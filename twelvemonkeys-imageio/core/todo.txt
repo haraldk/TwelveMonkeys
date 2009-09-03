@@ -1,0 +1,8 @@
+- Rename to imageio-common?
+- Separate modules for more for more plugins
+  - The BMP reader spports some special formats not supported by Sun reader
+  - PNM package is pretty complete, but useless, as it's provided by Sun? Licencse?
+  - WBMP?
+  - XBM?
+DONE:
+- Split up into separate plugins (modules), to allow easier configuration

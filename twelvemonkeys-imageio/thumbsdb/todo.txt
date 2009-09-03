@@ -1,0 +1,14 @@
+- Listeners
+
+- Expose one of the methods below:
+    - String getName(int pIndex)
+    - String[] getNames()
+    - Catalog getCatalog()
+
+- Make it multi-threaded? Or at least support multi-threaded reading
+ 
+- There seems to be different versions of the Thumbs.db:
+     - http://vinetto.sourceforge.net/docs.html
+     - We probably want to support all of these
+
+DONE:

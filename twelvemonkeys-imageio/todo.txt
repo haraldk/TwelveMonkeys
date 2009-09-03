@@ -1,0 +1,11 @@
+Consider creating a raw ImageReader (or util class?) that can read raw bitmaps:
+    - Interleaved (A)RGB (as in BMP, PICT, IFF PBM etc) -> A1R1G1B1, A2R2G2B2, ..., AnRnGnNn
+    - Channeled (A)RGB (as in Photoshop)                -> A1A2...An, R1R2...Rn, G1G2...Gn, B1B2...Bn
+    - Planar RGB (as in IFF ILBM)                       -> ....
+Formats that internally have these structures could delegate to an instance of this class.
+Could also be interesting to allow for raw reading using a RawImageReader.
+    - Would need to specify width, height
+    - Pixel layout
+    - Channel order
+    - Compression? RLE/PackBits/LZW/ZIP?
+    - IndexColorModel?

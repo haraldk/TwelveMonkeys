@@ -1,0 +1,3 @@
+com.twelvemonkeys.imageio.plugins.svg.SVGImageReaderSpi
+com.twelvemonkeys.imageio.plugins.wmf.WMFImageReaderSpi
+#com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi

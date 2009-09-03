@@ -1,0 +1,1 @@
+- Support all DIB formats?
