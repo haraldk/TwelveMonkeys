@@ -1,0 +1,131 @@
+/*
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.twelvemonkeys.io;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.ByteArrayInputStream;
+
+/**
+ * An unsynchronized {@code ByteArrayOutputStream} implementation. This version
+ * also has a constructor that lets you create a stream with initial content.
+ * <p/>
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/FastByteArrayOutputStream.java#2 $
+ */
+public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
+    /** Max grow size (unless if writing more than this ammount of bytes) */
+    protected int mMaxGrowSize = 1024 * 1024; // 1 MB
+
+    /**
+     * Creates a {@code ByteArrayOutputStream} with the given initial buffer
+     * size.
+     *
+     * @param pSize initial buffer size
+     */
+    public FastByteArrayOutputStream(int pSize) {
+        super(pSize);
+    }
+
+    /**
+     * Creates a {@code ByteArrayOutputStream} with the given initial content.
+     * <p/>
+     * Note that the buffer is not cloned, for maximum performance.
+     *
+     * @param pBuffer initial buffer
+     */
+    public FastByteArrayOutputStream(byte[] pBuffer) {
+        super(0); // Don't allocate array
+        buf = pBuffer;
+        count = pBuffer.length;
+    }
+
+    @Override
+    public synchronized void write(byte pBytes[], int pOffset, int pLength) {
+        if ((pOffset < 0) || (pOffset > pBytes.length) || (pLength < 0) ||
+                ((pOffset + pLength) > pBytes.length) || ((pOffset + pLength) < 0)) {
+            throw new IndexOutOfBoundsException();
+        }
+        else if (pLength == 0) {
+            return;
+        }
+        int newcount = count + pLength;
+        growIfNeeded(newcount);
+        System.arraycopy(pBytes, pOffset, buf, count, pLength);
+        count = newcount;
+    }
+
+    @Override
+    public synchronized void write(int pByte) {
+        int newcount = count + 1;
+        growIfNeeded(newcount);
+        buf[count] = (byte) pByte;
+        count = newcount;
+    }
+
+    private void growIfNeeded(int pNewcount) {
+        if (pNewcount > buf.length) {
+            int newSize = Math.max(Math.min(buf.length << 1, buf.length + mMaxGrowSize), pNewcount);
+            byte newBuf[] = new byte[newSize];
+            System.arraycopy(buf, 0, newBuf, 0, count);
+            buf = newBuf;
+        }
+    }
+
+    // Non-synchronized version of writeTo
+    @Override
+    public void writeTo(OutputStream pOut) throws IOException {
+        pOut.write(buf, 0, count);
+    }
+
+    // Non-synchronized version of toByteArray
+    @Override
+    public byte[] toByteArray() {
+        byte newbuf[] = new byte[count];
+        System.arraycopy(buf, 0, newbuf, 0, count);
+        return newbuf;
+    }
+
+    /**
+     * Creates a {@code ByteArrayInputStream} that reads directly from this
+     * {@code FastByteArrayOutputStream}'s byte buffer.
+     * The buffer is not cloned, for maximum performance.
+     * <p/>
+     * Note that care needs to be taken to avoid writes to
+     * this output stream after the input stream is created.
+     * Failing to do so, may result in unpredictable behviour.
+     *
+     * @return a new {@code ByteArrayInputStream}, reading from this stream's buffer.
+     */
+    public ByteArrayInputStream createInputStream() {
+        return new ByteArrayInputStream(buf, 0, count);
+    }
+}

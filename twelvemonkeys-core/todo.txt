@@ -1,0 +1,10 @@
+- Move some of the imageio classes and test cases to a new submodule imageio-util (imageio-core)
+    - ImageReaderBase
+    - ImageWriterBase
+    - Maybe something in the adapter folder?
+- Test cases for the OLE2Compound stuff
+- Move encoder/decoder streams to separate subpackage "enc"
+- Test cases for encoder/decoders
+- Test cases in general
+- Remove lots of the old imageio code
+- Remove some of the old SQL stuff?

@@ -1,0 +1,7 @@
+- Remove util.BASE64, make clients use io.Base64.
+- Create subpackages
+    io.base64
+    io.lzw
+    io.packbits
+    io.zip
+    

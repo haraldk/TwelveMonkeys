@@ -1,0 +1,168 @@
+/*
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.twelvemonkeys.lang;
+
+/**
+ * The class MathUtil contains methods for performing basic numeric operations 
+ * such as the elementary exponential, logarithm, square root, and 
+ * trigonometric functions.
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: haku $
+ *
+ * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/MathUtil.java#1 $
+ */
+public final class MathUtil {
+
+    /** */
+    private MathUtil() {
+    }
+    
+    /**
+     * Converts an angle measured in degrees to the equivalent angle measured
+     * in radians.
+     * This method is a replacement for the Math.toRadians() method in 
+     * Java versions < 1.2 (typically for Applets).
+     *
+     * @param pAngDeg an angle, in degrees
+     * @return the measurement of the angle <code>angdeg</code> in radians.
+     *
+     * @see java.lang.Math#toRadians(double)
+     */
+    public static double toRadians(final double pAngDeg) {
+        return pAngDeg * Math.PI / 180.0;
+    }
+
+    /**
+     * Converts an angle measured in radians to the equivalent angle measured 
+     * in degrees.
+     * This method is a replacement for the Math.toDegrees() method in 
+     * Java versions < 1.2 (typically for Applets).
+     *
+     * @param pAngRad an angle, in radians
+     * @return the measurement of the angle <code>angrad</code> in degrees.
+     *
+     * @see java.lang.Math#toDegrees(double)
+     */
+    public static double toDegrees(final double pAngRad) {
+        return pAngRad * 180.0 / Math.PI;
+    }
+
+    /**
+     * Returns the natural logarithm (base <I>e</I>) of a double value.
+     * Equivalent to <CODE>java.lang.Math.log</CODE>, just with a proper name.
+     *
+     * @param pArg a number greater than 0.0. 
+     * @return the value ln <CODE>pArg</CODE>, the natural logarithm of 
+     *         <CODE>pArg</CODE>.
+     *
+     * @see java.lang.Math#log(double)
+     */
+    public static double ln(final double pArg) {
+        return Math.log(pArg);
+    }
+
+    private final static double LN_10 = Math.log(10);
+
+    /**
+     * Returns the base 10 logarithm of a double value.
+     *
+     * @param pArg a number greater than 0.0. 
+     * @return the value log <CODE>pArg</CODE>, the base 10 logarithm of 
+     *         <CODE>pArg</CODE>.
+     */
+    public static double log(final double pArg) {
+        return Math.log(pArg) / LN_10;
+    }
+    
+    private final static double LN_2 = Math.log(10);
+
+    /**
+     * Returns the base 2 logarithm of a double value.
+     *
+     * @param pArg a number greater than 0.0. 
+     * @return the value log<SUB>2</SUB> <CODE>pArg</CODE>, the base 2 
+     *         logarithm of <CODE>pArg</CODE>.
+     */
+    public static double log2(final double pArg) {
+        return Math.log(pArg) / LN_2;
+    }
+
+    /**
+     * Returns the base <i>N</i> logarithm of a double value, for a given base 
+     * <i>N</i>.
+     *
+     * @param pArg a number greater than 0.0. 
+     * @param pBase a number greater than 0.0. 
+     *
+     * @return the value log<SUB>pBase</SUB> <CODE>pArg</CODE>, the base 
+     *         <CODE>pBase</CODE> logarithm of <CODE>pArg</CODE>.
+     */
+    public static double log(final double pArg, final double pBase) {
+        return Math.log(pArg) / Math.log(pBase);
+    }
+
+    /**
+     * A replacement for <tt>Math.abs</tt>, that never returns negative values.
+     * <tt>Math.abs(long)</tt> does this for <tt>Long.MIN_VALUE</tt>.
+     *
+     * @see Math#abs(long)
+     * @see Long#MIN_VALUE
+     *
+     * @param pNumber
+     * @return the absolute value of <tt>pNumber</tt>
+     *
+     * @throws ArithmeticException if <tt>pNumber == Long.MIN_VALUE</tt>
+     */
+    public static long abs(final long pNumber) {
+        if (pNumber == Long.MIN_VALUE) {
+            throw new ArithmeticException("long overflow: 9223372036854775808");
+        }
+        return (pNumber < 0) ? -pNumber : pNumber;
+    }
+
+    /**
+     * A replacement for <tt>Math.abs</tt>, that never returns negative values.
+     * <tt>Math.abs(int)</tt> does this for <tt>Integer.MIN_VALUE</tt>.
+     *
+     * @see Math#abs(int)
+     * @see Integer#MIN_VALUE
+     *
+     * @param pNumber
+     * @return the absolute value of <tt>pNumber</tt>
+     *
+     * @throws ArithmeticException if <tt>pNumber == Integer.MIN_VALUE</tt>
+     */
+    public static int abs(final int pNumber) {
+        if (pNumber == Integer.MIN_VALUE) {
+            throw new ArithmeticException("int overflow: 2147483648");
+        }
+        return (pNumber < 0) ? -pNumber : pNumber;
+    }
+}

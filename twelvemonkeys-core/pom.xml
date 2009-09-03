@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>twelvemonkeys-core</artifactId>
+    <groupId>com.twelvemonkeys</groupId>
+    <version>2.2-SNAPSHOT</version>
+    <name>TwelveMonkeys Core</name>
+    <description>
+        The TwelveMonkeys Core library. Contains common utility classes.
+    </description>
+
+    <parent>
+        <groupId>com.twelvemonkeys</groupId>
+        <artifactId>twelvemonkeys-parent</artifactId>
+        <version>2.0</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>jmagick</groupId>
+            <artifactId>jmagick</artifactId>
+            <version>6.2.4</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.3.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>jmock</groupId>
+            <artifactId>jmock-cglib</artifactId>
+            <version>1.0.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                  <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
