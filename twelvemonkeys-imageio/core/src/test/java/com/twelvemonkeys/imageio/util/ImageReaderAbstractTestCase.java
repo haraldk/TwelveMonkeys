@@ -204,7 +204,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         reader.setInput(null);
     }
 
-    public void testRead() throws IOException {
+    public void testRead() {
         ImageReader reader = createReader();
         for (TestData data : getTestData()) {
             // TODO: Is it required to call reset before setInput?
@@ -1283,7 +1283,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         return getClass().getResource(pName);
     }
 
-    static final  protected class TestData {
+    static final protected class TestData {
         private final Object mInput;
         private final List<Dimension> mSizes;
         private final List<BufferedImage> mImages;

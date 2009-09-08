@@ -4,6 +4,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public class PICTImageReaderTestCase extends ImageReaderAbstractTestCase<PICTIma
 
     static ImageReaderSpi sProvider = new PICTImageReaderSpi();
 
-    // TODO: Should also test the cliboard format (without 512 byte header)
+    // TODO: Should also test the clipboard format (without 512 byte header)
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/pict/test.pct"), new Dimension(300, 200)),
@@ -56,5 +57,14 @@ public class PICTImageReaderTestCase extends ImageReaderAbstractTestCase<PICTIma
 
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/pict", "image/x-pict");
+    }
+
+    public void testProviderNotMatchJPEG() throws IOException {
+        // This JPEG contains PICT magic bytes at locations a PICT would normally have them.
+        // We should not claim to be able read it.
+        assertFalse(sProvider.canDecodeInput(new TestData(
+                getClassLoaderResource("/jpeg/R-7439-1151526181.jpeg"),
+                new Dimension(386, 396)
+        )));
     }
 }

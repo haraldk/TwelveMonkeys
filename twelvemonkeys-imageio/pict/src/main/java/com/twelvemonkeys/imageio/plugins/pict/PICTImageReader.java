@@ -191,7 +191,7 @@ public class PICTImageReader extends ImageReaderBase {
 
         // Get frame at 72 dpi
         // NOTE: These are not pixel sizes!
-        // Need sto be multiplied with hRes/screenResolution and vRes/screenResolution
+        // Need to be multiplied with hRes/screenResolution and vRes/screenResolution
         int y = pStream.readUnsignedShort();
         int x = pStream.readUnsignedShort();
         int h = pStream.readUnsignedShort();
@@ -1664,10 +1664,18 @@ public class PICTImageReader extends ImageReaderBase {
             throw e;
         }
         catch (EOFException e) {
-            throw new IIOException("Error in PICT format: Unexpected end of File", e);
+            String pos;
+            try {
+                pos = String.format("position %d", mImageInput.getStreamPosition());
+            }
+            catch (IOException ignore) {
+                pos = "unknown position";
+            }
+
+            throw new IIOException(String.format("Error in PICT format: Unexpected end of File at %s", pos), e);
         }
         catch (IOException e) {
-            throw new IIOException("Error in PICT format: " + e.getMessage(), e);
+            throw new IIOException(String.format("Error in PICT format: %s", e.getMessage()), e);
         }
     }
 
@@ -2528,7 +2536,7 @@ public class PICTImageReader extends ImageReaderBase {
     /*
      * Read a long comment from the stream.
      */
-    private void readLongComment(DataInput pStream) throws IOException {
+    private void readLongComment(final DataInput pStream) throws IOException {
         // Comment kind and data byte count
         pStream.readShort();
 
@@ -2604,12 +2612,12 @@ public class PICTImageReader extends ImageReaderBase {
             // TODO: Might need to clear background
 
             g.setTransform(AffineTransform.getScaleInstance(mScreenImageXRatio, mScreenImageYRatio));
-            try {
+//            try {
                 drawOnto(g);
-            }
-            catch (IOException e) {
-                e.printStackTrace();
-            }
+//            }
+//            catch (IOException e) {
+//                e.printStackTrace();
+//            }
         }
         finally {
             g.dispose();
