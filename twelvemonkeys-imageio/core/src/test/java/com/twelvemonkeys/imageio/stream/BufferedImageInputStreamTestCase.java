@@ -17,14 +17,14 @@ import java.util.Random;
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedImageInputStreamTestCase.java,v 1.0 Jun 30, 2008 3:07:42 PM haraldk Exp$
  */
-public class BufferedImageInputStreamTestCase extends TestCase{
+public class BufferedImageInputStreamTestCase extends TestCase {
     protected final Random mRandom = new Random();
 
-    public void testCreate() {
+    public void testCreate() throws IOException {
         new BufferedImageInputStream(new ByteArrayImageInputStream(new byte[0]));
     }
 
-    public void testCreateNull() {
+    public void testCreateNull() throws IOException {
         try {
             new BufferedImageInputStream(null);
             fail("Expected IllegalArgumentException");
@@ -74,6 +74,35 @@ public class BufferedImageInputStreamTestCase extends TestCase{
 
         stream.readFully(result);
         assertTrue(rangeEquals(bytes, size, result, 0, size));
+    }
+
+    public void testBufferPositionCorrect() throws IOException {
+        // Fill bytes
+        byte[] bytes = new byte[1024];
+        mRandom.nextBytes(bytes);
+
+        ByteArrayImageInputStream input = new ByteArrayImageInputStream(bytes);
+
+        input.readByte();
+        input.readByte();
+        input.skipBytes(124);
+        input.readByte();
+        input.readByte();
+
+        // Sanity check
+        assertEquals(128, input.getStreamPosition());
+
+        BufferedImageInputStream stream = new BufferedImageInputStream(input);
+
+        assertEquals(input.getStreamPosition(), stream.getStreamPosition());
+
+        stream.skipBytes(128);
+
+        //assertTrue(256 <= input.getStreamPosition());
+        assertEquals(256, stream.getStreamPosition());
+        
+        stream.seek(1020);
+        assertEquals(1020, stream.getStreamPosition());
     }
 
     /**

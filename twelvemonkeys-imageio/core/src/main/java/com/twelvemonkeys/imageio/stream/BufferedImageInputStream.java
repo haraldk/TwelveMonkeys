@@ -26,14 +26,15 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     private int mBufferPos = 0;
     private int mBufferLength = 0;
 
-    public BufferedImageInputStream(final ImageInputStream pStream) {
+    public BufferedImageInputStream(final ImageInputStream pStream) throws IOException {
         this(pStream, DEFAULT_BUFFER_SIZE);
     }
 
-    private BufferedImageInputStream(final ImageInputStream pStream, final int pBufferSize) {
+    private BufferedImageInputStream(final ImageInputStream pStream, final int pBufferSize) throws IOException {
         Validate.notNull(pStream, "stream");
 
         mStream = pStream;
+        streamPos = pStream.getStreamPosition();
         mBuffer = new byte[pBufferSize];
     }
 
@@ -66,37 +67,53 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
         bitOffset = 0;
 
-        boolean bypassBuffer = false;
-
+        // TODO: Consider fixing the bypass buffer code...
         if (!isBufferValid()) {
             // Bypass cache if cache is empty for reads longer than buffer
             if (pLength >= mBuffer.length) {
-                bypassBuffer = true;
+                return readDirect(pBuffer, pOffset, pLength);
             }
             else {
                 fillBuffer();
             }
         }
 
-        if (!bypassBuffer && mBufferLength <= 0) {
+        return readBuffered(pBuffer, pOffset, pLength);
+    }
+
+    private int readDirect(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
+//        System.err.println("BEFORE                   streamPos: " + streamPos);
+//        System.err.println("BEFORE mStream.getStreamPosition(): " + mStream.getStreamPosition());
+
+        int read = mStream.read(pBuffer, pOffset, Math.min(mBuffer.length, pLength));
+
+        if (read > 0) {
+            streamPos += read;
+        }
+
+//        System.err.println("AFTER                    streamPos: " + streamPos);
+//        System.err.println("AFTER  mStream.getStreamPosition(): " + mStream.getStreamPosition());
+//        System.err.println();
+ 
+
+        mBufferStart = mStream.getStreamPosition();
+        mBufferLength = 0;
+
+        return read;
+    }
+
+
+    private int readBuffered(final byte[] pBuffer, final int pOffset, final int pLength) {
+        if (mBufferLength <= 0) {
             return -1;
         }
 
         // Read as much as possible from buffer
-        int length = bypassBuffer ? 0 : Math.min(mBufferLength - mBufferPos, pLength);
+        int length = Math.min(mBufferLength - mBufferPos, pLength);
 
         if (length > 0) {
             System.arraycopy(mBuffer, mBufferPos, pBuffer, pOffset, length);
             mBufferPos += length;
-        }
-
-        // Read rest directly from stream, if longer than buffer
-        if (pLength - length >= mBuffer.length) {
-            int read = mStream.read(pBuffer, pOffset + length, pLength - length);
-
-            if (read > 0) {
-                length += read;
-            }
         }
 
         streamPos += length;
