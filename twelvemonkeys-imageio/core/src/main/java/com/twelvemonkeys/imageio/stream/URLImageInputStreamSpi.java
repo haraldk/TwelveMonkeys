@@ -37,9 +37,9 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
             if ("file".equals(url.getProtocol())) {
                 try {
                     return new BufferedImageInputStream(new FileImageInputStream(new File(url.toURI())));
-//                    return new FileImageInputStream(new File(url.toURI()));
                 }
                 catch (URISyntaxException ignore) {
+                    // This should never happen, but if it does, we'll fall back to using the stream  
                     ignore.printStackTrace();
                 }
             }

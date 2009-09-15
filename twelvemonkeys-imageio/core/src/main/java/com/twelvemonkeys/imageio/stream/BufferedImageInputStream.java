@@ -53,6 +53,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         if (!isBufferValid()) {
             fillBuffer();
         }
+
         if (mBufferLength <= 0) {
             return -1;
         }
@@ -67,7 +68,6 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
         bitOffset = 0;
 
-        // TODO: Consider fixing the bypass buffer code...
         if (!isBufferValid()) {
             // Bypass cache if cache is empty for reads longer than buffer
             if (pLength >= mBuffer.length) {
@@ -82,19 +82,12 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     }
 
     private int readDirect(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
-//        System.err.println("BEFORE                   streamPos: " + streamPos);
-//        System.err.println("BEFORE mStream.getStreamPosition(): " + mStream.getStreamPosition());
-
+        // TODO: Figure out why reading more than the buffer length causes alignment issues...
         int read = mStream.read(pBuffer, pOffset, Math.min(mBuffer.length, pLength));
 
         if (read > 0) {
             streamPos += read;
         }
-
-//        System.err.println("AFTER                    streamPos: " + streamPos);
-//        System.err.println("AFTER  mStream.getStreamPosition(): " + mStream.getStreamPosition());
-//        System.err.println();
- 
 
         mBufferStart = mStream.getStreamPosition();
         mBufferLength = 0;
@@ -123,7 +116,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     @Override
     public void seek(long pPosition) throws IOException {
-        // TODO: Could probably be optimized to not invalidate buffer if new pos is within current buffer
+        // TODO: Could probably be optimized to not invalidate buffer if new position is within current buffer
         mStream.seek(pPosition);
         mBufferLength = 0; // Will invalidate buffer
         streamPos = mStream.getStreamPosition();
