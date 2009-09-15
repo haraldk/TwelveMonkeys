@@ -28,6 +28,8 @@ final class PSDPrintFlagsInformation extends PSDImageResource {
         mField = pInput.readUnsignedByte();
         mBleedWidth = pInput.readUnsignedInt();
         mBleedScale = pInput.readUnsignedShort();
+
+        pInput.skipBytes(mSize - 10);
     }
 
     @Override

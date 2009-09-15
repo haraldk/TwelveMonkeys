@@ -52,6 +52,7 @@ class PSDImageResource {
 
         mSize = pInput.readUnsignedInt();
         readData(pInput);
+
         // Data is even-padded
         if (mSize % 2 != 0) {
             pInput.read();
@@ -128,7 +129,7 @@ class PSDImageResource {
     public static PSDImageResource read(final ImageInputStream pInput) throws IOException {
         int type = pInput.readInt();
         if (type != PSD.RESOURCE_TYPE) {
-            throw new IIOException("Wrong image resource type, expected 8BIM: " + PSDUtil.intToStr(type));
+            throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%s'", PSDUtil.intToStr(type)));
         }
 
         // TODO: Process more of the resource stuff, most important are IPTC, EXIF and XMP data,

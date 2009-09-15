@@ -35,7 +35,7 @@ final class PSDPrintFlags extends PSDImageResource {
         mInterpolate = pInput.readUnsignedByte() != 0;
         mCaption = pInput.readUnsignedByte() != 0;
 
-        pInput.readUnsignedByte(); // Pad
+        pInput.skipBytes(mSize - 8);
     }
 
     @Override

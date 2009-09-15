@@ -425,6 +425,7 @@ public class PSDImageReader extends ImageReaderBase {
             if (mImageResources == null) {
                 mImageResources = new ArrayList<PSDImageResource>();
                 long expectedEnd = mImageInput.getStreamPosition() + length;
+
                 while (mImageInput.getStreamPosition() < expectedEnd) {
                     PSDImageResource resource = PSDImageResource.read(mImageInput);
                     mImageResources.add(resource);
