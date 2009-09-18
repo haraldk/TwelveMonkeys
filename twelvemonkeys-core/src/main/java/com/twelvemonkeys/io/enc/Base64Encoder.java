@@ -44,26 +44,37 @@ import java.io.IOException;
  */
 public class Base64Encoder implements Encoder {
 
-    public void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException {
+    public void encode(final OutputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength) 
+            throws IOException
+    {
+        if (pOffset < 0 || pOffset > pLength || pOffset > pBuffer.length) {
+            throw new IndexOutOfBoundsException("offset outside [0...length]");
+        }
+        else if (pLength > pBuffer.length) {
+            throw new IndexOutOfBoundsException("length > buffer length");
+        }
+
         // TODO: Implement
         // NOTE: This is impossible, given the current spec, as we need to either:
         //  - buffer all data in the EncoderStream
         //  - or have flush/end method(s) in the Encoder
         // to ensure proper end of stream handling
 
+        int length = pLength;
         int offset = pOffset;
 
         // TODO: Temp impl, will only work for single writes
         while ((pBuffer.length - offset) > 0) {
             byte a, b, c;
+
             if ((pBuffer.length - offset) > 2) {
-                pLength = 3;
+                length = 3;
             }
             else {
-                pLength = pBuffer.length - offset;
+                length = pBuffer.length - offset;
             }
 
-            switch (pLength) {
+            switch (length) {
                 case 1:
                     a = pBuffer[offset];
                     b = 0;

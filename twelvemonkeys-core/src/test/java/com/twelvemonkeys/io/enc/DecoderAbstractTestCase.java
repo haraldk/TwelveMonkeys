@@ -1,11 +1,7 @@
 package com.twelvemonkeys.io.enc;
 
-import com.twelvemonkeys.lang.ObjectAbstractTestCase;
-import com.twelvemonkeys.io.enc.Decoder;
-import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.io.enc.Encoder;
-import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.FileUtil;
+import com.twelvemonkeys.lang.ObjectAbstractTestCase;
 
 import java.io.*;
 import java.util.Arrays;
@@ -86,14 +82,34 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
     }
 
     public final void testStreams() throws Exception {
-        for (int i = 0; i < 100; ++i) {
-            runStreamTest(i);
+        for (int i = 0; i < 100; i++) {
+            try {
+                runStreamTest(i);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+                fail(e.getMessage() + ": " + i);
+            }
         }
+
         for (int i = 100; i < 2000; i += 250) {
-            runStreamTest(i);
+            try {
+                runStreamTest(i);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+                fail(e.getMessage() + ": " + i);
+            }
         }
+
         for (int i = 2000; i < 80000; i += 1000) {
-            runStreamTest(i);
+            try {
+                runStreamTest(i);
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+                fail(e.getMessage() + ": " + i);
+            }
         }
     }
 }

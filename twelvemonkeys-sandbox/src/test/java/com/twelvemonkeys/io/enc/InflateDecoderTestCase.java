@@ -1,10 +1,5 @@
 package com.twelvemonkeys.io.enc;
 
-import com.twelvemonkeys.io.enc.Decoder;
-import com.twelvemonkeys.io.enc.DeflateEncoder;
-import com.twelvemonkeys.io.enc.Encoder;
-import com.twelvemonkeys.io.enc.InflateDecoder;
-
 /**
  * InflateEncoderTest
  * <p/>

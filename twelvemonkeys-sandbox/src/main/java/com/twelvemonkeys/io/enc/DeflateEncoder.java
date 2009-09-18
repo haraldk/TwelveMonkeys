@@ -36,31 +36,55 @@ import java.util.zip.Deflater;
  * {@code Encoder} implementation for standard DEFLATE encoding.
  * <p/>
  *
- * @see <a href="http://tools.ietf.org/html/rfc1951">RFC 1951</a>
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/DeflateEncoder.java#2 $
  *
+ * @see <a href="http://tools.ietf.org/html/rfc1951">RFC 1951</a>
  * @see Deflater
  * @see InflateDecoder
  * @see java.util.zip.DeflaterOutputStream
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/DeflateEncoder.java#2 $
  */
-public final class DeflateEncoder implements Encoder {
+final class DeflateEncoder implements Encoder {
 
     private final Deflater mDeflater;
+    private final byte[] mBuffer = new byte[1024];
 
     public DeflateEncoder() {
-        this(new Deflater());
+//        this(new Deflater());
+        this(new Deflater(Deflater.DEFAULT_COMPRESSION, true)); // TODO: Should we use "no wrap"?
     }
 
-    public DeflateEncoder(Deflater pDeflater) {
+    public DeflateEncoder(final Deflater pDeflater) {
         if (pDeflater == null) {
             throw new IllegalArgumentException("deflater == null");
         }
+
         mDeflater = pDeflater;
     }
 
-    public void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException {
-        throw new InternalError("not implemented: encode()"); // TODO: Implement
+    public void encode(final OutputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength)
+            throws IOException
+    {
+        System.out.println("DeflateEncoder.encode");
+        mDeflater.setInput(pBuffer, pOffset, pLength);
+        flushInputToStream(pStream);
     }
+
+    private void flushInputToStream(final OutputStream pStream) throws IOException {
+        System.out.println("DeflateEncoder.flushInputToStream");
+
+        if (mDeflater.needsInput()) {
+            System.out.println("Foo");
+        }
+
+        while (!mDeflater.needsInput()) {
+            int deflated = mDeflater.deflate(mBuffer, 0, mBuffer.length);
+            pStream.write(mBuffer, 0, deflated);
+            System.out.println("flushed " + deflated);
+        }
+    }
+
+//    public void flush() {
+//        mDeflater.finish();
+//    }
 }

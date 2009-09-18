@@ -20,14 +20,14 @@ public class Base64EncoderTestCase extends EncoderAbstractTestCase {
     }
 
     public void testNegativeEncode() throws IOException {
-        Encoder base64 = createEncoder();
+        Encoder encoder = createEncoder();
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         try {
-            base64.encode(bytes, new byte[1], 2, 1);
+            encoder.encode(bytes, new byte[1], 2, 1);
             fail("wrong index should throw IndexOutOfBoundsException");
         }
-        catch (IndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException expected) {
         }
     }
 

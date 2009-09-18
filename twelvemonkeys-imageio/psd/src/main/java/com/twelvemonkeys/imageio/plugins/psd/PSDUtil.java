@@ -30,12 +30,12 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.io.enc.InflateDecoder;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.zip.ZipInputStream;
 
 /**
  * PSDUtil
@@ -81,7 +81,8 @@ final class PSDUtil {
     }
 
     static DataInputStream createZipStream(final ImageInputStream pInput, int pLength) {
-        return new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pInput, pLength), new InflateDecoder()));
+        //return new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pInput, pLength), new InflateDecoder()));
+        return new DataInputStream(new ZipInputStream(IIOUtil.createStreamAdapter(pInput, pLength)));
     }
 
     static DataInputStream createZipPredictorStream(final ImageInputStream pInput, int pLength) {

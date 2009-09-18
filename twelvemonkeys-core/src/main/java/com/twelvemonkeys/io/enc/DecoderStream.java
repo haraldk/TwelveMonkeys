@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.io.FilterInputStream;
 
 /**
- * An {@code InputStream} that provides on-the-fly deoding from an underlying
+ * An {@code InputStream} that provides on-the-fly decoding from an underlying
  * stream.
  * <p/>
  * @see EncoderStream
@@ -54,11 +54,11 @@ public final class DecoderStream extends FilterInputStream {
      * input stream specified by the {@code pStream} argument.
      *
      * @param pStream the underlying input stream.
-     * @param pDecoder
+     * @param pDecoder the decoder that will be used to decode the underlying stream
      *
      * @see java.io.FilterInputStream#in
      */
-    public DecoderStream(InputStream pStream, Decoder pDecoder) {
+    public DecoderStream(final InputStream pStream, final Decoder pDecoder) {
         super(pStream);
         mDecoder = pDecoder;
         mBuffer = new byte[1024];
@@ -92,7 +92,7 @@ public final class DecoderStream extends FilterInputStream {
         }
         else if ((pOffset < 0) || (pOffset > pBytes.length) || (pLength < 0) ||
                 ((pOffset + pLength) > pBytes.length) || ((pOffset + pLength) < 0)) {
-            throw new IndexOutOfBoundsException("bytes.length=" + pBytes.length + " offset=" + pOffset + " lenght=" + pLength);
+            throw new IndexOutOfBoundsException("bytes.length=" + pBytes.length + " offset=" + pOffset + " length=" + pLength);
         }
         else if (pLength == 0) {
             return 0;
@@ -106,6 +106,7 @@ public final class DecoderStream extends FilterInputStream {
         // Read until we have read pLength bytes, or have reached EOF
         int count = 0;
         int off = pOffset;
+
         while (pLength > count) {
             int avail = mBufferLimit - mBufferPos;
 
@@ -120,6 +121,7 @@ public final class DecoderStream extends FilterInputStream {
             // Copy as many bytes as possible
             int dstLen = Math.min(pLength - count, avail);
             System.arraycopy(mBuffer, mBufferPos, pBytes, off, dstLen);
+
             mBufferPos += dstLen;
 
             // Update offset (rest)
@@ -128,13 +130,6 @@ public final class DecoderStream extends FilterInputStream {
             // Inrease count
             count += dstLen;
         }
-
-        /*
-        for (int i = 0; i < count; i++) {
-            byte b = pBytes[pOffset + i];
-            System.out.print("0x" + Integer.toHexString(b & 0xff));
-        }
-        */
 
         return count;
     }
@@ -179,11 +174,18 @@ public final class DecoderStream extends FilterInputStream {
      */
     protected int fill() throws IOException {
         int read = mDecoder.decode(in, mBuffer);
+
+        // TODO: Enforce this in test case, leave here to aid debugging
+        if (read > mBuffer.length) {
+            throw new AssertionError(String.format("Decode beyond buffer (%d): %d", mBuffer.length, read));
+        }
+
         mBufferPos = 0;
 
         if (read == 0) {
             return -1;
         }
+
         return read;
     }
 }

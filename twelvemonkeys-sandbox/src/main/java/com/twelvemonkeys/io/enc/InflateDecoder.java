@@ -47,7 +47,7 @@ import java.util.zip.Inflater;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/InflateDecoder.java#2 $
  */
-public final class InflateDecoder implements Decoder {
+final class InflateDecoder implements Decoder {
 
     private final Inflater mInflater;
 
@@ -66,25 +66,29 @@ public final class InflateDecoder implements Decoder {
      *
      * @param pInflater the inflater instance to use
      */
-    public InflateDecoder(Inflater pInflater) {
+    public InflateDecoder(final Inflater pInflater) {
         if (pInflater == null) {
             throw new IllegalArgumentException("inflater == null");
         }
+
         mInflater = pInflater;
         mBuffer = new byte[1024];
     }
 
-    public int decode(InputStream pStream, byte[] pBuffer) throws IOException {
+    public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
         try {
             int decoded;
+
             while ((decoded = mInflater.inflate(pBuffer, 0, pBuffer.length)) == 0) {
                 if (mInflater.finished() || mInflater.needsDictionary()) {
                     return 0;
                 }
+
                 if (mInflater.needsInput()) {
                     fill(pStream);
                 }
             }
+
             return decoded;
         }
         catch (DataFormatException e) {
@@ -93,11 +97,13 @@ public final class InflateDecoder implements Decoder {
         }
     }
 
-    private void fill(InputStream pStream) throws IOException {
+    private void fill(final InputStream pStream) throws IOException {
         int available = pStream.read(mBuffer, 0, mBuffer.length);
+
         if (available == -1) {
             throw new EOFException("Unexpected end of ZLIB stream");
         }
+
         mInflater.setInput(mBuffer, 0, available);
     }
 }

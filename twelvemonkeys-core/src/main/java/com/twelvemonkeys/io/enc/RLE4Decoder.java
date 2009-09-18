@@ -52,6 +52,7 @@ final class RLE4Decoder extends AbstractRLEDecoder {
         while (mSrcY >= 0) {
             int byte1 = pInput.read();
             int byte2 = checkEOF(pInput.read());
+
             if (byte1 == 0x00) {
                 switch (byte2) {
                     case 0x00:
@@ -102,6 +103,7 @@ final class RLE4Decoder extends AbstractRLEDecoder {
                     mRow[mSrcX++] = (byte) byte2;
                     byte1 -= 2;
                 }
+
                 if (byte1 == 1) {
                     // TODO: Half byte alignment? Seems to be ok...
                     mRow[mSrcX++] = (byte) (byte2 & 0xf0);
@@ -110,14 +112,15 @@ final class RLE4Decoder extends AbstractRLEDecoder {
 
             // If we're done with a complete row, copy the data
             if (mSrcX == mRow.length) {
-
                 // Move to new position, either absolute (delta) or next line
                 if (deltaX != 0 || deltaY != 0) {
                     mSrcX = (deltaX + 1) / 2;
+
                     if (deltaY > mSrcY) {
                         mSrcY = deltaY;
                         break;
                     }
+
                     deltaX = 0;
                     deltaY = 0;
                 }

@@ -38,7 +38,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/LZWEncoder.java#2 $
  */
-public class LZWEncoder implements Encoder {
+final class LZWEncoder implements Encoder {
     public void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException {
         // TODO: Implement
         // TODO: We probably need a GIF specific subclass

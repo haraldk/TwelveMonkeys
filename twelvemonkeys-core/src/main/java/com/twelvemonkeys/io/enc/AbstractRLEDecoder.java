@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Abstract base class for RLE decoding as specifed by in the Windows BMP (aka DIB) file format.
+ * Abstract base class for RLE decoding as specified by in the Windows BMP (aka DIB) file format.
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -59,9 +59,11 @@ abstract class AbstractRLEDecoder implements Decoder {
         mWidth = pWidth;
         int bytesPerRow = mWidth;
         int mod = bytesPerRow % 4;
+        
         if (mod != 0) {
             bytesPerRow += 4 - mod;
         }
+
         mRow = new byte[bytesPerRow];
 
         mSrcX = 0;
@@ -133,6 +135,7 @@ abstract class AbstractRLEDecoder implements Decoder {
         if (pByte < 0) {
             throw new EOFException("Premature end of file");
         }
+
         return pByte;
     }
 }

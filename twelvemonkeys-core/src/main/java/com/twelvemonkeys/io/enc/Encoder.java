@@ -47,7 +47,7 @@ import java.io.OutputStream;
 public interface Encoder {
     
     /**
-     * Encodes up to {@code pBuffer.length} bytes into the given inputstream,
+     * Encodes up to {@code pBuffer.length} bytes into the given input stream,
      * from the given buffer.
      *
      * @param pStream the outputstream to encode data to

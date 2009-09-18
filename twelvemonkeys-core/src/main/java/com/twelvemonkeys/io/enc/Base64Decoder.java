@@ -43,7 +43,7 @@ import java.io.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/Base64Decoder.java#2 $
  */
-public class Base64Decoder implements Decoder {
+public final class Base64Decoder implements Decoder {
     /**
      * This array maps the characters to their 6 bit values
      */
@@ -60,12 +60,14 @@ public class Base64Decoder implements Decoder {
     };
 
     final static byte[] PEM_CONVERT_ARRAY;
-    private byte[] decode_buffer = new byte[4];
+
+    private byte[] mDecodeBuffer = new byte[4];
     private ByteArrayOutputStream mWrapped;
     private Object mWrappedObject;
 
     static {
         PEM_CONVERT_ARRAY = new byte[256];
+
         for (int i = 0; i < 255; i++) {
             PEM_CONVERT_ARRAY[i] = -1;
         }
@@ -75,20 +77,23 @@ public class Base64Decoder implements Decoder {
         }
     }
 
-    protected static int readFully(InputStream pStream, byte pBytes[],
-                                   int pOffset, int pLength) throws IOException {
+    protected static int readFully(final InputStream pStream, final byte pBytes[], final int pOffset, final int pLength)
+            throws IOException
+    {
         for (int i = 0; i < pLength; i++) {
             int read = pStream.read();
+
             if (read == -1) {
                 return i != 0 ? i : -1;
             }
+
             pBytes[i + pOffset] = (byte) read;
         }
 
         return pLength;
     }
 
-    protected boolean decodeAtom(InputStream pInput, OutputStream pOutput, int pLength)
+    protected boolean decodeAtom(final InputStream pInput, final OutputStream pOutput, final int pLength)
             throws IOException {
 
         byte byte0 = -1;
@@ -102,40 +107,45 @@ public class Base64Decoder implements Decoder {
 
         int read;
 
-        // Skip linefeeds
+        // Skip line feeds
         do {
             read = pInput.read();
+
             if (read == -1) {
                 return false;
             }
         } while (read == 10 || read == 13);
 
-        decode_buffer[0] = (byte) read;
-        read = readFully(pInput, decode_buffer, 1, pLength - 1);
+        mDecodeBuffer[0] = (byte) read;
+        read = readFully(pInput, mDecodeBuffer, 1, pLength - 1);
 
         if (read == -1) {
             return false;
         }
-        if (pLength > 3 && decode_buffer[3] == 61) {
-            pLength = 3;
-        }
-        if (pLength > 2 && decode_buffer[2] == 61) {
-            pLength = 2;
+
+        int length = pLength;
+
+        if (length > 3 && mDecodeBuffer[3] == 61) {
+            length = 3;
         }
 
-        switch (pLength) {
+        if (length > 2 && mDecodeBuffer[2] == 61) {
+            length = 2;
+        }
+
+        switch (length) {
             case 4:
-                byte3 = PEM_CONVERT_ARRAY[decode_buffer[3] & 255];
+                byte3 = PEM_CONVERT_ARRAY[mDecodeBuffer[3] & 255];
                 // fall through
             case 3:
-                byte2 = PEM_CONVERT_ARRAY[decode_buffer[2] & 255];
+                byte2 = PEM_CONVERT_ARRAY[mDecodeBuffer[2] & 255];
                 // fall through
             case 2:
-                byte1 = PEM_CONVERT_ARRAY[decode_buffer[1] & 255];
-                byte0 = PEM_CONVERT_ARRAY[decode_buffer[0] & 255];
+                byte1 = PEM_CONVERT_ARRAY[mDecodeBuffer[1] & 255];
+                byte0 = PEM_CONVERT_ARRAY[mDecodeBuffer[0] & 255];
                 // fall through
             default:
-                switch (pLength) {
+                switch (length) {
                     case 2:
                         pOutput.write((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
                         break;
@@ -149,16 +159,18 @@ public class Base64Decoder implements Decoder {
                         pOutput.write((byte) (byte2 << 6 & 192 | byte3 & 63));
                         break;
                 }
+
                 break;
         }
 
         return true;
     }
 
-    void decodeBuffer(InputStream pInput, ByteArrayOutputStream pOutput, int pLength) throws IOException {
+    void decodeBuffer(final InputStream pInput, final ByteArrayOutputStream pOutput, final int pLength) throws IOException {
         do {
             int k = 72;
             int i;
+
             for (i = 0; i + 4 < k; i += 4) {
                 if(!decodeAtom(pInput, pOutput, 4)) {
                     break;
@@ -169,17 +181,17 @@ public class Base64Decoder implements Decoder {
                 break;
             }
         }
-        while (true);
+        while (pOutput.size() + 54 < pLength); // 72 char lines should produce no more than 54 bytes
     }
 
-    public int decode(InputStream pStream, byte[] pBuffer) throws IOException {
+    public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
         if (mWrappedObject != pBuffer) {
             // NOTE: Array not cloned in FastByteArrayOutputStream
             mWrapped = new FastByteArrayOutputStream(pBuffer);
             mWrappedObject = pBuffer;
         }
-        mWrapped.reset(); // NOTE: This only resets count to 0
 
+        mWrapped.reset(); // NOTE: This only resets count to 0
         decodeBuffer(pStream, mWrapped, pBuffer.length);
 
         return mWrapped.size();

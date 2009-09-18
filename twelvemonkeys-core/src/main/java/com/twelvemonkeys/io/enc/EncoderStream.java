@@ -55,9 +55,9 @@ public final class EncoderStream extends FilterOutputStream {
      * underlying output stream.
      *
      * @param pStream the underlying output stream
-     * @param pEncoder
+     * @param pEncoder the encoder to use
      */
-    public EncoderStream(OutputStream pStream, Encoder pEncoder) {
+    public EncoderStream(final OutputStream pStream, final Encoder pEncoder) {
         this(pStream, pEncoder, false);
     }
 
@@ -66,11 +66,11 @@ public final class EncoderStream extends FilterOutputStream {
      * underlying output stream.
      *
      * @param pStream the underlying output stream
-     * @param pEncoder
+     * @param pEncoder the encoder to use
      * @param pFlushOnWrite if {@code true}, calls to the byte-array
      * {@code write} methods will automatically flush the buffer.
      */
-    public EncoderStream(OutputStream pStream, Encoder pEncoder, boolean pFlushOnWrite) {
+    public EncoderStream(final OutputStream pStream, final Encoder pEncoder, final boolean pFlushOnWrite) {
         super(pStream);
 
         mEncoder = pEncoder;
@@ -94,12 +94,13 @@ public final class EncoderStream extends FilterOutputStream {
         if (mBufferPos != 0) {
             // Make sure all remaining data in buffer is written to the stream
             mEncoder.encode(out, mBuffer, 0, mBufferPos);
+
             // Reset buffer
             mBufferPos = 0;
         }
     }
 
-    public final void write(byte[] pBytes) throws IOException {
+    public final void write(final byte[] pBytes) throws IOException {
         write(pBytes, 0, pBytes.length);
     }
 
@@ -107,14 +108,14 @@ public final class EncoderStream extends FilterOutputStream {
     // TODO: We might need a way to explicitly flush the encoder, or specify
     // that the encoder can't buffer. In that case, the encoder should probably
     // tell the EncoderStream how large buffer it prefers... 
-    public void write(byte[] pBytes, int pOffset, int pLength) throws IOException {
+    public void write(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
         if (!mFlushOnWrite && mBufferPos + pLength < mBuffer.length) {
             // Buffer data
             System.arraycopy(pBytes, pOffset, mBuffer, mBufferPos, pLength);
             mBufferPos += pLength;
         }
         else {
-            // Encode data allready in the buffer
+            // Encode data already in the buffer
             if (mBufferPos != 0) {
                 encodeBuffer();
             }
@@ -124,10 +125,11 @@ public final class EncoderStream extends FilterOutputStream {
         }
     }
 
-    public void write(int pByte) throws IOException {
+    public void write(final int pByte) throws IOException {
         if (mBufferPos >= mBuffer.length - 1) {
             encodeBuffer(); // Resets mBufferPos to 0
         }
+
         mBuffer[mBufferPos++] = (byte) pByte;
     }
 }

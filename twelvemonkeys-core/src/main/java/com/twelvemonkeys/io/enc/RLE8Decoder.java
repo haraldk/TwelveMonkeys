@@ -52,6 +52,7 @@ final class RLE8Decoder extends AbstractRLEDecoder {
         while (mSrcY >= 0) {
             int byte1 = pInput.read();
             int byte2 = checkEOF(pInput.read());
+            
             if (byte1 == 0x00) {
                 switch (byte2) {
                     case 0x00:
