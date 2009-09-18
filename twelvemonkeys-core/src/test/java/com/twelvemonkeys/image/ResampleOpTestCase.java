@@ -81,9 +81,9 @@ public class ResampleOpTestCase extends TestCase {
                 assertResample(image, 15, 5, pFilterType);
             }
             catch (ImagingOpException e) {
-                // NOTE: It is currently allowed for filters to throw this exception
-                System.err.println(e.getMessage() + ", image: " + image);
-                e.printStackTrace();
+                // NOTE: It is currently allowed for filters to throw this exception and it is PLATFORM DEPENDENT..
+                System.err.println("WARNING: " + e.getMessage() + ", image: " + image);
+                //e.printStackTrace();
             }
             catch (Throwable t) {
                 exceptions.add(t.toString() + ": " + image.toString());
