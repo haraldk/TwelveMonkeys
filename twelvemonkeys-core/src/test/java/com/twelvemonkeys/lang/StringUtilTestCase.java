@@ -15,9 +15,6 @@ import java.sql.Timestamp;
 /**
  * StringUtilTestCase
  *
- * <!-- To change this template use Options | File Templates. -->
- * <!-- Created by IntelliJ IDEA. -->
- *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/lang/StringUtilTestCase.java#1 $
@@ -25,7 +22,7 @@ import java.sql.Timestamp;
  */
 public class StringUtilTestCase extends TestCase {
     final static Object TEST_OBJECT = new Object();
-    final static Integer TEST_INTEGER = new Integer(42);
+    final static Integer TEST_INTEGER = 42;
     final static String TEST_STRING = "TheQuickBrownFox"; // No WS!
     final static String TEST_SUB_STRING = TEST_STRING.substring(2, 5);
     final static String TEST_DELIM_STRING = "one,two, three\n four\tfive six";
@@ -702,8 +699,8 @@ public class StringUtilTestCase extends TestCase {
         assertEquals(Color.yellow, StringUtil.toColor("yellow"));
         assertEquals(Color.yellow, StringUtil.toColor("YELLOW"));
 
-        System.out.println(StringUtil.deepToString(Color.yellow));
-        System.out.println(StringUtil.deepToString(Color.pink, true, -1));
+//        System.out.println(StringUtil.deepToString(Color.yellow));
+//        System.out.println(StringUtil.deepToString(Color.pink, true, -1));
 
         // Test HTML/CSS style color
         for (int i = 0; i < 256; i++) {
