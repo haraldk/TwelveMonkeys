@@ -64,7 +64,7 @@ public class FilterIterator<E> implements Iterator<E> {
      * @param pFilter the filter
      * @see FilterIterator.Filter
      */
-    public FilterIterator(Iterator<E> pIterator, Filter<E> pFilter) {
+    public FilterIterator(final Iterator<E> pIterator, final Filter<E> pFilter) {
         if (pIterator == null) {
             throw new IllegalArgumentException("iterator == null");
         }
@@ -98,7 +98,7 @@ public class FilterIterator<E> implements Iterator<E> {
     }
 
     /**
-     * Returns the next element in the interation.
+     * Returns the next element in the iteration.
      *
      * @return the next element in the iteration.
      * @see FilterIterator.Filter#accept
@@ -133,13 +133,13 @@ public class FilterIterator<E> implements Iterator<E> {
     }
 
     /**
-     * Used to tests wether or not an element fullfils certain criteria, and
+     * Used to tests whether or not an element fulfills certain criteria, and
      * hence should be accepted by the FilterIterator instance.
      */
     public static interface Filter<E> {
 
         /**
-         * Tests wether or not the element fullfils certain criteria, and hence
+         * Tests whether or not the element fulfills certain criteria, and hence
          * should be accepted.
          *
          * @param pElement the element to test
