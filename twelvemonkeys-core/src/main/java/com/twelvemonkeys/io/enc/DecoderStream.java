@@ -82,11 +82,11 @@ public final class DecoderStream extends FilterInputStream {
         return mBuffer[mBufferPos++] & 0xff;
     }
 
-    public int read(byte pBytes[]) throws IOException {
+    public int read(final byte pBytes[]) throws IOException {
         return read(pBytes, 0, pBytes.length);
     }
 
-    public int read(byte pBytes[], int pOffset, int pLength) throws IOException {
+    public int read(final byte pBytes[], final int pOffset, final int pLength) throws IOException {
         if (pBytes == null) {
             throw new NullPointerException();
         }
@@ -134,7 +134,7 @@ public final class DecoderStream extends FilterInputStream {
         return count;
     }
 
-    public long skip(long pLength) throws IOException {
+    public long skip(final long pLength) throws IOException {
         // End of file?
         if (mBufferLimit - mBufferPos < 0) {
             return 0;
@@ -142,6 +142,7 @@ public final class DecoderStream extends FilterInputStream {
 
         // Skip until we have skipped pLength bytes, or have reached EOF
         long total = 0;
+        
         while (total < pLength) {
             int avail = mBufferLimit - mBufferPos;
 
@@ -170,14 +171,19 @@ public final class DecoderStream extends FilterInputStream {
      * @return the number of bytes decoded, or {@code -1} if the end of the
      * file is reached
      *
-     * @throws IOException if an IO error occurs
+     * @throws IOException if an I/O error occurs
      */
     protected int fill() throws IOException {
         int read = mDecoder.decode(in, mBuffer);
 
         // TODO: Enforce this in test case, leave here to aid debugging
         if (read > mBuffer.length) {
-            throw new AssertionError(String.format("Decode beyond buffer (%d): %d", mBuffer.length, read));
+            throw new AssertionError(
+                    String.format(
+                            "Decode beyond buffer (%d): %d (using %s decoder)",
+                            mBuffer.length, read, mDecoder.getClass().getName()
+                    )
+            );
         }
 
         mBufferPos = 0;

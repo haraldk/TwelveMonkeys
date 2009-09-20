@@ -31,7 +31,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.IOException;
 
 /**
- * Thrown by {@code Decoder}s when encoded data is not decodable.
+ * Thrown by {@code Decoder}s when encoded data can not be decocded.
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -39,16 +39,16 @@ import java.io.IOException;
  */
 public class DecodeException extends IOException {
 
-    public DecodeException(String pMessage) {
+    public DecodeException(final String pMessage) {
         super(pMessage);
     }
 
-    public DecodeException(String pMessage, Throwable pCause) {
+    public DecodeException(final String pMessage, final Throwable pCause) {
         super(pMessage);
         initCause(pCause);
     }
 
-    public DecodeException(Throwable pCause) {
+    public DecodeException(final Throwable pCause) {
         this(pCause.getMessage(), pCause);
     }
 }

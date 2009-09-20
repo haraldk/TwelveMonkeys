@@ -60,7 +60,7 @@ public class Base64Encoder implements Encoder {
         //  - or have flush/end method(s) in the Encoder
         // to ensure proper end of stream handling
 
-        int length = pLength;
+        int length;
         int offset = pOffset;
 
         // TODO: Temp impl, will only work for single writes

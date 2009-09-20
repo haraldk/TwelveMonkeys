@@ -1,6 +1,6 @@
 /**
  * Contains customized stream classes, that can read or write compressed data on the fly,
- * along with encoders and decoders for popular stream formats, such as ZIP (deflate), LZW, PackBits etc..
+ * along with encoders and decoders for popular stream formats, such as Base64, ZIP (deflate), LZW, PackBits etc..
  *
  * @see com.twelvemonkeys.io.enc.DecoderStream
  * @see com.twelvemonkeys.io.enc.EncoderStream
