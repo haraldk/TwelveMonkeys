@@ -32,16 +32,14 @@ import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.*;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
+import java.awt.*;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -85,19 +83,22 @@ public class PSDImageReader extends ImageReaderBase {
         mColorSpace = null;
     }
 
-    public int getWidth(int pIndex) throws IOException {
+    public int getWidth(final int pIndex) throws IOException {
         checkBounds(pIndex);
         readHeader();
         return mHeader.mWidth;
     }
 
-    public int getHeight(int pIndex) throws IOException {
+    public int getHeight(final int pIndex) throws IOException {
         checkBounds(pIndex);
         readHeader();
         return mHeader.mHeight;
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int pIndex) throws IOException {
+        // TODO: Check out the custom ImageTypeIterator and ImageTypeProducer used in the Sun provided JPEGImageReader
+        // Could use similar concept to create lazily-created ImageTypeSpecifiers (util candidate, based on FilterIterator?)
+
         checkBounds(pIndex);
         readHeader();
 
@@ -114,7 +115,7 @@ public class PSDImageReader extends ImageReaderBase {
                 }
                 break;
             case PSD.COLOR_MODE_DUOTONE:
-                // NOTE: Duotone (whatever that is) should be treated as grayscale, so fall-through
+                // NOTE: Duotone (whatever that is) should be treated as gray scale, so fall-through
             case PSD.COLOR_MODE_GRAYSCALE:
                 if (mHeader.mChannels == 1 && mHeader.mBits == 8) {
                     types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
@@ -205,6 +206,28 @@ public class PSDImageReader extends ImageReaderBase {
         readLayerAndMaskInfo(false);
 
         BufferedImage image = getDestination(pParam, getImageTypes(pIndex), mHeader.mWidth, mHeader.mHeight);
+
+        /*
+        NOTE: It seems safe to just leave this out for now. The only thing we need is to support sub sampling.
+        Sun's readers does not support arbitrary destination formats.
+
+        // TODO: Create temp raster in native format w * 1
+        // Read (sub-sampled) row into temp raster (skip other rows)
+        // If color model (color space) is not RGB, do color convert op
+        // Otherwise, copy "through" ColorMode?l
+        // Copy pixels from temp raster
+        // If possible, leave the destination image "untouched" (accelerated)
+        // TODO: Banding...
+
+        ImageTypeSpecifier spec = getRawImageType(pIndex);
+        BufferedImage temp = spec.createBufferedImage(getWidth(pIndex), 1);
+        temp.getRaster();
+
+        if (...)
+        ColorConvertOp convert = new ColorConvertOp(...);
+
+        */
+
         // TODO: Should do color convert op for CMYK -> RGB
         ColorModel cm = image.getColorModel();
         final boolean isCMYK = cm.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
@@ -214,16 +237,37 @@ public class PSDImageReader extends ImageReaderBase {
         if (!(raster.getDataBuffer() instanceof DataBufferByte)) {
             throw new IIOException("Unsupported raster type: " + raster);
         }
-        byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
-        // TODO: Maybe a banded raster would be easier than interleaved?
+        // TODO: Maybe a banded raster would be easier than interleaved? We could still convert to interleaved in CCOp
         final int channels = raster.getNumBands();
+
+        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
+        final byte[] line = new byte[mHeader.mWidth];
 
 //        System.out.println("channels: " + channels);
 //        System.out.println("numColorComponents: " + numColorComponents);
 //        System.out.println("isCMYK: " + isCMYK);
 
         short compression = mImageInput.readShort();
+
+//        final Rectangle source = getSourceRegion(pParam, mHeader.mWidth, mHeader.mHeight);
+        final Rectangle source = new Rectangle();
+        final Rectangle dest = new Rectangle();
+        computeRegions(pParam, mHeader.mWidth, mHeader.mHeight, image, source, dest);
+//        System.out.println("image: " + new Rectangle(image.getWidth(), image.getHeight()));
+//        System.out.println("source: " + source);
+//        System.out.println("dest: " + dest);
+
+        final int xSub;
+        final int ySub;
+
+        if (pParam == null) {
+            xSub = ySub = 1;
+        }
+        else {
+            xSub = pParam.getSourceXSubsampling();
+            ySub = pParam.getSourceYSubsampling();
+        }
 
         // TODO: Bitmap (depth = 1) and 16 bit (depth = 16) must be read differently, obviously...
         // This code works fine for images with channel depth = 8
@@ -271,24 +315,39 @@ public class PSDImageReader extends ImageReaderBase {
                         for (y = 0; y < mHeader.mHeight; y++) {
                             int length = offsets[c * mHeader.mHeight + y];
 //                            System.out.println("channel: " + c + " line: " + y + " length: " + length);
+                            // TODO: Skip rows without decoding
                             DataInputStream input = PSDUtil.createPackBitsStream(mImageInput, length);
-                            for (x = 0; x < mHeader.mWidth; x++) {
-                                int offset = (x + y * mHeader.mWidth) * channels;
 
-                                byte value = input.readByte();
+                            // TODO: Sometimes need to read the line y == source.y + source.height...
+                            // Read entire line, if within source region and sampling
+                            if (y >= source.y && y < source.y + source.height && y % ySub == 0) {
+                                for (x = 0; x < mHeader.mWidth; x++) {
+                                    byte value = input.readByte();
 
-//                                if (c < numColorComponents) {
-//                                    continue;
-//                                }
+    //                                if (c < numColorComponents) {
+    //                                    continue;
+    //                                }
 
-                                // CMYK values are stored inverted, but alpha is not
-                                if (isCMYK && c < numColorComponents) {
-                                    value = (byte) (255 - value & 0xff);
+                                    // CMYK values are stored inverted, but alpha is not
+                                    if (isCMYK && c < numColorComponents) {
+                                        value = (byte) (255 - value & 0xff);
+                                    }
+
+    //                                System.out.println("b: " + Integer.toHexString(b & 0xff));
+                                    line[x] = value;
                                 }
 
-//                                System.out.println("b: " + Integer.toHexString(b & 0xff));
-                                data[offset + (channels - 1 - c)] = value;
+                                // TODO: Destination offset...
+                                // Copy line sub sampled into real data
+                                int offset = (y - source.y) / ySub * dest.width * channels + (channels - 1 - c);
+                                for (int i = 0; i < dest.width; i++) {
+                                    data[offset + i * channels] = line[source.x + i * xSub];
+                                }
                             }
+                            else {
+                                // TODO: (If not reading compressed) skip data
+                            }
+
                             input.close();
 
                             if (abortRequested()) {
@@ -346,7 +405,7 @@ public class PSDImageReader extends ImageReaderBase {
         if (cm.hasAlpha() && cm.getColorSpace().getType() == ColorSpace.TYPE_RGB) {
             WritableRaster raster = pImage.getRaster();
 
-            // TODO: Probably faster to do this inline..
+            // TODO: Probably faster to do this in line..
             // TODO: This is not so good, as it might break acceleration...
             byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
@@ -372,7 +431,6 @@ public class PSDImageReader extends ImageReaderBase {
                     }
                 }
             }
-
         }
 //        System.out.println("PSDImageReader.coerceData: " + cm.getClass());
 //        System.out.println("other.equals(cm): " + (other == cm));
@@ -534,7 +592,7 @@ public class PSDImageReader extends ImageReaderBase {
         }
     }
 
-    public static void main(String[] pArgs) throws IOException {
+    public static void main(final String[] pArgs) throws IOException {
         PSDImageReader imageReader = new PSDImageReader(null);
 
         File file = new File(pArgs[0]);
@@ -552,7 +610,9 @@ public class PSDImageReader extends ImageReaderBase {
 
         long start = System.currentTimeMillis();
         ImageReadParam param = new ImageReadParam();
-//        param.setSourceRegion(new Rectangle(100, 100, 300, 200));
+//        param.setSourceRegion(new Rectangle(200, 200, 400, 400));
+//        param.setSourceRegion(new Rectangle(300, 200));
+        param.setSourceSubsampling(3, 3, 0, 0);
         BufferedImage image = imageReader.read(0, param);
         System.out.println("time: " + (System.currentTimeMillis() - start));
         System.out.println("image: " + image);
@@ -572,5 +632,4 @@ public class PSDImageReader extends ImageReaderBase {
 
         showIt(image, file.getName());
     }
-
 }
