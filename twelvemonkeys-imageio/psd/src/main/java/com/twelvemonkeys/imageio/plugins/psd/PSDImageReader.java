@@ -315,12 +315,12 @@ public class PSDImageReader extends ImageReaderBase {
                         for (y = 0; y < mHeader.mHeight; y++) {
                             int length = offsets[c * mHeader.mHeight + y];
 //                            System.out.println("channel: " + c + " line: " + y + " length: " + length);
-                            // TODO: Skip rows without decoding
-                            DataInputStream input = PSDUtil.createPackBitsStream(mImageInput, length);
 
                             // TODO: Sometimes need to read the line y == source.y + source.height...
                             // Read entire line, if within source region and sampling
                             if (y >= source.y && y < source.y + source.height && y % ySub == 0) {
+                                DataInputStream input = PSDUtil.createPackBitsStream(mImageInput, length);
+
                                 for (x = 0; x < mHeader.mWidth; x++) {
                                     byte value = input.readByte();
 
@@ -343,12 +343,12 @@ public class PSDImageReader extends ImageReaderBase {
                                 for (int i = 0; i < dest.width; i++) {
                                     data[offset + i * channels] = line[source.x + i * xSub];
                                 }
+
+                                input.close();
                             }
                             else {
-                                // TODO: (If not reading compressed) skip data
+                                mImageInput.skipBytes(length);
                             }
-
-                            input.close();
 
                             if (abortRequested()) {
                                 break;
@@ -613,6 +613,7 @@ public class PSDImageReader extends ImageReaderBase {
 //        param.setSourceRegion(new Rectangle(200, 200, 400, 400));
 //        param.setSourceRegion(new Rectangle(300, 200));
         param.setSourceSubsampling(3, 3, 0, 0);
+//        param.setSourceSubsampling(2, 2, 0, 0);
         BufferedImage image = imageReader.read(0, param);
         System.out.println("time: " + (System.currentTimeMillis() - start));
         System.out.println("image: " + image);
