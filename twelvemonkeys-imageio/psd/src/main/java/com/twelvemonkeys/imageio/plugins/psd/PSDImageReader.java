@@ -32,17 +32,21 @@ import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
-import java.awt.*;
-import java.io.DataInputStream;
+import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
+import java.io.DataInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -207,6 +211,10 @@ public class PSDImageReader extends ImageReaderBase {
 
         BufferedImage image = getDestination(pParam, getImageTypes(pIndex), mHeader.mWidth, mHeader.mHeight);
 
+        final Rectangle source = new Rectangle();
+        final Rectangle dest = new Rectangle();
+        computeRegions(pParam, mHeader.mWidth, mHeader.mHeight, image, source, dest);
+
         /*
         NOTE: It seems safe to just leave this out for now. The only thing we need is to support sub sampling.
         Sun's readers does not support arbitrary destination formats.
@@ -228,35 +236,11 @@ public class PSDImageReader extends ImageReaderBase {
 
         */
 
-        // TODO: Should do color convert op for CMYK -> RGB
-        ColorModel cm = image.getColorModel();
-        final boolean isCMYK = cm.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
-        final int numColorComponents = cm.getColorSpace().getNumComponents();
-
+        // TODO: Maybe a banded raster would be easier than interleaved? We could still convert to interleaved in CCOp
         WritableRaster raster = image.getRaster();
         if (!(raster.getDataBuffer() instanceof DataBufferByte)) {
             throw new IIOException("Unsupported raster type: " + raster);
         }
-
-        // TODO: Maybe a banded raster would be easier than interleaved? We could still convert to interleaved in CCOp
-        final int channels = raster.getNumBands();
-
-        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-        final byte[] line = new byte[mHeader.mWidth];
-
-//        System.out.println("channels: " + channels);
-//        System.out.println("numColorComponents: " + numColorComponents);
-//        System.out.println("isCMYK: " + isCMYK);
-
-        short compression = mImageInput.readShort();
-
-//        final Rectangle source = getSourceRegion(pParam, mHeader.mWidth, mHeader.mHeight);
-        final Rectangle source = new Rectangle();
-        final Rectangle dest = new Rectangle();
-        computeRegions(pParam, mHeader.mWidth, mHeader.mHeight, image, source, dest);
-//        System.out.println("image: " + new Rectangle(image.getWidth(), image.getHeight()));
-//        System.out.println("source: " + source);
-//        System.out.println("dest: " + dest);
 
         final int xSub;
         final int ySub;
@@ -269,111 +253,23 @@ public class PSDImageReader extends ImageReaderBase {
             ySub = pParam.getSourceYSubsampling();
         }
 
+        int[] offsets = null;
+        int compression = mImageInput.readShort();
+
         // TODO: Bitmap (depth = 1) and 16 bit (depth = 16) must be read differently, obviously...
         // This code works fine for images with channel depth = 8
         switch (compression) {
-            case PSD.COMPRESSION_NONE:
                 // TODO: This entire reading block is duplicated and should be replaced with the one for RLE!
-//                System.out.println("Uncompressed");
-                for (int c = 0; c < mHeader.mChannels; c++) {
-                    for (int y = 0; y < mHeader.mHeight; y++) {
-                        for (int x = 0; x < mHeader.mWidth; x++) {
-                            int offset = (x + y * mHeader.mWidth) * channels;
-
-                            byte value = mImageInput.readByte();
-
-                            // CMYK values are stored inverted, but alpha is not
-                            if (isCMYK && c < numColorComponents) {
-                                value = (byte) (255 - value & 0xff);
-                            }
-
-//                                System.out.println("b: " + Integer.toHexString(b & 0xff));
-                            data[offset + (channels - 1 - c)] = value;
-                        }
-
-                        if (abortRequested()) {
-                            break;
-                        }
-                        processImageProgress((c * y * 100) / mHeader.mChannels * mHeader.mHeight);
-                    }
-                    if (abortRequested()) {
-                        break;
-                    }
-                }
-                break;
             case PSD.COMPRESSION_RLE:
-//                System.out.println("PackBits compressed");
                 // NOTE: Offsets will allow us to easily skip rows before AOI
-                int[] offsets = new int[mHeader.mChannels * mHeader.mHeight];
+                offsets = new int[mHeader.mChannels * mHeader.mHeight];
                 for (int i = 0; i < offsets.length; i++) {
                     offsets[i] = mImageInput.readUnsignedShort();
                 }
+                // Fall through
 
-                int x = 0, y = 0, c = 0;
-                try {
-                    for (c = 0; c < channels; c++) {
-                        for (y = 0; y < mHeader.mHeight; y++) {
-                            int length = offsets[c * mHeader.mHeight + y];
-//                            System.out.println("channel: " + c + " line: " + y + " length: " + length);
-
-                            // TODO: Sometimes need to read the line y == source.y + source.height...
-                            // Read entire line, if within source region and sampling
-                            if (y >= source.y && y < source.y + source.height && y % ySub == 0) {
-                                DataInputStream input = PSDUtil.createPackBitsStream(mImageInput, length);
-
-                                for (x = 0; x < mHeader.mWidth; x++) {
-                                    byte value = input.readByte();
-
-    //                                if (c < numColorComponents) {
-    //                                    continue;
-    //                                }
-
-                                    // CMYK values are stored inverted, but alpha is not
-                                    if (isCMYK && c < numColorComponents) {
-                                        value = (byte) (255 - value & 0xff);
-                                    }
-
-    //                                System.out.println("b: " + Integer.toHexString(b & 0xff));
-                                    line[x] = value;
-                                }
-
-                                // TODO: Destination offset...
-                                // Copy line sub sampled into real data
-                                int offset = (y - source.y) / ySub * dest.width * channels + (channels - 1 - c);
-                                for (int i = 0; i < dest.width; i++) {
-                                    data[offset + i * channels] = line[source.x + i * xSub];
-                                }
-
-                                input.close();
-                            }
-                            else {
-                                mImageInput.skipBytes(length);
-                            }
-
-                            if (abortRequested()) {
-                                break;
-                            }
-                            processImageProgress((c * y * 100) / mHeader.mChannels * mHeader.mHeight);
-                        }
-                        if (abortRequested()) {
-                            break;
-                        }
-                    }
-                }
-                catch (IOException e) {
-                    System.err.println("c: " + c);
-                    System.err.println("y: " + y);
-                    System.err.println("x: " + x);
-                    throw e;
-                }
-                catch (IndexOutOfBoundsException e) {
-                    e.printStackTrace();
-                    System.out.println("data.length: " + data.length);
-                    System.err.println("c: " + c);
-                    System.err.println("y: " + y);
-                    System.err.println("x: " + x);
-                    throw e;
-                }
+            case PSD.COMPRESSION_NONE:
+                read8bitData(raster, image.getColorModel(), source, dest, xSub, ySub, offsets, compression == PSD.COMPRESSION_RLE);
                 break;
             case PSD.COMPRESSION_ZIP:
                 // TODO: Could probably use the ZIPDecoder (DeflateDecoder) here..
@@ -396,6 +292,87 @@ public class PSDImageReader extends ImageReaderBase {
         }
 
         return image;
+    }
+
+    private void read8bitData(final WritableRaster pRaster, final ColorModel pDestinationColorModel,
+                              final Rectangle pSource, final Rectangle pDest,
+                              final int pXSub, final int pYSub,
+                              final int[] pRowOffsets, final boolean pRLECompressed) throws IOException
+    {
+        final int channels = pRaster.getNumBands();
+        final byte[] data = ((DataBufferByte) pRaster.getDataBuffer()).getData();
+
+        // TODO: FixMe: Use real source color model from native (raw) image type, and convert if needed
+        ColorModel sourceColorModel = pDestinationColorModel;
+        WritableRaster rowRaster = sourceColorModel.createCompatibleWritableRaster(mHeader.mWidth, 1);
+        final byte[] row = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+
+        final boolean isCMYK = sourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
+        final int colorComponents = sourceColorModel.getColorSpace().getNumComponents();
+
+        int x = 0, y = 0, c = 0;
+        try {
+            for (c = 0; c < channels; c++) {
+                for (y = 0; y < mHeader.mHeight; y++) {
+                    int length = pRLECompressed ? pRowOffsets[c * mHeader.mHeight + y] : mHeader.mWidth;
+
+                    // TODO: Sometimes need to read the line y == source.y + source.height...
+                    // Read entire line, if within source region and sampling
+                    if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
+                        DataInput input = pRLECompressed ? PSDUtil.createPackBitsStream(mImageInput, length) : mImageInput;
+
+                        for (x = 0; x < mHeader.mWidth; x++) {
+                            byte value = input.readByte();
+
+
+                            // CMYK values are stored inverted, but alpha is not
+                            if (isCMYK && c < colorComponents) {
+                                value = (byte) (255 - value & 0xff);
+                            }
+
+                            row[x] = value;
+                        }
+
+                        // TODO: Destination offset...??
+                        // Copy line sub sampled into real data
+                        int offset = (y - pSource.y) / pYSub * pDest.width * channels + (channels - 1 - c);
+                        for (int i = 0; i < pDest.width; i++) {
+                            data[offset + i * channels] = row[pSource.x + i * pXSub];
+                        }
+
+                        if (pRLECompressed) {
+                            ((DataInputStream) input).close();
+                        }
+                    }
+                    else {
+                        mImageInput.skipBytes(length);
+                    }
+
+                    if (abortRequested()) {
+                        break;
+                    }
+                    processImageProgress((c * y * 100) / mHeader.mChannels * mHeader.mHeight);
+                }
+
+                if (abortRequested()) {
+                    break;
+                }
+            }
+        }
+        catch (IOException e) {
+            System.err.println("c: " + c);
+            System.err.println("y: " + y);
+            System.err.println("x: " + x);
+            throw e;
+        }
+        catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+            System.out.println("data.length: " + data.length);
+            System.err.println("c: " + c);
+            System.err.println("y: " + y);
+            System.err.println("x: " + x);
+            throw e;
+        }
     }
 
     private void decomposeAlpha(final BufferedImage pImage) throws IOException {
