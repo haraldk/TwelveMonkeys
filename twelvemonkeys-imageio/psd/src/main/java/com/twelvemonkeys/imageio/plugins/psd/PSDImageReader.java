@@ -259,17 +259,16 @@ public class PSDImageReader extends ImageReaderBase {
         // TODO: Bitmap (depth = 1) and 16 bit (depth = 16) must be read differently, obviously...
         // This code works fine for images with channel depth = 8
         switch (compression) {
-                // TODO: This entire reading block is duplicated and should be replaced with the one for RLE!
+            case PSD.COMPRESSION_NONE:
+                read8bitData(raster, image.getColorModel(), source, dest, xSub, ySub, offsets, false);
+                break;
             case PSD.COMPRESSION_RLE:
                 // NOTE: Offsets will allow us to easily skip rows before AOI
                 offsets = new int[mHeader.mChannels * mHeader.mHeight];
                 for (int i = 0; i < offsets.length; i++) {
                     offsets[i] = mImageInput.readUnsignedShort();
                 }
-                // Fall through
-
-            case PSD.COMPRESSION_NONE:
-                read8bitData(raster, image.getColorModel(), source, dest, xSub, ySub, offsets, compression == PSD.COMPRESSION_RLE);
+                read8bitData(raster, image.getColorModel(), source, dest, xSub, ySub, offsets, true);
                 break;
             case PSD.COMPRESSION_ZIP:
                 // TODO: Could probably use the ZIPDecoder (DeflateDecoder) here..
@@ -280,9 +279,6 @@ public class PSDImageReader extends ImageReaderBase {
             default:
                 throw new IIOException("Unknown compression type: " + compression);
         }
-
-        // Compose out the background of the semi-transparent pixels, as PS somehow has the background composed in
-        decomposeAlpha(image);
 
         if (abortRequested()) {
             processReadAborted();
@@ -323,7 +319,6 @@ public class PSDImageReader extends ImageReaderBase {
 
                         for (x = 0; x < mHeader.mWidth; x++) {
                             byte value = input.readByte();
-
 
                             // CMYK values are stored inverted, but alpha is not
                             if (isCMYK && c < colorComponents) {
@@ -373,44 +368,39 @@ public class PSDImageReader extends ImageReaderBase {
             System.err.println("x: " + x);
             throw e;
         }
+
+        // Compose out the background of the semi-transparent pixels, as PS somehow has the background composed in
+        decomposeAlpha(sourceColorModel, data, pDest.width, pDest.height, channels);
     }
 
-    private void decomposeAlpha(final BufferedImage pImage) throws IOException {
-        ColorModel cm = pImage.getColorModel();
-
-        // TODO: What about CMYK + alpha? 
-        if (cm.hasAlpha() && cm.getColorSpace().getType() == ColorSpace.TYPE_RGB) {
-            WritableRaster raster = pImage.getRaster();
-
+    private void decomposeAlpha(final ColorModel pModel, final byte[] pData,
+                                final int pWidth, final int pHeight, final int pChannels) throws IOException
+    {
+        // TODO: What about CMYK + alpha?
+        if (pModel.hasAlpha() && pModel.getColorSpace().getType() == ColorSpace.TYPE_RGB) {
             // TODO: Probably faster to do this in line..
-            // TODO: This is not so good, as it might break acceleration...
-            byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            final int w = pImage.getWidth();
-            final int channels = raster.getNumBands();
-            for (int y = 0; y < pImage.getHeight(); y++) {
-                for (int x = 0; x < w; x++) {
-                    int offset = (x + y * w) * channels;
-
+            for (int y = 0; y < pHeight; y++) {
+                for (int x = 0; x < pWidth; x++) {
+                    int offset = (x + y * pWidth) * pChannels;
                     // TODO: Is the document background always white!?
                     // ABGR format
-                    int alpha = data[offset] & 0xff;
+                    int alpha = pData[offset] & 0xff;
+                    
                     if (alpha != 0) {
                         double normalizedAlpha = alpha / 255.0;
-                        for (int i = 1; i < channels; i++) {
-                            data[offset + i] = decompose(data[offset + i] & 0xff, normalizedAlpha);
+
+                        for (int i = 1; i < pChannels; i++) {
+                            pData[offset + i] = decompose(pData[offset + i] & 0xff, normalizedAlpha);
                         }
                     }
                     else {
-                        for (int i = 1; i < channels; i++) {
-                            data[offset + i] = 0;
+                        for (int i = 1; i < pChannels; i++) {
+                            pData[offset + i] = 0;
                         }
                     }
                 }
             }
         }
-//        System.out.println("PSDImageReader.coerceData: " + cm.getClass());
-//        System.out.println("other.equals(cm): " + (other == cm));
     }
 
     private static byte decompose(final int pColor, final double pAlpha) {
