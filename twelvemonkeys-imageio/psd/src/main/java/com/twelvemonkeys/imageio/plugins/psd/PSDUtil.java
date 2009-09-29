@@ -76,16 +76,16 @@ final class PSDUtil {
         return new String(bytes);
     }
 
-    static DataInputStream createPackBitsStream(final ImageInputStream pInput, int pLength) {
+    static DataInputStream createPackBitsStream(final ImageInputStream pInput, long pLength) {
         return new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pInput, pLength), new PackBitsDecoder()));
     }
 
-    static DataInputStream createZipStream(final ImageInputStream pInput, int pLength) {
+    static DataInputStream createZipStream(final ImageInputStream pInput, long pLength) {
         //return new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pInput, pLength), new InflateDecoder()));
         return new DataInputStream(new ZipInputStream(IIOUtil.createStreamAdapter(pInput, pLength)));
     }
 
-    static DataInputStream createZipPredictorStream(final ImageInputStream pInput, int pLength) {
+    static DataInputStream createZipPredictorStream(final ImageInputStream pInput, long pLength) {
         throw new UnsupportedOperationException("Method createZipPredictonStream not implemented");
     }
 
