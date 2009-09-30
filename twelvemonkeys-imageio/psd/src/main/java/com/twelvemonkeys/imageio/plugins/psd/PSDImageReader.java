@@ -279,10 +279,8 @@ public class PSDImageReader extends ImageReaderBase {
 
         switch (compression) {
             case PSD.COMPRESSION_NONE:
-                System.err.println("NONE");
                 break;
             case PSD.COMPRESSION_RLE:
-                System.err.println("RLE");
                 // NOTE: Offsets will allow us to easily skip rows before AOI
                 offsets = new int[mHeader.mChannels * mHeader.mHeight];
                 for (int i = 0; i < offsets.length; i++) {
@@ -515,7 +513,7 @@ public class PSDImageReader extends ImageReaderBase {
 
         final int destWidth = (pDest.width + 7) / 8;
 
-        int x = 0, y = 0;
+        int y = 0;
         try {
             for (y = 0; y < mHeader.mHeight; y++) {
                 int length = pRLECompressed ? pRowOffsets[y] : mHeader.mWidth;
@@ -536,41 +534,40 @@ public class PSDImageReader extends ImageReaderBase {
                         mImageInput.readFully(row, 0, row.length);
                     }
 
-
                     // TODO: Destination offset...??
                     int offset = (y - pSource.y) / pYSub * destWidth;
                     if (pXSub == 1) {
                         // Fast normal case, no sub sampling
                         for (int i = 0; i < destWidth; i++) {
                             byte value = row[pSource.x + i * pXSub];
-                            data[offset + i] = (byte) (~value & 0xff); // Invert bits to match Java default monochrome
+                            // NOTE: Invert bits to match Java's default monochrome
+                            data[offset + i] = (byte) (~value & 0xff);
                         }
                     }
                     else {
                         // Copy line sub sampled into real data
-                        int bitPos = pSource.x;
+                        int x = pSource.x;
                         for (int i = 0; i < destWidth; i++) {
                             // TODO: FIXME!
                             byte result = 0;
                             for (int j = 0; j < 8; j++) {
-                                int mask = 0x80 >> bitPos % 8;
-                                System.out.println("result: " + Integer.toBinaryString(result & 0xff));
-                                System.out.println("mask: " + Integer.toBinaryString(mask));
-                                System.out.println("bitPos: " + bitPos);
+                                int pos = x / 8;
+                                if (pos >= row.length) {
+                                    break;
+                                }
 
-                                int pos = pSource.x / 8 + i + bitPos / 8;
-                                System.out.println("pos: " + pos);
-                                result |= (row[pos] & mask) >> bitPos / 8;
-                                bitPos += pXSub;
+                                int sourceBitOff = x % 8;
+                                int mask = 0x80 >> sourceBitOff;
+                                
+                                result |= (((row[pos] & mask) != 0) ? 1 : 0) << 7 - j;
+
+                                x += pXSub;
                             }
 
-                            System.out.println("--> result: " + Integer.toBinaryString(result & 0xff));
-                            System.out.println();
-
-                            data[offset + i] = (byte) (~result & 0xff); // Invert bits to match Java default monochrome
+                            // NOTE: Invert bits to match Java's default monochrome
+                            data[offset + i] = (byte) (~result & 0xff);
                         }
                     }
-
                 }
                 else {
                     mImageInput.skipBytes(length);
@@ -584,14 +581,12 @@ public class PSDImageReader extends ImageReaderBase {
         }
         catch (IOException e) {
             System.err.println("y: " + y);
-            System.err.println("x: " + x);
             throw e;
         }
         catch (IndexOutOfBoundsException e) {
             e.printStackTrace();
             System.out.println("data.length: " + data.length);
             System.err.println("y: " + y);
-            System.err.println("x: " + x);
             throw e;
         }
     }
