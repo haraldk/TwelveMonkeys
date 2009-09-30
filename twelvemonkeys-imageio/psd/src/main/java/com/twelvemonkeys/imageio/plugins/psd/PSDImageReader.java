@@ -548,18 +548,20 @@ public class PSDImageReader extends ImageReaderBase {
                         // Copy line sub sampled into real data
                         int x = pSource.x;
                         for (int i = 0; i < destWidth; i++) {
-                            // TODO: FIXME!
                             byte result = 0;
+
                             for (int j = 0; j < 8; j++) {
                                 int pos = x / 8;
+
                                 if (pos >= row.length) {
-                                    break;
+                                    break; // Stay inside bounds...
                                 }
 
                                 int sourceBitOff = x % 8;
                                 int mask = 0x80 >> sourceBitOff;
-                                
-                                result |= (((row[pos] & mask) != 0) ? 1 : 0) << 7 - j;
+                                int destBitOff = 7 - j;
+
+                                result |= (((row[pos] & mask) != 0) ? 1 : 0) << destBitOff;
 
                                 x += pXSub;
                             }
