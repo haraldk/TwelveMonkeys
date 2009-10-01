@@ -536,32 +536,30 @@ public class PSDImageReader extends ImageReaderBase {
 
                     // TODO: Destination offset...??
                     int offset = (y - pSource.y) / pYSub * destWidth;
-                    if (pXSub == 1) {
+                    if (pXSub == 1 && pSource.x % 8 == 0) {
                         // Fast normal case, no sub sampling
                         for (int i = 0; i < destWidth; i++) {
-                            byte value = row[pSource.x + i * pXSub];
+                            byte value = row[pSource.x / 8 + i * pXSub];
                             // NOTE: Invert bits to match Java's default monochrome
                             data[offset + i] = (byte) (~value & 0xff);
                         }
                     }
                     else {
                         // Copy line sub sampled into real data
+                        final int maxX = pSource.x + pSource.width;
                         int x = pSource.x;
                         for (int i = 0; i < destWidth; i++) {
                             byte result = 0;
 
-                            for (int j = 0; j < 8; j++) {
-                                int pos = x / 8;
+                            for (int j = 0; j < 8 && x < maxX; j++) {
+                                int bytePos = x / 8;
 
-                                if (pos >= row.length) {
-                                    break; // Stay inside bounds...
-                                }
-
-                                int sourceBitOff = x % 8;
-                                int mask = 0x80 >> sourceBitOff;
+                                int sourceBitOff = 7 - (x % 8);
+                                int mask = 1 << sourceBitOff;
                                 int destBitOff = 7 - j;
 
-                                result |= (((row[pos] & mask) != 0) ? 1 : 0) << destBitOff;
+                                // Shift bit into place
+                                result |= ((row[bytePos] & mask) >> sourceBitOff) << destBitOff;
 
                                 x += pXSub;
                             }
@@ -780,9 +778,45 @@ public class PSDImageReader extends ImageReaderBase {
     }
 
     public static void main(final String[] pArgs) throws IOException {
+        int subsampleFactor = 1;
+        Rectangle sourceRegion = null;
+
+        int idx = 0;
+        while (pArgs[idx].charAt(0) == '-') {
+            if (pArgs[idx].equals("-s")) {
+                subsampleFactor = Integer.parseInt(pArgs[++idx]);
+            }
+            else if (pArgs[idx].equals("-r")) {
+                int xw = Integer.parseInt(pArgs[++idx]);
+                int yh = Integer.parseInt(pArgs[++idx]);
+
+                try {
+                    int w = Integer.parseInt(pArgs[idx + 1]);
+                    int h = Integer.parseInt(pArgs[idx + 2]);
+
+                    idx += 2;
+
+                    // x y w h
+                    sourceRegion = new Rectangle(xw, yh, w, h);
+                }
+                catch (NumberFormatException e) {
+                    // w h
+                    sourceRegion = new Rectangle(xw, yh);
+                }
+
+                System.out.println("sourceRegion: " + sourceRegion);
+            }
+            else {
+                System.err.println("Usage: java PSDImageReader [-s <subsample factor>] [-r [<x y>] <w h>] <image file>");
+                System.exit(1);
+            }
+
+            idx++;
+        }
+
         PSDImageReader imageReader = new PSDImageReader(null);
 
-        File file = new File(pArgs[0]);
+        File file = new File(pArgs[idx]);
         ImageInputStream stream = ImageIO.createImageInputStream(file);
         imageReader.setInput(stream);
         imageReader.readHeader();
@@ -796,13 +830,17 @@ public class PSDImageReader extends ImageReaderBase {
         System.out.println("imageReader.mGlobalLayerMask: " + imageReader.mGlobalLayerMask);
 
         long start = System.currentTimeMillis();
-        ImageReadParam param = new ImageReadParam();
-        if (pArgs.length > 1) {
-//        param.setSourceRegion(new Rectangle(200, 200, 400, 400));
-//        param.setSourceRegion(new Rectangle(300, 200));
-        param.setSourceSubsampling(3, 3, 0, 0);
-//        param.setSourceSubsampling(2, 2, 0, 0);
+
+        ImageReadParam param = imageReader.getDefaultReadParam();
+
+        if (sourceRegion != null) {
+            param.setSourceRegion(sourceRegion);
         }
+
+        if (subsampleFactor > 1) {
+            param.setSourceSubsampling(subsampleFactor, subsampleFactor, 0, 0);
+        }
+
         BufferedImage image = imageReader.read(0, param);
         System.out.println("time: " + (System.currentTimeMillis() - start));
         System.out.println("image: " + image);
