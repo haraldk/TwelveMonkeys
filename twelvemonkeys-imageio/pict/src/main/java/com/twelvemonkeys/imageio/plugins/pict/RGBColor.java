@@ -38,7 +38,7 @@ import java.awt.*;
  * @version $Id: RGBColor.java,v 1.0 Mar 2, 2009 10:39:24 AM haraldk Exp$
  */
 class RGBColor extends Color {
-    // TODO: Is the 16 bit resolution ever signigicant?
+    // TODO: Is the 16 bit resolution ever significant?
     public RGBColor(short r, short g, short b) {
         super((r & 0xffff) / (float) 0xffff, (g  & 0xffff) / (float) 0xffff, (b & 0xffff) / (float) 0xffff);
     }
