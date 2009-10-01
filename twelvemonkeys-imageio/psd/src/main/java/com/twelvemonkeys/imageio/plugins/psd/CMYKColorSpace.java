@@ -37,7 +37,7 @@ import java.awt.color.ColorSpace;
 * @author last modified by $Author: haraldk$
 * @version $Id: CMYKColorSpace.java,v 1.0 Apr 30, 2008 1:38:13 PM haraldk Exp$
 */
-// TODO: Move to com.twlevemonkeys.image?
+// TODO: Move to com.twelvemonkeys.image?
 // TODO: Read a ICC CMYK profile from classpath resource (from ECI)? ISO coated?
 final class CMYKColorSpace extends ColorSpace {
 

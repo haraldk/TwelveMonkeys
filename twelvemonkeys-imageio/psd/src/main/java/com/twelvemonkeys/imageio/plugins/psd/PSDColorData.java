@@ -68,11 +68,13 @@ class PSDColorData {
             int[] rgb = toInterleavedRGB(mColors);
             mColorModel = new InverseColorMapIndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
         }
+
         return mColorModel;
     }
 
     private int[] toInterleavedRGB(byte[] pColors) {
         int[] rgb = new int[pColors.length / 3];
+
         for (int i = 0; i < rgb.length; i++) {
             // Pack the non-interleaved samples into interleaved form
             int r = pColors[                 i] & 0xff;
@@ -81,6 +83,7 @@ class PSDColorData {
 
             rgb[i] = (r << 16) | (g << 8) | b;
         }
+
         return rgb;
     }
 }

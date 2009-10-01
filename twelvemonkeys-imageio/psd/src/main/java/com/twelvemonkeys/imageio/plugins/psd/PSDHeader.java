@@ -68,11 +68,14 @@ class PSDHeader {
         }
 
         int version = pInput.readUnsignedShort();
-        if (version != 1) {
-            if (version == 2) {
-                throw new IIOException("Large Document Format (PSB) not supported yet.");
-            }
-            throw new IIOException("Unknown PSD version, expected 1 or 2: 0x" + Integer.toHexString(version));
+
+        switch (version) {
+            case 1:
+                break;
+            case 2:
+                throw new IIOException("Photoshop Large Document Format (PSB) not supported yet.");
+            default:
+                throw new IIOException(String.format("Unknown PSD version, expected 1 or 2: 0x%08x", version));
         }
 
         byte[] reserved = new byte[6];
@@ -80,7 +83,7 @@ class PSDHeader {
 
         mChannels = pInput.readShort();
         mHeight = pInput.readInt(); // Rows
-        mWidth = pInput.readInt(); // Coloumns
+        mWidth = pInput.readInt(); // Columns
         mBits = pInput.readShort();
         mMode = pInput.readShort();
     }
