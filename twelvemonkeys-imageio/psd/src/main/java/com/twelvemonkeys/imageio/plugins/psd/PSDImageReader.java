@@ -95,7 +95,11 @@ public class PSDImageReader extends ImageReaderBase {
     }
 
     @Override
-    public ImageTypeSpecifier getRawImageType(int pIndex) throws IOException {
+    public ImageTypeSpecifier getRawImageType(final int pIndex) throws IOException {
+        return getRawImageTypeInternal(pIndex);
+    }
+
+    private ImageTypeSpecifier getRawImageTypeInternal(final int pIndex) throws IOException {
         checkBounds(pIndex);
         readHeader();
 
@@ -193,7 +197,7 @@ public class PSDImageReader extends ImageReaderBase {
         // Could use similar concept to create lazily-created ImageTypeSpecifiers (util candidate, based on FilterIterator?)
 
         // Get the raw type. Will fail for unsupported types
-        ImageTypeSpecifier rawType = getRawImageType(pIndex);
+        ImageTypeSpecifier rawType = getRawImageTypeInternal(pIndex);
 
         ColorSpace cs = rawType.getColorModel().getColorSpace();
         List<ImageTypeSpecifier> types = new ArrayList<ImageTypeSpecifier>();
@@ -264,17 +268,18 @@ public class PSDImageReader extends ImageReaderBase {
         return mColorSpace;
     }
 
-    public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
+    public BufferedImage read(final int pIndex, final ImageReadParam pParam) throws IOException {
         checkBounds(pIndex);
 
         readHeader();
 
-        processImageStarted(pIndex);
-
         readImageResources(false);
         readLayerAndMaskInfo(false);
 
+        // TODO: Test if explicit destination is compatible or throw IllegalArgumentException
         BufferedImage image = getDestination(pParam, getImageTypes(pIndex), mHeader.mWidth, mHeader.mHeight);
+
+        processImageStarted(pIndex);
 
         final Rectangle source = new Rectangle();
         final Rectangle dest = new Rectangle();
@@ -339,19 +344,7 @@ public class PSDImageReader extends ImageReaderBase {
                 throw new IIOException("Unknown compression type: " + compression);
         }
 
-        switch (mHeader.mBits) {
-            case 1:
-                read1bitData(image.getRaster(), image.getColorModel(), source, dest, xSub, ySub, offsets, compression == PSD.COMPRESSION_RLE);
-                break;
-            case 8:
-                read8bitData(image.getRaster(), image.getColorModel(), source, dest, xSub, ySub, offsets, compression == PSD.COMPRESSION_RLE);
-                break;
-            case 16:
-                read16bitData(image.getRaster(), image.getColorModel(), source, dest, xSub, ySub, offsets, compression == PSD.COMPRESSION_RLE);
-                break;
-            default:
-                throw new IIOException("Unknown bit depth: " + mHeader.mBits);
-        }
+        readImageData(image, source, dest, xSub, ySub, offsets, compression);
 
         if (abortRequested()) {
             processReadAborted();
@@ -363,11 +356,31 @@ public class PSDImageReader extends ImageReaderBase {
         return image;
     }
 
+    private void readImageData(final BufferedImage pImage,
+                               final Rectangle pSource, final Rectangle pDest,
+                               final int pXSub, final int pYSub,
+                               final int[] pOffsets, final int pCompression) throws IOException {
+        // TODO: Refactor so that we loop through channels here, and read one channel in each of the methods below
+
+        switch (mHeader.mBits) {
+            case 1:
+                read1bitData(pImage.getRaster(), pImage.getColorModel(), pSource, pDest, pXSub, pYSub, pOffsets, pCompression == PSD.COMPRESSION_RLE);
+                break;
+            case 8:
+                read8bitData(pImage.getRaster(), pImage.getColorModel(), pSource, pDest, pXSub, pYSub, pOffsets, pCompression == PSD.COMPRESSION_RLE);
+                break;
+            case 16:
+                read16bitData(pImage.getRaster(), pImage.getColorModel(), pSource, pDest, pXSub, pYSub, pOffsets, pCompression == PSD.COMPRESSION_RLE);
+                break;
+            default:
+                throw new IIOException("Unknown bit depth: " + mHeader.mBits);
+        }
+    }
+
     private void read16bitData(final WritableRaster pRaster, final ColorModel pDestinationColorModel,
                               final Rectangle pSource, final Rectangle pDest,
                               final int pXSub, final int pYSub,
-                              final int[] pRowOffsets, final boolean pRLECompressed) throws IOException
-    {
+                              final int[] pRowOffsets, final boolean pRLECompressed) throws IOException {
         final int channels = pRaster.getNumBands();
 
         // TODO: FixMe: Use real source color model from native (raw) image type, and convert if needed
@@ -872,6 +885,78 @@ public class PSDImageReader extends ImageReaderBase {
         }
     }
 
+    /// Thumbnail support
+    @Override
+    public boolean readerSupportsThumbnails() {
+        return true;
+    }
+
+    private List<PSDThumbnail> getThumbnailResources(final int pIndex) throws IOException {
+        checkBounds(pIndex);
+
+        readHeader();
+
+        List<PSDThumbnail> thumbnails = null;
+
+        if (mImageResources != null) {
+            // TODO: Need flag here, to specify what resources to read...
+            readImageResources(true);
+            // TODO: Skip this, requires storing some stream offsets
+            readLayerAndMaskInfo(false);
+
+            for (PSDImageResource resource : mImageResources) {
+                if (resource instanceof PSDThumbnail) {
+                    if (thumbnails == null) {
+                        thumbnails = new ArrayList<PSDThumbnail>();
+                    }
+                    thumbnails.add((PSDThumbnail) resource);
+                }
+            }
+        }
+
+        return thumbnails;
+    }
+
+    @Override
+    public int getNumThumbnails(int pIndex) throws IOException {
+        List<PSDThumbnail> thumbnails = getThumbnailResources(pIndex);
+
+        if (thumbnails == null) {
+            return 0;
+        }
+
+        return thumbnails.size();
+    }
+
+    @Override
+    public int getThumbnailWidth(int imageIndex, int thumbnailIndex) throws IOException {
+        // TODO: We could get this without decoding the thumbnail first
+        return super.getThumbnailWidth(imageIndex, thumbnailIndex);
+    }
+
+    @Override
+    public int getThumbnailHeight(int imageIndex, int thumbnailIndex) throws IOException {
+        // TODO: We could get this without decoding the thumbnail first
+        return super.getThumbnailHeight(imageIndex, thumbnailIndex);
+    }
+
+    @Override
+    public BufferedImage readThumbnail(int pImageIndex, int pThumbnailIndex) throws IOException {
+        // TODO: Thumbnail listeners...
+        List<PSDThumbnail> thumbnails = getThumbnailResources(pImageIndex);
+        if (thumbnails == null) {
+            throw new IndexOutOfBoundsException(String.format("%d > 0", pThumbnailIndex));
+        }
+
+        // TODO: Defer decoding
+        // TODO: It's possible to attach listeners to the ImageIO reader delegate... But do we really care?
+        processThumbnailStarted(pImageIndex, pThumbnailIndex);
+        processThumbnailComplete();
+
+        return thumbnails.get(pThumbnailIndex).getThumbnail();
+    }
+
+    /// Functional testing
     public static void main(final String[] pArgs) throws IOException {
         int subsampleFactor = 1;
         Rectangle sourceRegion = null;
@@ -923,6 +1008,13 @@ public class PSDImageReader extends ImageReaderBase {
         imageReader.readLayerAndMaskInfo(true);
         System.out.println("imageReader.mLayerInfo: " + imageReader.mLayerInfo);
         System.out.println("imageReader.mGlobalLayerMask: " + imageReader.mGlobalLayerMask);
+
+        if (imageReader.hasThumbnails(0)) {
+            int thumbnails = imageReader.getNumThumbnails(0);
+            for (int i = 0; i < thumbnails; i++) {
+                showIt(imageReader.readThumbnail(0, i), String.format("Thumbnail %d", i));                
+            }
+        }
 
         long start = System.currentTimeMillis();
 

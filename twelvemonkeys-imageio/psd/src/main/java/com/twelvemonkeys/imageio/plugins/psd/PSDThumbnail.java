@@ -65,6 +65,7 @@ class PSDThumbnail extends PSDImageResource {
             // TODO: Warning/Exception
         }
 
+        // TODO: Defer decoding until getThumbnail?
         // TODO: Support BGR if id == RES_THUMBNAIL_PS4? Or is that already supported in the JPEG?
         mThumbnail = ImageIO.read(IIOUtil.createStreamAdapter(pInput, sizeCompressed));
     }
