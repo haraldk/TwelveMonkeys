@@ -1,10 +1,19 @@
-- Move some of the imageio classes and test cases to a new submodule imageio-util (imageio-core)
-    - ImageReaderBase
-    - ImageWriterBase
-    - Maybe something in the adapter folder?
+- Rename core to common
+- Split up into three sub modules?
+  - common-core
+    - lang
+    - util
+  - common-io
+    - io
+    - io.enc
+    - io.ole2 (or move to separate module?)
+    - net (or move to separate module?)
+    - xml (or move to separate module?)
+  - common-image
+    - image
+  - common-sandbox
+    - all unreleased/experimental stuff
+
 - Test cases for the OLE2Compound stuff
-- Move encoder/decoder streams to separate subpackage "enc"
 - Test cases for encoder/decoders
 - Test cases in general
-- Remove lots of the old imageio code
-- Remove some of the old SQL stuff?

@@ -498,13 +498,13 @@ public final class SystemUtil {
         }
     }
 
-    public static void loadLibrary(String pLibrary) {
-        NativeLoader.loadLibrary(pLibrary);
-    }
-
-    public static void loadLibrary(String pLibrary, ClassLoader pLoader) {
-        NativeLoader.loadLibrary(pLibrary, pLoader);
-    }
+//    public static void loadLibrary(String pLibrary) {
+//        NativeLoader.loadLibrary(pLibrary);
+//    }
+//
+//    public static void loadLibrary(String pLibrary, ClassLoader pLoader) {
+//        NativeLoader.loadLibrary(pLibrary, pLoader);
+//    }
 
     public static void main(String[] args) throws CloneNotSupportedException {
 
