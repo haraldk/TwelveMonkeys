@@ -17,6 +17,8 @@ import java.io.IOException;
  */
 class PSDThumbnail extends PSDImageResource {
     private BufferedImage mThumbnail;
+    private int mWidth;
+    private int mHeight;
 
     public PSDThumbnail(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -39,16 +41,19 @@ class PSDThumbnail extends PSDImageResource {
         int format = pInput.readInt();
         switch (format) {
             case 0:
+                // RAW RGB
                 throw new IIOException("RAW RGB format thumbnail not supported yet");
             case 1:
+                // JPEG
                 break;
             default:
                 throw new IIOException(String.format("Unsupported thumbnail format (%s) in PSD document", format));
         }
 
+        mWidth = pInput.readInt();
+        mHeight = pInput.readInt();
+
         // This data isn't really useful, unless we're dealing with raw bytes
-        int width = pInput.readInt();
-        int height = pInput.readInt();
         int widthBytes = pInput.readInt();
         int totalSize = pInput.readInt();
 
@@ -70,7 +75,15 @@ class PSDThumbnail extends PSDImageResource {
         mThumbnail = ImageIO.read(IIOUtil.createStreamAdapter(pInput, sizeCompressed));
     }
 
-    public BufferedImage getThumbnail() {
+    public final int getWidth() {
+        return mWidth;
+    }
+
+    public final int getHeight() {
+        return mHeight;
+    }
+
+    public final BufferedImage getThumbnail() {
         return mThumbnail;
     }
 

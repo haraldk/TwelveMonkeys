@@ -765,7 +765,7 @@ public class PSDImageReader extends ImageReaderBase {
         }
     }
 
-    private void readImageResources(boolean pParseData) throws IOException {
+    private void readImageResources(final boolean pParseData) throws IOException {
         // TODO: Avoid unnecessary stream repositioning
         long pos = mImageInput.getFlushedPosition();
         mImageInput.seek(pos);
@@ -783,7 +783,7 @@ public class PSDImageReader extends ImageReaderBase {
                 }
 
                 if (mImageInput.getStreamPosition() != expectedEnd) {
-                    throw new IIOException("Corrupt PSD document");
+                    throw new IIOException("Corrupt PSD document"); // ..or maybe just a bug in the reader.. ;-)
                 }
             }
         }
@@ -791,7 +791,7 @@ public class PSDImageReader extends ImageReaderBase {
         mImageInput.seek(pos + length + 4);
     }
 
-    private void readLayerAndMaskInfo(boolean pParseData) throws IOException {
+    private void readLayerAndMaskInfo(final boolean pParseData) throws IOException {
         // TODO: Make sure we are positioned correctly
         long length = mImageInput.readUnsignedInt();
         if (pParseData && length > 0) {
@@ -909,6 +909,7 @@ public class PSDImageReader extends ImageReaderBase {
                     if (thumbnails == null) {
                         thumbnails = new ArrayList<PSDThumbnail>();
                     }
+
                     thumbnails.add((PSDThumbnail) resource);
                 }
             }
@@ -921,39 +922,40 @@ public class PSDImageReader extends ImageReaderBase {
     public int getNumThumbnails(int pIndex) throws IOException {
         List<PSDThumbnail> thumbnails = getThumbnailResources(pIndex);
 
+        return thumbnails == null ? 0 : thumbnails.size();
+    }
+
+    private PSDThumbnail getThumbnailResource(int pImageIndex, int pThumbnailIndex) throws IOException {
+        List<PSDThumbnail> thumbnails = getThumbnailResources(pImageIndex);
+
         if (thumbnails == null) {
-            return 0;
+            throw new IndexOutOfBoundsException(String.format("thumbnail index %d > 0", pThumbnailIndex));
         }
 
-        return thumbnails.size();
+        return thumbnails.get(pThumbnailIndex);
     }
 
     @Override
-    public int getThumbnailWidth(int imageIndex, int thumbnailIndex) throws IOException {
-        // TODO: We could get this without decoding the thumbnail first
-        return super.getThumbnailWidth(imageIndex, thumbnailIndex);
+    public int getThumbnailWidth(int pImageIndex, int pThumbnailIndex) throws IOException {
+        return getThumbnailResource(pImageIndex, pThumbnailIndex).getWidth();
     }
 
     @Override
-    public int getThumbnailHeight(int imageIndex, int thumbnailIndex) throws IOException {
-        // TODO: We could get this without decoding the thumbnail first
-        return super.getThumbnailHeight(imageIndex, thumbnailIndex);
+    public int getThumbnailHeight(int pImageIndex, int pThumbnailIndex) throws IOException {
+        return getThumbnailResource(pImageIndex, pThumbnailIndex).getHeight();
     }
 
     @Override
     public BufferedImage readThumbnail(int pImageIndex, int pThumbnailIndex) throws IOException {
         // TODO: Thumbnail listeners...
-        List<PSDThumbnail> thumbnails = getThumbnailResources(pImageIndex);
-        if (thumbnails == null) {
-            throw new IndexOutOfBoundsException(String.format("%d > 0", pThumbnailIndex));
-        }
+        PSDThumbnail thumbnail = getThumbnailResource(pImageIndex, pThumbnailIndex);
 
         // TODO: Defer decoding
         // TODO: It's possible to attach listeners to the ImageIO reader delegate... But do we really care?
         processThumbnailStarted(pImageIndex, pThumbnailIndex);
         processThumbnailComplete();
 
-        return thumbnails.get(pThumbnailIndex).getThumbnail();
+        return thumbnail.getThumbnail();
     }
 
     /// Functional testing
