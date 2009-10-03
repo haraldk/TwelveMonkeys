@@ -31,7 +31,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
                 new TestData(getClassLoaderResource("/psd/buttons.psd"), new Dimension(20, 20)),
                 // 5 channel, CMYK
                 new TestData(getClassLoaderResource("/psd/escenic-liquid-logo.psd"), new Dimension(595, 420)),
-                // 3 channel RGB, no composite layer
+                // 3 channel RGB, "no composite layer"
                 new TestData(getClassLoaderResource("/psd/jugware-icon.psd"), new Dimension(128, 128)),
                 // 3 channel RGB, old data, no layer info/mask 
                 new TestData(getClassLoaderResource("/psd/MARBLES.PSD"), new Dimension(1419, 1001)),

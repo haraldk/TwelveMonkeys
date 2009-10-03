@@ -56,7 +56,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageReader.java,v 1.0 Apr 29, 2008 4:45:52 PM haraldk Exp$
  */
-// TODO: Implement meta data reading
+// TODO: Implement ImageIO meta data interface
 // TODO: Implement layer reading
 // TODO: Allow reading separate (or some?) layers
 // TODO: Consider Romain Guy's Java 2D implementation of PS filters for the blending modes in layers
@@ -361,6 +361,7 @@ public class PSDImageReader extends ImageReaderBase {
                                final int pXSub, final int pYSub,
                                final int[] pOffsets, final int pCompression) throws IOException {
         // TODO: Refactor so that we loop through channels here, and read one channel in each of the methods below
+        // Compute pixel (not array) offsets based on raster (banded/interleaved)?
 
         switch (mHeader.mBits) {
             case 1:
@@ -373,7 +374,7 @@ public class PSDImageReader extends ImageReaderBase {
                 read16bitData(pImage.getRaster(), pImage.getColorModel(), pSource, pDest, pXSub, pYSub, pOffsets, pCompression == PSD.COMPRESSION_RLE);
                 break;
             default:
-                throw new IIOException("Unknown bit depth: " + mHeader.mBits);
+                throw new IIOException("Unknown PSD bit depth: " + mHeader.mBits);
         }
     }
 
@@ -526,7 +527,6 @@ public class PSDImageReader extends ImageReaderBase {
                         // TODO: If banded and not sub sampling/cmyk, we could just copy using System.arraycopy
                         // TODO: Destination offset...??
                         // Copy line sub sampled into real data
-//                        int offset = (y - pSource.y) / pYSub * pDest.width * channels + (channels - 1 - c);
                         int offset = banded ?
                                 (y - pSource.y) / pYSub * pDest.width :
                                 (y - pSource.y) / pYSub * pDest.width * channels + (channels - 1 - c);
@@ -898,20 +898,20 @@ public class PSDImageReader extends ImageReaderBase {
 
         List<PSDThumbnail> thumbnails = null;
 
-        if (mImageResources != null) {
+        if (mImageResources == null) {
             // TODO: Need flag here, to specify what resources to read...
             readImageResources(true);
             // TODO: Skip this, requires storing some stream offsets
             readLayerAndMaskInfo(false);
+        }
 
-            for (PSDImageResource resource : mImageResources) {
-                if (resource instanceof PSDThumbnail) {
-                    if (thumbnails == null) {
-                        thumbnails = new ArrayList<PSDThumbnail>();
-                    }
-
-                    thumbnails.add((PSDThumbnail) resource);
+        for (PSDImageResource resource : mImageResources) {
+            if (resource instanceof PSDThumbnail) {
+                if (thumbnails == null) {
+                    thumbnails = new ArrayList<PSDThumbnail>();
                 }
+
+                thumbnails.add((PSDThumbnail) resource);
             }
         }
 
