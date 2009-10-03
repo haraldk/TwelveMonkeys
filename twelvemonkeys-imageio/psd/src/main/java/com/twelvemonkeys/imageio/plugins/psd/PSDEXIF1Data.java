@@ -23,7 +23,7 @@ import java.util.List;
  * @see <a href="http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html">Aware systems TIFF tag reference</a>
  * @see <a href="http://partners.adobe.com/public/developer/tiff/index.html">Adobe TIFF developer resources</a>
  */
-public final class PSDEXIF1Data extends PSDImageResource {
+final class PSDEXIF1Data extends PSDImageResource {
 //    protected byte[] mData;
     protected Directory mDirectory;
 

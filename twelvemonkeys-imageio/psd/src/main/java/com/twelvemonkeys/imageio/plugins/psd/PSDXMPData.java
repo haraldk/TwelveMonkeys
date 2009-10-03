@@ -19,7 +19,7 @@ import java.nio.charset.Charset;
  * @see <a href="http://www.adobe.com/products/xmp/">Adobe Extensible Metadata Platform (XMP)</a>
  * @see <a href="http://www.adobe.com/devnet/xmp/">Adobe XMP Developer Center</a>
  */
-public final class PSDXMPData extends PSDImageResource {
+final class PSDXMPData extends PSDImageResource {
     protected byte[] mData;
 
     PSDXMPData(final short pId, final ImageInputStream pInput) throws IOException {
