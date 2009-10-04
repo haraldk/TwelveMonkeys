@@ -5,21 +5,25 @@ import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.net.MIMEUtil;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
 import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * TestPICTClippingApp
@@ -29,6 +33,7 @@ import java.util.List;
  * @version $Id: TestPICTClippingApp.java,v 1.0 Feb 16, 2009 3:05:16 PM haraldk Exp$
  */
 public class TestPICTClippingApp {
+
     public static void main(final String[] pArgs) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -58,6 +63,7 @@ public class TestPICTClippingApp {
 
     private static class ImageDropHandler extends TransferHandler {
         private final JLabel mLabel;
+        private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
         public ImageDropHandler(JLabel pLabel) {
             super(null);
@@ -108,7 +114,7 @@ public class TestPICTClippingApp {
                         input = (InputStream) data;
                     }
 
-                    ImageInputStream stream = ImageIO.createImageInputStream(input);
+                    final ImageInputStream stream = ImageIO.createImageInputStream(input);
                     Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
 
                     if (!readers.hasNext()) {
@@ -118,33 +124,16 @@ public class TestPICTClippingApp {
                     }
 
                     if (readers.hasNext()) {
-                        ImageReader reader = readers.next();
+                        final ImageReader imageReader = readers.next();
 
-                        reader.setInput(stream);
-
-                        final int maxDimension = 200;
-                        int w = reader.getWidth(0);
-                        int h = reader.getHeight(0);
-
-                        ImageReadParam param = null;
-                        if (w > maxDimension && h > maxDimension) {
-                            int sub = (int) Math.ceil(Math.min(w, h) / (double) maxDimension) / 3;
-                            if (sub > 1) {
-                                param = reader.getDefaultReadParam();
-                                param.setSourceSubsampling(sub, sub, 0, 0);
-                            }
-                        }
-
-                        System.out.printf("Reading %s format%s... ", reader.getFormatName(), (param != null ? ", sampling every " + param.getSourceXSubsampling() + "th pixel" : ""));
-                        final BufferedImage image = reader.read(0, param);
-                        System.out.printf("Done (%dx%d).%n", image.getWidth(), image.getHeight());
-
-                        SwingUtilities.invokeLater(new Runnable() {
+                        mExecutor.execute(new Runnable() {
                             public void run() {
-                                System.out.print("Scaling image... ");
-                                BufferedImage scaled = box(image, maxDimension);
-                                System.out.printf("Done (%dx%d).%n", scaled.getWidth(), scaled.getHeight());
-                                mLabel.setIcon(new BufferedImageIcon(scaled));
+                                try {
+                                    readAndInstallImage(stream, imageReader);
+                                }
+                                catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         });
 
@@ -170,22 +159,67 @@ public class TestPICTClippingApp {
             return false;
         }
 
+        private void readAndInstallImage(final ImageInputStream pStream, final ImageReader reader) throws IOException {
+            reader.setInput(pStream);
+
+            final int maxDimension = 200;
+            int w = reader.getWidth(0);
+            int h = reader.getHeight(0);
+
+            ImageReadParam param = null;
+            if (w > maxDimension && h > maxDimension) {
+                int sub = (int) Math.ceil((Math.max(w, h) / (double) maxDimension) / 3.0);
+                if (sub > 1) {
+                    param = reader.getDefaultReadParam();
+                    param.setSourceSubsampling(sub, sub, 0, 0);
+                }
+            }
+
+            System.out.printf("Reading %s format%s... ", reader.getFormatName(), (param != null ? ", sampling every " + param.getSourceXSubsampling() + "th pixel" : ""));
+            final BufferedImage image = reader.read(0, param);
+            System.out.printf("Done (%dx%d).%n", image.getWidth(), image.getHeight());
+
+            reader.dispose();
+
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                    System.out.print("Scaling image... ");
+                    BufferedImage scaled = box(image, maxDimension);
+                    System.out.printf("Done (%dx%d).%n", scaled.getWidth(), scaled.getHeight());
+                    mLabel.setIcon(new BufferedImageIcon(scaled));
+                }
+            });
+        }
+
         private BufferedImage box(final BufferedImage pImage, final int pMaxDimension) {
-            if (pImage.getWidth() > pMaxDimension || pImage.getHeight() > pMaxDimension) {
+            // TODO: ImageUtil.toRGB method? ColorConvertOp MUCH faster than ImageUtil.toBuffered(img, type)
+            BufferedImage image = pImage;
+            if (image.getType() == 0) {
+                try {
+                    ColorConvertOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_sRGB), null);
+                    image = op.filter(image, new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_4BYTE_ABGR_PRE));
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    image = ImageUtil.accelerate(image);
+                }
+            }
+
+            if (image.getWidth() > pMaxDimension || image.getHeight() > pMaxDimension) {
                 int w, h;
 
-                if (pImage.getWidth() > pImage.getHeight()) {
+                if (image.getWidth() > image.getHeight()) {
                     w = pMaxDimension;
-                    h = (int) Math.round(w / (pImage.getWidth() / (double) pImage.getHeight()));
+                    h = (int) Math.round(w / (image.getWidth() / (double) image.getHeight()));
                 }
                 else {
                     h = pMaxDimension;
-                    w = (int) Math.round(h * (pImage.getWidth() / (double) pImage.getHeight()));
+                    w = (int) Math.round(h * (image.getWidth() / (double) image.getHeight()));
                 }
 
-                return ImageUtil.createResampled(pImage, w, h, Image.SCALE_DEFAULT);
+                return ImageUtil.createResampled(image, w, h, Image.SCALE_DEFAULT);
             }
-            return pImage;
+            return image;
         }
     }
 }
