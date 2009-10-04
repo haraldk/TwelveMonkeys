@@ -2598,12 +2598,21 @@ public class PICTImageReader extends ImageReaderBase {
     }
 
     @Override
-    public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
+    public BufferedImage read(final int pIndex, final ImageReadParam pParam) throws IOException {
         checkBounds(pIndex);
 
         processImageStarted(pIndex);
 
-        // TODO: Param handling (need not be faked)
+        // TODO: Param handling
+        final int subX, subY;
+        if (pParam != null) {
+            subX = pParam.getSourceXSubsampling();
+            subY = pParam.getSourceYSubsampling();
+        }
+        else {
+            subX = 1;
+            subY = 1;
+        }
 
         Rectangle frame = getPICTFrame();
         BufferedImage image = getDestination(pParam, getImageTypes(pIndex), getXPtCoord(frame.width), getYPtCoord(frame.height));
@@ -2611,7 +2620,7 @@ public class PICTImageReader extends ImageReaderBase {
         try {
             // TODO: Might need to clear background
 
-            g.setTransform(AffineTransform.getScaleInstance(mScreenImageXRatio, mScreenImageYRatio));
+            g.setTransform(AffineTransform.getScaleInstance(mScreenImageXRatio / subX, mScreenImageYRatio / subY));
 //            try {
                 drawOnto(g);
 //            }
