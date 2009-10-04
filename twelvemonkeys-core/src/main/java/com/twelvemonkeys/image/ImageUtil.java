@@ -629,14 +629,13 @@ public final class ImageUtil {
      * Draws the source image onto the buffered image, using
      * {@code AlphaComposite.Src} and coordinates {@code 0, 0}.
      *
-     * @param pImage the image to draw on
+     * @param pDestination the image to draw on
      * @param pSource the source image to draw
      *
-     * @throws NullPointerException if {@code pImage} or {@code pSource} is
-     *         {@code null}
+     * @throws NullPointerException if {@code pDestination} or {@code pSource} is {@code null}
      */
-    static void drawOnto(final BufferedImage pImage, final Image pSource) {
-        Graphics2D g = pImage.createGraphics();
+    static void drawOnto(final BufferedImage pDestination, final Image pSource) {
+        Graphics2D g = pDestination.createGraphics();
         try {
             g.setComposite(AlphaComposite.Src);
             g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
