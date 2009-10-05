@@ -276,11 +276,9 @@ public class PSDImageReader extends ImageReaderBase {
         readImageResources(false);
         readLayerAndMaskInfo(false);
 
-        // TODO: Test if explicit destination is compatible or throw IllegalArgumentException
         BufferedImage image = getDestination(pParam, getImageTypes(pIndex), mHeader.mWidth, mHeader.mHeight);
         ImageTypeSpecifier rawType = getRawImageType(pIndex);
-
-        processImageStarted(pIndex);
+        checkReadParamBandSettings(pParam, rawType.getNumBands(), image.getSampleModel().getNumBands());
 
         final Rectangle source = new Rectangle();
         final Rectangle dest = new Rectangle();
@@ -293,7 +291,7 @@ public class PSDImageReader extends ImageReaderBase {
         // TODO: Create temp raster in native format w * 1
         // Read (sub-sampled) row into temp raster (skip other rows)
         // If color model (color space) is not RGB, do color convert op
-        // Otherwise, copy "through" ColorMode?l
+        // Otherwise, copy "through" ColorModel?
         // Copy pixels from temp raster
         // If possible, leave the destination image "untouched" (accelerated)
 
@@ -322,6 +320,8 @@ public class PSDImageReader extends ImageReaderBase {
             ySub = pParam.getSourceYSubsampling();
         }
 
+        processImageStarted(pIndex);
+
         int[] offsets = null;
         int compression = mImageInput.readShort();
 
@@ -342,7 +342,12 @@ public class PSDImageReader extends ImageReaderBase {
                 // Could be same as PNG prediction? Read up...
                 throw new IIOException("ZIP compression not supported yet");
             default:
-                throw new IIOException("Unknown compression type: " + compression);
+                throw new IIOException(
+                        String.format(
+                                "Unknown PSD compression: %d. Expected 0 (none), 1 (RLE), 2 (ZIP) or 3 (ZIP w/prediction).",
+                                compression
+                        )
+                );
         }
 
         // What we read here is the "composite layer" of the PSD file
@@ -532,7 +537,8 @@ public class PSDImageReader extends ImageReaderBase {
                                  final byte[] pRow,
                                  final Rectangle pSource, final Rectangle pDest, final int pXSub, final int pYSub,
                                  final int[] pRowOffsets, boolean pRLECompressed) throws IOException {
-        
+        // NOTE: 1 bit channels only occurs once
+
         final int destWidth = (pDest.width + 7) / 8;
 
         for (int y = 0; y < mHeader.mHeight; y++) {
@@ -878,7 +884,7 @@ public class PSDImageReader extends ImageReaderBase {
 
     @Override
     public BufferedImage readThumbnail(int pImageIndex, int pThumbnailIndex) throws IOException {
-        // TODO: Thumbnail listeners...
+        // TODO: Thumbnail progress listeners...
         PSDThumbnail thumbnail = getThumbnailResource(pImageIndex, pThumbnailIndex);
 
         // TODO: Defer decoding

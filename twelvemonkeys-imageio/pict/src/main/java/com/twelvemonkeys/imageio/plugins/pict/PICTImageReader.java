@@ -2604,6 +2604,7 @@ public class PICTImageReader extends ImageReaderBase {
         processImageStarted(pIndex);
 
         // TODO: Param handling
+        // TODO: Real subsampling for bit/pixmap/QT stills
         final int subX, subY;
         if (pParam != null) {
             subX = pParam.getSourceXSubsampling();

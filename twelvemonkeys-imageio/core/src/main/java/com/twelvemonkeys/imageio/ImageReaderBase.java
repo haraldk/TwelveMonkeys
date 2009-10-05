@@ -31,9 +31,7 @@ package com.twelvemonkeys.imageio;
 import com.twelvemonkeys.image.BufferedImageIcon;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
+import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -46,6 +44,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Iterator;
 
 /**
  * ImageReaderBase
@@ -189,6 +188,79 @@ public abstract class ImageReaderBase extends ImageReader {
         if (getInput() == null) {
             throw new IllegalStateException("getInput() == null");
         }
+    }
+
+    /**
+     * Returns the {@code BufferedImage} to which decoded pixel
+     * data should be written.
+     * <p/>
+     * As {@link javax.imageio.ImageReader#getDestination} but tests if the explicit destination
+     * image (if set) is valid according to the {@code ImageTypeSpecifier}s given in {@code pTypes}
+     *
+     *
+     * @param pParam an {@code ImageReadParam} to be used to get
+     * the destination image or image type, or {@code null}.
+     * @param pTypes an {@code Iterator} of
+     * {@code ImageTypeSpecifier}s indicating the legal image
+     * types, with the default first.
+     * @param pWidth the true width of the image or tile begin decoded.
+     * @param pHeight the true width of the image or tile being decoded.
+     *
+     * @return the {@code BufferedImage} to which decoded pixel
+     * data should be written.
+     *
+     * @exception IIOException if the {@code ImageTypeSpecifier} or {@code BufferedImage}
+     * specified by {@code pParam} does not match any of the legal
+     * ones from {@code pTypes}.
+     * @throws IllegalArgumentException if {@code pTypes}
+     * is {@code null} or empty, or if an object not of type
+     * {@code ImageTypeSpecifier} is retrieved from it.
+     * Or, if the resulting image would
+     * have a width or height less than 1,
+     * or if the product of
+     * {@code pWidth} and {@code pHeight} is greater than
+     * {@code Integer.MAX_VALUE}.
+     */
+    public static BufferedImage getDestination(final ImageReadParam pParam, final Iterator<ImageTypeSpecifier> pTypes,
+                                               final int pWidth, final int pHeight) throws IIOException {
+        BufferedImage image = ImageReader.getDestination(pParam, pTypes, pWidth, pHeight);
+
+        if (pParam != null) {
+            BufferedImage dest = pParam.getDestination();
+            if (dest != null) {
+                boolean found = false;
+
+                // NOTE: This is bad, as it relies on implementation details of super method...
+                // We know that the iterator has not been touched if explicit destination..
+                while (pTypes.hasNext()) {
+                    ImageTypeSpecifier specifier = pTypes.next();
+                    int imageType = specifier.getBufferedImageType();
+
+                    if (imageType != 0 && imageType == dest.getType()) {
+                        // Known types equal, perfect match
+                        found = true;
+                        break;
+                    }
+                    else {
+                        // If types are different, or TYPE_CUSTOM, test if
+                        // - transferType is ok
+                        // - bands are ok
+                        // TODO: Test if color model is ok?
+                        if (specifier.getSampleModel().getTransferType() == dest.getSampleModel().getTransferType() &&
+                                specifier.getNumBands() <= dest.getSampleModel().getNumBands()) {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!found) {
+                    throw new IIOException(String.format("Illegal explicit destination image %s", dest));
+                }
+            }
+        }
+
+        return image;
     }
 
     /**

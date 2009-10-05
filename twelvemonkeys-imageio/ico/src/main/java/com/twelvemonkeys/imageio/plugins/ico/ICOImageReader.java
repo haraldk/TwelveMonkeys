@@ -292,10 +292,9 @@ public class ICOImageReader extends ImageReaderBase {
     }
 
     private BufferedImage readBitmap(final DirectoryEntry pEntry) throws IOException {
-        // TODO: Currently, we have a memory leak, as the values refer to the keys...
         BitmapDescriptor descriptor = mDescriptors.get(pEntry);
 
-        if (!mDescriptors.containsKey(pEntry)) {
+        if (descriptor == null || !mDescriptors.containsKey(pEntry)) {
             DIBHeader header = getHeader(pEntry);
 
             int offset = pEntry.getOffset() + header.getSize();
