@@ -1194,11 +1194,14 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             param.setDestination(destination);
 
             try {
-                reader.read(0, param);
+                BufferedImage result = reader.read(0, param);
 
                 // NOTE: We allow the reader to read, as it's inconvenient to test all possible cases.
                 // However, it may NOT fail with any other exception in that case.
                 System.err.println("WARNING: Reader does not throw exception with non-declared destination: " + destination);
+
+                // Test that the destination is really taken into account
+                assertSame(destination, result);
             }
             catch (IIOException expected) {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
