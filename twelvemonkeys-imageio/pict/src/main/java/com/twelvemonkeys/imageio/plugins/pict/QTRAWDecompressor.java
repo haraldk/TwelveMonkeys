@@ -56,32 +56,69 @@ final class QTRAWDecompressor extends QTDecompressor {
     }
 
     public BufferedImage decompress(final QuickTime.ImageDesc pDescription, final InputStream pStream) throws IOException {
-        DataInputStream stream = new DataInputStream(pStream);
-
         byte[] data = new byte[pDescription.dataSize];
-        stream.readFully(data, 0, pDescription.dataSize);
-        stream.close();
+
+        DataInputStream stream = new DataInputStream(pStream);
+        try {
+            stream.readFully(data, 0, pDescription.dataSize);
+        }
+        finally {
+            stream.close();
+        }
 
         DataBuffer buffer = new DataBufferByte(data, data.length);
 
         WritableRaster raster;
-        // TODO: Depth parameter can be 1-32 (color) or 33-40 (grayscale)
+
+        // TODO: Depth parameter can be 1-32 (color) or 33-40 (gray scale)
         switch (pDescription.depth) {
-            case 24:
-                raster = Raster.createInterleavedRaster(buffer, pDescription.width, pDescription.height, pDescription.width * 3, 3, new int[] {0, 1, 2}, null);
+            case 40: // 8 bit gray (untested)
+                raster = Raster.createInterleavedRaster(
+                        buffer,
+                        pDescription.width, pDescription.height,
+                        pDescription.width, 1,
+                        new int[] {0},
+                        null
+                );
                 break;
-            case 32:
-                raster = Raster.createInterleavedRaster(buffer, pDescription.width, pDescription.height, pDescription.width * 4, 4, new int[] {1, 2, 3, 0}, null);
+            case 24: // 24 bit RGB
+                raster = Raster.createInterleavedRaster(
+                        buffer,
+                        pDescription.width, pDescription.height,
+                        pDescription.width * 3, 3,
+                        new int[] {0, 1, 2},
+                        null
+                );
+                break;
+            case 32: // 32 bit RGBA
+                // WORKAROUND: There is a bug in the way Java 2D interprets the band offsets before Java 6.
+                // So, instead of passing a correct offset array below, we swap channel 1 & 3...
+                for (int y = 0; y < pDescription.height; y++) {
+                    for (int x = 0; x < pDescription.width; x++) {
+                        int offset = 4 * y * pDescription.width + x * 4;
+                        byte temp = data[offset + 1];
+                        data[offset + 1] = data[offset + 3];
+                        data[offset + 3] = temp;
+                    }
+                }
+
+                raster = Raster.createInterleavedRaster(
+                        buffer,
+                        pDescription.width, pDescription.height,
+                        pDescription.width * 4, 4,
+                        new int[] {3, 2, 1, 0}, // B & R mixed up. {1, 2, 3, 0} is correct
+                        null
+                );
                 break;
             default:
                 throw new IIOException("Unsupported RAW depth: " + pDescription.depth);
         }
 
         ColorModel cm = new ComponentColorModel(
-                ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                pDescription.depth <= 32 ? ColorSpace.getInstance(ColorSpace.CS_sRGB) : ColorSpace.getInstance(ColorSpace.CS_GRAY),
                 pDescription.depth == 32,
                 false,
-                Transparency.TRANSLUCENT,
+                pDescription.depth == 32 ? Transparency.TRANSLUCENT : Transparency.OPAQUE,
                 DataBuffer.TYPE_BYTE
         );
 
