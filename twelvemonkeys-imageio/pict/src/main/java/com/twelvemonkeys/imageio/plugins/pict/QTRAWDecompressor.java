@@ -90,9 +90,10 @@ final class QTRAWDecompressor extends QTDecompressor {
                         null
                 );
                 break;
-            case 32: // 32 bit RGBA
-                // WORKAROUND: There is a bug in the way Java 2D interprets the band offsets before Java 6.
-                // So, instead of passing a correct offset array below, we swap channel 1 & 3...
+            case 32: // 32 bit ARGB
+                // WORKAROUND: There is a bug in the way Java 2D interprets the band offsets in
+                // Raster.createInterleavedRaster (see below) before Java 6. So, instead of
+                // passing a correct offset array below, we swap channel 1 & 3 to make it ABGR...
                 for (int y = 0; y < pDescription.height; y++) {
                     for (int x = 0; x < pDescription.width; x++) {
                         int offset = 4 * y * pDescription.width + x * 4;
