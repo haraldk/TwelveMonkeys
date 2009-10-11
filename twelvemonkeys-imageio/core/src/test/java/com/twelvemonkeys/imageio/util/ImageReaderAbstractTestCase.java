@@ -1206,12 +1206,18 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             catch (IIOException expected) {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
                 // The problem is that the checkReadParamBandSettings throws IllegalArgumentException, which seems more appropriate...
-                String message = expected.getMessage();
-                assertTrue("Wrong message: " + message, message.toLowerCase().contains("destination"));
+                String message = expected.getMessage().toLowerCase();
+                assertTrue(
+                        "Wrong message: " + message + " for type " + destination.getType(),
+                        message.contains("destination") ||
+                                ((destination.getType() == BufferedImage.TYPE_BYTE_BINARY || 
+                                        destination.getType() == BufferedImage.TYPE_BYTE_INDEXED)
+                                        && message.contains("indexcolormodel"))
+                );
             }
             catch (IllegalArgumentException expected) {
-                String message = expected.getMessage();
-                assertTrue("Wrong message: " + message, message.toLowerCase().contains("dest"));
+                String message = expected.getMessage().toLowerCase();
+                assertTrue("Wrong message: " + message, message.contains("dest"));
             }
         }
     }
@@ -1233,14 +1239,14 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             }
             catch (IIOException expected) {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
-                String message = expected.getMessage();
-                assertTrue(message.toLowerCase().contains("destination"));
-                assertTrue(message.toLowerCase().contains("type"));
+                String message = expected.getMessage().toLowerCase();
+                assertTrue(message.contains("destination"));
+                assertTrue(message.contains("type"));
             }
             catch (IllegalArgumentException expected) {
-                String message = expected.getMessage();
-                assertTrue(message.toLowerCase().contains("destination"));
-                assertTrue(message.toLowerCase().contains("type"));
+                String message = expected.getMessage().toLowerCase();
+                assertTrue(message.contains("destination"));
+                assertTrue(message.contains("type"));
             }
         }
     }
@@ -1272,13 +1278,14 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
     }
 
     // TODO: Test dest offset + destination set?
+    // TODO: Test that destination offset is used for image data, not just image dimensions...
     public void testSetDestinationOffset() throws IOException {
         final ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
         ImageReadParam param = reader.getDefaultReadParam();
-        Point point = new Point(10, 10);
+        Point point = new Point(37, 42);
         param.setDestinationOffset(point);
 
         BufferedImage image = reader.read(0, param);

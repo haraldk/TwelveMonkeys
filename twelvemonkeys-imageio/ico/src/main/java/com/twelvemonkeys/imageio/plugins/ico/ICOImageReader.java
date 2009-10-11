@@ -292,6 +292,7 @@ public class ICOImageReader extends ImageReaderBase {
     }
 
     private BufferedImage readBitmap(final DirectoryEntry pEntry) throws IOException {
+        // TODO: Get rid of the caching, as the images are mutable
         BitmapDescriptor descriptor = mDescriptors.get(pEntry);
 
         if (descriptor == null || !mDescriptors.containsKey(pEntry)) {

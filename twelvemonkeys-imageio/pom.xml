@@ -41,6 +41,8 @@
         <!-- Wrappers for 3rd party libs  -->
         <module>batik</module>
         <module>jmagick</module>
+
+        <module>reference</module>        
     </modules>
 
     <properties>

@@ -80,6 +80,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
     protected ThumbsDBImageReader(final ThumbsDBImageReaderSpi pProvider) {
         super(pProvider);
         mReader = createJPEGReader(pProvider);
+        initReaderListeners();
     }
 
     protected void resetMembers() {
@@ -128,11 +129,11 @@ public class ThumbsDBImageReader extends ImageReaderBase {
      * @throws java.io.IOException           if an error occurs during reading
      */
     @Override
-    public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
+    public BufferedImage read(final int pIndex, final ImageReadParam pParam) throws IOException {
         init();
         checkBounds(pIndex);
 
-        // Quick lookup
+        // Quick look-up
         BufferedImage image = null;
         if (pIndex < mThumbnails.length) {
             image = mThumbnails[pIndex];
@@ -145,13 +146,32 @@ public class ThumbsDBImageReader extends ImageReaderBase {
             image = mReader.read(0, pParam);
             mReader.reset();
 
-            mThumbnails[pIndex] = image;
+            if (pParam == null) {
+                mThumbnails[pIndex] = image; // TODO: Caching is not kosher, as images are mutable!!
+            }
         }
         else {
             // Keep progress listeners happy
             processImageStarted(pIndex);
             processImageProgress(100);
             processImageComplete();
+        }
+
+        // Fake destination support
+        if (pParam != null && (pParam.getDestination() != null && pParam.getDestination() != image ||
+                pParam.getDestinationType() != null && pParam.getDestinationType().getBufferedImageType() != image.getType())) {
+            BufferedImage destination = getDestination(pParam, getImageTypes(pIndex), getWidth(pIndex), getHeight(pIndex));
+
+            Graphics2D g = destination.createGraphics();
+            try {
+                g.setComposite(AlphaComposite.Src);
+                g.drawImage(image, 0, 0, null);
+            }
+            finally {
+                g.dispose();
+            }
+
+            image = destination;
         }
 
         return image;
@@ -195,7 +215,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
     }
 
     private void init(final int pIndex) throws IOException {
-        if (mCurrentImage == -1 || pIndex != mCurrentImage) {
+        if (mCurrentImage == -1 || pIndex != mCurrentImage || mReader.getInput() == null) {
             init();
             checkBounds(pIndex);
             mCurrentImage = pIndex;
@@ -212,39 +232,32 @@ public class ThumbsDBImageReader extends ImageReaderBase {
         ImageInputStream input = new MemoryCacheImageInputStream(entry.getInputStream());
         input.skipBytes(THUMBNAIL_OFFSET);
         mReader.setInput(input);
-        initReaderListeners();
     }
 
     private void initReaderListeners() {
-        if (progressListeners != null) {
-            mReader.addIIOReadProgressListener(new ProgressListenerBase() {
-                @Override
-                public void imageComplete(ImageReader pSource) {
-                    processImageComplete();
-                }
+        mReader.addIIOReadProgressListener(new ProgressListenerBase() {
+            @Override
+            public void imageComplete(ImageReader pSource) {
+                processImageComplete();
+            }
 
-                @Override
-                public void imageStarted(ImageReader pSource, int pImageIndex) {
-                    processImageStarted(mCurrentImage);
-                }
+            @Override
+            public void imageStarted(ImageReader pSource, int pImageIndex) {
+                processImageStarted(mCurrentImage);
+            }
 
-                @Override
-                public void imageProgress(ImageReader pSource, float pPercentageDone) {
-                    processImageProgress(pPercentageDone);
-                }
+            @Override
+            public void imageProgress(ImageReader pSource, float pPercentageDone) {
+                processImageProgress(pPercentageDone);
+            }
 
-                @Override
-                public void readAborted(ImageReader pSource) {
-                    processReadAborted();
-                }
-            });
-        }
-        if (updateListeners != null) {
-            // TODO: Update listeners
-        }
-        if (warningListeners != null) {
-            // TODO: Warning listeners
-        }
+            @Override
+            public void readAborted(ImageReader pSource) {
+                processReadAborted();
+            }
+        });
+        // TODO: Update listeners
+        // TODO: Warning listeners
     }
 
     private void init() throws IOException {
@@ -307,6 +320,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         init(pIndex);
+        initReader(pIndex);
         return mReader.getImageTypes(0);
     }
 

@@ -32,6 +32,7 @@ import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
+import com.twelvemonkeys.lang.SystemUtil;
 
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -50,6 +51,8 @@ import java.util.List;
  * @version $Id: ICOImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<ThumbsDBImageReader> {
+    private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
+
     private ThumbsDBImageReaderSpi mProvider = new ThumbsDBImageReaderSpi();
 
     protected List<TestData> getTestData() {
@@ -110,5 +113,27 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
         
         Entry child = root.getChildEntry("Catalog");
         child.getInputStream();
+    }
+
+    @Override
+    public void testSetDestination() throws IOException {
+        // Known bug in Sun JPEGImageReader before Java 6
+        if (IS_JAVA_6) {
+            super.testSetDestination();
+        }
+        else {
+            System.err.println("WARNING: Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
+        }
+    }
+
+    @Override
+    public void testSetDestinationType() throws IOException {
+        // Known bug in Sun JPEGImageReader before Java 6
+        if (IS_JAVA_6) {
+            super.testSetDestinationType();
+        }
+        else {
+            System.err.println("WARNING: Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
+        }
     }
 }
