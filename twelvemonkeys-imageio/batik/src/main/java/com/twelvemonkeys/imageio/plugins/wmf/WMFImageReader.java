@@ -129,8 +129,9 @@ public class WMFImageReader extends ImageReaderBase {
         return mReader.getHeight(pIndex);
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
-        throw new UnsupportedOperationException("Method getImageTypes not implemented");// TODO: Implement
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int pImageIndex) throws IOException {
+        init();
+        return mReader.getImageTypes(pImageIndex);
     }
 
 }

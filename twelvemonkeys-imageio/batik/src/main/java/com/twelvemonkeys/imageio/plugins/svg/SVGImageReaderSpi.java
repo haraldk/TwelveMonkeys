@@ -153,6 +153,13 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
     @Override
     public void onRegistration(ServiceRegistry registry, Class<?> category) {
         if (!SVG_READER_AVAILABLE) {
+            try {
+                new SVGImageReader(this);
+            }
+            catch (Throwable t) {
+                t.printStackTrace();
+            }
+
             IIOUtil.deregisterProvider(registry, this, category);
         }
     }}

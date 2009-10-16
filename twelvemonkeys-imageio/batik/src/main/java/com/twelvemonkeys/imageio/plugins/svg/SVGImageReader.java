@@ -60,6 +60,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -119,6 +120,16 @@ public class SVGImageReader extends ImageReaderBase {
             baseURI = svgParam.getBaseURI();
         }
 
+        Dimension size;
+        if (pParam != null && (size = pParam.getSourceRenderSize()) != null) {
+            // Use size...
+        }
+        else {
+            size = new Dimension(getWidth(pIndex), getHeight(pIndex));
+        }
+
+        BufferedImage destination = getDestination(pParam, getImageTypes(pIndex), size.width, size.height);
+
         // Read in the image, using the Batik Transcoder
         try {
             processImageStarted(pIndex);
@@ -126,9 +137,19 @@ public class SVGImageReader extends ImageReaderBase {
             mRasterizer.mTranscoderInput.setURI(baseURI);
             BufferedImage image = mRasterizer.getImage();
 
+            Graphics2D g = destination.createGraphics();
+            try {
+                g.setComposite(AlphaComposite.Src);
+                g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+                g.drawImage(image, 0, 0, null); // TODO: Dest offset?
+            }
+            finally {
+                g.dispose();
+            }
+
             processImageComplete();
 
-            return image;
+            return destination;
         }
         catch (TranscoderException e) {
             throw new IIOException(e.getMessage(), e);
@@ -220,7 +241,7 @@ public class SVGImageReader extends ImageReaderBase {
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
-        throw new UnsupportedOperationException("Method getImageTypes not implemented");// TODO: Implement
+        return Collections.singleton(ImageTypeSpecifier.createFromRenderedImage(mRasterizer.createImage(1, 1))).iterator();
     }
 
     /**
