@@ -545,7 +545,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         assertNull(image);
     }
 
-    public void testReadAsRenderedImageIndexOutOfBounds() {
+    public void testReadAsRenderedImageIndexOutOfBounds() throws IIOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -557,6 +557,10 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
         catch (IndexOutOfBoundsException expected) {
             // Ignore
+        }
+        catch (IIOException e) {
+            // Allow this to bubble up, due to a bug in the Sun JPEGImageReader
+            throw e;
         }
         catch (IOException e) {
             fail("Image could not be read: " + e);
@@ -1226,13 +1230,17 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             catch (IIOException expected) {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
                 String message = expected.getMessage().toLowerCase();
-                assertTrue(message.contains("destination"));
-                assertTrue(message.contains("type"));
+                if (!(message.contains("destination") && message.contains("type"))) {
+                    // Allow this to bubble up, du to a bug in the Sun PNGImageReader
+                    throw expected;
+                }
             }
             catch (IllegalArgumentException expected) {
                 String message = expected.getMessage().toLowerCase();
-                assertTrue(message.contains("destination"));
-                assertTrue(message.contains("type"));
+                if (!(message.contains("destination") && message.contains("type"))) {
+                    // Allow this to bubble up, du to a bug in the Sun PNGImageReader
+                    throw expected;
+                }
             }
         }
     }
