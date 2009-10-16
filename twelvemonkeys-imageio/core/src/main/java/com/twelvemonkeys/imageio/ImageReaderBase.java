@@ -44,6 +44,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -307,6 +308,10 @@ public abstract class ImageReaderBase extends ImageReader {
 
     public static void main(String[] pArgs) throws IOException {
         BufferedImage image = ImageIO.read(new File(pArgs[0]));
+        if (image == null) {
+            System.err.println("Supported formats: " + Arrays.toString(ImageIO.getReaderFormatNames()));
+            System.exit(1);
+        }
         showIt(image, pArgs[0]);
     }
 
