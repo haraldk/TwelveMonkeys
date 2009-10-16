@@ -154,9 +154,11 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
     public void onRegistration(ServiceRegistry registry, Class<?> category) {
         if (!SVG_READER_AVAILABLE) {
             try {
+                // NOTE: This will break, but it gives us some useful debug info
                 new SVGImageReader(this);
             }
             catch (Throwable t) {
+                System.err.println("Could not instantiate SVGImageReader (missing support classes).");
                 t.printStackTrace();
             }
 
