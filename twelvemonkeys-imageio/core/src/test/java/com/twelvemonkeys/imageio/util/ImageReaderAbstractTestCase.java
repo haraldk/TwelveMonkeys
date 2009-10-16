@@ -373,10 +373,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             fail("Image could not be read: " + e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(),
-                data.getDimension(0).width, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(),
-                data.getDimension(0).height, image.getHeight());
+        assertEquals("Read image has wrong width: " + image.getWidth(), data.getDimension(0).width, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), data.getDimension(0).height, image.getHeight());
     }
 
     public void testReadWithDefaultParam() {
@@ -392,10 +390,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             fail("Image could not be read: " + e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(),
-                data.getDimension(0).width, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(),
-                data.getDimension(0).height, image.getHeight());
+        assertEquals("Read image has wrong width: " + image.getWidth(), data.getDimension(0).width, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), data.getDimension(0).height, image.getHeight());
     }
 
     public void testReadWithNullParam() {
@@ -411,10 +407,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             fail("Image could not be read: " + e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(),
-                data.getDimension(0).width, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(),
-                data.getDimension(0).height, image.getHeight());
+        assertEquals("Read image has wrong width: " + image.getWidth(), data.getDimension(0).width, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), data.getDimension(0).height, image.getHeight());
     }
 
     public void testReadWithSizeParam() {
@@ -434,10 +428,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
                 fail("Image could not be read: " + e);
             }
             assertNotNull("Image was null!", image);
-            assertEquals("Read image has wrong width: " + image.getWidth(),
-                    10, image.getWidth());
-            assertEquals("Read image has wrong height: " + image.getHeight(),
-                    10, image.getHeight());
+            assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
+            assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
         }
     }
 
@@ -457,10 +449,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             fail("Image could not be read: " + e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: ",
-                (double) data.getDimension(0).width / 5.0, image.getWidth(), 1.0);
-        assertEquals("Read image has wrong height: ",
-                (double) data.getDimension(0).height / 5.0, image.getHeight(), 1.0);
+        assertEquals("Read image has wrong width: ", (double) data.getDimension(0).width / 5.0, image.getWidth(), 1.0);
+        assertEquals("Read image has wrong height: ", (double) data.getDimension(0).height / 5.0, image.getHeight(), 1.0);
     }
 
     public void testReadWithSourceRegionParam() {
@@ -479,10 +469,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             fail("Image could not be read: " + e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(),
-                10, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(),
-                10, image.getHeight());
+        assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
     }
 
     public void testReadWithSizeAndSourceRegionParam() {
@@ -507,10 +495,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
                 fail("Image could not be read: " + e);
             }
             assertNotNull("Image was null!", image);
-            assertEquals("Read image has wrong width: " + image.getWidth(),
-                    20, image.getWidth());
-            assertEquals("Read image has wrong height: " + image.getHeight(),
-                    20, image.getHeight());
+            assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
+            assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
         }
     }
 
