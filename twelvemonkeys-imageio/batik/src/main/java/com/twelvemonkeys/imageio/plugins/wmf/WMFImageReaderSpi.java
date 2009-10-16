@@ -112,6 +112,7 @@ public class WMFImageReaderSpi extends ImageReaderSpi {
         return "Windows Meta File (WMF) image reader";
     }
 
+    @SuppressWarnings({"deprecation"})
     @Override
     public void onRegistration(ServiceRegistry registry, Class<?> category) {
         if (!WMF_READER_AVAILABLE) {

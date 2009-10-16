@@ -61,8 +61,14 @@ public final class IIOUtil {
         return new BufferedOutputStream(new IIOOutputStreamAdapter(pStream));
     }
 
-    /*
+    /**
      * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
+     *
+     * @param pRegistry the registry to unregister from
+     * @param pProvider the provider to unregister
+     * @param pCategory the category to unregister from
+     *
+     * @deprecated
      */
     public static <T> void deregisterProvider(final ServiceRegistry pRegistry, final IIOServiceProvider pProvider, final Class<T> pCategory) {
         // http://www.ibm.com/developerworks/java/library/j-jtp04298.html

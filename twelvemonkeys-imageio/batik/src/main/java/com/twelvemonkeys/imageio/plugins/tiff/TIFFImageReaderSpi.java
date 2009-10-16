@@ -110,6 +110,7 @@ public class TIFFImageReaderSpi extends ImageReaderSpi {
         return "Tagged Image File Format (TIFF) image reader";
     }
 
+    @SuppressWarnings({"deprecation"})
     @Override
     public void onRegistration(ServiceRegistry registry, Class<?> category) {
         if (!TIFF_CLASSES_AVAILABLE) {

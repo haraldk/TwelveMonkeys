@@ -92,6 +92,8 @@ public class TIFFImageWriterSpi extends ImageWriterSpi {
         return "Tagged Image File Format (TIFF) image writer";
     }
 
+    @SuppressWarnings({"deprecation"})
+    @Override
     public void onRegistration(ServiceRegistry registry, Class<?> category) {
         if (!TIFFImageReaderSpi.TIFF_CLASSES_AVAILABLE) {
             IIOUtil.deregisterProvider(registry, this, category);

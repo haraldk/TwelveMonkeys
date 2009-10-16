@@ -150,6 +150,7 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
         return "Scaleable Vector Graphics (SVG) format image reader";
     }
 
+    @SuppressWarnings({"deprecation"})
     @Override
     public void onRegistration(ServiceRegistry registry, Class<?> category) {
         if (!SVG_READER_AVAILABLE) {
