@@ -81,5 +81,4 @@ public class BMPImageReaderTestCase extends JMagickImageReaderAbstractTestCase<B
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/bmp", "image/x-bmp", "image/x-windows-bmp", "image/x-ms-bmp");
     }
-
 }

@@ -41,4 +41,13 @@ import javax.imageio.ImageReader;
  */
 public abstract class JMagickImageReaderAbstractTestCase<T extends ImageReader> extends ImageReaderAbstractTestCase<T> {
 
+    @Override
+    protected void runTest() throws Throwable {
+        if (JMagickImageReaderSpiSupport.AVAILABLE) {
+            super.runTest();
+        }
+        else {
+            System.err.println("WARNING: JMagick not installed. Skipping test " + getName());
+        }
+    }
 }
