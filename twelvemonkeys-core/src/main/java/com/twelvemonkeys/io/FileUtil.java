@@ -878,7 +878,7 @@ public final class FileUtil {
 
         File folder = resolve(pFolder);
         if (!(/*folder.exists() &&*/folder.isDirectory() && folder.canRead())) {
-            // NOTE: exists is implictly called by isDirectory
+            // NOTE: exists is implicitly called by isDirectory
             throw new FileNotFoundException("\"" + pFolder + "\" is not a directory or is not readable.");
         }
 

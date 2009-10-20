@@ -29,7 +29,6 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.util.DebugUtil;
 import com.twelvemonkeys.util.convert.ConversionException;
 import com.twelvemonkeys.util.convert.Converter;
 
@@ -45,6 +44,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -154,7 +154,7 @@ public final class ServletUtil {
 
     // public static T getParameter<T>(ServletRequest pReq, String pName,
     //                                 String pFormat, T pDefault) {
-    static Object getParameter(ServletRequest pReq, String pName, Class pType, String pFormat, Object pDefault) {
+    static <T> T getParameter(ServletRequest pReq, String pName, Class<T> pType, String pFormat, T pDefault) {
         // Test if pDefault is either null or instance of pType
         if (pDefault != null && !pType.isInstance(pDefault)) {
             throw new IllegalArgumentException("default value not instance of " + pType + ": " + pDefault.getClass());
@@ -166,7 +166,7 @@ public final class ServletUtil {
             return pDefault;
         }
         try {
-            return Converter.getInstance().toObject(str, pType, pFormat);
+            return pType.cast(Converter.getInstance().toObject(str, pType, pFormat));
         }
         catch (ConversionException ce) {
             return pDefault;
@@ -949,14 +949,14 @@ public final class ServletUtil {
             // recieved the request
             buffer.append(indentation);
             buffer.append("Last accessed time: ");
-            buffer.append(DebugUtil.getTimestamp(pHttpSession.getLastAccessedTime()));
+            buffer.append(new Date(pHttpSession.getLastAccessedTime()));
             buffer.append("\n");
 
             // Returns the time when this session was created, measured in
             // milliseconds since midnight January 1, 1970 GMT
             buffer.append(indentation);
             buffer.append("Creation time: ");
-            buffer.append(DebugUtil.getTimestamp(pHttpSession.getCreationTime()));
+            buffer.append(new Date(pHttpSession.getCreationTime()));
             buffer.append("\n");
 
             // Returns true if the client does not yet know about the session

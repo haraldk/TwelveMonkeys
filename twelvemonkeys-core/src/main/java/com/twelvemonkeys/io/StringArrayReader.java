@@ -53,7 +53,7 @@ public class StringArrayReader extends StringReader {
     /**
      * Create a new string array reader.
      *
-     * @param pStrings <tt>String</tt>s providing the character stream.
+     * @param pStrings {@code String}s providing the character stream.
      */
     public StringArrayReader(final String[] pStrings) {
         super("");

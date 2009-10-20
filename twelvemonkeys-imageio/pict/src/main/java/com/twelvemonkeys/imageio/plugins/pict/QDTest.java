@@ -28,10 +28,13 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import com.twelvemonkeys.image.ConvolveTester;
+import com.twelvemonkeys.image.BufferedImageIcon;
+import com.twelvemonkeys.image.ImageUtil;
 
+import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * QDTest
@@ -125,6 +128,34 @@ public class QDTest {
             context.closePicture();
         }
 
-        ConvolveTester.showIt(image, "QuickDraw Test");
+        showIt(image, "QuickDraw Test");
     }
+
+    public static void showIt(final BufferedImage pImage, final String pTitle) {
+        try {
+            SwingUtilities.invokeAndWait(new Runnable() {
+                public void run() {
+                    JFrame frame = new JFrame(pTitle);
+                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                    frame.setLocationByPlatform(true);
+                    JPanel pane = new JPanel(new BorderLayout());
+                    GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+                    BufferedImageIcon icon = new BufferedImageIcon(ImageUtil.accelerate(pImage, gc));
+                    JScrollPane scroll = new JScrollPane(new JLabel(icon));
+                    scroll.setBorder(null);
+                    pane.add(scroll);
+                    frame.setContentPane(pane);
+                    frame.pack();
+                    frame.setVisible(true);
+                }
+            });
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

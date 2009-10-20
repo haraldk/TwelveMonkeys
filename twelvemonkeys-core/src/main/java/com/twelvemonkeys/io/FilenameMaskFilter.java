@@ -156,8 +156,8 @@ public class FilenameMaskFilter implements FilenameFilter {
      * This method implements the {@code java.io.FilenameFilter} interface.
      *
      * @param pDir  the directory in which the file was found.
-     * @param pName the pName of the file.
-     * @return {@code true} if  the pName should be included in the file
+     * @param pName the name of the file.
+     * @return {@code true} if the file {@code pName} should be included in the file
      *         list; {@code false} otherwise.
      */
     public boolean accept(File pDir, String pName) {
