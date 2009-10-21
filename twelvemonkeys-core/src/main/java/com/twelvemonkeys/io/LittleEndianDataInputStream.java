@@ -82,11 +82,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads a <code>boolean</code> from the underlying input stream by
+     * Reads a {@code boolean} from the underlying input stream by
      * reading a single byte. If the byte is zero, false is returned.
      * If the byte is positive, true is returned.
      *
-     * @return the <code>boolean</code> value read.
+     * @return the {@code boolean} value read.
      * @throws EOFException if the end of the underlying input stream
      *                      has been reached
      * @throws IOException  if the underlying stream throws an IOException.
@@ -100,10 +100,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads a signed <code>byte</code> from the underlying input stream
+     * Reads a signed {@code byte} from the underlying input stream
      * with value between -128 and 127
      *
-     * @return the <code>byte</code> value read.
+     * @return the {@code byte} value read.
      * @throws EOFException if the end of the underlying input stream
      *                      has been reached
      * @throws IOException  if the underlying stream throws an IOException.
@@ -118,10 +118,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads an unsigned <code>byte</code> from the underlying
+     * Reads an unsigned {@code byte} from the underlying
      * input stream with value between 0 and 255
      *
-     * @return the <code>byte</code> value read.
+     * @return the {@code byte} value read.
      * @throws EOFException if the end of the underlying input
      *                      stream has been reached
      * @throws IOException  if the underlying stream throws an IOException.
@@ -135,10 +135,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads a two byte signed <code>short</code> from the underlying
+     * Reads a two byte signed {@code short} from the underlying
      * input stream in little endian order, low byte first.
      *
-     * @return the <code>short</code> read.
+     * @return the {@code short} read.
      * @throws EOFException if the end of the underlying input stream
      *                      has been reached
      * @throws IOException  if the underlying stream throws an IOException.
@@ -155,7 +155,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads a two byte unsigned <code>short</code> from the underlying
+     * Reads a two byte unsigned {@code short} from the underlying
      * input stream in little endian order, low byte first.
      *
      * @return the int value of the unsigned short read.
@@ -174,7 +174,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads a two byte Unicode <code>char</code> from the underlying
+     * Reads a two byte Unicode {@code char} from the underlying
      * input stream in little endian order, low byte first.
      *
      * @return the int value of the unsigned short read.
@@ -193,10 +193,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
 
 
     /**
-     * Reads a four byte signed <code>int</code> from the underlying
+     * Reads a four byte signed {@code int} from the underlying
      * input stream in little endian order, low byte first.
      *
-     * @return the <code>int</code> read.
+     * @return the {@code int} read.
      * @throws EOFException if the end of the underlying input stream
      *                      has been reached
      * @throws IOException  if the underlying stream throws an IOException.
@@ -215,10 +215,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * Reads an eight byte signed <code>int</code> from the underlying
+     * Reads an eight byte signed {@code int} from the underlying
      * input stream in little endian order, low byte first.
      *
-     * @return the <code>int</code> read.
+     * @return the {@code int} read.
      * @throws EOFException if the end of the underlying input stream
      *                      has been reached
      * @throws IOException  if the underlying stream throws an IOException.
@@ -315,7 +315,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
 
     /**
      * @return the next eight bytes of this input stream, interpreted as a
-     *         little endian <code>double</code>.
+     *         little endian {@code double}.
      * @throws EOFException if end of stream occurs before eight bytes
      *                      have been read.
      * @throws IOException  if an I/O error occurs.
@@ -326,7 +326,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
 
     /**
      * @return the next four bytes of this input stream, interpreted as a
-     *         little endian <code>int</code>.
+     *         little endian {@code int}.
      * @throws EOFException if end of stream occurs before four bytes
      *                      have been read.
      * @throws IOException  if an I/O error occurs.
@@ -336,8 +336,8 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * See the general contract of the <code>skipBytes</code>
-     * method of <code>DataInput</code>.
+     * See the general contract of the {@code skipBytes}
+     * method of {@code DataInput}.
      * <p>
      * Bytes for this operation are read from the contained input stream.
      *
@@ -359,8 +359,8 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * See the general contract of the <code>readFully</code>
-     * method of <code>DataInput</code>.
+     * See the general contract of the {@code readFully}
+     * method of {@code DataInput}.
      * <p/>
      * Bytes
      * for this operation are read from the contained
@@ -377,8 +377,8 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * See the general contract of the <code>readFully</code>
-     * method of <code>DataInput</code>.
+     * See the general contract of the {@code readFully}
+     * method of {@code DataInput}.
      * <p/>
      * Bytes
      * for this operation are read from the contained
@@ -407,8 +407,8 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * See the general contract of the <code>readLine</code>
-     * method of <code>DataInput</code>.
+     * See the general contract of the {@code readLine}
+     * method of {@code DataInput}.
      * <p>
      * Bytes for this operation are read from the contained input stream.
      *

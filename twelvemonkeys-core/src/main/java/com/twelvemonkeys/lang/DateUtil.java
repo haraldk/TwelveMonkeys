@@ -98,7 +98,7 @@ public final class DateUtil {
     /**
      * Gets the current time, rounded down to the closest second.
      * Equivalent to invoking
-     * <tt>roundToSecond(System.currentTimeMillis())</tt>.
+     * {@code roundToSecond(System.currentTimeMillis())}.
      *
      * @return the current time, rounded to the closest second.
      */
@@ -109,7 +109,7 @@ public final class DateUtil {
     /**
      * Gets the current time, rounded down to the closest minute.
      * Equivalent to invoking
-     * <tt>roundToMinute(System.currentTimeMillis())</tt>.
+     * {@code roundToMinute(System.currentTimeMillis())}.
      *
      * @return the current time, rounded to the closest minute.
      */
@@ -120,7 +120,7 @@ public final class DateUtil {
     /**
      * Gets the current time, rounded down to the closest hour.
      * Equivalent to invoking
-     * <tt>roundToHour(System.currentTimeMillis())</tt>.
+     * {@code roundToHour(System.currentTimeMillis())}.
      *
      * @return the current time, rounded to the closest hour.
      */
@@ -131,7 +131,7 @@ public final class DateUtil {
     /**
      * Gets the current time, rounded down to the closest day.
      * Equivalent to invoking
-     * <tt>roundToDay(System.currentTimeMillis())</tt>.
+     * {@code roundToDay(System.currentTimeMillis())}.
      *
      * @return the current time, rounded to the closest day.
      */

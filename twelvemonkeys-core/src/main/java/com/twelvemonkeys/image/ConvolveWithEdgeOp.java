@@ -141,7 +141,7 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
             return pOriginal;
         }
 
-        // TODO: Might be faster if we could clone raster and strech it...
+        // TODO: Might be faster if we could clone raster and stretch it...
         int w = pOriginal.getWidth();
         int h = pOriginal.getHeight();
 

@@ -21,7 +21,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
     // TODO: Create Comparable test similar way
 
     /**
-     * Creates a <tt>TestCase</tt>.
+     * Creates a {@code TestCase}.
      *
      * @param testName  the test class name
      */
@@ -216,7 +216,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
     }
 
     /**
-     * Sanity check method, makes sure that any <tt>Serializable</tt>
+     * Sanity check method, makes sure that any {@code Serializable}
      * class can be serialized and de-serialized in memory,
      * using the handy makeObject() method
      *
@@ -306,7 +306,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
 
     public static final class SanityTestTestCase extends ObjectAbstractTestCase {
         /**
-         * Creates a <tt>TestCase</tt>.
+         * Creates a {@code TestCase}.
          *
          */
         public SanityTestTestCase() {

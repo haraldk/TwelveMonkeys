@@ -95,17 +95,17 @@ final class Win32File extends File {
     }
 
     /**
-     * Wraps a <tt>File</tt> object pointing to a Windows symbolic link
-     * (<tt>.lnk</tt> file) in a <tt>Win32Lnk</tt>.
+     * Wraps a {@code File} object pointing to a Windows symbolic link
+     * ({@code .lnk} file) in a {@code Win32Lnk}.
      * If the operating system is not Windows, the
-     * <tt>pPath</tt> parameter is returned unwrapped.
+     * {@code pPath} parameter is returned unwrapped.
      *
      * @param pPath any path, possibly pointing to a Windows symbolic link file.
-     * May be <tt>null</tt>, in which case <tt>null</tt> is returned.
+     * May be {@code null}, in which case {@code null} is returned.
      *
-     * @return a new <tt>Win32Lnk</tt> object if the current os is Windows, and
-     * the file is a Windows symbolic link (<tt>.lnk</tt> file), otherwise
-     * <tt>pPath</tt>
+     * @return a new {@code Win32Lnk} object if the current os is Windows, and
+     * the file is a Windows symbolic link ({@code .lnk} file), otherwise
+     * {@code pPath}
      */
     public static File wrap(final File pPath) {
         if (pPath == null) {
@@ -138,15 +138,15 @@ final class Win32File extends File {
     }
 
     /**
-     * Wraps a <tt>File</tt> array, possibly pointing to Windows symbolic links
-     * (<tt>.lnk</tt> files) in <tt>Win32Lnk</tt>s.
+     * Wraps a {@code File} array, possibly pointing to Windows symbolic links
+     * ({@code .lnk} files) in {@code Win32Lnk}s.
      *
-     * @param pPaths an array of <tt>File</tt>s, possibly pointing to Windows
+     * @param pPaths an array of {@code File}s, possibly pointing to Windows
      * symbolic link files.
-     * May be <tt>null</tt>, in which case <tt>null</tt> is returned.
+     * May be {@code null}, in which case {@code null} is returned.
      *
-     * @return <tt>pPaths</tt>, with any <tt>File</tt> representing a Windows
-     * symbolic link (<tt>.lnk</tt> file) wrapped in a <tt>Win32Lnk</tt>.
+     * @return {@code pPaths}, with any {@code File} representing a Windows
+     * symbolic link ({@code .lnk} file) wrapped in a {@code Win32Lnk}.
      */
     public static File[] wrap(File[] pPaths) {
         if (IS_WINDOWS) {

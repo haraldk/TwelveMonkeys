@@ -49,7 +49,7 @@ public final class ReflectUtil {
      *
      * @return the primitive type
      *
-     * @throws IllegalArgumentException if <tt>pType</tt> is not a primitive
+     * @throws IllegalArgumentException if {@code pType} is not a primitive
      * wrapper
      */
     public static Class unwrapType(Class pType) {
@@ -88,7 +88,7 @@ public final class ReflectUtil {
      *
      * @return the wrapper type
      *
-     * @throws IllegalArgumentException if <tt>pType</tt> is not a primitive
+     * @throws IllegalArgumentException if {@code pType} is not a primitive
      * type
      */
     public static Class wrapType(Class pType) {
@@ -121,12 +121,12 @@ public final class ReflectUtil {
     }
 
     /**
-     * Returns <tt>true</tt> if the given type is a primitive wrapper.
+     * Returns {@code true} if the given type is a primitive wrapper.
      *
      * @param pType
      *
-     * @return <tt>true</tt> if the given type is a primitive wrapper, otherwise
-     * <tt>false</tt>
+     * @return {@code true} if the given type is a primitive wrapper, otherwise
+     * {@code false}
      */
     public static boolean isPrimitiveWrapper(Class pType) {
         return pType == Boolean.class || pType == Byte.class

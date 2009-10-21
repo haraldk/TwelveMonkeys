@@ -64,7 +64,7 @@ import java.util.*;
  * collection views.  Basically, the modification is performed against your
  * map implementation, and an identical modification is performed against
  * a <I>confirmed</I> map implementation.  A confirmed map implementation is
- * something like <Code>java.util.HashMap</Code>, which is known to conform
+ * something like {@code java.util.HashMap}, which is known to conform
  * exactly to the {@link Map} contract.  After the modification takes place
  * on both your map implementation and the confirmed map implementation, the
  * two maps are compared to see if their state is identical.  The comparison
@@ -99,7 +99,7 @@ import java.util.*;
  * this base set of cases.  Simply override the test case (method) your map
  * fails and/or the methods that define the assumptions used by the test
  * cases.  For example, if your map does not allow duplicate values, override
- * {@link #isAllowDuplicateValues()} and have it return <code>false</code>
+ * {@link #isAllowDuplicateValues()} and have it return {@code false}
  *
  * @author Michael Smith
  * @author Rodney Waldhoff
@@ -151,7 +151,7 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
     /**
      * Returns true if the maps produced by
      * {@link #makeEmptyMap()} and {@link #makeFullMap()}
-     * support the <code>put</code> and <code>putAll</code> operations
+     * support the {@code put} and {@code putAll} operations
      * adding new mappings.
      * <p>
      * Default implementation returns true.
@@ -164,7 +164,7 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
     /**
      * Returns true if the maps produced by
      * {@link #makeEmptyMap()} and {@link #makeFullMap()}
-     * support the <code>put</code> and <code>putAll</code> operations
+     * support the {@code put} and {@code putAll} operations
      * changing existing mappings.
      * <p>
      * Default implementation returns true.
@@ -177,7 +177,7 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
     /**
      * Returns true if the maps produced by
      * {@link #makeEmptyMap()} and {@link #makeFullMap()}
-     * support the <code>setValue</code> operation on entrySet entries.
+     * support the {@code setValue} operation on entrySet entries.
      * <p>
      * Default implementation returns isPutChangeSupported().
      * Override if your collection class does not support setValue but does
@@ -190,7 +190,7 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
     /**
      * Returns true if the maps produced by
      * {@link #makeEmptyMap()} and {@link #makeFullMap()}
-     * support the <code>remove</code> and <code>clear</code> operations.
+     * support the {@code remove} and {@code clear} operations.
      * <p>
      * Default implementation returns true.
      * Override if your collection class does not support removal operations.
@@ -263,7 +263,7 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
      *  method must return an array with the same length as {@link
      *  #getSampleValues()} and all array elements must be different. The
      *  default implementation constructs a set of String keys, and includes a
-     *  single null key if {@link #isAllowNullKey()} returns <code>true</code>.
+     *  single null key if {@link #isAllowNullKey()} returns {@code true}.
      */
     public Object[] getSampleKeys() {
         Object[] result = new Object[] {
@@ -305,9 +305,9 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
      * method must return an array with the same length as
      * {@link #getSampleKeys()}.  The default implementation constructs a set of
      * String values and includes a single null value if
-     * {@link #isAllowNullValue()} returns <code>true</code>, and includes
+     * {@link #isAllowNullValue()} returns {@code true}, and includes
      * two values that are the same if {@link #isAllowDuplicateValues()} returns
-     * <code>true</code>.
+     * {@code true}.
      */
     public Object[] getSampleValues() {
         Object[] result = new Object[] {
@@ -327,9 +327,9 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
      * returned from this method should not be the same as those returned from
      * {@link #getSampleValues()}.  The default implementation constructs a
      * set of String values and includes a single null value if
-     * {@link #isAllowNullValue()} returns <code>true</code>, and includes two values
+     * {@link #isAllowNullValue()} returns {@code true}, and includes two values
      * that are the same if {@link #isAllowDuplicateValues()} returns
-     * <code>true</code>.
+     * {@code true}.
      */
     public Object[] getNewSampleValues() {
         Object[] result = new Object[] {
@@ -1548,10 +1548,10 @@ public abstract class MapAbstractTestCase extends ObjectAbstractTestCase {
      * Verifies that {@link #map} is still equal to {@link #confirmed}.
      * This method checks that the map is equal to the HashMap,
      * <I>and</I> that the map's collection views are still equal to
-     * the HashMap's collection views.  An <Code>equals</Code> test
+     * the HashMap's collection views.  An {@code equals} test
      * is done on the maps and their collection views; their size and
-     * <Code>isEmpty</Code> results are compared; their hashCodes are
-     * compared; and <Code>containsAll</Code> tests are run on the
+     * {@code isEmpty} results are compared; their hashCodes are
+     * compared; and {@code containsAll} tests are run on the
      * collection views.
      */
     public void verifyAll() {

@@ -127,7 +127,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      * properties to be appended into a single property.
      *
      * @param pKey   the keyword by which the request is known
-     *               (e.g., "<code>accept</code>").
+     *               (e.g., "{@code accept}").
      * @param pValue the value associated with it.
      * @see #getRequestProperty(java.lang.String)
      */
@@ -208,7 +208,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      * Returns the name of the specified header field.
      *
      * @param pName the name of a header field.
-     * @return the value of the named header field, or <code>null</code>
+     * @return the value of the named header field, or {@code null}
      *         if there is no such field in the header.
      */
     public String getHeaderField(String pName) {
@@ -216,16 +216,16 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
     }
 
     /**
-     * Returns the value for the <code>n</code><sup>th</sup> header field.
-     * It returns <code>null</code> if there are fewer than
-     * <code>n</code> fields.
+     * Returns the value for the {@code n}<sup>th</sup> header field.
+     * It returns {@code null} if there are fewer than
+     * {@code n} fields.
      * <p/>
      * This method can be used in conjunction with the
-     * <code>getHeaderFieldKey</code> method to iterate through all
+     * {@code getHeaderFieldKey} method to iterate through all
      * the headers in the message.
      *
      * @param pIndex an index.
-     * @return the value of the <code>n</code><sup>th</sup> header field.
+     * @return the value of the {@code n}<sup>th</sup> header field.
      * @see java.net.URLConnection#getHeaderFieldKey(int)
      */
     public String getHeaderField(int pIndex) {
@@ -247,11 +247,11 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
     }
 
     /**
-     * Returns the key for the <code>n</code><sup>th</sup> header field.
+     * Returns the key for the {@code n}<sup>th</sup> header field.
      *
      * @param pIndex an index.
-     * @return the key for the <code>n</code><sup>th</sup> header field,
-     *         or <code>null</code> if there are fewer than <code>n</code>
+     * @return the key for the {@code n}<sup>th</sup> header field,
+     *         or {@code null} if there are fewer than {@code n}
      *         fields.
      */
     public String getHeaderFieldKey(int pIndex) {
@@ -641,9 +641,9 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      * Opens a communications link to the resource referenced by this
      * URL, if such a connection has not already been established.
      * <p/>
-     * If the <code>connect</code> method is called when the connection
-     * has already been opened (indicated by the <code>connected</code>
-     * field having the value <code>true</code>), the call is ignored.
+     * If the {@code connect} method is called when the connection
+     * has already been opened (indicated by the {@code connected}
+     * field having the value {@code true}), the call is ignored.
      * <p/>
      * URLConnection objects go through two phases: first they are
      * created, then they are connected.  After being created, and
@@ -1062,7 +1062,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
 
         /**
          * Reads the chunk size from the chunk header
-         * <CODE>chunk-size [SP chunk-extension] CRLF</CODE>.
+         * {@code chunk-size [SP chunk-extension] CRLF}.
          * The chunk-extension is simply discarded.
          *
          * @return the length of the current chunk, or -1 if the current chunk

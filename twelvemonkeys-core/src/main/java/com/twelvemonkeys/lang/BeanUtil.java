@@ -537,10 +537,10 @@ public final class BeanUtil {
 
     /**
      * Configures the bean according to the given mapping.
-     * For each <CODE>Map.Entry</CODE> in <CODE>Map.values()</CODE>,
+     * For each {@code Map.Entry} in {@code Map.values()},
      * a method named
-     * <CODE>set + capitalize(entry.getKey())</CODE> is called on the bean,
-     * with <CODE>entry.getValue()</CODE> as its argument.
+     * {@code set + capitalize(entry.getKey())} is called on the bean,
+     * with {@code entry.getValue()} as its argument.
      * <p/>
      * Properties that has no matching set-method in the bean, are simply
      * discarded.
@@ -562,10 +562,10 @@ public final class BeanUtil {
 
     /**
      * Configures the bean according to the given mapping.
-     * For each <CODE>Map.Entry</CODE> in <CODE>Map.values()</CODE>,
+     * For each {@code Map.Entry} in {@code Map.values()},
      * a method named
-     * <CODE>set + capitalize(entry.getKey())</CODE> is called on the bean,
-     * with <CODE>entry.getValue()</CODE> as its argument.
+     * {@code set + capitalize(entry.getKey())} is called on the bean,
+     * with {@code entry.getValue()} as its argument.
      * <p/>
      * Optionally, lisp-style names are allowed, and automatically converted
      * to Java-style camel-case names.

@@ -51,7 +51,7 @@ public final class MathUtil {
      * Java versions < 1.2 (typically for Applets).
      *
      * @param pAngDeg an angle, in degrees
-     * @return the measurement of the angle <code>angdeg</code> in radians.
+     * @return the measurement of the angle {@code angdeg} in radians.
      *
      * @see java.lang.Math#toRadians(double)
      */
@@ -66,7 +66,7 @@ public final class MathUtil {
      * Java versions < 1.2 (typically for Applets).
      *
      * @param pAngRad an angle, in radians
-     * @return the measurement of the angle <code>angrad</code> in degrees.
+     * @return the measurement of the angle {@code angrad} in degrees.
      *
      * @see java.lang.Math#toDegrees(double)
      */
@@ -76,11 +76,11 @@ public final class MathUtil {
 
     /**
      * Returns the natural logarithm (base <I>e</I>) of a double value.
-     * Equivalent to <CODE>java.lang.Math.log</CODE>, just with a proper name.
+     * Equivalent to {@code java.lang.Math.log}, just with a proper name.
      *
      * @param pArg a number greater than 0.0. 
-     * @return the value ln <CODE>pArg</CODE>, the natural logarithm of 
-     *         <CODE>pArg</CODE>.
+     * @return the value ln {@code pArg}, the natural logarithm of
+     *         {@code pArg}.
      *
      * @see java.lang.Math#log(double)
      */
@@ -94,8 +94,8 @@ public final class MathUtil {
      * Returns the base 10 logarithm of a double value.
      *
      * @param pArg a number greater than 0.0. 
-     * @return the value log <CODE>pArg</CODE>, the base 10 logarithm of 
-     *         <CODE>pArg</CODE>.
+     * @return the value log {@code pArg}, the base 10 logarithm of
+     *         {@code pArg}.
      */
     public static double log(final double pArg) {
         return Math.log(pArg) / LN_10;
@@ -107,8 +107,8 @@ public final class MathUtil {
      * Returns the base 2 logarithm of a double value.
      *
      * @param pArg a number greater than 0.0. 
-     * @return the value log<SUB>2</SUB> <CODE>pArg</CODE>, the base 2 
-     *         logarithm of <CODE>pArg</CODE>.
+     * @return the value log<SUB>2</SUB> {@code pArg}, the base 2
+     *         logarithm of {@code pArg}.
      */
     public static double log2(final double pArg) {
         return Math.log(pArg) / LN_2;
@@ -121,24 +121,24 @@ public final class MathUtil {
      * @param pArg a number greater than 0.0. 
      * @param pBase a number greater than 0.0. 
      *
-     * @return the value log<SUB>pBase</SUB> <CODE>pArg</CODE>, the base 
-     *         <CODE>pBase</CODE> logarithm of <CODE>pArg</CODE>.
+     * @return the value log<SUB>pBase</SUB> {@code pArg}, the base
+     *         {@code pBase} logarithm of {@code pArg}.
      */
     public static double log(final double pArg, final double pBase) {
         return Math.log(pArg) / Math.log(pBase);
     }
 
     /**
-     * A replacement for <tt>Math.abs</tt>, that never returns negative values.
-     * <tt>Math.abs(long)</tt> does this for <tt>Long.MIN_VALUE</tt>.
+     * A replacement for {@code Math.abs}, that never returns negative values.
+     * {@code Math.abs(long)} does this for {@code Long.MIN_VALUE}.
      *
      * @see Math#abs(long)
      * @see Long#MIN_VALUE
      *
      * @param pNumber
-     * @return the absolute value of <tt>pNumber</tt>
+     * @return the absolute value of {@code pNumber}
      *
-     * @throws ArithmeticException if <tt>pNumber == Long.MIN_VALUE</tt>
+     * @throws ArithmeticException if {@code pNumber == Long.MIN_VALUE}
      */
     public static long abs(final long pNumber) {
         if (pNumber == Long.MIN_VALUE) {
@@ -148,16 +148,16 @@ public final class MathUtil {
     }
 
     /**
-     * A replacement for <tt>Math.abs</tt>, that never returns negative values.
-     * <tt>Math.abs(int)</tt> does this for <tt>Integer.MIN_VALUE</tt>.
+     * A replacement for {@code Math.abs}, that never returns negative values.
+     * {@code Math.abs(int)} does this for {@code Integer.MIN_VALUE}.
      *
      * @see Math#abs(int)
      * @see Integer#MIN_VALUE
      *
      * @param pNumber
-     * @return the absolute value of <tt>pNumber</tt>
+     * @return the absolute value of {@code pNumber}
      *
-     * @throws ArithmeticException if <tt>pNumber == Integer.MIN_VALUE</tt>
+     * @throws ArithmeticException if {@code pNumber == Integer.MIN_VALUE}
      */
     public static int abs(final int pNumber) {
         if (pNumber == Integer.MIN_VALUE) {

@@ -1,4 +1,6 @@
-- Rename core to common
+- Remove util.BASE64, make clients use io.Base64.
+
+- Rename core to common?
 - Split up into three sub modules?
   - common-core
     - lang

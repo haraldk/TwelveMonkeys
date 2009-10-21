@@ -37,7 +37,7 @@ import java.util.Hashtable;
 /**
  * A simple Authenticator implementation.
  * Singleton class, obtain reference through the static 
- * <CODE>getInstance</CODE> method.
+ * {@code getInstance} method.
  * <P>
  * <EM>After swearing, sweating, pulling my hair, banging my head repeatedly
  * into the walls and reading the java.net.Authenticator API documentation 
