@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <core.version>2.2-SNAPSHOT</core.version>
+        <core.version>2.2</core.version>
     </properties>
 
     <dependencies>
