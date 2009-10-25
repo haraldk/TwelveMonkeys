@@ -39,15 +39,15 @@ import java.io.IOException;
  * @version $Id: PSDGlobalLayerMask.java,v 1.0 May 8, 2008 5:33:48 PM haraldk Exp$
  */
 class PSDGlobalLayerMask {
-    private int mColorSpace;
-    private int mColor1;
-    private int mColor2;
-    private int mColor3;
-    private int mColor4;
-    private int mOpacity;
-    private int mKind;
+    final int mColorSpace;
+    final int mColor1;
+    final int mColor2;
+    final int mColor3;
+    final int mColor4;
+    final int mOpacity;
+    final int mKind;
 
-    PSDGlobalLayerMask(ImageInputStream pInput) throws IOException {
+    PSDGlobalLayerMask(final ImageInputStream pInput) throws IOException {
         mColorSpace = pInput.readUnsignedShort();
 
         mColor1 = pInput.readUnsignedShort();
