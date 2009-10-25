@@ -70,38 +70,42 @@ class PSDLayerBlendMode {
         builder.append(", clipping: ").append(mClipping);
         builder.append(", flags: ").append(byteToBinary(mFlags));
 
-        // TODO: Maybe the flag bits have oposite order?
+        /*
+        bit 0 = transparency protected; bit 1 = visible; bit 2 = obsolete; 
+        bit 3 = 1 for Photoshop 5.0 and later, tells if bit 4 has useful information;
+        bit 4 = pixel data irrelevant to appearance of document
+         */
         builder.append(" (");
         if ((mFlags & 0x01) != 0) {
-            builder.append("Transp. protected ");
-        }
-        else {
-            builder.append("Transp. open");
+            builder.append("Transp. protected, ");
         }
         if ((mFlags & 0x02) != 0) {
-            builder.append(", Visible");
-        }
-        else {
-            builder.append(", Hidden");
+            builder.append("Hidden, ");
         }
         if ((mFlags & 0x04) != 0) {
-            builder.append(", Obsolete bit");
+            builder.append("Obsolete bit, ");
         }
         if ((mFlags & 0x08) != 0) {
-            builder.append(", Photoshop 5 data");
+            builder.append("Photoshop 5.0 data, "); // "tells if next bit has useful information"...
         }
         if ((mFlags & 0x10) != 0) {
-            builder.append(", Pixel data irrelevant");
+            builder.append("Pixel data irrelevant, ");
         }
         if ((mFlags & 0x20) != 0) {
-            builder.append(", Unknown bit 5");
+            builder.append("Unknown bit 5, ");
         }
         if ((mFlags & 0x40) != 0) {
-            builder.append(", Unknown bit 6");
+            builder.append("Unknown bit 6, ");
         }
         if ((mFlags & 0x80) != 0) {
-            builder.append(", Unknown bit 7");
+            builder.append("Unknown bit 7, ");
         }
+
+        // Stupidity...
+        if (mFlags != 0) {
+            builder.delete(builder.length() - 2, builder.length());
+        }
+                
         builder.append(")");
 
         builder.append("]");

@@ -41,16 +41,16 @@ import java.util.Arrays;
  * @version $Id: PSDLayerInfo.java,v 1.0 Apr 29, 2008 6:01:12 PM haraldk Exp$
  */
 class PSDLayerInfo {
-    private int mTop;
-    private int mLeft;
-    private int mBottom;
-    private int mRight;
+    final int mTop;
+    final int mLeft;
+    final int mBottom;
+    final int mRight;
 
-    PSDChannelInfo[] mChannelInfo;
-    private PSDLayerBlendMode mBlendMode;
-    private PSDLayerMaskData mLayerMaskData;
-    private PSDChannelSourceDestinationRange[] mRanges;
-    private String mLayerName;
+    final PSDChannelInfo[] mChannelInfo;
+    final PSDLayerBlendMode mBlendMode;
+    final PSDLayerMaskData mLayerMaskData;
+    final PSDChannelSourceDestinationRange[] mRanges;
+    final String mLayerName;
 
     PSDLayerInfo(ImageInputStream pInput) throws IOException {
         mTop = pInput.readInt();
@@ -79,6 +79,9 @@ class PSDLayerInfo {
         int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or 36 bytes...
         if (layerMaskDataSize != 0) {
             mLayerMaskData = new PSDLayerMaskData(pInput, layerMaskDataSize);
+        }
+        else {
+            mLayerMaskData = null;
         }
 
         int layerBlendingDataSize = pInput.readInt();

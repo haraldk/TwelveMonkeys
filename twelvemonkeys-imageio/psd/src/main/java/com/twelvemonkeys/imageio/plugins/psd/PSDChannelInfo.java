@@ -36,8 +36,8 @@ package com.twelvemonkeys.imageio.plugins.psd;
  * @version $Id: PSDChannelInfo.java,v 1.0 May 6, 2008 2:46:23 PM haraldk Exp$
  */
 class PSDChannelInfo {
-    private short mChannelId;
-    long mLength;
+    final short mChannelId;
+    final long mLength;
 
     // typedef struct _CLI
     // {
