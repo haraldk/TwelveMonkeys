@@ -45,7 +45,7 @@ class PSDLayerBlendMode {
     final int mClipping; // 0: base, 1: non-base
     final int mFlags;
 
-    public PSDLayerBlendMode(ImageInputStream pInput) throws IOException {
+    public PSDLayerBlendMode(final ImageInputStream pInput) throws IOException {
         int blendModeSig = pInput.readInt();
         if (blendModeSig != PSD.RESOURCE_TYPE) { // TODO: Is this really just a resource?
             throw new IIOException("Illegal PSD Blend Mode signature, expected 8BIM: " + PSDUtil.intToStr(blendModeSig));
@@ -68,8 +68,18 @@ class PSDLayerBlendMode {
         builder.append("mode: \"").append(PSDUtil.intToStr(mBlendMode));
         builder.append("\", opacity: ").append(mOpacity);
         builder.append(", clipping: ").append(mClipping);
+        switch (mClipping) {
+            case 0:
+                builder.append(" (base)");
+                break;
+            case 1:
+                builder.append(" (non-base)");
+                break;
+            default:
+                builder.append(" (unknown)");
+                break;
+        }
         builder.append(", flags: ").append(byteToBinary(mFlags));
-
         /*
         bit 0 = transparency protected; bit 1 = visible; bit 2 = obsolete; 
         bit 3 = 1 for Photoshop 5.0 and later, tells if bit 4 has useful information;
@@ -86,7 +96,7 @@ class PSDLayerBlendMode {
             builder.append("Obsolete bit, ");
         }
         if ((mFlags & 0x08) != 0) {
-            builder.append("Photoshop 5.0 data, "); // "tells if next bit has useful information"...
+            builder.append("PS 5.0 data present, "); // "tells if next bit has useful information"...
         }
         if ((mFlags & 0x10) != 0) {
             builder.append("Pixel data irrelevant, ");
