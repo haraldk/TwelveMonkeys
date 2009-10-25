@@ -531,6 +531,65 @@ public class PSDImageReader extends ImageReaderBase {
         }
     }
 
+    private void read8bitChannelForLAyer(final int pChannel,
+                                 final byte[] pData, final int pBands, final int pBandOffset,
+                                 final ColorModel pSourceColorModel,
+                                 final byte[] pRow,
+                                 final Rectangle pSource, final Rectangle pDest,
+                                 final int pXSub, final int pYSub,
+                                 final int pWidth, final int pHeight,
+                                 final int[] pRowOffsets, final boolean pRLECompressed) throws IOException {
+
+        final boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
+        final int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+
+        for (int y = 0; y < pHeight; y++) {
+            // TODO: Extra param?
+//            int length = pRLECompressed ? pRowOffsets[pChannel * pHeight + y] : pWidth;
+            int length = pRLECompressed ? pRowOffsets[y] : pWidth;
+
+            // TODO: Sometimes need to read the line y == source.y + source.height...
+            // Read entire line, if within source region and sampling
+            if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
+                if (pRLECompressed) {
+                    DataInputStream input = PSDUtil.createPackBitsStream(mImageInput, length);
+                    try {
+                        input.readFully(pRow, 0, pWidth);
+                    }
+                    finally {
+                        input.close();
+                    }
+                }
+                else {
+                    mImageInput.readFully(pRow, 0, pWidth);
+                }
+
+                // TODO: If banded and not sub sampling/cmyk, we could just copy using System.arraycopy
+                // TODO: Destination offset...??
+                // Copy line sub sampled into real data
+                int offset = (y - pSource.y) / pYSub * pDest.width * pBands + pBandOffset;
+                for (int x = 0; x < pDest.width; x++) {
+                    byte value = pRow[pSource.x + x * pXSub];
+
+                    // CMYK values are stored inverted, but alpha is not
+                    if (isCMYK && pChannel < colorComponents) {
+                        value = (byte) (255 - value & 0xff);
+                    }
+
+                    pData[offset + x * pBands] = value;
+                }
+            }
+            else {
+                mImageInput.skipBytes(length);
+            }
+
+            if (abortRequested()) {
+                break;
+            }
+//            processImageProgress((pChannel * y * 100) / mHeader.mChannels * mHeader.mHeight);
+        }
+    }
+
     private void read1bitChannel(final int pChannel,
                                  final byte[] pData, final int pBands, final int pBandOffset,
                                  final ColorModel pSourceColorModel,
@@ -745,51 +804,165 @@ public class PSDImageReader extends ImageReaderBase {
             int layers = mImageInput.readShort();
 //            System.out.println("layers: " + layers);
 
-            PSDLayerInfo[] layerInfo = new PSDLayerInfo[Math.abs(layers)];
-            for (int i = 0; i < layerInfo.length; i++) {
-                layerInfo[i] = new PSDLayerInfo(mImageInput);
+            PSDLayerInfo[] layerInfos = new PSDLayerInfo[Math.abs(layers)];
+            for (int i = 0; i < layerInfos.length; i++) {
+                layerInfos[i] = new PSDLayerInfo(mImageInput);
 //                System.out.println("layerInfo[" + i + "]: " + layerInfo[i]);
             }
-            mLayerInfo = Arrays.asList(layerInfo);
+            mLayerInfo = Arrays.asList(layerInfos);
 
-            for (PSDLayerInfo info : layerInfo) {
-                for (PSDChannelInfo channelInfo : info.mChannelInfo) {
-                    int compression = mImageInput.readUnsignedShort();
-                    // 0: None, 1: PackBits RLE, 2: Zip, 3: Zip w/prediction
-                    switch (compression) {
-                        case PSD.COMPRESSION_NONE:
-//                            System.out.println("Compression: None");
+            mImageInput.mark();
+            ImageTypeSpecifier raw = getRawImageTypeInternal(0);
+            ImageTypeSpecifier imageType = getImageTypes(0).next();
+            mImageInput.reset();
+
+            for (PSDLayerInfo layerInfo : layerInfos) {
+                // TODO: Skip if one dimension <= 0
+                int width = layerInfo.mRight - layerInfo.mLeft;
+                int height = layerInfo.mBottom - layerInfo.mTop;
+
+                // If raw/imageType has no alpha, the layers may still have alpha...
+                if (layerInfo.mChannelInfo.length > imageType.getNumBands()) {
+
+                    // But, it could also be just the user mask...
+                    boolean userMask = false;
+                    for (PSDChannelInfo channelInfo : layerInfo.mChannelInfo) {
+                        if (channelInfo.mChannelId == -2) {
+                            userMask = true;
                             break;
-                        case PSD.COMPRESSION_RLE:
-//                            System.out.println("Compression: PackBits RLE");
-                            break;
-                        case PSD.COMPRESSION_ZIP:
-//                            System.out.println("Compression: ZIP");
-                            break;
-                        case PSD.COMPRESSION_ZIP_PREDICTON:
-//                            System.out.println("Compression: ZIP with prediction");
-                            break;
-                        default:
-                            // TODO: Do we care, as we can just skip the data?
-                            // We could issue a warning to the warning listener
-                            throw new IIOException(String.format(
-                                    "Unknown PSD compression: %d. Expected 0 (none), 1 (RLE), 2 (ZIP) or 3 (ZIP w/prediction).",
-                                    compression
-                            ));
+                        }
                     }
 
-                    // TODO: If RLE, the the image data starts with the byte counts
-                    // for all the scan lines in the channel (LayerBottom*LayerTop), with
-                    // each count stored as a two*byte value.
-                    //                if (compression == 1) {
-                    //                    mImageInput.skipBytes(channelInfo.mLength);
-                    //                }
+                    int newBandNum = layerInfo.mChannelInfo.length - (userMask ? 1 : 0);
 
-                    // TODO: Read channel image data (same format as composite image channel data)
-                    mImageInput.skipBytes(channelInfo.mLength - 2);
-                    //                if (channelInfo.mLength % 2 != 0) {
-                    //                    mImageInput.readByte();
-                    //                }
+                    // If still more channels, then create new imageType
+                    if (newBandNum > imageType.getNumBands()) {
+                        int[] offs = new int[newBandNum];
+                        for (int i = 0, offsLength = offs.length; i < offsLength; i++) {
+                            offs[i] = offsLength - i;
+                        }
+
+                        imageType = ImageTypeSpecifier.createInterleaved(imageType.getColorModel().getColorSpace(), offs, imageType.getSampleModel().getDataType(), true, false);
+                    }                    
+                }
+
+                // Create image
+                BufferedImage layer = width > 0 && height > 0 ? imageType.createBufferedImage(width, height) : null;
+
+                Rectangle source = new Rectangle(width, height);
+                Rectangle dest = source;
+
+                int xsub = 1;
+                int ysub = 1;
+
+                for (PSDChannelInfo channelInfo : layerInfo.mChannelInfo) {
+
+                    // TODO: If not explicitly needed, skip layers...
+                    if (layer == null || channelInfo.mChannelId == -2) {
+                        // channelId == 2 means "user supplied layer mask", whatever that is...
+                        mImageInput.skipBytes(channelInfo.mLength);
+                    }
+                    else {
+                        int c = channelInfo.mChannelId == -1 ? layerInfo.mChannelInfo.length - 1 : channelInfo.mChannelId;
+
+//                        System.err.println("channelInfo.mChannelId: " + channelInfo.mChannelId);
+//                        System.err.println("c: " + c);
+//                        System.err.println("layer.getRaster().getNumBands(): " + layer.getRaster().getNumBands());
+
+                        int[] offsets = null;
+
+                        int compression = mImageInput.readUnsignedShort();
+                        // 0: None, 1: PackBits RLE, 2: Zip, 3: Zip w/prediction
+                        switch (compression) {
+                            case PSD.COMPRESSION_NONE:
+//                            System.out.println("Compression: None");
+                                break;
+                            case PSD.COMPRESSION_RLE:
+//                            System.out.println("Compression: PackBits RLE");
+
+                                // NOTE: Offsets will allow us to easily skip rows before AOI
+//                            offsets = new int[mHeader.mChannels * mHeader.mHeight];
+                                offsets = new int[layerInfo.mBottom - layerInfo.mTop];
+                                for (int i = 0; i < offsets.length; i++) {
+                                    offsets[i] = mImageInput.readUnsignedShort();
+                                }
+
+                                break;
+                            case PSD.COMPRESSION_ZIP:
+                                // TODO: Skip
+                                //                            System.out.println("Compression: ZIP");
+                                break;
+                            case PSD.COMPRESSION_ZIP_PREDICTON:
+                                // TODO: Skip
+                                //                            System.out.println("Compression: ZIP with prediction");
+                                break;
+                            default:
+                                // TODO: Do we care, as we can just skip the data?
+                                // We could issue a warning to the warning listener
+                                throw new IIOException(String.format(
+                                        "Unknown PSD compression: %d. Expected 0 (none), 1 (RLE), 2 (ZIP) or 3 (ZIP w/prediction).",
+                                        compression
+                                ));
+                        }
+
+                        // TODO: If RLE, the the image data starts with the byte counts
+                        // for all the scan lines in the channel (LayerBottom-LayerTop), with
+                        // each count stored as a two*byte value.
+
+//                    System.out.println("offsets: " + Arrays.toString(offsets));
+
+                        final WritableRaster raster = layer.getRaster();
+                        // TODO: Conversion if destination cm is not compatible
+                        final ColorModel destCM = layer.getColorModel();
+
+                        // TODO: This raster is 3-5 times longer than needed, depending on number of channels...
+                        ColorModel sourceCM = raw.getColorModel();
+//                    final WritableRaster rowRaster = sourceCM.createCompatibleWritableRaster(mHeader.mWidth, 1);
+                        final WritableRaster rowRaster = sourceCM.createCompatibleWritableRaster(layer.getWidth(), 1);
+
+//                    final int channels = rowRaster.getNumBands();
+                        final boolean banded = raster.getDataBuffer().getNumBanks() > 1;
+                        final int interleavedBands = banded ? 1 : raster.getNumBands();
+
+//                    for (int c = 0; c < channels; c++) {
+//                    for (int c = 0; c < info.mChannelInfo.length; c++) {
+                        int bandOffset = banded ? 0 : interleavedBands - 1 - c;
+
+                        switch (mHeader.mBits) {
+                            case 1:
+                                byte[] row1 = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                                DataBufferByte buffer1 = (DataBufferByte) raster.getDataBuffer();
+                                byte[] data1 = banded ? buffer1.getData(c) : buffer1.getData();
+
+                                read1bitChannel(c, data1, interleavedBands, bandOffset, sourceCM, row1, source, dest, xsub, ysub, offsets, compression == PSD.COMPRESSION_RLE);
+                                break;
+                            case 8:
+                                byte[] row8 = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                                DataBufferByte buffer8 = (DataBufferByte) raster.getDataBuffer();
+                                byte[] data8 = banded ? buffer8.getData(c) : buffer8.getData();
+
+                                read8bitChannelForLAyer(c, data8, interleavedBands, bandOffset, sourceCM, row8, source, dest, xsub, ysub, layer.getWidth(), layer.getHeight(), offsets, compression == PSD.COMPRESSION_RLE);
+                                break;
+                            case 16:
+                                short[] row16 = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
+                                DataBufferUShort buffer16 = (DataBufferUShort) raster.getDataBuffer();
+                                short[] data16 = banded ? buffer16.getData(c) : buffer16.getData();
+
+                                read16bitChannel(c, data16, interleavedBands, bandOffset, sourceCM, row16, source, dest, xsub, ysub, offsets, compression == PSD.COMPRESSION_RLE);
+                                break;
+                            default:
+                                throw new IIOException("Unknown PSD bit depth: " + mHeader.mBits);
+                        }
+
+                        if (abortRequested()) {
+                            break;
+                        }
+                    }
+                }
+
+//                System.err.println("layer: " + layer);
+                if (layer != null) {
+                    showIt(layer, layerInfo.mLayerName + " " + layerInfo.mBlendMode.toString());
                 }
             }
 
@@ -798,8 +971,8 @@ public class PSDImageReader extends ImageReaderBase {
 
             long read = mImageInput.getStreamPosition() - pos;
 //            System.out.println("layerInfoLength: " + layerInfoLength);
-//            System.out.println("layer info read: " + (read - 4)); // - 4 for the layerInfoLength field itself
-            long diff = layerInfoLength - (read - 4);
+//            System.out.println("layer info read: " + (read - 4));
+            long diff = layerInfoLength - (read - 4); // - 4 for the layerInfoLength field itself
 //            System.out.println("diff: " + diff);
             mImageInput.skipBytes(diff);
 
@@ -939,14 +1112,14 @@ public class PSDImageReader extends ImageReaderBase {
         ImageInputStream stream = ImageIO.createImageInputStream(file);
         imageReader.setInput(stream);
         imageReader.readHeader();
-        System.out.println("imageReader.mHeader: " + imageReader.mHeader);
+//        System.out.println("imageReader.mHeader: " + imageReader.mHeader);
 
         imageReader.readImageResources(true);
-        System.out.println("imageReader.mImageResources: " + imageReader.mImageResources);
+//        System.out.println("imageReader.mImageResources: " + imageReader.mImageResources);
 
         imageReader.readLayerAndMaskInfo(true);
         System.out.println("imageReader.mLayerInfo: " + imageReader.mLayerInfo);
-        System.out.println("imageReader.mGlobalLayerMask: " + imageReader.mGlobalLayerMask);
+//        System.out.println("imageReader.mGlobalLayerMask: " + imageReader.mGlobalLayerMask);
 
         if (imageReader.hasThumbnails(0)) {
             int thumbnails = imageReader.getNumThumbnails(0);
