@@ -75,32 +75,51 @@ public class XMLSerializer {
         mContext = new SerializationContext();
     }
 
-    public void setIndentation(String pIndent) {
+    public final void setIndentation(String pIndent) {
         mContext.indent = pIndent != null ? pIndent : "  ";
     }
 
-    public void setStripComments(boolean pStrip) {
+    public final void setStripComments(boolean pStrip) {
         mContext.stripComments = pStrip;
     }
 
+    /**
+     * Serializes the entire document, along with the XML declaration
+     * ({@code &lt;?xml version="1.0" encoding="..."?&gt;}).
+     *
+     * @param pDocument the document to serialize.
+     */
     public void serialize(final Document pDocument) {
+        serialize(pDocument, true);
+    }
+
+    /**
+     * Serializes the entire sub tree starting at {@code pRootNode}, along with an optional XML declaration
+     * ({@code &lt;?xml version="1.0" encoding="..."?&gt;}).
+     *
+     * @param pRootNode the root node to serialize.
+     * @param pWriteXMLDeclaration {@code true} if the XML declaration should be included, otherwise {@code false}.
+     */
+    public void serialize(final Node pRootNode, final boolean pWriteXMLDeclaration) {
         PrintWriter out = new PrintWriter(new OutputStreamWriter(mOutput, mEncoding));
         try {
-            writeXMLDeclararion(out);
-            writeXML(out, pDocument, mContext.copy());
+            if (pWriteXMLDeclaration) {
+                writeXMLDeclaration(out);
+            }
+            writeXML(out, pRootNode, mContext.copy());
         }
         finally {
             out.flush();
         }
     }
 
-    private void writeXMLDeclararion(final PrintWriter pOut) {
+    private void writeXMLDeclaration(final PrintWriter pOut) {
         pOut.print("<?xml version=\"1.0\" encoding=\"");
         pOut.print(mEncoding.name());
         pOut.println("\"?>");
     }
 
-    private void writeXML(final PrintWriter pOut, final Document pDocument, final SerializationContext pContext) {
+    private void writeXML(final PrintWriter pOut, final Node pDocument, final SerializationContext pContext) {
         writeNodeRecursive(pOut, pDocument, pContext);
     }
 
@@ -183,7 +202,7 @@ public class XMLSerializer {
                 else if ("default".equals(space.getNodeValue())) {
                     pContext.preserveSpace = false;
                 }
-                // No other values are allowed per spec, ingore
+                // No other values are allowed per spec, ignore
             }
         }
     }
