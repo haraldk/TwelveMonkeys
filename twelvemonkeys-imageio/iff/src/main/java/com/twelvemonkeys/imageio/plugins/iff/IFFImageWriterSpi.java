@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
@@ -44,12 +47,17 @@ import java.util.Locale;
 public class IFFImageWriterSpi extends ImageWriterSpi {
 
     /**
-     * Creates an IFFImageWriterSpi
+     * Creates an {@code IFFImageWriterSpi}.
      */
     public IFFImageWriterSpi() {
+        this(IIOUtil.getProviderInfo(IFFImageWriterSpi.class));
+
+    }
+
+    private IFFImageWriterSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "$Revision: 1.0 $",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"iff", "IFF"},
                 new String[]{"iff", "lbm", "ham", "ham8", "ilbm"},
                 new String[]{"image/iff", "image/x-iff"},

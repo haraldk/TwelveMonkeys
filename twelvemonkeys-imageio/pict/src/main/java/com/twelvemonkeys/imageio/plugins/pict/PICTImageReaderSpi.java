@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -45,12 +48,16 @@ import java.util.Locale;
 public class PICTImageReaderSpi extends ImageReaderSpi {
 
     /**
-     * Creates an PICTImageReaderSpi
+     * Creates a {@code PICTImageReaderSpi}.
      */
     public PICTImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(PICTImageReaderSpi.class));
+    }
+
+    private PICTImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "2.2",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"pct", "PCT", "pict", "PICT"},
                 new String[]{"pct", "pict"},
                 new String[]{"image/pict", "image/x-pict"},

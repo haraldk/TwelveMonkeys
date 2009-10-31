@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.ico;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -43,9 +46,13 @@ import java.util.Locale;
 public class CURImageReaderSpi extends ImageReaderSpi {
 
     public CURImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(CURImageReaderSpi.class));
+    }
+
+    private CURImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "2.1",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"cur", "CUR"},
                 new String[]{"cur"},
                 new String[]{

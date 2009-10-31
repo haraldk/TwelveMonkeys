@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -46,12 +47,16 @@ import java.util.Locale;
 public class TIFFImageWriterSpi extends ImageWriterSpi {
 
     /**
-     * Creates a TIFFImageWriterSpi.
+     * Creates a {@code TIFFImageWriterSpi}.
      */
     public TIFFImageWriterSpi() {
+        this(IIOUtil.getProviderInfo(TIFFImageWriterSpi.class));
+    }
+
+    private TIFFImageWriterSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys", // Vendor name
-                "2.0", // Version
+                pProviderInfo.getVendorName(), // Vendor name
+                pProviderInfo.getVersion(), // Version
                 new String[]{"tiff", "TIFF"}, // Names
                 new String[]{"tif", "tiff"}, // Suffixes
                 new String[]{"image/tiff", "image/x-tiff"}, // Mime-types

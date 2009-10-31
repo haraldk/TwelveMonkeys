@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
@@ -44,12 +47,16 @@ import java.util.Locale;
 public class PICTImageWriterSpi extends ImageWriterSpi {
 
     /**
-     * Creates an PICTImageWriterSpi
+     * Creates a {@code PICTImageWriterSpi}.
      */
     public PICTImageWriterSpi() {
+        this(IIOUtil.getProviderInfo(PICTImageWriterSpi.class));
+    }
+
+    private PICTImageWriterSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "2.0",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"pct", "PCT",
                         "pict", "PICT"},
                 new String[]{"pct", "pict"},

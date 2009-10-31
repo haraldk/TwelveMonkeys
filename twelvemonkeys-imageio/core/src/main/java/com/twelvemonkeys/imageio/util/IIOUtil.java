@@ -1,6 +1,7 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
 
 import javax.imageio.IIOParam;
 import javax.imageio.spi.IIOServiceProvider;
@@ -61,21 +62,6 @@ public final class IIOUtil {
         return new BufferedOutputStream(new IIOOutputStreamAdapter(pStream));
     }
 
-    /**
-     * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
-     *
-     * @param pRegistry the registry to unregister from
-     * @param pProvider the provider to unregister
-     * @param pCategory the category to unregister from
-     *
-     * @deprecated
-     */
-    public static <T> void deregisterProvider(final ServiceRegistry pRegistry, final IIOServiceProvider pProvider, final Class<T> pCategory) {
-        // http://www.ibm.com/developerworks/java/library/j-jtp04298.html
-        // TODO: Consider placing this method in a ImageReaderSpiBase class or similar
-        pRegistry.deregisterServiceProvider(pCategory.cast(pProvider), pCategory);
-    }
-
     public static Image fakeSubsampling(final Image pImage, final IIOParam pParam) {
         if (pImage == null) {
             return null;
@@ -134,4 +120,30 @@ public final class IIOUtil {
 
         return pImage;
     }
+
+    /**
+     * Creates a {@link ProviderInfo} instance for the given service provider.
+     *
+     * @param pProviderClass the provider class to get info for.
+     * @return the newly created {@link ProviderInfo}.
+     */
+    public static ProviderInfo getProviderInfo(final Class<? extends IIOServiceProvider> pProviderClass) {
+        return new ProviderInfo(pProviderClass.getPackage());
+    }
+
+    /**
+     * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
+     *
+     * @param pRegistry the registry to unregister from
+     * @param pProvider the provider to unregister
+     * @param pCategory the category to unregister from
+     *
+     * @deprecated
+     */
+    public static <T> void deregisterProvider(final ServiceRegistry pRegistry, final IIOServiceProvider pProvider, final Class<T> pCategory) {
+        // http://www.ibm.com/developerworks/java/library/j-jtp04298.html
+        // TODO: Consider placing this method in a ImageReaderSpiBase class or similar
+        pRegistry.deregisterServiceProvider(pCategory.cast(pProvider), pCategory);
+    }
+
 }

@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
 import com.twelvemonkeys.lang.SystemUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
@@ -50,12 +51,16 @@ public class TIFFImageReaderSpi extends ImageReaderSpi {
     final static boolean TIFF_CLASSES_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader");
 
     /**
-     * Creates an SVGImageReaderSpi
+     * Creates a {@code TIFFImageReaderSpi}.
      */
     public TIFFImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(TIFFImageReaderSpi.class));    
+    }
+
+    private TIFFImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys", // Vendor name
-                "2.0", // Version
+                pProviderInfo.getVendorName(), // Vendor name
+                pProviderInfo.getVersion(), // Version
                 TIFF_CLASSES_AVAILABLE ? new String[]{"tiff", "TIFF"} : new String[] {""}, // Names
                 TIFF_CLASSES_AVAILABLE ? new String[]{"tiff", "tif"} : null, // Suffixes
                 TIFF_CLASSES_AVAILABLE ? new String[]{"image/tiff", "image/x-tiff"} : null, // Mime-types

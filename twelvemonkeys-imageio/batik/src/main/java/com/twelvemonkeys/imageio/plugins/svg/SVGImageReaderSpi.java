@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.svg;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
 import com.twelvemonkeys.lang.SystemUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
@@ -50,12 +51,16 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
     private final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
 
     /**
-     * Creates an SVGImageReaderSpi
+     * Creates an {@code SVGImageReaderSpi}.
      */
     public SVGImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(SVGImageReaderSpi.class));
+    }
+
+    private SVGImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys", // Vendor name
-                "2.0",           // Version
+                pProviderInfo.getVendorName(), // Vendor name
+                pProviderInfo.getVersion(),           // Version
                 SVG_READER_AVAILABLE ? new String[]{"svg", "SVG"} : new String[]{""}, // Names
                 SVG_READER_AVAILABLE ? new String[]{"svg"} : null, // Suffixes
                 SVG_READER_AVAILABLE ? new String[]{"image/svg", "image/x-svg", "image/svg+xml", "image/svg-xml"} : null, // Mime-types

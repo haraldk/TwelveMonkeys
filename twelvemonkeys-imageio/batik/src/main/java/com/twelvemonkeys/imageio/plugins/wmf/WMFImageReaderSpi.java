@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.wmf;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
 import com.twelvemonkeys.lang.SystemUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
@@ -51,12 +52,16 @@ public class WMFImageReaderSpi extends ImageReaderSpi {
     private final static boolean WMF_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
 
     /**
-     * Creates an SVGImageReaderSpi
+     * Creates a {@code WMFImageReaderSpi}.
      */
     public WMFImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(WMFImageReaderSpi.class));
+    }
+
+    private WMFImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys", // Vendor name
-                "2.0", // Version
+                pProviderInfo.getVendorName(), // Vendor name
+                pProviderInfo.getVersion(), // Version
                 WMF_READER_AVAILABLE ? new String[]{"wmf", "WMF"} : new String[]{""}, // Names
                 WMF_READER_AVAILABLE ? new String[]{"wmf", "emf"} : null, // Suffixes
                 WMF_READER_AVAILABLE ? new String[]{"application/x-msmetafile", "image/x-wmf"} : null, // Mime-types

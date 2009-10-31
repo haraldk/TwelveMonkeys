@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 
 import javax.imageio.ImageReader;
@@ -50,12 +52,16 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
     private ImageReaderSpi mJPEGProvider;
 
     /**
-     * Creates an IFFImageReaderSpi
+     * Creates a {@code ThumbsDBImageReaderSpi}.
      */
     public ThumbsDBImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(ThumbsDBImageReaderSpi.class));
+    }
+
+    private ThumbsDBImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "2.0",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"thumbs", "THUMBS", "Thumbs DB"},
                 new String[]{"db"},
                 new String[]{"image/x-thumbs-db", "application/octet-stream"}, // TODO: Check IANA et al...

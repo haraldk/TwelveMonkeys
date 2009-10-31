@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -46,12 +49,16 @@ public class IFFImageReaderSpi extends ImageReaderSpi {
     static IFFImageReaderSpi mSharedInstance;
 
     /**
-     * Creates an IFFImageReaderSpi
+     * Creates an {@code IFFImageReaderSpi}.
      */
     public IFFImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(IFFImageReaderSpi.class));
+    }
+
+    private IFFImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "2.0",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"iff", "IFF"},
                 new String[]{"iff", "lbm", "ham", "ham8", "ilbm"},
                 new String[]{"image/iff", "image/x-iff"},

@@ -28,9 +28,12 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+
+import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.ImageReader;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -44,16 +47,20 @@ import java.util.Locale;
 public class PSDImageReaderSpi extends ImageReaderSpi {
 
     /**
-     * Creates an PSDImageReaderSpi
+     * Creates a {@code PSDImageReaderSpi}.
      */
     public PSDImageReaderSpi() {
+        this(IIOUtil.getProviderInfo(PSDImageReaderSpi.class));
+    }
+
+    private PSDImageReaderSpi(final ProviderInfo pProviderInfo) {
         super(
-                "TwelveMonkeys",
-                "2.0",
+                pProviderInfo.getVendorName(),
+                pProviderInfo.getVersion(),
                 new String[]{"psd", "PSD"},
                 new String[]{"psd"},
                 new String[]{
-                        "application/vnd.adobe.photoshop", // This one seems official, used in XMP 
+                        "application/vnd.adobe.photoshop", // This one seems official, used in XMP
                         "image/x-psd", "application/x-photoshop", "image/x-photoshop"
                 },
                 "com.twelvemkonkeys.imageio.plugins.psd.PSDImageReader",
@@ -65,7 +72,7 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
         );
     }
 
-    public boolean canDecodeInput(Object pSource) throws IOException {
+    public boolean canDecodeInput(final Object pSource) throws IOException {
         if (!(pSource instanceof ImageInputStream)) {
             return false;
         }
@@ -82,11 +89,11 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
         }
     }
 
-    public ImageReader createReaderInstance(Object pExtension) throws IOException {
+    public ImageReader createReaderInstance(final Object pExtension) throws IOException {
         return new PSDImageReader(this);
     }
 
-    public String getDescription(Locale pLocale) {
+    public String getDescription(final Locale pLocale) {
         return "Adobe Photoshop Document (PSD) image reader";
     }
 }
