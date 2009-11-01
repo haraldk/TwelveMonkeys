@@ -48,13 +48,14 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * ImageReaderBase
+ * Abstract base class for image readers.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: ImageReaderBase.java,v 1.0 Sep 20, 2007 5:28:37 PM haraldk Exp$
  */
 public abstract class ImageReaderBase extends ImageReader {
+
     /**
      * For convenience. Only set if the input is an {@code ImageInputStream}.
      * @see #setInput(Object, boolean, boolean)
@@ -129,21 +130,21 @@ public abstract class ImageReaderBase extends ImageReader {
     protected abstract void resetMembers();
 
     /**
-     * Defaul implementation that always return {@code null}.
+     * Default implementation that always returns {@code null}.
      *
-     * @param pImageIndex ignored, unless overriden
-     * @return {@code null}, unless overriden
-     * @throws IOException never, unless overriden.
+     * @param pImageIndex ignored, unless overridden
+     * @return {@code null}, unless overridden
+     * @throws IOException never, unless overridden.
      */
     public IIOMetadata getImageMetadata(int pImageIndex) throws IOException {
         return null;
     }
 
     /**
-     * Defaul implementation that always return {@code null}.
+     * Default implementation that always returns {@code null}.
      *
-     * @return {@code null}, unless overriden
-     * @throws IOException never, unless overriden.
+     * @return {@code null}, unless overridden
+     * @throws IOException never, unless overridden.
      */
     public IIOMetadata getStreamMetadata() throws IOException {
         return null;
@@ -152,9 +153,9 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Default implementation that always returns {@code 1}.
      *
-     * @param pAllowSearch ignored, unless overriden
-     * @return {@code 1}, unless overriden
-     * @throws IOException never, unless overriden
+     * @param pAllowSearch ignored, unless overridden
+     * @return {@code 1}, unless overridden
+     * @throws IOException never, unless overridden
      */
     public int getNumImages(boolean pAllowSearch) throws IOException {
         assertInput();

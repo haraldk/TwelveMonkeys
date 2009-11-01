@@ -13,6 +13,9 @@ import com.twelvemonkeys.lang.Validate;
  * @see <a href="http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest">JAR Manifest</a>
  */
 public class ProviderInfo {
+    // TODO: Consider reading the META-INF/MANIFEST.MF from the class path using java.util.jar.Manifest.
+    // Use the manifest that is located in the same class path folder as the package.
+
     private final String mVendorName;
     private final String mVersion;
 

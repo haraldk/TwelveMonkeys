@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
@@ -39,13 +40,13 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 
 /**
- * ImageWriterBase
+ * Abstract base class for image writers.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: ImageWriterBase.java,v 1.0 Sep 24, 2007 12:22:28 AM haraldk Exp$
  */
-public abstract class ImageWriterBase extends javax.imageio.ImageWriter {
+public abstract class ImageWriterBase extends ImageWriter {
     protected ImageOutputStream mImageOutput;
 
     /**
@@ -95,7 +96,7 @@ public abstract class ImageWriterBase extends javax.imageio.ImageWriter {
      * @param pParam igonred.
      * @return {@code null}.
      */
-    public IIOMetadata getDefaultStreamMetadata(javax.imageio.ImageWriteParam pParam) {
+    public IIOMetadata getDefaultStreamMetadata(ImageWriteParam pParam) {
         return null;
     }
 
@@ -116,7 +117,7 @@ public abstract class ImageWriterBase extends javax.imageio.ImageWriter {
 
     /**
      * Utility method for getting the area of interest (AOI) of an image.
-     * The AOI is defined by the {@link IIOParam#setSourceRegion(java.awt.Rectangle)}
+     * The AOI is defined by the {@link javax.imageio.IIOParam#setSourceRegion(java.awt.Rectangle)}
      * method.
      * <p/>
      * Note: If it is possible for the reader to read the AOI directly, such a
@@ -136,7 +137,7 @@ public abstract class ImageWriterBase extends javax.imageio.ImageWriter {
     /**
      * Utility method for getting the subsampled image.
      * The subsampling is defined by the
-     * {@link IIOParam#setSourceSubsampling(int, int, int, int)}
+     * {@link javax.imageio.IIOParam#setSourceSubsampling(int, int, int, int)}
      * method.
      * <p/>
      * NOTE: This method does not take the subsampling offsets into
