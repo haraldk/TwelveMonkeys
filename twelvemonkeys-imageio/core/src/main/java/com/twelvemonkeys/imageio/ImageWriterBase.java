@@ -47,6 +47,11 @@ import java.io.IOException;
  * @version $Id: ImageWriterBase.java,v 1.0 Sep 24, 2007 12:22:28 AM haraldk Exp$
  */
 public abstract class ImageWriterBase extends ImageWriter {
+
+    /**
+     * For convenience. Only set if the output is an {@code ImageInputStream}.
+     * @see #setOutput(Object)
+     */
     protected ImageOutputStream mImageOutput;
 
     /**
@@ -60,8 +65,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
      *
-     * @param pProvider the {@code ImageWriterSpi} that
-     *                            is constructing this object, or {@code null}.
+     * @param pProvider the {@code ImageWriterSpi} that is constructing this object, or {@code null}.
      */
     protected ImageWriterBase(final ImageWriterSpi pProvider) {
         super(pProvider);
@@ -72,8 +76,9 @@ public abstract class ImageWriterBase extends ImageWriter {
     }
 
     @Override
-    public void setOutput(Object pOutput) {
+    public void setOutput(final Object pOutput) {
         super.setOutput(pOutput);
+
         if (pOutput instanceof ImageOutputStream) {
             mImageOutput = (ImageOutputStream) pOutput;
         }
@@ -93,10 +98,10 @@ public abstract class ImageWriterBase extends ImageWriter {
     /**
      * Returns {@code null}
      *
-     * @param pParam igonred.
+     * @param pParam ignored.
      * @return {@code null}.
      */
-    public IIOMetadata getDefaultStreamMetadata(ImageWriteParam pParam) {
+    public IIOMetadata getDefaultStreamMetadata(final ImageWriteParam pParam) {
         return null;
     }
 
@@ -104,14 +109,14 @@ public abstract class ImageWriterBase extends ImageWriter {
      * Returns {@code null}
      *
      * @param pInData ignored.
-     * @param pParam igonred.
+     * @param pParam ignored.
      * @return {@code null}.
      */
-    public IIOMetadata convertStreamMetadata(IIOMetadata pInData, ImageWriteParam pParam) {
+    public IIOMetadata convertStreamMetadata(final IIOMetadata pInData, final ImageWriteParam pParam) {
         return null;
     }
 
-    protected static Rectangle getSourceRegion(ImageWriteParam pParam, int pWidth, int pHeight) {
+    protected static Rectangle getSourceRegion(final ImageWriteParam pParam, final int pWidth, final int pHeight) {
         return IIOUtil.getSourceRegion(pParam, pWidth, pHeight);
     }
 
@@ -130,7 +135,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * region), or the original image, if no source region was set, or
      * {@code pParam} was {@code null}
      */
-    protected static BufferedImage fakeAOI(BufferedImage pImage, ImageWriteParam pParam) {
+    protected static BufferedImage fakeAOI(final BufferedImage pImage, final ImageWriteParam pParam) {
         return IIOUtil.fakeAOI(pImage, getSourceRegion(pParam, pImage.getWidth(), pImage.getHeight()));
     }
 
@@ -153,7 +158,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * original image, if no subsampling was specified, or
      * {@code pParam} was {@code null}
      */
-    protected static Image fakeSubsampling(Image pImage, ImageWriteParam pParam) {
+    protected static Image fakeSubsampling(final Image pImage, final ImageWriteParam pParam) {
         return IIOUtil.fakeSubsampling(pImage, pParam);
     }
 }

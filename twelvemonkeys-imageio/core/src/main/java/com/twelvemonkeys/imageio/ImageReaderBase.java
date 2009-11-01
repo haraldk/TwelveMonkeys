@@ -72,11 +72,10 @@ public abstract class ImageReaderBase extends ImageReader {
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
      *
-     * @param pOriginatingProvider the {@code ImageReaderSpi} that is
-     *                            invoking this constructor, or {@code null}.
+     * @param pProvider the {@code ImageReaderSpi} that is invoking this constructor, or {@code null}.
      */
-    protected ImageReaderBase(final ImageReaderSpi pOriginatingProvider) {
-        super(pOriginatingProvider);
+    protected ImageReaderBase(final ImageReaderSpi pProvider) {
+        super(pProvider);
     }
 
     /**
@@ -98,7 +97,7 @@ public abstract class ImageReaderBase extends ImageReader {
      * @see ImageInputStream
      */
     @Override
-    public void setInput(Object pInput, boolean pSeekForwardOnly, boolean pIgnoreMetadata) {
+    public void setInput(final Object pInput, final boolean pSeekForwardOnly, final boolean pIgnoreMetadata) {
         resetMembers();
         super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
         if (pInput instanceof ImageInputStream) {
@@ -168,8 +167,7 @@ public abstract class ImageReaderBase extends ImageReader {
      * @param pIndex the image index
      *
      * @throws java.io.IOException if an error occurs during reading
-     * @throws IndexOutOfBoundsException if not
-     * <tt>minIndex <= pIndex < numImages</tt>
+     * @throws IndexOutOfBoundsException if not {@code minIndex <= pIndex < numImages}
      */
     protected void checkBounds(int pIndex) throws IOException {
         assertInput();
@@ -217,10 +215,8 @@ public abstract class ImageReaderBase extends ImageReader {
      * @throws IllegalArgumentException if {@code pTypes}
      * is {@code null} or empty, or if an object not of type
      * {@code ImageTypeSpecifier} is retrieved from it.
-     * Or, if the resulting image would
-     * have a width or height less than 1,
-     * or if the product of
-     * {@code pWidth} and {@code pHeight} is greater than
+     * Or, if the resulting image would have a width or height less than 1,
+     * or if the product of {@code pWidth} and {@code pHeight} is greater than
      * {@code Integer.MAX_VALUE}.
      */
     public static BufferedImage getDestination(final ImageReadParam pParam, final Iterator<ImageTypeSpecifier> pTypes,
