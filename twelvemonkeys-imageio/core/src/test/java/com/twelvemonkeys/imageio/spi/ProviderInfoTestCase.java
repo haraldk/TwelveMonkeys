@@ -2,6 +2,8 @@ package com.twelvemonkeys.imageio.spi;
 
 import junit.framework.TestCase;
 
+import java.net.URL;
+
 /**
  * ProviderInfoTestCase
  *
@@ -24,23 +26,20 @@ public class ProviderInfoTestCase extends TestCase {
         }
     }
 
-    public void testGetVendorUnknownPackage() {
-        // TODO: FixMe: This test will fail if for some reason JUnit adds manifest info to their JAR..
-        ProviderInfo info = new ProviderInfo(Package.getPackage("junit.framework"));
+    public void testGetVendorNonJARPackage() {
+        ProviderInfo info = new ProviderInfo(mockNonJARPackage("org.foo"));
 
         String vendor = info.getVendorName();
         assertNotNull(vendor);
-        assertEquals("junit.framework", vendor);
+        assertEquals("org.foo", vendor);
 
         String version = info.getVersion();
         assertNotNull(version);
         assertEquals("DEV", version);
     }
 
-    public void testGetVendorTMPackage() {
-        // TODO: FixMe: This test will fail if for some reason the tests are run from within a JAR-file,
-        // and depends on implementation details. 
-        ProviderInfo info = new ProviderInfo(getClass().getPackage());
+    public void testGetVendorNonJARTMPackage() {
+        ProviderInfo info = new ProviderInfo(mockNonJARPackage("com.twelvemonkeys"));
 
         String vendor = info.getVendorName();
         assertNotNull(vendor);
@@ -51,25 +50,48 @@ public class ProviderInfoTestCase extends TestCase {
         assertEquals("DEV", version);
     }
 
-    public void testGetVendorKnownPackage() {
-        // TODO: FixMe: This test depends on implementation details, and may fail on various JRE's...
-        ProviderInfo info = new ProviderInfo(Package.getPackage("java.util"));
+    public void testGetVendorKnownJARPackage() {
+        ProviderInfo info = new ProviderInfo(mockJARPackage("com.acme", "1.7u4-BETA-b39", "Acme"));
 
         String vendor = info.getVendorName();
         assertNotNull(vendor);
-        assertFalse("".equals(vendor));
-
-        // NOTE: Does not work: assertEquals(System.getProperty("java.vendor"), vendor);
-        assertFalse("TwelveMonkeys".equals(vendor));
-        assertFalse("java.util".equals(vendor));
+        assertEquals("Acme", vendor);
 
         String version = info.getVersion();
         assertNotNull(version);
-        assertFalse("".equals(version));
-        assertFalse("DEV".equals(version));
-        
-        // Is this safe to assume?
-        String jreVersion = System.getProperty("java.version");
-        assertTrue(jreVersion.equals(version) || jreVersion.startsWith(version) || version.startsWith(jreVersion));
+        assertEquals("1.7u4-BETA-b39", version);
+    }
+
+    private Package mockNonJARPackage(final String pName) {
+        return new MockClassLoader().mockPackage(
+                pName,
+                null, null, null,
+                null, null, null,
+                null
+        );
+    }
+
+    private Package mockJARPackage(final String pName, final String pImplVersion, final String pImplVendor) {
+        return new MockClassLoader().mockPackage(
+                pName,
+                "The almighty specification", "1.0", "Acme Inc",
+                "The buggy implementation", pImplVersion, pImplVendor,
+                null
+        );
+    }
+
+    private static class MockClassLoader extends ClassLoader {
+        protected MockClassLoader() {
+            super(null);
+        }
+
+        public Package mockPackage(String name, String specTitle, String specVersion, String specVendor, String implTitle, String implVersion, String implVendor, URL sealBase) throws IllegalArgumentException {
+            return definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
+        }
+
+        @Override
+        protected Package getPackage(String name) {
+            return null; // Allow re-createing packages
+        }
     }
 }
