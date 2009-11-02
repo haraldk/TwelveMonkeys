@@ -53,10 +53,10 @@ public class CURImageReader extends ICOImageReader {
     }
 
     /**
-     * Returns the hotspot location for the cursor.
+     * Returns the hot spot location for the cursor.
      *
      * @param pImageIndex the index of the cursor in the current input.
-     * @return the hotspot location for the cursor
+     * @return the hot spot location for the cursor
      *
      * @throws IOException if an I/O exception occurs during reading of image meta data
      * @throws IndexOutOfBoundsException if {@code pImageIndex} is less than {@code 0} or greater than/equal to

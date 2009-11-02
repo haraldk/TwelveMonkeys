@@ -53,7 +53,7 @@ import java.util.List;
 /**
  * ImageReader for Microsoft Windows ICO (icon) format.
  * 1, 4, 8 bit palette support with bitmask transparency, and 16, 24 and 32 bit
- * true color support with alpha. Also supports Windows Vista PNG ecoded icons.
+ * true color support with alpha. Also supports Windows Vista PNG encoded icons.
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
