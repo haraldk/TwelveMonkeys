@@ -26,7 +26,7 @@ public class ProviderInfoTestCase extends TestCase {
         }
     }
 
-    public void testGetVendorNonJARPackage() {
+    public void testGetVendorUnknownNonJARPackage() {
         ProviderInfo info = new ProviderInfo(mockNonJARPackage("org.foo"));
 
         String vendor = info.getVendorName();
@@ -35,7 +35,7 @@ public class ProviderInfoTestCase extends TestCase {
 
         String version = info.getVersion();
         assertNotNull(version);
-        assertEquals("DEV", version);
+        assertEquals("Unspecified", version);
     }
 
     public void testGetVendorNonJARTMPackage() {

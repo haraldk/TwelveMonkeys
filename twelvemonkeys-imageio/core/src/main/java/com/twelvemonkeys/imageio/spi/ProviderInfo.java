@@ -34,12 +34,17 @@ public class ProviderInfo {
         mVendorName = vendor != null ? vendor : fakeVendor(pPackage);
 
         String version = pPackage.getImplementationVersion();
-        mVersion = version != null ? version : "DEV";
+        mVersion = version != null ? version : fakeVersion(pPackage);
     }
 
     private static String fakeVendor(final Package pPackage) {
         String name = pPackage.getName();
         return name.startsWith("com.twelvemonkeys") ? "TwelveMonkeys" : name;
+    }
+
+    private String fakeVersion(Package pPackage) {
+        String name = pPackage.getName();
+        return name.startsWith("com.twelvemonkeys") ? "DEV" : "Unspecified";
     }
 
     /**
