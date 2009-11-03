@@ -28,29 +28,4 @@
             <classifier>tests</classifier>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <!-- TODO: Make default -->
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.2</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <!--<mainClass>com.mycompany.app.App</mainClass>-->
-                            <packageName>com.twelvemonkeys.imageio.plugins.psd</packageName>
-                        </manifest>
-                        <manifestEntries>
-                            <Implementation-Title>${project.name}</Implementation-Title>
-                            <Implementation-Vendor>TwelveMonkeys</Implementation-Vendor>
-                            <Implementation-Version>${project.version}</Implementation-Version>
-                            <Implementation-URL>https://twelvemonkeys-imageio.dev.java.net/</Implementation-URL>
-                        </manifestEntries>
-                    </archive>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
