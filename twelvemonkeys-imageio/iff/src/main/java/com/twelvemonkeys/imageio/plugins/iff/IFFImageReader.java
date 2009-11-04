@@ -91,6 +91,16 @@ import java.util.List;
  * @see <a href="http://en.wikipedia.org/wiki/ILBM">Wikipedia: IFF ILBM</a>
  */
 public class IFFImageReader extends ImageReaderBase {
+    // http://home.comcast.net/~erniew/lwsdk/docs/filefmts/ilbm.html
+    // http://www.fileformat.info/format/iff/spec/7866a9f0e53c42309af667c5da3bd426/view.htm
+    //   - Contains definitions of some "new" chunks, as well as alternative FORM types
+
+    // TODO: One other existing deep bit ordering that you may encounter is the 21-bit
+    // NewTek format.
+    //
+    // NewTek deep ILBM bit ordering:
+    // saved first ------------------------------------------------------> saved last
+    // R7 G7 B7  R6 G6 B6  R5 G5 B5  R4 G4 B4  R3 G3 B3  R2 G2 B2  R1 G1 B1  R0 G0 B0
 
     private BMHDChunk mHeader;
     private CMAPChunk mColorMap;
@@ -294,9 +304,8 @@ public class IFFImageReader extends ImageReaderBase {
                 // 8 bit
                 // May be HAM8
                 if (!isHAM()) {
-                    // TODO: This is probably a bug, as mColorMap is null in case of gray..
-                    IndexColorModel cm = mColorMap.getIndexColorModel();
-                    if (cm != null) {
+                    if (mColorMap != null) {
+                        IndexColorModel cm = mColorMap.getIndexColorModel();
                         specifier = IndexedImageTypeSpecifier.createFromIndexColorModel(cm);
                         break;
                     }
@@ -533,7 +542,8 @@ public class IFFImageReader extends ImageReaderBase {
         if (destinationBands != null || offset.x != 0 || offset.y != 0) {
             destination = destination.createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), offset.x, offset.y, destinationBands);
         }
-        WritableRaster raster = mImage.getRaster().createCompatibleWritableRaster(width, 1);
+//        WritableRaster raster = mImage.getRaster().createCompatibleWritableRaster(width, 1);
+        WritableRaster raster = mImage.getRaster().createCompatibleWritableRaster(8 * planeWidth, 1);
         Raster sourceRow = raster.createChild(aoi.x, 0, aoi.width, 1, 0, 0, sourceBands);
 
         final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();

@@ -42,6 +42,7 @@ import java.io.IOException;
  */
 class CAMGChunk extends IFFChunk {
 
+    // HIRES=0x8000, LACE=0x4
     // #define CAMG_HAM 0x800   /* hold and modify */
     // #define CAMG_EHB 0x80    /* extra halfbrite */
 
