@@ -41,6 +41,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -340,12 +341,20 @@ public abstract class ImageReaderBase extends ImageReader {
     private static class ImageLabel extends JLabel {
         Paint mBackground;
 
-        public ImageLabel(BufferedImage pImage) {
+        final Paint mCheckeredBG;
+        final Color mDefaultBG;
+
+        public ImageLabel(final BufferedImage pImage) {
             super(new BufferedImageIcon(pImage));
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 
-            mBackground = createTexture();
+            mCheckeredBG = createTexture();
+
+            // For indexed color, default to the color of the transparent pixel, if any 
+            mDefaultBG = getDefaultBackground(pImage);
+
+            mBackground = mDefaultBG != null ? mDefaultBG : mCheckeredBG;
 
             JPopupMenu popup = createBackgroundPopup();
 
@@ -363,7 +372,8 @@ public abstract class ImageReaderBase extends ImageReader {
         private JPopupMenu createBackgroundPopup() {
             JPopupMenu popup = new JPopupMenu();
             ButtonGroup group = new ButtonGroup();
-            addCheckBoxItem(new ChangeBackgroundAction("Default", mBackground), popup, group);
+
+            addCheckBoxItem(new ChangeBackgroundAction("Checkered", mCheckeredBG), popup, group);
             popup.addSeparator();
             addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), popup, group);
             addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), popup, group);
@@ -371,7 +381,8 @@ public abstract class ImageReaderBase extends ImageReader {
             addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), popup, group);
             addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), popup, group);
             popup.addSeparator();
-            addCheckBoxItem(new ChooseBackgroundAction("Choose...", Color.BLUE), popup, group);
+            addCheckBoxItem(new ChooseBackgroundAction("Choose...", mDefaultBG != null ? mDefaultBG : Color.BLUE), popup, group);
+
             return popup;
         }
 
@@ -381,7 +392,19 @@ public abstract class ImageReaderBase extends ImageReader {
             pPopup.add(item);
         }
 
-        private Paint createTexture() {
+        private static Color getDefaultBackground(BufferedImage pImage) {
+            if (pImage.getColorModel() instanceof IndexColorModel) {
+                IndexColorModel cm = (IndexColorModel) pImage.getColorModel();
+                int transparent = cm.getTransparentPixel();
+                if (transparent >= 0) {
+                    return new Color(cm.getRGB(transparent), false);
+                }
+            }
+
+            return null;
+        }
+
+        private static Paint createTexture() {
             GraphicsConfiguration graphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
             BufferedImage pattern = graphicsConfiguration.createCompatibleImage(20, 20);
             Graphics2D g = pattern.createGraphics();
