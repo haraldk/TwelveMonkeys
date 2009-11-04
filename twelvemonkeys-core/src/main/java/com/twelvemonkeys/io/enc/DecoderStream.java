@@ -52,6 +52,7 @@ public final class DecoderStream extends FilterInputStream {
     /**
      * Creates a new decoder stream and chains it to the
      * input stream specified by the {@code pStream} argument.
+     * The stream will use a default decode buffer size.
      *
      * @param pStream the underlying input stream.
      * @param pDecoder the decoder that will be used to decode the underlying stream
@@ -59,9 +60,23 @@ public final class DecoderStream extends FilterInputStream {
      * @see java.io.FilterInputStream#in
      */
     public DecoderStream(final InputStream pStream, final Decoder pDecoder) {
+        this(pStream, pDecoder, 1024);
+    }
+
+    /**
+     * Creates a new decoder stream and chains it to the
+     * input stream specified by the {@code pStream} argument.
+     *
+     * @param pStream the underlying input stream.
+     * @param pDecoder the decoder that will be used to decode the underlying stream
+     * @param pBufferSize the size of the decode buffer
+     *
+     * @see java.io.FilterInputStream#in
+     */
+    public DecoderStream(final InputStream pStream, final Decoder pDecoder, final int pBufferSize) {
         super(pStream);
         mDecoder = pDecoder;
-        mBuffer = new byte[1024];
+        mBuffer = new byte[pBufferSize];
         mBufferPos = 0;
         mBufferLimit = 0;
     }
@@ -142,7 +157,7 @@ public final class DecoderStream extends FilterInputStream {
 
         // Skip until we have skipped pLength bytes, or have reached EOF
         long total = 0;
-        
+
         while (total < pLength) {
             int avail = mBufferLimit - mBufferPos;
 

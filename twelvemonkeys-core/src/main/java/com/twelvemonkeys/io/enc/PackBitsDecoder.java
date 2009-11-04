@@ -75,7 +75,7 @@ public final class PackBitsDecoder implements Decoder {
     }
 
     /**
-     * Creates a {@code PackBitsDecoder}.
+     * Creates a {@code PackBitsDecoder}, with optional compatibility mode.
      * <p/>
      * As some implementations of PackBits-like encoders treat {@code -128} as length of
      * a compressed run, instead of a no-op, it's possible to disable no-ops
