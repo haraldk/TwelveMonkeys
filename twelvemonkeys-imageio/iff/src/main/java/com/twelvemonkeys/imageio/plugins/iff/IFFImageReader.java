@@ -213,8 +213,7 @@ public class IFFImageReader extends ImageReaderBase {
                     mBody = new BODYChunk(length);
                     mBodyStart = mImageInput.getStreamPosition();
 
-                    // NOTE: We don't read the body here, it's done later in the
-                    // read(int, ImageReadParam) method
+                    // NOTE: We don't read the body here, it's done later in the read(int, ImageReadParam) method
 
                     // Done reading meta
                     return;
@@ -330,7 +329,7 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     private void readBody(final ImageReadParam pParam) throws IOException {
-        mImageInput.seek(mBodyStart); // 8 for the header before length in stream
+        mImageInput.seek(mBodyStart);
         mByteRunStream = null;
 
         // NOTE: mColorMap may be null for 8 bit (gray), 24 bit or 32 bit only
