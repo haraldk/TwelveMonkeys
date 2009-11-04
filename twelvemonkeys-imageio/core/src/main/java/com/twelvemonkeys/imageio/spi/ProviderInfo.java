@@ -16,6 +16,7 @@ public class ProviderInfo {
     // TODO: Consider reading the META-INF/MANIFEST.MF from the class path using java.util.jar.Manifest.
     // Use the manifest that is located in the same class path folder as the package.
 
+    private final String mTitle;
     private final String mVendorName;
     private final String mVersion;
 
@@ -29,6 +30,9 @@ public class ProviderInfo {
      */
     public ProviderInfo(final Package pPackage) {
         Validate.notNull(pPackage, "package");
+
+        String title = pPackage.getImplementationTitle();
+        mTitle = title != null ? title : pPackage.getName();
 
         String vendor = pPackage.getImplementationVendor();
         mVendorName = vendor != null ? vendor : fakeVendor(pPackage);
@@ -45,6 +49,18 @@ public class ProviderInfo {
     private String fakeVersion(Package pPackage) {
         String name = pPackage.getName();
         return name.startsWith("com.twelvemonkeys") ? "DEV" : "Unspecified";
+    }
+
+    /**
+     * Returns the implementation title, as specified in the manifest entry
+     * {@code Implementation-Title} for the package.
+     * If the title is unavailable, the package name or some default name
+     * for known packages are used.
+     *
+     * @return the implementation title
+     */
+    final String getImplementationTitle() {
+        return mTitle;
     }
 
     /**
@@ -68,5 +84,10 @@ public class ProviderInfo {
      */
     public final String getVersion() {
         return mVersion;
+    }
+
+    @Override
+    public String toString() {
+        return mTitle + ", " + mVersion + " by " + mVendorName;
     }
 }
