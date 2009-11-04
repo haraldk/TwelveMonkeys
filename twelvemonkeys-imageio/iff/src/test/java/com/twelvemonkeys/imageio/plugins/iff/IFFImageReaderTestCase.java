@@ -52,13 +52,13 @@ public class IFFImageReaderTestCase extends ImageReaderAbstractTestCase<IFFImage
                 new TestData(getClassLoaderResource("/iff/survivor.iff"), new Dimension(800, 600)), // 24 bit
                 // HAM6 - Ok (a lot of visual "fringe", would be interesting to see on a real HAM display)
                 new TestData(getClassLoaderResource("/iff/A4000T_HAM6.IFF"), new Dimension(320, 512)), // ham6
-                // HAM8 - Passes tests, but visuals are trashed. Have other HAM8 files that are ok
+                // HAM8 - Ok (PackBits decoder chokes on padding byte)
                 new TestData(getClassLoaderResource("/iff/A4000T_HAM8.IFF"), new Dimension(628, 512)), // ham8
-                // 8 color indexed - Passes tests, but trashed. Must be something special with these images
+                // 8 color indexed - Ok
                 new TestData(getClassLoaderResource("/iff/AmigaBig.iff"), new Dimension(300, 200)), // 8 color
                 // 8 color indexed - Ok
                 new TestData(getClassLoaderResource("/iff/AmigaAmiga.iff"), new Dimension(200, 150)), // 8 color
-                // Breaks completely... Could be bug in the packbits decoder?
+                // Ok (PackBits decoder chokes on padding byte)
                 new TestData(getClassLoaderResource("/iff/Abyss.iff"), new Dimension(320, 400))
         );
     }

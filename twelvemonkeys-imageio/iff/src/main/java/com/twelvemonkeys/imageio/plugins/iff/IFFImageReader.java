@@ -154,7 +154,7 @@ public class IFFImageReader extends ImageReaderBase {
             remaining -= 8;
             remaining -= length % 2 == 0 ? length : length + 1;
 
-            //System.out.println("Next chunk: " + toChunkStr(chunkId) + " lenght: " + length);
+            //System.out.println("Next chunk: " + toChunkStr(chunkId) + " length: " + length);
             //System.out.println("Remaining bytes after chunk: " + remaining);
 
             switch (chunkId) {
@@ -232,6 +232,7 @@ public class IFFImageReader extends ImageReaderBase {
             readBody(pParam);
         }
         else {
+            // TODO: Remove this hack when we have metadata
             // In the rare case of an ILBM containing nothing but a CMAP
             //System.out.println(mColorMap);
             if (mColorMap != null) {
@@ -243,7 +244,6 @@ public class IFFImageReader extends ImageReaderBase {
         BufferedImage result = mImage;
 
         processImageComplete();
-
 
         return result;
     }
@@ -294,6 +294,7 @@ public class IFFImageReader extends ImageReaderBase {
                 // 8 bit
                 // May be HAM8
                 if (!isHAM()) {
+                    // TODO: This is probably a bug, as mColorMap is null in case of gray..
                     IndexColorModel cm = mColorMap.getIndexColorModel();
                     if (cm != null) {
                         specifier = IndexedImageTypeSpecifier.createFromIndexColorModel(cm);
@@ -304,6 +305,7 @@ public class IFFImageReader extends ImageReaderBase {
                         break;
                     }
                 }
+                // NOTE: HAM modes falls through, as they are converted to RGB
             case 24:
                 // 24 bit RGB
                 specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
@@ -313,12 +315,12 @@ public class IFFImageReader extends ImageReaderBase {
                 specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
                 break;
             default:
-                throw new IIOException("Bit depth not implemented: " + mHeader.mBitplanes);
+                throw new IIOException(String.format("Bit depth not implemented: %d", mHeader.mBitplanes));
         }
         return specifier;
     }
 
-    private void readBody(ImageReadParam pParam) throws IOException {
+    private void readBody(final ImageReadParam pParam) throws IOException {
         mImageInput.seek(mBodyStart); // 8 for the header before length in stream
         mByteRunStream = null;
 
@@ -333,7 +335,7 @@ public class IFFImageReader extends ImageReaderBase {
 
     }
 
-    private void readIndexed(ImageReadParam pParam, final ImageInputStream pInput, final IndexColorModel pModel) throws IOException {
+    private void readIndexed(final ImageReadParam pParam, final ImageInputStream pInput, final IndexColorModel pModel) throws IOException {
         final int width = mHeader.mWidth;
         final int height = mHeader.mHeight;
 
@@ -363,7 +365,9 @@ public class IFFImageReader extends ImageReaderBase {
             destination = destination.createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), offset.x, offset.y, destinationBands);
         }
 
-        int planeWidth = (width + 7) / 8;
+        // NOTE:  Each row of the image is stored in an integral number of 16 bit words.
+        // The number of words per row is words=((w+15)/16)
+        int planeWidth = 2 * ((width + 15) / 16);
         final byte[] planeData = new byte[8 * planeWidth];
 
         ColorModel cm;
@@ -373,10 +377,14 @@ public class IFFImageReader extends ImageReaderBase {
             // TODO: If HAM6, use type USHORT_444_RGB or 2BYTE_444_RGB?
             // Or create a HAMColorModel, if at all possible?
             // TYPE_3BYTE_BGR
-            cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{8, 8, 8},
-                    false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+            cm = new ComponentColorModel(
+                    ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{8, 8, 8},
+                    false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE
+            );
             // Create a byte raster with BGR order
-            raster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, 1, width * 3, 3, new int[]{2, 1, 0}, null);
+            raster = Raster.createInterleavedRaster(
+                    DataBuffer.TYPE_BYTE, width, 1, width * 3, 3, new int[]{2, 1, 0}, null
+            );
         }
         else {
             // TYPE_BYTE_BINARY or TYPE_BYTE_INDEXED
@@ -400,14 +408,8 @@ public class IFFImageReader extends ImageReaderBase {
         ColorConvertOp converter = null;
 
         for (int srcY = 0; srcY < height; srcY++) {
-
             for (int p = 0; p < planes; p++) {
-                try {
-                    readPlaneData(pInput, planeData, p * planeWidth, planeWidth);
-                }
-                catch (IOException e) {
-                    // TODO: Add warning? Probbably a bug somewhere, should not catch!
-                }
+                readPlaneData(pInput, planeData, p * planeWidth, planeWidth);
             }
 
             // Skip rows outside AOI
@@ -420,11 +422,9 @@ public class IFFImageReader extends ImageReaderBase {
 
             if (mFormType == IFF.TYPE_ILBM) {
                 int pixelPos = 0;
-                int planePos = 0;
-                for (int i = 0; i < planeWidth; i++) {
+                for (int planePos = 0; planePos < planeWidth; planePos++) {
                     IFFUtil.bitRotateCW(planeData, planePos, planeWidth, row, pixelPos, 1);
                     pixelPos += 8;
-                    planePos++;
                 }
 
                 if (isHAM()) {
@@ -434,10 +434,13 @@ public class IFFImageReader extends ImageReaderBase {
                     raster.setDataElements(0, 0, width, 1, row);
                 }
             }
-            else /*if (mType == IFFImageReader.TYPE_PBM)*/ {
-                // TODO: Arraycopy might not be neccessary, if it's okay with row larger than width
+            else if (mFormType == IFF.TYPE_PBM) {
+                // TODO: Arraycopy might not be necessary, if it's okay with row larger than width
                 System.arraycopy(planeData, 0, row, 0, mHeader.mBitplanes * planeWidth);
                 raster.setDataElements(0, 0, width, 1, row);
+            }
+            else {
+                throw new AssertionError(String.format("Unsupported FORM type: %s", mFormType));
             }
 
             int dstY = (srcY - aoi.y) / sourceYSubsampling;
@@ -521,8 +524,9 @@ public class IFFImageReader extends ImageReaderBase {
         // Ensure band settings from param are compatible with images
         checkReadParamBandSettings(pParam, mHeader.mBitplanes / 8, mImage.getSampleModel().getNumBands());
 
-        int planeWidth = (width + 7) / 8;
-
+        // NOTE:  Each row of the image is stored in an integral number of 16 bit words.
+        // The number of words per row is words=((w+15)/16)
+        int planeWidth = 2 * ((width + 15) / 16);
         final byte[] planeData = new byte[8 * planeWidth];
 
         WritableRaster destination = mImage.getRaster();
@@ -558,15 +562,16 @@ public class IFFImageReader extends ImageReaderBase {
                     int off = (channels - c - 1);
 
                     int pixelPos = 0;
-                    int planePos = 0;
-                    for (int i = 0; i < planeWidth; i++) {
+                    for (int planePos = 0; planePos < planeWidth; planePos++) {
                         IFFUtil.bitRotateCW(planeData, planePos, planeWidth, data, off + pixelPos * channels, channels);
                         pixelPos += 8;
-                        planePos++;
                     }
                 }
-                else /*if (mType == IFFImageReader.TYPE_PBM)*/ {
+                else if (mFormType == IFF.TYPE_PBM) {
                     System.arraycopy(planeData, 0, data, srcY * 8 * planeWidth, planeWidth);
+                }
+                else {
+                    throw new AssertionError(String.format("Unsupported FORM type: %s", mFormType));
                 }
             }
 
@@ -607,16 +612,25 @@ public class IFFImageReader extends ImageReaderBase {
                 break;
 
             case BMHDChunk.COMPRESSION_BYTE_RUN:
+                // TODO: How do we know if the last byte in the body is a pad byte or not?!
+                // The body consists of byte-run (PackBits) compressed rows of bit plane data.
+                // However, we don't know how long each compressed row is, without decoding it...
+                // The workaround below, is to use a decode buffer size of pPlaneWidth,
+                // to make sure we don't decode anything we don't have to (shouldn't).
                 if (mByteRunStream == null) {
-                    mByteRunStream = new DataInputStream(new DecoderStream(
-                            IIOUtil.createStreamAdapter(pInput, mBody.mChunkLength),
-                            new PackBitsDecoder(true)
-                    ));
+                    mByteRunStream = new DataInputStream(
+                            new DecoderStream(
+                                    IIOUtil.createStreamAdapter(pInput, mBody.mChunkLength),
+                                    new PackBitsDecoder(true),
+                                    pPlaneWidth * mHeader.mBitplanes
+                            )
+                    );
                 }
                 mByteRunStream.readFully(pData, pOffset, pPlaneWidth);
                 break;
+
             default:
-                throw new IIOException("Unknown compression type: " + mHeader.mCompressionType);
+                throw new IIOException(String.format("Unknown compression type: %d", mHeader.mCompressionType));
         }
     }
 
@@ -666,7 +680,7 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     public static void main(String[] pArgs) throws IOException {
-        ImageReader reader = new IFFImageReader(new IFFImageReaderSpi());
+        ImageReader reader = new IFFImageReader();
 
 //        ImageInputStream input = ImageIO.createImageInputStream(new File(pArgs[0]));
         ImageInputStream input = new BufferedImageInputStream(ImageIO.createImageInputStream(new File(pArgs[0])));
@@ -687,7 +701,7 @@ public class IFFImageReader extends ImageReaderBase {
             BufferedImage image = reader.read(0, param);
             System.out.println("image = " + image);
 
-            showIt(image, "");
+            showIt(image, pArgs[0]);
         }
     }
 }

@@ -69,8 +69,9 @@ public class IFFImageWriterSpi extends ImageWriterSpi {
         );
     }
 
-    public boolean canEncodeImage(ImageTypeSpecifier pType) {
+    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
         // TODO: Probably can't store 16 bit types etc...
+        // TODO: Can't store CMYK (well.. it does, but they can't be read back) 
         return true;
     }
 

@@ -48,7 +48,7 @@ class IFFUtil {
 
     /**
      * Creates a rotation table
-     * @param n
+     * @param n number of bits -1
      *
      * @return the rotation table
      */
@@ -243,7 +243,7 @@ class IFFUtil {
     /**
      * Converts an int to a four letter String.
      *
-     * @param pChunkId
+     * @param pChunkId the chunk identifier
      * @return a String
      */
     static String toChunkStr(int pChunkId) {

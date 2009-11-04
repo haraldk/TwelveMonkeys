@@ -47,7 +47,7 @@ import java.io.OutputStream;
 /**
  * Writer for Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) format.
  * The IFF format (Interchange File Format) is the standard file format
- * supported by allmost all image software for the Amiga computer.
+ * supported by almost all image software for the Amiga computer.
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -57,8 +57,6 @@ import java.io.OutputStream;
  * @see <a href="http://en.wikipedia.org/wiki/ILBM">Wikipedia: IFF ILBM</a>
  */
 public class IFFImageWriter extends ImageWriterBase {
-
-    private static final byte[] ANNO_DATA = "Written by TwelveMonkeys IFFImageWriter 1.0 for Java (javax.imageio).".getBytes();
 
     public IFFImageWriter() {
         this(null);
@@ -121,6 +119,7 @@ public class IFFImageWriter extends ImageWriterBase {
 
     private void packImageData(OutputStream pOutput, RenderedImage pImage, ImageWriteParam pParam) throws IOException {
         // TODO: Allow param to dictate uncompressed
+        // TODO: Allow param to dictate type PBM?
         // TODO: Subsample/AOI
         final boolean compress = shouldCompress(pImage);
         final OutputStream output = compress ? new EncoderStream(pOutput, new PackBitsEncoder(), true) : pOutput;
@@ -136,12 +135,14 @@ public class IFFImageWriter extends ImageWriterBase {
         // 2. Perform byteRun1 compression for each plane separately
         // 3. Write the plane data for each plane
 
-        final int planeWidth = (width + 7) / 8;
+        //final int planeWidth = (width + 7) / 8;
+        final int planeWidth = 2 * ((width + 15) / 16);
         final byte[] planeData = new byte[8 * planeWidth];
         final int channels = (model.getPixelSize() + 7) / 8;
         final int planesPerChannel = channels == 1 ? model.getPixelSize() : 8;
         int[] pixels = new int[8 * planeWidth];
 
+        // TODO: The spec says "Do not compress across rows!".. I think we currently do.
         // NOTE: I'm a little unsure if this is correct for 4 channel (RGBA)
         // data, but it is at least consistent with the IFFImageReader for now...
         for (int y = 0; y < height; y++) {
@@ -174,7 +175,8 @@ public class IFFImageWriter extends ImageWriterBase {
 
     private void writeMeta(RenderedImage pImage, int pBodyLength) throws IOException {
         // Annotation ANNO chunk, 8 + annoData.length bytes
-        GenericChunk anno = new GenericChunk(IFFUtil.toInt("ANNO".getBytes()), ANNO_DATA);
+        String annotation = "Written by " + getOriginatingProvider().getDescription(null);
+        GenericChunk anno = new GenericChunk(IFFUtil.toInt("ANNO".getBytes()), annotation.getBytes());
 
         ColorModel cm = pImage.getColorModel();
         IndexColorModel icm = null;
