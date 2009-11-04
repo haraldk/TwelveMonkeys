@@ -53,6 +53,22 @@
                   <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Title>${project.name}</Implementation-Title>
+                            <Implementation-Vendor>TwelveMonkeys</Implementation-Vendor>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Implementation-URL>http://github.com/haraldk/TwelveMonkeys</Implementation-URL>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
