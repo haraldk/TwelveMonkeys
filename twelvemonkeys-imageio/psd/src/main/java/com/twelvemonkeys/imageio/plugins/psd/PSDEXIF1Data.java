@@ -35,7 +35,7 @@ final class PSDEXIF1Data extends PSDImageResource {
     protected void readData(final ImageInputStream pInput) throws IOException {
         // This is in essence an embedded TIFF file.
         // TODO: Extract TIFF parsing to more general purpose package
-        // TODO: Instead, read the byte data, store for later parsing
+        // TODO: Instead, read the byte data, store for later parsing (or store offset, and read on request)
         MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(IIOUtil.createStreamAdapter(pInput, mSize));
 
         byte[] bom = new byte[2];
