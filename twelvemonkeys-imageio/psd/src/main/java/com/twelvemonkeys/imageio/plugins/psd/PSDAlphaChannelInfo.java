@@ -48,11 +48,11 @@ class PSDAlphaChannelInfo extends PSDImageResource {
     }
 
     @Override
-    protected void readData(ImageInputStream pInput) throws IOException {
+    protected void readData(final ImageInputStream pInput) throws IOException {
         mNames = new ArrayList<String>();
         long left = mSize;
         while (left > 0) {
-            String name = PSDUtil.readPascalStringByte(pInput);
+            String name = PSDUtil.readPascalString(pInput);
             mNames.add(name);
             left -= name.length() + 1;
         }

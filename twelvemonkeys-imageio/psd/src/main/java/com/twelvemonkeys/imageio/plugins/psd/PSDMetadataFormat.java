@@ -1,5 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import org.w3c.dom.Document;
+
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import java.util.Arrays;
@@ -33,7 +35,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addElement("PSDHeader", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
 
         // TODO: Do the first two make sense?
-        addAttribute("PSDHeader", "signature", DATATYPE_STRING, false, "8BPS", Arrays.asList("8BPS"));
+//        addAttribute("PSDHeader", "signature", DATATYPE_STRING, false, "8BPS", Arrays.asList("8BPS"));
         addAttribute("PSDHeader", "version", DATATYPE_INTEGER, false, "1", Arrays.asList("1"));
 
         addAttribute("PSDHeader", "channels", DATATYPE_INTEGER, true, null, "1", "24", true, true);
@@ -42,16 +44,8 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // columns?
         addAttribute("PSDHeader", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
         addAttribute("PSDHeader", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
-        addAttribute("PSDHeader", "mode", DATATYPE_INTEGER, true, null, Arrays.asList(
-                String.valueOf(PSD.COLOR_MODE_MONOCHROME),
-                String.valueOf(PSD.COLOR_MODE_GRAYSCALE),
-                String.valueOf(PSD.COLOR_MODE_INDEXED),
-                String.valueOf(PSD.COLOR_MODE_RGB),
-                String.valueOf(PSD.COLOR_MODE_CMYK),
-                String.valueOf(PSD.COLOR_MODE_MULTICHANNEL),
-                String.valueOf(PSD.COLOR_MODE_DUOTONE),
-                String.valueOf(PSD.COLOR_MODE_LAB)
-        ));
+        // TODO: Consider using more readable names?!
+        addAttribute("PSDHeader", "mode", DATATYPE_INTEGER, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
 
         /*
         Contains the required data to define the color mode.
@@ -69,7 +63,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // NOTE: Palette, PaletteEntry naming taken from the standard format, native PSD naming is ColorModeData
         // NOTE: PSD stores these as 256 Red, 256 Green, 256 Blue.. Should we do the same in the meta data?
         addElement("Palette", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, 256, 256); // 768 = 256 * 3
-        addElement("PaletteEntry", "PSDColorData", CHILD_POLICY_EMPTY);
+        addElement("PaletteEntry", "Palette", CHILD_POLICY_EMPTY);
         addAttribute("PaletteEntry", "index", DATATYPE_INTEGER, true, null, "0", "255", true, true);
         addAttribute("PaletteEntry", "red", DATATYPE_INTEGER, true, null, "0", "255", true, true);
         addAttribute("PaletteEntry", "green", DATATYPE_INTEGER, true, null, "0", "255", true, true);
@@ -89,15 +83,19 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // TODO: Allow arbitrary values to be added as a generic resource...
 
         // root -> ImageResources -> AlphaChannelInfo
-        addElement("AlphaChannelInfo", "ImageResources", CHILD_POLICY_EMPTY);
-        addAttribute("AlphaChannelInfo", "names", DATATYPE_STRING, true, 0, Integer.MAX_VALUE);
+        addElement("AlphaChannelInfo", "ImageResources", 0, Integer.MAX_VALUE); // The format probably does not support that many layers..
+        addElement("Name", "AlphaChannelInfo", CHILD_POLICY_EMPTY);
+        addAttribute("Name", "value", DATATYPE_STRING, true, 0, Integer.MAX_VALUE);
 
         // root -> ImageResources -> DisplayInfo
         addElement("DisplayInfo", "ImageResources", CHILD_POLICY_EMPTY);
+        // TODO: Consider using human readable strings
+        // TODO: Limit values (0-8, 10, 11, 3000)
         addAttribute("DisplayInfo", "colorSpace", DATATYPE_INTEGER, true, null);
         addAttribute("DisplayInfo", "colors", DATATYPE_INTEGER, true, 4, 4);
         addAttribute("DisplayInfo", "opacity", DATATYPE_INTEGER, true, null, "0", "100", true, true);
-        addAttribute("DisplayInfo", "kind", DATATYPE_INTEGER, true, null, Arrays.asList("0", "1"));
+        // TODO: Consider using human readable strings
+        addAttribute("DisplayInfo", "kind", DATATYPE_INTEGER, true, null, Arrays.asList(PSDMetadata.DISPLAY_INFO_KINDS));
 
         // root -> ImageResources -> EXIF1Data
         addElement("EXIF1Data", "ImageResources", CHILD_POLICY_ALL);
@@ -138,6 +136,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // root -> ImageResources -> XMPData
         addElement("XMPData", "ImageResources", CHILD_POLICY_CHOICE);
         // TODO: Incorporate XMP metadata here somehow (or treat as opaque bytes?)
+        addObjectValue("XMPData", Document.class, true, null);
 
         // TODO: Layers
         //addElement("ChannelSourceDestinationRange", "LayerSomething", CHILD_POLICY_CHOICE);

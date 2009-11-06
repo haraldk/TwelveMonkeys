@@ -26,14 +26,14 @@ final class PSDPrintFlags extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mLabels = pInput.readUnsignedByte() != 0;
-        mCropMasks = pInput.readUnsignedByte() != 0;
-        mColorBars = pInput.readUnsignedByte() != 0;
-        mRegistrationMarks = pInput.readUnsignedByte() != 0;
-        mNegative = pInput.readUnsignedByte() != 0;
-        mFlip = pInput.readUnsignedByte() != 0;
-        mInterpolate = pInput.readUnsignedByte() != 0;
-        mCaption = pInput.readUnsignedByte() != 0;
+        mLabels = pInput.readBoolean();
+        mCropMasks = pInput.readBoolean();
+        mColorBars = pInput.readBoolean();
+        mRegistrationMarks = pInput.readBoolean();
+        mNegative = pInput.readBoolean();
+        mFlip = pInput.readBoolean();
+        mInterpolate = pInput.readBoolean();
+        mCaption = pInput.readBoolean();
 
         pInput.skipBytes(mSize - 8);
     }

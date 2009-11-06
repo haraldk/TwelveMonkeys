@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.lang.StringUtil;
+
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
 import java.io.IOException;
@@ -49,6 +51,12 @@ class PSDImageResource {
         mId = pId;
 
         mName = PSDUtil.readPascalString(pInput);
+
+        // Skip pad
+        int nameSize = mName.length() + 1;
+        if (nameSize % 2 != 0) {
+            pInput.readByte();
+        }
 
         mSize = pInput.readUnsignedInt();
         readData(pInput);
@@ -84,7 +92,10 @@ class PSDImageResource {
     protected StringBuilder toStringBuilder() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
 
-        builder.append(resourceTypeForId(mId));
+        String fakeType = resourceTypeForId(mId);
+        if (fakeType != null) {
+            builder.append("(").append(fakeType).append(")");
+        }
 
         builder.append("[ID: 0x");
         builder.append(Integer.toHexString(mId));
@@ -106,23 +117,25 @@ class PSDImageResource {
             case PSD.RES_THUMBNAIL_PS4:
             case PSD.RES_THUMBNAIL:
             case PSD.RES_ICC_PROFILE:
+            case PSD.RES_VERSION_INFO:
             case PSD.RES_EXIF_DATA_1:
 //            case PSD.RES_EXIF_DATA_3:
             case PSD.RES_XMP_DATA:
             case PSD.RES_PRINT_FLAGS_INFORMATION:
-                return "";
+                return null;
             default:
                 try {
                     for (Field field : PSD.class.getDeclaredFields()) {
                         if (field.getName().startsWith("RES_") && field.getInt(null) == pId) {
-                            return "(" + field.getName().substring(4) + ")";
+                            String name = field.getName().substring(4);
+                            return StringUtil.lispToCamel(name.replace("_", "-").toLowerCase(), true);
                         }
                     }
                 }
                 catch (IllegalAccessException ignore) {
                 }
                 
-                return "(unknown resource)";
+                return "unknown resource";
         }
     }
 
@@ -149,6 +162,8 @@ class PSDImageResource {
                 return new PSDThumbnail(id, pInput);
             case PSD.RES_ICC_PROFILE:
                 return new ICCProfile(id, pInput);
+            case PSD.RES_VERSION_INFO:
+                return new PSDVersionInfo(id, pInput);
             case PSD.RES_EXIF_DATA_1:
                 return new PSDEXIF1Data(id, pInput);
             case PSD.RES_XMP_DATA:

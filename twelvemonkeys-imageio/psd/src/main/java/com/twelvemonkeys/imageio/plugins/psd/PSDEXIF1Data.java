@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -67,8 +68,8 @@ final class PSDEXIF1Data extends PSDImageResource {
     }
 
     // TIFF Image file directory (IFD)
-    private static class Directory {
-        List<Entry> mEntries = new ArrayList<Entry>();
+    static class Directory implements Iterable<Entry> {
+        private List<Entry> mEntries = new ArrayList<Entry>();
 
         private Directory() {}
 
@@ -90,6 +91,20 @@ final class PSDEXIF1Data extends PSDImageResource {
             return directory;
         }
 
+        public Entry get(int pTag) {
+            for (Entry entry : mEntries) {
+                if (entry.mTag == pTag) {
+                    return entry;
+                }
+            }
+
+            return null;
+        }
+
+        public Iterator<Entry> iterator() {
+            return mEntries.iterator();
+        }
+
         @Override
         public String toString() {
             return String.format("Directory%s", mEntries);
@@ -97,7 +112,7 @@ final class PSDEXIF1Data extends PSDImageResource {
     }
 
     // TIFF IFD Entry
-    private static class Entry {
+    static class Entry {
         private static final int EXIF_IFD = 0x8769;
 
         private final static String[] TYPE_NAMES = {
