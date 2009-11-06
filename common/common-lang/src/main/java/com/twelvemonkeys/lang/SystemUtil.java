@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.lang;
 
-import com.twelvemonkeys.util.XMLProperties;
+//import com.twelvemonkeys.util.XMLProperties;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -414,13 +414,13 @@ public final class SystemUtil {
             throw new IllegalArgumentException("InputStream == null!");
         }
 
-        Properties mapping;
-        if (pInput instanceof  XMLPropertiesInputStream) {
+        Properties mapping = new Properties();
+        /*if (pInput instanceof  XMLPropertiesInputStream) {
             mapping = new XMLProperties();
         }
         else {
             mapping = new Properties();
-        }
+        }*/
 
         // Load the properties
         mapping.load(pInput);
