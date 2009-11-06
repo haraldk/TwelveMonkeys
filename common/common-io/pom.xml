@@ -15,4 +15,12 @@
         The TwelveMonkeys IO support
     </description>
 
+    <dependencies>
+     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>common-lang</artifactId>
+      <version>${project.version}</version>
+     </dependency>
+    </dependencies>
+
 </project>
