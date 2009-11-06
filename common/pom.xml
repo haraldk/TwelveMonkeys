@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.twelvemonkeys</groupId>
+        <artifactId>twelvemonkeys-parent</artifactId>
+        <version>2.3-SNAPSHOT</version>
+    </parent>
+    <groupId>com.twelvemonkeys.common</groupId>
+    <artifactId>common</artifactId>
+    <packaging>pom</packaging>
+    <name>TwelveMonkeys :: Common</name>
+    <description>
+        The TwelveMonkeys Common library. Contains common utility classes.
+    </description>
+
+    <modules>
+     <module>common-io</module>
+     <module>common-lang</module>
+     <module>common-image</module>
+    </modules>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>jmagick</groupId>
+            <artifactId>jmagick</artifactId>
+            <version>6.2.4</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit-dep</artifactId>
+            <version>4.5</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>jmock</groupId>
+            <artifactId>jmock-cglib</artifactId>
+            <version>1.0.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
