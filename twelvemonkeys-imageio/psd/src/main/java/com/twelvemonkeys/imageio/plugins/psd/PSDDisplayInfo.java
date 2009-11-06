@@ -40,7 +40,22 @@ import java.io.IOException;
  * @version $Id: PSDResolutionInfo.java,v 1.0 May 2, 2008 3:58:19 PM haraldk Exp$
  */
 class PSDDisplayInfo extends PSDImageResource {
-    // TODO: Size of this struct should be 14.. Does not compute... Something bogus here 
+    // TODO: Size of this struct should be 14.. Does not compute... Something bogus here
+
+    // ColorSpace definitions:
+    //    PSD_CS_RGB       = 0,                 /* RGB */
+    //    PSD_CS_HSB       = 1,                 /* Hue, Saturation, Brightness */
+    //    PSD_CS_CMYK      = 2,                 /* CMYK */
+    //    PSD_CS_PANTONE   = 3,                 /* Pantone matching system (Lab)*/
+    //    PSD_CS_FOCOLTONE = 4,                 /* Focoltone colour system (CMYK)*/
+    //    PSD_CS_TRUMATCH  = 5,                 /* Trumatch color (CMYK)*/
+    //    PSD_CS_TOYO      = 6,                 /* Toyo 88 colorfinder 1050 (Lab)*/
+    //    PSD_CS_LAB       = 7,                 /* L*a*b*/
+    //    PSD_CS_GRAYSCALE = 8,                 /* Grey scale */
+    //    PSD_CS_HKS       = 10,                /* HKS colors (CMYK)*/
+    //    PSD_CS_DIC       = 11,                /* DIC color guide (Lab)*/
+    //    PSD_CS_ANPA      = 3000,              /* Anpa color (Lab)*/
+        
     //typedef _DisplayInfo
     //{
     //   WORD  ColorSpace;
@@ -50,10 +65,10 @@ class PSDDisplayInfo extends PSDImageResource {
     //   BYTE  Padding;          /* Always zero */
     //} DISPLAYINFO;
 
-    private int mColorSpace;
-    private short[] mColors;
-    private short mOpacity;
-    private byte mKind;
+    int mColorSpace;
+    short[] mColors;
+    short mOpacity;
+    byte mKind;
 
     PSDDisplayInfo(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);

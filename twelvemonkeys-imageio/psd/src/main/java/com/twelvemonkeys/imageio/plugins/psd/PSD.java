@@ -101,7 +101,7 @@ interface PSD {
     int COMPRESSION_ZIP = 2;
 
     /** ZIP compression with prediction */
-    int COMPRESSION_ZIP_PREDICTON = 3;
+    int COMPRESSION_ZIP_PREDICTION = 3;
 
     // Color Modes
     /** Bitmap (monochrome) */
