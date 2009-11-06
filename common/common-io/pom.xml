@@ -2,25 +2,32 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>com.twelvemonkeys.common</groupId>
-        <artifactId>common</artifactId>
-        <version>2.3-SNAPSHOT</version>
-    </parent>
-    <artifactId>common-io</artifactId>
-    <packaging>jar</packaging>
-    <name>TwelveMonkeys :: Common :: IO</name>
-    <description>
-        The TwelveMonkeys IO support
-    </description>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.twelvemonkeys.common</groupId>
+    <artifactId>common</artifactId>
+    <version>2.3-SNAPSHOT</version>
+  </parent>
+  <artifactId>common-io</artifactId>
+  <packaging>jar</packaging>
+  <name>TwelveMonkeys :: Common :: IO</name>
+  <description>
+    The TwelveMonkeys IO support
+  </description>
 
-    <dependencies>
-     <dependency>
+  <dependencies>
+    <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>common-lang</artifactId>
       <version>${project.version}</version>
-     </dependency>
-    </dependencies>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>common-lang</artifactId>
+      <version>${project.version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>
