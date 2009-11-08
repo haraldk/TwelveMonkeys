@@ -17,12 +17,19 @@
 
 
     <dependencies>
+	<dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>common-lang</artifactId>
+        </dependency>
+	<dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>common-io</artifactId>
+        </dependency>
         <dependency>
             <groupId>jmagick</groupId>
             <artifactId>jmagick</artifactId>
-            <version>6.2.4</version>
-            <scope>provided</scope>
-            <optional>true</optional>
+	    <version>6.2.4</version>
+	    <optional>true</optional>
         </dependency>
     </dependencies>
 </project>

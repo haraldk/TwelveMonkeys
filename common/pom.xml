@@ -23,19 +23,32 @@
     </modules>
 
 
+<dependencyManagement>
+    <dependencies>
+	<dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>common-lang</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+	<dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>common-lang</artifactId>
+            <version>${project.version}</version>
+	    <classifier>tests</classifier>
+	    <scope>test</scope>
+        </dependency>
+	<dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>common-io</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
     <dependencies>
         <dependency>
-            <groupId>jmagick</groupId>
-            <artifactId>jmagick</artifactId>
-            <version>6.2.4</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
-            <artifactId>junit-dep</artifactId>
-            <version>4.5</version>
+            <artifactId>junit</artifactId>
+            <version>4.7</version>
             <scope>test</scope>
         </dependency>
 
@@ -45,5 +58,6 @@
             <version>1.0.1</version>
             <scope>test</scope>
         </dependency>
+
     </dependencies>
 </project>
