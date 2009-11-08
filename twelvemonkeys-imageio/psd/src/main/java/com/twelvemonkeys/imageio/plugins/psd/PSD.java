@@ -225,11 +225,11 @@ interface PSD {
 
     //    03f8
     /** Color transfer functions */
-    int RES_COLOR_TRANSFER_FUNCITON = 0x03f8;
+    int RES_COLOR_TRANSFER_FUNCTION = 0x03f8;
 
     //    03f9
     /** Duotone transfer functions */
-    int RES_DUOTONE_TRANSFER_FUNCITON = 0x03f9;
+    int RES_DUOTONE_TRANSFER_FUNCTOON = 0x03f9;
 
     //    03fa
     /** Duotone image information */
@@ -385,7 +385,7 @@ interface PSD {
      * (Photoshop 5.0) Unicode Alpha Names
      * Unicode string (4 bytes length followed by string).
      */
-    int RES_UNICODE_ALPHA_NAME = 0x0415;
+    int RES_UNICODE_ALPHA_NAMES = 0x0415;
 
     // 1046
     /**

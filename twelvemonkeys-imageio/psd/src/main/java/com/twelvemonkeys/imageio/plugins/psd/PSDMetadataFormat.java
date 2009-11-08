@@ -4,6 +4,7 @@ import org.w3c.dom.Document;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
+import java.awt.image.BufferedImage;
 import java.util.Arrays;
 
 /**
@@ -32,20 +33,19 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
         // root -> PSDHeader
         // TODO: How do I specify that the header is required?
-        addElement("PSDHeader", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
+        addElement("Header", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
 
-        // TODO: Do the first two make sense?
-//        addAttribute("PSDHeader", "signature", DATATYPE_STRING, false, "8BPS", Arrays.asList("8BPS"));
-        addAttribute("PSDHeader", "version", DATATYPE_INTEGER, false, "1", Arrays.asList("1"));
+        addAttribute("Header", "type", DATATYPE_STRING, false, "PSD", Arrays.asList("PSD", "PSB"));
+        addAttribute("Header", "version", DATATYPE_INTEGER, false, "1", Arrays.asList("1"));
 
-        addAttribute("PSDHeader", "channels", DATATYPE_INTEGER, true, null, "1", "24", true, true);
+        addAttribute("Header", "channels", DATATYPE_INTEGER, true, null, "1", "24", true, true);
         // rows?
-        addAttribute("PSDHeader", "height", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
+        addAttribute("Header", "height", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
         // columns?
-        addAttribute("PSDHeader", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
-        addAttribute("PSDHeader", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
+        addAttribute("Header", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
+        addAttribute("Header", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
         // TODO: Consider using more readable names?!
-        addAttribute("PSDHeader", "mode", DATATYPE_INTEGER, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
+        addAttribute("Header", "mode", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
 
         /*
         Contains the required data to define the color mode.
@@ -85,21 +85,45 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // root -> ImageResources -> AlphaChannelInfo
         addElement("AlphaChannelInfo", "ImageResources", 0, Integer.MAX_VALUE); // The format probably does not support that many layers..
         addElement("Name", "AlphaChannelInfo", CHILD_POLICY_EMPTY);
-        addAttribute("Name", "value", DATATYPE_STRING, true, 0, Integer.MAX_VALUE);
+        addAttribute("Name", "value", DATATYPE_STRING, true, null);
 
         // root -> ImageResources -> DisplayInfo
         addElement("DisplayInfo", "ImageResources", CHILD_POLICY_EMPTY);
         // TODO: Consider using human readable strings
         // TODO: Limit values (0-8, 10, 11, 3000)
-        addAttribute("DisplayInfo", "colorSpace", DATATYPE_INTEGER, true, null);
+        addAttribute("DisplayInfo", "colorSpace", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DISPLAY_INFO_CS));
         addAttribute("DisplayInfo", "colors", DATATYPE_INTEGER, true, 4, 4);
         addAttribute("DisplayInfo", "opacity", DATATYPE_INTEGER, true, null, "0", "100", true, true);
         // TODO: Consider using human readable strings
-        addAttribute("DisplayInfo", "kind", DATATYPE_INTEGER, true, null, Arrays.asList(PSDMetadata.DISPLAY_INFO_KINDS));
+        addAttribute("DisplayInfo", "kind", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DISPLAY_INFO_KINDS));
 
-        // root -> ImageResources -> EXIF1Data
-        addElement("EXIF1Data", "ImageResources", CHILD_POLICY_ALL);
+        // root -> ImageResources -> EXIF
+        addElement("EXIF", "ImageResources", CHILD_POLICY_EMPTY);
+        addObjectValue("EXIF", PSDEXIF1Data.Directory.class, true, null);
         // TODO: Incorporate EXIF / TIFF metadata here somehow... (or treat as opaque bytes?)
+
+        // root -> ImageResources -> GridAndGuideInfo
+        addElement("GridAndGuideInfo", "ImageResources", 0, Integer.MAX_VALUE);
+        addAttribute("GridAndGuideInfo", "version", DATATYPE_INTEGER, false, "1");
+        addAttribute("GridAndGuideInfo", "verticalGridCycle", DATATYPE_INTEGER, false, "576");
+        addAttribute("GridAndGuideInfo", "horizontalGridCycle", DATATYPE_INTEGER, false, "576");
+        addElement("Guide", "GridAndGuideInfo", CHILD_POLICY_EMPTY);
+        addAttribute("Guide", "location", DATATYPE_INTEGER, true, null, "0", Integer.toString(Integer.MAX_VALUE), true, true);
+        addAttribute("Guide", "orientation", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.GUIDE_ORIENTATIONS));
+
+        // root -> ImageResources -> ICCProfile
+        addElement("ICCProfile", "ImageResources", CHILD_POLICY_EMPTY);
+        addAttribute("ICCProfile", "colorSpaceType", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.JAVA_CS));
+
+        // root -> ImageResources -> IPTC
+        addElement("IPTC", "ImageResources", CHILD_POLICY_EMPTY);
+        addObjectValue("IPTC", PSDIPTCData.Directory.class, true, null);
+        // TODO: Incorporate IPTC metadata here somehow... (or treat as opaque bytes?)
+
+        // root -> ImageResources -> PixelAspectRatio
+        addElement("PixelAspectRatio", "ImageResources", CHILD_POLICY_EMPTY);
+        addAttribute("PixelAspectRatio", "version", DATATYPE_STRING, false, "1");
+        addAttribute("PixelAspectRatio", "aspectRatio", DATATYPE_DOUBLE, true, null, "0", Double.toString(Double.POSITIVE_INFINITY), true, false);
 
         // root -> ImageResources -> PrintFlags
         addElement("PrintFlags", "ImageResources", CHILD_POLICY_EMPTY);
@@ -114,29 +138,53 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
         // root -> ImageResources -> PrintFlagsInformation
         addElement("PrintFlagsInformation", "ImageResources", CHILD_POLICY_EMPTY);
-        addAttribute("PrintFlagsInformation", "version", DATATYPE_INTEGER, true, null);
+        addAttribute("PrintFlagsInformation", "version", DATATYPE_INTEGER, false, "1");
         addBooleanAttribute("PrintFlagsInformation", "cropMarks", false, false);
-        addAttribute("PrintFlagsInformation", "field", DATATYPE_INTEGER, true, null);
+        addAttribute("PrintFlagsInformation", "field", DATATYPE_INTEGER, true, "0");
         addAttribute("PrintFlagsInformation", "bleedWidth", DATATYPE_INTEGER, true, null, "0", String.valueOf(Long.MAX_VALUE), true, true); // TODO: LONG??!
         addAttribute("PrintFlagsInformation", "bleedScale", DATATYPE_INTEGER, true, null, "0", String.valueOf(Integer.MAX_VALUE), true, true);
+
+        // root -> ImageResources -> PrintScale
+        addElement("PrintScale", "ImageResources", CHILD_POLICY_EMPTY);
+        addAttribute("PrintScale", "style", DATATYPE_STRING, false, null, Arrays.asList(PSDMetadata.PRINT_SCALE_STYLES));
+        addAttribute("PrintScale", "xLocation", DATATYPE_FLOAT, true, null);
+        addAttribute("PrintScale", "yLocation", DATATYPE_FLOAT, true, null);
+        addAttribute("PrintScale", "scale", DATATYPE_FLOAT, true, null);
 
         // root -> ImageResources -> ResolutionInfo
         addElement("ResolutionInfo", "ImageResources", CHILD_POLICY_EMPTY);
         addAttribute("ResolutionInfo", "hRes", DATATYPE_FLOAT, true, null);
-        // TODO: Or use string and more friendly names? "pixels/inch"/"pixels/cm" and "inch"/"cm"/"pt"/"pica"/"column"
-        addAttribute("ResolutionInfo", "hResUnit", DATATYPE_INTEGER, true, null, Arrays.asList("1", "2"));
-        addAttribute("ResolutionInfo", "widthUnit", DATATYPE_INTEGER, true, null, Arrays.asList("1", "2", "3", "4", "5"));
+        addAttribute("ResolutionInfo", "hResUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.RESOLUTION_UNITS));
+        addAttribute("ResolutionInfo", "widthUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DIMENSION_UNITS));
         addAttribute("ResolutionInfo", "vRes", DATATYPE_FLOAT, true, null);
-        // TODO: Or use more friendly names?
-        addAttribute("ResolutionInfo", "vResUnit", DATATYPE_INTEGER, true, null, Arrays.asList("1", "2"));
-        addAttribute("ResolutionInfo", "heightUnit", DATATYPE_INTEGER, true, null, Arrays.asList("1", "2", "3", "4", "5"));
+        addAttribute("ResolutionInfo", "vResUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.RESOLUTION_UNITS));
+        addAttribute("ResolutionInfo", "heightUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DIMENSION_UNITS));
 
-        // ??? addElement("Thumbnail", "ImageResources", CHILD_POLICY_CHOICE);
+        // root -> ImageResources -> UnicodeAlphaNames
+        addElement("UnicodeAlphaNames", "ImageResources", 0, Integer.MAX_VALUE);
+        addChildElement("UnicodeAlphaNames", "Name"); // TODO: Does this really work?
 
-        // root -> ImageResources -> XMPData
-        addElement("XMPData", "ImageResources", CHILD_POLICY_CHOICE);
+
+        // root -> ImageResources -> VersionInfo
+        addElement("VersionInfo", "ImageResources", CHILD_POLICY_EMPTY);
+        addAttribute("VersionInfo", "version", DATATYPE_INTEGER, false, "1");
+        addBooleanAttribute("VersionInfo", "hasRealMergedData", false, false);
+        addAttribute("VersionInfo", "writer", DATATYPE_STRING, true, null);
+        addAttribute("VersionInfo", "reader", DATATYPE_STRING, true, null);
+        addAttribute("VersionInfo", "fileVersion", DATATYPE_INTEGER, true, "1");
+
+        // root -> ImageResources -> Thumbnail
+        addElement("Thumbnail", "ImageResources", CHILD_POLICY_EMPTY);
+        addObjectValue("Thumbnail", BufferedImage.class, true, null);
+
+        // root -> ImageResources -> UnicodeAlphaName
+        addElement("UnicodeAlphaName", "ImageResources", CHILD_POLICY_EMPTY);
+        addAttribute("UnicodeAlphaName", "value", DATATYPE_STRING, true, null);
+
+        // root -> ImageResources -> XMP
+        addElement("XMP", "ImageResources", CHILD_POLICY_CHOICE);
         // TODO: Incorporate XMP metadata here somehow (or treat as opaque bytes?)
-        addObjectValue("XMPData", Document.class, true, null);
+        addObjectValue("XMP", Document.class, true, null);
 
         // TODO: Layers
         //addElement("ChannelSourceDestinationRange", "LayerSomething", CHILD_POLICY_CHOICE);

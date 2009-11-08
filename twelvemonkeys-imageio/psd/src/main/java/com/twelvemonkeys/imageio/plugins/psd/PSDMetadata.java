@@ -43,10 +43,23 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     static final String[] DISPLAY_INFO_CS = {
             "RGB", "HSB", "CMYK", "PANTONE", "FOCOLTONE", "TRUMATCH", "TOYO", "LAB", "GRAYSCALE", null, "HKS", "DIC",
-            null, // ... (until index 2999),
+            null, // TODO: ... (until index 2999),
             "ANPA"
     };
     static final String[] DISPLAY_INFO_KINDS = {"selected", "protected"};
+
+    static final String[] RESOLUTION_UNITS = {null, "pixels/inch", "pixels/cm"};
+    static final String[] DIMENSION_UNITS = {null, "in", "cm", "pt", "picas", "columns"};
+
+    static final String[] JAVA_CS = {
+            "XYZ", "Lab", "Yuv", "YCbCr", "Yxy", "RGB", "GRAY", "HSV", "HLS", "CMYK", "CMY",
+            "2CLR", "3CLR", "4CLR", "5CLR", "6CLR", "7CLR", "8CLR", "9CLR", "ACLR", "BCLR", "CCLR", "DCLR", "ECLR", "FCLR"
+    };
+
+    static final String[] GUIDE_ORIENTATIONS = {"vertical", "horizontal"};
+
+    static final String[] PRINT_SCALE_STYLES = {"centered", "scaleToFit", "userDefined"};
+
 
     protected PSDMetadata() {
         // TODO: Allow XMP, EXIF and IPTC as extra formats?
@@ -155,8 +168,9 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
     }
 
     private Node createHeaderNode() {
-        IIOMetadataNode header = new IIOMetadataNode("PSDHeader");
+        IIOMetadataNode header = new IIOMetadataNode("Header");
 
+        header.setAttribute("type", "PSD");
         header.setAttribute("version", "1");
         header.setAttribute("channels", Integer.toString(mHeader.mChannels));
         header.setAttribute("height", Integer.toString(mHeader.mHeight));
@@ -175,7 +189,15 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
             // TODO: Always add name (if set) and id (as resourceId) to all nodes?
             // Resource Id is useful for people with access to the PSD spec..
 
-            if (imageResource instanceof PSDAlphaChannelInfo) {
+            if (imageResource instanceof ICCProfile) {
+                ICCProfile profile = (ICCProfile) imageResource;
+
+                // TODO: Format spec
+                node = new IIOMetadataNode("ICCProfile");
+                node.setAttribute("colorSpaceType", JAVA_CS[profile.getProfile().getColorSpaceType()]);
+                node.setUserObject(profile.getProfile());
+            }
+            else if (imageResource instanceof PSDAlphaChannelInfo) {
                 PSDAlphaChannelInfo alphaChannelInfo = (PSDAlphaChannelInfo) imageResource;
 
                 node = new IIOMetadataNode("AlphaChannelInfo");
@@ -185,8 +207,6 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                     nameNode.setAttribute("value", name);
                     node.appendChild(nameNode);
                 }
-
-                resource.appendChild(node);
             }
             else if (imageResource instanceof PSDDisplayInfo) {
                 PSDDisplayInfo displayInfo = (PSDDisplayInfo) imageResource;
@@ -205,14 +225,121 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 node.setAttribute("colors", builder.toString());
                 node.setAttribute("opacity", Integer.toString(displayInfo.mOpacity));
                 node.setAttribute("kind", DISPLAY_INFO_KINDS[displayInfo.mKind]);
+            }
+            else if (imageResource instanceof PSDGridAndGuideInfo) {
+                PSDGridAndGuideInfo info = (PSDGridAndGuideInfo) imageResource;
 
-                resource.appendChild(node);
+                node = new IIOMetadataNode("GridAndGuideInfo");
+                node.setAttribute("version", String.valueOf(info.mVersion));
+                node.setAttribute("verticalGridCycle", String.valueOf(info.mGridCycleVertical));
+                node.setAttribute("horizontalGridCycle", String.valueOf(info.mGridCycleHorizontal));
+
+                for (PSDGridAndGuideInfo.GuideResource guide : info.mGuides) {
+                    IIOMetadataNode guideNode = new IIOMetadataNode("Guide");
+                    guideNode.setAttribute("location", Integer.toString(guide.mLocation));
+                    guideNode.setAttribute("orientation", GUIDE_ORIENTATIONS[guide.mDirection]);
+                }
+            }
+            else if (imageResource instanceof PSDPixelAspectRatio) {
+                PSDPixelAspectRatio aspectRatio = (PSDPixelAspectRatio) imageResource;
+
+                node = new IIOMetadataNode("PixelAspectRatio");
+                node.setAttribute("version", String.valueOf(aspectRatio.mVersion));
+                node.setAttribute("aspectRatio", String.valueOf(aspectRatio.mAspect));
+            }
+            else if (imageResource instanceof PSDPrintFlags) {
+                PSDPrintFlags flags = (PSDPrintFlags) imageResource;
+
+                node = new IIOMetadataNode("PrintFlags");
+                node.setAttribute("labels", String.valueOf(flags.mLabels));
+                node.setAttribute("cropMarks", String.valueOf(flags.mCropMasks));
+                node.setAttribute("colorBars", String.valueOf(flags.mColorBars));
+                node.setAttribute("registrationMarks", String.valueOf(flags.mRegistrationMarks));
+                node.setAttribute("negative", String.valueOf(flags.mNegative));
+                node.setAttribute("flip", String.valueOf(flags.mFlip));
+                node.setAttribute("interpolate", String.valueOf(flags.mInterpolate));
+                node.setAttribute("caption", String.valueOf(flags.mCaption));
+            }
+            else if (imageResource instanceof PSDPrintFlagsInformation) {
+                PSDPrintFlagsInformation information = (PSDPrintFlagsInformation) imageResource;
+
+                node = new IIOMetadataNode("PrintFlagsInformation");
+                node.setAttribute("version", String.valueOf(information.mVersion));
+                node.setAttribute("cropMarks", String.valueOf(information.mCropMasks));
+                node.setAttribute("field", String.valueOf(information.mField));
+                node.setAttribute("bleedWidth", String.valueOf(information.mBleedWidth));
+                node.setAttribute("bleedScale", String.valueOf(information.mBleedScale));
+            }
+            else if (imageResource instanceof PSDPrintScale) {
+                PSDPrintScale printScale = (PSDPrintScale) imageResource;
+
+                node = new IIOMetadataNode("PrintScale");
+                node.setAttribute("style", PRINT_SCALE_STYLES[printScale.mStyle]);
+                node.setAttribute("xLocation", String.valueOf(printScale.mXLocation));
+                node.setAttribute("yLocation", String.valueOf(printScale.mYlocation));
+                node.setAttribute("scale", String.valueOf(printScale.mScale));
+            }
+            else if (imageResource instanceof PSDResolutionInfo) {
+                PSDResolutionInfo information = (PSDResolutionInfo) imageResource;
+
+                node = new IIOMetadataNode("ResolutionInfo");
+                node.setAttribute("horizontalResolution", String.valueOf(information.mHRes));
+                node.setAttribute("horizontalResolutionUnit", RESOLUTION_UNITS[information.mHResUnit]);
+                node.setAttribute("widthUnit", DIMENSION_UNITS[information.mWidthUnit]);
+                node.setAttribute("verticalResolution", String.valueOf(information.mVRes));
+                node.setAttribute("verticalResolutionUnit", RESOLUTION_UNITS[information.mVResUnit]);
+                node.setAttribute("heightUnit", DIMENSION_UNITS[information.mHeightUnit]);
+            }
+            else if (imageResource instanceof PSDUnicodeAlphaNames) {
+                PSDUnicodeAlphaNames alphaNames = (PSDUnicodeAlphaNames) imageResource;
+
+                node = new IIOMetadataNode("UnicodeAlphaNames");
+
+                for (String name : alphaNames.mNames) {
+                    IIOMetadataNode nameNode = new IIOMetadataNode("Name");
+                    nameNode.setAttribute("value", name);
+                    node.appendChild(nameNode);
+                }
+            }
+            else if (imageResource instanceof PSDVersionInfo) {
+                PSDVersionInfo information = (PSDVersionInfo) imageResource;
+
+                node = new IIOMetadataNode("VersionInfo");
+                node.setAttribute("version", String.valueOf(information.mVersion));
+                node.setAttribute("hasRealMergedData", String.valueOf(information.mHasRealMergedData));
+                node.setAttribute("writer", information.mWriter);
+                node.setAttribute("reader", information.mReader);
+                node.setAttribute("fileVersion", String.valueOf(information.mFileVersion));
+            }
+            else if (imageResource instanceof PSDThumbnail) {
+                // TODO: Revise/rethink this...
+                PSDThumbnail thumbnail = (PSDThumbnail) imageResource;
+
+                node = new IIOMetadataNode("Thumbnail");
+                // TODO: Thumbnail attributes + access to data, to avoid JPEG re-compression problems
+                node.setUserObject(thumbnail.getThumbnail());
+            }
+            else if (imageResource instanceof PSDIPTCData) {
+                // TODO: Revise/rethink this...
+                // Transcode to XMP? ;-)
+                PSDIPTCData iptc = (PSDIPTCData) imageResource;
+
+                node = new IIOMetadataNode("IPTC");
+                node.setUserObject(iptc.mDirectory);
+            }
+            else if (imageResource instanceof PSDEXIF1Data) {
+                // TODO: Revise/rethink this...
+                // Transcode to XMP? ;-)
+                PSDEXIF1Data exif = (PSDEXIF1Data) imageResource;
+
+                node = new IIOMetadataNode("EXIF");
+                node.setUserObject(exif.mDirectory);
             }
             else if (imageResource instanceof PSDXMPData) {
-                // TODO: Revise/rethink this...
+                // TODO: Revise/rethink this... Would it be possible to parse XMP as IIOMetadataNodes? Or is that just stupid...
                 PSDXMPData xmp = (PSDXMPData) imageResource;
 
-                node = new IIOMetadataNode("XMPData");
+                node = new IIOMetadataNode("XMP");
 
                 try {
                     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -225,20 +352,16 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 catch (Exception e) {
                     e.printStackTrace();
                 }
-
-                resource.appendChild(node);
             }
             else {
                 // Generic resource..
                 node = new IIOMetadataNode(PSDImageResource.resourceTypeForId(imageResource.mId));
-
-                resource.appendChild(node);
             }
-
 
             // TODO: More resources
 
-            node.setAttribute("resourceId", Integer.toHexString(imageResource.mId));
+            node.setAttribute("resourceId", String.format("0x%04x", imageResource.mId));
+            resource.appendChild(node);
         }
 
         return resource;
