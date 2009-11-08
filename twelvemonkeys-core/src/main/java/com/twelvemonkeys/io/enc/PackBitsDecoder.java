@@ -107,6 +107,7 @@ public final class PackBitsDecoder implements Decoder {
         int read = 0;
         final int max = pBuffer.length;
 
+        // TODO: Don't decode more than single runs, because some writers add pad bytes inside the stream...
         while (read < max) {
             int n;
             
