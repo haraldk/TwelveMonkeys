@@ -1,20 +1,15 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.util.FilterIterator;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
 
 import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.awt.image.IndexColorModel;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -26,27 +21,15 @@ import java.util.List;
  */
 public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
-    // TODO: Decide on image/stream metadata...
-    static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_image_1.0";
+    static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_1.0";
     static final String NATIVE_METADATA_FORMAT_CLASS_NAME = "com.twelvemonkeys.imageio.plugins.psd.PSDMetadataFormat";
 
+    // TODO: Move fields from PSDImageReader (header, color map, resources, etc) here
     PSDHeader mHeader;
     PSDColorData mColorData;
-    int mCompression = -1;
     List<PSDImageResource> mImageResources;
     PSDGlobalLayerMask mGlobalLayerMask;
     List<PSDLayerInfo> mLayerInfo;
-
-    static final String[] COLOR_MODES = {
-            "MONOCHROME", "GRAYSCALE", "INDEXED", "RGB", "CMYK", null, null, "MULTICHANNEL", "DUOTONE", "LAB"
-    };
-
-    static final String[] DISPLAY_INFO_CS = {
-            "RGB", "HSB", "CMYK", "PANTONE", "FOCOLTONE", "TRUMATCH", "TOYO", "LAB", "GRAYSCALE", null, "HKS", "DIC",
-            null, // ... (until index 2999),
-            "ANPA"
-    };
-    static final String[] DISPLAY_INFO_KINDS = {"selected", "protected"};
 
     protected PSDMetadata() {
         // TODO: Allow XMP, EXIF and IPTC as extra formats?
@@ -136,112 +119,8 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         }
     }
 
-    /// Native format support
-
     private Node getNativeTree() {
-        IIOMetadataNode root = new IIOMetadataNode(NATIVE_METADATA_FORMAT_NAME);
-
-        root.appendChild(createHeaderNode());
-
-        if (mHeader.mMode == PSD.COLOR_MODE_INDEXED) {
-            root.appendChild(createPaletteNode());
-        }
-
-        if (mImageResources != null && !mImageResources.isEmpty()) {
-            root.appendChild(createImageResourcesNode());
-        }
-        
-        return root;
-    }
-
-    private Node createHeaderNode() {
-        IIOMetadataNode header = new IIOMetadataNode("PSDHeader");
-
-        header.setAttribute("version", "1");
-        header.setAttribute("channels", Integer.toString(mHeader.mChannels));
-        header.setAttribute("height", Integer.toString(mHeader.mHeight));
-        header.setAttribute("width", Integer.toString(mHeader.mWidth));
-        header.setAttribute("bits", Integer.toString(mHeader.mBits));
-        header.setAttribute("mode", COLOR_MODES[mHeader.mMode]);
-
-        return header;
-    }
-
-    private Node createImageResourcesNode() {
-        IIOMetadataNode resource = new IIOMetadataNode("ImageResources");
-        IIOMetadataNode node;
-
-        for (PSDImageResource imageResource : mImageResources) {
-            // TODO: Always add name (if set) and id (as resourceId) to all nodes?
-            // Resource Id is useful for people with access to the PSD spec..
-
-            if (imageResource instanceof PSDAlphaChannelInfo) {
-                PSDAlphaChannelInfo alphaChannelInfo = (PSDAlphaChannelInfo) imageResource;
-
-                node = new IIOMetadataNode("AlphaChannelInfo");
-
-                for (String name : alphaChannelInfo.mNames) {
-                    IIOMetadataNode nameNode = new IIOMetadataNode("Name");
-                    nameNode.setAttribute("value", name);
-                    node.appendChild(nameNode);
-                }
-
-                resource.appendChild(node);
-            }
-            else if (imageResource instanceof PSDDisplayInfo) {
-                PSDDisplayInfo displayInfo = (PSDDisplayInfo) imageResource;
-
-                node = new IIOMetadataNode("DisplayInfo");
-                node.setAttribute("colorSpace", DISPLAY_INFO_CS[displayInfo.mColorSpace]);
-                
-                StringBuilder builder = new StringBuilder();
-                for (short color : displayInfo.mColors) {
-                    if (builder.length() > 0) {
-                        builder.append(" ");
-                    }
-                    builder.append(Integer.toString(color));
-                }
-
-                node.setAttribute("colors", builder.toString());
-                node.setAttribute("opacity", Integer.toString(displayInfo.mOpacity));
-                node.setAttribute("kind", DISPLAY_INFO_KINDS[displayInfo.mKind]);
-
-                resource.appendChild(node);
-            }
-            else if (imageResource instanceof PSDXMPData) {
-                // TODO: Revise/rethink this...
-                PSDXMPData xmp = (PSDXMPData) imageResource;
-
-                node = new IIOMetadataNode("XMPData");
-
-                try {
-                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder builder = factory.newDocumentBuilder();
-                    Document document = builder.parse(new InputSource(xmp.getData()));
-
-                    // Set the entire XMP document as user data
-                    node.setUserObject(document);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                resource.appendChild(node);
-            }
-            else {
-                // Generic resource..
-                node = new IIOMetadataNode(PSDImageResource.resourceTypeForId(imageResource.mId));
-
-                resource.appendChild(node);
-            }
-
-
-            // TODO: More resources
-
-            node.setAttribute("resourceId", Integer.toHexString(imageResource.mId));
-        }
-
-        return resource;
+        throw new UnsupportedOperationException("getNativeTree");
     }
 
     /// Standard format support
@@ -256,7 +135,7 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         switch (mHeader.mMode) {
             case PSD.COLOR_MODE_MONOCHROME:
             case PSD.COLOR_MODE_GRAYSCALE:
-            case PSD.COLOR_MODE_DUOTONE: // Rationale: Spec says treat as gray...
+            case PSD.COLOR_MODE_DUOTONE: // Rationale is spec says treat as gray...
                 cs = "GRAY";
                 break;
             case PSD.COLOR_MODE_RGB:
@@ -267,7 +146,8 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 cs = "CMYK";
                 break;
             case PSD.COLOR_MODE_MULTICHANNEL:
-                cs = getMultiChannelCS(mHeader.mChannels);
+                // TODO: FixMe
+                cs = "???";
                 break;
             case PSD.COLOR_MODE_LAB:
                 cs = "Lab";
@@ -278,10 +158,16 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         node.setAttribute("name", cs);
         chroma_node.appendChild(node);
 
-        // TODO: Channels might be 5 for RGB + A + Mask... Probably not correct
+        // TODO: Channels might be 5 for RGB + A + Mask...
         node = new IIOMetadataNode("NumChannels");
         node.setAttribute("value", Integer.toString(mHeader.mChannels));
         chroma_node.appendChild(node);
+
+//        if (gAMA_present) {
+//            node = new IIOMetadataNode("Gamma");
+//            node.setAttribute("value", Float.toString(gAMA_gamma*1.0e-5F));
+//            chroma_node.appendChild(node);
+//        }
 
         // TODO: Check if this is correct with bitmap (monchrome)
         node = new IIOMetadataNode("BlackIsZero");
@@ -289,11 +175,25 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         chroma_node.appendChild(node);
 
         if (mHeader.mMode == PSD.COLOR_MODE_INDEXED) {
-            node = createPaletteNode();
+            node = new IIOMetadataNode("Palette");
+
+            IndexColorModel cm = mColorData.getIndexColorModel();
+            for (int i = 0; i < cm.getMapSize(); i++) {
+                IIOMetadataNode entry =
+                    new IIOMetadataNode("PaletteEntry");
+                entry.setAttribute("index", Integer.toString(i));
+                entry.setAttribute("red",
+                                   Integer.toString(cm.getRed(i)));
+                entry.setAttribute("green",
+                                   Integer.toString(cm.getGreen(i)));
+                entry.setAttribute("blue",
+                                   Integer.toString(cm.getBlue(i)));
+
+                node.appendChild(entry);
+            }
             chroma_node.appendChild(node);
         }
 
-        // TODO: Hardcode background color to white?
 //        if (bKGD_present) {
 //            if (bKGD_colorType == PNGImageReader.PNG_COLOR_PALETTE) {
 //                node = new IIOMetadataNode("BackgroundIndex");
@@ -319,58 +219,21 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         return chroma_node;
     }
 
-    private IIOMetadataNode createPaletteNode() {
-        IIOMetadataNode node = new IIOMetadataNode("Palette");
-        IndexColorModel cm = mColorData.getIndexColorModel();
-
-        for (int i = 0; i < cm.getMapSize(); i++) {
-            IIOMetadataNode entry = new IIOMetadataNode("PaletteEntry");
-            entry.setAttribute("index", Integer.toString(i));
-            entry.setAttribute("red", Integer.toString(cm.getRed(i)));
-            entry.setAttribute("green", Integer.toString(cm.getGreen(i)));
-            entry.setAttribute("blue", Integer.toString(cm.getBlue(i)));
-
-            node.appendChild(entry);
-        }
-
-        return node;
-    }
-
-    private String getMultiChannelCS(short pChannels) {
-        if (pChannels < 16) {
-            return Integer.toHexString(pChannels) + "CLR";
-        }
-
-        throw new UnsupportedOperationException("Standard meta data format does not support more than 15 channels");
-    }
-
     @Override
     protected IIOMetadataNode getStandardCompressionNode() {
         IIOMetadataNode compression_node = new IIOMetadataNode("Compression");
         IIOMetadataNode node; // scratch node
 
         node = new IIOMetadataNode("CompressionTypeName");
-        String compression;
-        switch (mCompression) {
-            case PSD.COMPRESSION_NONE:
-                compression = "none";
-                break;
-            case PSD.COMPRESSION_RLE:
-                compression = "packbits";
-                break;
-            case PSD.COMPRESSION_ZIP:
-            case PSD.COMPRESSION_ZIP_PREDICTION:
-                compression = "zip";
-                break;
-            default:
-                throw new AssertionError("Unreachable");
-        }
-        node.setAttribute("value", compression);
+        // TODO: Only if set... 
+        node.setAttribute("value", "PackBits");
         compression_node.appendChild(node);
 
         node = new IIOMetadataNode("Lossless");
         node.setAttribute("value", "true");
         compression_node.appendChild(node);
+
+//        compression_node.appendChild(node);
 
         return compression_node;
     }
@@ -417,9 +280,9 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         node.setAttribute("value", "Normal");
         dimension_node.appendChild(node);
 
-        Iterator<PSDResolutionInfo> resolutionInfos = getResources(PSDResolutionInfo.class);
-        if (!resolutionInfos.hasNext()) {
-            PSDResolutionInfo resolutionInfo = resolutionInfos.next();
+        List<PSDResolutionInfo> resolutionInfos = getResources(PSDResolutionInfo.class);
+        if (!resolutionInfos.isEmpty()) {
+            PSDResolutionInfo resolutionInfo = resolutionInfos.get(0);
 
             node = new IIOMetadataNode("HorizontalPixelSize");
             node.setAttribute("value", Float.toString(asMM(resolutionInfo.mHResUnit, resolutionInfo.mHRes)));
@@ -467,49 +330,31 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     @Override
     protected IIOMetadataNode getStandardDocumentNode() {
-        IIOMetadataNode document_node = new IIOMetadataNode("Document");
-        IIOMetadataNode node; // scratch node
+        // TODO: PSDVersionInfo
 
-        node = new IIOMetadataNode("FormatVersion");
-        node.setAttribute("value", "1"); // PSD format version is always 1
-        document_node.appendChild(node);
-
-        // Get EXIF data if present
-        Iterator<PSDEXIF1Data> exif = getResources(PSDEXIF1Data.class);
-        if (exif.hasNext()) {
-            PSDEXIF1Data data = exif.next();
-
-            // Get the EXIF DateTime (aka ModifyDate) tag if present
-            PSDEXIF1Data.Entry dateTime = data.mDirectory.get(0x0132); // TODO: Constant
-            if (dateTime != null) {
-                node = new IIOMetadataNode("ImageModificationTime");
-                // Format: "YYYY:MM:DD hh:mm:ss" (with quotes! :-P)
-                String value = dateTime.getValueAsString();
-
-                node.setAttribute("year", value.substring(1, 5));
-                node.setAttribute("month", value.substring(6, 8));
-                node.setAttribute("day", value.substring(9, 11));
-                node.setAttribute("hour", value.substring(12, 14));
-                node.setAttribute("minute", value.substring(15, 17));
-                node.setAttribute("second", value.substring(18, 20));
-
-                document_node.appendChild(node);
-            }
-        }
-
-        return document_node;
+//        if (!tIME_present) {
+//            return null;
+//        }
+//
+//        IIOMetadataNode document_node = new IIOMetadataNode("Document");
+//        IIOMetadataNode node = null; // scratch node
+//
+//        node = new IIOMetadataNode("ImageModificationTime");
+//        node.setAttribute("year", Integer.toString(tIME_year));
+//        node.setAttribute("month", Integer.toString(tIME_month));
+//        node.setAttribute("day", Integer.toString(tIME_day));
+//        node.setAttribute("hour", Integer.toString(tIME_hour));
+//        node.setAttribute("minute", Integer.toString(tIME_minute));
+//        node.setAttribute("second", Integer.toString(tIME_second));
+//        document_node.appendChild(node);
+//
+//        return document_node;
+        return null;
     }
 
     @Override
     protected IIOMetadataNode getStandardTextNode() {
         // TODO: CaptionDigest?, EXIF, XMP
-
-        Iterator<PSDImageResource> textResources = getResources(PSDEXIF1Data.class, PSDXMPData.class);
-
-        while (textResources.hasNext()) {
-            PSDImageResource textResource = textResources.next();
-
-        }
         
 //        int numEntries = tEXt_keyword.size() +
 //            iTXt_keyword.size() + zTXt_keyword.size();
@@ -566,7 +411,8 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     @Override
     protected IIOMetadataNode getStandardTransparencyNode() {
-        IIOMetadataNode transparency_node = new IIOMetadataNode("Transparency");
+        IIOMetadataNode transparency_node =
+            new IIOMetadataNode("Transparency");
         IIOMetadataNode node; // scratch node
 
         node = new IIOMetadataNode("Alpha");
@@ -581,31 +427,20 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 mHeader.mMode == PSD.COLOR_MODE_CMYK & mHeader.mChannels >= 5;
     }
 
-    <T extends PSDImageResource> Iterator<T> getResources(final Class<T> pResourceType) {
-        // NOTE: The cast here is wrong, strictly speaking, but it does not matter...
-        @SuppressWarnings({"unchecked"})
-        Iterator<T> iterator = (Iterator<T>) mImageResources.iterator();
+    // TODO: Replace with filter iterator?
+    <T extends PSDImageResource> List<T> getResources(final Class<T> pResourceType) {
+        List<T> filtered = null;
 
-        return new FilterIterator<T>(iterator, new FilterIterator.Filter<T>() {
-            public boolean accept(final T pElement) {
-                return pResourceType.isInstance(pElement);
-            }
-        });
-    }
-
-    Iterator<PSDImageResource> getResources(final Class<? extends PSDImageResource>... pResourceTypes) {
-        Iterator<PSDImageResource> iterator = mImageResources.iterator();
-
-        return new FilterIterator<PSDImageResource>(iterator, new FilterIterator.Filter<PSDImageResource>() {
-            public boolean accept(final PSDImageResource pElement) {
-                for (Class<?> type : pResourceTypes) {
-                    if (type.isInstance(pElement)) {
-                        return true;
-                    }
+        for (PSDImageResource resource : mImageResources) {
+            if (pResourceType.isInstance(resource)) {
+                if (filtered == null) {
+                    filtered = new ArrayList<T>();
                 }
 
-                return false;
+                filtered.add(pResourceType.cast(resource));
             }
-        });
+        }
+
+        return filtered;
     }
 }

@@ -24,7 +24,7 @@ final class PSDPrintFlagsInformation extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         mVersion = pInput.readUnsignedShort();
-        mCropMasks = pInput.readBoolean();
+        mCropMasks = pInput.readUnsignedByte() != 0;
         mField = pInput.readUnsignedByte();
         mBleedWidth = pInput.readUnsignedInt();
         mBleedScale = pInput.readUnsignedShort();

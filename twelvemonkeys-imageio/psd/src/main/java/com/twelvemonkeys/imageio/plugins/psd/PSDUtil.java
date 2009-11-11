@@ -31,10 +31,8 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
-import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
-import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.zip.ZipInputStream;
@@ -59,22 +57,23 @@ final class PSDUtil {
         );
     }
 
-    // TODO: Proably also useful for PICT reader, move to some common util?
-    // TODO: Is this REALLY different from the previous method? Maybe the pad should not be read..
-    static String readPascalString(final DataInput pInput) throws IOException {
+    // TODO: Proably also useful for PICT reader, move to some common util? 
+    static String readPascalString(ImageInputStream pInput) throws IOException {
+        int length = pInput.readUnsignedByte();
+//        int length = pInput.readUnsignedShort();
+        byte[] bytes = new byte[length];
+        pInput.readFully(bytes);
+        if (length % 2 == 0) {
+            pInput.readByte(); // Pad
+        }
+        return new String(bytes);
+    }
+
+    static String readPascalStringByte(ImageInputStream pInput) throws IOException {
         int length = pInput.readUnsignedByte();
         byte[] bytes = new byte[length];
         pInput.readFully(bytes);
-
-        return StringUtil.decode(bytes, 0, bytes.length, "ASCII");
-    }
-
-    static String readUTF16String(final DataInput pInput) throws IOException {
-        int length = pInput.readInt();
-        byte[] bytes = new byte[length * 2];
-        pInput.readFully(bytes);
-
-        return StringUtil.decode(bytes, 0, bytes.length, "UTF-16");
+        return new String(bytes);
     }
 
     static DataInputStream createPackBitsStream(final ImageInputStream pInput, long pLength) {

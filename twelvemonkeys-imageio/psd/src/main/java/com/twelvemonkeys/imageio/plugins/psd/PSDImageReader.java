@@ -69,12 +69,11 @@ import java.util.List;
 // See http://www.adobeforums.com/webx?14@@.3bc381dc/0
 public class PSDImageReader extends ImageReaderBase {
     private PSDHeader mHeader;
-//    private PSDColorData mColorData;
-//    private List<PSDImageResource> mImageResources;
-//    private PSDGlobalLayerMask mGlobalLayerMask;
-//    private List<PSDLayerInfo> mLayerInfo;
+    private PSDColorData mColorData;
+    private List<PSDImageResource> mImageResources;
+    private PSDGlobalLayerMask mGlobalLayerMask;
+    private List<PSDLayerInfo> mLayerInfo;
     private ICC_ColorSpace mColorSpace;
-    protected PSDMetadata mMetadata;
 
     protected PSDImageReader(final ImageReaderSpi pOriginatingProvider) {
         super(pOriginatingProvider);
@@ -82,9 +81,8 @@ public class PSDImageReader extends ImageReaderBase {
 
     protected void resetMembers() {
         mHeader = null;
-//        mColorData = null;
-//        mImageResources = null;
-        mMetadata = null;
+        mColorData = null;
+        mImageResources = null;
         mColorSpace = null;
     }
 
@@ -124,7 +122,7 @@ public class PSDImageReader extends ImageReaderBase {
             case PSD.COLOR_MODE_INDEXED:
                 // TODO: 16 bit indexed?! Does it exist?
                 if (mHeader.mChannels == 1 && mHeader.mBits == 8) {
-                    return IndexedImageTypeSpecifier.createFromIndexColorModel(mMetadata.mColorData.getIndexColorModel());
+                    return IndexedImageTypeSpecifier.createFromIndexColorModel(mColorData.getIndexColorModel());
                 }
 
                 throw new IIOException(
@@ -266,7 +264,7 @@ public class PSDImageReader extends ImageReaderBase {
 
         if (mColorSpace == null) {
             ICC_Profile profile = null;
-            for (PSDImageResource resource : mMetadata.mImageResources) {
+            for (PSDImageResource resource : mImageResources) {
                 if (resource instanceof ICCProfile) {
                     profile = ((ICCProfile) resource).getProfile();
                     break;
@@ -335,8 +333,6 @@ public class PSDImageReader extends ImageReaderBase {
 
         int[] byteCounts = null;
         int compression = mImageInput.readShort();
-        // TODO: Need to make sure compression is set in metadata, even without reading the image data!        
-        mMetadata.mCompression = compression;
 
         switch (compression) {
             case PSD.COMPRESSION_NONE:
@@ -350,7 +346,7 @@ public class PSDImageReader extends ImageReaderBase {
                 break;
             case PSD.COMPRESSION_ZIP:
                 // TODO: Could probably use the ZIPDecoder (DeflateDecoder) here..
-            case PSD.COMPRESSION_ZIP_PREDICTION:
+            case PSD.COMPRESSION_ZIP_PREDICTON:
                 // TODO: Need to find out if the normal java.util.zip can handle this...
                 // Could be same as PNG prediction? Read up...
                 throw new IIOException("ZIP compression not supported yet");
@@ -697,9 +693,6 @@ public class PSDImageReader extends ImageReaderBase {
         if (mHeader == null) {
             mHeader = new PSDHeader(mImageInput);
 
-            mMetadata = new PSDMetadata();
-            mMetadata.mHeader = mHeader;
-
             /*
             Contains the required data to define the color mode.
 
@@ -712,7 +705,7 @@ public class PSDImageReader extends ImageReaderBase {
             around as a black box for use when saving the file.
              */
             if (mHeader.mMode == PSD.COLOR_MODE_INDEXED) {
-                mMetadata.mColorData = new PSDColorData(mImageInput);
+                mColorData = new PSDColorData(mImageInput);
             }
             else {
                 // TODO: We need to store the duotone spec if we decide to create a writer...
@@ -736,14 +729,14 @@ public class PSDImageReader extends ImageReaderBase {
         long length = mImageInput.readUnsignedInt();
 
         if (pParseData && length > 0) {
-            if (mMetadata.mImageResources == null) {
-                mMetadata.mImageResources = new ArrayList<PSDImageResource>();
+            if (mImageResources == null) {
+                mImageResources = new ArrayList<PSDImageResource>();
                 long expectedEnd = mImageInput.getStreamPosition() + length;
 
                 while (mImageInput.getStreamPosition() < expectedEnd) {
                     // TODO: Have PSDImageResources defer actual parsing? (Just store stream offsets)
                     PSDImageResource resource = PSDImageResource.read(mImageInput);
-                    mMetadata.mImageResources.add(resource);
+                    mImageResources.add(resource);
                 }
 
                 if (mImageInput.getStreamPosition() != expectedEnd) {
@@ -777,7 +770,7 @@ public class PSDImageReader extends ImageReaderBase {
             for (int i = 0; i < layerInfos.length; i++) {
                 layerInfos[i] = new PSDLayerInfo(mImageInput);
             }
-            mMetadata.mLayerInfo = Arrays.asList(layerInfos);
+            mLayerInfo = Arrays.asList(layerInfos);
 
             // TODO: Clean-up
             mImageInput.mark();
@@ -790,9 +783,9 @@ public class PSDImageReader extends ImageReaderBase {
                 BufferedImage layer = readLayerData(layerInfo, raw, imageType);
 
                 // TODO: Don't show! Store in meta data somehow...
-//                if (layer != null) {
-//                    showIt(layer, layerInfo.mLayerName + " " + layerInfo.mBlendMode.toString());
-//                }
+                if (layer != null) {
+                    showIt(layer, layerInfo.mLayerName + " " + layerInfo.mBlendMode.toString());
+                }
             }
 
             long read = mImageInput.getStreamPosition() - pos;
@@ -806,7 +799,7 @@ public class PSDImageReader extends ImageReaderBase {
             long layerMaskInfoLength = mImageInput.readUnsignedInt();
 //            System.out.println("GlobalLayerMaskInfo length: " + layerMaskInfoLength);
             if (layerMaskInfoLength > 0) {
-                mMetadata.mGlobalLayerMask = new PSDGlobalLayerMask(mImageInput);
+                mGlobalLayerMask = new PSDGlobalLayerMask(mImageInput);
 //                System.out.println("mGlobalLayerMask: " + mGlobalLayerMask);
             }
 
@@ -884,7 +877,7 @@ public class PSDImageReader extends ImageReaderBase {
 
                         break;
                     case PSD.COMPRESSION_ZIP:
-                    case PSD.COMPRESSION_ZIP_PREDICTION:
+                    case PSD.COMPRESSION_ZIP_PREDICTON:
                     default:
                         // Explicitly skipped above
                         throw new AssertionError(String.format("Unsupported layer data. Compression: %d", compression));
@@ -992,19 +985,16 @@ public class PSDImageReader extends ImageReaderBase {
         readImageResources(true);
         readLayerAndMaskInfo(true);
 
-        // TODO: Need to make sure compression is set in metadata, even without reading the image data!        
-        mMetadata.mCompression = mImageInput.readShort();
-
-//        mMetadata.mHeader = mHeader;
-//        mMetadata.mColorData = mColorData;
-//        mMetadata.mImageResources = mImageResources;
-
-        return mMetadata; // TODO: clone if we change to mutable metadata
+        PSDMetadata metadata = new PSDMetadata();
+        metadata.mHeader = mHeader;
+        metadata.mColorData = mColorData;
+        metadata.mImageResources = mImageResources;
+        return metadata;
     }
 
     @Override
     public IIOMetadata getImageMetadata(final int imageIndex, final String formatName, final Set<String> nodeNames) throws IOException {
-        // TODO: It might make sense to overload this, as there's loads of meta data in the file
+        // TODO: This might make sense, as there's loads of meta data in the file
         return super.getImageMetadata(imageIndex, formatName, nodeNames);
     }
 
@@ -1021,14 +1011,14 @@ public class PSDImageReader extends ImageReaderBase {
 
         List<PSDThumbnail> thumbnails = null;
 
-        if (mMetadata.mImageResources == null) {
+        if (mImageResources == null) {
             // TODO: Need flag here, to specify what resources to read...
             readImageResources(true);
             // TODO: Skip this, requires storing some stream offsets
             readLayerAndMaskInfo(false);
         }
 
-        for (PSDImageResource resource : mMetadata.mImageResources) {
+        for (PSDImageResource resource : mImageResources) {
             if (resource instanceof PSDThumbnail) {
                 if (thumbnails == null) {
                     thumbnails = new ArrayList<PSDThumbnail>();
@@ -1130,25 +1120,15 @@ public class PSDImageReader extends ImageReaderBase {
 //        System.out.println("imageReader.mHeader: " + imageReader.mHeader);
 
         imageReader.readImageResources(true);
-        System.out.println("imageReader.mImageResources: " + imageReader.mMetadata.mImageResources);
-        System.out.println();
+        System.out.println("imageReader.mImageResources: " + imageReader.mImageResources);
 
         imageReader.readLayerAndMaskInfo(true);
-        System.out.println("imageReader.mLayerInfo: " + imageReader.mMetadata.mLayerInfo);
+        System.out.println("imageReader.mLayerInfo: " + imageReader.mLayerInfo);
 //        System.out.println("imageReader.mGlobalLayerMask: " + imageReader.mGlobalLayerMask);
-        System.out.println();
 
         IIOMetadata metadata = imageReader.getImageMetadata(0);
-        Node node;
-        XMLSerializer serializer;
-
-        node = metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
-        serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
-        serializer.serialize(node, true);
-        System.out.println();
-
-        node = metadata.getAsTree(PSDMetadata.NATIVE_METADATA_FORMAT_NAME);
-        serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
+        Node node = metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        XMLSerializer serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
         serializer.serialize(node, true);
 
         if (imageReader.hasThumbnails(0)) {

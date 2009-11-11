@@ -37,7 +37,7 @@ class PSDThumbnail extends PSDImageResource {
      */
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        // TODO: Support for RAW RGB (format == 0): Extract RAW reader from PICT RAW QuickTime decompressor
+        // TODO: Support for RAW RGB (format == 0)
         int format = pInput.readInt();
         switch (format) {
             case 0:

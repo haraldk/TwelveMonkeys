@@ -98,12 +98,14 @@ class PSDLayerInfo {
         mLayerName = PSDUtil.readPascalString(pInput);
 
         int layerNameSize = mLayerName.length() + 1;
-
-        // Skip pad bytes for long word alignment
+        // readPascalString has already read pad byte for word alignment
+        if (layerNameSize % 2 != 0) {
+            layerNameSize++;
+        }
+        // Skip two more pad bytes if needed
         if (layerNameSize % 4 != 0) {
-            int skip = layerNameSize % 4;
-            pInput.skipBytes(skip);
-            layerNameSize += skip;
+            pInput.skipBytes(2);
+            layerNameSize += 2;
         }
 
         // TODO: There's some data skipped here...
