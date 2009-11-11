@@ -67,12 +67,8 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
                 STANDARD_INPUT_TYPE,
 //                new String[]{"com.twelvemkonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
                 null,
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                PSDMetadata.NATIVE_METADATA_FORMAT_NAME, PSDMetadata.NATIVE_METADATA_FORMAT_CLASS_NAME,
-                null, null // extra image metadata formats
+                true, null, null, null, null,
+                true, null, null, null, null
         );
     }
 

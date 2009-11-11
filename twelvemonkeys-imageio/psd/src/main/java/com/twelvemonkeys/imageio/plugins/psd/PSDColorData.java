@@ -47,7 +47,7 @@ class PSDColorData {
     final byte[] mColors;
     private IndexColorModel mColorModel;
 
-    PSDColorData(final ImageInputStream pInput) throws IOException {
+    PSDColorData(ImageInputStream pInput) throws IOException {
         int length = pInput.readInt();
         if (length == 0) {
             throw new IIOException("No palette information in PSD");
@@ -72,7 +72,7 @@ class PSDColorData {
         return mColorModel;
     }
 
-    private static int[] toInterleavedRGB(final byte[] pColors) {
+    private int[] toInterleavedRGB(byte[] pColors) {
         int[] rgb = new int[pColors.length / 3];
 
         for (int i = 0; i < rgb.length; i++) {

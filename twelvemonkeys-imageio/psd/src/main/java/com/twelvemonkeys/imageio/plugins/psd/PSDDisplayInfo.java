@@ -40,7 +40,7 @@ import java.io.IOException;
  * @version $Id: PSDResolutionInfo.java,v 1.0 May 2, 2008 3:58:19 PM haraldk Exp$
  */
 class PSDDisplayInfo extends PSDImageResource {
-    // TODO: Size of this struct should be 14.. Does not compute... Something bogus here 
+    // TODO: Size of this struct should be 14.. Does not compute... 
     //typedef _DisplayInfo
     //{
     //   WORD  ColorSpace;
@@ -67,20 +67,20 @@ class PSDDisplayInfo extends PSDImageResource {
 
 //        long left = mSize;
 //        while (left > 0) {
-        mColorSpace = pInput.readShort();
+            mColorSpace = pInput.readShort();
 
-        // Color[4]...?
+            // Color[4]...?
         mColors = new short[4];
-        mColors[0] = pInput.readShort();
-        mColors[1] = pInput.readShort();
-        mColors[2] = pInput.readShort();
-        mColors[3] = pInput.readShort();
+            mColors[0] = pInput.readShort();
+            mColors[1] = pInput.readShort();
+            mColors[2] = pInput.readShort();
+            mColors[3] = pInput.readShort();
 
-        mOpacity = pInput.readShort();
+            mOpacity = pInput.readShort();
 
-        mKind = pInput.readByte();
+            mKind = pInput.readByte();
 
-        pInput.readByte(); // Pad
+            pInput.readByte(); // Pad
 //            left -= 14;
 //        }
         pInput.skipBytes(mSize - 14);
