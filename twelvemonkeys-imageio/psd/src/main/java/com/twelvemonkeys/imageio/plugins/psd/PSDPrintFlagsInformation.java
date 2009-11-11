@@ -11,11 +11,11 @@ import java.io.IOException;
  * @version $Id: PSDPrintFlagsInfo.java,v 1.0 Jul 28, 2009 5:16:27 PM haraldk Exp$
  */
 final class PSDPrintFlagsInformation extends PSDImageResource {
-    private int mVersion;
-    private boolean mCropMasks;
-    private int mField;
-    private long mBleedWidth;
-    private int mBleedScale;
+    int mVersion;
+    boolean mCropMasks;
+    int mField;
+    long mBleedWidth;
+    int mBleedScale;
 
     PSDPrintFlagsInformation(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -24,8 +24,8 @@ final class PSDPrintFlagsInformation extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         mVersion = pInput.readUnsignedShort();
-        mCropMasks = pInput.readUnsignedByte() != 0;
-        mField = pInput.readUnsignedByte();
+        mCropMasks = pInput.readBoolean();
+        mField = pInput.readUnsignedByte(); // TODO: Is this really pad?
         mBleedWidth = pInput.readUnsignedInt();
         mBleedScale = pInput.readUnsignedShort();
 

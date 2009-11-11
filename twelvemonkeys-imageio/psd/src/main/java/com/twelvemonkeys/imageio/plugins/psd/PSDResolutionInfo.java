@@ -50,13 +50,12 @@ class PSDResolutionInfo extends PSDImageResource {
     //       WORD HeightUnit;        /* 1=in, 2=cm, 3=pt, 4=picas, 5=columns */
     //    } RESOLUTIONINFO;
 
-    private float mHRes;
-    private short mHResUnit;
-    private short mWidthUnit;
-    private float mVRes;
-    private short mVResUnit;
-    private short mHeightUnit;
-
+    float mHRes;
+    short mHResUnit;
+    short mWidthUnit;
+    float mVRes;
+    short mVResUnit;
+    short mHeightUnit;
 
     PSDResolutionInfo(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);

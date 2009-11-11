@@ -175,7 +175,7 @@ public class IFFImageWriter extends ImageWriterBase {
 
     private void writeMeta(RenderedImage pImage, int pBodyLength) throws IOException {
         // Annotation ANNO chunk, 8 + annoData.length bytes
-        String annotation = "Written by " + getOriginatingProvider().getDescription(null);
+        String annotation = "Written by " + getOriginatingProvider().getDescription(null) + " by " + getOriginatingProvider().getVendorName();
         GenericChunk anno = new GenericChunk(IFFUtil.toInt("ANNO".getBytes()), annotation.getBytes());
 
         ColorModel cm = pImage.getColorModel();

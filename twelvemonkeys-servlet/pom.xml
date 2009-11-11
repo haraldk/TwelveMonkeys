@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys-servlet</artifactId>
-    <version>2.2</version>
+    <version>2.3-SNAPSHOT</version>
     <name>TwelveMonkeys Servlet</name>
 
     <parent>
@@ -87,6 +87,22 @@
                 <artifactId>maven-resources-plugin</artifactId>
                 <configuration>
                   <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Title>${project.name}</Implementation-Title>
+                            <Implementation-Vendor>TwelveMonkeys</Implementation-Vendor>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Implementation-URL>http://github.com/haraldk/TwelveMonkeys</Implementation-URL>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>

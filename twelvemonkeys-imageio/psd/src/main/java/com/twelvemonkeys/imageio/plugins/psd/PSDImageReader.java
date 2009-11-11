@@ -31,8 +31,15 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.xml.XMLSerializer;
+import org.w3c.dom.Node;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -43,13 +50,11 @@ import java.awt.image.*;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 
 /**
- * ImageReader for Adobe Photoshop Document format.
+ * ImageReader for Adobe Photoshop Document (PSD) format.
  *
  * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -57,18 +62,19 @@ import java.util.List;
  * @version $Id: PSDImageReader.java,v 1.0 Apr 29, 2008 4:45:52 PM haraldk Exp$
  */
 // TODO: Implement ImageIO meta data interface
-// TODO: Allow reading separate (or some?) layers
+// TODO: API for reading separate layers
 // TODO: Consider Romain Guy's Java 2D implementation of PS filters for the blending modes in layers
 // http://www.curious-creature.org/2006/09/20/new-blendings-modes-for-java2d/
 // See http://www.codeproject.com/KB/graphics/PSDParser.aspx
 // See http://www.adobeforums.com/webx?14@@.3bc381dc/0
 public class PSDImageReader extends ImageReaderBase {
     private PSDHeader mHeader;
-    private PSDColorData mColorData;
-    private List<PSDImageResource> mImageResources;
-    private PSDGlobalLayerMask mGlobalLayerMask;
-    private List<PSDLayerInfo> mLayerInfo;
+//    private PSDColorData mColorData;
+//    private List<PSDImageResource> mImageResources;
+//    private PSDGlobalLayerMask mGlobalLayerMask;
+//    private List<PSDLayerInfo> mLayerInfo;
     private ICC_ColorSpace mColorSpace;
+    protected PSDMetadata mMetadata;
 
     protected PSDImageReader(final ImageReaderSpi pOriginatingProvider) {
         super(pOriginatingProvider);
@@ -76,8 +82,9 @@ public class PSDImageReader extends ImageReaderBase {
 
     protected void resetMembers() {
         mHeader = null;
-        mColorData = null;
-        mImageResources = null;
+//        mColorData = null;
+//        mImageResources = null;
+        mMetadata = null;
         mColorSpace = null;
     }
 
@@ -115,9 +122,9 @@ public class PSDImageReader extends ImageReaderBase {
                 );
 
             case PSD.COLOR_MODE_INDEXED:
-                // TODO: 16 bit indexed?!
+                // TODO: 16 bit indexed?! Does it exist?
                 if (mHeader.mChannels == 1 && mHeader.mBits == 8) {
-                    return IndexedImageTypeSpecifier.createFromIndexColorModel(mColorData.getIndexColorModel());
+                    return IndexedImageTypeSpecifier.createFromIndexColorModel(mMetadata.mColorData.getIndexColorModel());
                 }
 
                 throw new IIOException(
@@ -184,6 +191,11 @@ public class PSDImageReader extends ImageReaderBase {
                 throw new IIOException(
                         String.format("Unsupported channel count/bit depth for CMYK PSD: %d channels/%d bits", mHeader.mChannels, mHeader.mBits)
                 );
+
+            case PSD.COLOR_MODE_MULTICHANNEL:
+                // TODO: Implement
+            case PSD.COLOR_MODE_LAB:
+                // TODO: Implement
             default:
                 throw new IIOException(
                         String.format("Unsupported PSD MODE: %s (%d channels/%d bits)", mHeader.mMode, mHeader.mChannels, mHeader.mBits)
@@ -254,7 +266,7 @@ public class PSDImageReader extends ImageReaderBase {
 
         if (mColorSpace == null) {
             ICC_Profile profile = null;
-            for (PSDImageResource resource : mImageResources) {
+            for (PSDImageResource resource : mMetadata.mImageResources) {
                 if (resource instanceof ICCProfile) {
                     profile = ((ICCProfile) resource).getProfile();
                     break;
@@ -323,6 +335,8 @@ public class PSDImageReader extends ImageReaderBase {
 
         int[] byteCounts = null;
         int compression = mImageInput.readShort();
+        // TODO: Need to make sure compression is set in metadata, even without reading the image data!        
+        mMetadata.mCompression = compression;
 
         switch (compression) {
             case PSD.COMPRESSION_NONE:
@@ -336,7 +350,7 @@ public class PSDImageReader extends ImageReaderBase {
                 break;
             case PSD.COMPRESSION_ZIP:
                 // TODO: Could probably use the ZIPDecoder (DeflateDecoder) here..
-            case PSD.COMPRESSION_ZIP_PREDICTON:
+            case PSD.COMPRESSION_ZIP_PREDICTION:
                 // TODO: Need to find out if the normal java.util.zip can handle this...
                 // Could be same as PNG prediction? Read up...
                 throw new IIOException("ZIP compression not supported yet");
@@ -404,7 +418,7 @@ public class PSDImageReader extends ImageReaderBase {
                     read16bitChannel(c, mHeader.mChannels, data16, interleavedBands, bandOffset, pSourceCM, row16, pSource, pDest, pXSub, pYSub, mHeader.mWidth, mHeader.mHeight, pByteCounts, c * mHeader.mHeight, pCompression == PSD.COMPRESSION_RLE);
                     break;
                 default:
-                    throw new IIOException("Unknown PSD bit depth: " + mHeader.mBits);
+                    throw new IIOException(String.format("Unknown PSD bit depth: %s", mHeader.mBits));
             }
 
             if (abortRequested()) {
@@ -536,6 +550,7 @@ public class PSDImageReader extends ImageReaderBase {
         }
     }
 
+    @SuppressWarnings({"UnusedDeclaration"})
     private void read1bitChannel(final int pChannel, final int pChannelCount,
                                  final byte[] pData, final int pBands, final int pBandOffset,
                                  final ColorModel pSourceColorModel,
@@ -682,6 +697,9 @@ public class PSDImageReader extends ImageReaderBase {
         if (mHeader == null) {
             mHeader = new PSDHeader(mImageInput);
 
+            mMetadata = new PSDMetadata();
+            mMetadata.mHeader = mHeader;
+
             /*
             Contains the required data to define the color mode.
 
@@ -694,9 +712,10 @@ public class PSDImageReader extends ImageReaderBase {
             around as a black box for use when saving the file.
              */
             if (mHeader.mMode == PSD.COLOR_MODE_INDEXED) {
-                mColorData = new PSDColorData(mImageInput);
+                mMetadata.mColorData = new PSDColorData(mImageInput);
             }
             else {
+                // TODO: We need to store the duotone spec if we decide to create a writer...
                 // Skip color mode data for other modes
                 long length = mImageInput.readUnsignedInt();
                 mImageInput.skipBytes(length);
@@ -708,6 +727,7 @@ public class PSDImageReader extends ImageReaderBase {
     }
 
     // TODO: Flags or list of interesting resources to parse
+    // TODO: Obey ignoreMetadata
     private void readImageResources(final boolean pParseData) throws IOException {
         // TODO: Avoid unnecessary stream repositioning
         long pos = mImageInput.getFlushedPosition();
@@ -716,14 +736,14 @@ public class PSDImageReader extends ImageReaderBase {
         long length = mImageInput.readUnsignedInt();
 
         if (pParseData && length > 0) {
-            if (mImageResources == null) {
-                mImageResources = new ArrayList<PSDImageResource>();
+            if (mMetadata.mImageResources == null) {
+                mMetadata.mImageResources = new ArrayList<PSDImageResource>();
                 long expectedEnd = mImageInput.getStreamPosition() + length;
 
                 while (mImageInput.getStreamPosition() < expectedEnd) {
                     // TODO: Have PSDImageResources defer actual parsing? (Just store stream offsets)
                     PSDImageResource resource = PSDImageResource.read(mImageInput);
-                    mImageResources.add(resource);
+                    mMetadata.mImageResources.add(resource);
                 }
 
                 if (mImageInput.getStreamPosition() != expectedEnd) {
@@ -735,6 +755,8 @@ public class PSDImageReader extends ImageReaderBase {
         mImageInput.seek(pos + length + 4);
     }
 
+    // TODO: Flags or list of interesting resources to parse
+    // TODO: Obey ignoreMetadata
     private void readLayerAndMaskInfo(final boolean pParseData) throws IOException {
         // TODO: Make sure we are positioned correctly
         long length = mImageInput.readUnsignedInt();
@@ -755,7 +777,7 @@ public class PSDImageReader extends ImageReaderBase {
             for (int i = 0; i < layerInfos.length; i++) {
                 layerInfos[i] = new PSDLayerInfo(mImageInput);
             }
-            mLayerInfo = Arrays.asList(layerInfos);
+            mMetadata.mLayerInfo = Arrays.asList(layerInfos);
 
             // TODO: Clean-up
             mImageInput.mark();
@@ -767,10 +789,10 @@ public class PSDImageReader extends ImageReaderBase {
                 // TODO: If not explicitly needed, skip layers...
                 BufferedImage layer = readLayerData(layerInfo, raw, imageType);
 
-                // TODO: Don't show! Store in metadata somehow...
-                if (layer != null) {
-                    showIt(layer, layerInfo.mLayerName + " " + layerInfo.mBlendMode.toString());
-                }
+                // TODO: Don't show! Store in meta data somehow...
+//                if (layer != null) {
+//                    showIt(layer, layerInfo.mLayerName + " " + layerInfo.mBlendMode.toString());
+//                }
             }
 
             long read = mImageInput.getStreamPosition() - pos;
@@ -784,7 +806,7 @@ public class PSDImageReader extends ImageReaderBase {
             long layerMaskInfoLength = mImageInput.readUnsignedInt();
 //            System.out.println("GlobalLayerMaskInfo length: " + layerMaskInfoLength);
             if (layerMaskInfoLength > 0) {
-                mGlobalLayerMask = new PSDGlobalLayerMask(mImageInput);
+                mMetadata.mGlobalLayerMask = new PSDGlobalLayerMask(mImageInput);
 //                System.out.println("mGlobalLayerMask: " + mGlobalLayerMask);
             }
 
@@ -795,6 +817,7 @@ public class PSDImageReader extends ImageReaderBase {
             mImageInput.skipBytes(toSkip);
         }
         else {
+            // Skip entire layer and mask section
             mImageInput.skipBytes(length);
         }
     }
@@ -838,7 +861,7 @@ public class PSDImageReader extends ImageReaderBase {
             }
             else {
                 // 0 = red, 1 = green, etc
-                // ?1 = transparency mask; ?2 = user supplied layer mask
+                // -1 = transparency mask; -2 = user supplied layer mask
                 int c = channelInfo.mChannelId == -1 ? pLayerInfo.mChannelInfo.length - 1 : channelInfo.mChannelId;
 
                 // NOTE: For layers, byte counts are written per channel, while for the composite data
@@ -861,7 +884,7 @@ public class PSDImageReader extends ImageReaderBase {
 
                         break;
                     case PSD.COMPRESSION_ZIP:
-                    case PSD.COMPRESSION_ZIP_PREDICTON:
+                    case PSD.COMPRESSION_ZIP_PREDICTION:
                     default:
                         // Explicitly skipped above
                         throw new AssertionError(String.format("Unsupported layer data. Compression: %d", compression));
@@ -892,7 +915,7 @@ public class PSDImageReader extends ImageReaderBase {
                         read16bitChannel(c, imageType.getNumBands(), data16, interleavedBands, bandOffset, sourceCM, row16, area, area, xsub, ysub, width, height, byteCounts, 0, compression == PSD.COMPRESSION_RLE);
                         break;
                     default:
-                        throw new IIOException("Unknown PSD bit depth: " + mHeader.mBits);
+                        throw new IIOException(String.format("Unknown PSD bit depth: %s", mHeader.mBits));
                 }
 
                 if (abortRequested()) {
@@ -931,6 +954,60 @@ public class PSDImageReader extends ImageReaderBase {
         return pOriginal;
     }
 
+    /// Layer support
+    // TODO: For now, leave as Metadata
+
+    /*
+    int getNumLayers(int pImageIndex) throws IOException;
+
+    boolean hasLayers(int pImageIndex) throws IOException;
+
+    BufferedImage readLayer(int pImageIndex, int pLayerIndex, ImageReadParam pParam) throws IOException;
+
+    int getLayerWidth(int pImageIndex, int pLayerIndex) throws IOException;
+
+    int getLayerHeight(int pImageIndex, int pLayerIndex) throws IOException;
+
+    // ?
+    Point getLayerOffset(int pImageIndex, int pLayerIndex) throws IOException;
+
+     */
+
+    /// Metadata support
+    // TODO
+
+    @Override
+    public IIOMetadata getStreamMetadata() throws IOException {
+        // null might be appropriate here
+        // "For image formats that contain a single image, only image metadata is used."
+        return super.getStreamMetadata();
+    }
+
+    @Override
+    public IIOMetadata getImageMetadata(final int pImageIndex) throws IOException {
+        // TODO: Implement
+        checkBounds(pImageIndex);
+
+        readHeader();
+        readImageResources(true);
+        readLayerAndMaskInfo(true);
+
+        // TODO: Need to make sure compression is set in metadata, even without reading the image data!        
+        mMetadata.mCompression = mImageInput.readShort();
+
+//        mMetadata.mHeader = mHeader;
+//        mMetadata.mColorData = mColorData;
+//        mMetadata.mImageResources = mImageResources;
+
+        return mMetadata; // TODO: clone if we change to mutable metadata
+    }
+
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex, final String formatName, final Set<String> nodeNames) throws IOException {
+        // TODO: It might make sense to overload this, as there's loads of meta data in the file
+        return super.getImageMetadata(imageIndex, formatName, nodeNames);
+    }
+
     /// Thumbnail support
     @Override
     public boolean readerSupportsThumbnails() {
@@ -944,14 +1021,14 @@ public class PSDImageReader extends ImageReaderBase {
 
         List<PSDThumbnail> thumbnails = null;
 
-        if (mImageResources == null) {
+        if (mMetadata.mImageResources == null) {
             // TODO: Need flag here, to specify what resources to read...
             readImageResources(true);
             // TODO: Skip this, requires storing some stream offsets
             readLayerAndMaskInfo(false);
         }
 
-        for (PSDImageResource resource : mImageResources) {
+        for (PSDImageResource resource : mMetadata.mImageResources) {
             if (resource instanceof PSDThumbnail) {
                 if (thumbnails == null) {
                     thumbnails = new ArrayList<PSDThumbnail>();
@@ -965,13 +1042,13 @@ public class PSDImageReader extends ImageReaderBase {
     }
 
     @Override
-    public int getNumThumbnails(int pIndex) throws IOException {
+    public int getNumThumbnails(final int pIndex) throws IOException {
         List<PSDThumbnail> thumbnails = getThumbnailResources(pIndex);
 
         return thumbnails == null ? 0 : thumbnails.size();
     }
 
-    private PSDThumbnail getThumbnailResource(int pImageIndex, int pThumbnailIndex) throws IOException {
+    private PSDThumbnail getThumbnailResource(final int pImageIndex, final int pThumbnailIndex) throws IOException {
         List<PSDThumbnail> thumbnails = getThumbnailResources(pImageIndex);
 
         if (thumbnails == null) {
@@ -982,17 +1059,17 @@ public class PSDImageReader extends ImageReaderBase {
     }
 
     @Override
-    public int getThumbnailWidth(int pImageIndex, int pThumbnailIndex) throws IOException {
+    public int getThumbnailWidth(final int pImageIndex, final int pThumbnailIndex) throws IOException {
         return getThumbnailResource(pImageIndex, pThumbnailIndex).getWidth();
     }
 
     @Override
-    public int getThumbnailHeight(int pImageIndex, int pThumbnailIndex) throws IOException {
+    public int getThumbnailHeight(final int pImageIndex, final int pThumbnailIndex) throws IOException {
         return getThumbnailResource(pImageIndex, pThumbnailIndex).getHeight();
     }
 
     @Override
-    public BufferedImage readThumbnail(int pImageIndex, int pThumbnailIndex) throws IOException {
+    public BufferedImage readThumbnail(final int pImageIndex, final int pThumbnailIndex) throws IOException {
         // TODO: Thumbnail progress listeners...
         PSDThumbnail thumbnail = getThumbnailResource(pImageIndex, pThumbnailIndex);
 
@@ -1001,6 +1078,7 @@ public class PSDImageReader extends ImageReaderBase {
         processThumbnailStarted(pImageIndex, pThumbnailIndex);
         processThumbnailComplete();
 
+        // TODO: Returning a cached mutable thumbnail is not really safe...
         return thumbnail.getThumbnail();
     }
 
@@ -1052,11 +1130,26 @@ public class PSDImageReader extends ImageReaderBase {
 //        System.out.println("imageReader.mHeader: " + imageReader.mHeader);
 
         imageReader.readImageResources(true);
-//        System.out.println("imageReader.mImageResources: " + imageReader.mImageResources);
+        System.out.println("imageReader.mImageResources: " + imageReader.mMetadata.mImageResources);
+        System.out.println();
 
         imageReader.readLayerAndMaskInfo(true);
-        System.out.println("imageReader.mLayerInfo: " + imageReader.mLayerInfo);
+        System.out.println("imageReader.mLayerInfo: " + imageReader.mMetadata.mLayerInfo);
 //        System.out.println("imageReader.mGlobalLayerMask: " + imageReader.mGlobalLayerMask);
+        System.out.println();
+
+        IIOMetadata metadata = imageReader.getImageMetadata(0);
+        Node node;
+        XMLSerializer serializer;
+
+        node = metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
+        serializer.serialize(node, true);
+        System.out.println();
+
+        node = metadata.getAsTree(PSDMetadata.NATIVE_METADATA_FORMAT_NAME);
+        serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
+        serializer.serialize(node, true);
 
         if (imageReader.hasThumbnails(0)) {
             int thumbnails = imageReader.getNumThumbnails(0);

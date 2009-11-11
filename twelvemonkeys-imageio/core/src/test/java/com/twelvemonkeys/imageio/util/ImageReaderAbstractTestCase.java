@@ -36,6 +36,7 @@ import org.jmock.core.Stub;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadProgressListener;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -1320,7 +1321,9 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
 
             assertEquals(type.getColorModel(), result.getColorModel());
 
-//            assertEquals(type.getSampleModel(), result.getSampleModel());
+            // The following logically tests
+            // assertEquals(type.getSampleModel(), result.getSampleModel());
+            // but SampleModel does not have a proper equals method.
             SampleModel expectedModel = type.getSampleModel();
             SampleModel resultModel = result.getSampleModel();
 
@@ -1335,10 +1338,6 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
     }
 
-//    public void testSetDestinationTypeIllegal() throws IOException {
-//        throw new UnsupportedOperationException("Method testSetDestinationTypeIllegal not implemented"); // TODO: Implement
-//    }
-//
 //    public void testSetDestinationBands() throws IOException {
 //        throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
 //    }
@@ -1346,6 +1345,24 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
 //    public void testSetSourceBands() throws IOException {
 //        throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
 //    }
+
+    public void testProviderAndMetadataFormatNamesMatch() throws IOException {
+        ImageReaderSpi provider = createProvider();
+
+        ImageReader reader = createReader();
+        reader.setInput(getTestData().get(0).getInputStream());
+
+        IIOMetadata imageMetadata = reader.getImageMetadata(0);
+        if (imageMetadata != null) {
+            assertEquals(provider.getNativeImageMetadataFormatName(), imageMetadata.getNativeMetadataFormatName());
+        }
+
+        IIOMetadata streamMetadata = reader.getStreamMetadata();
+        if (streamMetadata != null) {
+            assertEquals(provider.getNativeStreamMetadataFormatName(), streamMetadata.getNativeMetadataFormatName());
+        }
+    }
+
 
     protected URL getClassLoaderResource(final String pName) {
         return getClass().getResource(pName);

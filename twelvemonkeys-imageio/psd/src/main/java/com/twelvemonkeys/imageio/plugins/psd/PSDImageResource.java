@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.lang.StringUtil;
+
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
 import java.io.IOException;
@@ -41,6 +43,9 @@ import java.lang.reflect.Field;
  * @version $Id: PSDImageResource.java,v 1.0 Apr 29, 2008 5:49:06 PM haraldk Exp$
  */
 class PSDImageResource {
+    // TODO: Refactor image resources to separate package
+    // TODO: Change constructor to store stream offset and length only (+ possibly the name), defer reading
+
     final short mId;
     final String mName;
     final long mSize;
@@ -50,8 +55,16 @@ class PSDImageResource {
 
         mName = PSDUtil.readPascalString(pInput);
 
+        // Skip pad
+        int nameSize = mName.length() + 1;
+        if (nameSize % 2 != 0) {
+            pInput.readByte();
+        }
+
         mSize = pInput.readUnsignedInt();
         readData(pInput);
+
+        // TODO: Sanity check reading here?
 
         // Data is even-padded
         if (mSize % 2 != 0) {
@@ -84,7 +97,10 @@ class PSDImageResource {
     protected StringBuilder toStringBuilder() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
 
-        builder.append(resourceTypeForId(mId));
+        String fakeType = resourceTypeForId(mId);
+        if (fakeType != null) {
+            builder.append("(").append(fakeType).append(")");
+        }
 
         builder.append("[ID: 0x");
         builder.append(Integer.toHexString(mId));
@@ -103,26 +119,32 @@ class PSDImageResource {
             case PSD.RES_ALPHA_CHANNEL_INFO:
             case PSD.RES_DISPLAY_INFO:
             case PSD.RES_PRINT_FLAGS:
+            case PSD.RES_IPTC_NAA:
+            case PSD.RES_GRID_AND_GUIDES_INFO:
             case PSD.RES_THUMBNAIL_PS4:
             case PSD.RES_THUMBNAIL:
             case PSD.RES_ICC_PROFILE:
+            case PSD.RES_VERSION_INFO:
             case PSD.RES_EXIF_DATA_1:
 //            case PSD.RES_EXIF_DATA_3:
             case PSD.RES_XMP_DATA:
+            case PSD.RES_PRINT_SCALE:
+            case PSD.RES_PIXEL_ASPECT_RATIO:
             case PSD.RES_PRINT_FLAGS_INFORMATION:
-                return "";
+                return null;
             default:
                 try {
                     for (Field field : PSD.class.getDeclaredFields()) {
                         if (field.getName().startsWith("RES_") && field.getInt(null) == pId) {
-                            return "(" + field.getName().substring(4) + ")";
+                            String name = field.getName().substring(4);
+                            return StringUtil.lispToCamel(name.replace("_", "-").toLowerCase(), true);
                         }
                     }
                 }
                 catch (IllegalAccessException ignore) {
                 }
                 
-                return "(unknown resource)";
+                return "UnknownResource";
         }
     }
 
@@ -144,15 +166,27 @@ class PSDImageResource {
                 return new PSDDisplayInfo(id, pInput);
             case PSD.RES_PRINT_FLAGS:
                 return new PSDPrintFlags(id, pInput);
+            case PSD.RES_IPTC_NAA:
+                return new PSDIPTCData(id, pInput);
+            case PSD.RES_GRID_AND_GUIDES_INFO:
+                return new PSDGridAndGuideInfo(id, pInput);
             case PSD.RES_THUMBNAIL_PS4:
             case PSD.RES_THUMBNAIL:
                 return new PSDThumbnail(id, pInput);
             case PSD.RES_ICC_PROFILE:
                 return new ICCProfile(id, pInput);
+            case PSD.RES_UNICODE_ALPHA_NAMES:
+                return new PSDUnicodeAlphaNames(id, pInput);
+            case PSD.RES_VERSION_INFO:
+                return new PSDVersionInfo(id, pInput);
             case PSD.RES_EXIF_DATA_1:
                 return new PSDEXIF1Data(id, pInput);
             case PSD.RES_XMP_DATA:
                 return new PSDXMPData(id, pInput);
+            case PSD.RES_PRINT_SCALE:
+                return new PSDPrintScale(id, pInput);
+            case PSD.RES_PIXEL_ASPECT_RATIO:
+                return new PSDPixelAspectRatio(id, pInput);
             case PSD.RES_PRINT_FLAGS_INFORMATION:
                 return new PSDPrintFlagsInformation(id, pInput);
             default:

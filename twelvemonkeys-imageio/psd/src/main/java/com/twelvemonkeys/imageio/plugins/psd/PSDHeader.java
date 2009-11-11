@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import org.w3c.dom.Node;
+
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
 import java.io.IOException;
@@ -61,7 +64,7 @@ class PSDHeader {
     final short mBits;
     final short mMode;
 
-    PSDHeader(ImageInputStream pInput) throws IOException {
+    PSDHeader(final ImageInputStream pInput) throws IOException {
         int signature = pInput.readInt();
         if (signature != PSD.SIGNATURE_8BPS) {
             throw new IIOException("Not a PSD document, expected signature \"8BPS\": \"" + PSDUtil.intToStr(signature) + "\" (0x" + Integer.toHexString(signature) + ")");

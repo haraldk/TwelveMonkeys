@@ -11,14 +11,14 @@ import java.io.IOException;
  * @version $Id: PSDPrintFlagsInfo.java,v 1.0 Jul 28, 2009 5:16:27 PM haraldk Exp$
  */
 final class PSDPrintFlags extends PSDImageResource {
-    private boolean mLabels;
-    private boolean mCropMasks;
-    private boolean mColorBars;
-    private boolean mRegistrationMarks;
-    private boolean mNegative;
-    private boolean mFlip;
-    private boolean mInterpolate;
-    private boolean mCaption;
+    boolean mLabels;
+    boolean mCropMasks;
+    boolean mColorBars;
+    boolean mRegistrationMarks;
+    boolean mNegative;
+    boolean mFlip;
+    boolean mInterpolate;
+    boolean mCaption;
 
     PSDPrintFlags(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -26,14 +26,14 @@ final class PSDPrintFlags extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mLabels = pInput.readUnsignedByte() != 0;
-        mCropMasks = pInput.readUnsignedByte() != 0;
-        mColorBars = pInput.readUnsignedByte() != 0;
-        mRegistrationMarks = pInput.readUnsignedByte() != 0;
-        mNegative = pInput.readUnsignedByte() != 0;
-        mFlip = pInput.readUnsignedByte() != 0;
-        mInterpolate = pInput.readUnsignedByte() != 0;
-        mCaption = pInput.readUnsignedByte() != 0;
+        mLabels = pInput.readBoolean();
+        mCropMasks = pInput.readBoolean();
+        mColorBars = pInput.readBoolean();
+        mRegistrationMarks = pInput.readBoolean();
+        mNegative = pInput.readBoolean();
+        mFlip = pInput.readBoolean();
+        mInterpolate = pInput.readBoolean();
+        mCaption = pInput.readBoolean();
 
         pInput.skipBytes(mSize - 8);
     }
