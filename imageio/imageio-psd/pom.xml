@@ -3,28 +3,26 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.twelvemonkeys.imageio</groupId>
-    <artifactId>twelvemonkeys-imageio-psd</artifactId>
-    <version>2.3-SNAPSHOT</version>
+    <parent>
+        <groupId>com.twelvemonkeys.imageio</groupId>
+        <artifactId>imageio</artifactId>
+        <version>2.3-SNAPSHOT</version>
+    </parent>
+    <artifactId>imageio-psd</artifactId>
     <name>TwelveMonkeys ImageIO PSD plugin</name>
     <description>
         ImageIO plugin for Adobe Photoshop Document (PSD).
     </description>
 
-    <parent>
-        <artifactId>twelvemonkeys-imageio</artifactId>
-        <groupId>com.twelvemonkeys</groupId>
-        <version>2.3-SNAPSHOT</version>
-    </parent>
 
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
-            <artifactId>twelvemonkeys-imageio-core</artifactId>
+            <artifactId>imageio-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
-            <artifactId>twelvemonkeys-imageio-core</artifactId>
+            <artifactId>imageio-core</artifactId>
             <classifier>tests</classifier>
         </dependency>
     </dependencies>
