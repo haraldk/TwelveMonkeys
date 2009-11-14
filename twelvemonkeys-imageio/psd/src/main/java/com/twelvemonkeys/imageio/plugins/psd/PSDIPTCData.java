@@ -1,5 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.metadata.iptc.IPTCReader;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.IIOException;
@@ -7,8 +8,13 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.*;
-import java.util.*;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * PSDIPTCData
@@ -20,7 +26,7 @@ import java.util.*;
 final class PSDIPTCData extends PSDImageResource {
     // TODO: Refactor to be more like PSDEXIF1Data...
     // TODO: Extract IPTC/EXIF/XMP metadata extraction/parsing to separate module(s)
-    Directory mDirectory;
+    com.twelvemonkeys.imageio.metadata.Directory mDirectory;
 
     PSDIPTCData(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -28,7 +34,8 @@ final class PSDIPTCData extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mDirectory = Directory.read(pInput, mSize);
+        // Read IPTC directory
+        mDirectory = new IPTCReader().read(pInput);
     }
 
     @Override
@@ -40,17 +47,37 @@ final class PSDIPTCData extends PSDImageResource {
     }
 
     static class Entry {
-        private int mTagId;
-        private String mValue;
+        final int mTagId;
+        private Object mValue;
 
-        public Entry(int pTagId, String pValue) {
+        public Entry(final int pTagId, final Object pValue) {
             mTagId = pTagId;
             mValue = pValue;
         }
 
         @Override
         public String toString() {
-            return (mTagId >> 8) + ":" + (mTagId & 0xff) + ": " + mValue;
+            return String.format("%d:%d: %s", mTagId >> 8, mTagId & 0xff, mValue);
+        }
+
+        public final String getTypeName() {
+            // TODO: Should this really look like EXIF?
+            if (mTagId == IPTC.TAG_RECORD_VERSION) {
+                return "SHORT";
+            }
+            else if (mValue instanceof String) {
+                return "ASCII";
+            }
+
+            return "Unknown type";
+        }
+
+        public final String getValueAsString() {
+            return String.valueOf(mValue);
+        }
+
+        public final Object getValue() {
+            return mValue;
         }
     }
     
@@ -60,6 +87,7 @@ final class PSDIPTCData extends PSDImageResource {
         private static final int ENCODING_UTF_8 = 0x1b2547;
 
         private int mEncoding = ENCODING_UNSPECIFIED;
+
         final List<Entry> mEntries = new ArrayList<Entry>();
 
         private Directory() {}
@@ -67,6 +95,16 @@ final class PSDIPTCData extends PSDImageResource {
         @Override
         public String toString() {
             return "Directory" + mEntries.toString();
+        }
+
+        public Entry get(int pTagId) {
+            for (Entry entry : mEntries) {
+                if (entry.mTagId == pTagId) {
+                    return entry;
+                }
+            }
+
+            return null;
         }
 
         public Iterator<Entry> iterator() {
@@ -81,43 +119,33 @@ final class PSDIPTCData extends PSDImageResource {
             // For each tag
             while (pInput.getStreamPosition() < streamEnd) {
                 // Identifies start of a tag
-                byte b = pInput.readByte();
-                if (b != 0x1c) {
-                    throw new IIOException("Corrupt IPTC stream segment");
+                byte marker = pInput.readByte();
+
+                if (marker != 0x1c) {
+                    throw new IIOException(String.format("Corrupt IPTC stream segment, found 0x%02x (expected 0x1c)", marker));
                 }
 
-                // We need at least four bytes left to read a tag
-                if (pInput.getStreamPosition() + 4 >= streamEnd) {
-                    break;
-                }
-
-                int directoryType = pInput.readUnsignedByte();
-                int tagType = pInput.readUnsignedByte();
+                int tagId = pInput.readShort();
                 int tagByteCount = pInput.readUnsignedShort();
 
-                if (pInput.getStreamPosition() + tagByteCount > streamEnd) {
-                    throw new IIOException("Data for tag extends beyond end of IPTC segment: " + (tagByteCount + pInput.getStreamPosition() - streamEnd));
-                }
-
-                directory.processTag(pInput, directoryType, tagType, tagByteCount);
+                directory.readEntry(pInput, tagId, tagByteCount);
             }
 
             return directory;
         }
 
-        private void processTag(ImageInputStream pInput, int directoryType, int tagType, int tagByteCount) throws IOException {
-            int tagIdentifier = (directoryType << 8) | tagType;
+        private void readEntry(final ImageInputStream pInput, final int pTagId, final int pLength) throws IOException {
+            Object value = null;
 
-            String str = null;
-            switch (tagIdentifier) {
+            switch (pTagId) {
                 case IPTC.TAG_CODED_CHARACTER_SET:
-                    // TODO: Use this encoding!?
+                    // TODO: Mapping from ISO 646 to Java supported character sets?
                     // TODO: Move somewhere else?
-                    mEncoding = parseEncoding(pInput, tagByteCount);
+                    mEncoding = parseEncoding(pInput, pLength);
                     return;
                 case IPTC.TAG_RECORD_VERSION:
-                    // short
-                    str = Integer.toString(pInput.readUnsignedShort());
+                    // A single unsigned short value
+                    value = pInput.readUnsignedShort();
                     break;
 //                case IPTC.TAG_RELEASE_DATE:
 //                case IPTC.TAG_EXPIRATION_DATE:
@@ -144,50 +172,26 @@ final class PSDIPTCData extends PSDImageResource {
 //                    }
 //
                 default:
+                    // Skip non-Application fields, as they are typically not human readable
+                    if ((pTagId & 0xff00) != IPTC.APPLICATION_RECORD) {
+                        pInput.skipBytes(pLength);
+                        return;
+                    }
+
                     // fall through
             }
 
-            // Skip non-Application fields, as they are typically not human readable
-            if (directoryType << 8 != IPTC.APPLICATION_RECORD) {
-                return;
-            }
-
             // If we don't have a value, treat it as a string
-            if (str == null) {
-                if (tagByteCount < 1) {
-                    str = "(No value)";
+            if (value == null) {
+                if (pLength < 1) {
+                    value = "(No value)";
                 }
                 else {
-                    str = String.format("\"%s\"", parseString(pInput, tagByteCount));
+                    value = parseString(pInput, pLength);
                 }
             }
 
-            mEntries.add(new Entry(tagIdentifier, str));
-
-//            if (directory.containsTag(tagIdentifier)) {
-//                // TODO: Does that REALLY help for performance?!
-//                // this fancy string[] business avoids using an ArrayList for performance reasons
-//                String[] oldStrings;
-//                String[] newStrings;
-//                try {
-//                    oldStrings = directory.getStringArray(tagIdentifier);
-//                }
-//                catch (MetadataException e) {
-//                    oldStrings = null;
-//                }
-//                if (oldStrings == null) {
-//                    newStrings = new String[1];
-//                }
-//                else {
-//                    newStrings = new String[oldStrings.length + 1];
-//                    System.arraycopy(oldStrings, 0, newStrings, 0, oldStrings.length);
-//                }
-//                newStrings[newStrings.length - 1] = str;
-//                directory.setStringArray(tagIdentifier, newStrings);
-//            }
-//            else {
-//                directory.setString(tagIdentifier, str);
-//            }
+            mEntries.add(new Entry(pTagId, value));
         }
 
 //        private Date getDateForTime(final Directory directory, final int tagIdentifier) {
@@ -267,22 +271,23 @@ final class PSDIPTCData extends PSDImageResource {
 //        }
 
         // TODO: Pass encoding as parameter? Use if specified
-        private String parseString(final ImageInputStream pInput, int length) throws IOException {
-            // NOTE: The IPTC "spec" says ISO 646 or ISO 2022 encoding. UTF-8 contains all 646 characters, but not 2022.
+        private String parseString(final ImageInputStream pInput, final int pLength) throws IOException {
+            byte[] data = new byte[pLength];
+            pInput.readFully(data);
+
+            // NOTE: The IPTC specification says character data should use ISO 646 or ISO 2022 encoding.
+            // UTF-8 contains all 646 characters, but not 2022.
             // This is however close to what libiptcdata does, see: http://libiptcdata.sourceforge.net/docs/iptc-i18n.html
-            // First try to decode using UTF-8 (which seems to be the de-facto standard)
-            String str;
             Charset charset = Charset.forName("UTF-8");
             CharsetDecoder decoder = charset.newDecoder();
-            CharBuffer chars;
-            byte[] data = new byte[length];
-            pInput.readFully(data);
+
             try {
+                // First try to decode using UTF-8 (which seems to be the de-facto standard)
                 // Will fail fast on illegal UTF-8-sequences
-                chars = decoder.onMalformedInput(CodingErrorAction.REPORT)
+                CharBuffer chars = decoder.onMalformedInput(CodingErrorAction.REPORT)
                         .onUnmappableCharacter(CodingErrorAction.REPORT)
                         .decode(ByteBuffer.wrap(data));
-                str = chars.toString();
+                return chars.toString();
             }
             catch (CharacterCodingException notUTF8) {
                 if (mEncoding == ENCODING_UTF_8) {
@@ -291,10 +296,8 @@ final class PSDIPTCData extends PSDImageResource {
 
                 // Fall back to use ISO-8859-1
                 // This will not fail, but may may create wrong fallback-characters
-                str = StringUtil.decode(data, 0, data.length, "ISO8859_1");
+                return StringUtil.decode(data, 0, data.length, "ISO8859_1");
             }
-
-            return str;
         }
     }
 

@@ -44,7 +44,6 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // columns?
         addAttribute("Header", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
         addAttribute("Header", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
-        // TODO: Consider using more readable names?!
         addAttribute("Header", "mode", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
 
         /*

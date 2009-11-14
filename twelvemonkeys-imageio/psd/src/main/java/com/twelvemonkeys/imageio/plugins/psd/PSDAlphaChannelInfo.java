@@ -34,11 +34,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * PSDAlhpaChannelInfo
+ * PSDAlphaChannelInfo
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlhpaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
+ * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
  */
 class PSDAlphaChannelInfo extends PSDImageResource {
     List<String> mNames;
@@ -50,6 +50,7 @@ class PSDAlphaChannelInfo extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         mNames = new ArrayList<String>();
+
         long left = mSize;
         while (left > 0) {
             String name = PSDUtil.readPascalString(pInput);

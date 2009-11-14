@@ -35,8 +35,8 @@ final class PSDVersionInfo extends PSDImageResource {
         mVersion = pInput.readInt();
         mHasRealMergedData = pInput.readBoolean();
 
-        mWriter = PSDUtil.readUTF16String(pInput);
-        mReader = PSDUtil.readUTF16String(pInput);
+        mWriter = PSDUtil.readUnicodeString(pInput);
+        mReader = PSDUtil.readUnicodeString(pInput);
         
         mFileVersion = pInput.readInt();
     }

@@ -1,14 +1,13 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.FilterIterator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
-import javax.imageio.metadata.IIOInvalidTreeException;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -24,7 +23,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDMetadata.java,v 1.0 Nov 4, 2009 5:28:12 PM haraldk Exp$
  */
-public final class PSDMetadata extends IIOMetadata implements Cloneable {
+public final class PSDMetadata extends AbstractMetadata {
 
     // TODO: Decide on image/stream metadata...
     static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_image_1.0";
@@ -60,98 +59,15 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     static final String[] PRINT_SCALE_STYLES = {"centered", "scaleToFit", "userDefined"};
 
-
     protected PSDMetadata() {
         // TODO: Allow XMP, EXIF and IPTC as extra formats?
         super(true, NATIVE_METADATA_FORMAT_NAME, NATIVE_METADATA_FORMAT_CLASS_NAME, null, null);
     }
 
-    @Override
-    public boolean isReadOnly() {
-        // TODO: Extract to abstract metadata impl class?
-        return true;
-    }
-
-    @Override
-    public Node getAsTree(final String pFormatName) {
-        validateFormatName(pFormatName);
-
-        if (pFormatName.equals(nativeMetadataFormatName)) {
-            return getNativeTree();
-        }
-        else if (pFormatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
-            return getStandardTree();
-        }
-
-        throw new AssertionError("Unreachable");
-    }
-
-    @Override
-    public void mergeTree(final String pFormatName, final Node pRoot) throws IIOInvalidTreeException {
-        // TODO: Extract to abstract metadata impl class?
-        assertMutable();
-
-        validateFormatName(pFormatName);
-
-        if (!pRoot.getNodeName().equals(nativeMetadataFormatName)) {
-            throw new IIOInvalidTreeException("Root must be " + nativeMetadataFormatName, pRoot);
-        }
-
-        Node node = pRoot.getFirstChild();
-        while (node != null) {
-            // TODO: Merge values from node into this
-
-            // Move to the next sibling
-            node = node.getNextSibling();
-        }
-    }
-
-    @Override
-    public void reset() {
-        // TODO: Extract to abstract metadata impl class?
-        assertMutable();
-
-        throw new UnsupportedOperationException("Method reset not implemented"); // TODO: Implement
-    }
-
-    // TODO: Extract to abstract metadata impl class?
-    private void assertMutable() {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    // TODO: Extract to abstract metadata impl class?
-    private void validateFormatName(final String pFormatName) {
-        String[] metadataFormatNames = getMetadataFormatNames();
-
-        if (metadataFormatNames != null) {
-            for (String metadataFormatName : metadataFormatNames) {
-                if (metadataFormatName.equals(pFormatName)) {
-                    return; // Found, we're ok!
-                }
-            }
-        }
-
-        throw new IllegalArgumentException(
-                String.format("Bad format name: \"%s\". Expected one of %s", pFormatName, Arrays.toString(metadataFormatNames))
-        );
-    }
-
-    @Override
-    public Object clone() {
-        // TODO: Make it a deep clone
-        try {
-            return super.clone();
-        }
-        catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /// Native format support
 
-    private Node getNativeTree() {
+    @Override
+    protected Node getNativeTree() {
         IIOMetadataNode root = new IIOMetadataNode(NATIVE_METADATA_FORMAT_NAME);
 
         root.appendChild(createHeaderNode());
@@ -195,6 +111,18 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 // TODO: Format spec
                 node = new IIOMetadataNode("ICCProfile");
                 node.setAttribute("colorSpaceType", JAVA_CS[profile.getProfile().getColorSpaceType()]);
+//
+//                FastByteArrayOutputStream data = new FastByteArrayOutputStream(0);
+//                EncoderStream base64 = new EncoderStream(data, new Base64Encoder(), true);
+//
+//                try {
+//                    base64.write(profile.getProfile().getData());
+//                }
+//                catch (IOException ignore) {
+//                }
+//
+//                byte[] bytes = data.toByteArray();
+//                node.setAttribute("data", StringUtil.decode(bytes, 0, bytes.length, "ASCII"));
                 node.setUserObject(profile.getProfile());
             }
             else if (imageResource instanceof PSDAlphaChannelInfo) {
@@ -215,10 +143,12 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 node.setAttribute("colorSpace", DISPLAY_INFO_CS[displayInfo.mColorSpace]);
                 
                 StringBuilder builder = new StringBuilder();
+
                 for (short color : displayInfo.mColors) {
                     if (builder.length() > 0) {
                         builder.append(" ");
                     }
+
                     builder.append(Integer.toString(color));
                 }
 
@@ -324,30 +254,65 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 // Transcode to XMP? ;-)
                 PSDIPTCData iptc = (PSDIPTCData) imageResource;
 
-                node = new IIOMetadataNode("IPTC");
+                node = new IIOMetadataNode("Directory");
+                node.setAttribute("type", "IPTC");
                 node.setUserObject(iptc.mDirectory);
+
+                for (Entry entry : iptc.mDirectory) {
+                    IIOMetadataNode tag = new IIOMetadataNode("Entry");
+                    tag.setAttribute("tag", String.format("%d:%02d", (Integer) entry.getIdentifier() >> 8, (Integer) entry.getIdentifier() & 0xff));
+
+                    String field = entry.getFieldName();
+                    if (field != null) {
+                        tag.setAttribute("field", String.format("%s", field));
+                    }
+                    tag.setAttribute("value", entry.getValueAsString());
+
+                    String type = entry.getTypeName();
+                    if (type != null) {
+                        tag.setAttribute("type", type);
+                    }
+                    node.appendChild(tag);
+                }
             }
             else if (imageResource instanceof PSDEXIF1Data) {
                 // TODO: Revise/rethink this...
                 // Transcode to XMP? ;-)
                 PSDEXIF1Data exif = (PSDEXIF1Data) imageResource;
 
-                node = new IIOMetadataNode("EXIF");
+                node = new IIOMetadataNode("Directory");
+                node.setAttribute("type", "EXIF");
+                // TODO: Set byte[] data instead
                 node.setUserObject(exif.mDirectory);
+
+                appendEntries(node, exif.mDirectory);
             }
             else if (imageResource instanceof PSDXMPData) {
                 // TODO: Revise/rethink this... Would it be possible to parse XMP as IIOMetadataNodes? Or is that just stupid...
+                // Or maybe use the Directory approach used by IPTC and EXIF.. 
                 PSDXMPData xmp = (PSDXMPData) imageResource;
 
                 node = new IIOMetadataNode("XMP");
 
                 try {
+//                    BufferedReader reader = new BufferedReader(xmp.getData());
+//                    String line;
+//                    while ((line = reader.readLine()) != null) {
+//                        System.out.println(line);
+//                    }
+//
+                    DocumentBuilder builder;
+                    Document document;
+
                     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    DocumentBuilder builder = factory.newDocumentBuilder();
-                    Document document = builder.parse(new InputSource(xmp.getData()));
+                    factory.setNamespaceAware(true);
+                    builder = factory.newDocumentBuilder();
+                    document = builder.parse(new InputSource(xmp.getData()));
+
 
                     // Set the entire XMP document as user data
                     node.setUserObject(document);
+//                    node.appendChild(document.getFirstChild());
                 }
                 catch (Exception e) {
                     e.printStackTrace();
@@ -355,7 +320,13 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
             }
             else {
                 // Generic resource..
-                node = new IIOMetadataNode(PSDImageResource.resourceTypeForId(imageResource.mId));
+                node = new IIOMetadataNode("ImageResource");
+                String value = PSDImageResource.resourceTypeForId(imageResource.mId);
+                if (!"UnknownResource".equals(value)) {
+                    node.setAttribute("name", value);
+                }
+                node.setAttribute("length", String.valueOf(imageResource.mSize));
+                // TODO: Set user object: byte array
             }
 
             // TODO: More resources
@@ -364,7 +335,34 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
             resource.appendChild(node);
         }
 
+        // TODO: Layers and layer info
+
+        // TODO: Global mask etc..
+
         return resource;
+    }
+
+    private void appendEntries(IIOMetadataNode pNode, final Directory pDirectory) {
+        for (Entry entry : pDirectory) {
+            IIOMetadataNode tag = new IIOMetadataNode("Entry");
+            tag.setAttribute("tag", String.format("%s", entry.getIdentifier()));
+
+            String field = entry.getFieldName();
+            if (field != null) {
+                tag.setAttribute("field", String.format("%s", field));
+            }
+
+            if (entry.getValue() instanceof Directory) {
+                appendEntries(tag, (Directory) entry.getValue());
+                tag.setAttribute("type", "Directory");
+            }
+            else {
+                tag.setAttribute("value", entry.getValueAsString());
+                tag.setAttribute("type", entry.getTypeName());
+            }
+
+            pNode.appendChild(tag);
+        }
     }
 
     /// Standard format support
@@ -461,7 +459,7 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     private String getMultiChannelCS(short pChannels) {
         if (pChannels < 16) {
-            return Integer.toHexString(pChannels) + "CLR";
+            return String.format("%xCLR", pChannels);
         }
 
         throw new UnsupportedOperationException("Standard meta data format does not support more than 15 channels");
@@ -469,88 +467,101 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     @Override
     protected IIOMetadataNode getStandardCompressionNode() {
-        IIOMetadataNode compression_node = new IIOMetadataNode("Compression");
+        IIOMetadataNode compressionNode = new IIOMetadataNode("Compression");
         IIOMetadataNode node; // scratch node
 
         node = new IIOMetadataNode("CompressionTypeName");
         String compression;
+
         switch (mCompression) {
             case PSD.COMPRESSION_NONE:
                 compression = "none";
                 break;
             case PSD.COMPRESSION_RLE:
-                compression = "packbits";
+                compression = "PackBits";
                 break;
             case PSD.COMPRESSION_ZIP:
             case PSD.COMPRESSION_ZIP_PREDICTION:
-                compression = "zip";
+                compression = "Deflate"; // TODO: ZLib? (TIFF native metadata format specifies both.. :-P)
                 break;
             default:
                 throw new AssertionError("Unreachable");
         }
-        node.setAttribute("value", compression);
-        compression_node.appendChild(node);
 
+        node.setAttribute("value", compression);
+        compressionNode.appendChild(node);
+
+        // TODO: Does it make sense to specify lossless for compression "none"?
         node = new IIOMetadataNode("Lossless");
         node.setAttribute("value", "true");
-        compression_node.appendChild(node);
+        compressionNode.appendChild(node);
 
-        return compression_node;
+        return compressionNode;
     }
 
     @Override
     protected IIOMetadataNode getStandardDataNode() {
-        IIOMetadataNode data_node = new IIOMetadataNode("Data");
+        IIOMetadataNode dataNode = new IIOMetadataNode("Data");
         IIOMetadataNode node; // scratch node
 
         node = new IIOMetadataNode("PlanarConfiguration");
         node.setAttribute("value", "PlaneInterleaved"); // TODO: Check with spec
-        data_node.appendChild(node);
+        dataNode.appendChild(node);
 
         node = new IIOMetadataNode("SampleFormat");
         node.setAttribute("value", mHeader.mMode == PSD.COLOR_MODE_INDEXED ? "Index" : "UnsignedIntegral");
-        data_node.appendChild(node);
+        dataNode.appendChild(node);
 
         String bitDepth = Integer.toString(mHeader.mBits); // bits per plane
+
         // TODO: Channels might be 5 for RGB + A + Mask...
         String[] bps = new String[mHeader.mChannels];
         Arrays.fill(bps, bitDepth);
 
         node = new IIOMetadataNode("BitsPerSample");
         node.setAttribute("value", StringUtil.toCSVString(bps, " "));
-        data_node.appendChild(node);
+        dataNode.appendChild(node);
 
         // TODO: SampleMSB? Or is network (aka Motorola/big endian) byte order assumed?
 
-        return data_node;
+        return dataNode;
     }
 
     @Override
     protected IIOMetadataNode getStandardDimensionNode() {
-        IIOMetadataNode dimension_node = new IIOMetadataNode("Dimension");
+        IIOMetadataNode dimensionNode = new IIOMetadataNode("Dimension");
         IIOMetadataNode node; // scratch node
 
         node = new IIOMetadataNode("PixelAspectRatio");
-        // TODO: This is not incorrect wrt resolution info  
-        float ratio = 1f;
-        node.setAttribute("value", Float.toString(ratio));
-        dimension_node.appendChild(node);
+
+        // TODO: This is not correct wrt resolution info
+        float aspect = 1f;
+
+        Iterator<PSDPixelAspectRatio> ratios = getResources(PSDPixelAspectRatio.class);
+        if (ratios.hasNext()) {
+            PSDPixelAspectRatio ratio = ratios.next();
+            aspect = (float) ratio.mAspect;
+        }
+
+        node.setAttribute("value", Float.toString(aspect));
+        dimensionNode.appendChild(node);
 
         node = new IIOMetadataNode("ImageOrientation");
         node.setAttribute("value", "Normal");
-        dimension_node.appendChild(node);
+        dimensionNode.appendChild(node);
 
+        // TODO: If no PSDResolutionInfo, this might still be available in the EXIF data...
         Iterator<PSDResolutionInfo> resolutionInfos = getResources(PSDResolutionInfo.class);
         if (!resolutionInfos.hasNext()) {
             PSDResolutionInfo resolutionInfo = resolutionInfos.next();
 
             node = new IIOMetadataNode("HorizontalPixelSize");
             node.setAttribute("value", Float.toString(asMM(resolutionInfo.mHResUnit, resolutionInfo.mHRes)));
-            dimension_node.appendChild(node);
+            dimensionNode.appendChild(node);
 
             node = new IIOMetadataNode("VerticalPixelSize");
             node.setAttribute("value", Float.toString(asMM(resolutionInfo.mVResUnit, resolutionInfo.mVRes)));
-            dimension_node.appendChild(node);
+            dimensionNode.appendChild(node);
         }
 
         // TODO:
@@ -580,7 +591,7 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
           <!-- Data type: Integer -->
 
          */
-        return dimension_node;
+        return dimensionNode;
     }
 
     private static float asMM(final short pUnit, final float pResolution) {
@@ -603,18 +614,18 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
             PSDEXIF1Data data = exif.next();
 
             // Get the EXIF DateTime (aka ModifyDate) tag if present
-            PSDEXIF1Data.Entry dateTime = data.mDirectory.get(0x0132); // TODO: Constant
+            Entry dateTime = data.mDirectory.getEntryById(0x0132); // TODO: Constant
             if (dateTime != null) {
-                node = new IIOMetadataNode("ImageModificationTime");
-                // Format: "YYYY:MM:DD hh:mm:ss" (with quotes! :-P)
+                node = new IIOMetadataNode("ImageCreationTime"); // As TIFF, but could just as well be ImageModificationTime
+                // Format: "YYYY:MM:DD hh:mm:ss"
                 String value = dateTime.getValueAsString();
 
-                node.setAttribute("year", value.substring(1, 5));
-                node.setAttribute("month", value.substring(6, 8));
-                node.setAttribute("day", value.substring(9, 11));
-                node.setAttribute("hour", value.substring(12, 14));
-                node.setAttribute("minute", value.substring(15, 17));
-                node.setAttribute("second", value.substring(18, 20));
+                node.setAttribute("year", value.substring(0, 4));
+                node.setAttribute("month", value.substring(5, 7));
+                node.setAttribute("day", value.substring(8, 10));
+                node.setAttribute("hour", value.substring(11, 13));
+                node.setAttribute("minute", value.substring(14, 16));
+                node.setAttribute("second", value.substring(17, 19));
 
                 document_node.appendChild(node);
             }
@@ -625,61 +636,68 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
 
     @Override
     protected IIOMetadataNode getStandardTextNode() {
-        // TODO: CaptionDigest?, EXIF, XMP
+        // TODO: TIFF uses
+        // DocumentName, ImageDescription, Make, Model, PageName, Software, Artist, HostComputer, InkNames, Copyright:
+        // /Text/TextEntry@keyword = field name, /Text/TextEntry@value = field value.
+        // Example: TIFF Software field => /Text/TextEntry@keyword = "Software",
+        //          /Text/TextEntry@value = Name and version number of the software package(s) used to create the image.
 
-        Iterator<PSDImageResource> textResources = getResources(PSDEXIF1Data.class, PSDXMPData.class);
+        Iterator<PSDImageResource> textResources = getResources(PSDEXIF1Data.class, PSDIPTCData.class, PSDXMPData.class);
+
+        if (!textResources.hasNext()) {
+            return null;
+        }
+
+        IIOMetadataNode text = new IIOMetadataNode("Text");
+        IIOMetadataNode node;
+
+        // TODO: Alpha channel names? (PSDAlphaChannelInfo/PSDUnicodeAlphaNames)
+        // TODO: Reader/writer (PSDVersionInfo)
 
         while (textResources.hasNext()) {
             PSDImageResource textResource = textResources.next();
 
-        }
-        
-//        int numEntries = tEXt_keyword.size() +
-//            iTXt_keyword.size() + zTXt_keyword.size();
-//        if (numEntries == 0) {
-//            return null;
-//        }
-//
-//        IIOMetadataNode text_node = new IIOMetadataNode("Text");
-//        IIOMetadataNode node = null; // scratch node
-//
-//        for (int i = 0; i < tEXt_keyword.size(); i++) {
-//            node = new IIOMetadataNode("TextEntry");
-//            node.setAttribute("keyword", (String)tEXt_keyword.get(i));
-//            node.setAttribute("value", (String)tEXt_text.get(i));
-//            node.setAttribute("encoding", "ISO-8859-1");
-//            node.setAttribute("compression", "none");
-//
-//            text_node.appendChild(node);
-//        }
-//
-//        for (int i = 0; i < iTXt_keyword.size(); i++) {
-//            node = new IIOMetadataNode("TextEntry");
-//            node.setAttribute("keyword", iTXt_keyword.get(i));
-//            node.setAttribute("value", iTXt_text.get(i));
-//            node.setAttribute("language",
-//                              iTXt_languageTag.get(i));
-//            if (iTXt_compressionFlag.get(i)) {
-//                node.setAttribute("compression", "deflate");
-//            } else {
-//                node.setAttribute("compression", "none");
-//            }
-//
-//            text_node.appendChild(node);
-//        }
-//
-//        for (int i = 0; i < zTXt_keyword.size(); i++) {
-//            node = new IIOMetadataNode("TextEntry");
-//            node.setAttribute("keyword", (String)zTXt_keyword.get(i));
-//            node.setAttribute("value", (String)zTXt_text.get(i));
-//            node.setAttribute("compression", "deflate");
-//
-//            text_node.appendChild(node);
-//        }
-//
-//        return text_node;
-        return null;
+            if (textResource instanceof PSDIPTCData) {
+                PSDIPTCData iptc = (PSDIPTCData) textResource;
 
+                for (Entry entry : iptc.mDirectory) {
+                    node = new IIOMetadataNode("TextEntry");
+
+                    if (entry.getValue() instanceof String) {
+                        node.setAttribute("keyword", String.format("%s", entry.getFieldName()));
+                        node.setAttribute("value", entry.getValueAsString());
+                        text.appendChild(node);
+                    }
+                }
+            }
+            else if (textResource instanceof PSDEXIF1Data) {
+                PSDEXIF1Data exif = (PSDEXIF1Data) textResource;
+
+                // TODO: Use name?
+                appendTextEntriesFlat(text, exif.mDirectory);
+            }
+            else if (textResource instanceof PSDXMPData) {
+                // TODO: Parse XMP (heavy) ONLY if we don't have required fields from IPTC/EXIF?
+                PSDXMPData xmp = (PSDXMPData) textResource;
+            }
+        }
+
+        return text;
+    }
+
+    private void appendTextEntriesFlat(IIOMetadataNode pNode, Directory pDirectory) {
+        for (Entry entry : pDirectory) {
+            if (entry.getValue() instanceof Directory) {
+                appendTextEntriesFlat(pNode, (Directory) entry.getValue());
+            }
+            else if (entry.getValue() instanceof String) {
+                IIOMetadataNode tag = new IIOMetadataNode("TextEntry");
+                // TODO: Use name!
+                tag.setAttribute("keyword", String.format("%s", entry.getFieldName()));
+                tag.setAttribute("value", entry.getValueAsString());
+                pNode.appendChild(tag);
+            }
+        }
     }
 
     @Override
@@ -693,7 +711,7 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
         IIOMetadataNode node; // scratch node
 
         node = new IIOMetadataNode("Alpha");
-        node.setAttribute("value", hasAlpha() ? "nonpremultipled" : "none"); // TODO: Check  spec
+        node.setAttribute("value", hasAlpha() ? "nonpremultiplied" : "none"); // TODO: Check  spec
         transparency_node.appendChild(node);
 
         return transparency_node;
@@ -730,5 +748,16 @@ public final class PSDMetadata extends IIOMetadata implements Cloneable {
                 return false;
             }
         });
+    }
+
+    @Override
+    public Object clone() {
+        // TODO: Make it a deep clone
+        try {
+            return super.clone();
+        }
+        catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

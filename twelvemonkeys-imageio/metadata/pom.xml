@@ -4,11 +4,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
-    <artifactId>twelvemonkeys-imageio-psd</artifactId>
+    <artifactId>twelvemonkeys-imageio-metadata</artifactId>
     <version>2.3-SNAPSHOT</version>
-    <name>TwelveMonkeys ImageIO PSD plugin</name>
+    <name>TwelveMonkeys ImageIO Metadata</name>
     <description>
-        ImageIO plugin for Adobe Photoshop Document (PSD).
+        ImageIO metadata module.
     </description>
 
     <parent>
@@ -26,10 +26,6 @@
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>twelvemonkeys-imageio-core</artifactId>
             <classifier>tests</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.twelvemonkeys.imageio</groupId>
-            <artifactId>twelvemonkeys-imageio-metadata</artifactId>
         </dependency>
     </dependencies>
 </project>

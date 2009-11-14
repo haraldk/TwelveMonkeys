@@ -1,13 +1,11 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -26,7 +24,8 @@ import java.util.List;
  */
 final class PSDEXIF1Data extends PSDImageResource {
 //    protected byte[] mData;
-    protected Directory mDirectory;
+//    protected Directory mDirectory;
+    protected com.twelvemonkeys.imageio.metadata.Directory mDirectory;
 
     PSDEXIF1Data(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -36,24 +35,25 @@ final class PSDEXIF1Data extends PSDImageResource {
     protected void readData(final ImageInputStream pInput) throws IOException {
         // This is in essence an embedded TIFF file.
         // TODO: Extract TIFF parsing to more general purpose package
-        // TODO: Instead, read the byte data, store for later parsing (or store offset, and read on request)
-        MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(IIOUtil.createStreamAdapter(pInput, mSize));
-
-        byte[] bom = new byte[2];
-        stream.readFully(bom);
-        if (bom[0] == 'I' && bom[1] == 'I') {
-            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-        }
-        else if (!(bom[0] == 'M' && bom[1] == 'M')) {
-            throw new IIOException(String.format("Invalid byte order marker '%s'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
-        }
-
-        if (stream.readUnsignedShort() != 42) {
-            throw new IIOException("Wrong TIFF magic in EXIF data.");
-        }
-
-        long directoryOffset = stream.readUnsignedInt();
-        mDirectory = Directory.read(stream, directoryOffset);
+        // TODO: Instead, read the byte data, store for later parsing (or better yet, store offset, and read on request)
+        mDirectory = new EXIFReader().read(pInput);
+//        byte[] bom = new byte[2];
+//        stream.readFully(bom);
+//        if (bom[0] == 'I' && bom[1] == 'I') {
+//            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+//        }
+//        else if (!(bom[0] == 'M' && bom[1] == 'M')) {
+//            throw new IIOException(String.format("Invalid byte order marker '%s'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
+//        }
+//
+//        if (stream.readUnsignedShort() != 42) {
+//            throw new IIOException("Wrong TIFF magic in EXIF data.");
+//        }
+//
+//        long directoryOffset = stream.readUnsignedInt();
+//
+//        // Read TIFF directory
+//        mDirectory = Directory.read(stream, directoryOffset);
     }
 
     @Override
@@ -78,11 +78,13 @@ final class PSDEXIF1Data extends PSDImageResource {
 
             pInput.seek(pOffset);
             int entryCount = pInput.readUnsignedShort();
+
             for (int i = 0; i < entryCount; i++) {
                 directory.mEntries.add(Entry.read(pInput));
             }
 
             long nextOffset = pInput.readUnsignedInt();
+
             if (nextOffset != 0) {
                 Directory next = Directory.read(pInput, nextOffset);
                 directory.mEntries.addAll(next.mEntries);
@@ -91,9 +93,9 @@ final class PSDEXIF1Data extends PSDImageResource {
             return directory;
         }
 
-        public Entry get(int pTag) {
+        public Entry get(int pTagId) {
             for (Entry entry : mEntries) {
-                if (entry.mTag == pTag) {
+                if (entry.mTagId == pTagId) {
                     return entry;
                 }
             }
@@ -127,7 +129,7 @@ final class PSDEXIF1Data extends PSDImageResource {
                 1, 1, 2, 4, 8, 4, 8,
         };
 
-        private int mTag;
+        final int mTagId;
         /*
         1 = BYTE 8-bit unsigned integer.
         2 = ASCII 8-bit byte that contains a 7-bit ASCII code; the last byte
@@ -153,19 +155,22 @@ final class PSDEXIF1Data extends PSDImageResource {
         private long mValueOffset;
         private Object mValue;
 
-        private Entry() {}
+        private Entry(int pTagId) {
+            mTagId = pTagId;
+        }
 
         public static Entry read(final ImageInputStream pInput) throws IOException {
-            Entry entry = new Entry();
+            Entry entry = new Entry(pInput.readUnsignedShort());
 
-            entry.mTag = pInput.readUnsignedShort();
             entry.mType = pInput.readShort();
             entry.mCount = pInput.readInt(); // Number of values
 
             // TODO: Handle other sub-IFDs
-            if (entry.mTag == EXIF_IFD) {
+            // GPS IFD: 0x8825, Interoperability IFD: 0xA005
+            if (entry.mTagId == EXIF_IFD) {
                 long offset = pInput.readUnsignedInt();
                 pInput.mark();
+
                 try {
                     entry.mValue = Directory.read(pInput, offset);
                 }
@@ -175,6 +180,7 @@ final class PSDEXIF1Data extends PSDImageResource {
             }
             else {
                 int valueLength = entry.getValueLength();
+
                 if (valueLength > 0 && valueLength <= 4) {
                     entry.readValueInLine(pInput);
                     pInput.skipBytes(4 - valueLength);
@@ -299,22 +305,21 @@ final class PSDEXIF1Data extends PSDImageResource {
             return -1;
         }
 
-        private String getTypeName() {
+        public final String getTypeName() {
             if (mType > 0 && mType <= TYPE_NAMES.length) {
                 return TYPE_NAMES[mType - 1];
             }
+
             return "Unknown type";
         }
 
-        // TODO: Tag names!
-        @Override
-        public String toString() {
-            return String.format("0x%04x: %s (%s, %d)", mTag, getValueAsString(), getTypeName(), mCount);
+        public final Object getValue() {
+            return mValue;
         }
 
-        public String getValueAsString() {
+        public final String getValueAsString() {
             if (mValue instanceof String) {
-                return String.format("\"%s\"", mValue);
+                return String.format("%s", mValue);
             }
 
             if (mValue != null && mValue.getClass().isArray()) {
@@ -337,6 +342,12 @@ final class PSDEXIF1Data extends PSDImageResource {
             }
 
             return String.valueOf(mValue);
+        }
+
+        // TODO: Tag names!
+        @Override
+        public String toString() {
+            return String.format("0x%04x: %s (%s, %d)", mTagId, mType == 2 ? String.format("\"%s\"", mValue) : getValueAsString(), getTypeName(), mCount);
         }
     }
 }

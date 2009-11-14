@@ -60,17 +60,27 @@ final class PSDUtil {
     }
 
     // TODO: Proably also useful for PICT reader, move to some common util?
-    // TODO: Is this REALLY different from the previous method? Maybe the pad should not be read..
     static String readPascalString(final DataInput pInput) throws IOException {
         int length = pInput.readUnsignedByte();
+
+        if (length == 0) {
+            return "";
+        }
+
         byte[] bytes = new byte[length];
         pInput.readFully(bytes);
 
         return StringUtil.decode(bytes, 0, bytes.length, "ASCII");
     }
 
-    static String readUTF16String(final DataInput pInput) throws IOException {
+    // TODO: Proably also useful for PICT reader, move to some common util?
+    static String readUnicodeString(final DataInput pInput) throws IOException {
         int length = pInput.readInt();
+
+        if (length == 0) {
+            return "";
+        }
+
         byte[] bytes = new byte[length * 2];
         pInput.readFully(bytes);
 
