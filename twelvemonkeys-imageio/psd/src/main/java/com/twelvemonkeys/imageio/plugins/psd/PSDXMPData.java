@@ -47,7 +47,7 @@ final class PSDXMPData extends PSDImageResource {
         builder.append("\"]");
 
         return builder.toString();
-    }
+    }   
 
     /**
      * Returns a character stream containing the XMP metadata (XML).
