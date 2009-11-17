@@ -24,7 +24,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: IPTCReader.java,v 1.0 Nov 13, 2009 8:37:23 PM haraldk Exp$
  */
-public class IPTCReader extends MetadataReader {
+public final class IPTCReader extends MetadataReader {
     private static final int ENCODING_UNKNOWN = -1;
     private static final int ENCODING_UNSPECIFIED = 0;
     private static final int ENCODING_UTF_8 = 0x1b2547;
@@ -38,10 +38,10 @@ public class IPTCReader extends MetadataReader {
 
         // 0x1c identifies start of a tag
         while (pInput.read() == 0x1c) {
-            int tagId = pInput.readShort();
+            short tagId = pInput.readShort();
             int tagByteCount = pInput.readUnsignedShort();
-
             Entry entry = readEntry(pInput, tagId, tagByteCount);
+
             if (entry != null) {
                 entries.add(entry);
             }
@@ -50,7 +50,7 @@ public class IPTCReader extends MetadataReader {
         return new IPTCDirectory(entries);
     }
 
-    private Entry readEntry(final ImageInputStream pInput, final int pTagId, final int pLength) throws IOException {
+    private IPTCEntry readEntry(final ImageInputStream pInput, final short pTagId, final int pLength) throws IOException {
         Object value = null;
 
         switch (pTagId) {
@@ -63,30 +63,6 @@ public class IPTCReader extends MetadataReader {
                 // A single unsigned short value
                 value = pInput.readUnsignedShort();
                 break;
-//                case IPTC.TAG_RELEASE_DATE:
-//                case IPTC.TAG_EXPIRATION_DATE:
-//                case IPTC.TAG_REFERENCE_DATE:
-//                case IPTC.TAG_DATE_CREATED:
-//                case IPTC.TAG_DIGITAL_CREATION_DATE:
-//                    // Date object
-//                    Date date = parseISO8601DatePart(pInput, tagByteCount);
-//                    if (date != null) {
-//                        directory.setDate(tagIdentifier, date);
-//                        return;
-//                    }
-//                case IPTC.TAG_RELEASE_TIME:
-//                case IPTC.TAG_EXPIRATION_TIME:
-//                case IPTC.TAG_TIME_CREATED:
-//                case IPTC.TAG_DIGITAL_CREATION_TIME:
-//                    // NOTE: Spec says fields should be sent in order, so this is okay
-//                    date = getDateForTime(directory, tagIdentifier);
-//
-//                    Date time = parseISO8601TimePart(pInput, tagByteCount, date);
-//                    if (time != null) {
-//                        directory.setDate(tagIdentifier, time);
-//                        return;
-//                    }
-//
             default:
                 // Skip non-Application fields, as they are typically not human readable
                 if ((pTagId & 0xff00) != IPTC.APPLICATION_RECORD) {
@@ -100,7 +76,7 @@ public class IPTCReader extends MetadataReader {
         // If we don't have a value, treat it as a string
         if (value == null) {
             if (pLength < 1) {
-                value = "(No value)";
+                value = null;
             }
             else {
                 value = parseString(pInput, pLength);

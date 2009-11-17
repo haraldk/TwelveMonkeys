@@ -2,15 +2,13 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.iptc.IPTC;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.FilterIterator;
-import org.w3c.dom.Document;
 import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
 
 import javax.imageio.metadata.IIOMetadataNode;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.awt.image.IndexColorModel;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -251,72 +249,36 @@ public final class PSDMetadata extends AbstractMetadata {
             }
             else if (imageResource instanceof PSDIPTCData) {
                 // TODO: Revise/rethink this...
-                // Transcode to XMP? ;-)
                 PSDIPTCData iptc = (PSDIPTCData) imageResource;
 
-                node = new IIOMetadataNode("Directory");
+                node = new IIOMetadataNode("DirectoryResource");
                 node.setAttribute("type", "IPTC");
                 node.setUserObject(iptc.mDirectory);
 
-                for (Entry entry : iptc.mDirectory) {
-                    IIOMetadataNode tag = new IIOMetadataNode("Entry");
-                    tag.setAttribute("tag", String.format("%d:%02d", (Integer) entry.getIdentifier() >> 8, (Integer) entry.getIdentifier() & 0xff));
-
-                    String field = entry.getFieldName();
-                    if (field != null) {
-                        tag.setAttribute("field", String.format("%s", field));
-                    }
-                    tag.setAttribute("value", entry.getValueAsString());
-
-                    String type = entry.getTypeName();
-                    if (type != null) {
-                        tag.setAttribute("type", type);
-                    }
-                    node.appendChild(tag);
-                }
+                appendEntries(node, "IPTC", iptc.mDirectory);
             }
             else if (imageResource instanceof PSDEXIF1Data) {
                 // TODO: Revise/rethink this...
-                // Transcode to XMP? ;-)
                 PSDEXIF1Data exif = (PSDEXIF1Data) imageResource;
 
-                node = new IIOMetadataNode("Directory");
+                node = new IIOMetadataNode("DirectoryResource");
                 node.setAttribute("type", "EXIF");
                 // TODO: Set byte[] data instead
                 node.setUserObject(exif.mDirectory);
 
-                appendEntries(node, exif.mDirectory);
+                appendEntries(node, "EXIF", exif.mDirectory);
             }
             else if (imageResource instanceof PSDXMPData) {
                 // TODO: Revise/rethink this... Would it be possible to parse XMP as IIOMetadataNodes? Or is that just stupid...
                 // Or maybe use the Directory approach used by IPTC and EXIF.. 
                 PSDXMPData xmp = (PSDXMPData) imageResource;
 
-                node = new IIOMetadataNode("XMP");
+                node = new IIOMetadataNode("DirectoryResource");
+                node.setAttribute("type", "XMP");
+                appendEntries(node, "XMP", xmp.mDirectory);
 
-                try {
-//                    BufferedReader reader = new BufferedReader(xmp.getData());
-//                    String line;
-//                    while ((line = reader.readLine()) != null) {
-//                        System.out.println(line);
-//                    }
-//
-                    DocumentBuilder builder;
-                    Document document;
-
-                    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                    factory.setNamespaceAware(true);
-                    builder = factory.newDocumentBuilder();
-                    document = builder.parse(new InputSource(xmp.getData()));
-
-
-                    // Set the entire XMP document as user data
-                    node.setUserObject(document);
-//                    node.appendChild(document.getFirstChild());
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+                // Set the entire XMP document as user data
+                node.setUserObject(xmp.mData);
             }
             else {
                 // Generic resource..
@@ -342,18 +304,25 @@ public final class PSDMetadata extends AbstractMetadata {
         return resource;
     }
 
-    private void appendEntries(IIOMetadataNode pNode, final Directory pDirectory) {
+    private void appendEntries(final IIOMetadataNode pNode, final String pType, final Directory pDirectory) {
         for (Entry entry : pDirectory) {
+            Object tagId = entry.getIdentifier();
+
             IIOMetadataNode tag = new IIOMetadataNode("Entry");
-            tag.setAttribute("tag", String.format("%s", entry.getIdentifier()));
+            tag.setAttribute("tag", String.format("%s", tagId));
 
             String field = entry.getFieldName();
             if (field != null) {
                 tag.setAttribute("field", String.format("%s", field));
             }
+            else {
+                if ("IPTC".equals(pType)) {
+                    tag.setAttribute("field", String.format("%s:%s", (Integer) tagId >> 8, (Integer) tagId & 0xff));
+                }
+            }
 
             if (entry.getValue() instanceof Directory) {
-                appendEntries(tag, (Directory) entry.getValue());
+                appendEntries(tag, pType, (Directory) entry.getValue());
                 tag.setAttribute("type", "Directory");
             }
             else {
@@ -614,7 +583,7 @@ public final class PSDMetadata extends AbstractMetadata {
             PSDEXIF1Data data = exif.next();
 
             // Get the EXIF DateTime (aka ModifyDate) tag if present
-            Entry dateTime = data.mDirectory.getEntryById(0x0132); // TODO: Constant
+            Entry dateTime = data.mDirectory.getEntryById(TIFF.TAG_DATE_TIME);
             if (dateTime != null) {
                 node = new IIOMetadataNode("ImageCreationTime"); // As TIFF, but could just as well be ImageModificationTime
                 // Format: "YYYY:MM:DD hh:mm:ss"
@@ -642,7 +611,7 @@ public final class PSDMetadata extends AbstractMetadata {
         // Example: TIFF Software field => /Text/TextEntry@keyword = "Software",
         //          /Text/TextEntry@value = Name and version number of the software package(s) used to create the image.
 
-        Iterator<PSDImageResource> textResources = getResources(PSDEXIF1Data.class, PSDIPTCData.class, PSDXMPData.class);
+        Iterator<PSDImageResource> textResources = getResources(PSD.RES_IPTC_NAA, PSD.RES_EXIF_DATA_1, PSD.RES_XMP_DATA);
 
         if (!textResources.hasNext()) {
             return null;
@@ -660,24 +629,40 @@ public final class PSDMetadata extends AbstractMetadata {
             if (textResource instanceof PSDIPTCData) {
                 PSDIPTCData iptc = (PSDIPTCData) textResource;
 
-                for (Entry entry : iptc.mDirectory) {
-                    node = new IIOMetadataNode("TextEntry");
+                appendTextEntriesFlat(text, iptc.mDirectory, new FilterIterator.Filter<Entry>() {
+                    public boolean accept(final Entry pEntry) {
+                        Integer tagId = (Integer) pEntry.getIdentifier();
 
-                    if (entry.getValue() instanceof String) {
-                        node.setAttribute("keyword", String.format("%s", entry.getFieldName()));
-                        node.setAttribute("value", entry.getValueAsString());
-                        text.appendChild(node);
+                        switch (tagId) {
+                            case IPTC.TAG_SOURCE:
+                                return true;
+                            default:
+                                return false;
+                        }
                     }
-                }
+                });
             }
             else if (textResource instanceof PSDEXIF1Data) {
                 PSDEXIF1Data exif = (PSDEXIF1Data) textResource;
 
-                // TODO: Use name?
-                appendTextEntriesFlat(text, exif.mDirectory);
+                appendTextEntriesFlat(text, exif.mDirectory, new FilterIterator.Filter<Entry>() {
+                    public boolean accept(final Entry pEntry) {
+                        Integer tagId = (Integer) pEntry.getIdentifier();
+
+                        switch (tagId) {
+                            case TIFF.TAG_SOFTWARE:
+                            case TIFF.TAG_ARTIST:
+                            case TIFF.TAG_COPYRIGHT:
+                                return true;
+                            default:
+                                return false;
+                        }
+                    }
+                });
             }
             else if (textResource instanceof PSDXMPData) {
                 // TODO: Parse XMP (heavy) ONLY if we don't have required fields from IPTC/EXIF?
+                // TODO: Use XMP IPTC/EXIF/TIFFF NativeDigest field to validate if the values are in sync...
                 PSDXMPData xmp = (PSDXMPData) textResource;
             }
         }
@@ -685,15 +670,26 @@ public final class PSDMetadata extends AbstractMetadata {
         return text;
     }
 
-    private void appendTextEntriesFlat(IIOMetadataNode pNode, Directory pDirectory) {
-        for (Entry entry : pDirectory) {
+    private void appendTextEntriesFlat(final IIOMetadataNode pNode, final Directory pDirectory, final FilterIterator.Filter<Entry> pFilter) {
+        FilterIterator<Entry> pEntries = new FilterIterator<Entry>(pDirectory.iterator(), pFilter);
+        while (pEntries.hasNext()) {
+            Entry entry = pEntries.next();
+
             if (entry.getValue() instanceof Directory) {
-                appendTextEntriesFlat(pNode, (Directory) entry.getValue());
+                appendTextEntriesFlat(pNode, (Directory) entry.getValue(), pFilter);
             }
             else if (entry.getValue() instanceof String) {
                 IIOMetadataNode tag = new IIOMetadataNode("TextEntry");
-                // TODO: Use name!
-                tag.setAttribute("keyword", String.format("%s", entry.getFieldName()));
+                String fieldName = entry.getFieldName();
+
+                if (fieldName != null) {
+                    tag.setAttribute("keyword", String.format("%s", fieldName));
+                }
+                else {
+                    // TODO: This should never happen, as we filter out only specific nodes
+                    tag.setAttribute("keyword", String.format("%s", entry.getIdentifier()));
+                }
+
                 tag.setAttribute("value", entry.getValueAsString());
                 pNode.appendChild(tag);
             }
@@ -734,13 +730,13 @@ public final class PSDMetadata extends AbstractMetadata {
         });
     }
 
-    Iterator<PSDImageResource> getResources(final Class<? extends PSDImageResource>... pResourceTypes) {
+    Iterator<PSDImageResource> getResources(final int... pResourceTypes) {
         Iterator<PSDImageResource> iterator = mImageResources.iterator();
 
         return new FilterIterator<PSDImageResource>(iterator, new FilterIterator.Filter<PSDImageResource>() {
-            public boolean accept(final PSDImageResource pElement) {
-                for (Class<?> type : pResourceTypes) {
-                    if (type.isInstance(pElement)) {
+            public boolean accept(final PSDImageResource pResource) {
+                for (int type : pResourceTypes) {
+                    if (type == pResource.mId) {
                         return true;
                     }
                 }

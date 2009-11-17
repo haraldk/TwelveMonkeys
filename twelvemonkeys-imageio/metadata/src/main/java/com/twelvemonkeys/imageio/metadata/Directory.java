@@ -12,7 +12,7 @@ public interface Directory extends Iterable<Entry> {
     // For multiple entries with same id in directory, the first entry (using the order from the stream) will be returned
     Entry getEntryById(Object pIdentifier);
 
-    Entry getEntryByName(String pName);
+    Entry getEntryByFieldName(String pName);
 
     // Iterator containing the entries in
     //Iterator<Entry> getBestEntries(Object pIdentifier, Object pQualifier, String pLanguage);

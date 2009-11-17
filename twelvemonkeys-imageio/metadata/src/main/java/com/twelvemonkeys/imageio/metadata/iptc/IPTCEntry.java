@@ -10,7 +10,18 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 * @version $Id: IPTCEntry.java,v 1.0 Nov 13, 2009 8:57:04 PM haraldk Exp$
 */
 class IPTCEntry extends AbstractEntry {
-    public IPTCEntry(int pTagId, Object pValue) {
+    public IPTCEntry(final int pTagId, final Object pValue) {
         super(pTagId, pValue);
+    }
+
+    @Override
+    public String getFieldName() {
+        switch ((Integer) getIdentifier()) {
+            case IPTC.TAG_SOURCE:
+                return "Source";
+            // TODO: More tags...
+        }
+
+        return null;
     }
 }

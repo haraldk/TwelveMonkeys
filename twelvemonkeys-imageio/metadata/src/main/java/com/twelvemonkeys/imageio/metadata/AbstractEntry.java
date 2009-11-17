@@ -23,7 +23,7 @@ public abstract class AbstractEntry implements Entry {
         mValue = pValue;
     }
 
-    public Object getIdentifier() {
+    public final Object getIdentifier() {
         return mIdentifier;
     }
 

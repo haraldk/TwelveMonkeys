@@ -13,7 +13,6 @@ import java.util.List;
  * @version $Id: AbstractDirectory.java,v 1.0 Nov 11, 2009 5:31:04 PM haraldk Exp$
  */
 public abstract class AbstractDirectory implements Directory {
-    // A linked hashmap or a stable bag structure might also work..
     private final List<Entry> mEntries = new ArrayList<Entry>();
 
     protected AbstractDirectory(final Collection<? extends Entry> pEntries) {
@@ -32,9 +31,9 @@ public abstract class AbstractDirectory implements Directory {
         return null;
     }
 
-    public Entry getEntryByName(final String pName) {
+    public Entry getEntryByFieldName(final String pFieldName) {
         for (Entry entry : this) {
-            if (entry.getFieldName().equals(pName)) {
+            if (entry.getFieldName() != null && entry.getFieldName().equals(pFieldName)) {
                 return entry;
             }
         }
@@ -66,6 +65,7 @@ public abstract class AbstractDirectory implements Directory {
         return mEntries.add(pEntry);
     }
 
+    @SuppressWarnings({"SuspiciousMethodCalls"})
     public boolean remove(final Object pEntry) {
         assertMutable();
 

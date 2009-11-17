@@ -15,6 +15,7 @@ import java.util.Arrays;
  * @version $Id: AbstractMetadata.java,v 1.0 Nov 13, 2009 1:02:12 AM haraldk Exp$
  */
 abstract class AbstractMetadata extends IIOMetadata implements Cloneable {
+    // TODO: Move to core...
 
     protected AbstractMetadata(final boolean pStandardFormatSupported,
                                final String pNativeFormatName, final String pNativeFormatClassName,

@@ -4,7 +4,6 @@ import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * EXIFDirectory

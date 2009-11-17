@@ -29,12 +29,12 @@ public final class EXIFReader extends MetadataReader {
             pInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         }
         else if (!(bom[0] == 'M' && bom[1] == 'M')) {
-            throw new IIOException(String.format("Invalid byte order marker '%s'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
+            throw new IIOException(String.format("Invalid TIFF byte order mark '%s', expected: 'II' or 'MM'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
         }
 
         int magic = pInput.readUnsignedShort();
-        if (magic != EXIF.TIFF_MAGIC) {
-            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic,  EXIF.TIFF_MAGIC));
+        if (magic != TIFF.TIFF_MAGIC) {
+            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic,  TIFF.TIFF_MAGIC));
         }
 
         long directoryOffset = pInput.readUnsignedInt();
@@ -73,9 +73,8 @@ public final class EXIFReader extends MetadataReader {
 
         Object value;
 
-        // TODO: Handle other sub-IFDs
-        // GPS IFD: 0x8825, Interoperability IFD: 0xA005
-        if (tagId == EXIF.EXIF_IFD) {
+        if (tagId == TIFF.IFD_EXIF || tagId == TIFF.IFD_GPS || tagId == TIFF.IFD_INTEROP) {
+            // Parse sub IFDs
             long offset = pInput.readUnsignedInt();
             pInput.mark();
 
@@ -207,8 +206,8 @@ public final class EXIFReader extends MetadataReader {
     }
 
     private int getValueLength(final int pType, final int pCount) {
-        if (pType > 0 && pType <= EXIF.TYPE_LENGTHS.length) {
-            return EXIF.TYPE_LENGTHS[pType - 1] * pCount;
+        if (pType > 0 && pType <= TIFF.TYPE_LENGTHS.length) {
+            return TIFF.TYPE_LENGTHS[pType - 1] * pCount;
         }
 
         return -1;
