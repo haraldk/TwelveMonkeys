@@ -26,13 +26,17 @@ import java.util.Arrays;
 public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     private static final String CONTENT_TYPE_BMP  = "image/bmp";
     private static final String CONTENT_TYPE_FOO  = "foo/bar";
+    private static final String CONTENT_TYPE_GIF  = "image/gif";
     private static final String CONTENT_TYPE_JPEG = "image/jpeg";
     private static final String CONTENT_TYPE_PNG  = "image/png";
     private static final String CONTENT_TYPE_TEXT = "text/plain";
 
-    private static final String IMAGE_NAME = "12monkeys-splash.png";
+    private static final String IMAGE_NAME_PNG = "12monkeys-splash.png";
+    private static final String IMAGE_NAME_GIF = "tux.gif";
 
-    private static final Dimension IMAGE_DIMENSION = new Dimension(300, 410);
+    private static final Dimension IMAGE_DIMENSION_PNG = new Dimension(300, 410);
+    private static final Dimension IMAGE_DIMENSION_GIF = new Dimension(250, 250);
+
     private HttpServletRequest mRequest;
     private ServletContext mContext;
 
@@ -43,15 +47,17 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         Mock mockRequest = mock(HttpServletRequest.class);
         mockRequest.stubs().method("getAttribute").will(returnValue(null));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         mRequest = (HttpServletRequest) mockRequest.proxy();
 
         Mock mockContext = mock(ServletContext.class);
-        mockContext.stubs().method("getResource").with(eq("/" + IMAGE_NAME)).will(returnValue(getClass().getResource(IMAGE_NAME)));
-        mockContext.stubs().method("log").withAnyArguments(); // Just supress the logging
+        mockContext.stubs().method("getResource").with(eq("/" + IMAGE_NAME_PNG)).will(returnValue(getClass().getResource(IMAGE_NAME_PNG)));
+        mockContext.stubs().method("getResource").with(eq("/" + IMAGE_NAME_GIF)).will(returnValue(getClass().getResource(IMAGE_NAME_GIF)));
+        mockContext.stubs().method("log").withAnyArguments(); // Just suppress the logging
         mockContext.stubs().method("getMimeType").with(eq("file.bmp")).will(returnValue(CONTENT_TYPE_BMP));
         mockContext.stubs().method("getMimeType").with(eq("file.foo")).will(returnValue(CONTENT_TYPE_FOO));
+        mockContext.stubs().method("getMimeType").with(eq("file.gif")).will(returnValue(CONTENT_TYPE_GIF));
         mockContext.stubs().method("getMimeType").with(eq("file.jpeg")).will(returnValue(CONTENT_TYPE_JPEG));
         mockContext.stubs().method("getMimeType").with(eq("file.png")).will(returnValue(CONTENT_TYPE_PNG));
         mockContext.stubs().method("getMimeType").with(eq("file.txt")).will(returnValue(CONTENT_TYPE_TEXT));
@@ -98,11 +104,11 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(mRequest, response, mContext);
         fakeResponse(mRequest, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
-        assertEquals(IMAGE_DIMENSION.width, image.getWidth());
-        assertEquals(IMAGE_DIMENSION.height, image.getHeight());
+        assertEquals(IMAGE_DIMENSION_PNG.width, image.getWidth());
+        assertEquals(IMAGE_DIMENSION_PNG.height, image.getHeight());
 
         // Flush image to wrapped response
         imageResponse.flush();
@@ -136,7 +142,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is untouched
-        assertTrue("Data differs", Arrays.equals(FileUtil.read(getClass().getResourceAsStream(IMAGE_NAME)), out.toByteArray()));
+        assertTrue("Data differs", Arrays.equals(FileUtil.read(getClass().getResourceAsStream(IMAGE_NAME_PNG)), out.toByteArray()));
     }
 
     // Transcode original PNG to JPEG with no other changes
@@ -161,8 +167,67 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         // Test that image data is still readable
         BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
         assertNotNull(outImage);
-        assertEquals(IMAGE_DIMENSION.width, outImage.getWidth());
-        assertEquals(IMAGE_DIMENSION.height, outImage.getHeight());
+        assertEquals(IMAGE_DIMENSION_PNG.width, outImage.getWidth());
+        assertEquals(IMAGE_DIMENSION_PNG.height, outImage.getHeight());
+        assertSimilarImage(ImageIO.read(mContext.getResource("/" + IMAGE_NAME_PNG)), outImage, 96f);
+    }
+
+    @Test
+    public void testTranscodeResponseIndexedCM() throws IOException {
+        // Custom setup
+        Mock mockRequest = mock(HttpServletRequest.class);
+        mockRequest.stubs().method("getAttribute").will(returnValue(null));
+        mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_GIF));
+        mockRequest.stubs().method("getParameter").will(returnValue(null));
+        HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
+
+        Mock mockResponse = mock(HttpServletResponse.class);
+        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_JPEG));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
+        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
+
+        ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
+        fakeResponse(request, imageResponse);
+
+        // Force transcode to JPEG
+        imageResponse.setOutputContentType("image/jpeg");
+
+        // Flush image to wrapped response
+        imageResponse.flush();
+
+        assertTrue("Content has no data", out.size() > 0);
+
+        // Test that image data is still readable
+        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        assertNotNull(outImage);
+        assertEquals(IMAGE_DIMENSION_GIF.width, outImage.getWidth());
+        assertEquals(IMAGE_DIMENSION_GIF.height, outImage.getHeight());
+        assertSimilarImage(ImageIO.read(mContext.getResource("/" + IMAGE_NAME_GIF)), outImage, 96f);
+    }
+
+    /**
+     * Makes sure images are the same, taking JPEG artifacts into account.
+     *
+     * @param pExpected the expected image
+     * @param pActual the actual image
+     * @param pArtifactThreshold the maximum allowed difference between the expected and actual pixel value 
+     */
+    private void assertSimilarImage(final BufferedImage pExpected, final BufferedImage pActual, final float pArtifactThreshold) {
+        for (int y = 0; y < pExpected.getHeight(); y++) {
+            for (int x = 0; x < pExpected.getWidth(); x++) {
+                int original = pExpected.getRGB(x, y);
+                int actual = pActual.getRGB(x, y);
+
+                // Multiply in the alpha component
+                float alpha = ((original >> 24) & 0xff) / 255f;
+
+                assertEquals(alpha * ((original >> 16) & 0xff), (actual >> 16) & 0xff, pArtifactThreshold);
+                assertEquals(alpha * ((original >> 8) & 0xff), (actual >> 8) & 0xff, pArtifactThreshold);
+                assertEquals(alpha * ((original) & 0xff), actual & 0xff, pArtifactThreshold);
+            }
+        }
     }
 
     public void testReplaceResponse() throws IOException {
@@ -175,7 +240,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(mRequest, response, mContext);
         fakeResponse(mRequest, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
@@ -298,7 +363,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").withAnyArguments().will(returnValue(null));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -311,7 +376,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
         assertEquals(sourceRegion.width, image.getWidth());
@@ -337,7 +402,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").withAnyArguments().will(returnValue(null));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -350,7 +415,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
         assertEquals(sourceRegion.width, image.getWidth());
@@ -379,7 +444,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI_UNIFORM)).will(returnValue(true));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -392,24 +457,24 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
         assertEquals(sourceRegion.width, image.getWidth());
         assertEquals(sourceRegion.height, image.getHeight());
 
-        BufferedImage original = ImageIO.read(getClass().getResource(IMAGE_NAME));
+        BufferedImage original = ImageIO.read(getClass().getResource(IMAGE_NAME_PNG));
 
         // Sanity check
         assertNotNull(original);
-        assertEquals(IMAGE_DIMENSION.width, original.getWidth());
-        assertEquals(IMAGE_DIMENSION.height, original.getHeight());
+        assertEquals(IMAGE_DIMENSION_PNG.width, original.getWidth());
+        assertEquals(IMAGE_DIMENSION_PNG.height, original.getHeight());
 
         // Center
         sourceRegion.setLocation(
-                (int) Math.round((IMAGE_DIMENSION.width - sourceRegion.getWidth()) / 2.0),
-                (int) Math.round((IMAGE_DIMENSION.height - sourceRegion.getHeight()) / 2.0)
+                (int) Math.round((IMAGE_DIMENSION_PNG.width - sourceRegion.getWidth()) / 2.0),
+                (int) Math.round((IMAGE_DIMENSION_PNG.height - sourceRegion.getHeight()) / 2.0)
         );
 
         // Test that we have exactly the pixels we should
@@ -442,7 +507,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI_UNIFORM)).will(returnValue(true));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -455,49 +520,49 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
         // Flush image to wrapped response
-        imageResponse.flush();        
+        imageResponse.flush();
 
-        assertTrue("Image wider than bounding box", IMAGE_DIMENSION.width >= image.getWidth());
-        assertTrue("Image taller than bounding box", IMAGE_DIMENSION.height >= image.getHeight());
-        assertTrue("Image not maximized to bounding box", IMAGE_DIMENSION.width == image.getWidth() || IMAGE_DIMENSION.height == image.getHeight());
+        assertTrue("Image wider than bounding box", IMAGE_DIMENSION_PNG.width >= image.getWidth());
+        assertTrue("Image taller than bounding box", IMAGE_DIMENSION_PNG.height >= image.getHeight());
+        assertTrue("Image not maximized to bounding box", IMAGE_DIMENSION_PNG.width == image.getWidth() || IMAGE_DIMENSION_PNG.height == image.getHeight());
 
         // Above tests that one of the sides equal, we now need to test that the other follows aspect
         double destAspect = sourceRegion.getWidth() / sourceRegion.getHeight();
-        double srcAspect = IMAGE_DIMENSION.getWidth() / IMAGE_DIMENSION.getHeight();
+        double srcAspect = IMAGE_DIMENSION_PNG.getWidth() / IMAGE_DIMENSION_PNG.getHeight();
 
         if (srcAspect >= destAspect) {
             // Dst is narrower than src
-            assertEquals(IMAGE_DIMENSION.height, image.getHeight());
+            assertEquals(IMAGE_DIMENSION_PNG.height, image.getHeight());
             assertEquals(
                     "Image width does not follow aspect",
-                    Math.round(IMAGE_DIMENSION.getHeight() * destAspect), image.getWidth()
+                    Math.round(IMAGE_DIMENSION_PNG.getHeight() * destAspect), image.getWidth()
             );
         }
         else {
             // Dst is wider than src
-            assertEquals(IMAGE_DIMENSION.width, image.getWidth());
+            assertEquals(IMAGE_DIMENSION_PNG.width, image.getWidth());
             assertEquals(
                     "Image height does not follow aspect",
-                    Math.round(IMAGE_DIMENSION.getWidth() / destAspect), image.getHeight()
+                    Math.round(IMAGE_DIMENSION_PNG.getWidth() / destAspect), image.getHeight()
             );
         }
 
-        BufferedImage original = ImageIO.read(getClass().getResource(IMAGE_NAME));
+        BufferedImage original = ImageIO.read(getClass().getResource(IMAGE_NAME_PNG));
 
         // Sanity check
         assertNotNull(original);
-        assertEquals(IMAGE_DIMENSION.width, original.getWidth());
-        assertEquals(IMAGE_DIMENSION.height, original.getHeight());
+        assertEquals(IMAGE_DIMENSION_PNG.width, original.getWidth());
+        assertEquals(IMAGE_DIMENSION_PNG.height, original.getHeight());
 
         // Center
         sourceRegion.setLocation(
-                (int) Math.round((IMAGE_DIMENSION.width - image.getWidth()) / 2.0),
-                (int) Math.round((IMAGE_DIMENSION.height - image.getHeight()) / 2.0)
+                (int) Math.round((IMAGE_DIMENSION_PNG.width - image.getWidth()) / 2.0),
+                (int) Math.round((IMAGE_DIMENSION_PNG.height - image.getHeight()) / 2.0)
         );
         sourceRegion.setSize(image.getWidth(), image.getHeight());
 
@@ -526,7 +591,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").withAnyArguments().will(returnValue(null));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -539,7 +604,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
@@ -549,10 +614,10 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
 
         // Above tests that one of the sides equal, we now need to test that the other follows aspect
         if (size.width == image.getWidth()) {
-            assertEquals(Math.round(size.getWidth() * IMAGE_DIMENSION.getWidth() / IMAGE_DIMENSION.getHeight()), image.getHeight());
+            assertEquals(Math.round(size.getWidth() * IMAGE_DIMENSION_PNG.getWidth() / IMAGE_DIMENSION_PNG.getHeight()), image.getHeight());
         }
         else {
-            assertEquals(Math.round(size.getHeight() * IMAGE_DIMENSION.getWidth() / IMAGE_DIMENSION.getHeight()), image.getWidth());
+            assertEquals(Math.round(size.getHeight() * IMAGE_DIMENSION_PNG.getWidth() / IMAGE_DIMENSION_PNG.getHeight()), image.getWidth());
         }
 
         // Flush image to wrapped response
@@ -576,7 +641,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE_UNIFORM)).will(returnValue(false));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -589,7 +654,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
         assertEquals(size.width, image.getWidth());
@@ -618,7 +683,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -631,7 +696,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
@@ -658,7 +723,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
     }
-    
+
     @Test
     public void testReadWithSourceRegionAndNonUniformResize() throws IOException {
         Rectangle sourceRegion = new Rectangle(100, 100, 200, 200);
@@ -670,7 +735,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE_UNIFORM)).will(returnValue(false));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -683,7 +748,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
         assertEquals(size.width, image.getWidth());
@@ -713,7 +778,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -726,7 +791,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
@@ -774,7 +839,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -787,7 +852,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
@@ -839,7 +904,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
         mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_SIZE)).will(returnValue(size));
         mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME));
+        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
         mockRequest.stubs().method("getParameter").will(returnValue(null));
         HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
@@ -852,7 +917,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, mContext);
         fakeResponse(request, imageResponse);
 
-        // Make sure image is correctly loaedd
+        // Make sure image is correctly loaded
         BufferedImage image = imageResponse.getImage();
         assertNotNull(image);
 
