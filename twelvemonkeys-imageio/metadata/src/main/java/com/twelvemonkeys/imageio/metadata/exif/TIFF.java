@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2009, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.metadata.exif;
 
 /**
@@ -45,9 +73,45 @@ public interface TIFF {
     int IFD_GPS = 0x8825;
     int IFD_INTEROP = 0xA005;
 
+    /// A. Tags relating to image data structure:
 
-    int TAG_SOFTWARE = 305;
+    int TAG_IMAGE_WIDTH = 256;
+    int TAG_IMAGE_HEIGHT = 257;
+    int TAG_BITS_PER_SAMPLE = 258;
+    int TAG_COMPRESSION = 259;
+    int TAG_PHOTOMETRIC_INTERPRETATION = 262;
+    int TAG_ORIENTATION = 274;
+    int TAG_SAMPLES_PER_PIXELS = 277;
+    int TAG_PLANAR_CONFIGURATION = 284;
+    int TAG_YCBCR_SUB_SAMPLING = 530;
+    int TAG_YCBCR_POSITIONING = 531;
+    int TAG_X_RESOLUTION = 282;
+    int TAG_Y_RESOLUTION = 283;
+    int TAG_RESOLUTION_UNIT = 296;
+
+    /// B. Tags relating to recording offset
+
+    int TAG_STRIP_OFFSETS = 273;
+    int TAG_ROWS_PER_STRIP = 278;
+    int TAG_STRIP_BYTE_COUNTS = 279;
+    int TAG_JPEG_INTERCHANGE_FORMAT = 513;
+    int TAG_JPEG_INTERCHANGE_FORMAT_LENGTH = 514;
+
+    /// C. Tags relating to image data characteristics
+
+    int TAG_TRANSFER_FUNCTION = 301;
+    int TAG_WHITE_POINT = 318;
+    int TAG_PRIMARY_CHROMATICITIES = 319;
+    int TAG_YCBCR_COEFFICIENTS = 529;
+    int TAG_REFERENCE_BLACK_WHITE = 532;
+
+    /// D. Other tags
+
     int TAG_DATE_TIME = 306;
+    int TAG_IMAGE_DESCRIPTION = 270;
+    int TAG_MAKE = 271;
+    int TAG_MODEL = 272;
+    int TAG_SOFTWARE = 305;
     int TAG_ARTIST = 315;
     int TAG_COPYRIGHT = 33432;
 }
