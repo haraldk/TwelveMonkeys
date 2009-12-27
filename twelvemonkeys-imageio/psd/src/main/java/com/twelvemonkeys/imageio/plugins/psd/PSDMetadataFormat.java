@@ -1,5 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.metadata.Directory;
 import org.w3c.dom.Document;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -98,7 +99,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
         // root -> ImageResources -> EXIF
         addElement("EXIF", "ImageResources", CHILD_POLICY_EMPTY);
-        addObjectValue("EXIF", PSDEXIF1Data.Directory.class, true, null);
+        addObjectValue("EXIF", Directory.class, true, null);
         // TODO: Incorporate EXIF / TIFF metadata here somehow... (or treat as opaque bytes?)
 
         // root -> ImageResources -> GridAndGuideInfo
@@ -116,7 +117,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
         // root -> ImageResources -> IPTC
         addElement("IPTC", "ImageResources", CHILD_POLICY_EMPTY);
-        addObjectValue("IPTC", PSDIPTCData.Directory.class, true, null);
+        addObjectValue("IPTC", Directory.class, true, null);
         // TODO: Incorporate IPTC metadata here somehow... (or treat as opaque bytes?)
 
         // root -> ImageResources -> PixelAspectRatio
