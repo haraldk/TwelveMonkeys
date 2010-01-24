@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,26 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio.metadata.xmp;
 
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
 /**
- * PSDAlphaChannelInfo
+ * XMPNamespaceMapping
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
+ * @version $Id: XMPNamespaceMapping.java,v 1.0 Nov 17, 2009 6:35:21 PM haraldk Exp$
  */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
-
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
-    }
-
-    @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
-
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
-        }
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
+final class XMPNamespaceMapping extends HashMap<String, String> {
+    public XMPNamespaceMapping() {
+        put(XMP.NS_RDF, "rdf");
+        put(XMP.NS_DC, "dc");
+        put(XMP.NS_EXIF, "exif");
+        put(XMP.NS_PHOTOSHOP, "photoshop");
+        put(XMP.NS_ST_REF, "stRef");
+        put(XMP.NS_TIFF, "tiff");
+        put(XMP.NS_XAP, "xap");
+        put(XMP.NS_XAP_MM, "xapMM");
     }
 }

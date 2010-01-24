@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
-
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+package com.twelvemonkeys.imageio.metadata;
 
 /**
- * PSDAlphaChannelInfo
+ * Directory
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
+ * @version $Id: Directory.java,v 1.0 Nov 11, 2009 4:20:58 PM haraldk Exp$
  */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
+public interface Directory extends Iterable<Entry> {
+    // TODO: Spec when more entries exist? Or make Entry support multi-values!?
+    // For multiple entries with same id in directory, the first entry (using the order from the stream) will be returned
+    Entry getEntryById(Object pIdentifier);
 
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
-    }
+    Entry getEntryByFieldName(String pName);
 
-    @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
+    // Iterator containing the entries in
+    //Iterator<Entry> getBestEntries(Object pIdentifier, Object pQualifier, String pLanguage);
 
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
-        }
-    }
 
-    @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
-    }
+    /// Collection-like API
+    // TODO: addOrReplaceIfPresent... (trouble for multi-values)  Or mutable entries?
+    // boolean replace(Entry pEntry)??
+    // boolean contains(Object pIdentifier)?
+
+    boolean add(Entry pEntry);
+
+    boolean remove(Object pEntry); // Object in case we retro-fit Collection/Map..
+
+    int size();
+        
+    boolean isReadOnly();
 }

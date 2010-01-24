@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
-
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+package com.twelvemonkeys.imageio.metadata.exif;
 
 /**
- * PSDAlphaChannelInfo
+ * EXIF
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
+ * @version $Id: EXIF.java,v 1.0 Nov 11, 2009 5:36:04 PM haraldk Exp$
  */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
-
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
-    }
-
-    @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
-
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
-        }
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
-    }
+public interface EXIF {
+    int TAG_COLOR_SPACE = 40961;
+    int TAG_PIXEL_X_DIMENSION = 40962;
+    int TAG_PIXEL_Y_DIMENSION = 40963;
 }

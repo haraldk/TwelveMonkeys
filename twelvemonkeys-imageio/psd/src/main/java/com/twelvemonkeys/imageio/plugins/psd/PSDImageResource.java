@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
@@ -62,11 +63,16 @@ class PSDImageResource {
         }
 
         mSize = pInput.readUnsignedInt();
-        readData(pInput);
+        long startPos = pInput.getStreamPosition();
 
-        // TODO: Sanity check reading here?
+        readData(new SubImageInputStream(pInput, mSize));
 
-        // Data is even-padded
+        // NOTE: This should never happen, however it's safer to keep it here to 
+        if (pInput.getStreamPosition() != startPos + mSize) {
+            pInput.seek(startPos + mSize);
+        }
+
+        // Data is even-padded (word aligned)
         if (mSize % 2 != 0) {
             pInput.read();
         }

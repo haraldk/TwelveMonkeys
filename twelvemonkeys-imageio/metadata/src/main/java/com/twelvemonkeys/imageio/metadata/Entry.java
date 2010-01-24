@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
-
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+package com.twelvemonkeys.imageio.metadata;
 
 /**
- * PSDAlphaChannelInfo
+ * Entry
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
+ * @version $Id: Entry.java,v 1.0 Nov 11, 2009 4:21:08 PM haraldk Exp$
  */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
+public interface Entry {
+    // "tag" identifier from spec
+    Object getIdentifier();
 
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
-    }
+    // Human readable "tag" (field) name from sepc
+    String getFieldName();
 
-    @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
+    // The internal "tag" value as stored in the stream, may be a Directory
+    Object getValue();
 
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
-        }
-    }
+    // Human readable "tag" value
+    String getValueAsString();
+    
+    //void setValue(Object pValue); // TODO: qualifiers...
 
-    @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
-    }
+    // Optional, implementation/spec specific type, describing the object returned from getValue
+    String getTypeName();
+
+    // TODO: Or something like getValue(qualifierType, qualifierValue) + getQualifiers()/getQualifierValues
+    // TODO: The problem with current model is getEntry() which only has single value support
+
+    // Optional, xml:lang-support
+    //String getLanguage();
+
+    // Optional, XMP alt-support. TODO: Do we need both?
+    //Object getQualifier();
+
+    // For arrays only
+    int valueCount();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,39 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio.metadata.xmp;
 
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.Map;
 
 /**
- * PSDAlphaChannelInfo
+ * XMP
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
+ * @version $Id: XMP.java,v 1.0 Nov 12, 2009 12:19:32 AM haraldk Exp$
+ *
+ * @see <a href="http://www.adobe.com/products/xmp/">Extensible Metadata Platform (XMP)</a>
  */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
+public interface XMP {
+    /** W3C Resource Description Format namespace */
+    String NS_RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
-    }
+    /** Dublin Core Metadata Initiative namespace */
+    String NS_DC = "http://purl.org/dc/elements/1.1/";
 
-    @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
+    String NS_EXIF = "http://ns.adobe.com/exif/1.0/";
 
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
-        }
-    }
+    String NS_PHOTOSHOP = "http://ns.adobe.com/photoshop/1.0/";
 
-    @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
-    }
+    String NS_ST_REF = "http://ns.adobe.com/xap/1.0/sType/ResourceRef#";
+
+    String NS_TIFF = "http://ns.adobe.com/tiff/1.0/";
+
+    String NS_XAP = "http://ns.adobe.com/xap/1.0/";
+
+    String NS_XAP_MM = "http://ns.adobe.com/xap/1.0/mm/";
+
+    /** Contains the mapping from URI to default namespace prefix. */
+    Map<String, String> DEFAULT_NS_MAPPING = Collections.unmodifiableMap(new XMPNamespaceMapping());
 }

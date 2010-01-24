@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,56 +26,18 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio.metadata;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
 /**
- * PSDGlobalLayerMask
+ * MetadataReader
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDGlobalLayerMask.java,v 1.0 May 8, 2008 5:33:48 PM haraldk Exp$
+ * @version $Id: MetadataReader.java,v 1.0 Nov 13, 2009 8:38:11 PM haraldk Exp$
  */
-class PSDGlobalLayerMask {
-    final int mColorSpace;
-    final int mColor1;
-    final int mColor2;
-    final int mColor3;
-    final int mColor4;
-    final int mOpacity;
-    final int mKind;
-
-    PSDGlobalLayerMask(final ImageInputStream pInput) throws IOException {
-        mColorSpace = pInput.readUnsignedShort(); // Undocumented
-
-        mColor1 = pInput.readUnsignedShort();
-        mColor2 = pInput.readUnsignedShort();
-        mColor3 = pInput.readUnsignedShort();
-        mColor4 = pInput.readUnsignedShort();
-
-        mOpacity = pInput.readUnsignedShort(); // 0-100
-
-        mKind = pInput.readUnsignedByte(); // 0: Selected (ie inverted), 1: Color protected, 128: Use value stored per layer 
-
-        // TODO: Variable: Filler zeros 
-
-        pInput.readByte(); // Pad
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder(getClass().getSimpleName());
-        builder.append("[");
-        builder.append("color space: 0x").append(Integer.toHexString(mColorSpace));
-        builder.append(", colors: [0x").append(Integer.toHexString(mColor1));
-        builder.append(", 0x").append(Integer.toHexString(mColor2));
-        builder.append(", 0x").append(Integer.toHexString(mColor3));
-        builder.append(", 0x").append(Integer.toHexString(mColor4));
-        builder.append("], opacity: ").append(mOpacity);
-        builder.append(", kind: ").append(mKind);
-        builder.append("]");
-        return builder.toString();
-    }
+public abstract class MetadataReader {
+    public abstract Directory read(ImageInputStream pInput) throws IOException;
 }

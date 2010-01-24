@@ -1,5 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.metadata.Directory;
 import org.w3c.dom.Document;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -44,7 +45,6 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // columns?
         addAttribute("Header", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
         addAttribute("Header", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
-        // TODO: Consider using more readable names?!
         addAttribute("Header", "mode", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
 
         /*
@@ -99,7 +99,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
         // root -> ImageResources -> EXIF
         addElement("EXIF", "ImageResources", CHILD_POLICY_EMPTY);
-        addObjectValue("EXIF", PSDEXIF1Data.Directory.class, true, null);
+        addObjectValue("EXIF", Directory.class, true, null);
         // TODO: Incorporate EXIF / TIFF metadata here somehow... (or treat as opaque bytes?)
 
         // root -> ImageResources -> GridAndGuideInfo
@@ -117,7 +117,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
         // root -> ImageResources -> IPTC
         addElement("IPTC", "ImageResources", CHILD_POLICY_EMPTY);
-        addObjectValue("IPTC", PSDIPTCData.Directory.class, true, null);
+        addObjectValue("IPTC", Directory.class, true, null);
         // TODO: Incorporate IPTC metadata here somehow... (or treat as opaque bytes?)
 
         // root -> ImageResources -> PixelAspectRatio

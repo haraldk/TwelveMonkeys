@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio.metadata.iptc;
 
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 
 /**
- * PSDAlphaChannelInfo
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
- */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
-
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
+* IPTCEntry
+*
+* @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+* @author last modified by $Author: haraldk$
+* @version $Id: IPTCEntry.java,v 1.0 Nov 13, 2009 8:57:04 PM haraldk Exp$
+*/
+class IPTCEntry extends AbstractEntry {
+    public IPTCEntry(final int pTagId, final Object pValue) {
+        super(pTagId, pValue);
     }
 
     @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
-
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
+    public String getFieldName() {
+        switch ((Integer) getIdentifier()) {
+            case IPTC.TAG_SOURCE:
+                return "Source";
+            // TODO: More tags...
         }
-    }
 
-    @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
+        return null;
     }
 }

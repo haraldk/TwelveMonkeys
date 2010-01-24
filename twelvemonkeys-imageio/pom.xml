@@ -29,6 +29,7 @@
     <modules>
         <!-- Support -->
         <module>core</module>
+        <module>metadata</module>
 
         <!-- Stand-alone readers/writers -->
         <module>ico</module>
@@ -95,6 +96,13 @@
                 <version>${imageio.core.version}</version>
                 <classifier>tests</classifier>
                 <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>twelvemonkeys-imageio-metadata</artifactId>
+                <version>${imageio.core.version}</version>
+                <scope>compile</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

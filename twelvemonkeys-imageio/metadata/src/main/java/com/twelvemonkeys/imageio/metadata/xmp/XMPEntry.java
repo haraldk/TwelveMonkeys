@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2009, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,43 +26,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio.metadata.xmp;
 
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 
 /**
- * PSDAlphaChannelInfo
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
- */
-class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
+* XMPEntry
+*
+* @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+* @author last modified by $Author: haraldk$
+* @version $Id: XMPEntry.java,v 1.0 Nov 17, 2009 9:38:39 PM haraldk Exp$
+*/
+final class XMPEntry extends AbstractEntry {
+    private final String mFieldName;
 
-    public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
+    public XMPEntry(final String pIdentifier, final Object pValue) {
+        this(pIdentifier, null, pValue);
     }
 
-    @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
-
-        long left = mSize;
-        while (left > 0) {
-            String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
-            left -= name.length() + 1;
-        }
+    public XMPEntry(final String pIdentifier, final String pFieldName, final Object pValue) {
+        super(pIdentifier, pValue);
+        mFieldName = pFieldName;
     }
 
+    @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override
-    public String toString() {
-        StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
-        return builder.toString();
+    public String getFieldName() {
+        return mFieldName != null ? mFieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
     }
 }
