@@ -29,6 +29,7 @@
     <modules>
         <!-- Support -->
         <module>imageio-core</module>
+        <module>imageio-metadata</module>
 
         <!-- Stand-alone readers/writers -->
         <module>imageio-ico</module>
@@ -97,6 +98,11 @@
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+	    <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>imageio-metadata</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
