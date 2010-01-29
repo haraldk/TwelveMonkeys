@@ -48,17 +48,19 @@ class PSDGlobalLayerMask {
     final int mKind;
 
     PSDGlobalLayerMask(final ImageInputStream pInput) throws IOException {
-        mColorSpace = pInput.readUnsignedShort();
+        mColorSpace = pInput.readUnsignedShort(); // Undocumented
 
         mColor1 = pInput.readUnsignedShort();
         mColor2 = pInput.readUnsignedShort();
         mColor3 = pInput.readUnsignedShort();
         mColor4 = pInput.readUnsignedShort();
 
-        mOpacity = pInput.readUnsignedShort();
+        mOpacity = pInput.readUnsignedShort(); // 0-100
 
-        mKind = pInput.readUnsignedByte();
-        
+        mKind = pInput.readUnsignedByte(); // 0: Selected (ie inverted), 1: Color protected, 128: Use value stored per layer 
+
+        // TODO: Variable: Filler zeros 
+
         pInput.readByte(); // Pad
     }
 

@@ -62,7 +62,9 @@ import java.util.List;
  * @version $Id: PSDImageReader.java,v 1.0 Apr 29, 2008 4:45:52 PM haraldk Exp$
  */
 // TODO: Implement ImageIO meta data interface
-// TODO: API for reading separate layers
+// TODO: Allow reading the extra alpha channels (index after composite data)
+// TODO: Support for PSDVersionInfo hasRealMergedData=false (no real composite data, layers will be in index 0)
+// TODO: Support for API for reading separate layers (index after composite data, and optional alpha channels)
 // TODO: Consider Romain Guy's Java 2D implementation of PS filters for the blending modes in layers
 // http://www.curious-creature.org/2006/09/20/new-blendings-modes-for-java2d/
 // See http://www.codeproject.com/KB/graphics/PSDParser.aspx
@@ -1144,11 +1146,12 @@ public class PSDImageReader extends ImageReaderBase {
 
         node = metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
         serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
+        serializer.setIndentation("   ");
         serializer.serialize(node, true);
         System.out.println();
 
         node = metadata.getAsTree(PSDMetadata.NATIVE_METADATA_FORMAT_NAME);
-        serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
+//        serializer = new XMLSerializer(System.out, System.getProperty("file.encoding"));
         serializer.serialize(node, true);
 
         if (imageReader.hasThumbnails(0)) {

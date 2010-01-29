@@ -86,7 +86,7 @@ class CMAPChunk extends IFFChunk {
             if (numColors == 32) {
                 paletteSize = 64;
             }
-            else {
+            else if (numColors != 64) {
                 throw new IIOException("Unknown number of colors for EHB: " + numColors);
             }
         }
@@ -100,7 +100,9 @@ class CMAPChunk extends IFFChunk {
             mGreens[i] = pInput.readByte();
             mBlues[i] = pInput.readByte();
         }
-        if (isEHB) {
+
+        if (isEHB && numColors == 32) {
+            // Create the half-brite colors
             for (int i = 0; i < numColors; i++) {
                 mReds[i + numColors] = (byte) ((mReds[i] & 0xff) / 2);
                 mGreens[i + numColors] = (byte) ((mGreens[i] & 0xff) / 2);

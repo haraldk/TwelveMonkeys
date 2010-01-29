@@ -1572,7 +1572,7 @@ public final class StringUtil {
      * @param pStringArray the string array
      * @return A string of comma-separated values
      */
-    public static String toCSVString(String[] pStringArray) {
+    public static String toCSVString(Object[] pStringArray) {
         return toCSVString(pStringArray, ", ");
     }
 
@@ -1584,7 +1584,7 @@ public final class StringUtil {
      * @return string of delimiter separated values
      * @throws IllegalArgumentException if {@code pDelimiterString == null}
      */
-    public static String toCSVString(String[] pStringArray, String pDelimiterString) {
+    public static String toCSVString(Object[] pStringArray, String pDelimiterString) {
         if (pStringArray == null) {
             return "";
         }

@@ -172,14 +172,9 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         try {
             return mStream.length();
         }
-        catch (IOException e) {
-            throw unchecked(e, RuntimeException.class);
+        catch (IOException ignore) {
         }
-    }
 
-    @SuppressWarnings({"unchecked", "UnusedDeclaration"})
-    private <T extends Throwable> T unchecked(IOException pExcption, Class<T> pClass) {
-        // Ugly hack to fool the compiler..
-        return (T) pExcption;
+        return -1;
     }
 }

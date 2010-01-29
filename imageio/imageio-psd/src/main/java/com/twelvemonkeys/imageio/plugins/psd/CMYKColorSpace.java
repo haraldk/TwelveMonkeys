@@ -103,10 +103,10 @@ Easier to calculate if K' is calculated first, because K' = min(C,M,Y):
     }
 
     public float[] toCIEXYZ(float[] colorvalue) {
-        throw new UnsupportedOperationException("Method toCIEXYZ not implemented"); // TODO: Implement
+        return sRGB.toCIEXYZ(toRGB(colorvalue));
     }
 
     public float[] fromCIEXYZ(float[] colorvalue) {
-        throw new UnsupportedOperationException("Method fromCIEXYZ not implemented"); // TODO: Implement
+        return sRGB.fromCIEXYZ(fromRGB(colorvalue));
     }
 }

@@ -131,9 +131,9 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      * @param pMimeType the content (MIME) type
      */
     public void setContentType(final String pMimeType) {
-        // Throw exception is allready set
+        // Throw exception is already set
         if (mOriginalContentType != null) {
-            throw new IllegalStateException("ContentType allready set.");
+            throw new IllegalStateException("ContentType already set.");
         }
 
         mOriginalContentType = pMimeType;
@@ -187,17 +187,13 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
             getImage();
         }
 
-        // This is stupid, but don't know how to work around...
-        // TODO: Test what types of images that work with JPEG, consider reporting it as a bug
+        // For known formats that don't support transparency, convert to opaque
         if (("image/jpeg".equals(outputType) || "image/jpg".equals(outputType)
                 || "image/bmp".equals(outputType) || "image/x-bmp".equals(outputType)) &&
-                mImage instanceof BufferedImage && ((BufferedImage) mImage).getType() == BufferedImage.TYPE_INT_ARGB) {
+                mImage.getColorModel().getTransparency() != Transparency.OPAQUE) {
             mImage = ImageUtil.toBuffered(mImage, BufferedImage.TYPE_INT_RGB);
         }
 
-        //System.out.println("Writing image, content-type: " + getContentType(outputType));
-        //System.out.println("Writing image, outputType: " + outputType);
-        //System.out.println("Writing image: " + mImage);
         if (mImage != null) {
             Iterator writers = ImageIO.getImageWritersByMIMEType(outputType);
             if (writers.hasNext()) {
@@ -218,10 +214,6 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
                     ImageOutputStream stream = ImageIO.createImageOutputStream(out);
 
-                    //System.out.println("-ISR- Image: " + mImage);
-                    //System.out.println("-ISR- ImageWriter: " + writer);
-                    //System.out.println("-ISR- ImageOutputStream: " + stream);
-
                     writer.setOutput(stream);
                     try {
                         writer.write(null, new IIOImage(mImage, null, null), param);
@@ -233,12 +225,10 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                 finally {
                     writer.dispose();
                     out.flush();
-//                    out.close();
                 }
             }
             else {
                 mContext.log("ERROR: No writer for content-type: " + outputType);
-//                sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Unable to encode image: No writer for content-type " + outputType);
                 throw new IIOException("Unable to transcode image: No suitable image writer found (content-type: " + outputType + ").");
             }
         }
@@ -364,8 +354,6 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
                         // Fill bgcolor behind image, if transparent
                         extractAndSetBackgroundColor(image);
-
-                        //System.out.println("-ISR- Image: " + image);
 
                         // Set image
                         mImage = image;

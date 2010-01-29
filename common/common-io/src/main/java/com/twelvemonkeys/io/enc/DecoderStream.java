@@ -60,6 +60,7 @@ public final class DecoderStream extends FilterInputStream {
      * @see java.io.FilterInputStream#in
      */
     public DecoderStream(final InputStream pStream, final Decoder pDecoder) {
+        // TODO: Let the decoder decide preferred buffer size 
         this(pStream, pDecoder, 1024);
     }
 

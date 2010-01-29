@@ -115,13 +115,7 @@ public class BASE64 {
         return buf.toString();
     }
 
-    /**
-     * Quick implementation, using the undocumented
-     * {@code sun.misc.BASE64Decoder.decodeBuffer(String)}.
-     */
-    public static byte[] decode(String pData) throws java.io.IOException {
-        //return DECODER.decodeBuffer(pData);
-
+    public static byte[] decode(String pData) throws IOException {
         InputStream in = new DecoderStream(new ByteArrayInputStream(pData.getBytes()), new Base64Decoder());
         ByteArrayOutputStream bytes = new FastByteArrayOutputStream(pData.length() * 3);
         FileUtil.copy(in, bytes);
@@ -131,7 +125,7 @@ public class BASE64 {
 
     //private final static sun.misc.BASE64Decoder DECODER = new sun.misc.BASE64Decoder();
 
-    public static void main(String[] pArgs) throws java.io.IOException {
+    public static void main(String[] pArgs) throws IOException {
         if (pArgs.length == 1) {
             System.out.println(encode(pArgs[0].getBytes()));
         }

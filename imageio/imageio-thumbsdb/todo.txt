@@ -11,4 +11,6 @@
      - http://vinetto.sourceforge.net/docs.html
      - We probably want to support all of these
 
+- Thumbnail (API) support? Does it make sense? It's all thumbnails.. 
+
 DONE:

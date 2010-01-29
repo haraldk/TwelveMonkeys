@@ -1,5 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
@@ -21,6 +23,7 @@ import java.nio.charset.Charset;
  */
 final class PSDXMPData extends PSDImageResource {
     protected byte[] mData;
+    Directory mDirectory;
 
     PSDXMPData(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -29,7 +32,9 @@ final class PSDXMPData extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         mData = new byte[(int) mSize]; // TODO: Fix potential overflow, or document why that can't happen (read spec)
-        pInput.readFully(mData);
+        //pInput.readFully(mData);
+
+        mDirectory = new XMPReader().read(pInput);
     }
 
     @Override
@@ -47,7 +52,7 @@ final class PSDXMPData extends PSDImageResource {
         builder.append("\"]");
 
         return builder.toString();
-    }
+    }   
 
     /**
      * Returns a character stream containing the XMP metadata (XML).
