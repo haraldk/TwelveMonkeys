@@ -40,6 +40,7 @@
     </contributors>
 
     <build>
+	<finalName>twelvemonkeys-${project.artifactId}-${project.version}</finalName>
         <pluginManagement>
             <plugins>
               <plugin>
