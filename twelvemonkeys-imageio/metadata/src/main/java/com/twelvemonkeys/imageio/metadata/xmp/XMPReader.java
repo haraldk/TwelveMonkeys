@@ -28,7 +28,9 @@
 
 package com.twelvemonkeys.imageio.metadata.xmp;
 
-import com.twelvemonkeys.imageio.metadata.*;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataReader;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -42,10 +44,7 @@ import javax.imageio.stream.ImageInputStream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -58,15 +57,15 @@ import java.util.*;
 public final class XMPReader extends MetadataReader {
     @Override
     public Directory read(final ImageInputStream pInput) throws IOException {
-        pInput.mark();
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(IIOUtil.createStreamAdapter(pInput), Charset.forName("UTF-8")));
-        String line;
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-        }
-
-        pInput.reset();
+//        pInput.mark();
+//
+//        BufferedReader reader = new BufferedReader(new InputStreamReader(IIOUtil.createStreamAdapter(pInput), Charset.forName("UTF-8")));
+//        String line;
+//        while ((line = reader.readLine()) != null) {
+//            System.out.println(line);
+//        }
+//
+//        pInput.reset();
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
