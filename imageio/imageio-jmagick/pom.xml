@@ -8,7 +8,7 @@
         <artifactId>imageio</artifactId>
         <version>3.0-SNAPSHOT</version>
     </parent>
-    <artifactId>twelvemonkeys-imageio-jmagick</artifactId>
+    <artifactId>imageio-jmagick</artifactId>
     <name>TwelveMonkeys :: ImageIO :: JMagick Plugin</name>
     <description>
         <![CDATA[
