@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys-servlet</artifactId>
-    <version>2.3-SNAPSHOT</version>
+    <version>2.3</version>
     <name>TwelveMonkeys Servlet</name>
 
     <parent>
@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <core.version>2.2</core.version>
+        <core.version>2.3</core.version>
     </properties>
 
     <dependencies>

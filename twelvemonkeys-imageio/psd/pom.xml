@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
     <artifactId>twelvemonkeys-imageio-psd</artifactId>
-    <version>2.3-SNAPSHOT</version>
+    <version>2.3</version>
     <name>TwelveMonkeys ImageIO PSD plugin</name>
     <description>
         ImageIO plugin for Adobe Photoshop Document (PSD).
@@ -14,7 +14,7 @@
     <parent>
         <artifactId>twelvemonkeys-imageio</artifactId>
         <groupId>com.twelvemonkeys</groupId>
-        <version>2.3-SNAPSHOT</version>
+        <version>2.3</version>
     </parent>
 
     <dependencies>
