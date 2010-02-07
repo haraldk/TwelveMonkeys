@@ -51,13 +51,13 @@ public class XMLSerializer {
     // Main problem: Sun's Java 5 does not have LS 3.0 support
     // This class has no dependencies, which probably makes it more useful
 
+    // TODO: Don't insert initial and ending line-break for text-nodes
+    // TODO: Support not inserting line-breaks, to preserve space
     // TODO: Support line breaking (at configurable width)
-    // TODO: Support skipping XML declaration?
     // TODO: Support standalone?
     // TODO: Support more than version 1.0?
     // TODO: Consider using IOException to communicate trouble, rather than RTE,
     // to be more compatible...
-    // TODO: Support not inserting line-breaks, to preserve space
 
     // TODO: Idea: Create a SerializationContext that stores attributes on
     // serialization, to keep the serialization thread-safe
@@ -152,7 +152,7 @@ public class XMLSerializer {
                 writeComment(pOut, pNode, pContext);
                 break;
             case Node.PROCESSING_INSTRUCTION_NODE:
-                writeProcessingInstruction(pOut, pNode);
+                writeProcessingInstruction(pOut, (ProcessingInstruction) pNode);
                 break;
             case Node.ATTRIBUTE_NODE:
                 throw new IllegalArgumentException("Malformed input Document: Attribute nodes should only occur inside Element nodes");
@@ -167,9 +167,16 @@ public class XMLSerializer {
         }
     }
 
-    private void writeProcessingInstruction(final PrintWriter pOut, final Node pNode) {
+    private void writeProcessingInstruction(final PrintWriter pOut, final ProcessingInstruction pNode) {
         pOut.print("\n<?");
-        pOut.print(pNode.getNodeValue());
+        pOut.print(pNode.getTarget());
+        String value = pNode.getData();
+
+        if (value != null) {
+            pOut.print(" ");
+            pOut.print(value);
+        }
+
         pOut.println("?>");
     }
 
@@ -180,8 +187,11 @@ public class XMLSerializer {
             pOut.print(maybeEscapeElementValue(value));
         }
         else if (!StringUtil.isEmpty(value)) {
-            indentToLevel(pOut, pContext);
-            pOut.println(maybeEscapeElementValue(value.trim()));
+            String escapedValue = maybeEscapeElementValue(value.trim());
+            //if (escapedValue.length() + (pContext.level * pContext.indent.length()) > 78) {
+                indentToLevel(pOut, pContext);
+            //}
+            pOut.println(escapedValue);
         }
     }
 
@@ -219,7 +229,7 @@ public class XMLSerializer {
         }
 
         String value = pNode.getNodeValue();
-        validateCommenValue(value);
+        validateCommentValue(value);
 
         if (value.startsWith(" ")) {
             pOut.print("<!--");
@@ -248,7 +258,7 @@ public class XMLSerializer {
         int startEscape = needsEscapeElement(pValue);
 
         if (startEscape < 0) {
-            // If no escpaing is needed, simply return original
+            // If no escaping is needed, simply return original
             return pValue;
         }
         else {
@@ -374,6 +384,7 @@ public class XMLSerializer {
                 default:
             }
         }
+
         return -1;
     }
 
@@ -384,7 +395,7 @@ public class XMLSerializer {
         return pValue;
     }
 
-    private static String validateCommenValue(final String pValue) {
+    private static String validateCommentValue(final String pValue) {
         if (pValue.indexOf("--") >= 0) {
             throw new IllegalArgumentException("Malformed input document: Comment may not contain the string '--'");
         }
@@ -407,6 +418,9 @@ public class XMLSerializer {
 
         // TODO: Attributes should probably include namespaces, so that it works
         // even if the document was created using attributes instead of namespaces...
+        // In that case, prefix will be null...
+
+        // TODO: Don't insert duplicate/unnecessary namesspace declarations
 
         // Handle namespace
         String namespace = pNode.getNamespaceURI();
@@ -444,6 +458,7 @@ public class XMLSerializer {
             }
         }
 
+        // TODO: Consider not indenting/newline if the first child is a text node
         // Iterate children if any
         if (pNode.hasChildNodes()) {
             pOut.print(">");
@@ -452,11 +467,9 @@ public class XMLSerializer {
             }
 
             NodeList children = pNode.getChildNodes();
-            //pContext.level++;
             for (int i = 0; i < children.getLength(); i++) {
                 writeNodeRecursive(pOut, children.item(i), pContext.push());
             }
-            //pContext.level--;
 
             if (!pContext.preserveSpace) {
                 indentToLevel(pOut, pContext);
@@ -515,12 +528,15 @@ public class XMLSerializer {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         DocumentBuilder builder;
+
         try {
             builder = factory.newDocumentBuilder();
         }
         catch (ParserConfigurationException e) {
+            //noinspection ThrowableInstanceNeverThrown BOGUS
             throw (IOException) new IOException(e.getMessage()).initCause(e);
         }
+
         DOMImplementation dom = builder.getDOMImplementation();
 
         Document document = dom.createDocument("http://www.twelvemonkeys.com/xml/test", "test", dom.createDocumentType("test", null, null));
