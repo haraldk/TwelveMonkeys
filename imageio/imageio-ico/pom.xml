@@ -9,7 +9,7 @@
         <version>3.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-ico</artifactId>
-    <name>TwelveMonkeys ImageIO ICO plugin</name>
+    <name>TwelveMonkeys :: ImageIO :: ICO plugin</name>
     <description>ImageIO plugin for Windows Icon (ICO) and Cursor (CUR) format.</description>
 
 
