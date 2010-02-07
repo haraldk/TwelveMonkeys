@@ -1,5 +1,6 @@
 package com.twelvemonkeys.servlet.image;
 
+import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.servlet.OutputStreamAdapter;
 import org.jmock.Mock;
@@ -165,11 +166,31 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
+        /*
+        File tempFile = File.createTempFile("imageservlet-test-", ".jpeg");
+        FileOutputStream stream = new FileOutputStream(tempFile);
+        out.writeTo(stream);
+        stream.close();
+        System.err.println("open " + tempFile);
+        */
+
         BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
         assertNotNull(outImage);
         assertEquals(IMAGE_DIMENSION_PNG.width, outImage.getWidth());
         assertEquals(IMAGE_DIMENSION_PNG.height, outImage.getHeight());
-        assertSimilarImage(ImageIO.read(mContext.getResource("/" + IMAGE_NAME_PNG)), outImage, 96f);
+
+        BufferedImage image = flatten(ImageIO.read(mContext.getResource("/" + IMAGE_NAME_PNG)), Color.BLACK);
+
+        /*
+        tempFile = File.createTempFile("imageservlet-test-", ".png");
+        stream = new FileOutputStream(tempFile);
+        ImageIO.write(image, "PNG", stream);
+        stream.close();
+        System.err.println("open " + tempFile);
+        */
+
+        // JPEG compression trashes the image completely...
+        assertSimilarImage(image, outImage, 144f);
     }
 
     @Test
@@ -200,11 +221,46 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
+        /*
+        File tempFile = File.createTempFile("imageservlet-test-", ".jpeg");
+        FileOutputStream stream = new FileOutputStream(tempFile);
+        out.writeTo(stream);
+        stream.close();
+        System.err.println("open " + tempFile);
+        */
+
         BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
         assertNotNull(outImage);
         assertEquals(IMAGE_DIMENSION_GIF.width, outImage.getWidth());
         assertEquals(IMAGE_DIMENSION_GIF.height, outImage.getHeight());
-        assertSimilarImage(ImageIO.read(mContext.getResource("/" + IMAGE_NAME_GIF)), outImage, 96f);
+
+        BufferedImage image = flatten(ImageIO.read(mContext.getResource("/" + IMAGE_NAME_GIF)), Color.WHITE);
+
+        /*
+        tempFile = File.createTempFile("imageservlet-test-", ".png");
+        stream = new FileOutputStream(tempFile);
+        ImageIO.write(image, "PNG", stream);
+        stream.close();
+        System.err.println("open " + tempFile);
+        */
+
+        assertSimilarImage(image, outImage, 96f);
+    }
+
+    private static BufferedImage flatten(final BufferedImage pImage, final Color pBackgroundColor) {
+        BufferedImage image = ImageUtil.toBuffered(pImage, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g = image.createGraphics();
+        try {
+            g.setComposite(AlphaComposite.DstOver);
+            g.setColor(pBackgroundColor);
+            g.fillRect(0, 0, pImage.getWidth(), pImage.getHeight());
+        }
+        finally {
+            g.dispose();
+        }
+
+        return image;
     }
 
     /**
@@ -261,6 +317,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
+        assertSimilarImage(image, outImage, 0);
     }
 
     // TODO: Test with AOI attributes (rename thes to source-region?)

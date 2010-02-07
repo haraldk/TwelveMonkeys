@@ -154,7 +154,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     @Override
     public void close() throws IOException {
         if (mStream != null) {
-            mStream.close();
+            //mStream.close();
             mStream = null;
             mBuffer = null;
         }
