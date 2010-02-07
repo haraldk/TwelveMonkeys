@@ -9,7 +9,7 @@
         <version>3.0-SNAPSHOT</version>
     </parent>
     <artifactId>twelvemonkeys-imageio-jmagick</artifactId>
-    <name>TwelveMonkeys ImageIO JMagick Plugin</name>
+    <name>TwelveMonkeys :: ImageIO :: JMagick Plugin</name>
     <description>
         <![CDATA[
         ImageIO wrapper for JMagick.

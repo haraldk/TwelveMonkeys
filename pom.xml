@@ -11,7 +11,7 @@
 
     <modules>
         <module>common</module>
-        <module>twelvemonkeys-servlet</module>
+        <module>servlet</module>
         <module>imageio</module>
         <!--<module>sandbox</module>-->
     </modules>

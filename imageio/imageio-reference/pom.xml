@@ -9,7 +9,7 @@
         <version>3.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-reference</artifactId>
-    <name>TwelveMonkeys ImageIO reference test cases</name>
+    <name>TwelveMonkeys :: ImageIO :: reference test cases</name>
     <description>
         Test cases for the JDK provided ImageReader implementations for reference.
     </description>

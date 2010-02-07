@@ -9,10 +9,10 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.twelvemonkeys</groupId>
-    <artifactId>twelvemonkeys-servlet</artifactId>
+    <groupId>com.twelvemonkeys.servlet</groupId>
+    <artifactId>servlet</artifactId>
     <version>3.0-SNAPSHOT</version>
-    <name>TwelveMonkeys Servlet</name>
+    <name>TwelveMonkeys :: Servlet</name>
 
     <dependencies>
         <dependency>
