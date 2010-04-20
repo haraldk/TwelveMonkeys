@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.twelvemonkeys.imageio</groupId>
+        <artifactId>imageio</artifactId>
+        <version>3.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>imageio-batik</artifactId>
+    <name>TwelveMonkeys :: ImageIO :: Batik Plugin</name>
+    <description>
+        <![CDATA[
+        ImageIO wrapper for the Batik SVG Toolkit, enabling Scalable Vector Graphics (SVG) support.
+        See the <a href="http://xmlgraphics.apache.org/batik/">Batik Home page</a>
+        for more information.]]>
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-rasterizer-ext</artifactId>
+            <version>1.6-1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-svggen</artifactId>
+            <version>1.6-1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>batik</groupId>
+            <artifactId>batik-transcoder</artifactId>
+            <version>1.6-1</version>
+            <scope>provided</scope>
+
+            <!--
+            There seems to be some weirdness in the
+            Batik/FOP poms (Batik depends on FOP 0.20-5) that screws things up,
+            making everything end up depending on Batik 1.5, not 1.6
+            -->
+            <exclusions>
+                <exclusion>
+                    <groupId>fop</groupId>
+                    <artifactId>fop</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+</project>
