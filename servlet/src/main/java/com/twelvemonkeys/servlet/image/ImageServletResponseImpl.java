@@ -582,7 +582,8 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         boolean aoiUniform = b != null && b; // default: false
 
         if (aoiX >= 0 || aoiY >= 0 || aoiW >= 0 || aoiH >= 0) {
-            aoi = getAOI(pDefaultWidth, pDefaultHeight, aoiX, aoiY, aoiW, aoiH, aoiPercent, aoiUniform);
+
+            aoi = new AreaOfInterest(pDefaultWidth, pDefaultHeight, aoiPercent, aoiUniform).getAOI(aoiX, aoiY, aoiW, aoiH);
             return aoi;
         }
 
@@ -692,93 +693,5 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
         // Create new Dimension object and return
         return new Dimension(pWidth, pHeight);
-    }
-
-    static Rectangle getAOI(int pOriginalWidth, int pOriginalHeight,
-                                      int pX, int pY, int pWidth, int pHeight,
-                                      boolean pPercent, boolean pMaximizeToAspect) {
-        // Algorithm:
-        // Try to get x and y (default 0,0).
-        // Try to get width and height (default width-x, height-y)
-        //
-        // If percent, get ratio
-        //
-        // If uniform
-        //
-
-        float ratio;
-
-        if (pPercent) {
-            if (pWidth >= 0 && pHeight >= 0) {
-                // Non-uniform
-                pWidth = Math.round((float) pOriginalWidth * (float) pWidth / 100f);
-                pHeight = Math.round((float) pOriginalHeight * (float) pHeight / 100f);
-            }
-            else if (pWidth >= 0) {
-                // Find ratio from pWidth
-                ratio = (float) pWidth / 100f;
-                pWidth = Math.round((float) pOriginalWidth * ratio);
-                pHeight = Math.round((float) pOriginalHeight * ratio);
-            }
-            else if (pHeight >= 0) {
-                // Find ratio from pHeight
-                ratio = (float) pHeight / 100f;
-                pWidth = Math.round((float) pOriginalWidth * ratio);
-                pHeight = Math.round((float) pOriginalHeight * ratio);
-            }
-            // Else: No crop
-        }
-        else {
-            // Uniform
-            if (pMaximizeToAspect) {
-                if (pWidth >= 0 && pHeight >= 0) {
-                    // Compute both ratios
-                    ratio = (float) pWidth / (float) pHeight;
-                    float originalRatio = (float) pOriginalWidth / (float) pOriginalHeight;
-                    if (ratio > originalRatio) {
-                        pWidth = pOriginalWidth;
-                        pHeight = Math.round((float) pOriginalWidth / ratio);
-                    }
-                    else {
-                        pHeight = pOriginalHeight;
-                        pWidth = Math.round((float) pOriginalHeight * ratio);
-                    }
-                }
-                else if (pWidth >= 0) {
-                    // Find ratio from pWidth
-                    ratio = (float) pWidth / (float) pOriginalWidth;
-                    pHeight = Math.round((float) pOriginalHeight * ratio);
-                }
-                else if (pHeight >= 0) {
-                    // Find ratio from pHeight
-                    ratio = (float) pHeight / (float) pOriginalHeight;
-                    pWidth = Math.round((float) pOriginalWidth * ratio);
-                }
-                // Else: No crop
-            }
-        }
-
-        // Not specified, or outside bounds: Use original dimensions
-        if (pWidth < 0 || (pX < 0 && pWidth > pOriginalWidth)
-                || (pX >= 0 && (pX + pWidth) > pOriginalWidth)) {
-            pWidth = (pX >= 0 ? pOriginalWidth - pX : pOriginalWidth);
-        }
-        if (pHeight < 0 || (pY < 0 && pHeight > pOriginalHeight)
-                || (pY >= 0 && (pY + pHeight) > pOriginalHeight)) {
-            pHeight = (pY >= 0 ? pOriginalHeight - pY : pOriginalHeight);
-        }
-
-        // Center
-        if (pX < 0) {
-            pX = (pOriginalWidth - pWidth) / 2;
-        }
-        if (pY < 0) {
-            pY = (pOriginalHeight - pHeight) / 2;
-        }
-
-//        System.out.println("x: " + pX + " y: " + pY
-//                           + " w: " + pWidth + " h " + pHeight);
-
-        return new Rectangle(pX, pY, pWidth, pHeight);
     }
 }
