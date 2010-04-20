@@ -66,7 +66,7 @@ public class ImageServletResponseImplTestCase {
         when(context.getMimeType("file.txt")).thenReturn(CONTENT_TYPE_TEXT);
     }
 
-    private void fakeResponse(HttpServletRequest pRequest, ImageServletResponseImpl pImageResponse) throws IOException {
+    private void fakeResponse(HttpServletRequest pRequest, DefaultImageServletResponse pImageResponse) throws IOException {
         String uri = pRequest.getRequestURI();
         int index = uri.lastIndexOf('/');
         assertTrue(uri, index >= 0);
