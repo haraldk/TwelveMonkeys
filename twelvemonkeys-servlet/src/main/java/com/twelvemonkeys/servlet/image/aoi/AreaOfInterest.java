@@ -7,7 +7,14 @@ import java.awt.*;
  * @version $Revision: $
  */
 public interface AreaOfInterest {
-    Rectangle getAOI(int pX, int pY, int pWidth, int pHeight);
-
+    
     Rectangle getAOI(Rectangle pCrop);
+
+    Dimension getOriginalDimension();
+
+    int calculateX(Dimension pOriginalDimension, Rectangle pCrop);
+
+    int calculateY(Dimension pOriginalDimension, Rectangle pCrop);
+
+    Dimension getCrop(Dimension pOriginalDimension, Rectangle pCrop);
 }

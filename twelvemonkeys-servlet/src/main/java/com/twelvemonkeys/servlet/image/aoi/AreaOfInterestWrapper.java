@@ -15,11 +15,23 @@ public class AreaOfInterestWrapper implements AreaOfInterest {
         this.mDelegate = Validate.notNull(mDelegate);
     }
 
-    public Rectangle getAOI(int pX, int pY, int pWidth, int pHeight) {
-        return mDelegate.getAOI(pX, pY, pWidth, pHeight);
-    }
-
     public Rectangle getAOI(Rectangle pCrop) {
         return mDelegate.getAOI(pCrop);
+    }
+
+    public Dimension getOriginalDimension() {
+        return mDelegate.getOriginalDimension();
+    }
+
+    public int calculateX(Dimension pOriginalDimension, Rectangle pCrop) {
+        return mDelegate.calculateX(pOriginalDimension, pCrop);
+    }
+
+    public int calculateY(Dimension pOriginalDimension, Rectangle pCrop) {
+        return mDelegate.calculateY(pOriginalDimension, pCrop);
+    }
+
+    public Dimension getCrop(Dimension pOriginalDimension, Rectangle pCrop) {
+        return mDelegate.getCrop(pOriginalDimension, pCrop);
     }
 }
