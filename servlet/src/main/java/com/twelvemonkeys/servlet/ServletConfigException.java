@@ -53,7 +53,7 @@ public class ServletConfigException extends ServletException {
      * @param pMessage the exception message
      * @param pCause the exception cause
      */
-    public ServletConfigException(String pMessage, Throwable pCause) {
+    public ServletConfigException(final String pMessage, final Throwable pCause) {
         super(pMessage, pCause);
         if (getCause() == null) {
             initCause(pCause);
@@ -65,28 +65,10 @@ public class ServletConfigException extends ServletException {
      *
      * @param pCause the exception cause
      */
-    public ServletConfigException(Throwable pCause) {
-        super("Erorr in Servlet configuration: " + pCause.getMessage(), pCause);
+    public ServletConfigException(final Throwable pCause) {
+        super("Error in Servlet configuration: " + pCause.getMessage(), pCause);
         if (getCause() == null) {
             initCause(pCause);
         }
     }
-
-    /**
-     * Gets the cause of this {@code ServletConfigException}.
-     *
-     * @return the cause, or {@code null} if unknown.
-     * @see #getRootCause()
-     */
-//    public final Throwable getCause() {
-//        Throwable cause = super.getCause();
-//        return cause != null ? cause : super.getRootCause();
-//    }
-
-    /**
-     * @deprecated Use {@link #getCause()} instead.
-     */
-//    public final Throwable getRootCause() {
-//        return getCause();
-//    }
 }

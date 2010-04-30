@@ -25,14 +25,15 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
     protected abstract Iterator<String> valuesImpl(String pName);
 
     @Override
-    public List<String> get(Object pKey) {
+    public List<String> get(final Object pKey) {
         if (pKey instanceof String) {
             return getValues((String) pKey);
         }
+
         return null;
     }
 
-    private List<String> getValues(String pName) {
+    private List<String> getValues(final String pName) {
         List<String> values = mCache.get(pName);
 
         if (values == null) {
@@ -61,13 +62,14 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
         if (mSize == -1) {
             computeSize();
         }
+
         return mSize;
     }
 
     private void computeSize() {
-        Iterator<String> names = keysImpl();
         mSize = 0;
-        for (;names.hasNext(); names.next()) {
+
+        for (Iterator<String> names = keysImpl(); names.hasNext(); names.next()) {
             mSize++;
         }
     }

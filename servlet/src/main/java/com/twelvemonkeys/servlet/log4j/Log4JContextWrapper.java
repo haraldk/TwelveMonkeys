@@ -2,19 +2,18 @@ package com.twelvemonkeys.servlet.log4j;
 
 import org.apache.log4j.Logger;
 
-import java.util.Enumeration;
-import java.util.Set;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.io.InputStream;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-
-import javax.servlet.ServletContext;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Set;
 
 /**
  * Log4JContextWrapper
@@ -24,6 +23,7 @@ import javax.servlet.ServletException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/log4j/Log4JContextWrapper.java#1 $
  */
 final class Log4JContextWrapper implements ServletContext {
+    // TODO: Move to sandbox
 
     // TODO: This solution sucks...
     // How about starting to create some kind of pluggable decorator system,
@@ -32,7 +32,7 @@ final class Log4JContextWrapper implements ServletContext {
     // wrapped object based on configuration.
     // This way we could simply call ServletUtil.decorate(ServletContext):ServletContext
     // And the context would be decorated with all configured mixins at once,
-    // requiring less bolierplate delegation code, and less layers of wrapping
+    // requiring less boilerplate delegation code, and less layers of wrapping
     // (alternatively we could decorate the Servlet/FilterConfig objects).
     // See the ServletUtil.createWrapper methods for some hints..
 

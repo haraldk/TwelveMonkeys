@@ -31,7 +31,7 @@ package com.twelvemonkeys.servlet;
 import java.lang.annotation.*;
 
 /**
- * Annotation to be used by serlvets/filters, to have their init-method
+ * Annotation to be used by servlets/filters, to have their {@code init}-method
  * automatically convert and set values from their respective configuration.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -41,10 +41,12 @@ import java.lang.annotation.*;
  * @see com.twelvemonkeys.servlet.GenericServlet#init(javax.servlet.ServletConfig)
  * @see com.twelvemonkeys.servlet.HttpServlet#init(javax.servlet.ServletConfig)
  */
+// TODO: Actually implement for version 3.0!
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface InitParam {
+    // TODO: Rename to value, to allow skipping name = "..."
     String name() default "";
 }

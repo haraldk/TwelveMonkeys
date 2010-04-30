@@ -70,9 +70,10 @@ import java.util.Iterator;
  */
 // TODO: Refactor out HTTP specifcs (if possible).
 // TODO: Is it a good ide to throw IIOException?
+// TODO: This implementation has a problem if two filters does scaling, as the second will overwrite the SIZE attribute
 class ImageServletResponseImpl extends HttpServletResponseWrapper implements ImageServletResponse {
 
-    private final ServletRequest mOriginalRequest;
+    private ServletRequest mOriginalRequest;
     private final ServletContext mContext;
     private final ServletResponseStreamDelegate mStreamDelegate;
 
@@ -123,6 +124,10 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     public ImageServletResponseImpl(final ServletRequest pRequest, final ServletResponse pResponse, final ServletContext pContext) {
         // Cheat for now...
         this((HttpServletRequest) pRequest, (HttpServletResponse) pResponse, pContext);
+    }
+
+    public void setRequest(ServletRequest pRequest) {
+        mOriginalRequest = pRequest;
     }
 
     /**
@@ -187,13 +192,6 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
             getImage();
         }
 
-        // For known formats that don't support transparency, convert to opaque
-        if (("image/jpeg".equals(outputType) || "image/jpg".equals(outputType)
-                || "image/bmp".equals(outputType) || "image/x-bmp".equals(outputType)) &&
-                mImage.getColorModel().getTransparency() != Transparency.OPAQUE) {
-            mImage = ImageUtil.toBuffered(mImage, BufferedImage.TYPE_INT_RGB);
-        }
-
         if (mImage != null) {
             Iterator writers = ImageIO.getImageWritersByMIMEType(outputType);
             if (writers.hasNext()) {
@@ -203,6 +201,12 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                 ImageWriter writer = (ImageWriter) writers.next();
                 try {
                     ImageWriteParam param = writer.getDefaultWriteParam();
+///////////////////
+// POST-PROCESS 
+                    // For known formats that don't support transparency, convert to opaque
+                    if (isNonAlphaFormat(outputType) && mImage.getColorModel().getTransparency() != Transparency.OPAQUE) {
+                        mImage = ImageUtil.toBuffered(mImage, BufferedImage.TYPE_INT_RGB);
+                    }
 
                     Float requestQuality = (Float) mOriginalRequest.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY);
 
@@ -211,7 +215,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                         param.setCompressionQuality(requestQuality != null ? requestQuality : 0.8f);
                     }
-
+//////////////////
                     ImageOutputStream stream = ImageIO.createImageOutputStream(out);
 
                     writer.setOutput(stream);
@@ -244,6 +248,11 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         }
     }
 
+    private boolean isNonAlphaFormat(String outputType) {
+        return "image/jpeg".equals(outputType) || "image/jpg".equals(outputType) ||
+                "image/bmp".equals(outputType) || "image/x-bmp".equals(outputType);
+    }
+
     private String getFormatNameSafe(final ImageWriter pWriter) {
         try {
             return pWriter.getOriginatingProvider().getFormatNames()[0];
@@ -255,7 +264,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     }
 
     public String getOutputContentType() {
-        return  mOutputContentType != null ? mOutputContentType : mOriginalContentType;
+        return mOutputContentType != null ? mOutputContentType : mOriginalContentType;
     }
 
     public void setOutputContentType(final String pImageFormat) {
@@ -304,18 +313,21 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         // Get default size
                         int originalWidth = reader.getWidth(0);
                         int originalHeight = reader.getHeight(0);
-
+//////////////////
+// PRE-PROCESS (prepare): param, size, format?, request, response?
+                        // TODO: AOI strategy?
                         // Extract AOI from request
-                        Rectangle aoi = extractAOIFromRequest(originalWidth, originalHeight);
+                        Rectangle aoi = extractAOIFromRequest(originalWidth, originalHeight, mOriginalRequest);
                         if (aoi != null) {
                             param.setSourceRegion(aoi);
                             originalWidth = aoi.width;
                             originalHeight = aoi.height;
                         }
 
+                        // TODO: Size and subsampling strategy?
                         // If possible, extract size from request
-                        Dimension size = extractSizeFromRequest(originalWidth, originalHeight);
-                        double readSubSamplingFactor = getReadSubsampleFactorFromRequest();
+                        Dimension size = extractSizeFromRequest(originalWidth, originalHeight, mOriginalRequest);
+                        double readSubSamplingFactor = getReadSubsampleFactorFromRequest(mOriginalRequest);
                         if (size != null) {
                             //System.out.println("Size: " + size);
                             if (param.canSetSourceRenderSize()) {
@@ -334,26 +346,16 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         // Need base URI for SVG with links/stylesheets etc
                         maybeSetBaseURIFromRequest(param);
 
+/////////////////////
+
                         // Finally, read the image using the supplied parameter
                         BufferedImage image = reader.read(0, param);
 
                         // If reader doesn't support dynamic sizing, scale now
-                        if (image != null && size != null
-                                && (image.getWidth() != size.width || image.getHeight() != size.height)) {
-
-                            int resampleAlgorithm = getResampleAlgorithmFromRequest();
-                            // NOTE: Only use createScaled if IndexColorModel,
-                            //  as it's more expensive due to color conversion
-                            if (image.getColorModel() instanceof IndexColorModel) {
-                                image = ImageUtil.createScaled(image, size.width, size.height, resampleAlgorithm);
-                            }
-                            else {
-                                image = ImageUtil.createResampled(image, size.width, size.height, resampleAlgorithm);
-                            }
-                        }
+                        image = resampleImage(image, size);
 
                         // Fill bgcolor behind image, if transparent
-                        extractAndSetBackgroundColor(image);
+                        extractAndSetBackgroundColor(image); // TODO: Move to flush/POST-PROCESS
 
                         // Set image
                         mImage = image;
@@ -383,27 +385,38 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         return mImage != null ? ImageUtil.toBuffered(mImage) : null;
     }
 
-    private int getResampleAlgorithmFromRequest() {
-        int resampleAlgoithm;
+    private BufferedImage resampleImage(final BufferedImage image, final Dimension size) {
+        if (image != null && size != null && (image.getWidth() != size.width || image.getHeight() != size.height)) {
+            int resampleAlgorithm = getResampleAlgorithmFromRequest();
 
+            // NOTE: Only use createScaled if IndexColorModel, as it's more expensive due to color conversion
+            if (image.getColorModel() instanceof IndexColorModel) {
+                return ImageUtil.createScaled(image, size.width, size.height, resampleAlgorithm);
+            }
+            else {
+                return ImageUtil.createResampled(image, size.width, size.height, resampleAlgorithm);
+            }
+        }
+        return image;
+    }
+
+    private int getResampleAlgorithmFromRequest() {
         Object algorithm = mOriginalRequest.getAttribute(ATTRIB_IMAGE_RESAMPLE_ALGORITHM);
         if (algorithm instanceof Integer && ((Integer) algorithm == Image.SCALE_SMOOTH || (Integer) algorithm == Image.SCALE_FAST || (Integer) algorithm == Image.SCALE_DEFAULT)) {
-            resampleAlgoithm = (Integer) algorithm;
+            return (Integer) algorithm;
         }
         else {
             if (algorithm != null) {
                 mContext.log("WARN: Illegal image resampling algorithm: " + algorithm);
             }
-            resampleAlgoithm = BufferedImage.SCALE_DEFAULT;
+            return BufferedImage.SCALE_DEFAULT;
         }
-
-        return resampleAlgoithm;
     }
 
-    private double getReadSubsampleFactorFromRequest() {
+    private double getReadSubsampleFactorFromRequest(final ServletRequest pOriginalRequest) {
         double subsampleFactor;
 
-        Object factor = mOriginalRequest.getAttribute(ATTRIB_READ_SUBSAMPLING_FACTOR);
+        Object factor = pOriginalRequest.getAttribute(ATTRIB_READ_SUBSAMPLING_FACTOR);
         if (factor instanceof Number && ((Number) factor).doubleValue() >= 1.0) {
             subsampleFactor = ((Number) factor).doubleValue();
         }
@@ -411,6 +424,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
             if (factor != null) {
                 mContext.log("WARN: Illegal read subsampling factor: " + factor);
             }
+
             subsampleFactor = 2.0;
         }
 
@@ -483,7 +497,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         }
     }
 
-    private Dimension extractSizeFromRequest(final int pDefaultWidth, final int pDefaultHeight) {
+    private Dimension extractSizeFromRequest(final int pDefaultWidth, final int pDefaultHeight, final ServletRequest pOriginalRequest) {
         // TODO: Allow extraction from request parameters
         /*
         int sizeW = ServletUtil.getIntParameter(mOriginalRequest, "size.w", -1);
@@ -491,14 +505,14 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         boolean sizePercent = ServletUtil.getBooleanParameter(mOriginalRequest, "size.percent", false);
         boolean sizeUniform = ServletUtil.getBooleanParameter(mOriginalRequest, "size.uniform", true);
         */
-        Dimension size = (Dimension) mOriginalRequest.getAttribute(ATTRIB_SIZE);
+        Dimension size = (Dimension) pOriginalRequest.getAttribute(ATTRIB_SIZE);
         int sizeW = size != null ? size.width : -1;
         int sizeH = size != null ? size.height : -1;
 
-        Boolean b = (Boolean) mOriginalRequest.getAttribute(ATTRIB_SIZE_PERCENT);
+        Boolean b = (Boolean) pOriginalRequest.getAttribute(ATTRIB_SIZE_PERCENT);
         boolean sizePercent = b != null && b; // default: false
 
-        b = (Boolean) mOriginalRequest.getAttribute(ATTRIB_SIZE_UNIFORM);
+        b = (Boolean) pOriginalRequest.getAttribute(ATTRIB_SIZE_UNIFORM);
         boolean sizeUniform = b == null || b; // default: true
 
         if (sizeW >= 0 || sizeH >= 0) {
@@ -508,7 +522,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         return size;
     }
 
-    private Rectangle extractAOIFromRequest(final int pDefaultWidth, final int pDefaultHeight) {
+    private Rectangle extractAOIFromRequest(final int pDefaultWidth, final int pDefaultHeight, final ServletRequest pOriginalRequest) {
         // TODO: Allow extraction from request parameters
         /*
         int aoiX = ServletUtil.getIntParameter(mOriginalRequest, "aoi.x", -1);
@@ -518,16 +532,16 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         boolean aoiPercent = ServletUtil.getBooleanParameter(mOriginalRequest, "aoi.percent", false);
         boolean aoiUniform = ServletUtil.getBooleanParameter(mOriginalRequest, "aoi.uniform", false);
         */
-        Rectangle aoi = (Rectangle) mOriginalRequest.getAttribute(ATTRIB_AOI);
+        Rectangle aoi = (Rectangle) pOriginalRequest.getAttribute(ATTRIB_AOI);
         int aoiX = aoi != null ? aoi.x : -1;
         int aoiY = aoi != null ? aoi.y : -1;
         int aoiW = aoi != null ? aoi.width : -1;
         int aoiH = aoi != null ? aoi.height : -1;
 
-        Boolean b = (Boolean) mOriginalRequest.getAttribute(ATTRIB_AOI_PERCENT);
+        Boolean b = (Boolean) pOriginalRequest.getAttribute(ATTRIB_AOI_PERCENT);
         boolean aoiPercent = b != null && b; // default: false
 
-        b = (Boolean) mOriginalRequest.getAttribute(ATTRIB_AOI_UNIFORM);
+        b = (Boolean) pOriginalRequest.getAttribute(ATTRIB_AOI_UNIFORM);
         boolean aoiUniform = b != null && b; // default: false
 
         if (aoiX >= 0 || aoiY >= 0 || aoiW >= 0 || aoiH >= 0) {
@@ -552,18 +566,18 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      * @param pHeight       the new height of the image, or -1 if unknown
      * @param pPercent        the constant specifying units for width and height
      *                      parameter (UNITS_PIXELS or UNITS_PERCENT)
-     * @param pUniformScale boolean specifying uniform scale or not
+     * @param pUniform boolean specifying uniform scale or not
      * @return a Dimension object, with the correct width and heigth
      *         in pixels, for the scaled version of the image.
      */
-    protected static Dimension getSize(int pOriginalWidth, int pOriginalHeight,
+    static Dimension getSize(int pOriginalWidth, int pOriginalHeight,
                                        int pWidth, int pHeight,
-                                       boolean pPercent, boolean pUniformScale) {
+                                       boolean pPercent, boolean pUniform) {
 
-        // If uniform, make sure width and height are scaled the same ammount
+        // If uniform, make sure width and height are scaled the same amount
         // (use ONLY height or ONLY width).
         //
-        // Algoritm:
+        // Algorithm:
         // if uniform
         //    if newHeight not set
         //       find ratio newWidth / oldWidth
@@ -602,7 +616,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
             // Else: No scale
         }
         else {
-            if (pUniformScale) {
+            if (pUniform) {
                 if (pWidth >= 0 && pHeight >= 0) {
                     // Compute both ratios
                     ratio = (float) pWidth / (float) pOriginalWidth;
@@ -616,7 +630,6 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                     else {
                         pHeight = Math.round((float) pOriginalHeight * ratio);
                     }
-
                 }
                 else if (pWidth >= 0) {
                     // Find ratio from pWidth
@@ -644,10 +657,10 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         return new Dimension(pWidth, pHeight);
     }
 
-    protected static Rectangle getAOI(int pOriginalWidth, int pOriginalHeight,
+    static Rectangle getAOI(int pOriginalWidth, int pOriginalHeight,
                                       int pX, int pY, int pWidth, int pHeight,
-                                      boolean pPercent, boolean pUniform) {
-        // Algoritm:
+                                      boolean pPercent, boolean pMaximizeToAspect) {
+        // Algorithm:
         // Try to get x and y (default 0,0).
         // Try to get width and height (default width-x, height-y)
         //
@@ -669,7 +682,6 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                 ratio = (float) pWidth / 100f;
                 pWidth = Math.round((float) pOriginalWidth * ratio);
                 pHeight = Math.round((float) pOriginalHeight * ratio);
-
             }
             else if (pHeight >= 0) {
                 // Find ratio from pHeight
@@ -681,7 +693,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         }
         else {
             // Uniform
-            if (pUniform) {
+            if (pMaximizeToAspect) {
                 if (pWidth >= 0 && pHeight >= 0) {
                     // Compute both ratios
                     ratio = (float) pWidth / (float) pHeight;

@@ -7,17 +7,17 @@ import java.util.Enumeration;
 import java.util.Iterator;
 
 /**
- * HeaderMap
+ * ServletHeadersMapAdapter
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/SerlvetHeadersMapAdapter.java#1 $
+ * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ServletHeadersMapAdapter.java#1 $
  */
-class SerlvetHeadersMapAdapter extends AbstractServletMapAdapter {
+class ServletHeadersMapAdapter extends AbstractServletMapAdapter {
 
     protected final HttpServletRequest mRequest;
 
-    public SerlvetHeadersMapAdapter(HttpServletRequest pRequest) {
+    public ServletHeadersMapAdapter(HttpServletRequest pRequest) {
         if (pRequest == null) {
             throw new IllegalArgumentException("request == null");
         }

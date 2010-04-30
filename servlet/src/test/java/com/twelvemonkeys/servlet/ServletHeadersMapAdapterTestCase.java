@@ -47,7 +47,7 @@ public class ServletHeadersMapAdapterTestCase extends MapAbstractTestCase {
         mockRequest.stubs().method("getHeaderNames").will(returnValue(Collections.enumeration(Collections.emptyList())));
         mockRequest.stubs().method("getHeaders").will(returnValue(null));
 
-        return new SerlvetHeadersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletHeadersMapAdapter((HttpServletRequest) mockRequest.proxy());
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ServletHeadersMapAdapterTestCase extends MapAbstractTestCase {
         mockRequest.stubs().method("getHeaders").with(eq("X-Foo")).will(returnEnumeration(HEADER_VALUE_FOO));
         mockRequest.stubs().method("getHeaders").with(not(or(eq("Date"), or(eq("ETag"), eq("X-Foo"))))).will(returnValue(null));
 
-        return new SerlvetHeadersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletHeadersMapAdapter((HttpServletRequest) mockRequest.proxy());
     }
 
     @Override

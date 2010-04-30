@@ -47,7 +47,7 @@ public class ServletParametersMapAdapterTestCase extends MapAbstractTestCase {
         mockRequest.stubs().method("getParameterNames").will(returnValue(Collections.enumeration(Collections.emptyList())));
         mockRequest.stubs().method("getParameterValues").will(returnValue(null));
 
-        return new SerlvetParametersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletParametersMapAdapter((HttpServletRequest) mockRequest.proxy());
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ServletParametersMapAdapterTestCase extends MapAbstractTestCase {
         mockRequest.stubs().method("getParameterValues").with(eq("foo")).will(returnValue(PARAM_VALUE_FOO.toArray(new String[PARAM_VALUE_FOO.size()])));
         mockRequest.stubs().method("getParameterValues").with(not(or(eq("date"), or(eq("tag"), eq("foo"))))).will(returnValue(null));
 
-        return new SerlvetParametersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletParametersMapAdapter((HttpServletRequest) mockRequest.proxy());
     }
 
     @Override

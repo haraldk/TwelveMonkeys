@@ -29,6 +29,7 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
@@ -52,7 +53,6 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
         ServletConfig, FilterConfig, ServletContext
     }
 
-//    private final boolean mIsServlet;
     private final ConfigType mType;
 
     private final ServletConfig mServletConfig;
@@ -62,23 +62,21 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
     // Cache the entry set
     private transient Set<Entry<String, String>> mEntrySet;
 
-    public ServletConfigMapAdapter(ServletConfig pConfig) {
+    public ServletConfigMapAdapter(final ServletConfig pConfig) {
         this(pConfig, ConfigType.ServletConfig);
     }
 
-    public ServletConfigMapAdapter(FilterConfig pConfig) {
+    public ServletConfigMapAdapter(final FilterConfig pConfig) {
         this(pConfig, ConfigType.FilterConfig);
     }
 
-    public ServletConfigMapAdapter(ServletContext pContext) {
+    public ServletConfigMapAdapter(final ServletContext pContext) {
         this(pContext, ConfigType.ServletContext);
     }
 
-    private ServletConfigMapAdapter(Object pConfig, ConfigType pType) {
-        if (pConfig == null) {
-            // Could happen of client code invokes with null reference
-            throw new IllegalArgumentException("Config == null");
-        }
+    private ServletConfigMapAdapter(final Object pConfig, final ConfigType pType) {
+        // Could happen if client code invokes with null reference
+        Validate.notNull(pConfig, "config");
 
         mType = pType;
 

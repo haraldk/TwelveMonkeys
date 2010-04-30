@@ -25,11 +25,11 @@ import java.util.Arrays;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/image/ImageServletResponseImplTestCase.java#6 $
  */
 public class ImageServletResponseImplTestCase extends MockObjectTestCase {
-    private static final String CONTENT_TYPE_BMP  = "image/bmp";
-    private static final String CONTENT_TYPE_FOO  = "foo/bar";
-    private static final String CONTENT_TYPE_GIF  = "image/gif";
+    private static final String CONTENT_TYPE_BMP = "image/bmp";
+    private static final String CONTENT_TYPE_FOO = "foo/bar";
+    private static final String CONTENT_TYPE_GIF = "image/gif";
     private static final String CONTENT_TYPE_JPEG = "image/jpeg";
-    private static final String CONTENT_TYPE_PNG  = "image/png";
+    private static final String CONTENT_TYPE_PNG = "image/png";
     private static final String CONTENT_TYPE_TEXT = "text/plain";
 
     private static final String IMAGE_NAME_PNG = "12monkeys-splash.png";
@@ -126,6 +126,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     // Test that wrapper works as a no-op, in case the image does not need to be decoded
     // This is not a very common use case, as filters should avoid wrapping the response
     // for performance reasons, but we still want that to work
+
     public void testNoOpResponse() throws IOException {
         Mock mockResponse = mock(HttpServletResponse.class);
         mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_PNG));
@@ -147,6 +148,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     }
 
     // Transcode original PNG to JPEG with no other changes
+
     public void testTranscodeResponse() throws IOException {
         Mock mockResponse = mock(HttpServletResponse.class);
         mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_JPEG));
@@ -268,7 +270,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
      *
      * @param pExpected the expected image
      * @param pActual the actual image
-     * @param pArtifactThreshold the maximum allowed difference between the expected and actual pixel value 
+     * @param pArtifactThreshold the maximum allowed difference between the expected and actual pixel value
      */
     private void assertSimilarImage(final BufferedImage pExpected, final BufferedImage pActual, final float pArtifactThreshold) {
         for (int y = 0; y < pExpected.getHeight(); y++) {
@@ -325,6 +327,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     // More?
 
     // Make sure we don't change semantics here...
+
     public void testNotFoundInput() throws IOException {
         // Need speical setup
         Mock mockRequest = mock(HttpServletRequest.class);
@@ -343,6 +346,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     }
 
     // NOTE: This means it's up to some Filter to decide wether we should filter the given request
+
     public void testUnsupportedInput() throws IOException {
         assertFalse("Test is invalid, rewrite test", ImageIO.getImageReadersByFormatName("txt").hasNext());
 
@@ -407,7 +411,6 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
 
     // TODO: Test that we handle image conversion to a suitable format, before writing response
     // For example: Read a PNG with transparency and store as B/W WBMP
-
 
 
     // TODO: Create ImageFilter test case, that tests normal use, as well as chaining
@@ -997,6 +1000,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     // -----------------------------------------------------------------------------------------------------------------
     // Absolute AOI
     // -----------------------------------------------------------------------------------------------------------------
+
     public void testGetAOIAbsolute() {
         assertEquals(new Rectangle(10, 10, 100, 100), ImageServletResponseImpl.getAOI(200, 200, 10, 10, 100, 100, false, false));
     }
@@ -1020,6 +1024,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     // -----------------------------------------------------------------------------------------------------------------
     // Uniform AOI centered
     // -----------------------------------------------------------------------------------------------------------------
+
     @Test
     public void testGetAOIUniformCenteredS2SUp() {
         assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 333, 333, false, true));
@@ -1148,6 +1153,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
     // -----------------------------------------------------------------------------------------------------------------
     // Absolute AOI centered
     // -----------------------------------------------------------------------------------------------------------------
+
     @Test
     public void testGetAOICenteredS2SUp() {
         assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 333, 333, false, false));
@@ -1303,4 +1309,7 @@ public class ImageServletResponseImplTestCase extends MockObjectTestCase {
         assertEquals(new Rectangle(0, 0, 100, 200), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 200, false, false));
     }
 
+    // TODO: Test percent
+
+    // TODO: Test getSize()...
 }

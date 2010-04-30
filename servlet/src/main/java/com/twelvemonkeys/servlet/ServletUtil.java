@@ -37,15 +37,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.File;
-import java.io.PrintStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -61,52 +58,52 @@ import java.util.Map;
 public final class ServletUtil {
 
     /**
-     * "javax.servlet.include.request_uri"
+     * {@code "javax.servlet.include.request_uri"}
      */
     private final static String ATTRIB_INC_REQUEST_URI = "javax.servlet.include.request_uri";
 
     /**
-     * "javax.servlet.include.context_path"
+     * {@code "javax.servlet.include.context_path"}
      */
     private final static String ATTRIB_INC_CONTEXT_PATH = "javax.servlet.include.context_path";
 
     /**
-     * "javax.servlet.include.servlet_path"
+     * {@code "javax.servlet.include.servlet_path"}
      */
     private final static String ATTRIB_INC_SERVLET_PATH = "javax.servlet.include.servlet_path";
 
     /**
-     * "javax.servlet.include.path_info"
+     * {@code "javax.servlet.include.path_info"}
      */
     private final static String ATTRIB_INC_PATH_INFO = "javax.servlet.include.path_info";
 
     /**
-     * "javax.servlet.include.query_string"
+     * {@code "javax.servlet.include.query_string"}
      */
     private final static String ATTRIB_INC_QUERY_STRING = "javax.servlet.include.query_string";
 
     /**
-     * "javax.servlet.forward.request_uri"
+     * {@code "javax.servlet.forward.request_uri"}
      */
     private final static String ATTRIB_FWD_REQUEST_URI = "javax.servlet.forward.request_uri";
 
     /**
-     * "javax.servlet.forward.context_path"
+     * {@code "javax.servlet.forward.context_path"}
      */
     private final static String ATTRIB_FWD_CONTEXT_PATH = "javax.servlet.forward.context_path";
 
     /**
-     * "javax.servlet.forward.servlet_path"
+     * {@code "javax.servlet.forward.servlet_path"}
      */
     private final static String ATTRIB_FWD_SERVLET_PATH = "javax.servlet.forward.servlet_path";
 
     /**
-     * "javax.servlet.forward.path_info"
+     * {@code "javax.servlet.forward.path_info"}
      */
     private final static String ATTRIB_FWD_PATH_INFO = "javax.servlet.forward.path_info";
 
     /**
-     * "javax.servlet.forward.query_string"
+     * {@code "javax.servlet.forward.query_string"}
      */
     private final static String ATTRIB_FWD_QUERY_STRING = "javax.servlet.forward.query_string";
 
@@ -126,10 +123,10 @@ public final class ServletUtil {
      * @return the value of the parameter, or the default value, if the
      *         parameter is not set.
      */
-    public static String getParameter(ServletRequest pReq, String pName, String pDefault) {
+    public static String getParameter(final ServletRequest pReq, final String pName, final String pDefault) {
         String str = pReq.getParameter(pName);
 
-        return ((str != null) ? str : pDefault);
+        return str != null ? str : pDefault;
     }
 
     /**
@@ -148,13 +145,10 @@ public final class ServletUtil {
      *                                  non-{@code null} and not an instance of {@code pType}
      * @throws NullPointerException     if {@code pReq}, {@code pName} or
      *                                  {@code pType} is {@code null}.
-     * @todo Well, it's done. Need some thinking...
+     * @todo Well, it's done. Need some thinking... We probably don't want default if conversion fails...
      * @see Converter#toObject
      */
-
-    // public static T getParameter<T>(ServletRequest pReq, String pName,
-    //                                 String pFormat, T pDefault) {
-    static <T> T getParameter(ServletRequest pReq, String pName, Class<T> pType, String pFormat, T pDefault) {
+    static <T> T getParameter(final ServletRequest pReq, final String pName, final Class<T> pType, final String pFormat, final T pDefault) {
         // Test if pDefault is either null or instance of pType
         if (pDefault != null && !pType.isInstance(pDefault)) {
             throw new IllegalArgumentException("default value not instance of " + pType + ": " + pDefault.getClass());
@@ -165,6 +159,7 @@ public final class ServletUtil {
         if (str == null) {
             return pDefault;
         }
+
         try {
             return pType.cast(Converter.getInstance().toObject(str, pType, pFormat));
         }
@@ -175,20 +170,20 @@ public final class ServletUtil {
 
     /**
      * Gets the value of the given parameter from the request converted to
-     * a boolean. If the parameter is not set or not parseable, the default
+     * a {@code boolean}.&nbsp;If the parameter is not set or not parseable, the default
      * value is returned.
      *
      * @param pReq     the servlet request
      * @param pName    the parameter name
      * @param pDefault the default value
-     * @return the value of the parameter converted to a boolean, or the
+     * @return the value of the parameter converted to a {@code boolean}, or the
      *         default value, if the parameter is not set.
      */
-    public static boolean getBooleanParameter(ServletRequest pReq, String pName, boolean pDefault) {
+    public static boolean getBooleanParameter(final ServletRequest pReq, final String pName, final boolean pDefault) {
         String str = pReq.getParameter(pName);
 
         try {
-            return ((str != null) ? Boolean.valueOf(str) : pDefault);
+            return str != null ? Boolean.valueOf(str) : pDefault;
         }
         catch (NumberFormatException nfe) {
             return pDefault;
@@ -197,20 +192,20 @@ public final class ServletUtil {
 
     /**
      * Gets the value of the given parameter from the request converted to
-     * an int.&nbsp;If the parameter is not set or not parseable, the default
+     * an {@code int}.&nbsp;If the parameter is not set or not parseable, the default
      * value is returned.
      *
      * @param pReq     the servlet request
      * @param pName    the parameter name
      * @param pDefault the default value
-     * @return the value of the parameter converted to an int, or the default
+     * @return the value of the parameter converted to an {@code int}, or the default
      *         value, if the parameter is not set.
      */
-    public static int getIntParameter(ServletRequest pReq, String pName, int pDefault) {
+    public static int getIntParameter(final ServletRequest pReq, final String pName, final int pDefault) {
         String str = pReq.getParameter(pName);
 
         try {
-            return ((str != null) ? Integer.parseInt(str) : pDefault);
+            return str != null ? Integer.parseInt(str) : pDefault;
         }
         catch (NumberFormatException nfe) {
             return pDefault;
@@ -219,20 +214,20 @@ public final class ServletUtil {
 
     /**
      * Gets the value of the given parameter from the request converted to
-     * an long.&nbsp;If the parameter is not set or not parseable, the default
+     * an {@code long}.&nbsp;If the parameter is not set or not parseable, the default
      * value is returned.
      *
      * @param pReq     the servlet request
      * @param pName    the parameter name
      * @param pDefault the default value
-     * @return the value of the parameter converted to an long, or the default
+     * @return the value of the parameter converted to an {@code long}, or the default
      *         value, if the parameter is not set.
      */
-    public static long getLongParameter(ServletRequest pReq, String pName, long pDefault) {
+    public static long getLongParameter(final ServletRequest pReq, final String pName, final long pDefault) {
         String str = pReq.getParameter(pName);
 
         try {
-            return ((str != null) ? Long.parseLong(str) : pDefault);
+            return str != null ? Long.parseLong(str) : pDefault;
         }
         catch (NumberFormatException nfe) {
             return pDefault;
@@ -241,20 +236,20 @@ public final class ServletUtil {
 
     /**
      * Gets the value of the given parameter from the request converted to
-     * a float.&nbsp;If the parameter is not set or not parseable, the default
+     * a {@code float}.&nbsp;If the parameter is not set or not parseable, the default
      * value is returned.
      *
      * @param pReq     the servlet request
      * @param pName    the parameter name
      * @param pDefault the default value
-     * @return the value of the parameter converted to a float, or the default
+     * @return the value of the parameter converted to a {@code float}, or the default
      *         value, if the parameter is not set.
      */
-    public static float getFloatParameter(ServletRequest pReq, String pName, float pDefault) {
+    public static float getFloatParameter(final ServletRequest pReq, final String pName, final float pDefault) {
         String str = pReq.getParameter(pName);
 
         try {
-            return ((str != null) ? Float.parseFloat(str) : pDefault);
+            return str != null ? Float.parseFloat(str) : pDefault;
         }
         catch (NumberFormatException nfe) {
             return pDefault;
@@ -263,20 +258,20 @@ public final class ServletUtil {
 
     /**
      * Gets the value of the given parameter from the request converted to
-     * a double.&nbsp;If the parameter is not set or not parseable, the default
+     * a {@code double}.&nbsp;If the parameter is not set or not parseable, the default
      * value is returned.
      *
      * @param pReq     the servlet request
      * @param pName    the parameter name
      * @param pDefault the default value
-     * @return the value of the parameter converted to n double, or the default
+     * @return the value of the parameter converted to n {@code double}, or the default
      *         value, if the parameter is not set.
      */
-    public static double getDoubleParameter(ServletRequest pReq, String pName, double pDefault) {
+    public static double getDoubleParameter(final ServletRequest pReq, final String pName, final double pDefault) {
         String str = pReq.getParameter(pName);
 
         try {
-            return ((str != null) ? Double.parseDouble(str) : pDefault);
+            return str != null ? Double.parseDouble(str) : pDefault;
         }
         catch (NumberFormatException nfe) {
             return pDefault;
@@ -285,20 +280,20 @@ public final class ServletUtil {
 
     /**
      * Gets the value of the given parameter from the request converted to
-     * a Date.&nbsp;If the parameter is not set or not parseable, the
+     * a {@code Date}.&nbsp;If the parameter is not set or not parseable, the
      * default value is returned.
      *
      * @param pReq     the servlet request
      * @param pName    the parameter name
      * @param pDefault the default value
-     * @return the value of the parameter converted to a Date, or the
+     * @return the value of the parameter converted to a {@code Date}, or the
      *         default value, if the parameter is not set.
      * @see com.twelvemonkeys.lang.StringUtil#toDate(String)
      */
-    public static long getDateParameter(ServletRequest pReq, String pName, long pDefault) {
+    public static long getDateParameter(final ServletRequest pReq, final String pName, final long pDefault) {
         String str = pReq.getParameter(pName);
         try {
-            return ((str != null) ? StringUtil.toDate(str).getTime() : pDefault);
+            return str != null ? StringUtil.toDate(str).getTime() : pDefault;
         }
         catch (IllegalArgumentException iae) {
             return pDefault;
@@ -341,7 +336,7 @@ public final class ServletUtil {
      * @deprecated Use {@link javax.servlet.http.HttpServletRequest#getRequestURL()}
      *             instead.
      */
-    static StringBuffer buildHTTPURL(HttpServletRequest pRequest) {
+    static StringBuffer buildHTTPURL(final HttpServletRequest pRequest) {
         StringBuffer resultURL = new StringBuffer();
 
         // Scheme, as in http, https, ftp etc
@@ -381,7 +376,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getRequestURI
      * @since Servlet 2.2
      */
-    public static String getIncludeRequestURI(ServletRequest pRequest) {
+    public static String getIncludeRequestURI(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_INC_REQUEST_URI);
     }
 
@@ -395,7 +390,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getContextPath
      * @since Servlet 2.2
      */
-    public static String getIncludeContextPath(ServletRequest pRequest) {
+    public static String getIncludeContextPath(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_INC_CONTEXT_PATH);
     }
 
@@ -409,7 +404,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getServletPath
      * @since Servlet 2.2
      */
-    public static String getIncludeServletPath(ServletRequest pRequest) {
+    public static String getIncludeServletPath(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_INC_SERVLET_PATH);
     }
 
@@ -423,7 +418,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getPathInfo
      * @since Servlet 2.2
      */
-    public static String getIncludePathInfo(ServletRequest pRequest) {
+    public static String getIncludePathInfo(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_INC_PATH_INFO);
     }
 
@@ -437,7 +432,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getQueryString
      * @since Servlet 2.2
      */
-    public static String getIncludeQueryString(ServletRequest pRequest) {
+    public static String getIncludeQueryString(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_INC_QUERY_STRING);
     }
 
@@ -451,7 +446,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getRequestURI
      * @since Servlet 2.4
      */
-    public static String getForwardRequestURI(ServletRequest pRequest) {
+    public static String getForwardRequestURI(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_FWD_REQUEST_URI);
     }
 
@@ -465,7 +460,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getContextPath
      * @since Servlet 2.4
      */
-    public static String getForwardContextPath(ServletRequest pRequest) {
+    public static String getForwardContextPath(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_FWD_CONTEXT_PATH);
     }
 
@@ -479,7 +474,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getServletPath
      * @since Servlet 2.4
      */
-    public static String getForwardServletPath(ServletRequest pRequest) {
+    public static String getForwardServletPath(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_FWD_SERVLET_PATH);
     }
 
@@ -493,7 +488,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getPathInfo
      * @since Servlet 2.4
      */
-    public static String getForwardPathInfo(ServletRequest pRequest) {
+    public static String getForwardPathInfo(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_FWD_PATH_INFO);
     }
 
@@ -507,7 +502,7 @@ public final class ServletUtil {
      * @see HttpServletRequest#getQueryString
      * @since Servlet 2.4
      */
-    public static String getForwardQueryString(ServletRequest pRequest) {
+    public static String getForwardQueryString(final ServletRequest pRequest) {
         return (String) pRequest.getAttribute(ATTRIB_FWD_QUERY_STRING);
     }
 
@@ -519,7 +514,7 @@ public final class ServletUtil {
      * @todo Read the spec, seems to be a mismatch with the Servlet API...
      * @see javax.servlet.http.HttpServletRequest#getServletPath()
      */
-    static String getScriptName(HttpServletRequest pRequest) {
+    static String getScriptName(final HttpServletRequest pRequest) {
         String requestURI = pRequest.getRequestURI();
         return StringUtil.getLastElement(requestURI, "/");
     }
@@ -536,11 +531,13 @@ public final class ServletUtil {
      * @param pRequest the current HTTP request
      * @return the request URI relative to the current context path.
      */
-    public static String getContextRelativeURI(HttpServletRequest pRequest) {
+    public static String getContextRelativeURI(final HttpServletRequest pRequest) {
         String context = pRequest.getContextPath();
+
         if (!StringUtil.isEmpty(context)) { // "" for root context
             return pRequest.getRequestURI().substring(context.length());
         }
+
         return pRequest.getRequestURI();
     }
 
@@ -557,12 +554,14 @@ public final class ServletUtil {
      * @see ServletContext#getRealPath(java.lang.String)
      * @see ServletContext#getResource(java.lang.String)
      */
-    public static URL getRealURL(ServletContext pContext, String pPath) throws MalformedURLException {
+    public static URL getRealURL(final ServletContext pContext, final String pPath) throws MalformedURLException {
         String realPath = pContext.getRealPath(pPath);
+
         if (realPath != null) {
             // NOTE: First convert to URI, as of Java 6 File.toURL is deprecated
             return new File(realPath).toURI().toURL();
         }
+
         return null;
     }
 
@@ -572,20 +571,19 @@ public final class ServletUtil {
      * @param pContext the servlet context
      * @return the temp directory
      */
-    public static File getTempDir(ServletContext pContext) {
+    public static File getTempDir(final ServletContext pContext) {
         return (File) pContext.getAttribute("javax.servlet.context.tempdir");
     }
 
     /**
-     * Gets the identificator string containing the unique identifier assigned
-     * to this session.
+     * Gets the unique identifier assigned to this session.
      * The identifier is assigned by the servlet container and is implementation
      * dependent.
      *
      * @param pRequest The HTTP servlet request object.
      * @return the session Id
      */
-    public static String getSessionId(HttpServletRequest pRequest) {
+    public static String getSessionId(final HttpServletRequest pRequest) {
         HttpSession session = pRequest.getSession();
 
         return (session != null) ? session.getId() : null;
@@ -598,11 +596,11 @@ public final class ServletUtil {
      * operations and iterating over it's {@code keySet}.
      * For other operations it may not perform well.</small>
      *
-     * @param pConfig the serlvet configuration
+     * @param pConfig the servlet configuration
      * @return a {@code Map} view of the config
      * @throws IllegalArgumentException if {@code pConfig} is {@code null}
      */
-    public static Map<String, String> asMap(ServletConfig pConfig) {
+    public static Map<String, String> asMap(final ServletConfig pConfig) {
         return new ServletConfigMapAdapter(pConfig);
     }
 
@@ -617,7 +615,7 @@ public final class ServletUtil {
      * @return a {@code Map} view of the config
      * @throws IllegalArgumentException if {@code pConfig} is {@code null}
      */
-    public static Map<String, String> asMap(FilterConfig pConfig) {
+    public static Map<String, String> asMap(final FilterConfig pConfig) {
         return new ServletConfigMapAdapter(pConfig);
     }
 
@@ -636,6 +634,13 @@ public final class ServletUtil {
         return new ServletConfigMapAdapter(pContext);
     }
 
+    // TODO?
+//    public static Map<String, ?> attributesAsMap(final ServletContext pContext) {
+//    }
+//
+//    public static Map<String, ?> attributesAsMap(final ServletRequest pRequest) {
+//    }
+//
     /**
      * Creates an unmodifiable {@code Map} view of the given
      * {@code HttpServletRequest}s request parameters.
@@ -645,7 +650,7 @@ public final class ServletUtil {
      * @throws IllegalArgumentException if {@code pRequest} is {@code null}
      */
     public static Map<String, List<String>> parametersAsMap(final HttpServletRequest pRequest) {
-        return new SerlvetParametersMapAdapter(pRequest);
+        return new ServletParametersMapAdapter(pRequest);
     }
 
     /**
@@ -657,7 +662,7 @@ public final class ServletUtil {
      * @throws IllegalArgumentException if {@code pRequest} is {@code null}
      */
     public static Map<String, List<String>> headersAsMap(final HttpServletRequest pRequest) {
-        return new SerlvetHeadersMapAdapter(pRequest);
+        return new ServletHeadersMapAdapter(pRequest);
     }
 
     /**
@@ -700,329 +705,22 @@ public final class ServletUtil {
         return pImplementation;
     }
 
-
-    /**
-     * Prints the init parameters in a {@code javax.servlet.ServletConfig}
-     * object to a {@code java.io.PrintStream}.
-     * <p/>
-     *
-     * @param pServletConfig The Servlet Config object.
-     * @param pPrintStream   The {@code java.io.PrintStream} for flushing
-     *                       the results.
-     */
-    public static void printDebug(final ServletConfig pServletConfig, final PrintStream pPrintStream) {
-        Enumeration parameterNames = pServletConfig.getInitParameterNames();
-
-        while (parameterNames.hasMoreElements()) {
-            String initParameterName = (String) parameterNames.nextElement();
-
-            pPrintStream.println(initParameterName + ": " + pServletConfig.getInitParameter(initParameterName));
-        }
-    }
-
-    /**
-     * Prints the init parameters in a {@code javax.servlet.ServletConfig}
-     * object to {@code System.out}.
-     *
-     * @param pServletConfig the Servlet Config object.
-     */
-    public static void printDebug(final ServletConfig pServletConfig) {
-        printDebug(pServletConfig, System.out);
-    }
-
-    /**
-     * Prints the init parameters in a {@code javax.servlet.ServletContext}
-     * object to a {@code java.io.PrintStream}.
-     *
-     * @param pServletContext the Servlet Context object.
-     * @param pPrintStream    the {@code java.io.PrintStream} for flushing the
-     *                        results.
-     */
-    public static void printDebug(final ServletContext pServletContext, final PrintStream pPrintStream) {
-        Enumeration parameterNames = pServletContext.getInitParameterNames();
-
-        while (parameterNames.hasMoreElements()) {
-            String initParameterName = (String) parameterNames.nextElement();
-
-            pPrintStream.println(initParameterName + ": " + pServletContext.getInitParameter(initParameterName));
-        }
-    }
-
-    /**
-     * Prints the init parameters in a {@code javax.servlet.ServletContext}
-     * object to {@code System.out}.
-     *
-     * @param pServletContext The Servlet Context object.
-     */
-    public static void printDebug(final ServletContext pServletContext) {
-        printDebug(pServletContext, System.out);
-    }
-
-    /**
-     * Prints an excerpt of the residing information in a
-     * {@code javax.servlet.http.HttpServletRequest} object to a
-     * {@code java.io.PrintStream}.
-     *
-     * @param pRequest     The HTTP servlet request object.
-     * @param pPrintStream The {@code java.io.PrintStream} for flushing
-     *                     the results.
-     */
-    public static void printDebug(final HttpServletRequest pRequest, final PrintStream pPrintStream) {
-        String indentation = "   ";
-        StringBuilder buffer = new StringBuilder();
-
-        // Returns the name of the authentication scheme used to protect the
-        // servlet, for example, "BASIC" or "SSL," or null if the servlet was
-        // not protected.
-        buffer.append(indentation);
-        buffer.append("Authentication scheme: ");
-        buffer.append(pRequest.getAuthType());
-        buffer.append("\n");
-
-        // Returns the portion of the request URI that indicates the context
-        // of the request.
-        buffer.append(indentation);
-        buffer.append("Context path: ");
-        buffer.append(pRequest.getContextPath());
-        buffer.append("\n");
-
-        // Returns an enumeration of all the header mNames this request contains.
-        buffer.append(indentation);
-        buffer.append("Header:");
-        buffer.append("\n");
-        Enumeration headerNames = pRequest.getHeaderNames();
-
-        while (headerNames.hasMoreElements()) {
-            String headerElement = (String) headerNames.nextElement();
-
-            buffer.append(indentation);
-            buffer.append(indentation);
-            buffer.append(headerElement);
-            buffer.append(": ");
-            buffer.append(pRequest.getHeader(headerElement));
-            buffer.append("\n");
-        }
-
-        // Returns the name of the HTTP method with which this request was made,
-        // for example, GET, POST, or PUT.
-        buffer.append(indentation);
-        buffer.append("HTTP method: ");
-        buffer.append(pRequest.getMethod());
-        buffer.append("\n");
-
-        // Returns any extra path information associated with the URL the client
-        // sent when it made this request.
-        buffer.append(indentation);
-        buffer.append("Extra path information from client: ");
-        buffer.append(pRequest.getPathInfo());
-        buffer.append("\n");
-
-        // Returns any extra path information after the servlet name but before
-        // the query string, and translates it to a real path.
-        buffer.append(indentation);
-        buffer.append("Extra translated path information from client: ");
-        buffer.append(pRequest.getPathTranslated());
-        buffer.append("\n");
-
-        // Returns the login of the user making this request, if the user has
-        // been authenticated, or null if the user has not been authenticated.
-        buffer.append(indentation);
-        String userInfo = pRequest.getRemoteUser();
-
-        if (StringUtil.isEmpty(userInfo)) {
-            buffer.append("User is not authenticated");
-        }
-        else {
-            buffer.append("User logint: ");
-            buffer.append(userInfo);
-        }
-        buffer.append("\n");
-
-        // Returns the session ID specified by the client.
-        buffer.append(indentation);
-        buffer.append("Session ID from client: ");
-        buffer.append(pRequest.getRequestedSessionId());
-        buffer.append("\n");
-
-        // Returns the server name.
-        buffer.append(indentation);
-        buffer.append("Server name: ");
-        buffer.append(pRequest.getServerName());
-        buffer.append("\n");
-
-        // Returns the part of this request's URL from the protocol name up
-        // to the query string in the first line of the HTTP request.
-        buffer.append(indentation);
-        buffer.append("Request URI: ").append(pRequest.getRequestURI());
-        buffer.append("\n");
-
-        // Returns the path info.
-        buffer.append(indentation);
-        buffer.append("Path information: ").append(pRequest.getPathInfo());
-        buffer.append("\n");
-
-        // Returns the part of this request's URL that calls the servlet.
-        buffer.append(indentation);
-        buffer.append("Servlet path: ").append(pRequest.getServletPath());
-        buffer.append("\n");
-
-        // Returns the query string that is contained in the request URL after
-        // the path.
-        buffer.append(indentation);
-        buffer.append("Query string: ").append(pRequest.getQueryString());
-        buffer.append("\n");
-
-        // Returns an enumeration of all the parameters bound to this request.
-        buffer.append(indentation);
-        buffer.append("Parameters:");
-        buffer.append("\n");
-        Enumeration parameterNames = pRequest.getParameterNames();
-        while (parameterNames.hasMoreElements()) {
-            String parameterName = (String) parameterNames.nextElement();
-
-            buffer.append(indentation);
-            buffer.append(indentation);
-            buffer.append(parameterName);
-            buffer.append(": ");
-            buffer.append(pRequest.getParameter(parameterName));
-            buffer.append("\n");
-        }
-
-        // Returns an enumeration of all the attribute objects bound to this
-        // request.
-        buffer.append(indentation);
-        buffer.append("Attributes:");
-        buffer.append("\n");
-        Enumeration attributeNames = pRequest.getAttributeNames();
-        while (attributeNames.hasMoreElements()) {
-            String attributeName = (String) attributeNames.nextElement();
-
-            buffer.append(indentation);
-            buffer.append(indentation);
-            buffer.append(attributeName);
-            buffer.append(": ");
-            buffer.append(pRequest.getAttribute(attributeName).toString());
-            buffer.append("\n");
-        }
-        pPrintStream.println(buffer.toString());
-    }
-
-    /**
-     * Prints an excerpt of the residing information in a
-     * {@code javax.servlet.http.HttpServletRequest} object to
-     * {@code System.out}.
-     *
-     * @param pRequest The HTTP servlet request object.
-     */
-    public static void printDebug(final HttpServletRequest pRequest) {
-        printDebug(pRequest, System.out);
-    }
-
-    /**
-     * Prints an excerpt of a {@code javax.servlet.http.HttpSession} object
-     * to a {@code java.io.PrintStream}.
-     *
-     * @param pHttpSession The HTTP Session object.
-     * @param pPrintStream The {@code java.io.PrintStream} for flushing
-     *                     the results.
-     */
-    public static void printDebug(final HttpSession pHttpSession, final PrintStream pPrintStream) {
-        String indentation = "   ";
-        StringBuilder buffer = new StringBuilder();
-
-        if (pHttpSession == null) {
-            buffer.append(indentation);
-            buffer.append("No session object available");
-            buffer.append("\n");
-        }
-        else {
-
-            // Returns a string containing the unique identifier assigned to
-            //this session
-            buffer.append(indentation);
-            buffer.append("Session ID: ").append(pHttpSession.getId());
-            buffer.append("\n");
-
-            // Returns the last time the client sent a request associated with
-            // this session, as the number of milliseconds since midnight
-            // January 1, 1970 GMT, and marked by the time the container
-            // recieved the request
-            buffer.append(indentation);
-            buffer.append("Last accessed time: ");
-            buffer.append(new Date(pHttpSession.getLastAccessedTime()));
-            buffer.append("\n");
-
-            // Returns the time when this session was created, measured in
-            // milliseconds since midnight January 1, 1970 GMT
-            buffer.append(indentation);
-            buffer.append("Creation time: ");
-            buffer.append(new Date(pHttpSession.getCreationTime()));
-            buffer.append("\n");
-
-            // Returns true if the client does not yet know about the session
-            // or if the client chooses not to join the session
-            buffer.append(indentation);
-            buffer.append("New session?: ");
-            buffer.append(pHttpSession.isNew());
-            buffer.append("\n");
-
-            // Returns the maximum time interval, in seconds, that the servlet
-            // container will keep this session open between client accesses
-            buffer.append(indentation);
-            buffer.append("Max inactive interval: ");
-            buffer.append(pHttpSession.getMaxInactiveInterval());
-            buffer.append("\n");
-
-            // Returns an enumeration of all the attribute objects bound to
-            // this session
-            buffer.append(indentation);
-            buffer.append("Attributes:");
-            buffer.append("\n");
-            Enumeration attributeNames = pHttpSession.getAttributeNames();
-
-            while (attributeNames.hasMoreElements()) {
-                String attributeName = (String) attributeNames.nextElement();
-
-                buffer.append(indentation);
-                buffer.append(indentation);
-                buffer.append(attributeName);
-                buffer.append(": ");
-                buffer.append(pHttpSession.getAttribute(attributeName).toString());
-                buffer.append("\n");
-            }
-        }
-        pPrintStream.println(buffer.toString());
-    }
-
-    /**
-     * Prints an excerpt of a {@code javax.servlet.http.HttpSession}
-     * object to {@code System.out}.
-     * <p/>
-     *
-     * @param pHttpSession The HTTP Session object.
-     */
-    public static void printDebug(final HttpSession pHttpSession) {
-        printDebug(pHttpSession, System.out);
-    }
-
     private static class HttpServletResponseHandler implements InvocationHandler {
-        private ServletResponse mResponse;
-        private HttpServletResponse mHttpResponse;
+        private final ServletResponseWrapper mResponse;
 
-        HttpServletResponseHandler(ServletResponseWrapper pResponse) {
+        HttpServletResponseHandler(final ServletResponseWrapper pResponse) {
             mResponse = pResponse;
-            mHttpResponse = (HttpServletResponse) pResponse.getResponse();
         }
 
-        public Object invoke(Object pProxy, Method pMethod, Object[] pArgs) throws Throwable {
+        public Object invoke(final Object pProxy, final Method pMethod, final Object[] pArgs) throws Throwable {
             try {
+                // TODO: Allow partial implementing?
                 if (pMethod.getDeclaringClass().isInstance(mResponse)) {
-                    //System.out.println("Invoking " + pMethod + " on wrapper");
                     return pMethod.invoke(mResponse, pArgs);
                 }
+
                 // Method is not implemented in wrapper
-                //System.out.println("Invoking " + pMethod + " on wrapped object");
-                return pMethod.invoke(mHttpResponse, pArgs);
+                return pMethod.invoke(mResponse.getResponse(), pArgs);
             }
             catch (InvocationTargetException e) {
                 // Unwrap, to avoid UndeclaredThrowableException...
@@ -1032,23 +730,21 @@ public final class ServletUtil {
     }
 
     private static class HttpServletRequestHandler implements InvocationHandler {
-        private ServletRequest mRequest;
-        private HttpServletRequest mHttpRequest;
+        private final ServletRequestWrapper mRequest;
 
-        HttpServletRequestHandler(ServletRequestWrapper pRequest) {
+        HttpServletRequestHandler(final ServletRequestWrapper pRequest) {
             mRequest = pRequest;
-            mHttpRequest = (HttpServletRequest) pRequest.getRequest();
         }
 
-        public Object invoke(Object pProxy, Method pMethod, Object[] pArgs) throws Throwable {
+        public Object invoke(final Object pProxy, final Method pMethod, final Object[] pArgs) throws Throwable {
             try {
+                // TODO: Allow partial implementing?
                 if (pMethod.getDeclaringClass().isInstance(mRequest)) {
-                    //System.out.println("Invoking " + pMethod + " on wrapper");
                     return pMethod.invoke(mRequest, pArgs);
                 }
+
                 // Method is not implemented in wrapper
-                //System.out.println("Invoking " + pMethod + " on wrapped object");
-                return pMethod.invoke(mHttpRequest, pArgs);
+                return pMethod.invoke(mRequest.getRequest(), pArgs);
             }
             catch (InvocationTargetException e) {
                 // Unwrap, to avoid UndeclaredThrowableException...

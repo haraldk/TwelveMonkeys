@@ -147,12 +147,12 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @see #init() init
      * @see BeanUtil#configure(Object, java.util.Map, boolean)
      */
-    public void init(FilterConfig pConfig) throws ServletException {
+    public void init(final FilterConfig pConfig) throws ServletException {
         if (pConfig == null) {
-            throw new ServletConfigException("filterconfig == null");
+            throw new ServletConfigException("filter config == null");
         }
 
-        // Store filterconfig
+        // Store filter config
         mFilterConfig = pConfig;
 
         // Configure this
@@ -197,8 +197,8 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @see Filter#doFilter Filter.doFilter
      * @see #doFilterImpl doFilterImpl
      */
-    public final void doFilter(ServletRequest pRequest, ServletResponse pResponse, FilterChain pFilterChain) throws IOException, ServletException {
-        // If request filter and allready run, continue chain and return fast
+    public final void doFilter(final ServletRequest pRequest, final ServletResponse pResponse, final FilterChain pFilterChain) throws IOException, ServletException {
+        // If request filter and already run, continue chain and return fast
         if (mOncePerRequest && isRunOnce(pRequest)) {
             pFilterChain.doFilter(pRequest, pResponse);
             return;
@@ -225,8 +225,8 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @return {@code true} if the request is allready filtered, otherwise
      *         {@code false}.
      */
-    private boolean isRunOnce(ServletRequest pRequest) {
-        // If request allready filtered, return true (skip)
+    private boolean isRunOnce(final ServletRequest pRequest) {
+        // If request already filtered, return true (skip)
         if (pRequest.getAttribute(mAttribRunOnce) == ATTRIB_RUN_ONCE_VALUE) {
             return true;
         }
@@ -299,7 +299,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @return a {@code String} containing the value of the initialization
      *         parameter
      */
-    public String getInitParameter(String pKey) {
+    public String getInitParameter(final String pKey) {
         return mFilterConfig.getInitParameter(pKey);
     }
 
@@ -322,7 +322,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @param pMessage the log message
      * @see ServletContext#log(String)
      */
-    protected void log(String pMessage) {
+    protected void log(final String pMessage) {
         getServletContext().log(getFilterName() + ": " + pMessage);
     }
 
@@ -335,7 +335,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @param pThrowable the exception
      * @see ServletContext#log(String,Throwable)
      */
-    protected void log(String pMessage, Throwable pThrowable) {
+    protected void log(final String pMessage, final Throwable pThrowable) {
         getServletContext().log(getFilterName() + ": " + pMessage, pThrowable);
     }
 
@@ -347,12 +347,12 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *
      * @deprecated For compatibility only, use {@link #init init} instead.
      */
-    public void setFilterConfig(FilterConfig pFilterConfig) {
+    public void setFilterConfig(final FilterConfig pFilterConfig) {
         try {
             init(pFilterConfig);
         }
         catch (ServletException e) {
-            log("Error in init(), see stacktrace for details.", e);
+            log("Error in init(), see stack trace for details.", e);
         }
     }
 
@@ -376,8 +376,8 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *        once per request
      * @see #mOncePerRequest
      */
-    @InitParam
-    public void setOncePerRequest(boolean pOncePerRequest) {
+    @InitParam(name = "once-per-request")
+    public void setOncePerRequest(final boolean pOncePerRequest) {
         mOncePerRequest = pOncePerRequest;
     }
 }
