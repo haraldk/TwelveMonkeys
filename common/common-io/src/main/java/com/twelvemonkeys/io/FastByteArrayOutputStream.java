@@ -41,8 +41,9 @@ import java.io.ByteArrayInputStream;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/FastByteArrayOutputStream.java#2 $
  */
+// TODO: Performance test of a stream impl that uses list of fixed size blocks, rather than contiguous block 
 public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
-    /** Max grow size (unless if writing more than this ammount of bytes) */
+    /** Max grow size (unless if writing more than this amount of bytes) */
     protected int mMaxGrowSize = 1024 * 1024; // 1 MB
 
     /**
@@ -121,7 +122,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
      * <p/>
      * Note that care needs to be taken to avoid writes to
      * this output stream after the input stream is created.
-     * Failing to do so, may result in unpredictable behviour.
+     * Failing to do so, may result in unpredictable behaviour.
      *
      * @return a new {@code ByteArrayInputStream}, reading from this stream's buffer.
      */

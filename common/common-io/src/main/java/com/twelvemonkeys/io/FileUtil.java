@@ -1029,6 +1029,7 @@ public final class FileUtil {
      * @return a human readable string representation
      */
     public static String toHumanReadableSize(final long pSizeInBytes) {
+        // TODO: Rewrite to use String.format?
         if (pSizeInBytes < 1024L) {
             return pSizeInBytes + " Bytes";
         }
@@ -1053,7 +1054,7 @@ public final class FileUtil {
     private static ThreadLocal<NumberFormat> sNumberFormat = new ThreadLocal<NumberFormat>() {
         protected NumberFormat initialValue() {
             NumberFormat format = NumberFormat.getNumberInstance();
-            // TODO: Consider making this locale/platfor specific, OR a method parameter...
+            // TODO: Consider making this locale/platform specific, OR a method parameter...
 //            format.setMaximumFractionDigits(2);
             format.setMaximumFractionDigits(0);
             return format;
@@ -1075,6 +1076,7 @@ public final class FileUtil {
      *
      * @see com.twelvemonkeys.util.Visitor
      */
+    @SuppressWarnings({"ResultOfMethodCallIgnored"})
     public static void visitFiles(final File pDirectory, final FileFilter pFilter, final Visitor<File> pVisitor) {
         Validate.notNull(pDirectory, "directory");
         Validate.notNull(pVisitor, "visitor");
