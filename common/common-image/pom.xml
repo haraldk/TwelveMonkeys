@@ -15,21 +15,22 @@
         The TwelveMonkeys Common Image support
     </description>
 
-
     <dependencies>
-	<dependency>
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>common-lang</artifactId>
         </dependency>
-	<dependency>
+
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>common-io</artifactId>
         </dependency>
+
         <dependency>
             <groupId>jmagick</groupId>
             <artifactId>jmagick</artifactId>
-	    <version>6.2.4</version>
-	    <optional>true</optional>
+            <version>6.2.4</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 </project>

@@ -17,33 +17,34 @@
     </description>
 
     <modules>
-     <module>common-io</module>
-     <module>common-lang</module>
-     <module>common-image</module>
+        <module>common-lang</module>
+        <module>common-io</module>
+        <module>common-image</module>
     </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>common-lang</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
-<dependencyManagement>
-    <dependencies>
-	<dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>common-lang</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-	<dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>common-lang</artifactId>
-            <version>${project.version}</version>
-	    <classifier>tests</classifier>
-	    <scope>test</scope>
-        </dependency>
-	<dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>common-io</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>common-lang</artifactId>
+                <version>${project.version}</version>
+                <classifier>tests</classifier>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>common-io</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -58,6 +59,5 @@
             <version>1.0.1</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 </project>
