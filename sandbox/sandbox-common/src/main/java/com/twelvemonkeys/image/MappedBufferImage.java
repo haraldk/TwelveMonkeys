@@ -3,42 +3,30 @@ package com.twelvemonkeys.image;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
-import java.awt.image.SampleModel;
 import java.io.IOException;
 import java.util.Random;
 
 /**
- * MappedBufferedImageFactory
+ * MappedBufferImage
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: MappedBufferedImageFactory.java,v 1.0 May 26, 2010 5:07:01 PM haraldk Exp$
+ * @version $Id: MappedBufferImage.java,v 1.0 Jun 13, 2010 7:33:19 PM haraldk Exp$
  */
-public class MappedBufferedImageFactory {
+public class MappedBufferImage {
     private static final boolean ALPHA = true;
 
     public static void main(String[] args) throws IOException {
         int w = args.length > 0 ? Integer.parseInt(args[0]) : 6000;
         int h = args.length > 1 ? Integer.parseInt(args[1]) : w * 2 / 3;
 
-        ColorModel cm = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().
-                getDefaultConfiguration().getColorModel(ALPHA ? Transparency.TRANSLUCENT : Transparency.OPAQUE);
-//        ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-//        ColorModel cm = new ComponentColorModel(cs, ALPHA, false, ALPHA ? TRANSLUCENT : OPAQUE, DataBuffer.TYPE_BYTE);
-        SampleModel sm = cm.createCompatibleSampleModel(w, h);
+        GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+        BufferedImage image = MappedImageFactory.createCompatibleMappedImage(w, h, configuration, MappedBufferImage.ALPHA ? Transparency.TRANSLUCENT : Transparency.OPAQUE);
 
-//        System.err.println("cm: " + cm);
-//        System.err.println("cm.getNumComponents(): " + cm.getNumComponents());
-//        System.err.println("cm.getPixelSize(): " + cm.getPixelSize());
-//        System.err.println("cm.getComponentSize(): " + Arrays.toString(cm.getComponentSize()));
-//        System.err.println("sm.getNumDataElements(): " + sm.getNumDataElements());
-//        System.err.println("sm.getNumBands(): " + sm.getNumBands());
-//        System.err.println("sm.getSampleSize(): " + Arrays.toString(sm.getSampleSize()));
+        System.out.println("image = " + image);
 
-        DataBuffer buffer = MappedFileBuffer.create(sm.getTransferType(), w * h * sm.getNumDataElements(), 1);
-//        DataBuffer buffer = sm.createDataBuffer();
+        DataBuffer buffer = image.getRaster().getDataBuffer();
 
         // Mix in some nice colors
         for (int y = 0; y < h; y++) {
@@ -48,7 +36,7 @@ public class MappedBufferedImageFactory {
                 int b = (int) ((x * (h - y) * 255.0) / (h * w));
                 int a = ALPHA ? (int) (((w - x) * (h - y) * 255.0) / (h * w)) : 0;
 
-                switch (cm.getTransferType()) {
+                switch (buffer.getDataType()) {
                     case DataBuffer.TYPE_BYTE:
                         int off = (y * w + x) * (ALPHA ? 4 : 3);
                         if (ALPHA) {
@@ -58,7 +46,7 @@ public class MappedBufferedImageFactory {
                             buffer.setElem(off, r);
                         }
                         else {
-                            // TODO: Why RGB / ABGR??
+                            // TODO: Why the RGB / ABGR byte order inconsistency??
                             buffer.setElem(off++, r);
                             buffer.setElem(off++, g);
                             buffer.setElem(off, b);
@@ -68,16 +56,10 @@ public class MappedBufferedImageFactory {
                         buffer.setElem(y * w + x, (255 - a) << 24 | r << 16 | g << 8 | b);
                         break;
                     default:
-                        System.err.println("Transfer type not supported: " + cm.getTransferType());
+                        System.err.println("Transfer type not supported: " + buffer.getDataType());
                 }
             }
         }
-
-        BufferedImage image = new BufferedImage(cm, new GenericWritableRaster(sm, buffer, new Point()), cm.isAlphaPremultiplied(), null);
-//        BufferedImage image = new BufferedImage(cm, new SunWritableRaster(sm, buffer, new Point()), cm.isAlphaPremultiplied(), null);
-//        BufferedImage image = new BufferedImage(cm, Raster.createWritableRaster(sm, buffer, null), false null);
-
-        System.out.println("image = " + image);
 
         // Add some random dots (get out the coffee)
         int s = 300;
@@ -101,6 +83,7 @@ public class MappedBufferedImageFactory {
                 }
                 catch (OutOfMemoryError e) {
                     System.gc();
+                    System.err.println("Out of memory: " + e.getMessage());
                     g = tile.createGraphics(); // If this fails, give up
                 }
 
@@ -171,7 +154,8 @@ public class MappedBufferedImageFactory {
         @Override
         protected void paintComponent(Graphics g) {
             // TODO: Figure out why mouse wheel/track pad scroll repaints entire component,
-            // consider creating a custom mouse wheel listener as a workaround
+            // unlike using the scroll bars of the JScrollPane.
+            // Consider creating a custom mouse wheel listener as a workaround.
 
             // We want to paint only the visible part of the image
             Rectangle visible = getVisibleRect();
@@ -185,7 +169,7 @@ public class MappedBufferedImageFactory {
             long start = System.currentTimeMillis();
             repaintImage(rect, g2);
             System.err.println("repaint: " + (System.currentTimeMillis() - start) + " ms");
-        }   
+        }
 
         private void repaintImage(Rectangle rect, Graphics2D g2) {
             try {
@@ -255,6 +239,5 @@ public class MappedBufferedImageFactory {
         public boolean getScrollableTracksViewportHeight() {
             return false;
         }
-
     }
 }
