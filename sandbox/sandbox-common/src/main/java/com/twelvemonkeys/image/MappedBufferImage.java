@@ -1,11 +1,22 @@
 package com.twelvemonkeys.image;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
+import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * MappedBufferImage
@@ -15,53 +26,99 @@ import java.util.Random;
  * @version $Id: MappedBufferImage.java,v 1.0 Jun 13, 2010 7:33:19 PM haraldk Exp$
  */
 public class MappedBufferImage {
-    private static final boolean ALPHA = true;
+    private static int threads = Runtime.getRuntime().availableProcessors();
 
     public static void main(String[] args) throws IOException {
-        int w = args.length > 0 ? Integer.parseInt(args[0]) : 6000;
-        int h = args.length > 1 ? Integer.parseInt(args[1]) : w * 2 / 3;
+        int w;
+        int h;
+        BufferedImage image;
+        File file = args.length > 0 ? new File(args[0]) : null;
+        
+        if (file != null && file.exists()) {
+            // Load image using ImageIO 
+            ImageInputStream input = ImageIO.createImageInputStream(file);
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 
-        GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
-        BufferedImage image = MappedImageFactory.createCompatibleMappedImage(w, h, configuration, MappedBufferImage.ALPHA ? Transparency.TRANSLUCENT : Transparency.OPAQUE);
-
-        System.out.println("image = " + image);
-
-        DataBuffer buffer = image.getRaster().getDataBuffer();
-
-        // Mix in some nice colors
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int r = (int) ((x * y * 255.0) / (h * w));
-                int g = (int) (((w - x) * y * 255.0) / (h * w));
-                int b = (int) ((x * (h - y) * 255.0) / (h * w));
-                int a = ALPHA ? (int) (((w - x) * (h - y) * 255.0) / (h * w)) : 0;
-
-                switch (buffer.getDataType()) {
-                    case DataBuffer.TYPE_BYTE:
-                        int off = (y * w + x) * (ALPHA ? 4 : 3);
-                        if (ALPHA) {
-                            buffer.setElem(off++, 255 - a);
-                            buffer.setElem(off++, b);
-                            buffer.setElem(off++, g);
-                            buffer.setElem(off, r);
-                        }
-                        else {
-                            // TODO: Why the RGB / ABGR byte order inconsistency??
-                            buffer.setElem(off++, r);
-                            buffer.setElem(off++, g);
-                            buffer.setElem(off, b);
-                        }
-                        break;
-                    case DataBuffer.TYPE_INT:
-                        buffer.setElem(y * w + x, (255 - a) << 24 | r << 16 | g << 8 | b);
-                        break;
-                    default:
-                        System.err.println("Transfer type not supported: " + buffer.getDataType());
-                }
+            if (!readers.hasNext()) {
+                System.err.println("No image reader found for input: " + file.getAbsolutePath());
+                System.exit(0);
+                return;
             }
+
+            ImageReader reader = readers.next();
+            reader.setInput(input);
+
+            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+            ImageTypeSpecifier type = types.next();
+
+            // TODO: Negotiate best layout according to the GraphicsConfiguration.
+
+            w = reader.getWidth(0);
+            h = reader.getHeight(0);
+
+//            GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+//            ColorModel cm2 = configuration.getColorModel(cm.getTransparency());
+
+//            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm2);
+//            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm);
+//            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
+            image = MappedImageFactory.createCompatibleMappedImage(w, h, type);
+//            image = type.createBufferedImage(w, h);
+
+            System.out.println("image = " + image);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setDestination(image);
+
+            reader.read(0, param);
+        }
+        else {
+            w = args.length > 0 ? Integer.parseInt(args[0]) : 6000;
+            h = args.length > 1 ? Integer.parseInt(args[1]) : w * 2 / 3;
+
+            GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+            image = MappedImageFactory.createCompatibleMappedImage(w, h, configuration, Transparency.TRANSLUCENT);
+//            image = MappedImageFactory.createCompatibleMappedImage(w, h, configuration, Transparency.OPAQUE);
+//            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
+
+            System.out.println("image = " + image);
+
+            DataBuffer buffer = image.getRaster().getDataBuffer();
+            final boolean alpha = image.getColorModel().hasAlpha();
+
+            // Mix in some nice colors
+            createBackground(w, h, buffer, alpha);
+
+            // Add some random dots (get out the coffee)
+            paintDots(w, h, image);
         }
 
-        // Add some random dots (get out the coffee)
+        int bytesPerPixel = image.getColorModel().getPixelSize() / 8; // Calculate first to avoid overflow
+        JFrame frame = new JFrame(String.format("Test [%s x %s] (%s)", w, h, toHumanReadableSize(w * h * bytesPerPixel))) {
+            @Override
+            public Dimension getPreferredSize() {
+                // TODO: This looks like a useful util method...
+                DisplayMode displayMode = getGraphicsConfiguration().getDevice().getDisplayMode();
+                Dimension size = super.getPreferredSize();
+
+                size.width = Math.min(size.width, displayMode.getWidth());
+                size.height = Math.min(size.height, displayMode.getHeight());
+
+                return size;
+            }
+        };
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JScrollPane scroll = new JScrollPane(new ImageComponent(image));
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        frame.add(scroll);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+    private static void paintDots(int w, int h, BufferedImage image) {
+        long start = System.currentTimeMillis();
+
         int s = 300;
         int ws = w / s;
         int hs = h / s;
@@ -72,9 +129,28 @@ public class MappedBufferImage {
         };
 
         Random r = new Random();
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
 
-        long start = System.currentTimeMillis();
-        for (int y = 0; y < hs - 1; y++) {
+        int step = (int) Math.ceil(hs / (double) threads);
+
+        for (int i = 0; i < threads; i++) {
+            executorService.submit(new PaintDotsTask(image, s, ws, colors, r, i * step, i * step + step));
+        }
+        System.err.printf("Started painting in %d threads, waiting for execution to complete...%n", threads);
+
+        Boolean done = null;
+        try {
+            executorService.shutdown();
+            done = executorService.awaitTermination(3L, TimeUnit.MINUTES);
+        }
+        catch (InterruptedException ignore) {
+        }
+
+        System.out.printf("%s painting %d dots in %d ms%n", (done == null ? "Interrupted" : !done ? "Timed out" : "Done"), Math.max(0, hs - 1) * Math.max(0, ws - 1), System.currentTimeMillis() - start);
+    }
+
+    private static void paintDots0(BufferedImage image, int s, int ws, Color[] colors, Random r, final int first, final int last) {
+        for (int y = first; y < last; y++) {
             for (int x = 0; x < ws - 1; x++) {
                 BufferedImage tile = image.getSubimage(x * s, y * s, 2 * s, 2 * s);
                 Graphics2D g;
@@ -100,26 +176,75 @@ public class MappedBufferImage {
                 }
             }
         }
+    }
 
-        System.out.printf("Done painting %d dots in %d ms%n", hs * ws, System.currentTimeMillis() - start);
+    private static void createBackground(int w, int h, DataBuffer buffer, boolean alpha) {
+        long start = System.currentTimeMillis();
 
-        JFrame frame = new JFrame(String.format("Test [%s x %s] (%s)", w, h, toHumanReadableSize(w * h * (ALPHA ? 4 : 3))));
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        JScrollPane scroll = new JScrollPane(new ImageComponent(image));
-        scroll.setBorder(BorderFactory.createEmptyBorder());
-        frame.add(scroll);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        int step = (int) Math.ceil(h / (double) threads);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        for (int i = 0; i < threads; i++) {
+            executorService.submit(new PaintBackgroundTask(w, h, buffer, alpha, i * step, i * step + step));
+        }
+        System.err.printf("Started painting in %d threads, waiting for execution to complete...%n", threads);
+
+        Boolean done = null;
+        try {
+            executorService.shutdown();
+            done = executorService.awaitTermination(3L, TimeUnit.MINUTES);
+        }
+        catch (InterruptedException ignore) {
+        }
+
+        System.out.printf("%s creating background in %d ms%n", (done == null ? "Interrupted" : !done ? "Timed out" : "Done"), System.currentTimeMillis() - start);
+    }
+
+    private static void paintBackground0(int w, int h, DataBuffer buffer, boolean alpha, final int first, final int last) {
+        for (int y = first; y < last; y++) {
+            for (int x = 0; x < w; x++) {
+                int r = (int) ((x * y * 255.0) / (h * w));
+                int g = (int) (((w - x) * y * 255.0) / (h * w));
+                int b = (int) ((x * (h - y) * 255.0) / (h * w));
+                int a = alpha ? (int) (((w - x) * (h - y) * 255.0) / (h * w)) : 0;
+
+                switch (buffer.getDataType()) {
+                    case DataBuffer.TYPE_BYTE:
+                        int off = (y * w + x) * (alpha ? 4 : 3);
+                        if (alpha) {
+                            buffer.setElem(off++, 255 - a);
+                            buffer.setElem(off++, b);
+                            buffer.setElem(off++, g);
+                            buffer.setElem(off, r);
+                        }
+                        else {
+                            // TODO: Why the RGB / ABGR byte order inconsistency??
+                            buffer.setElem(off++, r);
+                            buffer.setElem(off++, g);
+                            buffer.setElem(off, b);
+                        }
+                        break;
+                    case DataBuffer.TYPE_INT:
+                        buffer.setElem(y * w + x, (255 - a) << 24 | r << 16 | g << 8 | b);
+                        break;
+                    default:
+                        System.err.println("Transfer type not supported: " + buffer.getDataType());
+                }
+            }
+        }
     }
 
     private static String toHumanReadableSize(long size) {
-        return String.format("%,d MB", (int) (size / (double) (1024L << 10)));
+        return String.format("%,d MB", (long) (size / (double) (1024L << 10)));
     }
 
+    /**
+     * A fairly optimized component for displaying a BufferedImage
+     */
     private static class ImageComponent extends JComponent implements Scrollable {
         private final BufferedImage image;
         private Paint texture;
+        double zoom = 1;
 
         public ImageComponent(final BufferedImage image) {
             setOpaque(true); // Very important when subclassing JComponent...
@@ -166,6 +291,11 @@ public class MappedBufferImage {
             g2.setPaint(texture);
             g2.fillRect(rect.x, rect.y, rect.width, rect.height);
 
+            if (zoom != 1) {
+                AffineTransform transform = AffineTransform.getScaleInstance(zoom, zoom);
+                g2.setTransform(transform);
+            }
+
             long start = System.currentTimeMillis();
             repaintImage(rect, g2);
             System.err.println("repaint: " + (System.currentTimeMillis() - start) + " ms");
@@ -204,14 +334,13 @@ public class MappedBufferImage {
 //                e.printStackTrace();
                 // Happens whenever apple.awt.OSXCachingSufraceManager runs out of memory
                 // TODO: Figure out why repaint(x,y,w,h) doesn't work any more..?
-//                repaint(rect.x, rect.y, rect.width, rect.height); // NOTE: Will cause a brief flash while the component is redrawn
                 repaint(); // NOTE: Might cause a brief flash while the component is redrawn
             }
         }
 
         @Override
         public Dimension getPreferredSize() {
-            return new Dimension(image.getWidth(), image.getHeight());
+            return new Dimension((int) (image.getWidth() * zoom), (int) (image.getHeight() * zoom));
         }
 
         public Dimension getPreferredScrollableViewportSize() {
@@ -238,6 +367,52 @@ public class MappedBufferImage {
 
         public boolean getScrollableTracksViewportHeight() {
             return false;
+        }
+    }
+
+    private static class PaintDotsTask implements Runnable {
+        private final BufferedImage image;
+        private final int s;
+        private final int wstep;
+        private final Color[] colors;
+        private final Random random;
+        private final int last;
+        private final int first;
+
+        public PaintDotsTask(BufferedImage image, int s, int wstep, Color[] colors, Random random, int first, int last) {
+            this.image = image;
+            this.s = s;
+            this.wstep = wstep;
+            this.colors = colors;
+            this.random = random;
+            this.last = last;
+            this.first = first;
+        }
+
+        public void run() {
+            paintDots0(image, s, wstep, colors, random, first, last);
+        }
+    }
+
+    private static class PaintBackgroundTask implements Runnable {
+        private final int w;
+        private final int h;
+        private final DataBuffer buffer;
+        private final boolean alpha;
+        private final int first;
+        private final int last;
+
+        public PaintBackgroundTask(int w, int h, DataBuffer buffer, boolean alpha, int first, int last) {
+            this.w = w;
+            this.h = h;
+            this.buffer = buffer;
+            this.alpha = alpha;
+            this.first = first;
+            this.last = last;
+        }
+
+        public void run() {
+            paintBackground0(w, h, buffer, alpha, first, last);
         }
     }
 }

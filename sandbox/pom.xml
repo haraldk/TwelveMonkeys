@@ -8,7 +8,7 @@
     <version>3.0-SNAPSHOT</version>
     <name>TwelveMonkeys :: Sandbox</name>
     <packaging>pom</packaging>
-    
+
     <description>
         The TwelveMonkeys Sandbox. Experimental stuff, in progress, not for production use.
     </description>
@@ -26,34 +26,87 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-image</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-image</artifactId>
-            <version>${project.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.3.1</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>jmock</groupId>
             <artifactId>jmock-cglib</artifactId>
-            <version>1.0.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-lang</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-io</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-image</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.swing</groupId>
+                <artifactId>swing-core</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.swing</groupId>
+                <artifactId>swing-application</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-core</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-io</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+                <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-lang</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+                <classifier>tests</classifier>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.3.1</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>jmock</groupId>
+                <artifactId>jmock-cglib</artifactId>
+                <version>1.0.1</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -64,7 +117,7 @@
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <configuration>
-                  <encoding>UTF-8</encoding>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
@@ -84,5 +137,18 @@
                 </configuration>
             </plugin>
         </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <inherited>true</inherited>
+                    <configuration>
+                        <skipTests>true</skipTests>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 </project>

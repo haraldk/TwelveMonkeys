@@ -8,14 +8,18 @@ import java.nio.*;
 import java.nio.channels.FileChannel;
 
 /**
- * MappedFileBuffer
+ * A {@code DataBuffer} implementation that is backed by a memory mapped file.
+ * Memory will be allocated outside the normal JVM heap, allowing more efficient
+ * memory usage for large buffers.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: MappedFileBuffer.java,v 1.0 Jun 12, 2010 4:56:51 PM haraldk Exp$
+ *
+ * @see java.nio.channels.FileChannel#map(java.nio.channels.FileChannel.MapMode, long, long)
  */
 public abstract class MappedFileBuffer extends DataBuffer {
-    final Buffer buffer;
+    private final Buffer buffer;
 
     private MappedFileBuffer(final int type, final int size, final int numBanks) throws IOException {
         super(type, size, numBanks);
@@ -24,23 +28,10 @@ public abstract class MappedFileBuffer extends DataBuffer {
             throw new IllegalArgumentException("Integer overflow for size: " + size);
         }
 
-        int componentSize;
-        switch (type) {
-            case DataBuffer.TYPE_BYTE:
-                componentSize = 1;
-                break;
-            case DataBuffer.TYPE_USHORT:
-                componentSize = 2;
-                break;
-            case DataBuffer.TYPE_INT:
-                componentSize = 4;
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported data type: " + type);
-        }
+        int componentSize = DataBuffer.getDataTypeSize(type) / 8;
 
-        File tempFile = File.createTempFile(String.format("%s-", getClass().getSimpleName()), ".tmp");
-        tempFile.deleteOnExit();
+        // Create temp file to get a file handle to use for memory mapping
+        File tempFile = File.createTempFile(String.format("%s-", getClass().getSimpleName().toLowerCase()), ".tmp");
 
         try {
             RandomAccessFile raf = new RandomAccessFile(tempFile, "rw");
@@ -52,7 +43,6 @@ public abstract class MappedFileBuffer extends DataBuffer {
 
             // Map entire file into memory, let OS virtual memory/paging do the heavy lifting
             MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, length);
-//            MappedByteBuffer byteBuffer = channel.map(FileChannel.MapMode.PRIVATE, 0, length);
 
             switch (type) {
                 case DataBuffer.TYPE_BYTE:
@@ -72,15 +62,21 @@ public abstract class MappedFileBuffer extends DataBuffer {
             channel.close();
         }
         finally {
+            // NOTE: File can't be deleted right now on Windows, as the file is open. Let JVM clean up later
             if (!tempFile.delete()) {
-                System.err.println("Could not delete temp file: " + tempFile.getAbsolutePath());
+                tempFile.deleteOnExit();
             }
         }
     }
 
+    @Override
+    public String toString() {
+        return String.format("MappedFileBuffer: %s", buffer);
+    }
+
     // TODO: Is throws IOException a good idea?
 
-    public static MappedFileBuffer create(final int type, final int size, final int numBanks) throws IOException {
+    public static DataBuffer create(final int type, final int size, final int numBanks) throws IOException {
         switch (type) {
             case DataBuffer.TYPE_BYTE:
                 return new DataBufferByte(size, numBanks);

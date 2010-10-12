@@ -6,7 +6,9 @@ import java.awt.image.SampleModel;
 import java.awt.image.WritableRaster;
 
 /**
- * GenericWritableRaster
+ * A generic writable raster.
+ * For use when factory methods from {@link java.awt.image.Raster} can't be used,
+ * typically because of custom data buffers.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -19,6 +21,13 @@ class GenericWritableRaster extends WritableRaster {
 
     @Override
     public String toString() {
-        return String.format("%s@%x: w = %s h = %s", getClass().getSimpleName(), System.identityHashCode(this), getWidth(), getHeight());
+        return String.format(
+                "%s: %s width = %s height = %s #Bands = %s xOff = %s yOff = %s %s",
+                getClass().getSimpleName(),
+                sampleModel,
+                getWidth(), getHeight(), getNumBands(),
+                sampleModelTranslateX, sampleModelTranslateY,
+                dataBuffer
+        );
     }
 }
