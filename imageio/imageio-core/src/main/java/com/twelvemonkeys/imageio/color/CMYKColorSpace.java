@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2011, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ *  Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *  Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *  Neither the name "TwelveMonkeys" nor the
+ * names of its contributors may be used to endorse or promote products
+ * derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -26,25 +26,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio.color;
 
 import java.awt.color.ColorSpace;
 
 /**
- * CMYKColorSpace
+ * A fallback CMYK ColorSpace, in case none can be read from disk.
 *
 * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
 * @author last modified by $Author: haraldk$
 * @version $Id: CMYKColorSpace.java,v 1.0 Apr 30, 2008 1:38:13 PM haraldk Exp$
 */
-// TODO: Move to com.twelvemonkeys.image?
-// TODO: Read a ICC CMYK profile from classpath resource (from ECI)? ISO coated?
 final class CMYKColorSpace extends ColorSpace {
 
     static final ColorSpace INSTANCE = new CMYKColorSpace();
+
     final ColorSpace sRGB = getInstance(CS_sRGB);
 
-    CMYKColorSpace() {
+    private CMYKColorSpace() {
         super(ColorSpace.TYPE_CMYK, 4);
     }
 
@@ -58,6 +57,7 @@ final class CMYKColorSpace extends ColorSpace {
                 (1 - colorvalue[1]) * (1 - colorvalue[3]),
                 (1 - colorvalue[2]) * (1 - colorvalue[3])
         };
+
         // TODO: Convert via CIEXYZ space using sRGB space, as suggested in docs
         // return sRGB.fromCIEXYZ(toCIEXYZ(colorvalue));
     }
@@ -73,33 +73,35 @@ final class CMYKColorSpace extends ColorSpace {
 
         // Convert to CMYK values
         return new float[] {(c - k), (m - k), (y - k), k};
-/*
-http://www.velocityreviews.com/forums/t127265-rgb-to-cmyk.html
 
-(Step 0: Normalize R,G, and B values to fit into range [0.0 ... 1.0], or
-adapt the following matrix.)
+        /*
+        http://www.velocityreviews.com/forums/t127265-rgb-to-cmyk.html
 
-Step 1: RGB to CMY
+        (Step 0: Normalize R,G, and B values to fit into range [0.0 ... 1.0], or
+        adapt the following matrix.)
 
-| C |   | 1 |   | R |
-| M | = | 1 | - | G |
-| Y |   | 1 |   | B |
+        Step 1: RGB to CMY
 
-Step 2: CMY to CMYK
+        | C |   | 1 |   | R |
+        | M | = | 1 | - | G |
+        | Y |   | 1 |   | B |
 
-| C' |   | C |            | min(C,M,Y) |
-| M' |   | M |            | min(C,M,Y) |
-| Y' | = | Y |          - | min(C,M,Y) |
-| K' |   | min(C,M,Y) |   | 0 |
+        Step 2: CMY to CMYK
 
-Easier to calculate if K' is calculated first, because K' = min(C,M,Y):
+        | C' |   | C |            | min(C,M,Y) |
+        | M' |   | M |            | min(C,M,Y) |
+        | Y' | = | Y |          - | min(C,M,Y) |
+        | K' |   | min(C,M,Y) |   | 0 |
 
-| C' |   | C |   | K' |
-| M' |   | M |   | K' |
-| Y' | = | Y | - | K' |
-| K' |   | K'|   | 0 |
- */
-//        return fromCIEXYZ(sRGB.toCIEXYZ(rgbvalue));
+        Easier to calculate if K' is calculated first, because K' = min(C,M,Y):
+
+        | C' |   | C |   | K' |
+        | M' |   | M |   | K' |
+        | Y' | = | Y | - | K' |
+        | K' |   | K'|   | 0 |
+         */
+
+        //        return fromCIEXYZ(sRGB.toCIEXYZ(rgbvalue));
     }
 
     public float[] toCIEXYZ(float[] colorvalue) {
