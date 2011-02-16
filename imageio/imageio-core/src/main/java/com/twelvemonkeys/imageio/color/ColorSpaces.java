@@ -51,7 +51,7 @@ public final class ColorSpaces {
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
     /** The Adobe RGB 1998 (or compatible) color space. Either read from disk or built-in. */
-    public static final int CS_ADOBE_RGB_98 = 5000;
+    public static final int CS_ADOBE_RGB_1998 = 5000;
 
     /** A best-effort "generic" CMYK color space. Either read from disk or built-in. */
     public static final int CS_GENERIC_CMYK = 5001;
@@ -175,7 +175,7 @@ public final class ColorSpaces {
      * @return the {@link ColorSpace} specified by the color space constant.
      * @throws IllegalArgumentException if {@code colorSpace} is not one of the defined color spaces ({@code CS_*}).
      * @see ColorSpace
-     * @see ColorSpaces#CS_ADOBE_RGB_98
+     * @see ColorSpaces#CS_ADOBE_RGB_1998
      * @see ColorSpaces#CS_GENERIC_CMYK
      */
     public static ColorSpace getColorSpace(int colorSpace) {
@@ -188,7 +188,7 @@ public final class ColorSpaces {
             case ColorSpace.CS_LINEAR_RGB:
                 return ColorSpace.getInstance(colorSpace);
 
-            case CS_ADOBE_RGB_98:
+            case CS_ADOBE_RGB_1998:
                 // TODO: Read profile specified by config file instead of hard coded
                 try {
                     // This works for OS X only

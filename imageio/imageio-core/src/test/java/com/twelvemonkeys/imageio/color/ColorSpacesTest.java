@@ -121,18 +121,18 @@ public class ColorSpacesTest {
 
     @Test
     public void testAdobeRGB98NotNull() {
-        assertNotNull(ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_98));
+        assertNotNull(ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998));
     }
 
     @Test
     public void testAdobeRGB98IsTypeRGB() {
-        assertEquals(ColorSpace.TYPE_RGB, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_98).getType());
+        assertEquals(ColorSpace.TYPE_RGB, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998).getType());
     }
 
     @Test
     public void testAdobeRGB98AlwaysSame() {
-        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_98);
-        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_98));
+        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998);
+        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998));
 
         if (cs instanceof ICC_ColorSpace) {
             ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
