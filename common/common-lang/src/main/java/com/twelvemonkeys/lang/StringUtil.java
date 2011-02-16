@@ -77,7 +77,7 @@ public final class StringUtil {
     }
 
     /**
-     * Constructs a new {@link String} by decoding the specified subarray of bytes using the specified charset.
+     * Constructs a new {@link String} by decoding the specified sub array of bytes using the specified charset.
      * Replacement for {@link String#String(byte[], int, int, String) new String(byte[], int, int, String)}, that does
      * not throw the checked {@link UnsupportedEncodingException},
      * but instead the unchecked {@link UnsupportedCharsetException} if the character set is not supported.
@@ -1580,7 +1580,7 @@ public final class StringUtil {
      * Converts a string array to a string separated by the given delimiter.
      *
      * @param pStringArray     the string array
-     * @param pDelimiterString the delimter string
+     * @param pDelimiterString the delimiter string
      * @return string of delimiter separated values
      * @throws IllegalArgumentException if {@code pDelimiterString == null}
      */

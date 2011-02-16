@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.sql.SQLException;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 /**
  * ExceptionUtil
  *
@@ -14,6 +16,15 @@ import java.sql.SQLException;
  */
 public final class ExceptionUtil {
 
+    /**
+     * Re-throws an exception, either as-is if the exception was already unchecked, otherwise wrapped in
+     * a {@link RuntimeException}.
+     * "Expected" exception types are wrapped in {@link RuntimeException}s, while
+     * "unexpected" exception types are wrapped in {@link java.lang.reflect.UndeclaredThrowableException}s.
+     *
+     * @param pThrowable the exception to launder
+     * @param pExpectedTypes the types of exception the code is expected to throw
+     */
     /*public*/ static void launder(final Throwable pThrowable, Class<? extends Throwable>... pExpectedTypes) {
         if (pThrowable instanceof Error) {
             throw (Error) pThrowable;
@@ -40,36 +51,38 @@ public final class ExceptionUtil {
         throwAs(RuntimeException.class, pThrowable);
     }
 
-    /*public*/ static void handle(final Throwable pThrowable, final ThrowableHandler<? extends Throwable>... pHandler) {
-        handleImpl(pThrowable, pHandler);
+    @SuppressWarnings({"unchecked"})
+    /*public*/ static  void handle(final Throwable pThrowable, final ThrowableHandler<? extends Throwable>... pHandlers) {
+        handleImpl(pThrowable, (ThrowableHandler<Throwable>[]) pHandlers);
     }
 
-    @SuppressWarnings({"unchecked"})
-    private static <T extends Throwable> void handleImpl(final Throwable pThrowable, final ThrowableHandler<T>... pHandler) {
+    private static void handleImpl(final Throwable pThrowable, final ThrowableHandler<Throwable>... pHandlers) {
         // TODO: Sort more specific throwable handlers before less specific?
-        for (ThrowableHandler<T> handler : pHandler) {
+        for (ThrowableHandler<Throwable> handler : pHandlers) {
             if (handler.handles(pThrowable)) {
-                handler.handle((T) pThrowable);
+                handler.handle(pThrowable);
                 return;
             }
         }
+
+        // Not handled, re-throw
         throwUnchecked(pThrowable);
     }
 
     public static abstract class ThrowableHandler<T extends Throwable> {
-        private Class<? extends T>[] mThrowables;
+        private final Class<? extends T>[] throwables;
 
         protected ThrowableHandler(final Class<? extends T>... pThrowables) {
-            // TODO: Assert not null
-            mThrowables = pThrowables.clone();
+            throwables = notNull(pThrowables).clone();
         }
 
         final public boolean handles(final Throwable pThrowable) {
-            for (Class<? extends T> throwable : mThrowables) {
+            for (Class<? extends T> throwable : throwables) {
                 if (throwable.isAssignableFrom(pThrowable.getClass())) {
                     return true;
                 }
             }
+
             return false;
         }
 

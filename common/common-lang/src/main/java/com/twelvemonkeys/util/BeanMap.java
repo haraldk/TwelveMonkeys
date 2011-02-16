@@ -40,7 +40,7 @@ import java.io.Serializable;
 /**
  * A {@code Map} adapter for a Java Bean.
  * <p/>
- * Ruhtlessly stolen from
+ * Ruthlessly stolen from
  * <a href="http://binkley.blogspot.com/2006/08/mapping-java-bean.html>Binkley's Blog</a>
  */
 public final class BeanMap extends AbstractMap<String, Object> implements Serializable, Cloneable {

@@ -39,24 +39,24 @@ public final class Platform {
     /**
      * Normalized operating system constant
      */
-    final OperatingSystem mOS;
+    final OperatingSystem os;
 
     /**
      * Unormalized operating system version constant (for completeness)
      */
-    final String mVersion;
+    final String version;
 
     /**
      * Normalized system architecture constant
      */
-    final Architecture mArchitecture;
+    final Architecture architecture;
 
     static final private Platform INSTANCE = new Platform();
 
     private Platform() {
-        mOS = normalizeOperatingSystem();
-        mVersion = System.getProperty("os.version");
-        mArchitecture = normalizeArchitecture(mOS);
+        os = normalizeOperatingSystem();
+        version = System.getProperty("os.version");
+        architecture = normalizeArchitecture(os);
     }
 
     private static OperatingSystem normalizeOperatingSystem() {
@@ -138,21 +138,21 @@ public final class Platform {
      * @return this platform's OS.
      */
     public OperatingSystem getOS() {
-        return mOS;
+        return os;
     }
 
     /**
      * @return this platform's OS version.
      */
     public String getVersion() {
-        return mVersion;
+        return version;
     }
 
     /**
      * @return this platform's architecture.
      */
     public Architecture getArchitecture() {
-        return mArchitecture;
+        return architecture;
     }
 
     /**
@@ -160,7 +160,7 @@ public final class Platform {
      * @return the current {@code OperatingSystem}.
      */
     public static OperatingSystem os() {
-        return INSTANCE.mOS;
+        return INSTANCE.os;
     }
 
     /**
@@ -168,7 +168,7 @@ public final class Platform {
      * @return the current OS version.
      */
     public static String version() {
-        return INSTANCE.mVersion;
+        return INSTANCE.version;
     }
 
     /**
@@ -176,7 +176,7 @@ public final class Platform {
      * @return the current {@code Architecture}.
      */
     public static Architecture arch() {
-        return INSTANCE.mArchitecture;
+        return INSTANCE.architecture;
     }
 
     /**
@@ -197,14 +197,14 @@ public final class Platform {
 
         Unknown(System.getProperty("os.arch"));
 
-        final String mName;// for debug only
+        final String name;// for debug only
 
         private Architecture(String pName) {
-            mName = pName;
+            name = pName;
         }
 
         public String toString() {
-            return mName;
+            return name;
         }
     }
 
@@ -225,20 +225,20 @@ public final class Platform {
 
         Unknown(System.getProperty("os.name"), "");
 
-        final String mId;
-        final String mName;// for debug only
+        final String id;
+        final String name;// for debug only
 
         private OperatingSystem(String pName, String pId) {
-            mName = pName;
-            mId = pId;
+            name = pName;
+            id = pId;
         }
 
         public String getName() {
-            return mName;
+            return name;
         }
 
         public String toString() {
-            return mId;
+            return id;
         }
     }
 }

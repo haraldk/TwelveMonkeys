@@ -276,19 +276,19 @@ public final class BeanUtil {
             }
 
             try {
-                // If this does not throw an excption, it works
+                // If this does not throw an exception, it works
                 method = pObject.getClass().getMethod(pName, pParams);
             }
             catch (Throwable t) {
                 // Ignore
             }
 
-            // 2: Try any supertypes of paramType, to see if we have a match
+            // 2: Try any super-types of paramType, to see if we have a match
             if (method == null) {
                 while ((paramType = paramType.getSuperclass()) != null) {
                     pParams[0] = paramType;
                     try {
-                        // If this does not throw an excption, it works
+                        // If this does not throw an exception, it works
                         method = pObject.getClass().getMethod(pName, pParams);
                     }
                     catch (Throwable t) {
@@ -364,6 +364,9 @@ public final class BeanUtil {
                 return pValue;
             }
         }
+
+        // TODO: Convert value to single-value array if needed
+        // TODO: Convert CSV String to string array (or potentially any type of array)
 
         // TODO: Convert other types
         if (pValue instanceof String) {
@@ -596,8 +599,7 @@ public final class BeanUtil {
                 catch (NoSuchMethodException ignore) {
                     // If invocation failed, convert lisp-style and try again
                     if (pLispToCamel && property.indexOf('-') > 0) {
-                        setPropertyValue(pBean, StringUtil.lispToCamel(property, false),
-                                         entry.getValue());
+                        setPropertyValue(pBean, StringUtil.lispToCamel(property, false), entry.getValue());
                     }
                 }
             }

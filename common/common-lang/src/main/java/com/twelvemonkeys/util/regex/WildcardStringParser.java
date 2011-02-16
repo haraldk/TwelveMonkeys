@@ -114,6 +114,7 @@ import java.io.PrintStream;
  * @deprecated Will probably be removed in the near future
  */
 public class WildcardStringParser {
+    // TODO: Get rid of this class
 
     // Constants
 

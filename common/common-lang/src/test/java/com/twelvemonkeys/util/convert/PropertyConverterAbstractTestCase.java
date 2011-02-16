@@ -2,6 +2,8 @@ package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
 
+import java.util.Arrays;
+
 /**
  * PropertyConverterAbstractTestCase
  * <p/>
@@ -30,22 +32,67 @@ public abstract class PropertyConverterAbstractTestCase extends ObjectAbstractTe
             Object obj;
             try {
                 obj = converter.toObject(test.original(), test.type(), test.format());
-                assertEquals("'" + test.original() + "' convtered to incorrect type", test.type(), obj.getClass());
-                assertEquals("'" + test.original() + "' not converted", test.value(), obj);
+
+                assertEquals("'" + test.original() + "' converted to incorrect type", test.type(), obj.getClass());
+                if (test.type().isArray()) {
+                    assertTrue("'" + test.original() + "' not converted", arrayEquals(test.value(), obj));
+                }
+                else {
+                    assertEquals("'" + test.original() + "' not converted", test.value(), obj);
+                }
 
                 String result = converter.toString(test.value(), test.format());
 
-                assertEquals("'" + test.converted() + "' does not macth", test.converted(), result);
+                assertEquals("'" + test.converted() + "' does not match", test.converted(), result);
 
                 obj = converter.toObject(result, test.type(), test.format());
-                assertEquals("'" + test.original() + "' convtered to incorrect type", test.type(), obj.getClass());
-                assertEquals("'" + test.original() + "' did not survive roundrip conversion", test.value(), obj);
+                assertEquals("'" + test.original() + "' converted to incorrect type", test.type(), obj.getClass());
+
+                if (test.type().isArray()) {
+                    assertTrue("'" + test.original() + "' did not survive round trip conversion", arrayEquals(test.value(), obj));
+                }
+                else {
+                    assertEquals("'" + test.original() + "' did not survive round trip conversion", test.value(), obj);
+                }
             }
             catch (ConversionException e) {
                 e.printStackTrace();
                 fail("Converting '" + test.original() + "' to " + test.type() + " failed: " + e.getMessage());
             }
         }
+    }
+
+    // TODO: Util method?
+    private boolean arrayEquals(final Object left, final Object right) {
+        if (left.getClass().getComponentType().isPrimitive()) {
+            if (int.class == left.getClass().getComponentType()) {
+                return Arrays.equals((int[]) left, (int[]) right);
+            }
+            if (short.class == left.getClass().getComponentType()) {
+                return Arrays.equals((short[]) left, (short[]) right);
+            }
+            if (long.class == left.getClass().getComponentType()) {
+                return Arrays.equals((long[]) left, (long[]) right);
+            }
+            if (float.class == left.getClass().getComponentType()) {
+                return Arrays.equals((float[]) left, (float[]) right);
+            }
+            if (double.class == left.getClass().getComponentType()) {
+                return Arrays.equals((double[]) left, (double[]) right);
+            }
+            if (boolean.class == left.getClass().getComponentType()) {
+                return Arrays.equals((boolean[]) left, (boolean[]) right);
+            }
+            if (byte.class == left.getClass().getComponentType()) {
+                return Arrays.equals((byte[]) left, (byte[]) right);
+            }
+            if (char.class == left.getClass().getComponentType()) {
+                return Arrays.equals((char[]) left, (char[]) right);
+            }
+            // Else blow up below...
+        }
+
+        return Arrays.equals((Object[]) left, (Object[]) right);
     }
 
     public static final class Conversion {

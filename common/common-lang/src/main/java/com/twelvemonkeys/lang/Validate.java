@@ -16,6 +16,8 @@ import java.util.Map;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/Validate.java#1 $
  */
 public final class Validate {
+    // TODO: Make it possible to throw IllegalStateException instead of IllegalArgumentException?
+
     private static final String UNSPECIFIED_PARAM_NAME = "method parameter";
 
     private Validate() {}
@@ -120,5 +122,17 @@ public final class Validate {
         }
 
         return pParameter;
+    }
+
+    public static boolean isTrue(final boolean pExpression, final String pMessage) {
+        return isTrue(pExpression, pExpression, pMessage);
+    }
+
+    public static <T> T isTrue(final boolean condition, final T value, final String message) {
+        if (!condition) {
+            throw new IllegalArgumentException(String.format(message, value));
+        }
+
+        return value;
     }
 }

@@ -65,7 +65,7 @@ import java.util.*;
  */
 public class ServiceRegistry {
     // TODO: Security issues?
-    // TODO: Application contexts?
+    // TODO: Application contexts? Probably use instance per thread group..
 
     /**
      * "META-INF/services/"
@@ -73,7 +73,7 @@ public class ServiceRegistry {
     public static final String SERVICES = "META-INF/services/";
 
     // Class to CategoryRegistry mapping
-    private final Map<Class<?>, CategoryRegistry> mCategoryMap;
+    private final Map<Class<?>, CategoryRegistry> categoryMap;
 
     /**
      * Creates a {@code ServiceRegistry} instance with a set of categories
@@ -98,7 +98,7 @@ public class ServiceRegistry {
         }
 
         // NOTE: Categories are constant for the lifetime of a registry
-        mCategoryMap = Collections.unmodifiableMap(map);
+        categoryMap = Collections.unmodifiableMap(map);
     }
 
     private <T> void putCategory(Map<Class<?>, CategoryRegistry> pMap, Class<T> pCategory) {
@@ -154,7 +154,7 @@ public class ServiceRegistry {
 
         if (!classNames.isEmpty()) {
             @SuppressWarnings({"unchecked"})
-            CategoryRegistry<T> registry = mCategoryMap.get(pCategory);
+            CategoryRegistry<T> registry = categoryMap.get(pCategory);
 
             Set providerClassNames = classNames.keySet();
 
@@ -213,7 +213,7 @@ public class ServiceRegistry {
      * @return an {@code Iterator} containing all categories in this registry.
      */
     protected Iterator<Class<?>> categories() {
-        return mCategoryMap.keySet().iterator();
+        return categoryMap.keySet().iterator();
     }
 
     /**
@@ -260,18 +260,19 @@ public class ServiceRegistry {
                                           return getRegistry(pElement).contatins(pProvider);
                                       }
                                   }) {
-            Class<?> mCurrent;
+            Class<?> current;
 
             public Class next() {
-                return (mCurrent = super.next());
+                return (current = super.next());
             }
 
             public void remove() {
-                if (mCurrent == null) {
+                if (current == null) {
                     throw new IllegalStateException("No current element");
                 }
-                getRegistry(mCurrent).deregister(pProvider);
-                mCurrent = null;
+                
+                getRegistry(current).deregister(pProvider);
+                current = null;
             }
         };
     }
@@ -284,7 +285,7 @@ public class ServiceRegistry {
      */
     private <T> CategoryRegistry<T> getRegistry(final Class<T> pCategory) {
         @SuppressWarnings({"unchecked"})
-        CategoryRegistry<T> registry = mCategoryMap.get(pCategory);
+        CategoryRegistry<T> registry = categoryMap.get(pCategory);
         if (registry == null) {
             throw new IllegalArgumentException("No such category: " + pCategory.getName());
         }
@@ -366,17 +367,17 @@ public class ServiceRegistry {
      * Keeps track of each individual category.
      */
     class CategoryRegistry<T> {
-        private final Class<T> mCategory;
-        private final Map<Class, T> mProviders = new LinkedHashMap<Class, T>();
+        private final Class<T> category;
+        private final Map<Class, T> providers = new LinkedHashMap<Class, T>();
 
         CategoryRegistry(Class<T> pCategory) {
             Validate.notNull(pCategory, "category");
-            mCategory = pCategory;
+            category = pCategory;
         }
 
         private void checkCategory(final Object pProvider) {
-            if (!mCategory.isInstance(pProvider)) {
-                throw new IllegalArgumentException(pProvider + " not instance of category " + mCategory.getName());
+            if (!category.isInstance(pProvider)) {
+                throw new IllegalArgumentException(pProvider + " not instance of category " + category.getName());
             }
         }
 
@@ -386,7 +387,7 @@ public class ServiceRegistry {
             // NOTE: We only register the new instance, if we don't allready
             // have an instance of pProvider's class.
             if (!contatins(pProvider)) {
-                mProviders.put(pProvider.getClass(), pProvider);
+                providers.put(pProvider.getClass(), pProvider);
                 processRegistration(pProvider);
                 return true;
             }
@@ -397,7 +398,7 @@ public class ServiceRegistry {
         void processRegistration(final T pProvider) {
             if (pProvider instanceof RegisterableService) {
                 RegisterableService service = (RegisterableService) pProvider;
-                service.onRegistration(ServiceRegistry.this, mCategory);
+                service.onRegistration(ServiceRegistry.this, category);
             }
         }
 
@@ -406,7 +407,7 @@ public class ServiceRegistry {
 
             // NOTE: We remove any provider of the same class, this may or may
             // not be the same instance as pProvider.
-            T oldProvider = mProviders.remove(pProvider.getClass());
+            T oldProvider = providers.remove(pProvider.getClass());
 
             if (oldProvider != null) {
                 processDeregistration(oldProvider);
@@ -419,12 +420,12 @@ public class ServiceRegistry {
         void processDeregistration(final T pOldProvider) {
             if (pOldProvider instanceof RegisterableService) {
                 RegisterableService service = (RegisterableService) pOldProvider;
-                service.onDeregistration(ServiceRegistry.this, mCategory);
+                service.onDeregistration(ServiceRegistry.this, category);
             }
         }
 
         public boolean contatins(final Object pProvider) {
-            return mProviders.containsKey(pProvider.getClass());
+            return providers.containsKey(pProvider.getClass());
         }
 
         public Iterator<T> providers() {
@@ -432,9 +433,9 @@ public class ServiceRegistry {
             // using the deregister method will result in
             // ConcurrentModificationException in the iterator..
             // We wrap the iterator to track deregistration right.
-            final Iterator<T> iterator = mProviders.values().iterator();
+            final Iterator<T> iterator = providers.values().iterator();
             return new Iterator<T>() {
-                T mCurrent;
+                T current;
 
                 public boolean hasNext() {
                     return iterator.hasNext();
@@ -442,12 +443,12 @@ public class ServiceRegistry {
                 }
 
                 public T next() {
-                    return (mCurrent = iterator.next());
+                    return (current = iterator.next());
                 }
 
                 public void remove() {
                     iterator.remove();
-                    processDeregistration(mCurrent);
+                    processDeregistration(current);
                 }
             };
         }

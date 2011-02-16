@@ -37,60 +37,31 @@ package com.twelvemonkeys.util.convert;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/convert/ConversionException.java#1 $
  */
 public class ConversionException extends IllegalArgumentException {
-    protected Throwable mCause = this;
-
     /**
      * Creates a {@code ConversionException} with the given error message.
      *
      * @param pMessage the error message
      */ 
-    public ConversionException(String pMessage) {
+    public ConversionException(final String pMessage) {
         super(pMessage);
     }
 
     /**
      * Creates a {@code ConversionException} with the given cause.
      *
-     * @param pCause The Throwable that caused this exception
+     * @param pCause The {@link Throwable} that caused this exception
      */ 
-    public ConversionException(Throwable pCause) {
-        super(pCause == null ? null : pCause.getMessage());
-        initCause(pCause);
+    public ConversionException(final Throwable pCause) {
+        super(pCause != null ? pCause.getMessage() : null, pCause);
     }
 
     /**
-     * Returns the cause of this {@code Throwable} or {@code null} if the
-     * cause is nonexistent or unknown.
+     * Creates a {@code ConversionException} with the given message and cause.
      *
-     * @return the cause of this {@code Throwable} or {@code null} if the
-     * cause is nonexistent or unknown (the cause is the throwable that caused
-     * this throwable to get thrown).
+     * @param pMessage the error message
+     * @param pCause The {@link Throwable} that caused this exception
      */
-    public Throwable getCause() {
-        if (mCause == this) {
-            return null;
-        }
-        return mCause;
-    }
-
-    /**
-     * Initializes this ConversionException with the given cause.
-     *
-     * @param pCause The Throwable that caused this exception
-     *
-     * @throws IllegalStateException if cause is allready set 
-     * @throws IllegalArgumentException if {@code pCause == this}
-     */
-    public Throwable initCause(Throwable pCause) {
-        if (mCause != this) {
-            throw new IllegalStateException("Can't overwrite cause");
-        }
-        if (pCause == this) {
-            throw new IllegalArgumentException("Can't be caused by self");
-        }
-
-        mCause = pCause;
-
-        return this;
+    public ConversionException(final String pMessage, final Throwable pCause) {
+        super(pMessage, pCause);
     }
 }

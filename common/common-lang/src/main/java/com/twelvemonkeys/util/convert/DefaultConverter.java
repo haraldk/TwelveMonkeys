@@ -28,9 +28,11 @@
 
 package com.twelvemonkeys.util.convert;
 
-import com.twelvemonkeys.lang.*;
+import com.twelvemonkeys.lang.BeanUtil;
+import com.twelvemonkeys.lang.StringUtil;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Converts strings to objects and back.
@@ -67,9 +69,7 @@ public final class DefaultConverter implements PropertyConverter {
      * be converted into the given type, using a string constructor or static
      * {@code valueof} method.
      */
-    public Object toObject(String pString, final Class pType, String pFormat)
-        throws ConversionException {
-
+    public Object toObject(String pString, final Class pType, String pFormat) throws ConversionException {
         if (pString == null) {
             return null;
         }
@@ -77,6 +77,14 @@ public final class DefaultConverter implements PropertyConverter {
         if (pType == null) {
             throw new MissingTypeException();
         }
+
+        if (pType.isArray()) {
+            return toArray(pString, pType, pFormat);
+        }
+
+        // TODO: Separate CollectionConverter?
+        // should however, be simple to wrap array using Arrays.asList
+        // But what about generic type?! It's erased...
 
         // Primitive -> wrapper
         Class type;
@@ -113,6 +121,31 @@ public final class DefaultConverter implements PropertyConverter {
         }
     }
 
+    private Object toArray(String pString, Class pType, String pFormat) {
+        String[] strings = StringUtil.toStringArray(pString, pFormat != null ? pFormat : StringUtil.DELIMITER_STRING);
+        Class type = pType.getComponentType();
+        if (type == String.class) {
+            return strings;
+        }
+
+        Object array = Array.newInstance(type, strings.length);
+        try {
+            for (int i = 0; i < strings.length; i++) {
+                Array.set(array, i, Converter.getInstance().toObject(strings[i], type));
+            }
+        }
+        catch (ConversionException e) {
+            if (pFormat != null) {
+                throw new ConversionException(String.format("%s for string \"%s\" with format \"%s\"", e.getMessage(), pString, pFormat), e);
+            }
+            else {
+                throw new ConversionException(String.format("%s for string \"%s\"", e.getMessage(), pString), e);
+            }
+        }
+
+        return array;
+    }
+
     /**
      * Converts the object to a string, using {@code pObject.toString()}.
      *
@@ -126,10 +159,77 @@ public final class DefaultConverter implements PropertyConverter {
         throws ConversionException {
 
         try {
-            return (pObject != null ? pObject.toString() : null);
+            return pObject == null ? null : pObject.getClass().isArray() ? arrayToString(toObjectArray(pObject), pFormat) : pObject.toString();
         }	    
         catch (RuntimeException rte) {
             throw new ConversionException(rte);
         }
+    }
+
+    private String arrayToString(final Object[] pArray, final String pFormat) {
+        return pFormat == null ? StringUtil.toCSVString(pArray) : StringUtil.toCSVString(pArray, pFormat);
+    }
+
+    private Object[] toObjectArray(Object pObject) {
+        // TODO: Extract util method for wrapping/unwrapping native arrays?
+        Object[] array;
+        Class<?> componentType = pObject.getClass().getComponentType();
+        if (componentType.isPrimitive()) {
+            if (int.class == componentType) {
+                array = new Integer[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (short.class == componentType) {
+                array = new Short[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (long.class == componentType) {
+                array = new Long[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (float.class == componentType) {
+                array = new Float[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (double.class == componentType) {
+                array = new Double[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (boolean.class == componentType) {
+                array = new Boolean[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (byte.class == componentType) {
+                array = new Byte[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else if (char.class == componentType) {
+                array = new Character[Array.getLength(pObject)];
+                for (int i = 0; i < array.length; i++) {
+                    Array.set(array, i, Array.get(pObject, i));
+                }
+            }
+            else {
+                throw new IllegalArgumentException("Unknown type " + componentType);
+            }
+        }
+        else {
+            array = (Object[]) pObject;
+        }
+        return array;
     }
 }
