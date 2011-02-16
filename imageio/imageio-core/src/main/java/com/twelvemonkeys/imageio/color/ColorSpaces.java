@@ -38,6 +38,7 @@ import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * A helper class for working with ICC color profiles and color spaces.
@@ -55,7 +56,7 @@ public final class ColorSpaces {
     /** A best-effort "generic" CMYK color space. Either read from disk or built-in. */
     public static final int CS_GENERIC_CMYK = 5001;
 
-    private static final LRUHashMap<Key, ICC_ColorSpace> cache = new LRUHashMap<Key, ICC_ColorSpace>(10);
+    private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<Key, ICC_ColorSpace>(10);
 
     private ColorSpaces() {}
 
