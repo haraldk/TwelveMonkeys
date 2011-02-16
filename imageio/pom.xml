@@ -14,7 +14,6 @@
     <packaging>pom</packaging>
     <name>TwelveMonkeys :: ImageIO</name>
 
-
     <contributors>
         <contributor>
             <name>Harald Kuhr</name>
@@ -34,7 +33,8 @@
         <!-- Stand-alone readers/writers -->
         <module>imageio-ico</module>
         <module>imageio-iff</module>
-        <module>imageio-pdf</module> 
+        <module>imageio-jpeg</module>
+        <module>imageio-pdf</module>
         <module>imageio-pict</module>
         <module>imageio-psd</module>
         <module>imageio-thumbsdb</module>
@@ -100,7 +100,8 @@
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-	    <dependency>
+
+	        <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-metadata</artifactId>
                 <version>${project.version}</version>
