@@ -165,7 +165,7 @@ public final class ColorSpaces {
     // TODO: Document how to download, install and configure Adobe color profiles or other profiles
 
     /**
-     * Gets or creates the color space specified by the given color space constant.
+     * Returns the color space specified by the given color space constant.
      * <p />
      * For standard Java color spaces, the built-in instance is returned.
      * Otherwise, color spaces are looked up from cache and created on demand.
@@ -196,7 +196,8 @@ public final class ColorSpaces {
                 catch (IOException ignore) {
                 }
 
-                // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile
+                // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
+                // identical for all practical purposes
                 InputStream stream = ColorSpaces.class.getResourceAsStream("/profiles/ClayRGB1998.icc");
                 try {
                     return createColorSpace(ICC_Profile.getInstance(stream));
@@ -207,7 +208,7 @@ public final class ColorSpaces {
                     FileUtil.close(stream);
                 }
 
-                // Should never happen...
+                // Should never happen given we now bundle the profile...
                 throw new RuntimeException("Could not read AdobeRGB1998 profile");
 
             case CS_GENERIC_CMYK:
@@ -215,16 +216,20 @@ public final class ColorSpaces {
                 // TODO: C:\Windows\System32\spool\drivers\color\RSWOP.icm for Windows Vista?
                 try {
                     // This works for OS X only
+//                    return createColorSpace(ICC_Profile.getInstance("/C:/Windows/System32/spool/drivers/color/RSWOP.icm"));
                     return createColorSpace(ICC_Profile.getInstance("/System/Library/ColorSync/Profiles/Generic CMYK Profile.icc"));
+//                    return createColorSpace(ICC_Profile.getInstance("/Downloads/coated_FOGRA39L_argl.icc"));
+//                    return createColorSpace(ICC_Profile.getInstance("/Downloads/RSWOP.icm"));
+//                    return createColorSpace(ICC_Profile.getInstance("/Downloads/USWebCoatedSWOP.icc"));
                 }
                 catch (IOException ignore) {
                 }
-
+                
                 // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
                 return CMYKColorSpace.getInstance();
             default:
 
-                // TODO: Allow more customizable models based on the config file?
+            // TODO: Allow more customizable models based on the config file?
         }
 
         throw new IllegalArgumentException(String.format("Unsupported color space: %s", colorSpace));
