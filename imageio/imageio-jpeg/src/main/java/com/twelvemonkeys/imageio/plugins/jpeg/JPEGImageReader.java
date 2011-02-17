@@ -393,7 +393,7 @@ public class JPEGImageReader extends ImageReaderBase {
         ColorConvertOp convert = null;
         ICC_ColorSpace replacement = profile != null ? ColorSpaces.createColorSpace(profile) : null;
 
-        if (profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && image.getColorModel().getColorSpace().getType() == ColorSpace.CS_GRAY) {
+        if (profile != null && profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && image.getColorModel().getColorSpace().getType() == ColorSpace.CS_GRAY) {
             // com.sun. reader does not do ColorConvertOp for CS_GRAY, even if embedded ICC profile,
             // probably because IJG native part does it already...? If applied, color looks wrong (too dark)...
         }
