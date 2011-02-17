@@ -76,8 +76,8 @@ public class PSDImageReader extends ImageReaderBase {
     private ICC_ColorSpace colorSpace;
     protected PSDMetadata metadata;
 
-    protected PSDImageReader(final ImageReaderSpi pOriginatingProvider) {
-        super(pOriginatingProvider);
+    protected PSDImageReader(final ImageReaderSpi originatingProvider) {
+        super(originatingProvider);
     }
 
     protected void resetMembers() {
@@ -86,25 +86,25 @@ public class PSDImageReader extends ImageReaderBase {
         colorSpace = null;
     }
 
-    public int getWidth(final int pIndex) throws IOException {
-        checkBounds(pIndex);
+    public int getWidth(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
         readHeader();
         return header.width;
     }
 
-    public int getHeight(final int pIndex) throws IOException {
-        checkBounds(pIndex);
+    public int getHeight(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
         readHeader();
         return header.height;
     }
 
     @Override
-    public ImageTypeSpecifier getRawImageType(final int pIndex) throws IOException {
-        return getRawImageTypeInternal(pIndex);
+    public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
+        return getRawImageTypeInternal(imageIndex);
     }
 
-    private ImageTypeSpecifier getRawImageTypeInternal(final int pIndex) throws IOException {
-        checkBounds(pIndex);
+    private ImageTypeSpecifier getRawImageTypeInternal(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
         readHeader();
 
         ColorSpace cs;
@@ -203,12 +203,12 @@ public class PSDImageReader extends ImageReaderBase {
         }
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(final int pIndex) throws IOException {
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         // TODO: Check out the custom ImageTypeIterator and ImageTypeProducer used in the Sun provided JPEGImageReader
         // Could use similar concept to create lazily-created ImageTypeSpecifiers (util candidate, based on FilterIterator?)
 
         // Get the raw type. Will fail for unsupported types
-        ImageTypeSpecifier rawType = getRawImageTypeInternal(pIndex);
+        ImageTypeSpecifier rawType = getRawImageTypeInternal(imageIndex);
 
         ColorSpace cs = rawType.getColorModel().getColorSpace();
         List<ImageTypeSpecifier> types = new ArrayList<ImageTypeSpecifier>();
@@ -295,21 +295,21 @@ public class PSDImageReader extends ImageReaderBase {
         return colorSpace;
     }
 
-    public BufferedImage read(final int pIndex, final ImageReadParam pParam) throws IOException {
-        checkBounds(pIndex);
+    public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
+        checkBounds(imageIndex);
 
         readHeader();
 
         readImageResources(false);
         readLayerAndMaskInfo(false);
 
-        BufferedImage image = getDestination(pParam, getImageTypes(pIndex), header.width, header.height);
-        ImageTypeSpecifier rawType = getRawImageType(pIndex);
-        checkReadParamBandSettings(pParam, rawType.getNumBands(), image.getSampleModel().getNumBands());
+        BufferedImage image = getDestination(param, getImageTypes(imageIndex), header.width, header.height);
+        ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        checkReadParamBandSettings(param, rawType.getNumBands(), image.getSampleModel().getNumBands());
 
         final Rectangle source = new Rectangle();
         final Rectangle dest = new Rectangle();
-        computeRegions(pParam, header.width, header.height, image, source, dest);
+        computeRegions(param, header.width, header.height, image, source, dest);
 
         /*
         NOTE: It seems safe to just leave this out for now. The only thing we need is to support sub sampling.
@@ -329,8 +329,8 @@ public class PSDImageReader extends ImageReaderBase {
 
         // TODO: Banding...
 
-        ImageTypeSpecifier spec = getRawImageType(pIndex);
-        BufferedImage temp = spec.createBufferedImage(getWidth(pIndex), 1);
+        ImageTypeSpecifier spec = getRawImageType(imageIndex);
+        BufferedImage temp = spec.createBufferedImage(getWidth(imageIndex), 1);
         temp.getRaster();
 
         if (...)
@@ -341,15 +341,15 @@ public class PSDImageReader extends ImageReaderBase {
         final int xSub;
         final int ySub;
 
-        if (pParam == null) {
+        if (param == null) {
             xSub = ySub = 1;
         }
         else {
-            xSub = pParam.getSourceXSubsampling();
-            ySub = pParam.getSourceYSubsampling();
+            xSub = param.getSourceXSubsampling();
+            ySub = param.getSourceYSubsampling();
         }
 
-        processImageStarted(pIndex);
+        processImageStarted(imageIndex);
 
         int[] byteCounts = null;
         int compression = imageInput.readShort();
@@ -1028,8 +1028,8 @@ public class PSDImageReader extends ImageReaderBase {
         return true;
     }
 
-    private List<PSDThumbnail> getThumbnailResources(final int pIndex) throws IOException {
-        checkBounds(pIndex);
+    private List<PSDThumbnail> getThumbnailResources(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
 
         readHeader();
 
@@ -1056,40 +1056,40 @@ public class PSDImageReader extends ImageReaderBase {
     }
 
     @Override
-    public int getNumThumbnails(final int pIndex) throws IOException {
-        List<PSDThumbnail> thumbnails = getThumbnailResources(pIndex);
+    public int getNumThumbnails(final int imageIndex) throws IOException {
+        List<PSDThumbnail> thumbnails = getThumbnailResources(imageIndex);
 
         return thumbnails == null ? 0 : thumbnails.size();
     }
 
-    private PSDThumbnail getThumbnailResource(final int pImageIndex, final int pThumbnailIndex) throws IOException {
-        List<PSDThumbnail> thumbnails = getThumbnailResources(pImageIndex);
+    private PSDThumbnail getThumbnailResource(final int imageIndex, final int thumbnailIndex) throws IOException {
+        List<PSDThumbnail> thumbnails = getThumbnailResources(imageIndex);
 
         if (thumbnails == null) {
-            throw new IndexOutOfBoundsException(String.format("thumbnail index %d > 0", pThumbnailIndex));
+            throw new IndexOutOfBoundsException(String.format("thumbnail index %d > 0", thumbnailIndex));
         }
 
-        return thumbnails.get(pThumbnailIndex);
+        return thumbnails.get(thumbnailIndex);
     }
 
     @Override
-    public int getThumbnailWidth(final int pImageIndex, final int pThumbnailIndex) throws IOException {
-        return getThumbnailResource(pImageIndex, pThumbnailIndex).getWidth();
+    public int getThumbnailWidth(final int imageIndex, final int thumbnailIndex) throws IOException {
+        return getThumbnailResource(imageIndex, thumbnailIndex).getWidth();
     }
 
     @Override
-    public int getThumbnailHeight(final int pImageIndex, final int pThumbnailIndex) throws IOException {
-        return getThumbnailResource(pImageIndex, pThumbnailIndex).getHeight();
+    public int getThumbnailHeight(final int imageIndex, final int thumbnailIndex) throws IOException {
+        return getThumbnailResource(imageIndex, thumbnailIndex).getHeight();
     }
 
     @Override
-    public BufferedImage readThumbnail(final int pImageIndex, final int pThumbnailIndex) throws IOException {
+    public BufferedImage readThumbnail(final int imageIndex, final int thumbnailIndex) throws IOException {
         // TODO: Thumbnail progress listeners...
-        PSDThumbnail thumbnail = getThumbnailResource(pImageIndex, pThumbnailIndex);
+        PSDThumbnail thumbnail = getThumbnailResource(imageIndex, thumbnailIndex);
 
         // TODO: Defer decoding
         // TODO: It's possible to attach listeners to the ImageIO reader delegate... But do we really care?
-        processThumbnailStarted(pImageIndex, pThumbnailIndex);
+        processThumbnailStarted(imageIndex, thumbnailIndex);
         processThumbnailComplete();
 
         // TODO: Returning a cached mutable thumbnail is not really safe...

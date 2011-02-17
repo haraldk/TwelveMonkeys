@@ -51,30 +51,30 @@ public class PSDImageResource {
     final String name;
     final long size;
 
-    PSDImageResource(final short pId, final ImageInputStream pInput) throws IOException {
-        id = pId;
+    PSDImageResource(final short resourceId, final ImageInputStream input) throws IOException {
+        id = resourceId;
 
-        name = PSDUtil.readPascalString(pInput);
+        name = PSDUtil.readPascalString(input);
 
         // Skip pad
         int nameSize = name.length() + 1;
         if (nameSize % 2 != 0) {
-            pInput.readByte();
+            input.readByte();
         }
 
-        size = pInput.readUnsignedInt();
-        long startPos = pInput.getStreamPosition();
+        size = input.readUnsignedInt();
+        long startPos = input.getStreamPosition();
 
-        readData(new SubImageInputStream(pInput, size));
+        readData(new SubImageInputStream(input, size));
 
         // NOTE: This should never happen, however it's safer to keep it here to 
-        if (pInput.getStreamPosition() != startPos + size) {
-            pInput.seek(startPos + size);
+        if (input.getStreamPosition() != startPos + size) {
+            input.seek(startPos + size);
         }
 
         // Data is even-padded (word aligned)
         if (size % 2 != 0) {
-            pInput.read();
+            input.read();
         }
     }
 

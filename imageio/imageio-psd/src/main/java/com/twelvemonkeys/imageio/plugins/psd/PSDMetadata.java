@@ -304,8 +304,8 @@ public final class PSDMetadata extends AbstractMetadata {
         return resource;
     }
 
-    private void appendEntries(final IIOMetadataNode pNode, final String pType, final Directory pDirectory) {
-        for (Entry entry : pDirectory) {
+    private void appendEntries(final IIOMetadataNode node, final String type, final Directory directory) {
+        for (Entry entry : directory) {
             Object tagId = entry.getIdentifier();
 
             IIOMetadataNode tag = new IIOMetadataNode("Entry");
@@ -316,13 +316,13 @@ public final class PSDMetadata extends AbstractMetadata {
                 tag.setAttribute("field", String.format("%s", field));
             }
             else {
-                if ("IPTC".equals(pType)) {
+                if ("IPTC".equals(type)) {
                     tag.setAttribute("field", String.format("%s:%s", (Integer) tagId >> 8, (Integer) tagId & 0xff));
                 }
             }
 
             if (entry.getValue() instanceof Directory) {
-                appendEntries(tag, pType, (Directory) entry.getValue());
+                appendEntries(tag, type, (Directory) entry.getValue());
                 tag.setAttribute("type", "Directory");
             }
             else {
@@ -330,7 +330,7 @@ public final class PSDMetadata extends AbstractMetadata {
                 tag.setAttribute("type", entry.getTypeName());
             }
 
-            pNode.appendChild(tag);
+            node.appendChild(tag);
         }
     }
 
@@ -426,9 +426,9 @@ public final class PSDMetadata extends AbstractMetadata {
         return node;
     }
 
-    private String getMultiChannelCS(short pChannels) {
-        if (pChannels < 16) {
-            return String.format("%xCLR", pChannels);
+    private String getMultiChannelCS(short channels) {
+        if (channels < 16) {
+            return String.format("%xCLR", channels);
         }
 
         throw new UnsupportedOperationException("Standard meta data format does not support more than 15 channels");
@@ -563,9 +563,9 @@ public final class PSDMetadata extends AbstractMetadata {
         return dimensionNode;
     }
 
-    private static float asMM(final short pUnit, final float pResolution) {
+    private static float asMM(final short unit, final float resolution) {
         // Unit: 1 -> pixels per inch, 2 -> pixels pr cm   
-        return (pUnit == 1 ? 25.4f : 10) / pResolution;
+        return (unit == 1 ? 25.4f : 10) / resolution;
     }
 
     @Override
@@ -670,13 +670,13 @@ public final class PSDMetadata extends AbstractMetadata {
         return text;
     }
 
-    private void appendTextEntriesFlat(final IIOMetadataNode pNode, final Directory pDirectory, final FilterIterator.Filter<Entry> pFilter) {
-        FilterIterator<Entry> pEntries = new FilterIterator<Entry>(pDirectory.iterator(), pFilter);
+    private void appendTextEntriesFlat(final IIOMetadataNode node, final Directory directory, final FilterIterator.Filter<Entry> filter) {
+        FilterIterator<Entry> pEntries = new FilterIterator<Entry>(directory.iterator(), filter);
         while (pEntries.hasNext()) {
             Entry entry = pEntries.next();
 
             if (entry.getValue() instanceof Directory) {
-                appendTextEntriesFlat(pNode, (Directory) entry.getValue(), pFilter);
+                appendTextEntriesFlat(node, (Directory) entry.getValue(), filter);
             }
             else if (entry.getValue() instanceof String) {
                 IIOMetadataNode tag = new IIOMetadataNode("TextEntry");
@@ -691,7 +691,7 @@ public final class PSDMetadata extends AbstractMetadata {
                 }
 
                 tag.setAttribute("value", entry.getValueAsString());
-                pNode.appendChild(tag);
+                node.appendChild(tag);
             }
         }
     }
@@ -718,24 +718,24 @@ public final class PSDMetadata extends AbstractMetadata {
                 header.mode == PSD.COLOR_MODE_CMYK & header.channels >= 5;
     }
 
-    <T extends PSDImageResource> Iterator<T> getResources(final Class<T> pResourceType) {
+    <T extends PSDImageResource> Iterator<T> getResources(final Class<T> resourceType) {
         // NOTE: The cast here is wrong, strictly speaking, but it does not matter...
         @SuppressWarnings({"unchecked"})
         Iterator<T> iterator = (Iterator<T>) imageResources.iterator();
 
         return new FilterIterator<T>(iterator, new FilterIterator.Filter<T>() {
             public boolean accept(final T pElement) {
-                return pResourceType.isInstance(pElement);
+                return resourceType.isInstance(pElement);
             }
         });
     }
 
-    Iterator<PSDImageResource> getResources(final int... pResourceTypes) {
+    Iterator<PSDImageResource> getResources(final int... resourceTypes) {
         Iterator<PSDImageResource> iterator = imageResources.iterator();
 
         return new FilterIterator<PSDImageResource>(iterator, new FilterIterator.Filter<PSDImageResource>() {
             public boolean accept(final PSDImageResource pResource) {
-                for (int type : pResourceTypes) {
+                for (int type : resourceTypes) {
                     if (type == pResource.id) {
                         return true;
                     }

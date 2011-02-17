@@ -21,7 +21,7 @@ import java.io.IOException;
  */
 public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImageReader> {
 
-    static ImageReaderSpi sProvider = new PSDImageReaderSpi();
+    static ImageReaderSpi provider = new PSDImageReaderSpi();
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -49,12 +49,12 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
     }
 
     protected ImageReaderSpi createProvider() {
-        return sProvider;
+        return provider;
     }
 
     @Override
     protected PSDImageReader createReader() {
-        return new PSDImageReader(sProvider);
+        return new PSDImageReader(provider);
     }
 
     protected Class<PSDImageReader> getReaderClass() {
