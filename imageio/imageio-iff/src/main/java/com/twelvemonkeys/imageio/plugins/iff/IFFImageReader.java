@@ -135,13 +135,13 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     private void readMeta() throws IOException {
-        if (mImageInput.readInt() != IFF.CHUNK_FORM) {
+        if (imageInput.readInt() != IFF.CHUNK_FORM) {
             throw new IIOException("Unknown file format for IFFImageReader");
         }
 
-        int remaining = mImageInput.readInt() - 4; // We'll read 4 more in a sec
+        int remaining = imageInput.readInt() - 4; // We'll read 4 more in a sec
 
-        mFormType = mImageInput.readInt();
+        mFormType = imageInput.readInt();
         if (mFormType != IFF.TYPE_ILBM && mFormType != IFF.TYPE_PBM) {
             throw new IIOException("Only IFF (FORM) type ILBM and PBM supported: " + IFFUtil.toChunkStr(mFormType));
         }
@@ -152,8 +152,8 @@ public class IFFImageReader extends ImageReaderBase {
         mViewPort = null;
 
         while (remaining > 0) {
-            int chunkId = mImageInput.readInt();
-            int length = mImageInput.readInt();
+            int chunkId = imageInput.readInt();
+            int length = imageInput.readInt();
 
             remaining -= 8;
             remaining -= length % 2 == 0 ? length : length + 1;
@@ -168,7 +168,7 @@ public class IFFImageReader extends ImageReaderBase {
                     }
 
                     mHeader = new BMHDChunk(length);
-                    mHeader.readChunk(mImageInput);
+                    mHeader.readChunk(imageInput);
 
                     //System.out.println(mHeader);
                     break;
@@ -177,7 +177,7 @@ public class IFFImageReader extends ImageReaderBase {
                         throw new IIOException("Multiple CMAP chunks not allowed");
                     }
                     mColorMap = new CMAPChunk(length, mHeader, mViewPort);
-                    mColorMap.readChunk(mImageInput);
+                    mColorMap.readChunk(imageInput);
 
                     //System.out.println(mColorMap);
                     break;
@@ -186,7 +186,7 @@ public class IFFImageReader extends ImageReaderBase {
                         throw new IIOException("Multiple GRAB chunks not allowed");
                     }
                     mGrab = new GRABChunk(length);
-                    mGrab.readChunk(mImageInput);
+                    mGrab.readChunk(imageInput);
 
                     //System.out.println(mGrab);
                     break;
@@ -195,7 +195,7 @@ public class IFFImageReader extends ImageReaderBase {
                         throw new IIOException("Multiple CAMG chunks not allowed");
                     }
                     mViewPort = new CAMGChunk(length);
-                    mViewPort.readChunk(mImageInput);
+                    mViewPort.readChunk(imageInput);
 
                     //System.out.println(mViewPort);
                     break;
@@ -205,7 +205,7 @@ public class IFFImageReader extends ImageReaderBase {
                     }
 
                     mBody = new BODYChunk(length);
-                    mBodyStart = mImageInput.getStreamPosition();
+                    mBodyStart = imageInput.getStreamPosition();
 
                     // NOTE: We don't read the body here, it's done later in the read(int, ImageReadParam) method
 
@@ -215,7 +215,7 @@ public class IFFImageReader extends ImageReaderBase {
                     // TODO: We probably want to store anno chunks as Metadata
                     // ANNO, DEST, SPRT and more
                     IFFChunk generic = new GenericChunk(chunkId, length);
-                    generic.readChunk(mImageInput);
+                    generic.readChunk(imageInput);
 
                     //System.out.println(generic);
                     break;
@@ -323,16 +323,16 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     private void readBody(final ImageReadParam pParam) throws IOException {
-        mImageInput.seek(mBodyStart);
+        imageInput.seek(mBodyStart);
         mByteRunStream = null;
 
         // NOTE: mColorMap may be null for 8 bit (gray), 24 bit or 32 bit only
         if (mColorMap != null) {
             IndexColorModel cm = mColorMap.getIndexColorModel();
-            readIndexed(pParam, mImageInput, cm);
+            readIndexed(pParam, imageInput, cm);
         }
         else {
-            readTrueColor(pParam, mImageInput);
+            readTrueColor(pParam, imageInput);
         }
 
     }

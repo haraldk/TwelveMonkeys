@@ -1,10 +1,11 @@
 package com.twelvemonkeys.imageio.stream;
 
-import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTestCase.rangeEquals;
 import junit.framework.TestCase;
 
 import java.io.IOException;
 import java.util.Random;
+
+import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTestCase.rangeEquals;
 
 /**
  * ByteArrayImageInputStreamTestCase
@@ -14,7 +15,7 @@ import java.util.Random;
  * @version $Id: ByteArrayImageInputStreamTestCase.java,v 1.0 Apr 21, 2009 10:58:48 AM haraldk Exp$
  */
 public class ByteArrayImageInputStreamTestCase extends TestCase {
-    protected final Random mRandom = new Random();
+    protected final Random random = new Random();
 
     public void testCreate() {
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(new byte[0]);
@@ -36,7 +37,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
 
     public void testRead() throws IOException {
         byte[] data = new byte[1024 * 1024];
-        mRandom.nextBytes(data);
+        random.nextBytes(data);
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
@@ -49,7 +50,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
 
     public void testReadArray() throws IOException {
         byte[] data = new byte[1024 * 1024];
-        mRandom.nextBytes(data);
+        random.nextBytes(data);
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
@@ -65,7 +66,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
 
     public void testReadSkip() throws IOException {
         byte[] data = new byte[1024 * 14];
-        mRandom.nextBytes(data);
+        random.nextBytes(data);
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
@@ -82,7 +83,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
 
     public void testReadSeek() throws IOException {
         byte[] data = new byte[1024 * 18];
-        mRandom.nextBytes(data);
+        random.nextBytes(data);
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 

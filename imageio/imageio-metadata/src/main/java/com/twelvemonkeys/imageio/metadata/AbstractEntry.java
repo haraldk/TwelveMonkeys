@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio.metadata;
 import com.twelvemonkeys.lang.Validate;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
 /**
  * AbstractEntry
@@ -69,6 +70,45 @@ public abstract class AbstractEntry implements Entry {
     }
 
     public String getValueAsString() {
+        if (valueCount() > 1) {
+            if (valueCount() < 16) {
+                Class<?> type = mValue.getClass().getComponentType();
+
+                if (type.isPrimitive()) {
+                    if (type.equals(boolean.class)) {
+                        return Arrays.toString((boolean[]) mValue);
+                    }
+                    else if (type.equals(byte.class)) {
+                        return Arrays.toString((byte[]) mValue);
+                    }
+                    else if (type.equals(char.class)) {
+                        return new String((char[]) mValue);
+                    }
+                    else if (type.equals(double.class)) {
+                        return Arrays.toString((double[]) mValue);
+                    }
+                    else if (type.equals(float.class)) {
+                        return Arrays.toString((float[]) mValue);
+                    }
+                    else if (type.equals(int.class)) {
+                        return Arrays.toString((int[]) mValue);
+                    }
+                    else if (type.equals(long.class)) {
+                        return Arrays.toString((long[]) mValue);
+                    }
+                    else if (type.equals(short.class)) {
+                        return Arrays.toString((short[]) mValue);
+                    }
+                    // Fall through should never happen
+                }
+                else {
+                    return Arrays.toString((Object[]) mValue);
+                }
+            }
+            
+            return String.valueOf(mValue) + " ("  + valueCount() + ")";
+        }
+
         return String.valueOf(mValue);
     }
 

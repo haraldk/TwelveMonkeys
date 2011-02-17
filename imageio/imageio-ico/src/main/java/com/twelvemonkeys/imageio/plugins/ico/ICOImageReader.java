@@ -132,8 +132,8 @@ public class ICOImageReader extends ImageReaderBase {
             case 8:
                 // TODO: This is slightly QnD...
                 int offset = entry.getOffset() + header.getSize();
-                if (offset != mImageInput.getStreamPosition()) {
-                    mImageInput.seek(offset);
+                if (offset != imageInput.getStreamPosition()) {
+                    imageInput.seek(offset);
                 }
                 BitmapIndexed indexed = new BitmapIndexed(entry, header);
                 readColorMap(indexed);
@@ -220,21 +220,17 @@ public class ICOImageReader extends ImageReaderBase {
         return destination;
     }
 
-    private boolean hasExplicitDestination(final ImageReadParam pParam) {
-        return (pParam != null && (pParam.getDestination() != null || pParam.getDestinationType() != null || pParam.getDestinationOffset() != null));
-    }
-
     private boolean isPNG(final DirectoryEntry pEntry) throws IOException {
         long magic;
 
-        mImageInput.seek(pEntry.getOffset());
-        mImageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
+        imageInput.seek(pEntry.getOffset());
+        imageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
 
         try {
-            magic = mImageInput.readLong();
+            magic = imageInput.readLong();
         }
         finally {
-            mImageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         }
 
         return magic == DIB.PNG_MAGIC;
@@ -252,8 +248,8 @@ public class ICOImageReader extends ImageReaderBase {
     private ImageReader initPNGReader(final DirectoryEntry pEntry) throws IOException {
         ImageReader pngReader = getPNGReader();
 
-        mImageInput.seek(pEntry.getOffset());
-        InputStream inputStream = IIOUtil.createStreamAdapter(mImageInput, pEntry.getSize());
+        imageInput.seek(pEntry.getOffset());
+        InputStream inputStream = IIOUtil.createStreamAdapter(imageInput, pEntry.getSize());
         ImageInputStream stream = ImageIO.createImageInputStream(inputStream);
 
         // NOTE: Will throw IOException on later reads if input is not PNG
@@ -283,8 +279,8 @@ public class ICOImageReader extends ImageReaderBase {
 
     private DIBHeader getHeader(final DirectoryEntry pEntry) throws IOException {
         if (!mHeaders.containsKey(pEntry)) {
-            mImageInput.seek(pEntry.getOffset());
-            DIBHeader header = DIBHeader.read(mImageInput);
+            imageInput.seek(pEntry.getOffset());
+            DIBHeader header = DIBHeader.read(imageInput);
             mHeaders.put(pEntry, header);
         }
 
@@ -299,8 +295,8 @@ public class ICOImageReader extends ImageReaderBase {
             DIBHeader header = getHeader(pEntry);
 
             int offset = pEntry.getOffset() + header.getSize();
-            if (offset != mImageInput.getStreamPosition()) {
-                mImageInput.seek(offset);
+            if (offset != imageInput.getStreamPosition()) {
+                imageInput.seek(offset);
             }
 
             // TODO: Support this, it's already in the BMP reader, spec allows RLE4 and RLE8
@@ -368,7 +364,7 @@ public class ICOImageReader extends ImageReaderBase {
 
         for (int i = 0; i < colorCount; i++) {
             // aRGB (a is "Reserved")
-            pBitmap.mColors[i] = (mImageInput.readInt() & 0xffffff) | 0xff000000;
+            pBitmap.mColors[i] = (imageInput.readInt() & 0xffffff) | 0xff000000;
         }
     }
 
@@ -377,7 +373,7 @@ public class ICOImageReader extends ImageReaderBase {
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
-            mImageInput.readFully(row, 0, width);
+            imageInput.readFully(row, 0, width);
             int rowPos = 0;
             int xOrVal = 0x80;
             int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
@@ -411,7 +407,7 @@ public class ICOImageReader extends ImageReaderBase {
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
-            mImageInput.readFully(row, 0, width);
+            imageInput.readFully(row, 0, width);
             int rowPos = 0;
             boolean high4 = true;
             int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
@@ -446,7 +442,7 @@ public class ICOImageReader extends ImageReaderBase {
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
-            mImageInput.readFully(row, 0, width);
+            imageInput.readFully(row, 0, width);
             int rowPos = 0;
             int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
 
@@ -488,12 +484,12 @@ public class ICOImageReader extends ImageReaderBase {
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
             int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
-            mImageInput.readFully(pixels, offset, pBitmap.getWidth());
+            imageInput.readFully(pixels, offset, pBitmap.getWidth());
 
 
             // Skip to 32 bit boundary
             if (pBitmap.getWidth() % 2 != 0) {
-                mImageInput.readShort();
+                imageInput.readShort();
             }
 
             if (abortRequested()) {
@@ -524,7 +520,7 @@ public class ICOImageReader extends ImageReaderBase {
         
         for (int y = 0; y < pBitmap.getHeight(); y++) {
             int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
-            mImageInput.readFully(pixels, offset, pBitmap.getWidth() * 3);
+            imageInput.readFully(pixels, offset, pBitmap.getWidth() * 3);
 
             // TODO: Possibly read padding byte here!
 
@@ -550,7 +546,7 @@ public class ICOImageReader extends ImageReaderBase {
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
             int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
-            mImageInput.readFully(pixels, offset, pBitmap.getWidth());
+            imageInput.readFully(pixels, offset, pBitmap.getWidth());
 
             if (abortRequested()) {
                 processReadAborted();
@@ -571,17 +567,17 @@ public class ICOImageReader extends ImageReaderBase {
     }
 
     private void readFileHeader() throws IOException {
-        mImageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
         // Read file header
-        mImageInput.readUnsignedShort(); // Reserved
+        imageInput.readUnsignedShort(); // Reserved
 
         // Should be same as type as the provider
-        int type = mImageInput.readUnsignedShort();
-        int imageCount = mImageInput.readUnsignedShort();
+        int type = imageInput.readUnsignedShort();
+        int imageCount = imageInput.readUnsignedShort();
 
         // Read directory
-        mDirectory = Directory.read(type, imageCount, mImageInput);
+        mDirectory = Directory.read(type, imageCount, imageInput);
     }
 
     final DirectoryEntry getEntry(final int pImageIndex) throws IOException {

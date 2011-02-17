@@ -49,12 +49,12 @@ public final class JPEGSegmentUtil {
 
     private JPEGSegmentUtil() {}
 
-    // TODO: Allow for multiple images (multiple SOI markers), using specified index?
-    public static List<Segment> readSegments(final ImageInputStream stream, final int appMarker, final String segmentName) throws IOException {
+    // TODO: Allow for multiple images (multiple SOI markers), using specified index, or document that stream must be placed before SOI of wanted image
+    public static List<Segment> readSegments(final ImageInputStream stream, final int imageIndex, final int appMarker, final String segmentName) throws IOException {
         return readSegments(stream, Collections.singletonMap(appMarker, Collections.singletonList(segmentName)));
     }
 
-    public static List<Segment> readSegments(final ImageInputStream stream, Map<Integer, List<String>> segmentIdentifiers) throws IOException {
+    public static List<Segment> readSegments(final ImageInputStream stream, final Map<Integer, List<String>> segmentIdentifiers) throws IOException {
         readSOI(stream);
 
         List<Segment> segments = Collections.emptyList();

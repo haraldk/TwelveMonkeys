@@ -99,22 +99,22 @@ public class IFFImageWriter extends ImageWriterBase {
     }
 
     private void writeBody(ByteArrayOutputStream pImageData) throws IOException {
-        mImageOutput.writeInt(IFF.CHUNK_BODY);
-        mImageOutput.writeInt(pImageData.size());
+        imageOutput.writeInt(IFF.CHUNK_BODY);
+        imageOutput.writeInt(pImageData.size());
 
         // NOTE: This is much faster than mOutput.write(pImageData.toByteArray())
         // as the data array is not duplicated
-        pImageData.writeTo(IIOUtil.createStreamAdapter(mImageOutput));
+        pImageData.writeTo(IIOUtil.createStreamAdapter(imageOutput));
 
         if (pImageData.size() % 2 == 0) {
-            mImageOutput.writeByte(0); // PAD
+            imageOutput.writeByte(0); // PAD
         }
 
         // NOTE: Most progress is done in packImageData, however, as we need to
         // buffer, to write correct size, we defer the last 10 percent until now.
         processImageProgress(100f);
 
-        mImageOutput.flush();
+        imageOutput.flush();
     }
 
     private void packImageData(OutputStream pOutput, RenderedImage pImage, ImageWriteParam pParam) throws IOException {
@@ -213,16 +213,16 @@ public class IFFImageWriter extends ImageWriterBase {
             size += 8 + cmap.mChunkLength;
         }
 
-        mImageOutput.writeInt(IFF.CHUNK_FORM);
-        mImageOutput.writeInt(size);
+        imageOutput.writeInt(IFF.CHUNK_FORM);
+        imageOutput.writeInt(size);
 
-        mImageOutput.writeInt(IFF.TYPE_ILBM);
+        imageOutput.writeInt(IFF.TYPE_ILBM);
 
-        anno.writeChunk(mImageOutput);
-        header.writeChunk(mImageOutput);
+        anno.writeChunk(imageOutput);
+        header.writeChunk(imageOutput);
         if (cmap != null) {
             //System.out.println("CMAP written");
-            cmap.writeChunk(mImageOutput);
+            cmap.writeChunk(imageOutput);
         }
 
     }

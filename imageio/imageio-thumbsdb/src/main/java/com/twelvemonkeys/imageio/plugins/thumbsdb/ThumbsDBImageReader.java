@@ -209,8 +209,8 @@ public class ThumbsDBImageReader extends ImageReaderBase {
     @Override
     public void setInput(Object pInput, boolean pSeekForwardOnly, boolean pIgnoreMetadata) {
         super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
-        if (mImageInput != null) {
-            mImageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        if (imageInput != null) {
+            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         }
     }
 
@@ -263,7 +263,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
     private void init() throws IOException {
         assertInput();
         if (mRoot == null) {
-            mRoot = new CompoundDocument(mImageInput).getRootEntry();
+            mRoot = new CompoundDocument(imageInput).getRootEntry();
             SortedSet children = mRoot.getChildEntries();
 
             mThumbnails = new BufferedImage[children.size() - 1];

@@ -47,7 +47,7 @@ public interface TIFF {
     5 = RATIONAL Two LONGs:  the first represents the numerator of a
     fraction; the second, the denominator.
 
-     TIFF 6.0 and above:
+    TIFF 6.0 and above:
     6 = SBYTE An 8-bit signed (twos-complement) integer.
     7 = UNDEFINED An 8-bit byte that may contain anything, depending on
     the definition of the field.
@@ -57,21 +57,39 @@ public interface TIFF {
     fraction, the second the denominator.
     11 = FLOAT Single precision (4-byte) IEEE format.
     12 = DOUBLE Double precision (8-byte) IEEE format.
+
+    TODO: Verify IFD type
+    See http://www.awaresystems.be/imaging/tiff/tifftags/subifds.html
+    13 = IFD, same as LONG
+
+    TODO: BigTiff specifies more types
+    See http://www.awaresystems.be/imaging/tiff/bigtiff.html, http://www.remotesensing.org/libtiff/bigtiffdesign.html
+    (what about 14-15??)
+    16 = TIFF_LONG8, being unsigned 8byte integer
+    17 = TIFF_SLONG8, being signed 8byte integer
+    18 = TIFF_IFD8, being a new unsigned 8byte IFD offset.
+    Should probably all map to Java long (and fail if high bit is set for the unsigned types???)
      */
     String[] TYPE_NAMES = {
             "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL",
-
             "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL", "FLOAT", "DOUBLE",
+            "IFD",
+            null, null,
+            "LONG8", "SLONG8", "IFD8"
     };
     int[] TYPE_LENGTHS = {
             1, 1, 2, 4, 8,
-
             1, 1, 2, 4, 8, 4, 8,
+            4,
+            -1, -1,
+            8, 8, 8
     };
 
-    int IFD_EXIF = 0x8769;
-    int IFD_GPS = 0x8825;
-    int IFD_INTEROP = 0xA005;
+    /// EXIF defined TIFF tags
+
+    int TAG_EXIF_IFD = 34665;
+    int TAG_GPS_IFD = 34853;
+    int TAG_INTEROP_IFD = 40965;
 
     /// A. Tags relating to image data structure:
 
@@ -114,4 +132,22 @@ public interface TIFF {
     int TAG_SOFTWARE = 305;
     int TAG_ARTIST = 315;
     int TAG_COPYRIGHT = 33432;
+
+    int TAG_SUB_IFD = 330;
+
+    int TAG_XMP = 700;
+    int TAG_IPTC = 33723;
+    int TAG_PHOTOSHOP = 34377;
+    int TAG_ICC_PROFILE = 34675;
+
+    // Microsoft Office Document Imaging (MODI)
+    // http://msdn.microsoft.com/en-us/library/aa167596%28office.11%29.aspx
+    int TAG_MODI_BLC = 34718;
+    int TAG_MODI_VECTOR = 34719;
+    int TAG_MODI_PTC = 34720;
+
+    // http://blogs.msdn.com/b/openspecification/archive/2009/12/08/details-of-three-tiff-tag-extensions-that-microsoft-office-document-imaging-modi-software-may-write-into-the-tiff-files-it-generates.aspx
+    int TAG_MODI_PLAIN_TEXT = 37679;
+    int TAG_MODI_OLE_PROPERTY_SET = 37680;
+    int TAG_MODI_TEXT_POS_INFO = 37681;
 }

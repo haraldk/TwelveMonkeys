@@ -28,9 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Parts of this software is based on JVG/JIS.
 See http://www.cs.hut.fi/~framling/JVG/index.html for more information.
-Redistribution under BSD authorized by Kary Främling:
+Redistribution under BSD authorized by Kary Frï¿½mling:
 
-Copyright (c) 2003, Kary Främling
+Copyright (c) 2003, Kary Frï¿½mling
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,7 @@ import java.util.List;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a> (original PICT/QuickDraw parsing)
+ * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Frï¿½mling</a> (original PICT/QuickDraw parsing)
  * @author <a href="mailto:matthias.wiesmann@a3.epfl.ch">Matthias Wiesmann</a> (original embedded QuickTime parsing)
  * @version $Id: PICTReader.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */
@@ -151,7 +151,7 @@ public class PICTImageReader extends ImageReaderBase {
     private Rectangle getPICTFrame() throws IOException {
         if (mFrame == null) {
             // Read in header information
-            readPICTHeader(mImageInput);
+            readPICTHeader(imageInput);
             if (DEBUG) {
                 System.out.println("Done reading PICT header!");
             }
@@ -343,7 +343,7 @@ public class PICTImageReader extends ImageReaderBase {
     private void drawOnto(Graphics2D pGraphics) throws IOException {
         mContext = new QuickDrawContext(pGraphics);
 
-        readPICTopcodes(mImageInput);
+        readPICTopcodes(imageInput);
         if (DEBUG) {
             System.out.println("Done reading PICT body!");
         }
@@ -1666,7 +1666,7 @@ public class PICTImageReader extends ImageReaderBase {
         catch (EOFException e) {
             String pos;
             try {
-                pos = String.format("position %d", mImageInput.getStreamPosition());
+                pos = String.format("position %d", imageInput.getStreamPosition());
             }
             catch (IOException ignore) {
                 pos = "unknown position";
@@ -1977,7 +1977,7 @@ public class PICTImageReader extends ImageReaderBase {
             unPackBits.readFully(pixArray, pixBufOffset, pBounds.width);
             /*}
             else {
-                mImageInput.readFully(dstBytes);
+                imageInput.readFully(dstBytes);
             }*/
 
             // TODO: Use TYPE_USHORT_555_RGB for 16 bit
@@ -2294,7 +2294,7 @@ public class PICTImageReader extends ImageReaderBase {
                 unPackBits.readFully(dstBytes);
             }
             else {
-                mImageInput.readFully(dstBytes);
+                imageInput.readFully(dstBytes);
             }
 
             if (packType == 3) {

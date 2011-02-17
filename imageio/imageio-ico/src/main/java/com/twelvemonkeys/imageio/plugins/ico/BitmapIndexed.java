@@ -78,7 +78,7 @@ class BitmapIndexed extends BitmapDescriptor {
 
         WritableRaster raster = image.getRaster();
 
-        // Make pixels transparant according to mask
+        // Make pixels transparent according to mask
         final int trans = icm.getTransparentPixel();
         for (int y = 0; y < getHeight(); y++) {
             for (int x = 0; x < getWidth(); x++) {

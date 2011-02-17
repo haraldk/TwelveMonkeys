@@ -124,7 +124,7 @@ public class TIFFImageWriter extends ImageWriterBase {
         processImageStarted(0);
 
         mEncoder.encode(image);
-        mImageOutput.flush();
+        imageOutput.flush();
 
         processImageComplete();
     }
@@ -136,10 +136,10 @@ public class TIFFImageWriter extends ImageWriterBase {
 
     private synchronized void init() {
         if (mEncoder == null) {
-            if (mImageOutput == null) {
+            if (imageOutput == null) {
                 throw new IllegalStateException("output == null");
             }
-            mEncoder = new TIFFImageEncoder(IIOUtil.createStreamAdapter(mImageOutput), null);
+            mEncoder = new TIFFImageEncoder(IIOUtil.createStreamAdapter(imageOutput), null);
         }
     }
 }

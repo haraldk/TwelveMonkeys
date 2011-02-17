@@ -116,6 +116,10 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
 
     protected abstract List<String> getMIMETypes();
 
+    protected boolean allowsNullRawImageType() {
+        return false;
+    }    
+
     protected void assertProviderInstalledForName(final String pFormat, final Class<? extends ImageReader> pReaderClass) {
         assertProviderInstalled0(pFormat.toUpperCase(), pReaderClass, ImageIO.getImageReadersByFormatName(pFormat.toUpperCase()));
         assertProviderInstalled0(pFormat.toLowerCase(), pReaderClass, ImageIO.getImageReadersByFormatName(pFormat.toLowerCase()));
@@ -1111,30 +1115,34 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
 
     public void testGetTypeSpecifiers() throws IOException {
         final ImageReader reader = createReader();
-        TestData data = getTestData().get(0);
-        reader.setInput(data.getInputStream());
+        for (TestData data : getTestData()) {
+            reader.setInput(data.getInputStream());
 
-        ImageTypeSpecifier rawType = reader.getRawImageType(0);
-        assertNotNull(rawType);
-
-        Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
-
-        assertNotNull(types);
-        assertTrue(types.hasNext());
-
-        // TODO: This might fail even though the specifiers are obviously equal, if the
-        // color spaces they use are not the SAME instance, as ColorSpace uses identity equals
-        // and Interleaved ImageTypeSpecifiers are only equal if color spaces are equal...
-        boolean rawFound = false;
-        while (types.hasNext()) {
-            ImageTypeSpecifier type = types.next();
-            if (type.equals(rawType)) {
-                rawFound = true;
-                break;
+            ImageTypeSpecifier rawType = reader.getRawImageType(0);
+            if (rawType == null && allowsNullRawImageType()) {
+                continue;
             }
-        }
+            assertNotNull(rawType);
 
-        assertTrue("ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
+            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+
+            assertNotNull(types);
+            assertTrue(types.hasNext());
+
+            // TODO: This might fail even though the specifiers are obviously equal, if the
+            // color spaces they use are not the SAME instance, as ColorSpace uses identity equals
+            // and Interleaved ImageTypeSpecifiers are only equal if color spaces are equal...
+            boolean rawFound = false;
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+                if (type.equals(rawType)) {
+                    rawFound = true;
+                    break;
+                }
+            }
+
+            assertTrue("ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
+        }
     }
 
     public void testSetDestination() throws IOException {
@@ -1164,12 +1172,18 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         ImageReadParam param = reader.getDefaultReadParam();
 
         ImageTypeSpecifier type = reader.getRawImageType(0);
-        BufferedImage destination = type.createBufferedImage(reader.getWidth(0), reader.getHeight(0));
-        param.setDestination(destination);
 
-        BufferedImage result = reader.read(0, param);
+        if (type != null) {
+            BufferedImage destination = type.createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+            param.setDestination(destination);
 
-        assertSame(destination, result);
+            BufferedImage result = reader.read(0, param);
+
+            assertSame(destination, result);
+        }
+        else {
+            System.err.println("WARNING: Test skipped due to reader.getRawImageType(0) returning null");
+        }
     }
 
     public void testSetDestinationIllegal() throws IOException {
@@ -1258,7 +1272,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             boolean removed = illegalTypes.remove(valid);
 
             // TODO: 4BYTE_ABGR (6) and 4BYTE_ABGR_PRE (7) is essentially the same type... 
-            // !#$#§%$! ImageTypeSpecifier.equals is not well-defined
+            // !#$#ï¿½%$! ImageTypeSpecifier.equals is not well-defined
             if (!removed) {
                 for (Iterator<ImageTypeSpecifier> iterator = illegalTypes.iterator(); iterator.hasNext();) {
                     ImageTypeSpecifier illegalType = iterator.next();

@@ -88,7 +88,7 @@ public class WMFImageReader extends ImageReaderBase {
 
     private synchronized void init() throws IOException {
         // Need the extra test, to avoid throwing an IOException from the Transcoder
-        if (mImageInput == null) {
+        if (imageInput == null) {
             throw new IllegalStateException("input == null");
         }
 
@@ -98,7 +98,7 @@ public class WMFImageReader extends ImageReaderBase {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             Writer writer = new OutputStreamWriter(output, "UTF8");
             try {
-                TranscoderInput in = new TranscoderInput(IIOUtil.createStreamAdapter(mImageInput));
+                TranscoderInput in = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
                 TranscoderOutput out = new TranscoderOutput(writer);
 
                 // TODO: Transcodinghints?

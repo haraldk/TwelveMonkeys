@@ -43,7 +43,7 @@ import java.lang.reflect.Field;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageResource.java,v 1.0 Apr 29, 2008 5:49:06 PM haraldk Exp$
  */
-class PSDImageResource {
+public class PSDImageResource {
     // TODO: Refactor image resources to separate package
     // TODO: Change constructor to store stream offset and length only (+ possibly the name), defer reading
 

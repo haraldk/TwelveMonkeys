@@ -47,15 +47,15 @@ import java.util.Map;
  * @version $Id: WriterFileSuffixFilter.java,v 1.0 11.okt.2006 20:05:36 haku Exp$
  */
 public final class WriterFileSuffixFilter extends FileFilter implements java.io.FileFilter {
-    private final String mDescription;
-    private Map<String, Boolean>mKnownSuffixes = new HashMap<String, Boolean>(32);
+    private final String description;
+    private Map<String, Boolean> knownSuffixes = new HashMap<String, Boolean>(32);
 
     public WriterFileSuffixFilter() {
         this("Images (all supported output formats)");
     }
 
     public WriterFileSuffixFilter(String pDescription) {
-        mDescription = pDescription;
+        description = pDescription;
     }
 
     public boolean accept(File pFile) {
@@ -66,24 +66,25 @@ public final class WriterFileSuffixFilter extends FileFilter implements java.io.
 
         // Test if we have an ImageWriter for this suffix
         String suffix = FileUtil.getExtension(pFile);
-        return !StringUtil.isEmpty(suffix) && hasWriterForSuffix(suffix);
 
+        return !StringUtil.isEmpty(suffix) && hasWriterForSuffix(suffix);
     }
 
     private boolean hasWriterForSuffix(String pSuffix) {
-        if (mKnownSuffixes.get(pSuffix) == Boolean.TRUE) {
+        if (knownSuffixes.get(pSuffix) == Boolean.TRUE) {
             return true;
         }
 
         try {
             // Cahce lookup
             Iterator iterator = ImageIO.getImageWritersBySuffix(pSuffix);
+
             if (iterator.hasNext()) {
-                mKnownSuffixes.put(pSuffix, Boolean.TRUE);
+                knownSuffixes.put(pSuffix, Boolean.TRUE);
                 return true;
             }
             else {
-                mKnownSuffixes.put(pSuffix, Boolean.FALSE);
+                knownSuffixes.put(pSuffix, Boolean.FALSE);
                 return false;
             }
         }
@@ -93,6 +94,6 @@ public final class WriterFileSuffixFilter extends FileFilter implements java.io.
     }
 
     public String getDescription() {
-        return mDescription;
+        return description;
     }
 }

@@ -137,25 +137,25 @@ public class TIFFImageReader extends ImageReaderBase {
 
     private synchronized void init() {
         if (mDecoder == null) {
-            if (mImageInput == null) {
+            if (imageInput == null) {
                 throw new IllegalStateException("input == null");
             }
 
             mDecoder = new TIFFImageDecoder(new SeekableStream() {
                 public int read() throws IOException {
-                    return mImageInput.read();
+                    return imageInput.read();
                 }
 
                 public int read(final byte[] pBytes, final int pStart, final int pLength) throws IOException {
-                    return mImageInput.read(pBytes, pStart, pLength);
+                    return imageInput.read(pBytes, pStart, pLength);
                 }
 
                 public long getFilePointer() throws IOException {
-                    return mImageInput.getStreamPosition();
+                    return imageInput.getStreamPosition();
                 }
 
                 public void seek(final long pPos) throws IOException {
-                    mImageInput.seek(pPos);
+                    imageInput.seek(pPos);
                 }
             }, null);
         }

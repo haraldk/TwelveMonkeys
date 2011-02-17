@@ -506,12 +506,12 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private void readSegments() throws IOException {
-        long pos = mImageInput.getStreamPosition();
+        long pos = imageInput.getStreamPosition();
 
         try {
-            mImageInput.seek(0); // TODO: Seek to wanted image
+            imageInput.seek(0); // TODO: Seek to wanted image
 
-            segments = JPEGSegmentUtil.readSegments(mImageInput, SEGMENT_IDENTIFIERS);
+            segments = JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
         }
         catch (IOException ignore) {
         }
@@ -519,7 +519,7 @@ public class JPEGImageReader extends ImageReaderBase {
             foo.printStackTrace();
         }
         finally {
-            mImageInput.seek(pos);
+            imageInput.seek(pos);
         }
     }
 

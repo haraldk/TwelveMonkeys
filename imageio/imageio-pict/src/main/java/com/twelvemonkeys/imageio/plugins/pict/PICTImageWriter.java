@@ -28,9 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Parts of this software is based on JVG/JIS.
 See http://www.cs.hut.fi/~framling/JVG/index.html for more information.
-Redistribution under BSD authorized by Kary Främling:
+Redistribution under BSD authorized by Kary Frï¿½mling:
 
-Copyright (c) 2003, Kary Främling
+Copyright (c) 2003, Kary Frï¿½mling
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -79,7 +79,7 @@ import java.io.*;
  * Images are stored using the "opDirectBitsRect" opcode, which directly
  * stores RGB values (using PackBits run-length encoding).
  *
- * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a>
+ * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Frï¿½mling</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTWriter.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */
@@ -116,121 +116,121 @@ public class PICTImageWriter extends ImageWriterBase {
         // TODO: Make 512 byte header optional
         // Write empty 512-byte header
         byte[] buf = new byte[PICT.PICT_NULL_HEADER_SIZE];
-        mImageOutput.write(buf);
+        imageOutput.write(buf);
 
         // Write out the size, leave as 0, this is ok
-        mImageOutput.writeShort(0);
+        imageOutput.writeShort(0);
 
         // Write image frame (same as image bounds)
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(pImage.getHeight());
-        mImageOutput.writeShort(pImage.getWidth());
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(pImage.getHeight());
+        imageOutput.writeShort(pImage.getWidth());
 
         // Write version, version 2
-        mImageOutput.writeShort(PICT.OP_VERSION);
-        mImageOutput.writeShort(PICT.OP_VERSION_2);
+        imageOutput.writeShort(PICT.OP_VERSION);
+        imageOutput.writeShort(PICT.OP_VERSION_2);
 
         // Version 2 HEADER_OP, extended version.
-        mImageOutput.writeShort(PICT.OP_HEADER_OP);
-        mImageOutput.writeInt(PICT.HEADER_V2_EXT); // incl 2 bytes reseverd
+        imageOutput.writeShort(PICT.OP_HEADER_OP);
+        imageOutput.writeInt(PICT.HEADER_V2_EXT); // incl 2 bytes reseverd
 
         // Image resolution, 72 dpi
-        mImageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
-        mImageOutput.writeShort(0);
+        imageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
+        imageOutput.writeShort(0);
 
         // Optimal source rectangle (same as image bounds)
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(pImage.getHeight());
-        mImageOutput.writeShort(pImage.getWidth());
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(pImage.getHeight());
+        imageOutput.writeShort(pImage.getWidth());
 
         // Reserved (4 bytes)
-        mImageOutput.writeInt(0);
+        imageOutput.writeInt(0);
 
         // TODO: The header really ends here...
 
         // Highlight
-        mImageOutput.writeShort(PICT.OP_DEF_HILITE);
+        imageOutput.writeShort(PICT.OP_DEF_HILITE);
 
         // Set the clip rectangle
-        mImageOutput.writeShort(PICT.OP_CLIP_RGN);
-        mImageOutput.writeShort(10);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(pImage.getHeight());
-        mImageOutput.writeShort(pImage.getWidth());
+        imageOutput.writeShort(PICT.OP_CLIP_RGN);
+        imageOutput.writeShort(10);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(pImage.getHeight());
+        imageOutput.writeShort(pImage.getWidth());
 
         // Pixmap operation
-        mImageOutput.writeShort(PICT.OP_DIRECT_BITS_RECT);
+        imageOutput.writeShort(PICT.OP_DIRECT_BITS_RECT);
 
         // PixMap pointer (always 0x000000FF);
-        mImageOutput.writeInt(0x000000ff);
+        imageOutput.writeInt(0x000000ff);
 
         // Write rowBytes, this is 4 times the width.
         // Set the high bit, to indicate a PixMap.
         mRowBytes = 4 * pImage.getWidth();
-        mImageOutput.writeShort(0x8000 | mRowBytes);
+        imageOutput.writeShort(0x8000 | mRowBytes);
 
         // Write bounds rectangle (same as image bounds)
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(pImage.getHeight()); // TODO: Handle overflow?
-        mImageOutput.writeShort(pImage.getWidth());
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(pImage.getHeight()); // TODO: Handle overflow?
+        imageOutput.writeShort(pImage.getWidth());
 
         // PixMap record version
-        mImageOutput.writeShort(0);
+        imageOutput.writeShort(0);
 
         // Packing format (always 4: PackBits)
-        mImageOutput.writeShort(4);
+        imageOutput.writeShort(4);
 
         // Size of packed data (leave as 0)
-        mImageOutput.writeInt(0);
+        imageOutput.writeInt(0);
 
         // Pixmap resolution, 72 dpi
-        mImageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
-        mImageOutput.writeShort(0);
+        imageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(PICT.MAC_DEFAULT_DPI);
+        imageOutput.writeShort(0);
 
         // Pixel type, 16 is allright for direct pixels
-        mImageOutput.writeShort(16);
+        imageOutput.writeShort(16);
 
         // Pixel size
-        mImageOutput.writeShort(32);
+        imageOutput.writeShort(32);
 
         // TODO: Allow alpha? Allow 5 bit per pixel component (16 bit)?
         // Pixel component count
-        mImageOutput.writeShort(3);
+        imageOutput.writeShort(3);
 
         // Pixel component size
-        mImageOutput.writeShort(8);
+        imageOutput.writeShort(8);
 
         // PlaneBytes, ignored for now
-        mImageOutput.writeInt(0);
+        imageOutput.writeInt(0);
 
         // TODO: Allow IndexColorModel?
         // ColorTable record (for RGB direct pixels, just write 0)
-        mImageOutput.writeInt(0);
+        imageOutput.writeInt(0);
 
         // Reserved (4 bytes)
-        mImageOutput.writeInt(0);
+        imageOutput.writeInt(0);
 
         // Source and dest rect (both are same as image bounds)
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(pImage.getHeight());
-        mImageOutput.writeShort(pImage.getWidth());
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(pImage.getHeight());
+        imageOutput.writeShort(pImage.getWidth());
 
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(0);
-        mImageOutput.writeShort(pImage.getHeight());
-        mImageOutput.writeShort(pImage.getWidth());
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(0);
+        imageOutput.writeShort(pImage.getHeight());
+        imageOutput.writeShort(pImage.getWidth());
 
         // Transfer mode
-        mImageOutput.writeShort(QuickDraw.SRC_COPY);
+        imageOutput.writeShort(QuickDraw.SRC_COPY);
 
         // TODO: Move to writePICTData?
         // TODO: Alpha support
@@ -282,13 +282,13 @@ public class PICTImageWriter extends ImageWriterBase {
                 packBits.write(mScanlineBytes);
 
                 if (mRowBytes > 250) {
-                    mImageOutput.writeShort(bytes.size());
+                    imageOutput.writeShort(bytes.size());
                 }
                 else {
-                    mImageOutput.writeByte(bytes.size());
+                    imageOutput.writeByte(bytes.size());
                 }
 
-                bytes.writeTo(IIOUtil.createStreamAdapter(mImageOutput));
+                bytes.writeTo(IIOUtil.createStreamAdapter(imageOutput));
 
                 mScanWidthLeft = w;
             }
@@ -327,13 +327,13 @@ public class PICTImageWriter extends ImageWriterBase {
                 packBits.write(mScanlineBytes);
 
                 if (mRowBytes > 250) {
-                    mImageOutput.writeShort(bytes.size());
+                    imageOutput.writeShort(bytes.size());
                 }
                 else {
-                    mImageOutput.writeByte(bytes.size());
+                    imageOutput.writeByte(bytes.size());
                 }
 
-                bytes.writeTo(IIOUtil.createStreamAdapter(mImageOutput));
+                bytes.writeTo(IIOUtil.createStreamAdapter(imageOutput));
 
                 mScanWidthLeft = w;
             }
@@ -342,15 +342,15 @@ public class PICTImageWriter extends ImageWriterBase {
 
     private void writePICTTrailer() throws IOException {
         // Write out end opcode. Be sure to be word-aligned.
-        long length = mImageOutput.length();
+        long length = imageOutput.length();
         if (length == -1) {
             throw new IIOException("Cannot write trailer without knowing length");
         }
 
         if ((length & 1) > 0) {
-            mImageOutput.writeByte(0);
+            imageOutput.writeByte(0);
         }
-        mImageOutput.writeShort(PICT.OP_END_OF_PICTURE);
+        imageOutput.writeShort(PICT.OP_END_OF_PICTURE);
     }
 
     public void write(IIOMetadata pStreamMetadata, IIOImage pImage, ImageWriteParam pParam) throws IOException {

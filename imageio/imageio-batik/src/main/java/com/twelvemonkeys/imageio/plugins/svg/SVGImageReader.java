@@ -98,8 +98,8 @@ public class SVGImageReader extends ImageReaderBase {
     public void setInput(Object pInput, boolean pSeekForwardOnly, boolean pIgnoreMetadata) {
         super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
 
-        if (mImageInput != null) {
-            TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(mImageInput));
+        if (imageInput != null) {
+            TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
             mRasterizer.setInput(input);
         }
     }

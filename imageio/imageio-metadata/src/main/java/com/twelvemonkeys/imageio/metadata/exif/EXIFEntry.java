@@ -43,16 +43,35 @@ final class EXIFEntry extends AbstractEntry {
     EXIFEntry(final int pIdentifier, final Object pValue, final short pType) {
         super(pIdentifier, pValue);
 
-        if (pType < 1 || pType > TIFF.TYPE_NAMES.length) {
-            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", pType));
-        }
+//        if (pType < 1 || pType > TIFF.TYPE_NAMES.length) {
+//            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", pType));
+//        }
         
         mType = pType;
+    }
+
+    public short getType() {
+        return mType;
     }
 
     @Override
     public String getFieldName() {
         switch ((Integer) getIdentifier()) {
+            case TIFF.TAG_EXIF_IFD:
+                return "EXIF";
+            case TIFF.TAG_XMP:
+                return "XMP";
+            case TIFF.TAG_IPTC:
+                return "IPTC";
+            case TIFF.TAG_PHOTOSHOP:
+                return "Adobe";
+            case TIFF.TAG_ICC_PROFILE:
+                return "ICC Profile";
+
+            case TIFF.TAG_IMAGE_WIDTH:
+                return "ImageWidth";
+            case TIFF.TAG_IMAGE_HEIGHT:
+                return "ImageHeight";
             case TIFF.TAG_COMPRESSION:
                 return "Compression";
             case TIFF.TAG_ORIENTATION:
@@ -82,6 +101,7 @@ final class EXIFEntry extends AbstractEntry {
                 return "PixelXDimension";
             case EXIF.TAG_PIXEL_Y_DIMENSION:
                 return "PixelYDimension";
+
             // TODO: More field names
         }
 

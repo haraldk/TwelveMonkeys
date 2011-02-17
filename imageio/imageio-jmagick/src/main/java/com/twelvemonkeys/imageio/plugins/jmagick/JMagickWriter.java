@@ -113,8 +113,8 @@ abstract class JMagickWriter extends ImageWriterBase {
             processImageProgress(67);
 
             // Write blob to output
-            mImageOutput.write(bytes);
-            mImageOutput.flush();
+            imageOutput.write(bytes);
+            imageOutput.flush();
             processImageProgress(100);
         }
         catch (MagickException e) {

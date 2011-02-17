@@ -23,12 +23,12 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
    static final int DEFAULT_BUFFER_SIZE = 8192;
 
-    private ImageInputStream mStream;
+    private ImageInputStream stream;
 
-    private byte[] mBuffer;
-    private long mBufferStart = 0;
-    private int mBufferPos = 0;
-    private int mBufferLength = 0;
+    private byte[] buffer;
+    private long bufferStart = 0;
+    private int bufferPos = 0;
+    private int bufferLength = 0;
 
     public BufferedImageInputStream(final ImageInputStream pStream) throws IOException {
         this(pStream, DEFAULT_BUFFER_SIZE);
@@ -37,19 +37,19 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     private BufferedImageInputStream(final ImageInputStream pStream, final int pBufferSize) throws IOException {
         Validate.notNull(pStream, "stream");
 
-        mStream = pStream;
+        stream = pStream;
         streamPos = pStream.getStreamPosition();
-        mBuffer = new byte[pBufferSize];
+        buffer = new byte[pBufferSize];
     }
 
     private void fillBuffer() throws IOException {
-        mBufferStart = streamPos;
-        mBufferLength = mStream.read(mBuffer, 0, mBuffer.length);
-        mBufferPos = 0;
+        bufferStart = streamPos;
+        bufferLength = stream.read(buffer, 0, buffer.length);
+        bufferPos = 0;
     }
 
     private boolean isBufferValid() throws IOException {
-        return mBufferPos < mBufferLength && mBufferStart == mStream.getStreamPosition() - mBufferLength;
+        return bufferPos < bufferLength && bufferStart == stream.getStreamPosition() - bufferLength;
     }
 
     @Override
@@ -58,14 +58,14 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
             fillBuffer();
         }
 
-        if (mBufferLength <= 0) {
+        if (bufferLength <= 0) {
             return -1;
         }
 
         bitOffset = 0;
         streamPos++;
 
-        return mBuffer[mBufferPos++] & 0xff;
+        return buffer[bufferPos++] & 0xff;
     }
 
     @Override
@@ -74,7 +74,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
         if (!isBufferValid()) {
             // Bypass cache if cache is empty for reads longer than buffer
-            if (pLength >= mBuffer.length) {
+            if (pLength >= buffer.length) {
                 return readDirect(pBuffer, pOffset, pLength);
             }
             else {
@@ -87,30 +87,30 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     private int readDirect(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
         // TODO: Figure out why reading more than the buffer length causes alignment issues...
-        int read = mStream.read(pBuffer, pOffset, Math.min(mBuffer.length, pLength));
+        int read = stream.read(pBuffer, pOffset, Math.min(buffer.length, pLength));
 
         if (read > 0) {
             streamPos += read;
         }
 
-        mBufferStart = mStream.getStreamPosition();
-        mBufferLength = 0;
+        bufferStart = stream.getStreamPosition();
+        bufferLength = 0;
 
         return read;
     }
 
 
     private int readBuffered(final byte[] pBuffer, final int pOffset, final int pLength) {
-        if (mBufferLength <= 0) {
+        if (bufferLength <= 0) {
             return -1;
         }
 
         // Read as much as possible from buffer
-        int length = Math.min(mBufferLength - mBufferPos, pLength);
+        int length = Math.min(bufferLength - bufferPos, pLength);
 
         if (length > 0) {
-            System.arraycopy(mBuffer, mBufferPos, pBuffer, pOffset, length);
-            mBufferPos += length;
+            System.arraycopy(buffer, bufferPos, pBuffer, pOffset, length);
+            bufferPos += length;
         }
 
         streamPos += length;
@@ -121,42 +121,42 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     @Override
     public void seek(long pPosition) throws IOException {
         // TODO: Could probably be optimized to not invalidate buffer if new position is within current buffer
-        mStream.seek(pPosition);
-        mBufferLength = 0; // Will invalidate buffer
-        streamPos = mStream.getStreamPosition();
+        stream.seek(pPosition);
+        bufferLength = 0; // Will invalidate buffer
+        streamPos = stream.getStreamPosition();
     }
 
     @Override
     public void flushBefore(long pos) throws IOException {
-        mStream.flushBefore(pos);
+        stream.flushBefore(pos);
     }
 
     @Override
     public long getFlushedPosition() {
-        return mStream.getFlushedPosition();
+        return stream.getFlushedPosition();
     }
 
     @Override
     public boolean isCached() {
-        return mStream.isCached();
+        return stream.isCached();
     }
 
     @Override
     public boolean isCachedMemory() {
-        return mStream.isCachedMemory();
+        return stream.isCachedMemory();
     }
 
     @Override
     public boolean isCachedFile() {
-        return mStream.isCachedFile();
+        return stream.isCachedFile();
     }
 
     @Override
     public void close() throws IOException {
-        if (mStream != null) {
-            //mStream.close();
-            mStream = null;
-            mBuffer = null;
+        if (stream != null) {
+            //stream.close();
+            stream = null;
+            buffer = null;
         }
         super.close();
     }
@@ -170,7 +170,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     public long length() {
         // WTF?! This method is allowed to throw IOException in the interface...
         try {
-            return mStream.length();
+            return stream.length();
         }
         catch (IOException ignore) {
         }

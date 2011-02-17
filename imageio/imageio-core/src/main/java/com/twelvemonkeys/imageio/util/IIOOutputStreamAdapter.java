@@ -40,34 +40,34 @@ import java.io.OutputStream;
  * @version $Id: IIOOutputStreamAdapter.java,v 1.0 Sep 26, 2007 11:50:38 AM haraldk Exp$
  */
 class IIOOutputStreamAdapter extends OutputStream {
-    private ImageOutputStream mOutput;
+    private ImageOutputStream output;
 
     public IIOOutputStreamAdapter(final ImageOutputStream pOutput) {
-        mOutput = pOutput;
+        output = pOutput;
     }
 
     @Override
     public void write(final byte[] pBytes) throws IOException {
-        mOutput.write(pBytes);
+        output.write(pBytes);
     }
 
     @Override
     public void write(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        mOutput.write(pBytes, pOffset, pLength);
+        output.write(pBytes, pOffset, pLength);
     }
 
     @Override
     public void write(final int pByte) throws IOException {
-        mOutput.write(pByte);
+        output.write(pByte);
     }
 
     @Override
     public void flush() throws IOException {
-        mOutput.flush();
+        output.flush();
     }
 
     @Override
     public void close() throws IOException {
-        mOutput = null;
+        output = null;
     }
 }

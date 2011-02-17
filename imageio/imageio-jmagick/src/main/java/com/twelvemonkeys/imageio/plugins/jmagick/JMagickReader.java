@@ -286,11 +286,11 @@ abstract class JMagickReader extends ImageReaderBase {
                 // TODO: If ImageInputStream is already file-backed, maybe we can peek into that file?
                 //       At the moment, the cache/file is not accessible, but we could create our own
                 //       FileImageInputStream provider that gives us this access.
-                if (!mUseTempFile && mImageInput.length() >= 0 && mImageInput.length() <= Integer.MAX_VALUE) {
+                if (!mUseTempFile && imageInput.length() >= 0 && imageInput.length() <= Integer.MAX_VALUE) {
                     // This works for most file formats, as long as ImageMagick
                     // uses the file magic to decide file format
-                    byte[] bytes = new byte[(int) mImageInput.length()];
-                    mImageInput.readFully(bytes);
+                    byte[] bytes = new byte[(int) imageInput.length()];
+                    imageInput.readFully(bytes);
 
                     // Unfortunately, this is a waste of space & time...
                     ImageInfo info = new ImageInfo();
@@ -309,7 +309,7 @@ abstract class JMagickReader extends ImageReaderBase {
                         byte[] buffer = new byte[FileUtil.BUF_SIZE];
                         int count;
 
-                        while ((count = mImageInput.read(buffer)) != -1) {
+                        while ((count = imageInput.read(buffer)) != -1) {
                             out.write(buffer, 0, count);
                         }
 

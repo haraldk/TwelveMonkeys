@@ -47,15 +47,15 @@ import java.util.Map;
  * @version $Id: ReaderFileSuffixFilter.java,v 1.0 11.okt.2006 20:05:36 haku Exp$
  */
 public final class ReaderFileSuffixFilter extends FileFilter implements java.io.FileFilter {
-    private final String mDescription;
-    private final Map<String, Boolean> mKnownSuffixes = new HashMap<String, Boolean>(32);
+    private final String description;
+    private final Map<String, Boolean> knownSuffixes = new HashMap<String, Boolean>(32);
 
     public ReaderFileSuffixFilter() {
         this("Images (all supported input formats)");
     }
 
     public ReaderFileSuffixFilter(String pDescription) {
-        mDescription = pDescription;
+        description = pDescription;
     }
 
     public boolean accept(File pFile) {
@@ -71,19 +71,20 @@ public final class ReaderFileSuffixFilter extends FileFilter implements java.io.
     }
 
     private boolean hasReaderForSuffix(String pSuffix) {
-        if (mKnownSuffixes.get(pSuffix) == Boolean.TRUE) {
+        if (knownSuffixes.get(pSuffix) == Boolean.TRUE) {
             return true;
         }
 
         try {
             // Cahce lookup
             Iterator iterator = ImageIO.getImageReadersBySuffix(pSuffix);
+
             if (iterator.hasNext()) {
-                mKnownSuffixes.put(pSuffix, Boolean.TRUE);
+                knownSuffixes.put(pSuffix, Boolean.TRUE);
                 return true;
             }
             else {
-                mKnownSuffixes.put(pSuffix, Boolean.FALSE);
+                knownSuffixes.put(pSuffix, Boolean.FALSE);
                 return false;
             }
         }
@@ -93,6 +94,6 @@ public final class ReaderFileSuffixFilter extends FileFilter implements java.io.
     }
 
     public String getDescription() {
-        return mDescription;
+        return description;
     }
 }

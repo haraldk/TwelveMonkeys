@@ -1,6 +1,7 @@
-Implement source subsampling and region of interest
-Separate package for the resources (seems to be a lot)?
-Possibility to read only some resources? readResources(int[] resourceKeys)?
- - Probably faster when we only need the color space
-Support for Photoshop specific TIFF tags (extension for TIFFImageReader)?
-PSDImageWriter?
+- Implement source subsampling and region of interest
+- Separate package for the resources (seems to be a lot)?
+  - Move to metadata package, or implement metadata interface, as this is (similar|equivalent) to TIFF/JPEG APP13 segment tag?
+- Possibility to read only some resources? readResources(int[] resourceKeys)?
+  - Probably faster when we only need the color space
+- Support for Photoshop specific TIFF tags (extension for TIFFImageReader)?
+- PSDImageWriter?

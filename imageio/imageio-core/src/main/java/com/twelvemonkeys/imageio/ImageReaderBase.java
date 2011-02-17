@@ -37,9 +37,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.File;
@@ -61,7 +59,7 @@ public abstract class ImageReaderBase extends ImageReader {
      * For convenience. Only set if the input is an {@code ImageInputStream}.
      * @see #setInput(Object, boolean, boolean)
      */
-    protected ImageInputStream mImageInput;
+    protected ImageInputStream imageInput;
 
     /**
      * Constructs an {@code ImageReader} and sets its
@@ -102,7 +100,7 @@ public abstract class ImageReaderBase extends ImageReader {
         resetMembers();
         super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
         if (pInput instanceof ImageInputStream) {
-            mImageInput = (ImageInputStream) pInput;
+            imageInput = (ImageInputStream) pInput;
         }
     }
 
@@ -229,7 +227,7 @@ public abstract class ImageReaderBase extends ImageReader {
             if (dest != null) {
                 boolean found = false;
 
-                // NOTE: This is bad, as it relies on implementation details of super method...
+                // NOTE: This is bad, as it relies on implementation details of "super" method...
                 // We know that the iterator has not been touched if explicit destination..
                 while (pTypes.hasNext()) {
                     ImageTypeSpecifier specifier = pTypes.next();
@@ -318,7 +316,27 @@ public abstract class ImageReaderBase extends ImageReader {
             SwingUtilities.invokeAndWait(new Runnable() {
                 public void run() {
                     JFrame frame = new JFrame(pTitle);
-                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                    frame.getRootPane().getActionMap().put("window-close", new AbstractAction() {
+                        public void actionPerformed(ActionEvent e) {
+                            Window window = SwingUtilities.getWindowAncestor((Component) e.getSource());
+                            window.setVisible(false);
+                            window.dispose();
+                        }
+                    });
+                    frame.getRootPane().getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_W, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "window-close");
+
+                    frame.addWindowListener(new WindowAdapter() {
+                        @Override
+                        public void windowClosed(WindowEvent e) {
+                            Window[] windows = Window.getWindows();
+                            if (windows == null || windows.length == 0) {
+                                System.exit(0);
+                            }
+                        }
+                    });
+                    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
                     frame.setLocationByPlatform(true);
                     JPanel pane = new JPanel(new BorderLayout());
                     JScrollPane scroll = new JScrollPane(new ImageLabel(pImage));
@@ -336,6 +354,10 @@ public abstract class ImageReaderBase extends ImageReader {
         catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected static boolean hasExplicitDestination(final ImageReadParam pParam) {
+        return (pParam != null && (pParam.getDestination() != null || pParam.getDestinationType() != null || pParam.getDestinationOffset() != null));
     }
 
     private static class ImageLabel extends JLabel {

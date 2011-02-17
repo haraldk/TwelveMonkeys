@@ -69,7 +69,7 @@ public class XMPScannerTestCase extends TestCase {
     }
 
     public void testScanForUTF8singleQuote() throws IOException {
-        InputStream stream = createXMPStream(XMP, "UTF-8".replace("\"", "'"));
+        InputStream stream = createXMPStream(XMP.replace("\"", "'"), "UTF-8");
 
         Reader reader = XMPScanner.scanForXMPPacket(stream);
 
@@ -85,7 +85,7 @@ public class XMPScannerTestCase extends TestCase {
     }
 
     public void testScanForUTF16BEsingleQuote() throws IOException {
-        InputStream stream = createXMPStream(XMP, "UTF-16BE".replace("\"", "'"));
+        InputStream stream = createXMPStream(XMP.replace("\"", "'"), "UTF-16BE");
 
         Reader reader = XMPScanner.scanForXMPPacket(stream);
 
@@ -101,7 +101,7 @@ public class XMPScannerTestCase extends TestCase {
     }
 
     public void testScanForUTF16LEsingleQuote() throws IOException {
-        InputStream stream = createXMPStream(XMP, "UTF-16LE".replace("\"", "'"));
+        InputStream stream = createXMPStream(XMP.replace("\"", "'"), "UTF-16LE");
 
         Reader reader = XMPScanner.scanForXMPPacket(stream);
 

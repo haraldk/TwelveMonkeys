@@ -52,7 +52,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * For convenience. Only set if the output is an {@code ImageInputStream}.
      * @see #setOutput(Object)
      */
-    protected ImageOutputStream mImageOutput;
+    protected ImageOutputStream imageOutput;
 
     /**
      * Constructs an {@code ImageWriter} and sets its
@@ -80,7 +80,7 @@ public abstract class ImageWriterBase extends ImageWriter {
         super.setOutput(pOutput);
 
         if (pOutput instanceof ImageOutputStream) {
-            mImageOutput = (ImageOutputStream) pOutput;
+            imageOutput = (ImageOutputStream) pOutput;
         }
     }
 
