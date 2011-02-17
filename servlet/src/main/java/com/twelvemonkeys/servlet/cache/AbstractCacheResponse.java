@@ -10,16 +10,16 @@ import java.util.*;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/AbstractCacheResponse.java#1 $
  */
 public abstract class AbstractCacheResponse implements CacheResponse {
-    private int mStatus;
-    private final Map<String, List<String>> mHeaders = new LinkedHashMap<String, List<String>>(); // Insertion order
-    private final Map<String, List<String>> mReadableHeaders = Collections.unmodifiableMap(mHeaders);
+    private int status;
+    private final Map<String, List<String>> headers = new LinkedHashMap<String, List<String>>(); // Insertion order
+    private final Map<String, List<String>> readableHeaders = Collections.unmodifiableMap(headers);
 
     public int getStatus() {
-        return mStatus;
+        return status;
     }
 
     public void setStatus(int pStatusCode) {
-        mStatus = pStatusCode;
+        status = pStatusCode;
     }
 
     public void addHeader(String pHeaderName, String pHeaderValue) {
@@ -31,15 +31,15 @@ public abstract class AbstractCacheResponse implements CacheResponse {
     }
 
     private void setHeader(String pHeaderName, String pHeaderValue, boolean pAdd) {
-        List<String> values = pAdd ? mHeaders.get(pHeaderName) : null;
+        List<String> values = pAdd ? headers.get(pHeaderName) : null;
         if (values == null) {
             values = new ArrayList<String>();
-            mHeaders.put(pHeaderName, values);
+            headers.put(pHeaderName, values);
         }
         values.add(pHeaderValue);
     }
 
     public Map<String, List<String>> getHeaders() {
-        return mReadableHeaders;
+        return readableHeaders;
     }
 }

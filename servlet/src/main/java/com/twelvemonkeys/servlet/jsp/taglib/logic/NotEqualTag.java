@@ -132,15 +132,15 @@ public class NotEqualTag extends ConditionalTagBase {
      */
     protected boolean condition() throws JspException {
 
-        if (StringUtil.isEmpty(mObjectName)) {
+        if (StringUtil.isEmpty(objectName)) {
             return false;
         }
 
-        if (StringUtil.isEmpty(mObjectValue)) {
+        if (StringUtil.isEmpty(objectValue)) {
             return true;
         }
 
-        Object pageScopedAttribute = pageContext.getAttribute(mObjectName);
+        Object pageScopedAttribute = pageContext.getAttribute(objectName);
         if (pageScopedAttribute == null) {
             return false;
         }
@@ -162,7 +162,7 @@ public class NotEqualTag extends ConditionalTagBase {
             return false;
         }
 
-        return (!(pageScopedStringAttribute.equals(mObjectValue)));
+        return (!(pageScopedStringAttribute.equals(objectValue)));
     }
 
 }

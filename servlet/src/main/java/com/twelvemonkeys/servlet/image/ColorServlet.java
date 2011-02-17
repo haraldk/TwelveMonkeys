@@ -87,7 +87,7 @@ public class ColorServlet extends GenericServlet {
     private final static int GREEN_IDX = RED_IDX + 1;
     private final static int BLUE_IDX = GREEN_IDX + 1;
 
-    private final CRC32 mCRC = new CRC32();
+    private final CRC32 crc = new CRC32();
 
     /**
      * Creates a ColorDroplet.
@@ -108,7 +108,6 @@ public class ColorServlet extends GenericServlet {
      * @throws ServletException
      */
     public void service(ServletRequest pRequest, ServletResponse pResponse) throws IOException, ServletException {
-
         int red = 0;
         int green = 0;
         int blue = 0;
@@ -172,10 +171,10 @@ public class ColorServlet extends GenericServlet {
     private void updateCRC(byte[] pBytes, int pOff, int pLen) {
         int value;
 
-        synchronized (mCRC) {
-            mCRC.reset();
-            mCRC.update(pBytes, pOff, pLen);
-            value = (int) mCRC.getValue();
+        synchronized (crc) {
+            crc.reset();
+            crc.update(pBytes, pOff, pLen);
+            value = (int) crc.getValue();
         }
 
         pBytes[pOff + pLen    ] = (byte) ((value >> 24) & 0xff);

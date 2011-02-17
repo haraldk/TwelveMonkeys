@@ -71,14 +71,14 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
     /**
      * The filter config.
      */
-    private transient FilterConfig mFilterConfig = null;
+    private transient FilterConfig filterConfig = null;
 
     /**
      * Makes sure the filter runs once per request
      * <p/>
      * see #isRunOnce
      *
-     * @see #mOncePerRequest
+     * @see #oncePerRequest
      *      see #ATTRIB_RUN_ONCE_VALUE
      */
     private final static String ATTRIB_RUN_ONCE_EXT = ".REQUEST_HANDLED";
@@ -90,17 +90,17 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * <p/>
      * see #isRunOnce
      *
-     * @see #mOncePerRequest
+     * @see #oncePerRequest
      *      see #ATTRIB_RUN_ONCE_VALUE
      */
-    private String mAttribRunOnce = null;
+    private String attribRunOnce = null;
 
     /**
      * Makes sure the filter runs once per request
      * <p/>
      * see #isRunOnce
      *
-     * @see #mOncePerRequest
+     * @see #oncePerRequest
      *      see #ATTRIB_RUN_ONCE_EXT
      */
     private static final Object ATTRIB_RUN_ONCE_VALUE = new Object();
@@ -119,7 +119,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * <pre>&lt;dispatcher&gt;REQUEST&lt;/dispatcher&gt;</pre>
      * </em>
      */
-    protected boolean mOncePerRequest = false;
+    protected boolean oncePerRequest = false;
 
     /**
      * Does nothing.
@@ -153,7 +153,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
         }
 
         // Store filter config
-        mFilterConfig = pConfig;
+        filterConfig = pConfig;
 
         // Configure this
         try {
@@ -164,8 +164,8 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
         }
 
         // Create run-once attribute name
-        mAttribRunOnce = pConfig.getFilterName() + ATTRIB_RUN_ONCE_EXT;
-        log("init (oncePerRequest=" + mOncePerRequest + ", attribRunOnce=" + mAttribRunOnce + ")");
+        attribRunOnce = pConfig.getFilterName() + ATTRIB_RUN_ONCE_EXT;
+        log("init (oncePerRequest=" + oncePerRequest + ", attribRunOnce=" + attribRunOnce + ")");
         init();
     }
 
@@ -199,7 +199,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      */
     public final void doFilter(final ServletRequest pRequest, final ServletResponse pResponse, final FilterChain pFilterChain) throws IOException, ServletException {
         // If request filter and already run, continue chain and return fast
-        if (mOncePerRequest && isRunOnce(pRequest)) {
+        if (oncePerRequest && isRunOnce(pRequest)) {
             pFilterChain.doFilter(pRequest, pResponse);
             return;
         }
@@ -227,18 +227,18 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      */
     private boolean isRunOnce(final ServletRequest pRequest) {
         // If request already filtered, return true (skip)
-        if (pRequest.getAttribute(mAttribRunOnce) == ATTRIB_RUN_ONCE_VALUE) {
+        if (pRequest.getAttribute(attribRunOnce) == ATTRIB_RUN_ONCE_VALUE) {
             return true;
         }
 
         // Set attribute and return false (continue)
-        pRequest.setAttribute(mAttribRunOnce, ATTRIB_RUN_ONCE_VALUE);
+        pRequest.setAttribute(attribRunOnce, ATTRIB_RUN_ONCE_VALUE);
         return false;
     }
 
     /**
      * Invoked once, or each time a request/response pair is passed through the
-     * chain, depending on the {@link #mOncePerRequest} member variable.
+     * chain, depending on the {@link #oncePerRequest} member variable.
      *
      * @param pRequest the servlet request
      * @param pResponse the servlet response
@@ -247,7 +247,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @throws IOException if an I/O error occurs
      * @throws ServletException if an exception occurs during the filter process
      *
-     * @see #mOncePerRequest
+     * @see #oncePerRequest
      * @see #doFilter doFilter
      * @see Filter#doFilter Filter.doFilter
      */
@@ -262,7 +262,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      */
     public void destroy() {
         log("destroy");
-        mFilterConfig = null;
+        filterConfig = null;
     }
 
     /**
@@ -273,7 +273,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @see FilterConfig#getFilterName
      */
     public String getFilterName() {
-        return mFilterConfig.getFilterName();
+        return filterConfig.getFilterName();
     }
 
     /**
@@ -287,7 +287,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      */
     public ServletContext getServletContext() {
         // TODO: Create a servlet context wrapper that lets you log to a log4j appender?
-        return mFilterConfig.getServletContext();
+        return filterConfig.getServletContext();
     }
 
     /**
@@ -300,7 +300,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *         parameter
      */
     public String getInitParameter(final String pKey) {
-        return mFilterConfig.getInitParameter(pKey);
+        return filterConfig.getInitParameter(pKey);
     }
 
     /**
@@ -312,7 +312,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *         containing the mNames of the servlet's initialization parameters
      */
     public Enumeration getInitParameterNames() {
-        return mFilterConfig.getInitParameterNames();
+        return filterConfig.getInitParameterNames();
     }
 
     /**
@@ -363,7 +363,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @see FilterConfig
      */
     public FilterConfig getFilterConfig() {
-        return mFilterConfig;
+        return filterConfig;
     }
 
     /**
@@ -374,10 +374,10 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *
      * @param pOncePerRequest {@code true} if the filter should run only
      *        once per request
-     * @see #mOncePerRequest
+     * @see #oncePerRequest
      */
     @InitParam(name = "once-per-request")
     public void setOncePerRequest(final boolean pOncePerRequest) {
-        mOncePerRequest = pOncePerRequest;
+        oncePerRequest = pOncePerRequest;
     }
 }

@@ -39,8 +39,7 @@ public class ValueOfTEI extends TagExtraInfo {
         Object nameAttr = pTagData.getAttribute("name");
         Object paramAttr = pTagData.getAttribute("param");
 
-        if ((nameAttr != null && paramAttr == null) ||
-                (nameAttr == null && paramAttr != null)) {
+        if ((nameAttr != null && paramAttr == null) || (nameAttr == null && paramAttr != null)) {
             return true; // Exactly one of name or param set
         }
 

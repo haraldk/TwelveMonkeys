@@ -13,22 +13,22 @@ import java.io.IOException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/ServletResponseResolver.java#2 $
  */
 final class ServletResponseResolver implements ResponseResolver {
-    final private ServletCacheRequest mRequest;
-    final private ServletCacheResponse mResponse;
-    final private FilterChain mChain;
+    final private ServletCacheRequest request;
+    final private ServletCacheResponse response;
+    final private FilterChain chain;
 
     ServletResponseResolver(final ServletCacheRequest pRequest, final ServletCacheResponse pResponse, final FilterChain pChain) {
-        mRequest = pRequest;
-        mResponse = pResponse;
-        mChain = pChain;
+        request = pRequest;
+        response = pResponse;
+        chain = pChain;
     }
 
     public void resolve(final CacheRequest pRequest, final CacheResponse pResponse) throws IOException, CacheException {
-        // Need only wrap if pResponse is not mResponse...
-        HttpServletResponse response = pResponse == mResponse ? mResponse.getResponse() : new SerlvetCacheResponseWrapper(mResponse.getResponse(), pResponse);
+        // Need only wrap if pResponse is not response...
+        HttpServletResponse response = pResponse == this.response ? this.response.getResponse() : new SerlvetCacheResponseWrapper(this.response.getResponse(), pResponse);
 
         try {
-            mChain.doFilter(mRequest.getRequest(), response);
+            chain.doFilter(request.getRequest(), response);
         }
         catch (ServletException e) {
             throw new CacheException(e);

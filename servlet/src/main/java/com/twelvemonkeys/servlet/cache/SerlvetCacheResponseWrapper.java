@@ -55,16 +55,16 @@ import java.util.Map;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/SerlvetCacheResponseWrapper.java#2 $
  */
 class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
-    private ServletResponseStreamDelegate mStreamDelegate;
+    private ServletResponseStreamDelegate streamDelegate;
 
-    private CacheResponse mCacheResponse;
+    private CacheResponse cacheResponse;
 
-    private Boolean mCachable;
-    private int mStatus;
+    private Boolean cachable;
+    private int status;
 
     public SerlvetCacheResponseWrapper(final HttpServletResponse pServletResponse, final CacheResponse pResponse) {
         super(pServletResponse);
-        mCacheResponse = pResponse;
+        cacheResponse = pResponse;
         init();
     }
 
@@ -76,18 +76,18 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
      methods below.
      */
     private void init() {
-        mCachable = null;
-        mStatus = SC_OK;
-        mStreamDelegate = new ServletResponseStreamDelegate(this) {
+        cachable = null;
+        status = SC_OK;
+        streamDelegate = new ServletResponseStreamDelegate(this) {
             protected OutputStream createOutputStream() throws IOException {
                 // Test if this request is really cachable, otherwise,
                 // just write through to underlying response, and don't cache
                 if (isCachable()) {
-                    return mCacheResponse.getOutputStream();
+                    return cacheResponse.getOutputStream();
                 }
                 else {
                     // TODO: We need to tell the cache about this, somehow...
-                    writeHeaders(mCacheResponse, (HttpServletResponse) getResponse());
+                    writeHeaders(cacheResponse, (HttpServletResponse) getResponse());
                     return super.getOutputStream();
                 }
             }
@@ -111,21 +111,21 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
 
     public boolean isCachable() {
         // NOTE: Intentionally not synchronized
-        if (mCachable == null) {
-            mCachable = isCachableImpl();
+        if (cachable == null) {
+            cachable = isCachableImpl();
         }
 
-        return mCachable;
+        return cachable;
     }
 
     private boolean isCachableImpl() {
         // TODO: This code is duped in the cache...
-        if (mStatus != SC_OK) {
+        if (status != SC_OK) {
             return false;
         }
 
         // Vary: *
-        List<String> values = mCacheResponse.getHeaders().get(HTTPCache.HEADER_VARY);
+        List<String> values = cacheResponse.getHeaders().get(HTTPCache.HEADER_VARY);
         if (values != null) {
             for (String value : values) {
                 if ("*".equals(value)) {
@@ -135,7 +135,7 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
         }
 
         // Cache-Control: no-cache, no-store, must-revalidate
-        values = mCacheResponse.getHeaders().get(HTTPCache.HEADER_CACHE_CONTROL);
+        values = cacheResponse.getHeaders().get(HTTPCache.HEADER_CACHE_CONTROL);
         if (values != null) {
             for (String value : values) {
                 if (StringUtil.contains(value, "no-cache")
@@ -147,7 +147,7 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
         }
 
         // Pragma: no-cache
-        values = mCacheResponse.getHeaders().get(HTTPCache.HEADER_PRAGMA);
+        values = cacheResponse.getHeaders().get(HTTPCache.HEADER_PRAGMA);
         if (values != null) {
             for (String value : values) {
                 if (StringUtil.contains(value, "no-cache")) {
@@ -160,16 +160,16 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
     }
 
     public void flushBuffer() throws IOException {
-        mStreamDelegate.flushBuffer();
+        streamDelegate.flushBuffer();
     }
 
     public void resetBuffer() {
         // Servlet 2.3
-        mStreamDelegate.resetBuffer();
+        streamDelegate.resetBuffer();
     }
 
     public void reset() {
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.reset();
         }
         // No else, might be cachable after all..
@@ -177,26 +177,26 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
     }
 
     public ServletOutputStream getOutputStream() throws IOException {
-        return mStreamDelegate.getOutputStream();
+        return streamDelegate.getOutputStream();
     }
 
     public PrintWriter getWriter() throws IOException {
-        return mStreamDelegate.getWriter();
+        return streamDelegate.getWriter();
     }
 
     public boolean containsHeader(String name) {
-        return mCacheResponse.getHeaders().get(name) != null;
+        return cacheResponse.getHeaders().get(name) != null;
     }
 
     public void sendError(int pStatusCode, String msg) throws IOException {
         // NOT cachable
-        mStatus = pStatusCode;
+        status = pStatusCode;
         super.sendError(pStatusCode, msg);
     }
 
     public void sendError(int pStatusCode) throws IOException {
         // NOT cachable
-        mStatus = pStatusCode;
+        status = pStatusCode;
         super.sendError(pStatusCode);
     }
 
@@ -208,63 +208,63 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
     public void setStatus(int pStatusCode) {
         // NOT cachable unless pStatusCode == 200 (or a FEW others?)
         if (pStatusCode != SC_OK) {
-            mStatus = pStatusCode;
+            status = pStatusCode;
             super.setStatus(pStatusCode);
         }
     }
 
     public void sendRedirect(String pLocation) throws IOException {
         // NOT cachable
-        mStatus = SC_MOVED_TEMPORARILY;
+        status = SC_MOVED_TEMPORARILY;
         super.sendRedirect(pLocation);
     }
 
     public void setDateHeader(String pName, long pValue) {
         // If in write-trough-mode, set headers directly
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.setDateHeader(pName, pValue);
         }
-        mCacheResponse.setHeader(pName, NetUtil.formatHTTPDate(pValue));
+        cacheResponse.setHeader(pName, NetUtil.formatHTTPDate(pValue));
     }
 
     public void addDateHeader(String pName, long pValue) {
         // If in write-trough-mode, set headers directly
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.addDateHeader(pName, pValue);
         }
-        mCacheResponse.addHeader(pName, NetUtil.formatHTTPDate(pValue));
+        cacheResponse.addHeader(pName, NetUtil.formatHTTPDate(pValue));
     }
 
     public void setHeader(String pName, String pValue) {
         // If in write-trough-mode, set headers directly
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.setHeader(pName, pValue);
         }
-        mCacheResponse.setHeader(pName, pValue);
+        cacheResponse.setHeader(pName, pValue);
     }
 
     public void addHeader(String pName, String pValue) {
         // If in write-trough-mode, set headers directly
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.addHeader(pName, pValue);
         }
-        mCacheResponse.addHeader(pName, pValue);
+        cacheResponse.addHeader(pName, pValue);
     }
 
     public void setIntHeader(String pName, int pValue) {
         // If in write-trough-mode, set headers directly
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.setIntHeader(pName, pValue);
         }
-        mCacheResponse.setHeader(pName, String.valueOf(pValue));
+        cacheResponse.setHeader(pName, String.valueOf(pValue));
     }
 
     public void addIntHeader(String pName, int pValue) {
         // If in write-trough-mode, set headers directly
-        if (Boolean.FALSE.equals(mCachable)) {
+        if (Boolean.FALSE.equals(cachable)) {
             super.addIntHeader(pName, pValue);
         }
-        mCacheResponse.addHeader(pName, String.valueOf(pValue));
+        cacheResponse.addHeader(pName, String.valueOf(pValue));
     }
 
     public final void setContentType(String type) {

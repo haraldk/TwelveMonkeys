@@ -14,14 +14,10 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet.taglib;
 
-import java.io.IOException;
+import com.twelvemonkeys.servlet.jsp.droplet.Param;
+import com.twelvemonkeys.servlet.jsp.taglib.ExTagSupport;
 
-import javax.servlet.*;
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
-
-import com.twelvemonkeys.servlet.jsp.droplet.*;
-import com.twelvemonkeys.servlet.jsp.taglib.*;
+import javax.servlet.jsp.JspException;
 
 /**
  * Parameter tag that emulates ATG Dynamo JHTML behaviour for JSP.
@@ -33,22 +29,19 @@ import com.twelvemonkeys.servlet.jsp.taglib.*;
  * @version $Revision: #1 $, ($Date: 2008/05/05 $)
  *
  */
-
 public class ParamTag extends ExTagSupport {
 
     /**
      * This is the name of the parameter to be inserted into the {@code
      * PageContext.REQUEST_SCOPE} scope.
      */
-
-    private String mParameterName;
+    private String parameterName;
 
     /**
      * This is the value for the parameter to be inserted into the {@code
      * PageContext.REQUEST_SCOPE} scope.
      */
-
-    private Object mParameterValue;
+    private Object parameterValue;
 
     /**
      * This method allows the JSP page to set the name for the parameter by
@@ -57,9 +50,8 @@ public class ParamTag extends ExTagSupport {
      * @param pName The name for the parameter to insert into the {@code
      *     PageContext.REQUEST_SCOPE} scope.
      */
-
     public void setName(String pName) {
-        mParameterName = pName;
+        parameterName = pName;
     }
 
     /**
@@ -69,9 +61,8 @@ public class ParamTag extends ExTagSupport {
      * @param pValue The value for the parameter to insert into the <code>
      *     PageContext.REQUEST_SCOPE</page> scope.
      */
-
     public void setValue(String pValue) {
-        mParameterValue = new Param(pValue);
+        parameterValue = new Param(pValue);
     }
 
     /**
@@ -84,7 +75,6 @@ public class ParamTag extends ExTagSupport {
      *     TagSupport.SKIP_BODY} value.
      * @exception JspException
      */
-
     public int doStartTag() throws JspException {
         //checkEnclosedInIncludeTag();
 
@@ -118,11 +108,10 @@ public class ParamTag extends ExTagSupport {
      * This method adds the parameter whose name and value were passed to this
      * object via the tag attributes to the parent {@code Include} tag.
      */
-
     private void addParameter() {
         IncludeTag includeTag = (IncludeTag) getParent();
 
-        includeTag.addParameter(mParameterName, mParameterValue);
+        includeTag.addParameter(parameterName, parameterValue);
     }
 
     /**
@@ -133,9 +122,8 @@ public class ParamTag extends ExTagSupport {
      * life cycle just in case a JspException was thrown during the tag
      * execution.
      */
-
     protected void clearServiceState() {
-        mParameterName = null;
-        mParameterValue = null;
+        parameterName = null;
+        parameterValue = null;
     }
 }

@@ -44,7 +44,7 @@ import java.io.IOException;
  */
 public class TimingFilter extends GenericFilter {
 
-    private String mAttribUsage = null;
+    private String attribUsage = null;
 
     /**
      * Method init
@@ -52,7 +52,7 @@ public class TimingFilter extends GenericFilter {
      * @throws ServletException
      */
     public void init() throws ServletException {
-        mAttribUsage = getFilterName() + ".timerDelta";
+        attribUsage = getFilterName() + ".timerDelta";
     }
 
     /**
@@ -66,13 +66,13 @@ public class TimingFilter extends GenericFilter {
     protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain)
             throws IOException, ServletException {
         // Get total usage of earlier filters on same level
-        Object usageAttrib = pRequest.getAttribute(mAttribUsage);
+        Object usageAttrib = pRequest.getAttribute(attribUsage);
         long total = 0;
 
         if (usageAttrib instanceof Long) {
             // If set, get value, and remove attribute for nested resources
-            total = ((Long) usageAttrib).longValue();
-            pRequest.removeAttribute(mAttribUsage);
+            total = (Long) usageAttrib;
+            pRequest.removeAttribute(attribUsage);
         }
 
         // Start timing
@@ -87,10 +87,10 @@ public class TimingFilter extends GenericFilter {
             long end = System.currentTimeMillis();
 
             // Get time usage of included resources, add to total usage
-            usageAttrib = pRequest.getAttribute(mAttribUsage);
+            usageAttrib = pRequest.getAttribute(attribUsage);
             long usage = 0;
             if (usageAttrib instanceof Long) {
-                usage = ((Long) usageAttrib).longValue();
+                usage = (Long) usageAttrib;
             }
 
             // Get the name of the included resource
@@ -107,7 +107,7 @@ public class TimingFilter extends GenericFilter {
 
             // Store total usage
             total += delta;
-            pRequest.setAttribute(mAttribUsage, new Long(total));
+            pRequest.setAttribute(attribUsage, total);
         }
     }
 }

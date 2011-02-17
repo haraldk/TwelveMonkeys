@@ -63,7 +63,7 @@ public class MappedBufferImage {
         File file = args.length > 0 ? new File(args[0]) : null;
         
         if (file != null && file.exists()) {
-            // Load image using ImageIO 
+            // Load image using ImageIO
             ImageInputStream input = ImageIO.createImageInputStream(file);
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 
@@ -90,6 +90,7 @@ public class MappedBufferImage {
 //            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm2);
 //            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm);
 //            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
+//            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_INT_BGR);
             image = MappedImageFactory.createCompatibleMappedImage(w, h, type);
 //            image = type.createBufferedImage(w, h);
 
@@ -121,8 +122,18 @@ public class MappedBufferImage {
             paintDots(w, h, image);
         }
 
+        // TODO: Make re-sampling optional
+        if (true) {
+            image = resampleImage(image, 800);
+        }
+
         int bytesPerPixel = image.getColorModel().getPixelSize() / 8; // Calculate first to avoid overflow
-        JFrame frame = new JFrame(String.format("Test [%s x %s] (%s)", w, h, toHumanReadableSize(w * h * bytesPerPixel))) {
+        String size = toHumanReadableSize(w * h * bytesPerPixel);
+        showIt(w, h, image, size);
+    }
+
+    private static void showIt(final int w, final int h, BufferedImage image, final String size) {
+        JFrame frame = new JFrame(String.format("Test [%s x %s] (%s)", w, h, size)) {
             @Override
             public Dimension getPreferredSize() {
                 // TODO: This looks like a useful util method...
@@ -144,26 +155,83 @@ public class MappedBufferImage {
         frame.setVisible(true);
     }
 
-    private static void paintDots(int w, int h, BufferedImage image) {
+    private static BufferedImage resampleImage(final BufferedImage image, final int width) {
+        long start = System.currentTimeMillis();
+
+        float aspect = image.getHeight() / (float) image.getWidth();
+        int height = Math.round(width * aspect);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+
+        // NOTE: The createCompatibleDestImage takes the byte order/layout into account, unlike the cm.createCompatibleWritableRaster
+        final BufferedImage output = new ResampleOp(width, height).createCompatibleDestImage(image, null);
+
+        final int inStep = (int) Math.ceil(image.getHeight() / (double) threads);
+        final int outStep = (int) Math.ceil(height / (double) threads);
+
+        // Resample image in slices
+        for (int i = 0; i < threads; i++) {
+            final int inY = i * inStep;
+            final int outY = i * outStep;
+            final int inHeight = Math.min(inStep, image.getHeight() - inY);
+            final int outHeight = Math.min(outStep, output.getHeight() - outY);
+            executorService.submit(new Runnable() {
+                public void run() {
+                    try {
+                        BufferedImage in = image.getSubimage(0, inY, image.getWidth(), inHeight);
+                        BufferedImage out = output.getSubimage(0, outY, width, outHeight);
+                        new ResampleOp(width, outHeight, ResampleOp.FILTER_LANCZOS).filter(in, out);
+//                        BufferedImage out = new ResampleOp(width, outHeight, ResampleOp.FILTER_LANCZOS).filter(in, null);
+//                        ImageUtil.drawOnto(output.getSubimage(0, outY, width, outHeight), out);
+
+//                        showIt(width, outHeight, out, "foo");
+                    }
+                    catch (RuntimeException e) {
+                        e.printStackTrace();
+                        throw e;
+                    }
+                }
+            });
+        }
+
+//        System.out.println("Starting image scale on single thread, waiting for execution to complete...");
+//        BufferedImage output = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS).filter(image, null);
+        System.out.printf("Started image scale on %d threads, waiting for execution to complete...%n", threads);
+
+        Boolean done = null;
+        try {
+            executorService.shutdown();
+            done = executorService.awaitTermination(5L, TimeUnit.MINUTES);
+        }
+        catch (InterruptedException ignore) {
+        }
+
+        System.out.printf("%s scaling image in %d ms%n", (done == null ? "Interrupted" : !done ? "Timed out" : "Done"), System.currentTimeMillis() - start);
+        System.out.println("image = " + output);
+        return output;
+    }
+
+    private static void paintDots(int width, int height, final BufferedImage image) {
         long start = System.currentTimeMillis();
 
         int s = 300;
-        int ws = w / s;
-        int hs = h / s;
+        int ws = width / s;
+        int hs = height / s;
 
         Color[] colors = new Color[] {
                 Color.WHITE, Color.ORANGE, Color.BLUE, Color.MAGENTA, Color.BLACK, Color.RED, Color.CYAN,
                 Color.GRAY, Color.GREEN, Color.YELLOW, Color.PINK, Color.LIGHT_GRAY, Color.DARK_GRAY
         };
 
-        Random r = new Random();
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
 
         int step = (int) Math.ceil(hs / (double) threads);
+        Random r = new Random();
 
         for (int i = 0; i < threads; i++) {
             executorService.submit(new PaintDotsTask(image, s, ws, colors, r, i * step, i * step + step));
         }
+
         System.err.printf("Started painting in %d threads, waiting for execution to complete...%n", threads);
 
         Boolean done = null;

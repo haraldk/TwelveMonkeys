@@ -45,7 +45,9 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: MappedImageFactory.java,v 1.0 May 26, 2010 5:07:01 PM haraldk Exp$
  */
-public class MappedImageFactory {
+public final class MappedImageFactory {
+    private MappedImageFactory() {}
+
     public static BufferedImage createCompatibleMappedImage(int width, int height, int type) throws IOException {
         BufferedImage temp = new BufferedImage(1, 1, type);
         return createCompatibleMappedImage(width, height, temp.getSampleModel().createCompatibleSampleModel(width, height), temp.getColorModel());

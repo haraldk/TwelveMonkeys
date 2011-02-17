@@ -45,19 +45,19 @@ import java.util.Map;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/WritableCachedResponseImpl.java#3 $
  */
 class WritableCachedResponseImpl implements WritableCachedResponse {
-    private final CachedResponseImpl mCachedResponse;
+    private final CachedResponseImpl cachedResponse;
 
     /**
      * Creates a {@code WritableCachedResponseImpl}.
      */
     protected WritableCachedResponseImpl() {
-        mCachedResponse = new CachedResponseImpl();
+        cachedResponse = new CachedResponseImpl();
         // Hmmm..
         setHeader(HTTPCache.HEADER_CACHED_TIME, NetUtil.formatHTTPDate(System.currentTimeMillis()));
     }
 
     public CachedResponse getCachedResponse() {
-        return mCachedResponse;
+        return cachedResponse;
     }
 
     public void setHeader(String pName, String pValue) {
@@ -69,7 +69,7 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
     }
 
     public Map<String, List<String>> getHeaders() {
-        return mCachedResponse.mHeaders;
+        return cachedResponse.headers;
     }
 
     /**
@@ -83,7 +83,7 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
         // If adding, get list and append, otherwise replace list
         List<String> values = null;
         if (pAdd) {
-            values = mCachedResponse.mHeaders.get(pName);
+            values = cachedResponse.headers.get(pName);
         }
 
         if (values == null) {
@@ -91,18 +91,18 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
 
             if (pAdd) {
                 // Add length of pName
-                mCachedResponse.mHeadersSize += (pName != null ? pName.length() : 0);
+                cachedResponse.headersSize += (pName != null ? pName.length() : 0);
             }
             else {
                 // Remove length of potential replaced old values + pName
                 String[] oldValues = getHeaderValues(pName);
                 if (oldValues != null) {
                     for (String oldValue : oldValues) {
-                        mCachedResponse.mHeadersSize -= oldValue.length();
+                        cachedResponse.headersSize -= oldValue.length();
                     }
                 }
                 else {
-                    mCachedResponse.mHeadersSize += (pName != null ? pName.length() : 0);
+                    cachedResponse.headersSize += (pName != null ? pName.length() : 0);
                 }
             }
         }
@@ -112,31 +112,31 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
             values.add(pValue);
 
             // Add length of pValue
-            mCachedResponse.mHeadersSize += pValue.length();
+            cachedResponse.headersSize += pValue.length();
         }
 
         // Always add to headers
-        mCachedResponse.mHeaders.put(pName, values);
+        cachedResponse.headers.put(pName, values);
     }
 
     public OutputStream getOutputStream() {
         // TODO: Hmm.. Smells like DCL..?
-        if (mCachedResponse.mContent == null) {
+        if (cachedResponse.content == null) {
             createOutputStream();
         }
-        return mCachedResponse.mContent;
+        return cachedResponse.content;
     }
 
     public void setStatus(int pStatusCode) {
-        mCachedResponse.mStatus = pStatusCode;
+        cachedResponse.status = pStatusCode;
     }
 
     public int getStatus() {
-        return mCachedResponse.getStatus();
+        return cachedResponse.getStatus();
     }
 
     private synchronized void createOutputStream() {
-        ByteArrayOutputStream cache = mCachedResponse.mContent;
+        ByteArrayOutputStream cache = cachedResponse.content;
         if (cache == null) {
             String contentLengthStr = getHeaderValue("Content-Length");
             if (contentLengthStr != null) {
@@ -146,43 +146,43 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
             else {
                 cache = new FastByteArrayOutputStream(1024);
             }
-            mCachedResponse.mContent = cache;
+            cachedResponse.content = cache;
         }
     }
 
     public void writeHeadersTo(CacheResponse pResponse) {
-        mCachedResponse.writeHeadersTo(pResponse);
+        cachedResponse.writeHeadersTo(pResponse);
     }
 
     public void writeContentsTo(OutputStream pStream) throws IOException {
-        mCachedResponse.writeContentsTo(pStream);
+        cachedResponse.writeContentsTo(pStream);
     }
 
     public String[] getHeaderNames() {
-        return mCachedResponse.getHeaderNames();
+        return cachedResponse.getHeaderNames();
     }
 
     public String[] getHeaderValues(String pHeaderName) {
-        return mCachedResponse.getHeaderValues(pHeaderName);
+        return cachedResponse.getHeaderValues(pHeaderName);
     }
 
     public String getHeaderValue(String pHeaderName) {
-        return mCachedResponse.getHeaderValue(pHeaderName);
+        return cachedResponse.getHeaderValue(pHeaderName);
     }
 
     public int size() {
-        return mCachedResponse.size();
+        return cachedResponse.size();
     }
 
     public boolean equals(Object pOther) {
         if (pOther instanceof WritableCachedResponse) {
             // Take advantage of faster implementation
-            return mCachedResponse.equals(((WritableCachedResponse) pOther).getCachedResponse());
+            return cachedResponse.equals(((WritableCachedResponse) pOther).getCachedResponse());
         }
-        return mCachedResponse.equals(pOther);
+        return cachedResponse.equals(pOther);
     }
 
     public int hashCode() {
-        return mCachedResponse.hashCode();
+        return cachedResponse.hashCode();
     }
 }

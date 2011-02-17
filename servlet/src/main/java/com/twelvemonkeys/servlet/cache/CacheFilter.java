@@ -57,7 +57,7 @@ import java.util.logging.Logger;
  */
 public class CacheFilter extends GenericFilter {
 
-    HTTPCache mCache;
+    HTTPCache cache;
 
     /**
      * Initializes the filter
@@ -99,7 +99,7 @@ public class CacheFilter extends GenericFilter {
         int maxCachedEntites = 10000;
 
         try {
-            mCache = new HTTPCache(
+            cache = new HTTPCache(
                     getTempFolder(),
                     expiryTime,
                     memCacheSize * 1024 * 1024,
@@ -120,7 +120,7 @@ public class CacheFilter extends GenericFilter {
                     return null;
                 }
             };
-            log("Created cache: " + mCache);
+            log("Created cache: " + cache);
         }
         catch (IllegalArgumentException e) {
             throw new ServletConfigException("Could not create cache: " + e.toString(), e);
@@ -136,8 +136,8 @@ public class CacheFilter extends GenericFilter {
     }
 
     public void destroy() {
-        log("Destroying cache: " + mCache);
-        mCache = null;
+        log("Destroying cache: " + cache);
+        cache = null;
         super.destroy();
     }
 
@@ -155,7 +155,7 @@ public class CacheFilter extends GenericFilter {
 
             // Render fast
             try {
-                mCache.doCached(cacheRequest, cacheResponse, resolver);
+                cache.doCached(cacheRequest, cacheResponse, resolver);
             }
             catch (CacheException e) {
                 if (e.getCause() instanceof ServletException) {

@@ -14,13 +14,14 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet.taglib;
 
-import java.io.*;
+import com.twelvemonkeys.servlet.jsp.droplet.JspFragment;
+import com.twelvemonkeys.servlet.jsp.taglib.ExTagSupport;
 
-import javax.servlet.*;
-import javax.servlet.jsp.*;
-
-import com.twelvemonkeys.servlet.jsp.droplet.*;
-import com.twelvemonkeys.servlet.jsp.taglib.*;
+import javax.servlet.ServletException;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.JspWriter;
+import javax.servlet.jsp.PageContext;
+import java.io.IOException;
 
 /**
  * ValueOf tag that emulates ATG Dynamo JHTML behaviour for JSP.
@@ -38,14 +39,14 @@ public class ValueOfTag extends ExTagSupport {
      * the current JSP page.  This value will be set via the {@code name}
      * attribute.
      */
-    private String mParameterName;
+    private String parameterName;
 
     /**
      * This is the value of the parameter read from the {@code
      * PageContext.REQUEST_SCOPE} scope.  If the parameter doesn't exist,
      * then this will be null.
      */
-    private Object mParameterValue;
+    private Object parameterValue;
 
     /**
      * This method is called as part of the initialisation phase of the tag
@@ -56,7 +57,7 @@ public class ValueOfTag extends ExTagSupport {
      *     PageContext.REQUEST_SCOPE} scope.
      */
     public void setName(String pName) {
-        mParameterName = pName;
+        parameterName = pName;
     }
 
     /**
@@ -69,7 +70,7 @@ public class ValueOfTag extends ExTagSupport {
      *     PageContext.REQUEST_SCOPE} scope.
      */
     public void setParam(String pName) {
-        mParameterName = pName;
+        parameterName = pName;
     }
 
     /**
@@ -88,19 +89,19 @@ public class ValueOfTag extends ExTagSupport {
     public int doStartTag() throws JspException {
         try {
             if (parameterExists()) {
-                if (mParameterValue instanceof JspFragment) {
+                if (parameterValue instanceof JspFragment) {
                     // OPARAM or PARAM
-                    ((JspFragment) mParameterValue).service(pageContext);
+                    ((JspFragment) parameterValue).service(pageContext);
                     /*
-                    log("Service subpage " + pageContext.getServletContext().getRealPath(((Oparam) mParameterValue).getName()));
+                    log("Service subpage " + pageContext.getServletContext().getRealPath(((Oparam) parameterValue).getName()));
 
-                    pageContext.include(((Oparam) mParameterValue).getName());
+                    pageContext.include(((Oparam) parameterValue).getName());
                     */
                 }
                 else {
                     // Normal JSP parameter value
                     JspWriter writer = pageContext.getOut();
-                    writer.print(mParameterValue);
+                    writer.print(parameterValue);
                 }
 
                 return SKIP_BODY;
@@ -135,13 +136,13 @@ public class ValueOfTag extends ExTagSupport {
      *     } scope, {@code false} otherwise.
      */
     private boolean parameterExists() {
-        mParameterValue = pageContext.getAttribute(mParameterName, PageContext.REQUEST_SCOPE);
+        parameterValue = pageContext.getAttribute(parameterName, PageContext.REQUEST_SCOPE);
 
         // -- Harald K 20020726
-        if (mParameterValue == null) {
-            mParameterValue = pageContext.getRequest().getParameter(mParameterName);
+        if (parameterValue == null) {
+            parameterValue = pageContext.getRequest().getParameter(parameterName);
         }
 
-        return (mParameterValue != null);
+        return (parameterValue != null);
     }
 }

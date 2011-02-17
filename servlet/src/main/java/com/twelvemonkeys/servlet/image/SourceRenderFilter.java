@@ -77,9 +77,9 @@ public class SourceRenderFilter extends ImageFilter {
     }
 
     public void init() throws ServletException {
-        if (mTriggerParams == null) {
+        if (triggerParams == null) {
             // Add all params as triggers
-            mTriggerParams = new String[]{mSizeWidthParam, mSizeHeightParam,
+            triggerParams = new String[]{mSizeWidthParam, mSizeHeightParam,
                     mSizeUniformParam, mSizePercentParam,
                     mRegionLeftParam, mRegionTopParam,
                     mRegionWidthParam, mRegionHeightParam,

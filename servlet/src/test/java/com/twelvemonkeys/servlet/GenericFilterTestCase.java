@@ -1,10 +1,9 @@
 package com.twelvemonkeys.servlet;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.HashMap;
-
 import javax.servlet.*;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * GenericFilterTestCase
@@ -30,12 +29,12 @@ public final class GenericFilterTestCase extends FilterAbstractTestCase {
             fail(e.getMessage());
         }
 
-        assertFalse("OncePerRequest should default to false", filter.mOncePerRequest);
+        assertFalse("OncePerRequest should default to false", filter.oncePerRequest);
         filter.destroy();
 
         // TRUE
         filter = new GenericFilterImpl();
-        Map params = new HashMap();
+        Map<String, String> params = new HashMap<String, String>();
         params.put("once-per-request", "true");
 
         try {
@@ -45,12 +44,12 @@ public final class GenericFilterTestCase extends FilterAbstractTestCase {
             fail(e.getMessage());
         }
 
-        assertTrue("oncePerRequest should be true", filter.mOncePerRequest);
+        assertTrue("oncePerRequest should be true", filter.oncePerRequest);
         filter.destroy();
 
         // TRUE
         filter = new GenericFilterImpl();
-        params = new HashMap();
+        params = new HashMap<String, String>();
         params.put("oncePerRequest", "true");
 
         try {
@@ -60,7 +59,7 @@ public final class GenericFilterTestCase extends FilterAbstractTestCase {
             fail(e.getMessage());
         }
 
-        assertTrue("oncePerRequest should be true", filter.mOncePerRequest);
+        assertTrue("oncePerRequest should be true", filter.oncePerRequest);
         filter.destroy();
     }
 

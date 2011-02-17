@@ -35,7 +35,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
     }
 
     private static class TestConfig implements ServletConfig, FilterConfig, ServletContext, Serializable, Cloneable {
-        Map mMap = new HashMap();
+        Map map = new HashMap();
 
         public String getServletName() {
             return "dummy"; // Not needed for this test
@@ -55,12 +55,12 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
 
         public String getInitParameter(String s) {
-            return (String) mMap.get(s);
+            return (String) map.get(s);
         }
 
         public Enumeration getInitParameterNames() {
             //noinspection unchecked
-            return Collections.enumeration(mMap.keySet());
+            return Collections.enumeration(map.keySet());
         }
 
         public ServletContext getContext(String uripath) {
@@ -157,7 +157,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
 
         public Map makeFullMap() {
             ServletConfig config = new TestConfig();
-            addSampleMappings(((TestConfig) config).mMap);
+            addSampleMappings(((TestConfig) config).map);
             return new ServletConfigMapAdapter(config);
         }
     }
@@ -171,7 +171,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
 
         public Map makeFullMap() {
             FilterConfig config = new TestConfig();
-            addSampleMappings(((TestConfig) config).mMap);
+            addSampleMappings(((TestConfig) config).map);
             return new ServletConfigMapAdapter(config);
         }
     }
@@ -185,7 +185,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
 
         public Map makeFullMap() {
             FilterConfig config = new TestConfig();
-            addSampleMappings(((TestConfig) config).mMap);
+            addSampleMappings(((TestConfig) config).map);
             return new ServletConfigMapAdapter(config);
         }
     }

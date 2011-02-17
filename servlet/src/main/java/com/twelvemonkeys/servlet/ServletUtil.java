@@ -706,21 +706,21 @@ public final class ServletUtil {
     }
 
     private static class HttpServletResponseHandler implements InvocationHandler {
-        private final ServletResponseWrapper mResponse;
+        private final ServletResponseWrapper response;
 
         HttpServletResponseHandler(final ServletResponseWrapper pResponse) {
-            mResponse = pResponse;
+            response = pResponse;
         }
 
         public Object invoke(final Object pProxy, final Method pMethod, final Object[] pArgs) throws Throwable {
             try {
                 // TODO: Allow partial implementing?
-                if (pMethod.getDeclaringClass().isInstance(mResponse)) {
-                    return pMethod.invoke(mResponse, pArgs);
+                if (pMethod.getDeclaringClass().isInstance(response)) {
+                    return pMethod.invoke(response, pArgs);
                 }
 
                 // Method is not implemented in wrapper
-                return pMethod.invoke(mResponse.getResponse(), pArgs);
+                return pMethod.invoke(response.getResponse(), pArgs);
             }
             catch (InvocationTargetException e) {
                 // Unwrap, to avoid UndeclaredThrowableException...
@@ -730,21 +730,21 @@ public final class ServletUtil {
     }
 
     private static class HttpServletRequestHandler implements InvocationHandler {
-        private final ServletRequestWrapper mRequest;
+        private final ServletRequestWrapper request;
 
         HttpServletRequestHandler(final ServletRequestWrapper pRequest) {
-            mRequest = pRequest;
+            request = pRequest;
         }
 
         public Object invoke(final Object pProxy, final Method pMethod, final Object[] pArgs) throws Throwable {
             try {
                 // TODO: Allow partial implementing?
-                if (pMethod.getDeclaringClass().isInstance(mRequest)) {
-                    return pMethod.invoke(mRequest, pArgs);
+                if (pMethod.getDeclaringClass().isInstance(request)) {
+                    return pMethod.invoke(request, pArgs);
                 }
 
                 // Method is not implemented in wrapper
-                return pMethod.invoke(mRequest.getRequest(), pArgs);
+                return pMethod.invoke(request.getRequest(), pArgs);
             }
             catch (InvocationTargetException e) {
                 // Unwrap, to avoid UndeclaredThrowableException...

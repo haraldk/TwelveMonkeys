@@ -123,7 +123,7 @@ public class ScaleFilter extends ImageFilter {
     protected final static String PARAM_IMAGE = "image";
 
     /** */
-    protected int mDefaultScaleQuality = Image.SCALE_DEFAULT;
+    protected int defaultScaleQuality = Image.SCALE_DEFAULT;
 
     /**
      * Reads the image from the requested URL, scales it, and returns it in the
@@ -188,11 +188,11 @@ public class ScaleFilter extends ImageFilter {
             }
         }
 
-        return mDefaultScaleQuality;
+        return defaultScaleQuality;
     }
 
     public void setDefaultScaleQuality(String pDefaultScaleQuality) {
-        mDefaultScaleQuality = getQuality(pDefaultScaleQuality);
+        defaultScaleQuality = getQuality(pDefaultScaleQuality);
     }
 
     /**

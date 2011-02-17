@@ -8,12 +8,10 @@
 package com.twelvemonkeys.servlet.jsp.taglib.logic;
 
 
-import java.lang.*;
+import com.twelvemonkeys.lang.StringUtil;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.jsp.JspException;
-
-import com.twelvemonkeys.lang.StringUtil;
 
 
 /**
@@ -134,15 +132,15 @@ public class EqualTag extends ConditionalTagBase {
      */
     protected boolean condition() throws JspException {
 
-        if (StringUtil.isEmpty(mObjectName)) {
+        if (StringUtil.isEmpty(objectName)) {
             return false;
         }
 
-        if (StringUtil.isEmpty(mObjectValue)) {
+        if (StringUtil.isEmpty(objectValue)) {
             return true;
         }
 
-        Object pageScopedAttribute = pageContext.getAttribute(mObjectName);
+        Object pageScopedAttribute = pageContext.getAttribute(objectName);
         if (pageScopedAttribute == null) {
             return false;
         }
@@ -164,7 +162,7 @@ public class EqualTag extends ConditionalTagBase {
             return false;
         }
 
-        return (pageScopedStringAttribute.equals(mObjectValue));
+        return (pageScopedStringAttribute.equals(objectValue));
     }
 
 }

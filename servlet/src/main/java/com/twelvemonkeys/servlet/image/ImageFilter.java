@@ -49,15 +49,19 @@ import java.io.IOException;
  *
  */
 public abstract class ImageFilter extends GenericFilter {
+    // TODO: Take the design back to the drawing board (see ImageServletResponseImpl)
+    //      - Allow multiple filters to set size attribute
+    //      - Allow a later filter to reset, to get pass-through given certain criteria...
+    //      - Or better yet, allow a filter to decide if it wants to decode, based on image metadata on the original image (ie: width/height)
 
-    protected String[] mTriggerParams = null;
+    protected String[] triggerParams = null;
 
     /**
      * The {@code doFilterImpl} method is called once, or each time a
      * request/response pair is passed through the chain, depending on the
-     * {@link #mOncePerRequest} member variable.
+     * {@link #oncePerRequest} member variable.
      *
-     * @see #mOncePerRequest
+     * @see #oncePerRequest
      * @see com.twelvemonkeys.servlet.GenericFilter#doFilterImpl doFilter
      * @see Filter#doFilter Filter.doFilter
      *
@@ -107,8 +111,7 @@ public abstract class ImageFilter extends GenericFilter {
                 //System.out.println("Done filtering.");
 
                 //System.out.println("Making image available...");
-                // Make image available to other filters (avoid unnecessary
-                // serializing/deserializing)
+                // Make image available to other filters (avoid unnecessary serializing/deserializing)
                 imageResponse.setImage(image);
                 //System.out.println("Done.");
 
@@ -156,7 +159,7 @@ public abstract class ImageFilter extends GenericFilter {
     /**
      * Tests if the filter should do image filtering/processing.
      * <P/>
-     * This default implementation uses {@link #mTriggerParams} to test if:
+     * This default implementation uses {@link #triggerParams} to test if:
      * <dl>
      *  <dt>{@code mTriggerParams == null}</dt>
      *  <dd>{@code return true}</dd>
@@ -173,12 +176,12 @@ public abstract class ImageFilter extends GenericFilter {
      */
     protected boolean trigger(final ServletRequest pRequest) {
         // If triggerParams not set, assume always trigger
-        if (mTriggerParams == null) {
+        if (triggerParams == null) {
             return true;
         }
 
         // Trigger only for certain request parameters
-        for (String triggerParam : mTriggerParams) {
+        for (String triggerParam : triggerParams) {
             if (pRequest.getParameter(triggerParam) != null) {
                 return true;
             }
@@ -195,8 +198,9 @@ public abstract class ImageFilter extends GenericFilter {
      *
      * @param pTriggerParams a comma-separated string of parameter names.
      */
-    public void setTriggerParams(String pTriggerParams) {
-        mTriggerParams = StringUtil.toStringArray(pTriggerParams);
+    // TODO: Make it an @InitParam, and make sure we may set String[]/Collection<String> as parameter?
+    public void setTriggerParams(final String pTriggerParams) {
+        triggerParams = StringUtil.toStringArray(pTriggerParams);
     }
 
     /**

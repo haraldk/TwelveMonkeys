@@ -1,10 +1,10 @@
 
 package com.twelvemonkeys.servlet.jsp.taglib.logic;
 
-import java.util.Iterator;
-
 import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.*;
+import javax.servlet.jsp.tagext.Tag;
+import javax.servlet.jsp.tagext.TagSupport;
+import java.util.Iterator;
 
 /**
  * Abstract base class for adding iterators to a page.
@@ -24,7 +24,7 @@ public abstract class IteratorProviderTag extends TagSupport {
     public final static String ATTRIBUTE_TYPE = "type";
 
     /** */
-    private String mType = null;
+    private String type = null;
 
     /**
      * Gets the type.
@@ -32,7 +32,7 @@ public abstract class IteratorProviderTag extends TagSupport {
      * @return the type (class name)
      */
     public String getType() {
-        return mType;
+        return type;
     }
 
     /**
@@ -42,7 +42,7 @@ public abstract class IteratorProviderTag extends TagSupport {
      */
 
     public void setType(String pType) {
-        mType = pType;
+        type = pType;
     }
 
     /**

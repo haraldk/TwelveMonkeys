@@ -41,27 +41,26 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * @version $Revision: #1 $, ($Date: 2008/05/05 $)
  */
-
 public class NestingHandler extends DefaultHandler {
-    private String mIncludeTagName = "include";
-    private String mParamTagName = "param";
-    private String mOpenParamTagName = "oparam";
+    private String includeTagName = "include";
+    private String paramTagName = "param";
+    private String openParamTagName = "oparam";
 
     //private Stack mParents = new Stack();
 
-    private boolean mInIncludeTag = false;
+    private boolean inIncludeTag = false;
 
-    private String mNamespacePrefix = null;
-    private String mNamespaceURI = null;
+    private String namespacePrefix = null;
+    private String namespaceURI = null;
 
-    private NestingValidator mValidator = null;
+    private NestingValidator validator = null;
 
     public NestingHandler(String pNamespacePrefix, String pNameSpaceURI,
                           NestingValidator pValidator) {
-        mNamespacePrefix = pNamespacePrefix;
-        mNamespaceURI = pNameSpaceURI;
+        namespacePrefix = pNamespacePrefix;
+        namespaceURI = pNameSpaceURI;
 
-        mValidator = pValidator;
+        validator = pValidator;
     }
 
     public void startElement(String pNamespaceURI, String pLocalName,
@@ -74,7 +73,7 @@ public class NestingHandler extends DefaultHandler {
         String localName = !StringUtil.isEmpty(pLocalName)
                 ? pLocalName : getLocalName(pQualifiedName);
         /*
-        if (namespacePrefix.equals(mNamespacePrefix)) {
+        if (namespacePrefix.equals(namespacePrefix)) {
             System.out.println("startElement:\nnamespaceURI=" + pNamespaceURI
                                + " namespacePrefix=" + namespacePrefix
                                + " localName=" + localName
@@ -82,48 +81,48 @@ public class NestingHandler extends DefaultHandler {
                                + " attributes=" + pAttributes);
         }
         */
-        if (localName.equals(mIncludeTagName)) {
+        if (localName.equals(includeTagName)) {
             // include
-            //System.out.println("<" + mNamespacePrefix + ":"
-            //                   + mIncludeTagName + ">");
-            if (mInIncludeTag) {
-                mValidator.reportError("Cannot nest " + namespacePrefix + ":"
-                                       + mIncludeTagName);
+            //System.out.println("<" + namespacePrefix + ":"
+            //                   + includeTagName + ">");
+            if (inIncludeTag) {
+                validator.reportError("Cannot nest " + namespacePrefix + ":"
+                                       + includeTagName);
             }
-            mInIncludeTag = true;
+            inIncludeTag = true;
         }
-        else if (localName.equals(mParamTagName)) {
+        else if (localName.equals(paramTagName)) {
             // param
-            //System.out.println("<" + mNamespacePrefix + ":"
-            //                   + mParamTagName + "/>");
-            if (!mInIncludeTag) {
-                mValidator.reportError(mNamespacePrefix + ":"
-                                       + mParamTagName
+            //System.out.println("<" + namespacePrefix + ":"
+            //                   + paramTagName + "/>");
+            if (!inIncludeTag) {
+                validator.reportError(this.namespacePrefix + ":"
+                                       + paramTagName
                                        + " can only appear within "
-                                       + mNamespacePrefix + ":"
-                                       + mIncludeTagName);
+                                       + this.namespacePrefix + ":"
+                                       + includeTagName);
             }
         }
-        else if (localName.equals(mOpenParamTagName)) {
+        else if (localName.equals(openParamTagName)) {
             // oparam
-            //System.out.println("<" + mNamespacePrefix + ":"
-            //                   + mOpenParamTagName + ">");
-            if (!mInIncludeTag) {
-                mValidator.reportError(mNamespacePrefix + ":"
-                                       + mOpenParamTagName
+            //System.out.println("<" + namespacePrefix + ":"
+            //                   + openParamTagName + ">");
+            if (!inIncludeTag) {
+                validator.reportError(this.namespacePrefix + ":"
+                                       + openParamTagName
                                        + " can only appear within "
-                                       + mNamespacePrefix + ":"
-                                       + mIncludeTagName);
+                                       + this.namespacePrefix + ":"
+                                       + includeTagName);
             }
-            mInIncludeTag = false;
+            inIncludeTag = false;
         }
         else {
             // Only jsp:text allowed inside include!
-            if (mInIncludeTag && !localName.equals("text")) {
-                mValidator.reportError(namespacePrefix + ":" + localName
+            if (inIncludeTag && !localName.equals("text")) {
+                validator.reportError(namespacePrefix + ":" + localName
                                        + " can not appear within "
-                                       + mNamespacePrefix + ":"
-                                       + mIncludeTagName);
+                                       + this.namespacePrefix + ":"
+                                       + includeTagName);
             }
         }
     }
@@ -139,28 +138,28 @@ public class NestingHandler extends DefaultHandler {
         String localName = !StringUtil.isEmpty(pLocalName)
                 ? pLocalName : getLocalName(pQualifiedName);
         /*
-        if (namespacePrefix.equals(mNamespacePrefix)) {
+        if (namespacePrefix.equals(namespacePrefix)) {
             System.out.println("endElement:\nnamespaceURI=" + pNamespaceURI
                                + " namespacePrefix=" + namespacePrefix
                                + " localName=" + localName
                                + " qName=" + pQualifiedName);
         }
         */
-        if (namespacePrefix.equals(mNamespacePrefix)
-                && localName.equals(mIncludeTagName)) {
+        if (namespacePrefix.equals(this.namespacePrefix)
+                && localName.equals(includeTagName)) {
 
-            //System.out.println("</" + mNamespacePrefix + ":"
-            //                   + mIncludeTagName + ">");
+            //System.out.println("</" + namespacePrefix + ":"
+            //                   + includeTagName + ">");
 
-            mInIncludeTag = false;
+            inIncludeTag = false;
         }
-        else if (namespacePrefix.equals(mNamespacePrefix)
-                && localName.equals(mOpenParamTagName)) {
+        else if (namespacePrefix.equals(this.namespacePrefix)
+                && localName.equals(openParamTagName)) {
 
-            //System.out.println("</" + mNamespacePrefix + ":"
-            //                   + mOpenParamTagName + ">");
+            //System.out.println("</" + namespacePrefix + ":"
+            //                   + openParamTagName + ">");
 
-            mInIncludeTag = true; // assuming no errors before this...
+            inIncludeTag = true; // assuming no errors before this...
         }
     }
 
@@ -169,8 +168,8 @@ public class NestingHandler extends DefaultHandler {
      */
 
     private String getNSPrefixFromURI(String pNamespaceURI) {
-        return (pNamespaceURI.equals(mNamespaceURI)
-                ? mNamespacePrefix : "");
+        return (pNamespaceURI.equals(namespaceURI)
+                ? namespacePrefix : "");
     }
 
     private String getNamespacePrefix(String pQualifiedName) {

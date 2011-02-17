@@ -15,42 +15,42 @@ import java.util.Map;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/ServletCacheRequest.java#1 $
  */
 public final class ServletCacheRequest extends AbstractCacheRequest {
-    private final HttpServletRequest mRequest;
+    private final HttpServletRequest request;
 
-    private Map<String, List<String>> mHeaders;
-    private Map<String, List<String>> mParameters;
+    private Map<String, List<String>> headers;
+    private Map<String, List<String>> parameters;
 
     protected ServletCacheRequest(final HttpServletRequest pRequest) {
         super(URI.create(pRequest.getRequestURI()), pRequest.getMethod());
-        mRequest = pRequest;
+        request = pRequest;
     }
 
     public Map<String, List<String>> getHeaders() {
-        if (mHeaders == null) {
-            mHeaders = ServletUtil.headersAsMap(mRequest);
+        if (headers == null) {
+            headers = ServletUtil.headersAsMap(request);
         }
 
-        return mHeaders;
+        return headers;
     }
 
     public Map<String, List<String>> getParameters() {
-        if (mParameters == null) {
-            mParameters = ServletUtil.parametersAsMap(mRequest);
+        if (parameters == null) {
+            parameters = ServletUtil.parametersAsMap(request);
         }
 
-        return mParameters;
+        return parameters;
     }
 
     public String getServerName() {
-        return mRequest.getServerName();
+        return request.getServerName();
     }
 
     public int getServerPort() {
-        return mRequest.getServerPort();
+        return request.getServerPort();
     }
 
     HttpServletRequest getRequest() {
-        return mRequest;
+        return request;
     }
 
 }

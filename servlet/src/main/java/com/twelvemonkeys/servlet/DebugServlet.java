@@ -45,7 +45,7 @@ import java.util.Enumeration;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/DebugServlet.java#1 $
  */
 public class DebugServlet extends GenericServlet {
-    private long mDateModified;
+    private long dateModified;
 
     public final void service(ServletRequest pRequest, ServletResponse pResponse) throws ServletException, IOException {
         service((HttpServletRequest) pRequest, (HttpServletResponse) pResponse);
@@ -53,13 +53,13 @@ public class DebugServlet extends GenericServlet {
 
     public void init() throws ServletException {
         super.init();
-        mDateModified = System.currentTimeMillis();
+        dateModified = System.currentTimeMillis();
     }
 
     public void service(HttpServletRequest pRequest, HttpServletResponse pResponse) throws ServletException, IOException {
         pResponse.setContentType("text/plain");
         // Include these to allow browser caching
-        pResponse.setDateHeader("Last-Modified", mDateModified);
+        pResponse.setDateHeader("Last-Modified", dateModified);
         pResponse.setHeader("ETag", getServletName());
 
         ServletOutputStream out = pResponse.getOutputStream();

@@ -32,55 +32,49 @@ import javax.servlet.jsp.tagext.Tag;
 import java.io.File;
 import java.io.IOException;
 
-
 /**
  * Open parameter tag that emulates ATG Dynamo JHTML behaviour for JSP.
  *
  * @author Thomas Purcell (CSC Australia)
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- *
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/droplet/taglib/OparamTag.java#1 $
  */
-
 public class OparamTag extends BodyReaderTag {
 
     protected final static String COUNTER = "com.twelvemonkeys.servlet.jsp.taglib.OparamTag.counter";
 
-
-    private File mSubpage = null;
+    private File subpage = null;
 
     /**
      * This is the name of the parameter to be inserted into the {@code
      * PageContext.REQUEST_SCOPE} scope.
      */
+    private String parameterName = null;
 
-    private String mParameterName = null;
+    private String language = null;
 
-    private String mLanguage = null;
-
-    private String mPrefix = null;
+    private String prefix = null;
 
     /**
      * This method allows the JSP page to set the name for the parameter by
      * using the {@code name} tag attribute.
      *
      * @param pName The name for the parameter to insert into the {@code
-     *     PageContext.REQUEST_SCOPE} scope.
+     * PageContext.REQUEST_SCOPE} scope.
      */
-
     public void setName(String pName) {
-        mParameterName = pName;
+        parameterName = pName;
     }
 
     public void setLanguage(String pLanguage) {
         //System.out.println("setLanguage:"+pLanguage);
-        mLanguage = pLanguage;
+        language = pLanguage;
     }
 
     public void setPrefix(String pPrefix) {
         //System.out.println("setPrefix:"+pPrefix);
-        mPrefix = pPrefix;
+        prefix = pPrefix;
     }
 
     /**
@@ -89,11 +83,11 @@ public class OparamTag extends BodyReaderTag {
      * {@code IncludeTag} then a {@code JspException} is thrown.
      *
      * @return If this tag is enclosed within an {@code IncludeTag}, then
-     *     the default return value from this method is the {@code
-     *     TagSupport.EVAL_BODY_TAG} value.
-     * @exception JspException
+     *         the default return value from this method is the {@code
+     *         TagSupport.EVAL_BODY_TAG} value.
+     *
+     * @throws JspException
      */
-
     public int doStartTag() throws JspException {
         //checkEnclosedInIncludeTag(); // Moved to TagLibValidator
 
@@ -101,17 +95,17 @@ public class OparamTag extends BodyReaderTag {
         HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
 
         // Get filename
-        mSubpage = createFileNameFromRequest(request);
+        subpage = createFileNameFromRequest(request);
 
         // Get include tag, and add to parameters
         IncludeTag includeTag = (IncludeTag) getParent();
-        includeTag.addParameter(mParameterName, new Oparam(mSubpage.getName()));
+        includeTag.addParameter(parameterName, new Oparam(subpage.getName()));
 
         // if ! subpage.exist || jsp newer than subpage, write new
         File jsp = new File(pageContext.getServletContext()
-                            .getRealPath(request.getServletPath()));
+                .getRealPath(request.getServletPath()));
 
-        if (!mSubpage.exists() || jsp.lastModified() > mSubpage.lastModified()) {
+        if (!subpage.exists() || jsp.lastModified() > subpage.lastModified()) {
             return BodyTag.EVAL_BODY_BUFFERED;
         }
 
@@ -148,9 +142,8 @@ public class OparamTag extends BodyReaderTag {
      * life cycle just in case a JspException was thrown during the tag
      * execution.
      */
-
     protected void clearServiceState() {
-        mParameterName = null;
+        parameterName = null;
     }
 
     /**
@@ -160,36 +153,31 @@ public class OparamTag extends BodyReaderTag {
      * into the session scope then a {@code JspException} will be thrown.
      *
      * @param pContent The body of the tag as a String.
-     *
-     * @exception JspException
+     * @throws JspException
      */
-
     protected void processBody(String pContent) throws JspException {
         // Okay, we have the content, we need to write it to disk somewhere
         String content = pContent;
 
-        if (!StringUtil.isEmpty(mLanguage)) {
-            content = "<%@page language=\"" + mLanguage + "\" %>" + content;
+        if (!StringUtil.isEmpty(language)) {
+            content = "<%@page language=\"" + language + "\" %>" + content;
         }
 
-        if (!StringUtil.isEmpty(mPrefix)) {
-            content = "<%@taglib uri=\"/twelvemonkeys-common\" prefix=\"" + mPrefix + "\" %>" + content;
+        if (!StringUtil.isEmpty(prefix)) {
+            content = "<%@taglib uri=\"/twelvemonkeys-common\" prefix=\"" + prefix + "\" %>" + content;
         }
 
         // Write the content of the oparam to disk
         try {
-            log("Processing subpage " + mSubpage.getPath());
-            FileUtil.write(mSubpage, content.getBytes());
-
+            log("Processing subpage " + subpage.getPath());
+            FileUtil.write(subpage, content.getBytes());
         }
         catch (IOException ioe) {
             throw new JspException(ioe);
         }
     }
 
-    /**
-     * Creates a unique filename for each (nested) oparam
-     */
+    /** Creates a unique filename for each (nested) oparam */
     private File createFileNameFromRequest(HttpServletRequest pRequest) {
         //System.out.println("ServletPath" + pRequest.getServletPath());
         String path = pRequest.getServletPath();
@@ -203,7 +191,7 @@ public class OparamTag extends BodyReaderTag {
 
         // Replace special chars in name with '_'
         name = name.replace('.', '_');
-        String param = mParameterName.replace('.', '_');
+        String param = parameterName.replace('.', '_');
         param = param.replace('/', '_');
         param = param.replace('\\', '_');
         param = param.replace(':', '_');
@@ -218,21 +206,20 @@ public class OparamTag extends BodyReaderTag {
         return new File(new File(pageContext.getServletContext().getRealPath(path)), name + "_oparam_" + count + "_" + param + ".jsp");
     }
 
-    /**
-     * Gets the current oparam count for this request
-     */
+    /** Gets the current oparam count for this request */
     private int getOparamCountFromRequest(HttpServletRequest pRequest) {
         // Use request.attribute for incrementing oparam counter
         Integer count = (Integer) pRequest.getAttribute(COUNTER);
-        if (count == null)
+        if (count == null) {
             count = new Integer(0);
-        else
+        }
+        else {
             count = new Integer(count.intValue() + 1);
+        }
 
         // ... and set it back
         pRequest.setAttribute(COUNTER, count);
 
         return count.intValue();
     }
-
 }

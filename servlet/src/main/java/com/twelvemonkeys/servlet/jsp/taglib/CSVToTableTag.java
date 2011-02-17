@@ -20,11 +20,16 @@
 
 package com.twelvemonkeys.servlet.jsp.taglib;
 
-import java.util.*;
-import java.io.*;
-
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.JspWriter;
+import javax.servlet.jsp.tagext.BodyContent;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * Creates a table from a string of "comma-separated values" (CSV).
@@ -67,29 +72,27 @@ import javax.servlet.jsp.tagext.*;
  *
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/taglib/CSVToTableTag.java#1 $
  */
-
 public class CSVToTableTag extends ExBodyTagSupport {
-
     public final static String TAB = "\t";
 
-    protected String mDelimiter = null;
-    protected boolean mFirstRowIsHeader = false;
-    protected boolean mFirstColIsHeader = false;
+    protected String delimiter = null;
+    protected boolean firstRowIsHeader = false;
+    protected boolean firstColIsHeader = false;
 
     public void setDelimiter(String pDelimiter) {
-        mDelimiter = pDelimiter;
+        delimiter = pDelimiter;
     }
 
     public String getDelimiter() {
-        return mDelimiter != null ? mDelimiter : TAB;
+        return delimiter != null ? delimiter : TAB;
     }
 
     public void setFirstRowIsHeader(String pBoolean) {
-        mFirstRowIsHeader = Boolean.valueOf(pBoolean).booleanValue();
+        firstRowIsHeader = Boolean.valueOf(pBoolean);
     }
 
     public void setFirstColIsHeader(String pBoolean) {
-        mFirstColIsHeader = Boolean.valueOf(pBoolean).booleanValue();
+        firstColIsHeader = Boolean.valueOf(pBoolean);
     }
 
 
@@ -114,14 +117,11 @@ public class CSVToTableTag extends ExBodyTagSupport {
                     // Loop over cells in each row
                     for (int col = 0; col < table.getCols(); col++) {
                         // Test if we are using headers, else normal cell
-                        if (mFirstRowIsHeader && row == 0
-                                || mFirstColIsHeader && col == 0) {
-                            out.println("<TH>" + table.get(row, col)
-                                        + " </TH>");
+                        if (firstRowIsHeader && row == 0 || firstColIsHeader && col == 0) {
+                            out.println("<TH>" + table.get(row, col) + " </TH>");
                         }
                         else {
-                            out.println("<TD>" + table.get(row, col)
-                                        + " </TD>");
+                            out.println("<TD>" + table.get(row, col) + " </TD>");
                         }
                     }
 
@@ -139,29 +139,29 @@ public class CSVToTableTag extends ExBodyTagSupport {
     }
 
     static class Table {
-        List mRows = null;
-        int mCols = 0;
+        List rows = null;
+        int cols = 0;
 
         private Table(List pRows, int pCols) {
-            mRows = pRows;
-            mCols = pCols;
+            rows = pRows;
+            cols = pCols;
         }
 
         int getRows() {
-            return mRows != null ? mRows.size() : 0;
+            return rows != null ? rows.size() : 0;
         }
 
         int getCols() {
-            return mCols;
+            return cols;
         }
 
         List getTableRows() {
-            return mRows;
+            return rows;
         }
 
         List getTableRow(int pRow) {
-            return mRows != null
-                    ? (List) mRows.get(pRow)
+            return rows != null
+                    ? (List) rows.get(pRow)
                     : Collections.EMPTY_LIST;
         }
 
@@ -175,25 +175,22 @@ public class CSVToTableTag extends ExBodyTagSupport {
          * Parses a BodyContent to a table.
          *
          */
-
-        static Table parseContent(Reader pContent, String pDelim)
-                throws IOException {
-            ArrayList tableRows = new ArrayList();
+        static Table parseContent(Reader pContent, String pDelim) throws IOException {
+            List<List<String>> tableRows = new ArrayList<List<String>>();
             int tdsPerTR = 0;
 
             // Loop through TRs
             BufferedReader reader = new BufferedReader(pContent);
-            String tr = null;
+            String tr;
             while ((tr = reader.readLine()) != null) {
                 // Discard blank lines
-                if (tr != null
-                        && tr.trim().length() <= 0 && tr.indexOf(pDelim) < 0) {
+                if (tr.trim().length() <= 0 && tr.indexOf(pDelim) < 0) {
                     continue;
                 }
 
                 //System.out.println("CSVToTable: read LINE=\"" + tr + "\"");
 
-                ArrayList tableDatas = new ArrayList();
+                List<String> tableDatas = new ArrayList<String>();
                 StringTokenizer tableRow = new StringTokenizer(tr, pDelim,
                                                                true);
 
@@ -235,6 +232,4 @@ public class CSVToTableTag extends ExBodyTagSupport {
             return new Table(tableRows, tdsPerTR);
         }
     }
-
-
 }

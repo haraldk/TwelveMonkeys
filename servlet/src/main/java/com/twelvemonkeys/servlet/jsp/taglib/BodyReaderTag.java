@@ -10,7 +10,6 @@ import javax.servlet.jsp.JspException;
  *
  * @version 1.0
  */
-
 public abstract class BodyReaderTag extends ExBodyTagSupport {
     /**
      * This is the method called by the JSP engine when the body for a tag
@@ -23,7 +22,6 @@ public abstract class BodyReaderTag extends ExBodyTagSupport {
      *     processed the one time.
      * @exception JspException
      */
-
     public int doAfterBody() throws JspException {
         processBody(bodyContent.getString());
         return SKIP_BODY;
@@ -36,8 +34,7 @@ public abstract class BodyReaderTag extends ExBodyTagSupport {
      * this method is called.
      *
      * @param pContent The body for the custom tag converted to a String.
-     * @exception JscException
+     * @exception JspException
      */
-
     protected abstract void processBody(String pContent) throws JspException;
 }

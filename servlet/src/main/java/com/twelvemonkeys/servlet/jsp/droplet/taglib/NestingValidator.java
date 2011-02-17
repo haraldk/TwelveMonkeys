@@ -20,16 +20,16 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet.taglib;
 
+import org.xml.sax.InputSource;
+import org.xml.sax.helpers.DefaultHandler;
 
-import java.util.*;
-
-import javax.servlet.jsp.tagext.*;
-import javax.xml.parsers.*;
-
-import org.xml.sax.*;
-import org.xml.sax.helpers.*;
-
-import com.twelvemonkeys.util.*;
+import javax.servlet.jsp.tagext.PageData;
+import javax.servlet.jsp.tagext.TagLibraryValidator;
+import javax.servlet.jsp.tagext.ValidationMessage;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A validator that verifies that tags follow
@@ -47,18 +47,14 @@ import com.twelvemonkeys.util.*;
  * @version $Revision: #1 $, ($Date: 2008/05/05 $)
  *
  */
-
 public class NestingValidator extends TagLibraryValidator {
 
-    private Vector errors = new Vector();
+    private List<ValidationMessage> errors = new ArrayList<ValidationMessage>();
 
     /**
      *
      */
-
-    public ValidationMessage[] validate(String pPrefix,
-                                        String pURI,
-                                        PageData pPage) {
+    public ValidationMessage[] validate(String pPrefix, String pURI, PageData pPage) {
 
         //System.out.println("Validating " + pPrefix + " (" + pURI + ") for "
         //                   + pPage + ".");
@@ -88,14 +84,12 @@ public class NestingValidator extends TagLibraryValidator {
         }
 
         // Return any errors and exceptions, empty array means okay
-        return (ValidationMessage[])
-                errors.toArray(new ValidationMessage[errors.size()]);
+        return errors.toArray(new ValidationMessage[errors.size()]);
     }
 
     /**
      * Callback method for the handler to report errors
      */
-
     public void reportError(String pMessage) {
         // The first argument to the ValidationMessage
         // constructor can be a tag ID. Since tag IDs

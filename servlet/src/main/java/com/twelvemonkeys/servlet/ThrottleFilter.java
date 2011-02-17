@@ -67,13 +67,13 @@ public class ThrottleFilter extends GenericFilter {
     /**
      * Minimum free thread count, defaults to {@code 10}
      */
-    protected int mMaxConcurrentThreadCount = 10;
+    protected int maxConcurrentThreadCount = 10;
 
     /**
      * The number of running request threads
      */
-    private int mRunningThreads = 0;
-    private final Object mRunningThreadsLock = new Object();
+    private int runningThreads = 0;
+    private final Object runningThreadsLock = new Object();
 
     /**
      * Default response message sent to user agents, if the request is rejected
@@ -89,17 +89,17 @@ public class ThrottleFilter extends GenericFilter {
     /**
      * The reposne message sent to user agenta, if the request is rejected
      */
-    private Map mResponseMessageNames = new HashMap(10);
+    private Map<String, String> responseMessageNames = new HashMap<String, String>(10);
 
     /**
      * The reposne message sent to user agents, if the request is rejected
      */
-    private String[] mResponseMessageTypes = null;
+    private String[] responseMessageTypes = null;
 
     /**
      * Cache for response messages
      */
-    private Map mResponseCache = new HashMap(10);
+    private Map<String, CacheEntry> responseCache = new HashMap<String, CacheEntry>(10);
 
 
     /**
@@ -110,7 +110,7 @@ public class ThrottleFilter extends GenericFilter {
     public void setMaxConcurrentThreadCount(String pMaxConcurrentThreadCount) {
         if (!StringUtil.isEmpty(pMaxConcurrentThreadCount)) {
             try {
-                mMaxConcurrentThreadCount = Integer.parseInt(pMaxConcurrentThreadCount);
+                maxConcurrentThreadCount = Integer.parseInt(pMaxConcurrentThreadCount);
             }
             catch (NumberFormatException nfe) {
                 // Use default
@@ -133,23 +133,24 @@ public class ThrottleFilter extends GenericFilter {
     public void setResponseMessages(String pResponseMessages) {
         // Split string in type=filename pairs
         String[] mappings = StringUtil.toStringArray(pResponseMessages, ", \r\n\t");
-        List types = new ArrayList();
+        List<String> types = new ArrayList<String>();
 
-        for (int i = 0; i < mappings.length; i++) {
+        for (String pair : mappings) {
             // Split pairs on '='
-            String[] mapping = StringUtil.toStringArray(mappings[i], "= ");
+            String[] mapping = StringUtil.toStringArray(pair, "= ");
 
             // Test for wrong mapping
             if ((mapping == null) || (mapping.length < 2)) {
                 log("Error in init param \"responseMessages\": " + pResponseMessages);
                 continue;
             }
+
             types.add(mapping[0]);
-            mResponseMessageNames.put(mapping[0], mapping[1]);
+            responseMessageNames.put(mapping[0], mapping[1]);
         }
 
         // Create arrays
-        mResponseMessageTypes = (String[]) types.toArray(new String[types.size()]);
+        responseMessageTypes = types.toArray(new String[types.size()]);
     }
 
     /**
@@ -159,8 +160,7 @@ public class ThrottleFilter extends GenericFilter {
      * @throws IOException
      * @throws ServletException
      */
-    protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain)
-            throws IOException, ServletException {
+    protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain) throws IOException, ServletException {
         try {
             if (beginRequest()) {
                 // Continue request
@@ -198,18 +198,19 @@ public class ThrottleFilter extends GenericFilter {
      * @return <CODE>true<CODE> if the request should be handled.
      */
     private boolean beginRequest() {
-        synchronized (mRunningThreadsLock) {
-            mRunningThreads++;
+        synchronized (runningThreadsLock) {
+            runningThreads++;
         }
-        return (mRunningThreads <= mMaxConcurrentThreadCount);
+
+        return (runningThreads <= maxConcurrentThreadCount);
     }
 
     /**
      * Marks the end of the request
      */
     private void doneRequest() {
-        synchronized (mRunningThreadsLock) {
-            mRunningThreads--;
+        synchronized (runningThreadsLock) {
+            runningThreads--;
         }
     }
 
@@ -220,12 +221,10 @@ public class ThrottleFilter extends GenericFilter {
      * @return the content type
      */
     private String getContentType(HttpServletRequest pRequest) {
-        if (mResponseMessageTypes != null) {
+        if (responseMessageTypes != null) {
             String accept = pRequest.getHeader("Accept");
 
-            for (int i = 0; i < mResponseMessageTypes.length; i++) {
-                String type = mResponseMessageTypes[i];
-
+            for (String type : responseMessageTypes) {
                 // Note: This is not 100% correct way of doing content negotiation
                 // But we just want a compatible result, quick, so this is okay
                 if (StringUtil.contains(accept, type)) {
@@ -245,17 +244,16 @@ public class ThrottleFilter extends GenericFilter {
      * @return the message
      */
     private String getMessage(String pContentType) {
-
-        String fileName = (String) mResponseMessageNames.get(pContentType);
+        String fileName = responseMessageNames.get(pContentType);
 
         // Get cached value
-        CacheEntry entry = (CacheEntry) mResponseCache.get(fileName);
+        CacheEntry entry = responseCache.get(fileName);
 
         if ((entry == null) || entry.isExpired()) {
 
             // Create and add or replace cached value
             entry = new CacheEntry(readMessage(fileName));
-            mResponseCache.put(fileName, entry);
+            responseCache.put(fileName, entry);
         }
 
         // Return value
@@ -292,20 +290,20 @@ public class ThrottleFilter extends GenericFilter {
      * Keeps track of Cached objects
      */
     private static class CacheEntry {
-        private Object mValue;
-        private long mTimestamp = -1;
+        private Object value;
+        private long timestamp = -1;
 
         CacheEntry(Object pValue) {
-            mValue = pValue;
-            mTimestamp = System.currentTimeMillis();
+            value = pValue;
+            timestamp = System.currentTimeMillis();
         }
 
         Object getValue() {
-            return mValue;
+            return value;
         }
 
         boolean isExpired() {
-            return (System.currentTimeMillis() - mTimestamp) > 60000;  // Cache 1 minute
+            return (System.currentTimeMillis() - timestamp) > 60000;  // Cache 1 minute
         }
     }
 }

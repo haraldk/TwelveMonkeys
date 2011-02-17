@@ -41,20 +41,20 @@ public class IncludeTag extends ExTagSupport {
      * This will contain the names of all the parameters that have been
      * added to the PageContext.REQUEST_SCOPE scope by this tag.
      */
-    private ArrayList mParameterNames = null;
+    private ArrayList<String> parameterNames = null;
 
     /**
      * If any of the parameters we insert for this tag already exist, then
      * we back up the older parameter in this {@code HashMap} and
      * restore them when the tag is finished.
      */
-    private HashMap mOldParameters = null;
+    private HashMap<String, Object> oldParameters = null;
 
     /**
      * This is the URL for the JSP page that the parameters contained in this
      * tag are to be inserted into.
      */
-    private String mPage;
+    private String page;
 
     /**
      * The name of the PageContext attribute
@@ -68,7 +68,7 @@ public class IncludeTag extends ExTagSupport {
      * @param pPage The URL for the JSP page to insert parameters into.
      */
     public void setPage(String pPage) {
-        mPage = pPage;
+        page = pPage;
     }
 
     /**
@@ -85,13 +85,13 @@ public class IncludeTag extends ExTagSupport {
      */
     public void addParameter(String pName, Object pValue) {
         // Check that we haven't already saved this parameter
-        if (!mParameterNames.contains(pName)) {
-            mParameterNames.add(pName);
+        if (!parameterNames.contains(pName)) {
+            parameterNames.add(pName);
 
             // Now check if this parameter already exists in the page.
             Object obj = getRequest().getAttribute(pName);
             if (obj != null) {
-                mOldParameters.put(pName, obj);
+                oldParameters.put(pName, obj);
             }
         }
 
@@ -110,8 +110,8 @@ public class IncludeTag extends ExTagSupport {
      * @exception JspException
      */
     public int doStartTag() throws JspException {
-        mOldParameters = new HashMap();
-        mParameterNames = new ArrayList();
+        oldParameters = new HashMap<String, Object>();
+        parameterNames = new ArrayList<String>();
 
         return EVAL_BODY_INCLUDE;
     }
@@ -129,44 +129,44 @@ public class IncludeTag extends ExTagSupport {
         String msg;
 
         try {
-            Iterator iterator;
+            Iterator<String> iterator;
             String parameterName;
 
             // -- Harald K 20020726
             // Include the page, in place
             //getDispatcher().include(getRequest(), getResponse());
             addParameter(PAGE_CONTEXT, pageContext); // Will be cleared later
-            pageContext.include(mPage);
+            pageContext.include(page);
 
             // Remove all the parameters that were added to the request scope
             // for this insert tag.
-            iterator = mParameterNames.iterator();
+            iterator = parameterNames.iterator();
 
             while (iterator.hasNext()) {
-                parameterName = (String) iterator.next();
+                parameterName = iterator.next();
 
                 getRequest().removeAttribute(parameterName);
             }
 
-            iterator = mOldParameters.keySet().iterator();
+            iterator = oldParameters.keySet().iterator();
 
             // Restore the parameters we temporarily replaced (if any).
             while (iterator.hasNext()) {
-                parameterName = (String) iterator.next();
+                parameterName = iterator.next();
 
-                getRequest().setAttribute(parameterName, mOldParameters.get(parameterName));
+                getRequest().setAttribute(parameterName, oldParameters.get(parameterName));
             }
 
             return super.doEndTag();
         }
         catch (IOException ioe) {
-            msg = "Caught an IOException while including " + mPage
+            msg = "Caught an IOException while including " + page
                     + "\n" + ioe.toString();
             log(msg, ioe);
             throw new JspException(msg);
         }
         catch (ServletException se) {
-            msg = "Caught a ServletException while including " + mPage
+            msg = "Caught a ServletException while including " + page
                     + "\n" + se.toString();
             log(msg, se);
             throw new JspException(msg);
@@ -177,8 +177,8 @@ public class IncludeTag extends ExTagSupport {
      * Free up the member variables that we've used throughout this tag.
      */
     protected void clearServiceState() {
-        mOldParameters = null;
-        mParameterNames = null;
+        oldParameters = null;
+        parameterNames = null;
     }
 
     /**
@@ -190,7 +190,7 @@ public class IncludeTag extends ExTagSupport {
      */
     /*
     private RequestDispatcher getDispatcher() {
-        return getRequest().getRequestDispatcher(mPage);
+        return getRequest().getRequestDispatcher(page);
     }
     */
 

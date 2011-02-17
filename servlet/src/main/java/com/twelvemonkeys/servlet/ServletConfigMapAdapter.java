@@ -53,14 +53,14 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
         ServletConfig, FilterConfig, ServletContext
     }
 
-    private final ConfigType mType;
+    private final ConfigType type;
 
-    private final ServletConfig mServletConfig;
-    private final FilterConfig mFilterConfig;
-    private final ServletContext mServletContext;
+    private final ServletConfig servletConfig;
+    private final FilterConfig filterConfig;
+    private final ServletContext servletContext;
 
     // Cache the entry set
-    private transient Set<Entry<String, String>> mEntrySet;
+    private transient Set<Entry<String, String>> entrySet;
 
     public ServletConfigMapAdapter(final ServletConfig pConfig) {
         this(pConfig, ConfigType.ServletConfig);
@@ -78,23 +78,23 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
         // Could happen if client code invokes with null reference
         Validate.notNull(pConfig, "config");
 
-        mType = pType;
+        type = pType;
 
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                mServletConfig = (ServletConfig) pConfig;
-                mFilterConfig = null;
-                mServletContext = null;
+                servletConfig = (ServletConfig) pConfig;
+                filterConfig = null;
+                servletContext = null;
                 break;
             case FilterConfig:
-                mServletConfig = null;
-                mFilterConfig = (FilterConfig) pConfig;
-                mServletContext = null;
+                servletConfig = null;
+                filterConfig = (FilterConfig) pConfig;
+                servletContext = null;
                 break;
             case ServletContext:
-                mServletConfig = null;
-                mFilterConfig = null;
-                mServletContext = (ServletContext) pConfig;
+                servletConfig = null;
+                filterConfig = null;
+                servletContext = (ServletContext) pConfig;
                 break;
             default:
                 throw new IllegalArgumentException("Wrong type: " + pType);
@@ -107,13 +107,13 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
      * @return the servlet or filter name
      */
     public final String getName() {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getServletName();
+                return servletConfig.getServletName();
             case FilterConfig:
-                return mFilterConfig.getFilterName();
+                return filterConfig.getFilterName();
             case ServletContext:
-                return mServletContext.getServletContextName();
+                return servletContext.getServletContextName();
             default:
                 throw new IllegalStateException();
         }
@@ -125,49 +125,49 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
      * @return the servlet context
      */
     public final ServletContext getServletContext() {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getServletContext();
+                return servletConfig.getServletContext();
             case FilterConfig:
-                return mFilterConfig.getServletContext();
+                return filterConfig.getServletContext();
             case ServletContext:
-                return mServletContext;
+                return servletContext;
             default:
                 throw new IllegalStateException();
         }
     }
 
     public final Enumeration getInitParameterNames() {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getInitParameterNames();
+                return servletConfig.getInitParameterNames();
             case FilterConfig:
-                return mFilterConfig.getInitParameterNames();
+                return filterConfig.getInitParameterNames();
             case ServletContext:
-                return mServletContext.getInitParameterNames();
+                return servletContext.getInitParameterNames();
             default:
                 throw new IllegalStateException();
         }
     }
 
     public final String getInitParameter(final String pName) {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getInitParameter(pName);
+                return servletConfig.getInitParameter(pName);
             case FilterConfig:
-                return mFilterConfig.getInitParameter(pName);
+                return filterConfig.getInitParameter(pName);
             case ServletContext:
-                return mServletContext.getInitParameter(pName);
+                return servletContext.getInitParameter(pName);
             default:
                 throw new IllegalStateException();
         }
     }
 
     public Set<Entry<String, String>> entrySet() {
-        if (mEntrySet == null) {
-            mEntrySet = createEntrySet();
+        if (entrySet == null) {
+            entrySet = createEntrySet();
         }
-        return mEntrySet;
+        return entrySet;
     }
 
     private Set<Entry<String, String>> createEntrySet() {

@@ -109,7 +109,7 @@ import java.io.IOException;
 public class GZIPFilter extends GenericFilter {
 
     {
-        mOncePerRequest = true;
+        oncePerRequest = true;
     }
 
     protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain) throws IOException, ServletException {

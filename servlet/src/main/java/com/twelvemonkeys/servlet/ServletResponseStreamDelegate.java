@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.servlet;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
 import java.io.IOException;
@@ -43,44 +45,41 @@ import java.io.OutputStream;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ServletResponseStreamDelegate.java#2 $
  */
 public class ServletResponseStreamDelegate {
-    private Object mOut = null;
-    protected final ServletResponse mResponse;
+    private Object out = null;
+    protected final ServletResponse response;
 
     public ServletResponseStreamDelegate(ServletResponse pResponse) {
-        if (pResponse == null) {
-            throw new IllegalArgumentException("response == null");
-        }
-        mResponse = pResponse;
+        response = Validate.notNull(pResponse, "response");
     }
 
     // NOTE: Intentionally NOT threadsafe, as one request/response should be
     // handled by one thread ONLY.
     public final ServletOutputStream getOutputStream() throws IOException {
-        if (mOut == null) {
+        if (out == null) {
             OutputStream out = createOutputStream();
-            mOut = out instanceof ServletOutputStream ? out : new OutputStreamAdapter(out);
+            this.out = out instanceof ServletOutputStream ? out : new OutputStreamAdapter(out);
         }
-        else if (mOut instanceof PrintWriter) {
+        else if (out instanceof PrintWriter) {
             throw new IllegalStateException("getWriter() allready called.");
         }
 
-        return (ServletOutputStream) mOut;
+        return (ServletOutputStream) out;
     }
 
     // NOTE: Intentionally NOT threadsafe, as one request/response should be
     // handled by one thread ONLY.
     public final PrintWriter getWriter() throws IOException {
-        if (mOut == null) {
+        if (out == null) {
             // NOTE: getCharacterEncoding may should not return null
             OutputStream out = createOutputStream();
-            String charEncoding = mResponse.getCharacterEncoding();
-            mOut = new PrintWriter(charEncoding != null ? new OutputStreamWriter(out, charEncoding) : new OutputStreamWriter(out));
+            String charEncoding = response.getCharacterEncoding();
+            this.out = new PrintWriter(charEncoding != null ? new OutputStreamWriter(out, charEncoding) : new OutputStreamWriter(out));
         }
-        else if (mOut instanceof ServletOutputStream) {
+        else if (out instanceof ServletOutputStream) {
             throw new IllegalStateException("getOutputStream() allready called.");
         }
 
-        return (PrintWriter) mOut;
+        return (PrintWriter) out;
     }
 
     /**
@@ -95,20 +94,20 @@ public class ServletResponseStreamDelegate {
      * @throws IOException if an I/O exception occurs
      */
     protected OutputStream createOutputStream() throws IOException {
-        return mResponse.getOutputStream();
+        return response.getOutputStream();
     }
 
     public void flushBuffer() throws IOException {
-        if (mOut instanceof ServletOutputStream) {
-            ((ServletOutputStream) mOut).flush();
+        if (out instanceof ServletOutputStream) {
+            ((ServletOutputStream) out).flush();
         }
-        else if (mOut != null) {
-            ((PrintWriter) mOut).flush();
+        else if (out != null) {
+            ((PrintWriter) out).flush();
         }
     }
 
     public void resetBuffer() {
         // TODO: Is this okay? Probably not... :-)
-        mOut = null;
+        out = null;
     }
 }

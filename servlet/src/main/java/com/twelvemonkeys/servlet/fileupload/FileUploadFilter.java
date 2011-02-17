@@ -54,8 +54,8 @@ import java.net.MalformedURLException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/FileUploadFilter.java#1 $
  */
 public class FileUploadFilter extends GenericFilter {
-    private File mUploadDir;
-    private long mMaxFileSize = 1024 * 1024; // 1 MByte
+    private File uploadDir;
+    private long maxFileSize = 1024 * 1024; // 1 MByte
 
     /**
      * This method is called by the server before the filter goes into service,
@@ -66,17 +66,19 @@ public class FileUploadFilter extends GenericFilter {
     public void init() throws ServletException {
         // Get the name of the upload directory.
         String uploadDirParam = getInitParameter("uploadDir");
+
         if (!StringUtil.isEmpty(uploadDirParam)) {
             try {
                 URL uploadDirURL = getServletContext().getResource(uploadDirParam);
-                mUploadDir = FileUtil.toFile(uploadDirURL);
+                uploadDir = FileUtil.toFile(uploadDirURL);
             }
             catch (MalformedURLException e) {
                 throw new ServletException(e.getMessage(), e);
             }
         }
-        if (mUploadDir == null) {
-            mUploadDir = ServletUtil.getTempDir(getServletContext());
+
+        if (uploadDir == null) {
+            uploadDir = ServletUtil.getTempDir(getServletContext());
         }
     }
 
@@ -86,23 +88,9 @@ public class FileUploadFilter extends GenericFilter {
      *
      * @param pMaxSize
      */
-//    public void setMaxFileSize(String pMaxSize) {
-//        try {
-//            setMaxFileSize(Long.parseLong(pMaxSize));
-//        }
-//        catch (NumberFormatException e) {
-//            log("Error setting maxFileSize, using default: " + mMaxFileSize, e);
-//        }
-//    }
-
-    /**
-     * Sets max filesize allowed for upload.
-     *
-     * @param pMaxSize
-     */
     public void setMaxFileSize(long pMaxSize) {
         log("maxFileSize=" + pMaxSize);
-        mMaxFileSize = pMaxSize;
+        maxFileSize = pMaxSize;
     }
 
     /**
@@ -125,7 +113,7 @@ public class FileUploadFilter extends GenericFilter {
 
         // If the content type is multipart, wrap
         if (isMultipartFileUpload(contentType)) {
-            pRequest = new HttpFileUploadRequestWrapper(request, mUploadDir, mMaxFileSize);
+            pRequest = new HttpFileUploadRequestWrapper(request, uploadDir, maxFileSize);
         }
 
         pChain.doFilter(pRequest, pResponse);

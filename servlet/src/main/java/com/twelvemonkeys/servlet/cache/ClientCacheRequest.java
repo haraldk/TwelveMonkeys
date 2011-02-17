@@ -13,13 +13,13 @@ import java.util.Map;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/ClientCacheRequest.java#1 $
  */
 public final class ClientCacheRequest extends AbstractCacheRequest {
-    private Map<String, List<String>> mParameters;
-    private Map<String, List<String>> mHeaders;
+    private Map<String, List<String>> parameters;
+    private Map<String, List<String>> headers;
 
     public ClientCacheRequest(final URI pRequestURI,final Map<String, List<String>> pParameters, final Map<String, List<String>> pHeaders) {
         super(pRequestURI, "GET"); // TODO: Consider supporting more than get? At least HEAD and OPTIONS...
-        mParameters = normalizeMap(pParameters);
-        mHeaders = normalizeMap(pHeaders);
+        parameters = normalizeMap(pParameters);
+        headers = normalizeMap(pHeaders);
     }
 
     private <K, V> Map<K, V> normalizeMap(Map<K, V> pMap) {
@@ -27,11 +27,11 @@ public final class ClientCacheRequest extends AbstractCacheRequest {
     }
 
     public Map<String, List<String>> getParameters() {
-        return mParameters;
+        return parameters;
     }
 
     public Map<String, List<String>> getHeaders() {
-        return mHeaders;
+        return headers;
     }
 
     public String getServerName() {

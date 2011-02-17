@@ -23,8 +23,6 @@
 package com.twelvemonkeys.servlet.jsp.taglib.logic;
 
 
-import java.lang.*;
-
 import javax.servlet.jsp.JspException;
 import javax.servlet.jsp.tagext.TagSupport;
 
@@ -38,8 +36,8 @@ import javax.servlet.jsp.tagext.TagSupport;
 public abstract class ConditionalTagBase extends TagSupport {
 
   // Members
-  protected String mObjectName;
-  protected String mObjectValue;
+  protected String objectName;
+  protected String objectValue;
 
   // Properties
 
@@ -51,7 +49,7 @@ public abstract class ConditionalTagBase extends TagSupport {
    *
    */
   public String getName() {
-    return mObjectName;
+    return objectName;
   }
 
   /**
@@ -62,7 +60,7 @@ public abstract class ConditionalTagBase extends TagSupport {
    *
    */
   public void setName(String pObjectName) {
-    this.mObjectName = pObjectName;
+    this.objectName = pObjectName;
   }
 
   /**
@@ -73,7 +71,7 @@ public abstract class ConditionalTagBase extends TagSupport {
    *
    */
   public String getValue() {
-    return mObjectValue;
+    return objectValue;
   }
 
   /**
@@ -84,7 +82,7 @@ public abstract class ConditionalTagBase extends TagSupport {
    *
    */
   public void setValue(String pObjectValue) {
-    this.mObjectValue = pObjectValue;
+    this.objectValue = pObjectValue;
   }
 
   /**
@@ -120,8 +118,8 @@ public abstract class ConditionalTagBase extends TagSupport {
   public void release() {
 
     super.release();
-    mObjectName  = null;
-    mObjectValue = null;
+    objectName = null;
+    objectValue = null;
   }
 
   /**

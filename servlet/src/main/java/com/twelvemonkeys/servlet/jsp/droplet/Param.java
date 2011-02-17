@@ -1,10 +1,10 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet;
 
-import java.io.*;
-
-import javax.servlet.*;
-import javax.servlet.jsp.*;
+import javax.servlet.ServletException;
+import javax.servlet.jsp.JspWriter;
+import javax.servlet.jsp.PageContext;
+import java.io.IOException;
 
 /**
  * Param
@@ -12,7 +12,7 @@ import javax.servlet.jsp.*;
 public class Param implements JspFragment {
 
     /** The value member field. */
-    protected String mValue = null;
+    protected String value = null;
 
     /**
      * Creates a Param.
@@ -20,14 +20,14 @@ public class Param implements JspFragment {
      * @param pValue the value of the parameter
      */
     public Param(String pValue) {
-        mValue = pValue;
+        value = pValue;
     }
 
     /**
      * Gets the value of the parameter.
      */
     public String getValue() {
-        return mValue;
+        return value;
     }
 
     /**
@@ -37,6 +37,6 @@ public class Param implements JspFragment {
     public void service(PageContext pContext)
             throws ServletException, IOException {
         JspWriter writer = pContext.getOut();
-        writer.print(mValue);
+        writer.print(value);
     }
 }

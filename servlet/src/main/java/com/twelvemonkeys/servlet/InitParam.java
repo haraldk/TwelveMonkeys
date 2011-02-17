@@ -37,6 +37,7 @@ import java.lang.annotation.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/InitParam.java#1 $
+ * @see com.twelvemonkeys.servlet.ServletConfigurator
  * @see com.twelvemonkeys.servlet.GenericFilter#init(javax.servlet.FilterConfig)
  * @see com.twelvemonkeys.servlet.GenericServlet#init(javax.servlet.ServletConfig)
  * @see com.twelvemonkeys.servlet.HttpServlet#init(javax.servlet.ServletConfig)
@@ -45,8 +46,10 @@ import java.lang.annotation.*;
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD/*, TODO: ElementType.FIELD*/})
 public @interface InitParam {
-    // TODO: Rename to value, to allow skipping name = "..."
-    String name() default "";
+    static final String UNDEFINED = "";
+    String name() default UNDEFINED;
+    String defaultValue() default UNDEFINED; // TODO: Consider separate annotation?
+    boolean required() default false; // TODO: Consider separate annotation?
 }

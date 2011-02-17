@@ -16,9 +16,9 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
 
     private final static List<String> NULL_LIST = new ArrayList<String>();
 
-    private transient Map<String, List<String>> mCache = new HashMap<String, List<String>>();
-    private transient int mSize = -1;
-    private transient AbstractSet<Entry<String, List<String>>> mEntries;
+    private transient Map<String, List<String>> cache = new HashMap<String, List<String>>();
+    private transient int size = -1;
+    private transient AbstractSet<Entry<String, List<String>>> entries;
 
     protected abstract Iterator<String> keysImpl();
 
@@ -34,17 +34,18 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
     }
 
     private List<String> getValues(final String pName) {
-        List<String> values = mCache.get(pName);
+        List<String> values = cache.get(pName);
 
         if (values == null) {
             //noinspection unchecked
             Iterator<String> headers = valuesImpl(pName);
+
             if (headers == null) {
-                mCache.put(pName, NULL_LIST);
+                cache.put(pName, NULL_LIST);
             }
             else {
                 values = toList(headers);
-                mCache.put(pName, values);
+                cache.put(pName, values);
             }
         }
 
@@ -59,24 +60,24 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
 
     @Override
     public int size() {
-        if (mSize == -1) {
+        if (size == -1) {
             computeSize();
         }
 
-        return mSize;
+        return size;
     }
 
     private void computeSize() {
-        mSize = 0;
+        size = 0;
 
         for (Iterator<String> names = keysImpl(); names.hasNext(); names.next()) {
-            mSize++;
+            size++;
         }
     }
 
     public Set<Entry<String, List<String>>> entrySet() {
-        if (mEntries == null) {
-            mEntries = new AbstractSet<Entry<String, List<String>>>() {
+        if (entries == null) {
+            entries = new AbstractSet<Entry<String, List<String>>>() {
                 public Iterator<Entry<String, List<String>>> iterator() {
                     return new Iterator<Entry<String, List<String>>>() {
                         Iterator<String> mHeaderNames = keysImpl();
@@ -102,7 +103,7 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
             };
         }
 
-        return mEntries;
+        return entries;
     }
 
     private class HeaderEntry implements Entry<String, List<String>> {

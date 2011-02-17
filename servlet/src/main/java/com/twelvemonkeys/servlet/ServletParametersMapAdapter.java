@@ -1,10 +1,11 @@
 package com.twelvemonkeys.servlet;
 
+import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.util.CollectionUtil;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Iterator;
 import java.util.Enumeration;
+import java.util.Iterator;
 
 /**
  * ServletParametersMapAdapter
@@ -15,23 +16,20 @@ import java.util.Enumeration;
  */
 class ServletParametersMapAdapter extends AbstractServletMapAdapter {
 
-    protected final HttpServletRequest mRequest;
+    protected final HttpServletRequest request;
 
     public ServletParametersMapAdapter(HttpServletRequest pRequest) {
-        if (pRequest == null) {
-            throw new IllegalArgumentException("request == null");
-        }
-        mRequest = pRequest;
+        request = Validate.notNull(pRequest, "request");
     }
 
     protected Iterator<String> valuesImpl(String pName) {
-        String[] values = mRequest.getParameterValues(pName);
+        String[] values = request.getParameterValues(pName);
         return values == null ? null : CollectionUtil.iterator(values);
     }
 
     protected Iterator<String> keysImpl() {
         //noinspection unchecked
-        Enumeration<String> names = mRequest.getParameterNames();
+        Enumeration<String> names = request.getParameterNames();
         return names == null ? null : CollectionUtil.iterator(names);
     }
 

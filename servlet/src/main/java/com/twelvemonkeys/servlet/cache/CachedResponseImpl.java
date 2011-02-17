@@ -29,6 +29,7 @@
 package com.twelvemonkeys.servlet.cache;
 
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.util.LinkedMap;
 
 import java.io.ByteArrayOutputStream;
@@ -46,28 +47,25 @@ import java.util.Set;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/CachedResponseImpl.java#4 $
  */
 class CachedResponseImpl implements CachedResponse {
-    final protected Map<String, List<String>> mHeaders;
-    protected int mHeadersSize;
-    protected ByteArrayOutputStream mContent = null;
-    int mStatus;
+    final protected Map<String, List<String>> headers;
+    protected int headersSize;
+    protected ByteArrayOutputStream content = null;
+    int status;
 
     protected CachedResponseImpl() {
-        mHeaders = new LinkedMap<String, List<String>>(); // Keep headers in insertion order
+        headers = new LinkedMap<String, List<String>>(); // Keep headers in insertion order
     }
 
     // For use by HTTPCache, when recreating CachedResponses from disk cache
     CachedResponseImpl(final int pStatus, final LinkedMap<String, List<String>> pHeaders, final int pHeaderSize, final byte[] pContent) {
-        if (pHeaders == null) {
-            throw new IllegalArgumentException("headers == null");
-        }
-        mStatus = pStatus;
-        mHeaders = pHeaders;
-        mHeadersSize = pHeaderSize;
-        mContent = new FastByteArrayOutputStream(pContent);
+        status = pStatus;
+        headers = Validate.notNull(pHeaders, "headers");
+        headersSize = pHeaderSize;
+        content = new FastByteArrayOutputStream(pContent);
     }
 
     public int getStatus() {
-        return mStatus;
+        return status;
     }
 
     /**
@@ -107,11 +105,11 @@ class CachedResponseImpl implements CachedResponse {
      * @throws java.io.IOException
      */
     public void writeContentsTo(final OutputStream pStream) throws IOException {
-        if (mContent == null) {
+        if (content == null) {
             throw new IOException("Cache is null, no content to write.");
         }
 
-        mContent.writeTo(pStream);
+        content.writeTo(pStream);
     }
 
     /**
@@ -120,7 +118,7 @@ class CachedResponseImpl implements CachedResponse {
      * @return an array of {@code String}s
      */
     public String[] getHeaderNames() {
-        Set<String> headers = mHeaders.keySet();
+        Set<String> headers = this.headers.keySet();
         return headers.toArray(new String[headers.size()]);
     }
 
@@ -133,7 +131,7 @@ class CachedResponseImpl implements CachedResponse {
      * such header in this response.
      */
     public String[] getHeaderValues(final String pHeaderName) {
-        List<String> values = mHeaders.get(pHeaderName);
+        List<String> values = headers.get(pHeaderName);
         if (values == null) {
             return null;
         }
@@ -153,13 +151,13 @@ class CachedResponseImpl implements CachedResponse {
      * such header in this response.
      */
     public String getHeaderValue(final String pHeaderName) {
-        List<String> values = mHeaders.get(pHeaderName);
+        List<String> values = headers.get(pHeaderName);
         return (values != null && values.size() > 0) ? values.get(0) : null;
     }
 
     public int size() {
-        // mContent.size() is exact size in bytes, mHeadersSize is an estimate
-        return (mContent != null ? mContent.size() : 0) + mHeadersSize;
+        // content.size() is exact size in bytes, headersSize is an estimate
+        return (content != null ? content.size() : 0) + headersSize;
     }
 
     public boolean equals(final Object pOther) {
@@ -180,9 +178,9 @@ class CachedResponseImpl implements CachedResponse {
     }
 
     private boolean equalsImpl(final CachedResponseImpl pOther) {
-        return mHeadersSize == pOther.mHeadersSize &&
-                (mContent == null ? pOther.mContent == null : mContent.equals(pOther.mContent)) &&
-                mHeaders.equals(pOther.mHeaders);
+        return headersSize == pOther.headersSize &&
+                (content == null ? pOther.content == null : content.equals(pOther.content)) &&
+                headers.equals(pOther.headers);
     }
 
     private boolean equalsGeneric(final CachedResponse pOther) {
@@ -212,9 +210,9 @@ class CachedResponseImpl implements CachedResponse {
 
     public int hashCode() {
         int result;
-        result = mHeaders.hashCode();
-        result = 29 * result + mHeadersSize;
-        result = 37 * result + (mContent != null ? mContent.hashCode() : 0);
+        result = headers.hashCode();
+        result = 29 * result + headersSize;
+        result = 37 * result + (content != null ? content.hashCode() : 0);
         return result;
     }
 }

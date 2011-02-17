@@ -53,8 +53,8 @@ public class BrowserHelperFilter extends GenericFilter {
     private static final String HTTP_HEADER_ACCEPT = "Accept";
     protected static final String HTTP_HEADER_USER_AGENT = "User-Agent";
 
-    private Pattern[] mKnownAgentPatterns;
-    private String[] mKnownAgentAccpets;
+    private Pattern[] knownAgentPatterns;
+    private String[] knownAgentAccepts;
 
     /**
      * Sets the accept-mappings for this filter
@@ -100,8 +100,8 @@ public class BrowserHelperFilter extends GenericFilter {
                     log("Could not parse User-Agent identification for " + agent, e);
                 }
 
-                mKnownAgentPatterns = patterns.toArray(new Pattern[patterns.size()]);
-                mKnownAgentAccpets = accepts.toArray(new String[accepts.size()]);
+                knownAgentPatterns = patterns.toArray(new Pattern[patterns.size()]);
+                knownAgentAccepts = accepts.toArray(new String[accepts.size()]);
             }
         }
         catch (IOException e) {
@@ -110,7 +110,7 @@ public class BrowserHelperFilter extends GenericFilter {
     }
 
     public void init() throws ServletException {
-        if (mKnownAgentAccpets == null || mKnownAgentAccpets.length == 0) {
+        if (knownAgentAccepts == null || knownAgentAccepts.length == 0) {
             throw new ServletConfigException("No User-Agent/Accept mappings for filter: " + getFilterName());
         }
     }
@@ -120,16 +120,16 @@ public class BrowserHelperFilter extends GenericFilter {
             //System.out.println("--> Trying to find User-Agent/Accept headers...");
             HttpServletRequest request = (HttpServletRequest) pRequest;
             // Check if User-Agent is in list of known agents
-            if (mKnownAgentPatterns != null && mKnownAgentPatterns.length > 0) {
+            if (knownAgentPatterns != null && knownAgentPatterns.length > 0) {
                 String agent = request.getHeader(HTTP_HEADER_USER_AGENT);
                 //System.out.println("--> User-Agent: " + agent);
 
-                for (int i = 0; i < mKnownAgentPatterns.length; i++) {
-                    Pattern pattern = mKnownAgentPatterns[i];
+                for (int i = 0; i < knownAgentPatterns.length; i++) {
+                    Pattern pattern = knownAgentPatterns[i];
                     //System.out.println("--> Pattern: " + pattern);
                     if (pattern.matcher(agent).matches()) {
                         // TODO: Consider merge known with real accpet, in case plugins add extra capabilities?
-                        final String fakeAccept = mKnownAgentAccpets[i];
+                        final String fakeAccept = knownAgentAccepts[i];
 
                         //System.out.println("--> User-Agent: " + agent + " accepts: " + fakeAccept);
 

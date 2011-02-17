@@ -57,15 +57,15 @@ final class Log4JContextWrapper implements ServletContext {
         });
     }
 
-    private final ServletContext mContext;
+    private final ServletContext context;
 
-    private final Logger mLogger;
+    private final Logger logger;
 
     Log4JContextWrapper(ServletContext pContext) {
-        mContext = pContext;
+        context = pContext;
 
         // TODO: We want a logger per servlet, not per servlet context, right?
-        mLogger = Logger.getLogger(pContext.getServletContextName());
+        logger = Logger.getLogger(pContext.getServletContextName());
 
         // TODO: Automatic init/config of Log4J using context parameter for log4j.xml?
         // See Log4JInit.java
@@ -85,99 +85,99 @@ final class Log4JContextWrapper implements ServletContext {
         // Should be possible using some stack peek hack, but that's slow...
         // Find a good way...
         // Maybe just pass it into the constuctor, and have one wrapper per servlet
-        mLogger.info(pMessage);
+        logger.info(pMessage);
     }
 
     public void log(String pMessage, Throwable pCause) {
         // TODO: Get logger for caller..
 
-        mLogger.error(pMessage, pCause);
+        logger.error(pMessage, pCause);
     }
 
     public Object getAttribute(String pMessage) {
-        return mContext.getAttribute(pMessage);
+        return context.getAttribute(pMessage);
     }
 
     public Enumeration getAttributeNames() {
-        return mContext.getAttributeNames();
+        return context.getAttributeNames();
     }
 
     public ServletContext getContext(String pMessage) {
-        return mContext.getContext(pMessage);
+        return context.getContext(pMessage);
     }
 
     public String getInitParameter(String pMessage) {
-        return mContext.getInitParameter(pMessage);
+        return context.getInitParameter(pMessage);
     }
 
     public Enumeration getInitParameterNames() {
-        return mContext.getInitParameterNames();
+        return context.getInitParameterNames();
     }
 
     public int getMajorVersion() {
-        return mContext.getMajorVersion();
+        return context.getMajorVersion();
     }
 
     public String getMimeType(String pMessage) {
-        return mContext.getMimeType(pMessage);
+        return context.getMimeType(pMessage);
     }
 
     public int getMinorVersion() {
-        return mContext.getMinorVersion();
+        return context.getMinorVersion();
     }
 
     public RequestDispatcher getNamedDispatcher(String pMessage) {
-        return mContext.getNamedDispatcher(pMessage);
+        return context.getNamedDispatcher(pMessage);
     }
 
     public String getRealPath(String pMessage) {
-        return mContext.getRealPath(pMessage);
+        return context.getRealPath(pMessage);
     }
 
     public RequestDispatcher getRequestDispatcher(String pMessage) {
-        return mContext.getRequestDispatcher(pMessage);
+        return context.getRequestDispatcher(pMessage);
     }
 
     public URL getResource(String pMessage) throws MalformedURLException {
-        return mContext.getResource(pMessage);
+        return context.getResource(pMessage);
     }
 
     public InputStream getResourceAsStream(String pMessage) {
-        return mContext.getResourceAsStream(pMessage);
+        return context.getResourceAsStream(pMessage);
     }
 
     public Set getResourcePaths(String pMessage) {
-        return mContext.getResourcePaths(pMessage);
+        return context.getResourcePaths(pMessage);
     }
 
     public String getServerInfo() {
-        return mContext.getServerInfo();
+        return context.getServerInfo();
     }
 
     public Servlet getServlet(String pMessage) throws ServletException {
         //noinspection deprecation
-        return mContext.getServlet(pMessage);
+        return context.getServlet(pMessage);
     }
 
     public String getServletContextName() {
-        return mContext.getServletContextName();
+        return context.getServletContextName();
     }
 
     public Enumeration getServletNames() {
         //noinspection deprecation
-        return mContext.getServletNames();
+        return context.getServletNames();
     }
 
     public Enumeration getServlets() {
         //noinspection deprecation
-        return mContext.getServlets();
+        return context.getServlets();
     }
 
     public void removeAttribute(String pMessage) {
-        mContext.removeAttribute(pMessage);
+        context.removeAttribute(pMessage);
     }
 
     public void setAttribute(String pMessage, Object pExtension) {
-        mContext.setAttribute(pMessage, pExtension);
+        context.setAttribute(pMessage, pExtension);
     }
 }

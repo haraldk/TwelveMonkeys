@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.servlet;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.servlet.ServletOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -67,7 +69,7 @@ import java.io.OutputStream;
 public class OutputStreamAdapter extends ServletOutputStream {
 
     /** The wrapped {@code OutputStream}. */
-    protected final OutputStream mOut;
+    protected final OutputStream out;
 
     /**
      * Creates an {@code OutputStreamAdapter}.
@@ -76,11 +78,9 @@ public class OutputStreamAdapter extends ServletOutputStream {
      *
      * @throws IllegalArgumentException if {@code pOut} is {@code null}.
      */
-    public OutputStreamAdapter(OutputStream pOut) {
-        if (pOut == null) {
-            throw new IllegalArgumentException("out == null");
-        }
-        mOut = pOut;
+    public OutputStreamAdapter(final OutputStream pOut) {
+        Validate.notNull(pOut, "out");
+        out = pOut;
     }
 
     /**
@@ -89,11 +89,12 @@ public class OutputStreamAdapter extends ServletOutputStream {
      * @return the wrapped {@code OutputStream}.
      */
     public OutputStream getOutputStream() {
-        return mOut;
+        return out;
     }
 
+    @Override
     public String toString() {
-        return "ServletOutputStream adapted from " + mOut.toString();
+        return "ServletOutputStream adapted from " + out.toString();
     }
 
     /**
@@ -103,20 +104,17 @@ public class OutputStreamAdapter extends ServletOutputStream {
      *
      * @throws IOException if an error occurs during writing
      */
-    public void write(int pByte)
-            throws IOException {
-        mOut.write(pByte);
+    public void write(final int pByte) throws IOException {
+        out.write(pByte);
     }
 
     // Overide for efficiency
-    public void write(byte pBytes[])
-            throws IOException {
-        mOut.write(pBytes);
+    public void write(final byte pBytes[]) throws IOException {
+        out.write(pBytes);
     }
 
     // Overide for efficiency
-    public void write(byte pBytes[], int pOff, int pLen)
-            throws IOException {
-        mOut.write(pBytes, pOff, pLen);
+    public void write(final byte pBytes[], final int pOff, final int pLen) throws IOException {
+        out.write(pBytes, pOff, pLen);
     }
 }

@@ -19,11 +19,10 @@ public class Oparam extends Param implements JspFragment {
         super(pValue);
     }
 
-    public void service(PageContext pContext)
-            throws ServletException, IOException {
-        pContext.getServletContext().log("Service subpage " + pContext.getServletContext().getRealPath(mValue));
+    public void service(PageContext pContext) throws ServletException, IOException {
+        pContext.getServletContext().log("Service subpage " + pContext.getServletContext().getRealPath(value));
 
-        pContext.include(mValue);
+        pContext.include(value);
     }
 }
 

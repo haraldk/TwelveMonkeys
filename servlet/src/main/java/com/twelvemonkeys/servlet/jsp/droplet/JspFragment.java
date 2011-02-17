@@ -14,10 +14,9 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet;
 
-import java.io.*;
-
-import javax.servlet.*;
-import javax.servlet.jsp.*;
+import javax.servlet.ServletException;
+import javax.servlet.jsp.PageContext;
+import java.io.IOException;
 
 /**
  * Interface for JSP sub pages or page fragments to implement.
@@ -39,6 +38,5 @@ public interface JspFragment {
      *         subpage's normal operation
      * @throws IOException if an input or output exception occurs
      */
-    public void service(PageContext pContext)
-            throws ServletException, IOException;
+    public void service(PageContext pContext) throws ServletException, IOException;
 }

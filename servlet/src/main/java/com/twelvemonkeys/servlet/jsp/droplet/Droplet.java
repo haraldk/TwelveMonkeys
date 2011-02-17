@@ -17,13 +17,14 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet;
 
-import java.io.*;
+import com.twelvemonkeys.servlet.jsp.droplet.taglib.IncludeTag;
 
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.servlet.jsp.*;
-
-import com.twelvemonkeys.servlet.jsp.droplet.taglib.*;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.PageContext;
+import java.io.IOException;
 
 /**
  * Dynamo Droplet like Servlet.
@@ -44,8 +45,7 @@ public abstract class Droplet extends HttpServlet implements JspFragment {
      * Services a parameter. Programatically equivalent to the
      * <d:valueof param="pParameter"/> JSP tag.
      */
-    public void serviceParameter(String pParameter, PageContext pPageContext)
-            throws ServletException, IOException {
+    public void serviceParameter(String pParameter, PageContext pPageContext) throws ServletException, IOException {
         Object param = pPageContext.getRequest().getAttribute(pParameter);
 
         if (param != null) {
@@ -68,11 +68,8 @@ public abstract class Droplet extends HttpServlet implements JspFragment {
     /**
      * "There's no need to override this method." :-)
      */
-    final public void service(HttpServletRequest pRequest,
-                              HttpServletResponse pResponse)
-            throws ServletException, IOException {
-        PageContext pageContext =
-                (PageContext) pRequest.getAttribute(IncludeTag.PAGE_CONTEXT);
+    final public void service(HttpServletRequest pRequest, HttpServletResponse pResponse) throws ServletException, IOException {
+        PageContext pageContext = (PageContext) pRequest.getAttribute(IncludeTag.PAGE_CONTEXT);
 
         // TODO: What if pageContext == null
         service(pageContext);

@@ -44,12 +44,12 @@ import java.awt.image.RenderedImage;
  */
 public class AWTImageFilterAdapter extends ImageFilter {
 
-    private java.awt.image.ImageFilter mFilter = null;
+    private java.awt.image.ImageFilter imageFilter = null;
 
     public void setImageFilter(String pFilterClass) {
         try {
             Class filterClass = Class.forName(pFilterClass);
-            mFilter = (java.awt.image.ImageFilter) filterClass.newInstance();
+            imageFilter = (java.awt.image.ImageFilter) filterClass.newInstance();
         }
         catch (ClassNotFoundException e) {
             log("Could not load filter class.", e);
@@ -64,7 +64,7 @@ public class AWTImageFilterAdapter extends ImageFilter {
 
     protected RenderedImage doFilter(BufferedImage pImage, ServletRequest pRequest, ImageServletResponse pResponse) {
         // Filter
-        Image img = ImageUtil.filter(pImage, mFilter);
+        Image img = ImageUtil.filter(pImage, imageFilter);
 
         // Create BufferedImage & return
        return ImageUtil.toBuffered(img, BufferedImage.TYPE_INT_RGB); // TODO: This is for JPEG only...

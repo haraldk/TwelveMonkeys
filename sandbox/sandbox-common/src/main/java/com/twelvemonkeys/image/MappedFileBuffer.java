@@ -52,7 +52,7 @@ public abstract class MappedFileBuffer extends DataBuffer {
     private final Buffer buffer;
 
     private MappedFileBuffer(final int type, final int size, final int numBanks) throws IOException {
-        super(type, Validate.isTrue(size < 0, size, "Integer overflow for size: %d"), numBanks);
+        super(type, Validate.isTrue(size >= 0, size, "Integer overflow for size: %d"), numBanks);
 
         int componentSize = DataBuffer.getDataTypeSize(type) / 8;
 

@@ -1,53 +1,49 @@
 
 package com.twelvemonkeys.servlet.jsp.taglib;
 
+import com.twelvemonkeys.util.convert.Converter;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.tagext.Tag;
+import javax.servlet.jsp.tagext.TagSupport;
 import java.io.File;
 import java.util.Date;
-
-import javax.servlet.http.*;
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
-
-import com.twelvemonkeys.util.convert.*;
 
 /**
  * Prints the last modified
  */
 
 public class LastModifiedTag extends TagSupport {
-    private String mFileName = null;
-    private String mFormat = null;
+    private String fileName = null;
+    private String format = null;
 
     public void setFile(String pFileName) {
-        mFileName = pFileName;
+        fileName = pFileName;
     }
 
     public void setFormat(String pFormat) {
-        mFormat = pFormat;
+        format = pFormat;
     }
 
     public int doStartTag() throws JspException {
-        File file = null;
+        File file;
 
-        if (mFileName != null) {
-            file = new File(pageContext.getServletContext()
-                            .getRealPath(mFileName));
+        if (fileName != null) {
+            file = new File(pageContext.getServletContext().getRealPath(fileName));
         }
         else {
-            HttpServletRequest request =
-                    (HttpServletRequest) pageContext.getRequest();
+            HttpServletRequest request = (HttpServletRequest) pageContext.getRequest();
 
             // Get the file containing the servlet
-            file = new File(pageContext.getServletContext()
-                            .getRealPath(request.getServletPath()));
+            file = new File(pageContext.getServletContext().getRealPath(request.getServletPath()));
         }
 
         Date lastModified = new Date(file.lastModified());
         Converter conv = Converter.getInstance();
 
         // Set the last modified value back
-        pageContext.setAttribute("lastModified",
-                                 conv.toString(lastModified, mFormat));
+        pageContext.setAttribute("lastModified", conv.toString(lastModified, format));
 
         return Tag.EVAL_BODY_INCLUDE;
     }

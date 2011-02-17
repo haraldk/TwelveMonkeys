@@ -60,7 +60,7 @@ import java.util.Iterator;
  * This {@link ImageServletResponse} implementation can be used with image
  * requests, to have the image immediately decoded to a {@code BufferedImage}.
  * The image may be optionally subsampled, scaled and/or cropped.
- * The response also automtically handles writing the image back to the underlying response stream
+ * The response also automatically handles writing the image back to the underlying response stream
  * in the preferred format, when the response is flushed.
  * <p>
  *
@@ -68,22 +68,23 @@ import java.util.Iterator;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ImageServletResponseImpl.java#10 $
  *
  */
-// TODO: Refactor out HTTP specifcs (if possible).
+// TODO: Refactor out HTTP specifics (if possible).
 // TODO: Is it a good ide to throw IIOException?
 // TODO: This implementation has a problem if two filters does scaling, as the second will overwrite the SIZE attribute
+// TODO: Allow different scaling algorithm based on input image (use case: IndexColorModel does not scale well using default, smooth may be slow for large images)
 class ImageServletResponseImpl extends HttpServletResponseWrapper implements ImageServletResponse {
 
-    private ServletRequest mOriginalRequest;
-    private final ServletContext mContext;
-    private final ServletResponseStreamDelegate mStreamDelegate;
+    private ServletRequest originalRequest;
+    private final ServletContext context;
+    private final ServletResponseStreamDelegate streamDelegate;
 
-    private FastByteArrayOutputStream mBufferedOut;
+    private FastByteArrayOutputStream bufferedOut;
 
-    private RenderedImage mImage;
-    private String mOutputContentType;
+    private RenderedImage image;
+    private String outputContentType;
 
-    private String mOriginalContentType;
-    private int mOriginalContentLength = -1;
+    private String originalContentType;
+    private int originalContentLength = -1;
 
     /**
      * Creates an {@code ImageServletResponseImpl}.
@@ -94,21 +95,21 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      */
     public ImageServletResponseImpl(final HttpServletRequest pRequest, final HttpServletResponse pResponse, final ServletContext pContext) {
         super(pResponse);
-        mOriginalRequest = pRequest;
-        mStreamDelegate = new ServletResponseStreamDelegate(pResponse) {
+        originalRequest = pRequest;
+        streamDelegate = new ServletResponseStreamDelegate(pResponse) {
             @Override
             protected OutputStream createOutputStream() throws IOException {
-                if (mOriginalContentLength >= 0) {
-                    mBufferedOut = new FastByteArrayOutputStream(mOriginalContentLength);
+                if (originalContentLength >= 0) {
+                    bufferedOut = new FastByteArrayOutputStream(originalContentLength);
                 }
                 else {
-                    mBufferedOut = new FastByteArrayOutputStream(0);
+                    bufferedOut = new FastByteArrayOutputStream(0);
                 }
 
-                return mBufferedOut;
+                return bufferedOut;
             }
         };
-        mContext = pContext;
+        context = pContext;
     }
 
     /**
@@ -127,7 +128,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     }
 
     public void setRequest(ServletRequest pRequest) {
-        mOriginalRequest = pRequest;
+        originalRequest = pRequest;
     }
 
     /**
@@ -137,11 +138,11 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      */
     public void setContentType(final String pMimeType) {
         // Throw exception is already set
-        if (mOriginalContentType != null) {
+        if (originalContentType != null) {
             throw new IllegalStateException("ContentType already set.");
         }
 
-        mOriginalContentType = pMimeType;
+        originalContentType = pMimeType;
     }
 
     /**
@@ -151,7 +152,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      * @throws IOException
      */
     public ServletOutputStream getOutputStream() throws IOException {
-        return mStreamDelegate.getOutputStream();
+        return streamDelegate.getOutputStream();
     }
 
     /**
@@ -161,7 +162,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      * @throws IOException
      */
     public PrintWriter getWriter() throws IOException {
-        return mStreamDelegate.getWriter();
+        return streamDelegate.getWriter();
     }
 
     /**
@@ -170,11 +171,11 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      * @param pLength the content length
      */
     public void setContentLength(final int pLength) {
-        if (mOriginalContentLength != -1) {
+        if (originalContentLength != -1) {
             throw new IllegalStateException("ContentLength already set.");
         }
 
-        mOriginalContentLength = pLength;
+        originalContentLength = pLength;
     }
 
     /**
@@ -188,59 +189,62 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         String outputType = getOutputContentType();
 
         // Force transcoding, if no other filtering is done
-        if (!outputType.equals(mOriginalContentType)) {
+        if (!outputType.equals(originalContentType)) {
             getImage();
         }
 
-        if (mImage != null) {
+        if (image != null) {
             Iterator writers = ImageIO.getImageWritersByMIMEType(outputType);
             if (writers.hasNext()) {
                 super.setContentType(outputType);
                 OutputStream out = super.getOutputStream();
-
-                ImageWriter writer = (ImageWriter) writers.next();
                 try {
-                    ImageWriteParam param = writer.getDefaultWriteParam();
-///////////////////
-// POST-PROCESS 
-                    // For known formats that don't support transparency, convert to opaque
-                    if (isNonAlphaFormat(outputType) && mImage.getColorModel().getTransparency() != Transparency.OPAQUE) {
-                        mImage = ImageUtil.toBuffered(mImage, BufferedImage.TYPE_INT_RGB);
-                    }
-
-                    Float requestQuality = (Float) mOriginalRequest.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY);
-
-                    // The default JPEG quality is not good enough, so always apply compression
-                    if ((requestQuality != null || "jpeg".equalsIgnoreCase(getFormatNameSafe(writer))) && param.canWriteCompressed()) {
-                        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                        param.setCompressionQuality(requestQuality != null ? requestQuality : 0.8f);
-                    }
-//////////////////
-                    ImageOutputStream stream = ImageIO.createImageOutputStream(out);
-
-                    writer.setOutput(stream);
+                    ImageWriter writer = (ImageWriter) writers.next();
                     try {
-                        writer.write(null, new IIOImage(mImage, null, null), param);
+                        ImageWriteParam param = writer.getDefaultWriteParam();
+    ///////////////////
+    // POST-PROCESS
+                        // For known formats that don't support transparency, convert to opaque
+                        if (isNonAlphaFormat(outputType) && image.getColorModel().getTransparency() != Transparency.OPAQUE) {
+                            image = ImageUtil.toBuffered(image, BufferedImage.TYPE_INT_RGB);
+                        }
+
+                        Float requestQuality = (Float) originalRequest.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY);
+
+                        // The default JPEG quality is not good enough, so always apply compression
+                        if ((requestQuality != null || "jpeg".equalsIgnoreCase(getFormatNameSafe(writer))) && param.canWriteCompressed()) {
+                            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                            param.setCompressionQuality(requestQuality != null ? requestQuality : 0.8f);
+                        }
+    //////////////////
+                        ImageOutputStream stream = ImageIO.createImageOutputStream(out);
+
+                        writer.setOutput(stream);
+                        try {
+                            writer.write(null, new IIOImage(image, null, null), param);
+                        }
+                        finally {
+                            stream.close();
+                        }
                     }
                     finally {
-                        stream.close();
+                        writer.dispose();
                     }
                 }
                 finally {
-                    writer.dispose();
                     out.flush();
                 }
             }
             else {
-                mContext.log("ERROR: No writer for content-type: " + outputType);
+                context.log("ERROR: No writer for content-type: " + outputType);
                 throw new IIOException("Unable to transcode image: No suitable image writer found (content-type: " + outputType + ").");
             }
         }
         else {
-            super.setContentType(mOriginalContentType);
+            super.setContentType(originalContentType);
             ServletOutputStream out = super.getOutputStream();
             try {
-                mBufferedOut.writeTo(out);
+                bufferedOut.writeTo(out);
             }
             finally {
                 out.flush();
@@ -264,11 +268,11 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     }
 
     public String getOutputContentType() {
-        return mOutputContentType != null ? mOutputContentType : mOriginalContentType;
+        return outputContentType != null ? outputContentType : originalContentType;
     }
 
     public void setOutputContentType(final String pImageFormat) {
-        mOutputContentType = pImageFormat;
+        outputContentType = pImageFormat;
     }
 
     /**
@@ -278,7 +282,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      *        response stream
      */
     public void setImage(final RenderedImage pImage) {
-        mImage = pImage;
+        image = pImage;
     }
 
     /**
@@ -290,14 +294,14 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
      * @throws java.io.IOException if an I/O exception occurs during reading
      */
     public BufferedImage getImage() throws IOException {
-        if (mImage == null) {
+        if (image == null) {
             // No content, no image
-            if (mBufferedOut == null) {
+            if (bufferedOut == null) {
                 return null;
             }
 
             // Read from the byte buffer
-            InputStream byteStream = mBufferedOut.createInputStream();
+            InputStream byteStream = bufferedOut.createInputStream();
             ImageInputStream input = null;
             try {
                 input = ImageIO.createImageInputStream(byteStream);
@@ -317,7 +321,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 // PRE-PROCESS (prepare): param, size, format?, request, response?
                         // TODO: AOI strategy?
                         // Extract AOI from request
-                        Rectangle aoi = extractAOIFromRequest(originalWidth, originalHeight, mOriginalRequest);
+                        Rectangle aoi = extractAOIFromRequest(originalWidth, originalHeight, originalRequest);
                         if (aoi != null) {
                             param.setSourceRegion(aoi);
                             originalWidth = aoi.width;
@@ -326,8 +330,8 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
                         // TODO: Size and subsampling strategy?
                         // If possible, extract size from request
-                        Dimension size = extractSizeFromRequest(originalWidth, originalHeight, mOriginalRequest);
-                        double readSubSamplingFactor = getReadSubsampleFactorFromRequest(mOriginalRequest);
+                        Dimension size = extractSizeFromRequest(originalWidth, originalHeight, originalRequest);
+                        double readSubSamplingFactor = getReadSubsampleFactorFromRequest(originalRequest);
                         if (size != null) {
                             //System.out.println("Size: " + size);
                             if (param.canSetSourceRenderSize()) {
@@ -358,21 +362,21 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         extractAndSetBackgroundColor(image); // TODO: Move to flush/POST-PROCESS
 
                         // Set image
-                        mImage = image;
+                        this.image = image;
                     }
                     finally {
                         reader.dispose();
                     }
                 }
                 else {
-                    mContext.log("ERROR: No suitable image reader found (content-type: " + mOriginalContentType + ").");
-                    mContext.log("ERROR: Available formats: " + getFormatsString());
+                    context.log("ERROR: No suitable image reader found (content-type: " + originalContentType + ").");
+                    context.log("ERROR: Available formats: " + getFormatsString());
 
-                    throw new IIOException("Unable to transcode image: No suitable image reader found (content-type: " + mOriginalContentType + ").");
+                    throw new IIOException("Unable to transcode image: No suitable image reader found (content-type: " + originalContentType + ").");
                 }
 
                 // Free resources, as the image is now either read, or unreadable
-                mBufferedOut = null;
+                bufferedOut = null;
             }
             finally {
                 if (input != null) {
@@ -382,7 +386,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         }
 
         // Image is usually a BufferedImage, but may also be a RenderedImage
-        return mImage != null ? ImageUtil.toBuffered(mImage) : null;
+        return image != null ? ImageUtil.toBuffered(image) : null;
     }
 
     private BufferedImage resampleImage(final BufferedImage image, final Dimension size) {
@@ -401,13 +405,13 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     }
 
     private int getResampleAlgorithmFromRequest() {
-        Object algorithm = mOriginalRequest.getAttribute(ATTRIB_IMAGE_RESAMPLE_ALGORITHM);
+        Object algorithm = originalRequest.getAttribute(ATTRIB_IMAGE_RESAMPLE_ALGORITHM);
         if (algorithm instanceof Integer && ((Integer) algorithm == Image.SCALE_SMOOTH || (Integer) algorithm == Image.SCALE_FAST || (Integer) algorithm == Image.SCALE_DEFAULT)) {
             return (Integer) algorithm;
         }
         else {
             if (algorithm != null) {
-                mContext.log("WARN: Illegal image resampling algorithm: " + algorithm);
+                context.log("WARN: Illegal image resampling algorithm: " + algorithm);
             }
             return BufferedImage.SCALE_DEFAULT;
         }
@@ -422,7 +426,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         }
         else {
             if (factor != null) {
-                mContext.log("WARN: Illegal read subsampling factor: " + factor);
+                context.log("WARN: Illegal read subsampling factor: " + factor);
             }
 
             subsampleFactor = 2.0;
@@ -434,7 +438,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     private void extractAndSetBackgroundColor(final BufferedImage pImage) {
         // TODO: bgColor request attribute instead of parameter?
         if (pImage.getColorModel().hasAlpha()) {
-            String bgColor = mOriginalRequest.getParameter("bg.color");
+            String bgColor = originalRequest.getParameter("bg.color");
             if (bgColor != null) {
                 Color color = StringUtil.toColor(bgColor);
 
@@ -465,7 +469,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     }
 
     private void maybeSetBaseURIFromRequest(final ImageReadParam pParam) {
-        if (mOriginalRequest instanceof HttpServletRequest) {
+        if (originalRequest instanceof HttpServletRequest) {
             try {
                 // If there's a setBaseURI method, we'll try to use that (uses reflection, to avoid dependency on plugins)
                 Method setBaseURI;
@@ -477,22 +481,22 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                 }
 
                 // Get URL for resource and set as base
-                String baseURI = ServletUtil.getContextRelativeURI((HttpServletRequest) mOriginalRequest);
+                String baseURI = ServletUtil.getContextRelativeURI((HttpServletRequest) originalRequest);
 
-                URL resourceURL = mContext.getResource(baseURI);
+                URL resourceURL = context.getResource(baseURI);
                 if (resourceURL == null) {
-                    resourceURL = ServletUtil.getRealURL(mContext, baseURI);
+                    resourceURL = ServletUtil.getRealURL(context, baseURI);
                 }
 
                 if (resourceURL != null) {
                     setBaseURI.invoke(pParam, resourceURL.toExternalForm());
                 }
                 else {
-                    mContext.log("WARN: Resource URL not found for URI: " + baseURI);
+                    context.log("WARN: Resource URL not found for URI: " + baseURI);
                 }
             }
             catch (Exception e) {
-                mContext.log("WARN: Could not set base URI: ", e);
+                context.log("WARN: Could not set base URI: ", e);
             }
         }
     }
@@ -500,10 +504,10 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     private Dimension extractSizeFromRequest(final int pDefaultWidth, final int pDefaultHeight, final ServletRequest pOriginalRequest) {
         // TODO: Allow extraction from request parameters
         /*
-        int sizeW = ServletUtil.getIntParameter(mOriginalRequest, "size.w", -1);
-        int sizeH = ServletUtil.getIntParameter(mOriginalRequest, "size.h", -1);
-        boolean sizePercent = ServletUtil.getBooleanParameter(mOriginalRequest, "size.percent", false);
-        boolean sizeUniform = ServletUtil.getBooleanParameter(mOriginalRequest, "size.uniform", true);
+        int sizeW = ServletUtil.getIntParameter(originalRequest, "size.w", -1);
+        int sizeH = ServletUtil.getIntParameter(originalRequest, "size.h", -1);
+        boolean sizePercent = ServletUtil.getBooleanParameter(originalRequest, "size.percent", false);
+        boolean sizeUniform = ServletUtil.getBooleanParameter(originalRequest, "size.uniform", true);
         */
         Dimension size = (Dimension) pOriginalRequest.getAttribute(ATTRIB_SIZE);
         int sizeW = size != null ? size.width : -1;
@@ -525,12 +529,12 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
     private Rectangle extractAOIFromRequest(final int pDefaultWidth, final int pDefaultHeight, final ServletRequest pOriginalRequest) {
         // TODO: Allow extraction from request parameters
         /*
-        int aoiX = ServletUtil.getIntParameter(mOriginalRequest, "aoi.x", -1);
-        int aoiY = ServletUtil.getIntParameter(mOriginalRequest, "aoi.y", -1);
-        int aoiW = ServletUtil.getIntParameter(mOriginalRequest, "aoi.w", -1);
-        int aoiH = ServletUtil.getIntParameter(mOriginalRequest, "aoi.h", -1);
-        boolean aoiPercent = ServletUtil.getBooleanParameter(mOriginalRequest, "aoi.percent", false);
-        boolean aoiUniform = ServletUtil.getBooleanParameter(mOriginalRequest, "aoi.uniform", false);
+        int aoiX = ServletUtil.getIntParameter(originalRequest, "aoi.x", -1);
+        int aoiY = ServletUtil.getIntParameter(originalRequest, "aoi.y", -1);
+        int aoiW = ServletUtil.getIntParameter(originalRequest, "aoi.w", -1);
+        int aoiH = ServletUtil.getIntParameter(originalRequest, "aoi.h", -1);
+        boolean aoiPercent = ServletUtil.getBooleanParameter(originalRequest, "aoi.percent", false);
+        boolean aoiUniform = ServletUtil.getBooleanParameter(originalRequest, "aoi.uniform", false);
         */
         Rectangle aoi = (Rectangle) pOriginalRequest.getAttribute(ATTRIB_AOI);
         int aoiX = aoi != null ? aoi.x : -1;

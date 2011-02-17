@@ -42,12 +42,12 @@ import java.awt.image.RenderedImage;
  */
 public class BufferedImageOpAdapter extends ImageFilter {
 
-    private BufferedImageOp mFilter = null;
+    private BufferedImageOp filter = null;
 
     public void setImageFilter(String pFilterClass) {
         try {
             Class filterClass = Class.forName(pFilterClass);
-            mFilter = (BufferedImageOp) filterClass.newInstance();
+            filter = (BufferedImageOp) filterClass.newInstance();
         }
         catch (ClassNotFoundException e) {
             log("Could not instantiate filter class.", e);
@@ -62,6 +62,6 @@ public class BufferedImageOpAdapter extends ImageFilter {
     
     protected RenderedImage doFilter(BufferedImage pImage, ServletRequest pRequest, ImageServletResponse pResponse) {
         // Filter & return 
-        return mFilter.filter(pImage, null);
+        return filter.filter(pImage, null);
     }
 }
