@@ -53,7 +53,7 @@ import java.io.IOException;
  */
 public class TIFFImageWriter extends ImageWriterBase {
 
-    private TIFFImageEncoder mEncoder = null;
+    private TIFFImageEncoder encoder;
 
     protected TIFFImageWriter(final ImageWriterSpi pProvider) {
         super(pProvider);
@@ -61,7 +61,7 @@ public class TIFFImageWriter extends ImageWriterBase {
 
     @Override
     public void setOutput(final Object output) {
-        mEncoder = null;
+        encoder = null;
         super.setOutput(output);
     }
 
@@ -82,7 +82,7 @@ public class TIFFImageWriter extends ImageWriterBase {
             param = new TIFFEncodeParam();
             // TODO: Convert params
 
-            mEncoder.setParam(param);
+            encoder.setParam(param);
         }
 
         BufferedImage image;
@@ -123,7 +123,7 @@ public class TIFFImageWriter extends ImageWriterBase {
 
         processImageStarted(0);
 
-        mEncoder.encode(image);
+        encoder.encode(image);
         imageOutput.flush();
 
         processImageComplete();
@@ -131,15 +131,15 @@ public class TIFFImageWriter extends ImageWriterBase {
 
     public void dispose() {
         super.dispose();
-        mEncoder = null;
+        encoder = null;
     }
 
     private synchronized void init() {
-        if (mEncoder == null) {
+        if (encoder == null) {
             if (imageOutput == null) {
                 throw new IllegalStateException("output == null");
             }
-            mEncoder = new TIFFImageEncoder(IIOUtil.createStreamAdapter(imageOutput), null);
+            encoder = new TIFFImageEncoder(IIOUtil.createStreamAdapter(imageOutput), null);
         }
     }
 }

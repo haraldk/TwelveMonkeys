@@ -55,15 +55,15 @@ import java.util.List;
 // TODO: Support raster decoding...
 public class TIFFImageReader extends ImageReaderBase {
 
-    private TIFFImageDecoder mDecoder = null;
-    private List<RenderedImage> mImages = new ArrayList<RenderedImage>();
+    private TIFFImageDecoder decoder = null;
+    private List<RenderedImage> images = new ArrayList<RenderedImage>();
 
     protected TIFFImageReader(final ImageReaderSpi pOriginatingProvider) {
         super(pOriginatingProvider);
     }
 
     protected void resetMembers() {
-        mDecoder = null;
+        decoder = null;
     }
 
     public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
@@ -80,18 +80,18 @@ public class TIFFImageReader extends ImageReaderBase {
         if (pParam == null) {
             // Cache image for use by getWidth and getHeight methods
             RenderedImage image;
-            if (mImages.size() > pIndex && mImages.get(pIndex) != null) {
-                image = mImages.get(pIndex);
+            if (images.size() > pIndex && images.get(pIndex) != null) {
+                image = images.get(pIndex);
             }
             else {
                 // Decode
-                image = mDecoder.decodeAsRenderedImage(pIndex);
+                image = decoder.decodeAsRenderedImage(pIndex);
 
                 // Make room
-                for (int i = mImages.size(); i < pIndex; i++) {
-                    mImages.add(pIndex, null);
+                for (int i = images.size(); i < pIndex; i++) {
+                    images.add(pIndex, null);
                 }
-                mImages.add(pIndex, image);
+                images.add(pIndex, image);
             }
 
             if (abortRequested()) {
@@ -104,9 +104,9 @@ public class TIFFImageReader extends ImageReaderBase {
         }
         else {
             // TODO: Parameter conversion
-            mDecoder.setParam(new TIFFDecodeParam());
+            decoder.setParam(new TIFFDecodeParam());
 
-            RenderedImage image = mDecoder.decodeAsRenderedImage(pIndex);
+            RenderedImage image = decoder.decodeAsRenderedImage(pIndex);
 
             // Subsample and apply AOI
             if (pParam.getSourceRegion() != null) {
@@ -136,12 +136,12 @@ public class TIFFImageReader extends ImageReaderBase {
     }
 
     private synchronized void init() {
-        if (mDecoder == null) {
+        if (decoder == null) {
             if (imageInput == null) {
                 throw new IllegalStateException("input == null");
             }
 
-            mDecoder = new TIFFImageDecoder(new SeekableStream() {
+            decoder = new TIFFImageDecoder(new SeekableStream() {
                 public int read() throws IOException {
                     return imageInput.read();
                 }
@@ -165,14 +165,14 @@ public class TIFFImageReader extends ImageReaderBase {
         init(pIndex);
 
         // TODO: Use cache...
-        return mDecoder.decodeAsRenderedImage(pIndex).getWidth();
+        return decoder.decodeAsRenderedImage(pIndex).getWidth();
     }
 
     public int getHeight(int pIndex) throws IOException {
         init(pIndex);
 
         // TODO: Use cache...
-        return mDecoder.decodeAsRenderedImage(pIndex).getHeight();
+        return decoder.decodeAsRenderedImage(pIndex).getHeight();
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
@@ -182,7 +182,7 @@ public class TIFFImageReader extends ImageReaderBase {
     public int getNumImages(boolean allowSearch) throws IOException {
         init();
         if (allowSearch) {
-            return mDecoder.getNumPages();
+            return decoder.getNumPages();
         }
         return -1;
     }

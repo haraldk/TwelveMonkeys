@@ -57,17 +57,18 @@ import java.util.Iterator;
 // TODO: Consider using temp file instead of in-memory stream
 public class WMFImageReader extends ImageReaderBase {
 
-    private SVGImageReader mReader = null;
+    private SVGImageReader reader = null;
 
     public WMFImageReader(final ImageReaderSpi pProvider) {
         super(pProvider);
     }
 
     protected void resetMembers() {
-        if (mReader != null) {
-            mReader.dispose();
+        if (reader != null) {
+            reader.dispose();
         }
-        mReader = null;
+
+        reader = null;
     }
 
     public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
@@ -75,7 +76,7 @@ public class WMFImageReader extends ImageReaderBase {
 
         processImageStarted(pIndex);
 
-        BufferedImage image = mReader.read(pIndex, pParam);
+        BufferedImage image = reader.read(pIndex, pParam);
         if (abortRequested()) {
             processReadAborted();
             return image;
@@ -92,7 +93,7 @@ public class WMFImageReader extends ImageReaderBase {
             throw new IllegalStateException("input == null");
         }
 
-        if (mReader == null) {
+        if (reader == null) {
             WMFTranscoder transcoder = new WMFTranscoder();
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -109,8 +110,8 @@ public class WMFImageReader extends ImageReaderBase {
                 throw new IIOException(e.getMessage(), e);
             }
 
-            mReader = new SVGImageReader(getOriginatingProvider());
-            mReader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(output.toByteArray())));
+            reader = new SVGImageReader(getOriginatingProvider());
+            reader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(output.toByteArray())));
         }
     }
 
@@ -121,17 +122,17 @@ public class WMFImageReader extends ImageReaderBase {
 
     public int getWidth(int pIndex) throws IOException {
         init();
-        return mReader.getWidth(pIndex);
+        return reader.getWidth(pIndex);
     }
 
     public int getHeight(int pIndex) throws IOException {
         init();
-        return mReader.getHeight(pIndex);
+        return reader.getHeight(pIndex);
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(final int pImageIndex) throws IOException {
         init();
-        return mReader.getImageTypes(pImageIndex);
+        return reader.getImageTypes(pImageIndex);
     }
 
 }

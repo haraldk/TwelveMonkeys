@@ -74,7 +74,7 @@ import java.util.Map;
  * @see <A href="http://www.mail-archive.com/batik-dev@xml.apache.org/msg00992.html">batik-dev</A>
  */
 public class SVGImageReader extends ImageReaderBase {
-    private Rasterizer mRasterizer = new Rasterizer();
+    private Rasterizer rasterizer = new Rasterizer();
 
     /**
      * Creates an {@code SVGImageReader}.
@@ -91,7 +91,7 @@ public class SVGImageReader extends ImageReaderBase {
     @Override
     public void dispose() {
         super.dispose();
-        mRasterizer = null;
+        rasterizer = null;
     }
 
     @Override
@@ -100,7 +100,7 @@ public class SVGImageReader extends ImageReaderBase {
 
         if (imageInput != null) {
             TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
-            mRasterizer.setInput(input);
+            rasterizer.setInput(input);
         }
     }
 
@@ -114,7 +114,7 @@ public class SVGImageReader extends ImageReaderBase {
             // Set IIOParams as hints
             // Note: The cast to Map invokes a different method that preserves
             // unset defaults, DO NOT REMOVE!
-            mRasterizer.setTranscodingHints((Map) paramsToHints(svgParam));
+            rasterizer.setTranscodingHints((Map) paramsToHints(svgParam));
 
             // Get the base URI (not a hint)
             baseURI = svgParam.getBaseURI();
@@ -134,8 +134,8 @@ public class SVGImageReader extends ImageReaderBase {
         try {
             processImageStarted(pIndex);
 
-            mRasterizer.mTranscoderInput.setURI(baseURI);
-            BufferedImage image = mRasterizer.getImage();
+            rasterizer.mTranscoderInput.setURI(baseURI);
+            BufferedImage image = rasterizer.getImage();
 
             Graphics2D g = destination.createGraphics();
             try {
@@ -223,7 +223,7 @@ public class SVGImageReader extends ImageReaderBase {
     public int getWidth(int pIndex) throws IOException {
         checkBounds(pIndex);
         try {
-            return mRasterizer.getDefaultWidth();
+            return rasterizer.getDefaultWidth();
         }
         catch (TranscoderException e) {
             throw new IIOException(e.getMessage(), e);
@@ -233,7 +233,7 @@ public class SVGImageReader extends ImageReaderBase {
     public int getHeight(int pIndex) throws IOException {
         checkBounds(pIndex);
         try {
-            return mRasterizer.getDefaultHeight();
+            return rasterizer.getDefaultHeight();
         }
         catch (TranscoderException e) {
             throw new IIOException(e.getMessage(), e);
@@ -241,7 +241,7 @@ public class SVGImageReader extends ImageReaderBase {
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
-        return Collections.singleton(ImageTypeSpecifier.createFromRenderedImage(mRasterizer.createImage(1, 1))).iterator();
+        return Collections.singleton(ImageTypeSpecifier.createFromRenderedImage(rasterizer.createImage(1, 1))).iterator();
     }
 
     /**
