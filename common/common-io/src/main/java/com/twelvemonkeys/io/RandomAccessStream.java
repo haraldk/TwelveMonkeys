@@ -50,13 +50,12 @@ public abstract class RandomAccessStream implements Seekable, DataInput, DataOut
     // TODO: Package private SeekableDelegate?
 
     // TODO: Both read and write must update stream position
-    //private int mPosition = -1;
+    //private int position = -1;
 
     /** This random access stream, wrapped in an {@code InputStream} */
-    SeekableInputStream mInputView = null;
+    SeekableInputStream inputView = null;
     /** This random access stream, wrapped in an {@code OutputStream} */
-    SeekableOutputStream mOutputView = null;
-
+    SeekableOutputStream outputView = null;
 
     // TODO: Create an Input and an Output interface matching InputStream and OutputStream?
     public int read() throws IOException {
@@ -119,10 +118,10 @@ public abstract class RandomAccessStream implements Seekable, DataInput, DataOut
      * @return a {@code SeekableInputStream} reading from this stream
      */
     public final SeekableInputStream asInputStream() {
-        if (mInputView == null) {
-             mInputView = new InputStreamView(this);
+        if (inputView == null) {
+             inputView = new InputStreamView(this);
         }
-        return mInputView;
+        return inputView;
     }
 
     /**
@@ -134,15 +133,15 @@ public abstract class RandomAccessStream implements Seekable, DataInput, DataOut
      * @return a {@code SeekableOutputStream} writing to this stream
      */
     public final SeekableOutputStream asOutputStream() {
-        if (mOutputView == null) {
-            mOutputView = new OutputStreamView(this);
+        if (outputView == null) {
+            outputView = new OutputStreamView(this);
         }
-        return mOutputView;
+        return outputView;
     }
 
     static final class InputStreamView extends SeekableInputStream {
-        // TODO: Consider adding synchonization (on mStream) for all operations
-        // TODO: Is is a good thing that close/flush etc works on mStream?
+        // TODO: Consider adding synchonization (on stream) for all operations
+        // TODO: Is is a good thing that close/flush etc works on stream?
         //  - Or should it rather just work on the views?
         //  - Allow multiple views?
 
@@ -190,8 +189,8 @@ public abstract class RandomAccessStream implements Seekable, DataInput, DataOut
     }
 
     static final class OutputStreamView extends SeekableOutputStream {
-        // TODO: Consider adding synchonization (on mStream) for all operations
-        // TODO: Is is a good thing that close/flush etc works on mStream?
+        // TODO: Consider adding synchonization (on stream) for all operations
+        // TODO: Is is a good thing that close/flush etc works on stream?
         //  - Or should it rather just work on the views?
         //  - Allow multiple views?
 

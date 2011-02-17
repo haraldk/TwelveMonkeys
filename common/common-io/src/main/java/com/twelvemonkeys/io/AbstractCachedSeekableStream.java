@@ -14,28 +14,28 @@ import java.io.InputStream;
  */
 abstract class AbstractCachedSeekableStream extends SeekableInputStream {
     /** The backing stream */
-    protected final InputStream mStream;
+    protected final InputStream stream;
 
-    /** The stream positon in the backing stream (mStream) */
-    protected long mStreamPosition;
+    /** The stream positon in the backing stream (stream) */
+    protected long streamPosition;
 
-    private StreamCache mCache;
+    private StreamCache cache;
 
     protected AbstractCachedSeekableStream(final InputStream pStream, final StreamCache pCache) {
         Validate.notNull(pStream, "stream");
         Validate.notNull(pCache, "cache");
 
-        mStream = pStream;
-        mCache = pCache;
+        stream = pStream;
+        cache = pCache;
     }
 
     protected final StreamCache getCache() {
-        return mCache;
+        return cache;
     }
 
     @Override
     public int available() throws IOException {
-        long avail = mStreamPosition - mPosition + mStream.available();
+        long avail = streamPosition - position + stream.available();
         return avail > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) avail;
     }
 
@@ -43,26 +43,26 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
         checkOpen();
         int read;
 
-        if (mPosition == mStreamPosition) {
+        if (position == streamPosition) {
             // TODO: Read more bytes here!
             // TODO: Use buffer if not in-memory cache? (See FileCacheSeekableStream overrides).
             // Read a byte from the stream
-            read = mStream.read();
+            read = stream.read();
 
             if (read >= 0) {
-                mStreamPosition++;
-                mCache.write(read);
+                streamPosition++;
+                cache.write(read);
             }
         }
         else {
             // ..or read byte from the cache
             syncPosition();
-            read = mCache.read();
+            read = cache.read();
         }
 
         // TODO: This field is not REALLY considered accessible.. :-P
         if (read != -1) {
-            mPosition++;
+            position++;
         }
 
         return read;
@@ -73,32 +73,32 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
         checkOpen();
         int length;
 
-        if (mPosition == mStreamPosition) {
+        if (position == streamPosition) {
             // Read bytes from the stream
-            length = mStream.read(pBytes, pOffset, pLength);
+            length = stream.read(pBytes, pOffset, pLength);
 
             if (length > 0) {
-                mStreamPosition += length;
-                mCache.write(pBytes, pOffset, length);
+                streamPosition += length;
+                cache.write(pBytes, pOffset, length);
             }
         }
         else {
             // ...or read bytes from the cache
             syncPosition();
-            length = mCache.read(pBytes, pOffset, pLength);
+            length = cache.read(pBytes, pOffset, pLength);
         }
 
         // TODO: This field is not REALLY considered accessible.. :-P
         if (length > 0) {
-            mPosition += length;
+            position += length;
         }
 
         return length;
     }
 
     protected final void syncPosition() throws IOException {
-        if (mCache.getPosition() != mPosition) {
-            mCache.seek(mPosition); // Assure EOF is correctly thrown
+        if (cache.getPosition() != position) {
+            cache.seek(position); // Assure EOF is correctly thrown
         }
     }
 
@@ -111,14 +111,14 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
     public abstract boolean isCachedFile();
 
     protected void seekImpl(long pPosition) throws IOException {
-        if (mStreamPosition < pPosition) {
+        if (streamPosition < pPosition) {
             // Make sure we append at end of cache
-            if (mCache.getPosition() != mStreamPosition) {
-                mCache.seek(mStreamPosition);
+            if (cache.getPosition() != streamPosition) {
+                cache.seek(streamPosition);
             }
 
             // Read diff from stream into cache
-            long left = pPosition - mStreamPosition;
+            long left = pPosition - streamPosition;
 
             // TODO: Use fixed buffer, instead of allocating here...
             int bufferLen = left > 1024 ? 1024 : (int) left;
@@ -126,11 +126,11 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
 
             while (left > 0) {
                 int length = buffer.length < left ? buffer.length : (int) left;
-                int read = mStream.read(buffer, 0, length);
+                int read = stream.read(buffer, 0, length);
 
                 if (read > 0) {
-                    mCache.write(buffer, 0, read);
-                    mStreamPosition += read;
+                    cache.write(buffer, 0, read);
+                    streamPosition += read;
                     left -= read;
                 }
                 else if (read < 0) {
@@ -138,27 +138,27 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
                 }
             }
         }
-        else if (mStreamPosition >= pPosition) {
+        else if (streamPosition >= pPosition) {
             // Seek backwards into the cache
-            mCache.seek(pPosition);
+            cache.seek(pPosition);
         }
 
 //        System.out.println("pPosition:        " + pPosition);
-//        System.out.println("mPosition:        " + mPosition);
-//        System.out.println("mStreamPosition:  " + mStreamPosition);
-//        System.out.println("mCache.mPosition: " + mCache.getPosition());
+//        System.out.println("position:        " + position);
+//        System.out.println("streamPosition:  " + streamPosition);
+//        System.out.println("cache.position: " + cache.getPosition());
 
-        // NOTE: If mPosition == pPosition then we're good to go
+        // NOTE: If position == pPosition then we're good to go
     }
 
     protected void flushBeforeImpl(long pPosition) {
-        mCache.flush(pPosition);
+        cache.flush(pPosition);
     }
 
     protected void closeImpl() throws IOException {
-        mCache.flush(mPosition);
-        mCache = null;
-        mStream.close();
+        cache.flush(position);
+        cache = null;
+        stream.close();
     }
 
     /**

@@ -49,7 +49,7 @@ final class RLE8Decoder extends AbstractRLEDecoder {
         int deltaX = 0;
         int deltaY = 0;
 
-        while (mSrcY >= 0) {
+        while (srcY >= 0) {
             int byte1 = pInput.read();
             int byte2 = checkEOF(pInput.read());
             
@@ -58,27 +58,27 @@ final class RLE8Decoder extends AbstractRLEDecoder {
                     case 0x00:
                         // End of line
                         // NOTE: Some BMPs have double EOLs..
-                        if (mSrcX != 0) {
-                            mSrcX = mRow.length;
+                        if (srcX != 0) {
+                            srcX = row.length;
                         }
                         break;
                     case 0x01:
                         // End of bitmap
-                        mSrcX = mRow.length;
-                        mSrcY = 0;
+                        srcX = row.length;
+                        srcY = 0;
                         break;
                     case 0x02:
                         // Delta
-                        deltaX = mSrcX + pInput.read();
-                        deltaY = mSrcY - checkEOF(pInput.read());
-                        mSrcX = mRow.length;
+                        deltaX = srcX + pInput.read();
+                        deltaY = srcY - checkEOF(pInput.read());
+                        srcX = row.length;
                         break;
                     default:
                         // Absolute mode
                         // Copy the next byte2 (3..255) bytes from file to output
                         boolean paddingByte = (byte2 % 2) != 0;
                         while (byte2-- > 0) {
-                            mRow[mSrcX++] = (byte) checkEOF(pInput.read());
+                            row[srcX++] = (byte) checkEOF(pInput.read());
                         }
                         if (paddingByte) {
                             checkEOF(pInput.read());
@@ -90,26 +90,26 @@ final class RLE8Decoder extends AbstractRLEDecoder {
                 // Replicate byte2 as many times as byte1 says
                 byte value = (byte) byte2;
                 while (byte1-- > 0) {
-                    mRow[mSrcX++] = value;
+                    row[srcX++] = value;
                 }
             }
 
             // If we're done with a complete row, copy the data
-            if (mSrcX == mRow.length) {
+            if (srcX == row.length) {
 
                 // Move to new position, either absolute (delta) or next line
                 if (deltaX != 0 || deltaY != 0) {
-                    mSrcX = deltaX;
-                    if (deltaY != mSrcY) {
-                        mSrcY = deltaY;
+                    srcX = deltaX;
+                    if (deltaY != srcY) {
+                        srcY = deltaY;
                         break;
                     }
                     deltaX = 0;
                     deltaY = 0;
                 }
                 else {
-                    mSrcX = 0;
-                    mSrcY--;
+                    srcX = 0;
+                    srcY--;
                     break;
                 }
             }

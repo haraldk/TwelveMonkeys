@@ -52,13 +52,13 @@ public final class DOMSerializer {
     private static final String PARAM_PRETTY_PRINT = "format-pretty-print";
     private static final String PARAM_XML_DECLARATION = "xml-declaration";
 
-    private final LSSerializer mSerializer;
-    private final LSOutput mOutput;
+    private final LSSerializer serializer;
+    private final LSOutput output;
 
     private DOMSerializer() {
         DOMImplementationLS domImpl = Support.getImplementation();
-        mSerializer = domImpl.createLSSerializer();
-        mOutput = domImpl.createLSOutput();
+        serializer = domImpl.createLSSerializer();
+        output = domImpl.createLSOutput();
     }
 
     /**
@@ -71,8 +71,8 @@ public final class DOMSerializer {
     public DOMSerializer(final OutputStream pStream, final String pEncoding) {
         this();
 
-        mOutput.setByteStream(pStream);
-        mOutput.setEncoding(pEncoding);
+        output.setByteStream(pStream);
+        output.setEncoding(pEncoding);
     }
 
     /**
@@ -84,17 +84,17 @@ public final class DOMSerializer {
     public DOMSerializer(final Writer pStream) {
         this();
 
-        mOutput.setCharacterStream(pStream);
+        output.setCharacterStream(pStream);
     }
 
     /*
     // TODO: Is it useful?
     public void setNewLine(final String pNewLine) {
-        mSerializer.setNewLine(pNewLine);
+        serializer.setNewLine(pNewLine);
     }
 
     public String getNewLine() {
-        return mSerializer.getNewLine();
+        return serializer.getNewLine();
     }
     */
 
@@ -107,18 +107,18 @@ public final class DOMSerializer {
      * @param pPrettyPrint {@code true} to enable pretty printing
      */
     public void setPrettyPrint(final boolean pPrettyPrint) {
-        DOMConfiguration configuration = mSerializer.getDomConfig();
+        DOMConfiguration configuration = serializer.getDomConfig();
         if (configuration.canSetParameter(PARAM_PRETTY_PRINT, pPrettyPrint)) {
             configuration.setParameter(PARAM_PRETTY_PRINT, pPrettyPrint);
         }
     }
 
     public boolean getPrettyPrint() {
-        return Boolean.TRUE.equals(mSerializer.getDomConfig().getParameter(PARAM_PRETTY_PRINT));
+        return Boolean.TRUE.equals(serializer.getDomConfig().getParameter(PARAM_PRETTY_PRINT));
     }
 
     private void setXMLDeclaration(boolean pXMLDeclaration) {
-        mSerializer.getDomConfig().setParameter(PARAM_XML_DECLARATION, pXMLDeclaration);
+        serializer.getDomConfig().setParameter(PARAM_XML_DECLARATION, pXMLDeclaration);
     }
 
     /**
@@ -142,7 +142,7 @@ public final class DOMSerializer {
 
     private void serializeImpl(final Node pNode, final boolean pOmitDecl) {
         setXMLDeclaration(pOmitDecl);
-        mSerializer.write(pNode, mOutput);
+        serializer.write(pNode, output);
     }
 
     private static class Support {

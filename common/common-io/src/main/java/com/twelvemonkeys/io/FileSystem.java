@@ -80,10 +80,10 @@ abstract class FileSystem {
     }
 
     private static class UnknownFileSystem extends FileSystem {
-        private final String mOSName;
+        private final String osName;
 
         UnknownFileSystem(String pOSName) {
-            mOSName = pOSName;
+            osName = pOSName;
         }
 
         long getFreeSpace(File pPath) {
@@ -95,7 +95,7 @@ abstract class FileSystem {
         }
 
         String getName() {
-            return "Unknown (" + mOSName + ")";
+            return "Unknown (" + osName + ")";
         }
     }
 }

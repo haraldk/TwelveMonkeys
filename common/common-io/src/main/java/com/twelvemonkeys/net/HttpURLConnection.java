@@ -29,7 +29,6 @@
 package com.twelvemonkeys.net;
 
 import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.util.BASE64;
 
 import java.io.*;
 import java.net.*;
@@ -65,18 +64,18 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
     private final static String HTTP_HEADER_END = "\r\n\r\n";
     private static final String HEADER_WWW_AUTH = "WWW-Authenticate";
     private final static int BUF_SIZE = 8192;
-    private int mMaxRedirects = (System.getProperty("http.maxRedirects") != null)
+    private int maxRedirects = (System.getProperty("http.maxRedirects") != null)
             ? Integer.parseInt(System.getProperty("http.maxRedirects"))
             : 20;
-    protected int mTimeout = -1;
-    protected int mConnectTimeout = -1;
-    private Socket mSocket = null;
-    protected InputStream mErrorStream = null;
-    protected InputStream mInputStream = null;
-    protected OutputStream mOutputStream = null;
-    private String[] mResponseHeaders = null;
-    protected Properties mResponseHeaderFields = null;
-    protected Properties mRequestProperties = new Properties();
+    protected int timeout = -1;
+    protected int connectTimeout = -1;
+    private Socket socket = null;
+    protected InputStream errorStream = null;
+    protected InputStream inputStream = null;
+    protected OutputStream outputStream = null;
+    private String[] responseHeaders = null;
+    protected Properties responseHeaderFields = null;
+    protected Properties requestProperties = new Properties();
 
     /**
      * Creates a HttpURLConnection.
@@ -114,7 +113,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
     protected HttpURLConnection(URL pURL, int pTimeout, int pConnectTimeout) {
         super(pURL);
         setTimeout(pTimeout);
-        mConnectTimeout = pConnectTimeout;
+        connectTimeout = pConnectTimeout;
     }
 
     /**
@@ -135,13 +134,13 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         if (connected) {
             throw new IllegalAccessError("Already connected");
         }
-        String oldValue = mRequestProperties.getProperty(pKey);
+        String oldValue = requestProperties.getProperty(pKey);
 
         if (oldValue == null) {
-            mRequestProperties.setProperty(pKey, pValue);
+            requestProperties.setProperty(pKey, pValue);
         }
         else {
-            mRequestProperties.setProperty(pKey, oldValue + ", " + pValue);
+            requestProperties.setProperty(pKey, oldValue + ", " + pValue);
         }
     }
 
@@ -158,7 +157,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         if (connected) {
             throw new IllegalAccessError("Already connected");
         }
-        return mRequestProperties.getProperty(pKey);
+        return requestProperties.getProperty(pKey);
     }
 
     /**
@@ -212,7 +211,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      *         if there is no such field in the header.
      */
     public String getHeaderField(String pName) {
-        return mResponseHeaderFields.getProperty(StringUtil.toLowerCase(pName));
+        return responseHeaderFields.getProperty(StringUtil.toLowerCase(pName));
     }
 
     /**
@@ -230,10 +229,10 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      */
     public String getHeaderField(int pIndex) {
         // TODO: getInputStream() first, to make sure we have header fields
-        if (pIndex >= mResponseHeaders.length) {
+        if (pIndex >= responseHeaders.length) {
             return null;
         }
-        String field = mResponseHeaders[pIndex];
+        String field = responseHeaders[pIndex];
 
         // pIndex == 0, means the response code etc (i.e. "HTTP/1.1 200 OK").
         if ((pIndex == 0) || (field == null)) {
@@ -256,10 +255,10 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      */
     public String getHeaderFieldKey(int pIndex) {
         // TODO: getInputStream() first, to make sure we have header fields
-        if (pIndex >= mResponseHeaders.length) {
+        if (pIndex >= responseHeaders.length) {
             return null;
         }
-        String field = mResponseHeaders[pIndex];
+        String field = responseHeaders[pIndex];
 
         if (StringUtil.isEmpty(field)) {
             return null;
@@ -283,10 +282,10 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         if (pTimeout < 0) {  // Must be positive
             throw new IllegalArgumentException("Timeout must be positive.");
         }
-        mTimeout = pTimeout;
-        if (mSocket != null) {
+        timeout = pTimeout;
+        if (socket != null) {
             try {
-                mSocket.setSoTimeout(pTimeout);
+                socket.setSoTimeout(pTimeout);
             }
             catch (SocketException se) {
                 // Not much to do about that...
@@ -305,12 +304,12 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
     public int getTimeout() {
 
         try {
-            return ((mSocket != null)
-                    ? mSocket.getSoTimeout()
-                    : mTimeout);
+            return ((socket != null)
+                    ? socket.getSoTimeout()
+                    : timeout);
         }
         catch (SocketException se) {
-            return mTimeout;
+            return timeout;
         }
     }
 
@@ -332,24 +331,24 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         }
         int length;
 
-        if (mInputStream == null) {
+        if (inputStream == null) {
             return null;
         }
 
         // "De-chunk" the output stream
         else if ("chunked".equalsIgnoreCase(getHeaderField("Transfer-Encoding"))) {
-            if (!(mInputStream instanceof ChunkedInputStream)) {
-                mInputStream = new ChunkedInputStream(mInputStream);
+            if (!(inputStream instanceof ChunkedInputStream)) {
+                inputStream = new ChunkedInputStream(inputStream);
             }
         }
 
         // Make sure we don't wait forever, if the content-length is known
         else if ((length = getHeaderFieldInt("Content-Length", -1)) >= 0) {
-            if (!(mInputStream instanceof FixedLengthInputStream)) {
-                mInputStream = new FixedLengthInputStream(mInputStream, length);
+            if (!(inputStream instanceof FixedLengthInputStream)) {
+                inputStream = new FixedLengthInputStream(inputStream, length);
             }
         }
-        return mInputStream;
+        return inputStream;
     }
 
     /**
@@ -364,7 +363,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         if (!connected) {
             connect();
         }
-        return mOutputStream;
+        return outputStream;
     }
 
     /**
@@ -374,15 +373,15 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      * instance can be reused for other requests.
      */
     public void disconnect() {
-        if (mSocket != null) {
+        if (socket != null) {
             try {
-                mSocket.close();
+                socket.close();
             }
             catch (IOException ioe) {
 
                 // Does not matter, I guess.
             }
-            mSocket = null;
+            socket = null;
         }
         connected = false;
     }
@@ -397,37 +396,37 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
                 : HTTP_DEFAULT_PORT;
 
         // Create socket if we don't have one
-        if (mSocket == null) {
-            //mSocket = new Socket(pURL.getHost(), port); // Blocks...
-            mSocket = createSocket(pURL, port, mConnectTimeout);
-            mSocket.setSoTimeout(mTimeout);
+        if (socket == null) {
+            //socket = new Socket(pURL.getHost(), port); // Blocks...
+            socket = createSocket(pURL, port, connectTimeout);
+            socket.setSoTimeout(timeout);
         }
 
         // Get Socket output stream
-        OutputStream os = mSocket.getOutputStream();
+        OutputStream os = socket.getOutputStream();
 
         // Connect using HTTP
-        writeRequestHeaders(os, pURL, method, mRequestProperties, usingProxy(), pAuth, pAuthType);
+        writeRequestHeaders(os, pURL, method, requestProperties, usingProxy(), pAuth, pAuthType);
 
         // Get response input stream
-        InputStream sis = mSocket.getInputStream();
+        InputStream sis = socket.getInputStream();
         BufferedInputStream is = new BufferedInputStream(sis);
 
         // Detatch reponse headers from reponse input stream
         InputStream header = detatchResponseHeader(is);
 
         // Parse headers and set response code/message
-        mResponseHeaders = parseResponseHeader(header);
-        mResponseHeaderFields = parseHeaderFields(mResponseHeaders);
+        responseHeaders = parseResponseHeader(header);
+        responseHeaderFields = parseHeaderFields(responseHeaders);
 
         //System.err.println("Headers fields:");
-        //mResponseHeaderFields.list(System.err);
+        //responseHeaderFields.list(System.err);
         // Test HTTP response code, to see if further action is needed
         switch (getResponseCode()) {
             case HTTP_OK:
                 // 200 OK
-                mInputStream = is;
-                mErrorStream = null;
+                inputStream = is;
+                errorStream = null;
                 break;
 
                 /*
@@ -472,7 +471,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
 
                 // Avoid infinite loop
                 if (pRetries++ <= 0) {
-                    throw new ProtocolException("Server redirected too many times (" + mMaxRedirects + ") (Authentication required: " + auth + ")");  // This is what sun.net.www.protocol.http.HttpURLConnection does
+                    throw new ProtocolException("Server redirected too many times (" + maxRedirects + ") (Authentication required: " + auth + ")");  // This is what sun.net.www.protocol.http.HttpURLConnection does
                 }
                 else if (pa != null) {
                     connect(pURL, pa, method, pRetries);
@@ -506,8 +505,8 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
 
                     // Test if we can reuse the Socket
                     if (!(newLoc.getAuthority().equals(pURL.getAuthority()) && (newLoc.getPort() == pURL.getPort()))) {
-                        mSocket.close();                 // Close the socket, won't need it anymore
-                        mSocket = null;
+                        socket.close();                 // Close the socket, won't need it anymore
+                        socket = null;
                     }
                     if (location != null) {
                         //System.err.println("Redirecting to " + location);
@@ -526,22 +525,22 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
             default :
                 // Not 200 OK, or any of the redirect responses
                 // Probably an error...
-                mErrorStream = is;
-                mInputStream = null;
+                errorStream = is;
+                inputStream = null;
         }
 
         // --- Need rethinking...
         // No further questions, let the Socket wait forever (until the server
         // closes the connection)
-        //mSocket.setSoTimeout(0);
+        //socket.setSoTimeout(0);
         // Probably not... The timeout should only kick if the read BLOCKS.
         // Shutdown output, meaning any writes to the outputstream below will
         // probably fail...
-        //mSocket.shutdownOutput();
+        //socket.shutdownOutput();
         // Not a good idea at all... POSTs need the outputstream to send the
         // form-data.
         // --- /Need rethinking.
-        mOutputStream = os;
+        outputStream = os;
     }
 
     private static interface SocketConnector extends Runnable {
@@ -663,7 +662,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
             return;  // Ignore
         }
         connected = true;
-        connect(url, null, null, mMaxRedirects);
+        connect(url, null, null, maxRedirects);
     }
 
     /**

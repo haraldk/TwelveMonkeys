@@ -41,8 +41,8 @@ import java.util.Random;
  */
 public class DiffusionDither implements BufferedImageOp, RasterOp {
 
-    protected IndexColorModel mIndexColorModel = null;
-    private boolean mAlternateScans = true;
+    protected IndexColorModel indexColorModel = null;
+    private boolean alternateScans = true;
     private static final int FS_SCALE = 1 << 8;
     private static final Random RANDOM = new Random();
 
@@ -54,7 +54,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      */
     public DiffusionDither(IndexColorModel pICM) {
         // Store colormodel
-        mIndexColorModel = pICM;
+        indexColorModel = pICM;
     }
 
     /**
@@ -74,7 +74,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * @param pUse {@code true} if scan mode should be alternating left/right
      */
     public void setAlternateScans(boolean pUse) {
-        mAlternateScans = pUse;
+        alternateScans = pUse;
     }
 
     /**
@@ -252,10 +252,10 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
     }
 
     private IndexColorModel getICM(BufferedImage pSource) {
-        return (mIndexColorModel != null ? mIndexColorModel : IndexImage.getIndexColorModel(pSource, 256, IndexImage.TRANSPARENCY_BITMASK));
+        return (indexColorModel != null ? indexColorModel : IndexImage.getIndexColorModel(pSource, 256, IndexImage.TRANSPARENCY_BITMASK));
     }
     private IndexColorModel getICM(Raster pSource) {
-        return (mIndexColorModel != null ? mIndexColorModel : createIndexColorModel(pSource));
+        return (indexColorModel != null ? indexColorModel : createIndexColorModel(pSource));
     }
 
     private IndexColorModel createIndexColorModel(Raster pSource) {
@@ -456,7 +456,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
             mNextErr = temperr;
 
             // Toggle direction
-            if (mAlternateScans) {
+            if (alternateScans) {
                 forward = !forward;
             }
         }

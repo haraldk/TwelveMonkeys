@@ -28,11 +28,14 @@
 
 package com.twelvemonkeys.image;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.awt.*;
 import java.awt.image.*;
-import java.util.*;
-import java.util.List;
 import java.lang.reflect.Array;
+import java.util.EventListener;
+import java.util.Hashtable;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -52,50 +55,53 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/BufferedImageFactory.java#1 $
  */
 public final class BufferedImageFactory {
-    private List<ProgressListener> mListeners;
-    private int mPercentageDone;
+    private List<ProgressListener> listeners;
+    private int percentageDone;
 
-    private ImageProducer mProducer;
-    private boolean mError;
-    private boolean mFetching;
-    private boolean mReadColorModelOnly;
+    private ImageProducer producer;
+    private boolean error;
+    private volatile boolean fetching;
+    private boolean readColorModelOnly;
 
-    private int mX = 0;
-    private int mY = 0;
-    private int mWidth = -1;
-    private int mHeight = -1;
+    private int x = 0;
+    private int y = 0;
+    private int width = -1;
+    private int height = -1;
 
-    private int mXSub = 1;
-    private int mYSub = 1;
+    private int xSub = 1;
+    private int ySub = 1;
 
-    private int mOffset;
-    private int mScanSize;
+    private int offset;
+    private int scanSize;
 
-    private ColorModel mSourceColorModel;
-    private Hashtable mSourceProperties; // ImageConsumer API dictates Hashtable
+    private ColorModel sourceColorModel;
+    private Hashtable sourceProperties; // ImageConsumer API dictates Hashtable
 
-    private Object mSourcePixels;
+    private Object sourcePixels;
 
-    private BufferedImage mBuffered;
-    private ColorModel mColorModel;
+    private BufferedImage buffered;
+    private ColorModel colorModel;
 
     // NOTE: Just to not expose the inheritance
-    private final Consumer mConsumer = new Consumer();
+    private final Consumer consumer = new Consumer();
 
     /**
      * Creates a {@code BufferedImageFactory}.
      * @param pSource the source image
+     * @throws IllegalArgumentException if {@code pSource == null}
      */
     public BufferedImageFactory(final Image pSource) {
-        this(pSource.getSource());
+        this(pSource != null ? pSource.getSource() : null);
     }
 
     /**
      * Creates a {@code BufferedImageFactory}.
      * @param pSource the source image producer
+     * @throws IllegalArgumentException if {@code pSource == null}
      */
     public BufferedImageFactory(final ImageProducer pSource) {
-        mProducer = pSource;
+        Validate.notNull(pSource, "source");
+        producer = pSource;
     }
 
     /**
@@ -109,7 +115,7 @@ public final class BufferedImageFactory {
      */
     public BufferedImage getBufferedImage() throws ImageConversionException {
         doFetch(false);
-        return mBuffered;
+        return buffered;
     }
 
     /**
@@ -123,7 +129,7 @@ public final class BufferedImageFactory {
      */
     public ColorModel getColorModel() throws ImageConversionException {
         doFetch(true);
-        return mBuffered != null ? mBuffered.getColorModel() : mColorModel;
+        return buffered != null ? buffered.getColorModel() : colorModel;
     }
 
     /**
@@ -131,15 +137,15 @@ public final class BufferedImageFactory {
      */
     public void dispose() {
         freeResources();
-        mBuffered = null;
-        mColorModel = null;
+        buffered = null;
+        colorModel = null;
     }
 
     /**
      * Aborts the image production.
      */
     public void abort() {
-        mConsumer.imageComplete(ImageConsumer.IMAGEABORTED);
+        consumer.imageComplete(ImageConsumer.IMAGEABORTED);
     }
 
     /**
@@ -149,14 +155,14 @@ public final class BufferedImageFactory {
      */
     public void setSourceRegion(final Rectangle pRegion) {
         // Re-fetch everything, if region changed
-        if (mX != pRegion.x || mY != pRegion.y || mWidth != pRegion.width || mHeight != pRegion.height) {
+        if (x != pRegion.x || y != pRegion.y || width != pRegion.width || height != pRegion.height) {
             dispose();
         }
 
-        mX = pRegion.x;
-        mY = pRegion.y;
-        mWidth = pRegion.width;
-        mHeight = pRegion.height;
+        x = pRegion.x;
+        y = pRegion.y;
+        width = pRegion.width;
+        height = pRegion.height;
     }
 
     /**
@@ -167,50 +173,51 @@ public final class BufferedImageFactory {
      */
     public void setSourceSubsampling(int pXSub, int pYSub) {
         // Re-fetch everything, if subsampling changed
-        if (mXSub != pXSub || mYSub != pYSub) {
+        if (xSub != pXSub || ySub != pYSub) {
             dispose();
         }
 
         if (pXSub > 1) {
-            mXSub = pXSub;
+            xSub = pXSub;
         }
         if (pYSub > 1) {
-            mYSub = pYSub;
+            ySub = pYSub;
         }
     }
 
     private synchronized void doFetch(boolean pColorModelOnly) throws ImageConversionException {
-        if (!mFetching && (!pColorModelOnly && mBuffered == null || mBuffered == null && mSourceColorModel == null)) {
+        if (!fetching && (!pColorModelOnly && buffered == null || buffered == null && sourceColorModel == null)) {
             // NOTE: Subsampling is only applied if extracting full image
-            if (!pColorModelOnly && (mXSub > 1 || mYSub > 1)) {
+            if (!pColorModelOnly && (xSub > 1 || ySub > 1)) {
                 // If only sampling a region, the region must be scaled too
-                if (mWidth > 0 && mHeight > 0) {
-                    mWidth = (mWidth + mXSub - 1) / mXSub;
-                    mHeight = (mHeight + mYSub - 1) / mYSub;
+                if (width > 0 && height > 0) {
+                    width = (width + xSub - 1) / xSub;
+                    height = (height + ySub - 1) / ySub;
 
-                    mX = (mX + mXSub - 1) / mXSub;
-                    mY = (mY + mYSub - 1) / mYSub;
+                    x = (x + xSub - 1) / xSub;
+                    y = (y + ySub - 1) / ySub;
                 }
 
-                mProducer = new FilteredImageSource(mProducer, new SubsamplingFilter(mXSub, mYSub));
+                producer = new FilteredImageSource(producer, new SubsamplingFilter(xSub, ySub));
             }
 
             // Start fetching
-            mFetching = true;
-            mReadColorModelOnly = pColorModelOnly;
-            mProducer.startProduction(mConsumer); // Note: If single-thread (synchronous), this call will block
+            fetching = true;
+            readColorModelOnly = pColorModelOnly;
+
+            producer.startProduction(consumer); // Note: If single-thread (synchronous), this call will block
 
             // Wait until the producer wakes us up, by calling imageComplete
-            while (mFetching) {
+            while (fetching) {
                 try {
-                    wait();
+                    wait(200l);
                 }
                 catch (InterruptedException e) {
                     throw new ImageConversionException("Image conversion aborted: " + e.getMessage(), e);
                 }
             }
 
-            if (mError) {
+            if (error) {
                 throw new ImageConversionException("Image conversion failed: ImageConsumer.IMAGEERROR.");
             }
 
@@ -224,21 +231,21 @@ public final class BufferedImageFactory {
     }
 
     private void createColorModel() {
-        mColorModel = mSourceColorModel;
+        colorModel = sourceColorModel;
 
         // Clean up, in case any objects are copied/cloned, so we can free resources
         freeResources();
     }
 
     private void createBuffered() {
-        if (mWidth > 0 && mHeight > 0) {
-            if (mSourceColorModel != null && mSourcePixels != null) {
+        if (width > 0 && height > 0) {
+            if (sourceColorModel != null && sourcePixels != null) {
                 // TODO: Fix pixel size / color model problem
-                WritableRaster raster = ImageUtil.createRaster(mWidth, mHeight, mSourcePixels, mSourceColorModel);
-                mBuffered = new BufferedImage(mSourceColorModel, raster, mSourceColorModel.isAlphaPremultiplied(), mSourceProperties);
+                WritableRaster raster = ImageUtil.createRaster(width, height, sourcePixels, sourceColorModel);
+                buffered = new BufferedImage(sourceColorModel, raster, sourceColorModel.isAlphaPremultiplied(), sourceProperties);
             }
             else {
-                mBuffered = ImageUtil.createClear(mWidth, mHeight, null);
+                buffered = ImageUtil.createClear(width, height, null);
             }
         }
 
@@ -247,21 +254,21 @@ public final class BufferedImageFactory {
     }
 
     private void freeResources() {
-        mSourceColorModel = null;
-        mSourcePixels = null;
-        mSourceProperties = null;
+        sourceColorModel = null;
+        sourcePixels = null;
+        sourceProperties = null;
     }
 
     private void processProgress(int mScanline) {
-        if (mListeners != null) {
-            int percent = 100 * mScanline / mHeight;
+        if (listeners != null) {
+            int percent = 100 * mScanline / height;
 
             //System.out.println("Progress: " + percent + "%");
 
-            if (percent > mPercentageDone) {
-                mPercentageDone = percent;
+            if (percent > percentageDone) {
+                percentageDone = percent;
 
-                for (ProgressListener listener : mListeners) {
+                for (ProgressListener listener : listeners) {
                     listener.progress(this, percent);
                 }
             }
@@ -278,11 +285,11 @@ public final class BufferedImageFactory {
             return;
         }
 
-        if (mListeners == null) {
-            mListeners = new CopyOnWriteArrayList<ProgressListener>();
+        if (listeners == null) {
+            listeners = new CopyOnWriteArrayList<ProgressListener>();
         }
 
-        mListeners.add(pListener);
+        listeners.add(pListener);
     }
 
     /**
@@ -295,19 +302,19 @@ public final class BufferedImageFactory {
             return;
         }
 
-        if (mListeners == null) {
+        if (listeners == null) {
             return;
         }
 
-        mListeners.remove(pListener);
+        listeners.remove(pListener);
     }
 
     /**
      * Removes all progress listeners from this factory.
      */
     public void removeAllProgressListeners() {
-        if (mListeners != null) {
-            mListeners.clear();
+        if (listeners != null) {
+            listeners.clear();
         }
     }
 
@@ -378,21 +385,21 @@ public final class BufferedImageFactory {
             }
 
             // Allocate array if necessary
-            if (mSourcePixels == null) {
+            if (sourcePixels == null) {
                 // Allocate a suitable source pixel array
                 // TODO: Should take pixel "width" into consideration, for byte packed rasters?!
                 // OR... Is anything but single-pixel models really supported by the API?
-                mSourcePixels = Array.newInstance(pPixels.getClass().getComponentType(), mWidth * mHeight);
-                mScanSize = mWidth;
-                mOffset = 0;
+                sourcePixels = Array.newInstance(pPixels.getClass().getComponentType(), width * height);
+                scanSize = width;
+                offset = 0;
             }
-            else if (mSourcePixels.getClass() != pPixels.getClass()) {
+            else if (sourcePixels.getClass() != pPixels.getClass()) {
                 throw new IllegalStateException("Only one pixel type allowed");
             }
 
             // AOI stuff
-            if (pY < mY) {
-                int diff = mY - pY;
+            if (pY < y) {
+                int diff = y - pY;
                 if (diff >= pHeight) {
                     return;
                 }
@@ -400,15 +407,15 @@ public final class BufferedImageFactory {
                 pY += diff;
                 pHeight -= diff;
             }
-            if (pY + pHeight > mY + mHeight) {
-                pHeight = (mY + mHeight) - pY;
+            if (pY + pHeight > y + height) {
+                pHeight = (y + height) - pY;
                 if (pHeight <= 0) {
                     return;
                 }
             }
 
-            if (pX < mX) {
-                int diff = mX - pX;
+            if (pX < x) {
+                int diff = x - pX;
                 if (diff >= pWidth) {
                     return;
                 }
@@ -416,20 +423,20 @@ public final class BufferedImageFactory {
                 pX += diff;
                 pWidth -= diff;
             }
-            if (pX + pWidth > mX + mWidth) {
-                pWidth = (mX + mWidth) - pX;
+            if (pX + pWidth > x + width) {
+                pWidth = (x + width) - pX;
                 if (pWidth <= 0) {
                     return;
                 }
             }
 
-            int dstOffset = mOffset + (pY - mY) * mScanSize + (pX - mX);
+            int dstOffset = offset + (pY - y) * scanSize + (pX - x);
 
             // Do the pixel copying
             for (int i = pHeight; i > 0; i--) {
-                System.arraycopy(pPixels, pOffset, mSourcePixels, dstOffset, pWidth);
+                System.arraycopy(pPixels, pOffset, sourcePixels, dstOffset, pWidth);
                 pOffset += pScanSize;
-                dstOffset += mScanSize;
+                dstOffset += scanSize;
             }
 
             processProgress(pY + pHeight);
@@ -439,14 +446,14 @@ public final class BufferedImageFactory {
             setPixelsImpl(pX, pY, pWidth, pHeight, pModel, pPixels, pOffset, pScanSize);
         }
 
-        private void setColorModelOnce(ColorModel pModel) {
+        private void setColorModelOnce(final ColorModel pModel) {
             // NOTE: There seems to be a "bug" in AreaAveragingScaleFilter, as it
             // first passes the original color model through in setColorModel, then
             // later replaces it with the default RGB in the first setPixels call
             // (this is probably allowed according to the spec, but it's a waste of time and space).
-            if (mSourceColorModel != pModel) {
-                if (/*mSourceColorModel == null ||*/ mSourcePixels == null) {
-                    mSourceColorModel = pModel;
+            if (sourceColorModel != pModel) {
+                if (/*sourceColorModel == null ||*/ sourcePixels == null) {
+                    sourceColorModel = pModel;
                 }
                 else {
                     throw new IllegalStateException("Change of ColorModel after pixel delivery not supported");
@@ -454,23 +461,22 @@ public final class BufferedImageFactory {
             }
 
             // If color model is all we ask for, stop now
-            if (mReadColorModelOnly) {
-                mConsumer.imageComplete(ImageConsumer.IMAGEABORTED);
+            if (readColorModelOnly) {
+                consumer.imageComplete(ImageConsumer.IMAGEABORTED);
             }
         }
 
-        @SuppressWarnings({"ThrowableInstanceNeverThrown"})
         public void imageComplete(int pStatus) {
-            mFetching = false;
+            fetching = false;
 
-            if (mProducer != null) {
-                mProducer.removeConsumer(this);
+            if (producer != null) {
+                producer.removeConsumer(this);
             }
 
             switch (pStatus) {
                 case ImageConsumer.IMAGEERROR:
-                    new Error().printStackTrace();
-                    mError = true;
+                    Thread.dumpStack();
+                    error = true;
                 break;
             }
 
@@ -484,15 +490,15 @@ public final class BufferedImageFactory {
         }
 
         public void setDimensions(int pWidth, int pHeight) {
-            if (mWidth < 0) {
-                mWidth = pWidth - mX;
+            if (width < 0) {
+                width = pWidth - x;
             }
-            if (mHeight < 0) {
-                mHeight = pHeight - mY;
+            if (height < 0) {
+                height = pHeight - y;
             }
 
             // Hmm.. Special case, but is it a good idea?
-            if (mWidth <= 0 || mHeight <= 0) {
+            if (width <= 0 || height <= 0) {
                 imageComplete(ImageConsumer.STATICIMAGEDONE);
             }
         }
@@ -530,7 +536,7 @@ public final class BufferedImageFactory {
         }
 
         public void setProperties(Hashtable pProperties) {
-            mSourceProperties = pProperties;
+            sourceProperties = pProperties;
         }
     }
 }

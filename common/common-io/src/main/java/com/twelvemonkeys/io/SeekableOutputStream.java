@@ -43,11 +43,11 @@ import java.util.Stack;
  */
 public abstract class SeekableOutputStream extends OutputStream implements Seekable {
     // TODO: Implement
-    long mPosition;
-    long mFlushedPosition;
-    boolean mClosed;
+    long position;
+    long flushedPosition;
+    boolean closed;
 
-    protected Stack<Long> mMarkedPositions = new Stack<Long>();
+    protected Stack<Long> markedPositions = new Stack<Long>();
 
     /// Outputstream overrides
     @Override
@@ -63,28 +63,28 @@ public abstract class SeekableOutputStream extends OutputStream implements Seeka
 
         // TODO: This is correct according to javax.imageio (IndexOutOfBoundsException),
         // but it's inconsistent with reset that throws IOException...
-        if (pPosition < mFlushedPosition) {
+        if (pPosition < flushedPosition) {
             throw new IndexOutOfBoundsException("position < flushedPosition!");
         }
 
         seekImpl(pPosition);
-        mPosition = pPosition;
+        position = pPosition;
     }
 
     protected abstract void seekImpl(long pPosition) throws IOException;
 
     public final void mark() {
-        mMarkedPositions.push(mPosition);
+        markedPositions.push(position);
     }
 
     public final void reset() throws IOException {
         checkOpen();
-        if (!mMarkedPositions.isEmpty()) {
-            long newPos = mMarkedPositions.pop();
+        if (!markedPositions.isEmpty()) {
+            long newPos = markedPositions.pop();
 
             // TODO: This is correct according to javax.imageio (IOException),
             // but it's inconsistent with seek that throws IndexOutOfBoundsException...
-            if (newPos < mFlushedPosition) {
+            if (newPos < flushedPosition) {
                 throw new IOException("Previous marked position has been discarded!");
             }
 
@@ -93,7 +93,7 @@ public abstract class SeekableOutputStream extends OutputStream implements Seeka
     }
 
     public final void flushBefore(long pPosition) throws IOException {
-        if (pPosition < mFlushedPosition) {
+        if (pPosition < flushedPosition) {
             throw new IndexOutOfBoundsException("position < flushedPosition!");
         }
         if (pPosition > getStreamPosition()) {
@@ -101,28 +101,28 @@ public abstract class SeekableOutputStream extends OutputStream implements Seeka
         }
         checkOpen();
         flushBeforeImpl(pPosition);
-        mFlushedPosition = pPosition;
+        flushedPosition = pPosition;
     }
 
     protected abstract void flushBeforeImpl(long pPosition) throws IOException;
 
     @Override
     public final void flush() throws IOException {
-        flushBefore(mFlushedPosition);
+        flushBefore(flushedPosition);
     }
 
     public final long getFlushedPosition() throws IOException {
         checkOpen();
-        return mFlushedPosition;
+        return flushedPosition;
     }
 
     public final long getStreamPosition() throws IOException {
         checkOpen();
-        return mPosition;
+        return position;
     }
 
     protected final void checkOpen() throws IOException {
-        if (mClosed) {
+        if (closed) {
             throw new IOException("closed");
         }
     }
@@ -130,7 +130,7 @@ public abstract class SeekableOutputStream extends OutputStream implements Seeka
     @Override
     public final void close() throws IOException {
         checkOpen();
-        mClosed = true;
+        closed = true;
         closeImpl();
     }
 

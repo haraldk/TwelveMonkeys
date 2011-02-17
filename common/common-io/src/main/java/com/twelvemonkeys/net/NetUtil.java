@@ -3,7 +3,6 @@ package com.twelvemonkeys.net;
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.lang.DateUtil;
-import com.twelvemonkeys.util.BASE64;
 import com.twelvemonkeys.util.CollectionUtil;
 
 import java.io.*;

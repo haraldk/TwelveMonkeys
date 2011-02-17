@@ -28,29 +28,31 @@
 
 package com.twelvemonkeys.net;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.net.Authenticator;
 import java.net.InetAddress;
 import java.net.PasswordAuthentication;
 import java.net.URL;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A simple Authenticator implementation.
- * Singleton class, obtain reference through the static 
+ * Singleton class, obtain reference through the static
  * {@code getInstance} method.
- * <P>
+ * <p/>
  * <EM>After swearing, sweating, pulling my hair, banging my head repeatedly
- * into the walls and reading the java.net.Authenticator API documentation 
+ * into the walls and reading the java.net.Authenticator API documentation
  * once more, an idea came to my mind. This is the result. I hope you find it
  * useful. -- Harald K.</EM>
  *
- * @see java.net.Authenticator
- *
  * @author Harald Kuhr (haraldk@iconmedialab.no)
- * @version 1.0 
+ * @version 1.0
+ * @see java.net.Authenticator
  */
 public class SimpleAuthenticator extends Authenticator {
-    
+
     /** The reference to the single instance of this class. */
     private static SimpleAuthenticator sInstance = null;
     /** Keeps track of the state of this class. */
@@ -63,237 +65,179 @@ public class SimpleAuthenticator extends Authenticator {
     /** Basic authentication scheme. */
     public final static String BASIC = "Basic";
 
-    /**
-     * The hastable that keeps track of the PasswordAuthentications.
-     */
+    /** The hastable that keeps track of the PasswordAuthentications. */
+    protected Map<AuthKey, PasswordAuthentication> passwordAuthentications = null;
 
-    protected Hashtable mPasswordAuthentications = null;
+    /** The hastable that keeps track of the Authenticators. */
+    protected Map<PasswordAuthenticator, AuthenticatorFilter> authenticators = null;
 
-    /**
-     * The hastable that keeps track of the Authenticators.
-     */
-
-    protected Hashtable mAuthenticators = null;
-    	
-    /**
-     * Creates a SimpleAuthenticator.
-     */
-
+    /** Creates a SimpleAuthenticator. */
     private SimpleAuthenticator() {
-    	mPasswordAuthentications = new Hashtable();
-    	mAuthenticators = new Hashtable();
+        passwordAuthentications = new HashMap<AuthKey, PasswordAuthentication>();
+        authenticators = new HashMap<PasswordAuthenticator, AuthenticatorFilter>();
     }
 
     /**
-     * Gets the SimpleAuthenticator instance and registers it through the 
+     * Gets the SimpleAuthenticator instance and registers it through the
      * Authenticator.setDefault(). If there is no current instance
      * of the SimpleAuthenticator in the VM, one is created. This method will
-     * try to figure out if the setDefault() succeeded (a hack), and will 
+     * try to figure out if the setDefault() succeeded (a hack), and will
      * return null if it was not able to register the instance as default.
      *
-     * @return The single instance of this class, or null, if another 
-     * Authenticator is allready registered as default.
+     * @return The single instance of this class, or null, if another
+     *         Authenticator is allready registered as default.
      */
-
     public static synchronized SimpleAuthenticator getInstance() {
-    	if (!sInitialized) {
-    	    // Create an instance
-    	    sInstance = new SimpleAuthenticator();
+        if (!sInitialized) {
+            // Create an instance
+            sInstance = new SimpleAuthenticator();
 
-    	    // Try to set default (this may quietly fail...)
-    	    Authenticator.setDefault(sInstance);
+            // Try to set default (this may quietly fail...)
+            Authenticator.setDefault(sInstance);
 
-    	    // A hack to figure out if we really did set the authenticator
-    	    PasswordAuthentication pa = 
-    	    	Authenticator.requestPasswordAuthentication(null, FOURTYTWO,
-    	    	                                            null, null, MAGIC);
+            // A hack to figure out if we really did set the authenticator
+            PasswordAuthentication pa = Authenticator.requestPasswordAuthentication(null, FOURTYTWO, null, null, MAGIC);
 
-    	    // If this test returns false, we didn't succeed, so we set the 
-    	    // instance back to null.
-    	    if (pa == null || !MAGIC.equals(pa.getUserName()) ||
-    	        !("" + FOURTYTWO).equals(new String(pa.getPassword())))
-    	    	sInstance = null;
+            // If this test returns false, we didn't succeed, so we set the
+            // instance back to null.
+            if (pa == null || !MAGIC.equals(pa.getUserName()) || !("" + FOURTYTWO).equals(new String(pa.getPassword()))) {
+                sInstance = null;
+            }
 
-    	    // Done
-    	    sInitialized = true;
-    	}
+            // Done
+            sInitialized = true;
+        }
 
-    	return sInstance;    	
+        return sInstance;
     }
 
     /**
-     * Gets the PasswordAuthentication for the request. Called when password 
+     * Gets the PasswordAuthentication for the request. Called when password
      * authorization is needed.
      *
-     * @return The PasswordAuthentication collected from the user, or null if 
+     * @return The PasswordAuthentication collected from the user, or null if
      *         none is provided.
      */
-    
     protected PasswordAuthentication getPasswordAuthentication() {
-    	// Don't worry, this is just a hack to figure out if we were able
-    	// to set this Authenticator through the setDefault method. 
-    	if (!sInitialized && MAGIC.equals(getRequestingScheme()) 
-    	    && getRequestingPort() == FOURTYTWO)
-    	    return new PasswordAuthentication(MAGIC, ("" + FOURTYTWO)
-        	    .toCharArray());
-	/*
-	System.err.println("getPasswordAuthentication");
-	System.err.println(getRequestingSite());
-	System.err.println(getRequestingPort());
-	System.err.println(getRequestingProtocol());
-	System.err.println(getRequestingPrompt());
-	System.err.println(getRequestingScheme());
-	*/
+        // Don't worry, this is just a hack to figure out if we were able
+        // to set this Authenticator through the setDefault method.
+        if (!sInitialized && MAGIC.equals(getRequestingScheme()) && getRequestingPort() == FOURTYTWO) {
+            return new PasswordAuthentication(MAGIC, ("" + FOURTYTWO).toCharArray());
+        }
+        /*
+         System.err.println("getPasswordAuthentication");
+         System.err.println(getRequestingSite());
+         System.err.println(getRequestingPort());
+         System.err.println(getRequestingProtocol());
+         System.err.println(getRequestingPrompt());
+         System.err.println(getRequestingScheme());
+         */
 
-    	// TODO: 
-    	// Look for a more specific PasswordAuthenticatior before using
-    	// Default:
-    	// 
-    	// if (...)
-    	//    return pa.requestPasswordAuthentication(getRequestingSite(),
-    	//    	                                      getRequestingPort(), 
-    	//                                            getRequestingProtocol(), 
-    	//                                            getRequestingPrompt(),
-    	//                                    	      getRequestingScheme());
+        // TODO:
+        // Look for a more specific PasswordAuthenticatior before using
+        // Default:
+        //
+        // if (...)
+        //    return pa.requestPasswordAuthentication(getRequestingSite(),
+        //    	                                      getRequestingPort(),
+        //                                            getRequestingProtocol(),
+        //                                            getRequestingPrompt(),
+        //                                    	      getRequestingScheme());
 
-    	return (PasswordAuthentication) 
-    	    mPasswordAuthentications.get(new AuthKey(getRequestingSite(),
-    	                                             getRequestingPort(), 
-    	                                             getRequestingProtocol(), 
-    	                                             getRequestingPrompt(),
-    	                                             getRequestingScheme()));
+        return passwordAuthentications.get(new AuthKey(getRequestingSite(),
+                getRequestingPort(),
+                getRequestingProtocol(),
+                getRequestingPrompt(),
+                getRequestingScheme()));
     }
 
-    /**
-     * Registers a PasswordAuthentication with a given URL address.
-     *
-     */
-
-    public PasswordAuthentication registerPasswordAuthentication(URL pURL, 
-                                                  PasswordAuthentication pPA) {
-    	return  registerPasswordAuthentication(NetUtil.createInetAddressFromURL(pURL),
-    	                                       pURL.getPort(),
-    	                                       pURL.getProtocol(),
-    	                                       null, // Prompt/Realm
-    	                                       BASIC,
-    	                                       pPA);
+    /** Registers a PasswordAuthentication with a given URL address. */
+    public PasswordAuthentication registerPasswordAuthentication(URL pURL, PasswordAuthentication pPA) {
+        return registerPasswordAuthentication(NetUtil.createInetAddressFromURL(pURL),
+                pURL.getPort(),
+                pURL.getProtocol(),
+                null, // Prompt/Realm
+                BASIC,
+                pPA);
     }
 
-    /**
-     * Registers a PasswordAuthentication with a given net address.
-     *
-     */
+    /** Registers a PasswordAuthentication with a given net address. */
+    public PasswordAuthentication registerPasswordAuthentication(InetAddress pAddress, int pPort, String pProtocol, String pPrompt, String pScheme, PasswordAuthentication pPA) {
+        /*
+         System.err.println("registerPasswordAuthentication");
+         System.err.println(pAddress);
+         System.err.println(pPort);
+         System.err.println(pProtocol);
+         System.err.println(pPrompt);
+         System.err.println(pScheme);
+         */
 
-    public PasswordAuthentication registerPasswordAuthentication(
-    	InetAddress pAddress, int pPort, String pProtocol,
-    	String pPrompt, String pScheme, PasswordAuthentication pPA)
-    {
-	/*
-	System.err.println("registerPasswordAuthentication");
-	System.err.println(pAddress);
-	System.err.println(pPort);
-	System.err.println(pProtocol);
-	System.err.println(pPrompt);
-	System.err.println(pScheme);
-	*/
-
-    	return (PasswordAuthentication) 
-    	    mPasswordAuthentications.put(new AuthKey(pAddress, pPort, 
-    	                                             pProtocol, pPrompt, 
-    	                                             pScheme),
-    	                                 pPA);
+        return passwordAuthentications.put(new AuthKey(pAddress, pPort, pProtocol, pPrompt, pScheme), pPA);
     }
 
-    /**
-     * Unregisters a PasswordAuthentication with a given URL address.
-     *
-     */
-    
+    /** Unregisters a PasswordAuthentication with a given URL address. */
     public PasswordAuthentication unregisterPasswordAuthentication(URL pURL) {
-    	return unregisterPasswordAuthentication(NetUtil.createInetAddressFromURL(pURL),
-    	                                        pURL.getPort(),
-    	                                        pURL.getProtocol(),
-    	                                        null,
-    	                                        BASIC);
+        return unregisterPasswordAuthentication(NetUtil.createInetAddressFromURL(pURL), pURL.getPort(), pURL.getProtocol(), null, BASIC);
     }
 
-    /**
-     * Unregisters a PasswordAuthentication with a given net address.
-     *
-     */
-    
-    public PasswordAuthentication unregisterPasswordAuthentication(
-        InetAddress pAddress, int pPort, String pProtocol,
-    	String pPrompt, String pScheme)
-    {
-    	return (PasswordAuthentication) 
-    	    mPasswordAuthentications.remove(new AuthKey(pAddress, pPort,
-    	                                                pProtocol, pPrompt,
-    	                                                pScheme));
+    /** Unregisters a PasswordAuthentication with a given net address. */
+    public PasswordAuthentication unregisterPasswordAuthentication(InetAddress pAddress, int pPort, String pProtocol, String pPrompt, String pScheme) {
+        return passwordAuthentications.remove(new AuthKey(pAddress, pPort, pProtocol, pPrompt, pScheme));
     }
 
     /**
      * TODO: Registers a PasswordAuthenticator that can answer authentication
      * requests.
-     * 
+     *
      * @see PasswordAuthenticator
      */
-
-    public void registerPasswordAuthenticator(PasswordAuthenticator pPA,
-                                              AuthenticatorFilter pFilter) {
-    	mAuthenticators.put(pPA, pFilter);
+    public void registerPasswordAuthenticator(PasswordAuthenticator pPA, AuthenticatorFilter pFilter) {
+        authenticators.put(pPA, pFilter);
     }
 
     /**
      * TODO: Unregisters a PasswordAuthenticator that can answer authentication
      * requests.
-     * 
+     *
      * @see PasswordAuthenticator
      */
-    
     public void unregisterPasswordAuthenticator(PasswordAuthenticator pPA) {
-    	mAuthenticators.remove(pPA);
+        authenticators.remove(pPA);
     }
-    
 }
 
 /**
  * Utility class, used for caching the PasswordAuthentication objects.
  * Everything but address may be null
  */
-
 class AuthKey {
-    
-    InetAddress mAddress = null;
-    int mPort = -1;
-    String mProtocol = null;
-    String mPrompt = null;
-    String mScheme = null;
 
-    AuthKey(InetAddress pAddress, int pPort, String pProtocol,
-            String pPrompt, String pScheme) {
-    	if (pAddress == null)
-    	    throw new IllegalArgumentException("Address argument can't be null!");
+    InetAddress address = null;
+    int port = -1;
+    String protocol = null;
+    String prompt = null;
+    String scheme = null;
 
-    	mAddress = pAddress;
-    	mPort = pPort;
-    	mProtocol = pProtocol;
-    	mPrompt = pPrompt;
-    	mScheme = pScheme;
+    AuthKey(InetAddress pAddress, int pPort, String pProtocol, String pPrompt, String pScheme) {
+        Validate.notNull(pAddress, "address");
 
-    	//    	System.out.println("Created: " + this); 
+        address = pAddress;
+        port = pPort;
+        protocol = pProtocol;
+        prompt = pPrompt;
+        scheme = pScheme;
+
+        //    	System.out.println("Created: " + this);
     }
 
-    /**
-     * Creates a string representation of this object.
-     */
+    /** Creates a string representation of this object. */
 
     public String toString() {
-    	return "AuthKey[" + mAddress + ":"  + mPort + "/"  + mProtocol + " \"" + mPrompt + "\" (" + mScheme + ")]";
+        return "AuthKey[" + address + ":" + port + "/" + protocol + " \"" + prompt + "\" (" + scheme + ")]";
     }
 
     public boolean equals(Object pObj) {
-    	return (pObj instanceof AuthKey ? equals((AuthKey) pObj) : false);
+        return (pObj instanceof AuthKey && equals((AuthKey) pObj));
     }
 
     // Ahem.. Breaks the rule from Object.equals(Object):
@@ -302,25 +246,25 @@ class AuthKey {
     // should return true. 
 
     public boolean equals(AuthKey pKey) {
-    	// Maybe allow nulls, and still be equal?
-    	return (mAddress.equals(pKey.mAddress)
-    	        && (mPort == -1
-    	            || pKey.mPort == -1
-    	            || mPort == pKey.mPort)
-    	        && (mProtocol == null 
-    	            || pKey.mProtocol == null
-    	            || mProtocol.equals(pKey.mProtocol))
-    	        && (mPrompt == null 
-    	            || pKey.mPrompt == null
-    	            || mPrompt.equals(pKey.mPrompt))
-    	        && (mScheme == null
-    	            || pKey.mScheme == null
-    	            || mScheme.equalsIgnoreCase(pKey.mScheme)));
+        // Maybe allow nulls, and still be equal?
+        return (address.equals(pKey.address)
+                && (port == -1
+                || pKey.port == -1
+                || port == pKey.port)
+                && (protocol == null
+                || pKey.protocol == null
+                || protocol.equals(pKey.protocol))
+                && (prompt == null
+                || pKey.prompt == null
+                || prompt.equals(pKey.prompt))
+                && (scheme == null
+                || pKey.scheme == null
+                || scheme.equalsIgnoreCase(pKey.scheme)));
     }
 
     public int hashCode() {
-    	// There won't be too many pr address, will it? ;-)
-    	return mAddress.hashCode();
+        // There won't be too many pr address, will it? ;-)
+        return address.hashCode();
     }
 }
 

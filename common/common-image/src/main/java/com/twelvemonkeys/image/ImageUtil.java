@@ -32,7 +32,6 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
-
 import java.util.Hashtable;
 
 /**
@@ -354,7 +353,7 @@ public final class ImageUtil {
      * The new image will have the same {@code ColorModel}, {@code Raster} and
      * properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage}, it is simply returned
+     * If the image is already a {@code BufferedImage}, it is simply returned
      * and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -365,7 +364,7 @@ public final class ImageUtil {
      * @throws ImageConversionException if the image cannot be converted
      */
     public static BufferedImage toBuffered(Image pOriginal) {
-        // Don't convert if it allready is BufferedImage
+        // Don't convert if it already is BufferedImage
         if (pOriginal instanceof BufferedImage) {
             return (BufferedImage) pOriginal;
         }
@@ -543,9 +542,10 @@ public final class ImageUtil {
      */
     static WritableRaster createCompatibleWritableRaster(BufferedImage pOriginal, ColorModel pModel, int mWidth, int mHeight) {
         if (pModel == null || equals(pOriginal.getColorModel(), pModel)) {
+            int[] bOffs;
             switch (pOriginal.getType()) {
                 case BufferedImage.TYPE_3BYTE_BGR:
-                    int[] bOffs = {2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
+                    bOffs = new int[]{2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
                     return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
                                                           mWidth, mHeight,
                                                           mWidth * 3, 3,
@@ -557,6 +557,17 @@ public final class ImageUtil {
                                                           mWidth, mHeight,
                                                           mWidth * 4, 4,
                                                           bOffs, null);
+                case BufferedImage.TYPE_CUSTOM:
+                    // Peek into the sample model to see if we have a sample model that will be incompatible with the default case
+                    SampleModel sm = pOriginal.getRaster().getSampleModel();
+                    if (sm instanceof ComponentSampleModel) {
+                        bOffs = ((ComponentSampleModel) sm).getBandOffsets();
+                        return Raster.createInterleavedRaster(sm.getDataType(),
+                                                              mWidth, mHeight,
+                                                              mWidth * bOffs.length, bOffs.length,
+                                                              bOffs, null);
+                    }
+                    // Else fall through
                 default:
                     return pOriginal.getColorModel().createCompatibleWritableRaster(mWidth, mHeight);
             }
@@ -569,7 +580,7 @@ public final class ImageUtil {
      * The new image will have the same {@code ColorModel}, {@code Raster} and
      * properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage} of the given type, it
+     * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -597,7 +608,7 @@ public final class ImageUtil {
      * the color model
      */
     private static BufferedImage toBuffered(Image pOriginal, int pType, IndexColorModel pICM) {
-        // Don't convert if it allready is BufferedImage and correct type
+        // Don't convert if it already is BufferedImage and correct type
         if ((pOriginal instanceof BufferedImage)
                 && ((BufferedImage) pOriginal).getType() == pType
                 && (pICM == null || equals(((BufferedImage) pOriginal).getColorModel(), pICM))) {
@@ -784,7 +795,7 @@ public final class ImageUtil {
      * Creates a scaled instance of the given {@code Image}, and converts it to
      * a {@code BufferedImage} if needed.
      * If the original image is a {@code BufferedImage} the result will have
-     * same type and colormodel. Note that this implies overhead, and is
+     * same type and color model. Note that this implies overhead, and is
      * probably not useful for anything but {@code IndexColorModel} images.
      *
      * @param pImage the {@code Image} to scale
@@ -820,7 +831,7 @@ public final class ImageUtil {
 
         BufferedImage scaled = createResampled(pImage, pWidth, pHeight, pHints);
 
-        // Convert if colormodels or type differ, to behave as documented
+        // Convert if color models or type differ, to behave as documented
         if (type != scaled.getType() && type != BI_TYPE_ANY || !equals(scaled.getColorModel(), cm)) {
             //System.out.print("Converting TYPE " + scaled.getType() + " -> " + type + "... ");
             //long start = System.currentTimeMillis();
@@ -965,9 +976,6 @@ public final class ImageUtil {
     }
 
     private static int convertAWTHints(int pHints) {
-        // TODO: These conversions are broken!
-        // box == area average
-        // point == replicate (or..?)
         switch (pHints) {
             case Image.SCALE_FAST:
             case Image.SCALE_REPLICATE:

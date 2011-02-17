@@ -63,11 +63,11 @@ import java.io.EOFException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/PackBitsDecoder.java#1 $
  */
 public final class PackBitsDecoder implements Decoder {
-    private final boolean mDisableNoop;
+    private final boolean disableNoop;
 
-    private int mLeftOfRun;
-    private boolean mSplitRun;
-    private boolean mEOF;
+    private int leftOfRun;
+    private boolean splitRun;
+    private boolean reachedEOF;
 
     /** Creates a {@code PackBitsDecoder}. */
     public PackBitsDecoder() {
@@ -86,7 +86,7 @@ public final class PackBitsDecoder implements Decoder {
      * @param pDisableNoop {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
      */
     public PackBitsDecoder(final boolean pDisableNoop) {
-        mDisableNoop = pDisableNoop;
+        disableNoop = pDisableNoop;
     }
 
     /**
@@ -100,7 +100,7 @@ public final class PackBitsDecoder implements Decoder {
      * @throws IOException
      */
     public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
-        if (mEOF) {
+        if (reachedEOF) {
             return -1;
         }
 
@@ -111,16 +111,16 @@ public final class PackBitsDecoder implements Decoder {
         while (read < max) {
             int n;
             
-            if (mSplitRun) {
+            if (splitRun) {
                 // Continue run
-                n = mLeftOfRun;
-                mSplitRun = false;
+                n = leftOfRun;
+                splitRun = false;
             }
             else {
                 // Start new run
                 int b = pStream.read();
                 if (b < 0) {
-                    mEOF = true;
+                    reachedEOF = true;
                     break;
                 }
                 n = (byte) b;
@@ -128,13 +128,13 @@ public final class PackBitsDecoder implements Decoder {
 
             // Split run at or before max
             if (n >= 0 && n + 1 + read > max) {
-                mLeftOfRun = n;
-                mSplitRun = true;
+                leftOfRun = n;
+                splitRun = true;
                 break;
             }
             else if (n < 0 && -n + 1 + read > max) {
-                mLeftOfRun = n;
-                mSplitRun = true;
+                leftOfRun = n;
+                splitRun = true;
                 break;
             }
 
@@ -146,7 +146,7 @@ public final class PackBitsDecoder implements Decoder {
                     read += n + 1;
                 }
                 // Allow -128 for compatibility, see above
-                else if (mDisableNoop || n != -128) {
+                else if (disableNoop || n != -128) {
                     // Replicate the next byte -n + 1 times
                     byte value = readByte(pStream);
 

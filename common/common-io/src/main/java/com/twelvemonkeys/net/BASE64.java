@@ -26,7 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.util;
+package com.twelvemonkeys.net;
 
 import com.twelvemonkeys.io.*;
 import com.twelvemonkeys.io.enc.Base64Decoder;
@@ -41,8 +41,9 @@ import java.io.*;
  * @author unascribed
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/BASE64.java#1 $
+ * @deprecated Use {@link com.twelvemonkeys.io.enc.Base64Encoder}/{@link Base64Decoder} instead
  */
-public class BASE64 {
+class BASE64 {
 
     /**
      * This array maps the characters to their 6 bit values

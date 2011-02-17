@@ -43,15 +43,15 @@ import java.util.Stack;
 public abstract class SeekableInputStream extends InputStream implements Seekable {
 
     // TODO: It's at the moment not possible to create subclasses outside this
-    // package, as there's no access to mPosition. mPosition needs to be
+    // package, as there's no access to position. position needs to be
     // updated from the read/read/read methods...
 
     /** The stream position in this stream */
-    long mPosition;
-    long mFlushedPosition;
-    boolean mClosed;
+    long position;
+    long flushedPosition;
+    boolean closed;
 
-    protected Stack<Long> mMarkedPositions = new Stack<Long>();
+    protected Stack<Long> markedPositions = new Stack<Long>();
 
     /// InputStream overrides
     @Override
@@ -70,8 +70,8 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
      */
     @Override
     public final long skip(long pLength) throws IOException {
-        long pos = mPosition;
-        if (pos + pLength < mFlushedPosition) {
+        long pos = position;
+        if (pos + pLength < flushedPosition) {
             throw new IOException("position < flushedPosition");
         }
 
@@ -79,7 +79,7 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
         // to seek past end of stream
         seek(Math.min(pos + pLength, pos + available()));
 
-        return mPosition - pos;
+        return position - pos;
     }
 
     @Override
@@ -88,7 +88,7 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
 
         // TODO: We don't really need to do this.. Is it a good idea?
         try {
-            flushBefore(Math.max(mPosition - pLimit, mFlushedPosition));
+            flushBefore(Math.max(position - pLimit, flushedPosition));
         }
         catch (IOException ignore) {
             // Ignore, as it's not really critical
@@ -111,29 +111,29 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
 
         // NOTE: This is correct according to javax.imageio (IndexOutOfBoundsException),
         // but it's kind of inconsistent with reset that throws IOException...
-        if (pPosition < mFlushedPosition) {
+        if (pPosition < flushedPosition) {
            throw new IndexOutOfBoundsException("position < flushedPosition");
         }
 
         seekImpl(pPosition);
-        mPosition = pPosition;
+        position = pPosition;
     }
 
     protected abstract void seekImpl(long pPosition) throws IOException;
 
     public final void mark() {
-        mMarkedPositions.push(mPosition);
+        markedPositions.push(position);
     }
 
     @Override
     public final void reset() throws IOException {
         checkOpen();
-        if (!mMarkedPositions.isEmpty()) {
-            long newPos = mMarkedPositions.pop();
+        if (!markedPositions.isEmpty()) {
+            long newPos = markedPositions.pop();
 
             // NOTE: This is correct according to javax.imageio (IOException),
             // but it's kind of inconsistent with seek that throws IndexOutOfBoundsException...
-            if (newPos < mFlushedPosition) {
+            if (newPos < flushedPosition) {
                 throw new IOException("Previous marked position has been discarded");
             }
 
@@ -150,7 +150,7 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
     }
 
     public final void flushBefore(long pPosition) throws IOException {
-        if (pPosition < mFlushedPosition) {
+        if (pPosition < flushedPosition) {
             throw new IndexOutOfBoundsException("position < flushedPosition");
         }
         if (pPosition > getStreamPosition()) {
@@ -158,7 +158,7 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
         }
         checkOpen();
         flushBeforeImpl(pPosition);
-        mFlushedPosition = pPosition;
+        flushedPosition = pPosition;
     }
 
     /**
@@ -172,21 +172,21 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
     protected abstract void flushBeforeImpl(long pPosition) throws IOException;
 
     public final void flush() throws IOException {
-        flushBefore(mFlushedPosition);
+        flushBefore(flushedPosition);
     }
 
     public final long getFlushedPosition() throws IOException {
         checkOpen();
-        return mFlushedPosition;
+        return flushedPosition;
     }
 
     public final long getStreamPosition() throws IOException {
         checkOpen();
-        return mPosition;
+        return position;
     }
 
     protected final void checkOpen() throws IOException {
-        if (mClosed) {
+        if (closed) {
             throw new IOException("closed");
         }
     }
@@ -194,7 +194,7 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
     @Override
     public final void close() throws IOException {
         checkOpen();
-        mClosed = true;
+        closed = true;
         closeImpl();
     }
 
@@ -211,7 +211,7 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
      */
     @Override
     protected void finalize() throws Throwable {
-        if (!mClosed) {
+        if (!closed) {
             try {
                 close();
             }

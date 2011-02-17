@@ -46,15 +46,16 @@ import java.util.List;
  */
 public class CompoundReader extends Reader {
 
-    private Reader mCurrent;
-    private List<Reader> mReaders;
-    protected final Object mLock;
+    private Reader current;
+    private List<Reader> readers;
 
-    protected final boolean mMarkSupported;
+    protected final Object finalLock;
 
-    private int mCurrentReader;
-    private int mMarkedReader;
-    private int mMark;
+    protected final boolean markSupported;
+
+    private int currentReader;
+    private int markedReader;
+    private int mark;
     private int mNext;
 
     /**
@@ -71,10 +72,10 @@ public class CompoundReader extends Reader {
     public CompoundReader(final Iterator<Reader> pReaders) {
         super(Validate.notNull(pReaders, "readers"));
 
-        mLock = pReaders; // NOTE: It's ok to sync on pReaders, as the
+        finalLock = pReaders; // NOTE: It's ok to sync on pReaders, as the
                           // reference can't change, only it's elements
 
-        mReaders = new ArrayList<Reader>();
+        readers = new ArrayList<Reader>();
 
         boolean markSupported = true;
         while (pReaders.hasNext()) {
@@ -82,25 +83,25 @@ public class CompoundReader extends Reader {
             if (reader == null) {
                 throw new NullPointerException("readers cannot contain null-elements");
             }
-            mReaders.add(reader);
+            readers.add(reader);
             markSupported = markSupported && reader.markSupported();
         }
-        mMarkSupported = markSupported;
+        this.markSupported = markSupported;
 
-        mCurrent = nextReader();
+        current = nextReader();
     }
 
     protected final Reader nextReader() {
-        if (mCurrentReader >= mReaders.size()) {
-            mCurrent = new EmptyReader();
+        if (currentReader >= readers.size()) {
+            current = new EmptyReader();
         }
         else {
-            mCurrent = mReaders.get(mCurrentReader++);
+            current = readers.get(currentReader++);
         }
         
         // NOTE: Reset mNext for every reader, and record marked reader in mark/reset methods!
         mNext = 0;
-        return mCurrent;
+        return current;
     }
 
     /**
@@ -109,17 +110,18 @@ public class CompoundReader extends Reader {
      * @throws IOException if the stream is closed
      */
     protected final void ensureOpen() throws IOException {
-        if (mReaders == null) {
+        if (readers == null) {
             throw new IOException("Stream closed");
         }
     }
 
     public void close() throws IOException {
         // Close all readers
-        for (Reader reader : mReaders) {
+        for (Reader reader : readers) {
             reader.close();
         }
-        mReaders = null;
+
+        readers = null;
     }
 
     @Override
@@ -130,46 +132,46 @@ public class CompoundReader extends Reader {
 
         // TODO: It would be nice if we could actually close some readers now
 
-        synchronized (mLock) {
+        synchronized (finalLock) {
             ensureOpen();
-            mMark = mNext;
-            mMarkedReader = mCurrentReader;
+            mark = mNext;
+            markedReader = currentReader;
 
-            mCurrent.mark(pReadLimit);
+            current.mark(pReadLimit);
         }
     }
 
     @Override
     public void reset() throws IOException {
-        synchronized (mLock) {
+        synchronized (finalLock) {
             ensureOpen();
 
-            if (mCurrentReader != mMarkedReader) {
+            if (currentReader != markedReader) {
                 // Reset any reader before this
-                for (int i = mCurrentReader; i >= mMarkedReader; i--) {
-                    mReaders.get(i).reset();
+                for (int i = currentReader; i >= markedReader; i--) {
+                    readers.get(i).reset();
                 }
 
-                mCurrentReader = mMarkedReader - 1;
+                currentReader = markedReader - 1;
                 nextReader();
             }
-            mCurrent.reset();
+            current.reset();
 
-            mNext = mMark;
+            mNext = mark;
         }
     }
 
     @Override
     public boolean markSupported() {
-        return mMarkSupported;
+        return markSupported;
     }
 
     @Override
     public int read() throws IOException {
-        synchronized (mLock) {
-            int read = mCurrent.read();
+        synchronized (finalLock) {
+            int read = current.read();
 
-            if (read < 0 && mCurrentReader < mReaders.size()) {
+            if (read < 0 && currentReader < readers.size()) {
                 nextReader();
                 return read(); // In case of 0-length readers
             }
@@ -181,10 +183,10 @@ public class CompoundReader extends Reader {
     }
 
     public int read(char pBuffer[], int pOffset, int pLength) throws IOException {
-        synchronized (mLock) {
-            int read = mCurrent.read(pBuffer, pOffset, pLength);
+        synchronized (finalLock) {
+            int read = current.read(pBuffer, pOffset, pLength);
 
-            if (read < 0 && mCurrentReader < mReaders.size()) {
+            if (read < 0 && currentReader < readers.size()) {
                 nextReader();
                 return read(pBuffer, pOffset, pLength); // In case of 0-length readers
             }
@@ -197,15 +199,15 @@ public class CompoundReader extends Reader {
 
     @Override
     public boolean ready() throws IOException {
-        return mCurrent.ready();
+        return current.ready();
     }
 
     @Override
     public long skip(long pChars) throws IOException {
-        synchronized (mLock) {
-            long skipped = mCurrent.skip(pChars);
+        synchronized (finalLock) {
+            long skipped = current.skip(pChars);
 
-            if (skipped == 0 && mCurrentReader < mReaders.size()) {
+            if (skipped == 0 && currentReader < readers.size()) {
                 nextReader();
                 return skip(pChars); // In case of 0-length readers
             }

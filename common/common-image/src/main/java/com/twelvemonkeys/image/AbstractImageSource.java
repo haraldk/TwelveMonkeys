@@ -41,21 +41,24 @@ import java.util.ArrayList;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/AbstractImageSource.java#1 $
  */
 public abstract class AbstractImageSource implements ImageProducer {
-    private List<ImageConsumer> mConsumers = new ArrayList<ImageConsumer>();
-    protected int mWidth;
-    protected int mHeight;
-    protected int mXOff;
-    protected int mYOff;
+    private List<ImageConsumer> consumers = new ArrayList<ImageConsumer>();
+    protected int width;
+    protected int height;
+    protected int xOff;
+    protected int yOff;
 
     // ImageProducer interface
-    public void addConsumer(ImageConsumer pConsumer) {
-        if (mConsumers.contains(pConsumer)) {
+    public void addConsumer(final ImageConsumer pConsumer) {
+        if (consumers.contains(pConsumer)) {
             return;
         }
-        mConsumers.add(pConsumer);
+
+        consumers.add(pConsumer);
+
         try {
             initConsumer(pConsumer);
             sendPixels(pConsumer);
+
             if (isConsumer(pConsumer)) {
                 pConsumer.imageComplete(ImageConsumer.STATICIMAGEDONE);
 
@@ -68,34 +71,35 @@ public abstract class AbstractImageSource implements ImageProducer {
         }
         catch (Exception e) {
             e.printStackTrace();
+
             if (isConsumer(pConsumer)) {
                 pConsumer.imageComplete(ImageConsumer.IMAGEERROR);
             }
         }
     }
 
-    public void removeConsumer(ImageConsumer pConsumer) {
-        mConsumers.remove(pConsumer);
+    public void removeConsumer(final ImageConsumer pConsumer) {
+        consumers.remove(pConsumer);
     }
 
     /**
-     * This implementation silently ignores this instruction. If pixeldata is
+     * This implementation silently ignores this instruction. If pixel data is
      * not in TDLR order by default, subclasses must override this method.
      *
      * @param pConsumer the consumer that requested the resend
      *
      * @see ImageProducer#requestTopDownLeftRightResend(java.awt.image.ImageConsumer)
      */
-    public void requestTopDownLeftRightResend(ImageConsumer pConsumer) {
+    public void requestTopDownLeftRightResend(final ImageConsumer pConsumer) {
         // ignore
     }
 
-    public void startProduction(ImageConsumer pConsumer) {
+    public void startProduction(final ImageConsumer pConsumer) {
         addConsumer(pConsumer);
     }
 
-    public boolean isConsumer(ImageConsumer pConsumer) {
-        return mConsumers.contains(pConsumer);
+    public boolean isConsumer(final ImageConsumer pConsumer) {
+        return consumers.contains(pConsumer);
     }
 
     protected abstract void initConsumer(ImageConsumer pConsumer);

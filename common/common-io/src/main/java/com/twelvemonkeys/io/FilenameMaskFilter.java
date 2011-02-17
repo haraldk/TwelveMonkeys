@@ -60,9 +60,9 @@ import java.io.FilenameFilter;
 public class FilenameMaskFilter implements FilenameFilter {
 
     // Members
-    private String[] mFilenameMasksForInclusion;
-    private String[] mFilenameMasksForExclusion;
-    private boolean mInclusion = true;
+    private String[] filenameMasksForInclusion;
+    private String[] filenameMasksForExclusion;
+    private boolean inclusion = true;
 
 
     /**
@@ -127,29 +127,29 @@ public class FilenameMaskFilter implements FilenameFilter {
      * @param pFilenameMasksForInclusion the filename masks to include
      */
     public void setFilenameMasksForInclusion(String[] pFilenameMasksForInclusion) {
-        mFilenameMasksForInclusion = pFilenameMasksForInclusion;
+        filenameMasksForInclusion = pFilenameMasksForInclusion;
     }
 
     /**
      * @return the current inclusion masks
      */
     public String[] getFilenameMasksForInclusion() {
-        return mFilenameMasksForInclusion.clone();
+        return filenameMasksForInclusion.clone();
     }
 
     /**
      * @param pFilenameMasksForExclusion the filename masks to exclude
      */
     public void setFilenameMasksForExclusion(String[] pFilenameMasksForExclusion) {
-        mFilenameMasksForExclusion = pFilenameMasksForExclusion;
-        mInclusion = false;
+        filenameMasksForExclusion = pFilenameMasksForExclusion;
+        inclusion = false;
     }
 
     /**
      * @return the current exclusion masks
      */
     public String[] getFilenameMasksForExclusion() {
-        return mFilenameMasksForExclusion.clone();
+        return filenameMasksForExclusion.clone();
     }
 
     /**
@@ -164,8 +164,8 @@ public class FilenameMaskFilter implements FilenameFilter {
         WildcardStringParser parser;
 
         // Check each filename string mask whether the file is to be accepted
-        if (mInclusion) {  // Inclusion
-            for (String mask : mFilenameMasksForInclusion) {
+        if (inclusion) {  // Inclusion
+            for (String mask : filenameMasksForInclusion) {
                 parser = new WildcardStringParser(mask);
                 if (parser.parseString(pName)) {
 
@@ -181,7 +181,7 @@ public class FilenameMaskFilter implements FilenameFilter {
         }
         else {
             // Exclusion
-            for (String mask : mFilenameMasksForExclusion) {
+            for (String mask : filenameMasksForExclusion) {
                 parser = new WildcardStringParser(mask);
                 if (parser.parseString(pName)) {
 
@@ -204,32 +204,32 @@ public class FilenameMaskFilter implements FilenameFilter {
         StringBuilder retVal = new StringBuilder();
         int i;
 
-        if (mInclusion) {
+        if (inclusion) {
             // Inclusion
-            if (mFilenameMasksForInclusion == null) {
-                retVal.append("No filename masks set - property mFilenameMasksForInclusion is null!");
+            if (filenameMasksForInclusion == null) {
+                retVal.append("No filename masks set - property filenameMasksForInclusion is null!");
             }
             else {
-                retVal.append(mFilenameMasksForInclusion.length);
+                retVal.append(filenameMasksForInclusion.length);
                 retVal.append(" filename mask(s) - ");
-                for (i = 0; i < mFilenameMasksForInclusion.length; i++) {
+                for (i = 0; i < filenameMasksForInclusion.length; i++) {
                     retVal.append("\"");
-                    retVal.append(mFilenameMasksForInclusion[i]);
+                    retVal.append(filenameMasksForInclusion[i]);
                     retVal.append("\", \"");
                 }
             }
         }
         else {
             // Exclusion
-            if (mFilenameMasksForExclusion == null) {
-                retVal.append("No filename masks set - property mFilenameMasksForExclusion is null!");
+            if (filenameMasksForExclusion == null) {
+                retVal.append("No filename masks set - property filenameMasksForExclusion is null!");
             }
             else {
-                retVal.append(mFilenameMasksForExclusion.length);
+                retVal.append(filenameMasksForExclusion.length);
                 retVal.append(" exclusion filename mask(s) - ");
-                for (i = 0; i < mFilenameMasksForExclusion.length; i++) {
+                for (i = 0; i < filenameMasksForExclusion.length; i++) {
                     retVal.append("\"");
-                    retVal.append(mFilenameMasksForExclusion[i]);
+                    retVal.append(filenameMasksForExclusion[i]);
                     retVal.append("\", \"");
                 }
             }

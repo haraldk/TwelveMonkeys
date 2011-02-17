@@ -685,28 +685,28 @@ public final class FileUtil {
         // a file array, which may throw OutOfMemoryExceptions for
         // large directories/in low memory situations
         class DeleteFilesVisitor implements Visitor<File> {
-            private int mFailedCount = 0;
-            private IOException mException = null;
+            private int failedCount = 0;
+            private IOException exception = null;
 
             public void visit(final File pFile) {
                 try {
                     if (!delete(pFile, true)) {
-                        mFailedCount++;
+                        failedCount++;
                     }
                 }
                 catch (IOException e) {
-                    mFailedCount++;
-                    if (mException == null) {
-                        mException = e;
+                    failedCount++;
+                    if (exception == null) {
+                        exception = e;
                     }
                 }
             }
 
             boolean succeeded() throws IOException {
-                if (mException != null) {
-                    throw mException;
+                if (exception != null) {
+                    throw exception;
                 }
-                return mFailedCount == 0;
+                return failedCount == 0;
             }
         }
         DeleteFilesVisitor fileDeleter = new DeleteFilesVisitor();

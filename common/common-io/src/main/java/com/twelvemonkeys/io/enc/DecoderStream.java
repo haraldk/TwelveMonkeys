@@ -44,10 +44,10 @@ import java.io.FilterInputStream;
  */
 public final class DecoderStream extends FilterInputStream {
 
-    protected int mBufferPos;
-    protected int mBufferLimit;
-    protected final byte[] mBuffer;
-    protected final Decoder mDecoder;
+    protected int bufferPos;
+    protected int bufferLimit;
+    protected final byte[] buffer;
+    protected final Decoder decoder;
 
     /**
      * Creates a new decoder stream and chains it to the
@@ -76,26 +76,26 @@ public final class DecoderStream extends FilterInputStream {
      */
     public DecoderStream(final InputStream pStream, final Decoder pDecoder, final int pBufferSize) {
         super(pStream);
-        mDecoder = pDecoder;
-        mBuffer = new byte[pBufferSize];
-        mBufferPos = 0;
-        mBufferLimit = 0;
+        decoder = pDecoder;
+        buffer = new byte[pBufferSize];
+        bufferPos = 0;
+        bufferLimit = 0;
     }
 
     public int available() throws IOException {
-        return mBufferLimit - mBufferPos + super.available();
+        return bufferLimit - bufferPos + super.available();
     }
 
     public int read() throws IOException {
-        if (mBufferPos == mBufferLimit) {
-            mBufferLimit = fill();
+        if (bufferPos == bufferLimit) {
+            bufferLimit = fill();
         }
 
-        if (mBufferLimit < 0) {
+        if (bufferLimit < 0) {
             return -1;
         }
 
-        return mBuffer[mBufferPos++] & 0xff;
+        return buffer[bufferPos++] & 0xff;
     }
 
     public int read(final byte pBytes[]) throws IOException {
@@ -115,7 +115,7 @@ public final class DecoderStream extends FilterInputStream {
         }
 
         // End of file?
-        if ((mBufferLimit - mBufferPos) < 0) {
+        if ((bufferLimit - bufferPos) < 0) {
             return -1;
         }
 
@@ -124,21 +124,21 @@ public final class DecoderStream extends FilterInputStream {
         int off = pOffset;
 
         while (pLength > count) {
-            int avail = mBufferLimit - mBufferPos;
+            int avail = bufferLimit - bufferPos;
 
             if (avail <= 0) {
-                mBufferLimit = fill();
+                bufferLimit = fill();
 
-                if (mBufferLimit < 0) {
+                if (bufferLimit < 0) {
                     break;
                 }
             }
 
             // Copy as many bytes as possible
             int dstLen = Math.min(pLength - count, avail);
-            System.arraycopy(mBuffer, mBufferPos, pBytes, off, dstLen);
+            System.arraycopy(buffer, bufferPos, pBytes, off, dstLen);
 
-            mBufferPos += dstLen;
+            bufferPos += dstLen;
 
             // Update offset (rest)
             off += dstLen;
@@ -152,7 +152,7 @@ public final class DecoderStream extends FilterInputStream {
 
     public long skip(final long pLength) throws IOException {
         // End of file?
-        if (mBufferLimit - mBufferPos < 0) {
+        if (bufferLimit - bufferPos < 0) {
             return 0;
         }
 
@@ -160,12 +160,12 @@ public final class DecoderStream extends FilterInputStream {
         long total = 0;
 
         while (total < pLength) {
-            int avail = mBufferLimit - mBufferPos;
+            int avail = bufferLimit - bufferPos;
 
             if (avail == 0) {
-                mBufferLimit = fill();
+                bufferLimit = fill();
 
-                if (mBufferLimit < 0) {
+                if (bufferLimit < 0) {
                     break;
                 }
             }
@@ -174,7 +174,7 @@ public final class DecoderStream extends FilterInputStream {
             // an int, so the cast is safe
             int skipped = (int) Math.min(pLength - total, avail);
 
-            mBufferPos += skipped; // Just skip these bytes
+            bufferPos += skipped; // Just skip these bytes
             total += skipped;
         }
 
@@ -190,19 +190,19 @@ public final class DecoderStream extends FilterInputStream {
      * @throws IOException if an I/O error occurs
      */
     protected int fill() throws IOException {
-        int read = mDecoder.decode(in, mBuffer);
+        int read = decoder.decode(in, buffer);
 
         // TODO: Enforce this in test case, leave here to aid debugging
-        if (read > mBuffer.length) {
+        if (read > buffer.length) {
             throw new AssertionError(
                     String.format(
                             "Decode beyond buffer (%d): %d (using %s decoder)",
-                            mBuffer.length, read, mDecoder.getClass().getName()
+                            buffer.length, read, decoder.getClass().getName()
                     )
             );
         }
 
-        mBufferPos = 0;
+        bufferPos = 0;
 
         if (read == 0) {
             return -1;

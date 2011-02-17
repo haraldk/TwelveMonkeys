@@ -65,22 +65,22 @@ public class XMLSerializer {
     // Store user options here too
     // TODO: Push/pop?
 
-    private final OutputStream mOutput;
-    private final Charset mEncoding;
-    private final SerializationContext mContext;
+    private final OutputStream output;
+    private final Charset encoding;
+    private final SerializationContext context;
 
     public XMLSerializer(final OutputStream pOutput, final String pEncoding) {
-        mOutput = pOutput;
-        mEncoding = Charset.forName(pEncoding);
-        mContext = new SerializationContext();
+        output = pOutput;
+        encoding = Charset.forName(pEncoding);
+        context = new SerializationContext();
     }
 
     public final void setIndentation(String pIndent) {
-        mContext.indent = pIndent != null ? pIndent : "  ";
+        context.indent = pIndent != null ? pIndent : "  ";
     }
 
     public final void setStripComments(boolean pStrip) {
-        mContext.stripComments = pStrip;
+        context.stripComments = pStrip;
     }
 
     /**
@@ -101,12 +101,12 @@ public class XMLSerializer {
      * @param pWriteXMLDeclaration {@code true} if the XML declaration should be included, otherwise {@code false}.
      */
     public void serialize(final Node pRootNode, final boolean pWriteXMLDeclaration) {
-        PrintWriter out = new PrintWriter(new OutputStreamWriter(mOutput, mEncoding));
+        PrintWriter out = new PrintWriter(new OutputStreamWriter(output, encoding));
         try {
             if (pWriteXMLDeclaration) {
                 writeXMLDeclaration(out);
             }
-            writeXML(out, pRootNode, mContext.copy());
+            writeXML(out, pRootNode, context.copy());
         }
         finally {
             out.flush();
@@ -115,7 +115,7 @@ public class XMLSerializer {
 
     private void writeXMLDeclaration(final PrintWriter pOut) {
         pOut.print("<?xml version=\"1.0\" encoding=\"");
-        pOut.print(mEncoding.name());
+        pOut.print(encoding.name());
         pOut.println("\"?>");
     }
 

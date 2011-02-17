@@ -44,7 +44,7 @@ import java.io.ByteArrayInputStream;
 // TODO: Performance test of a stream impl that uses list of fixed size blocks, rather than contiguous block 
 public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     /** Max grow size (unless if writing more than this amount of bytes) */
-    protected int mMaxGrowSize = 1024 * 1024; // 1 MB
+    protected int maxGrowSize = 1024 * 1024; // 1 MB
 
     /**
      * Creates a {@code ByteArrayOutputStream} with the given initial buffer
@@ -94,7 +94,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
 
     private void growIfNeeded(int pNewcount) {
         if (pNewcount > buf.length) {
-            int newSize = Math.max(Math.min(buf.length << 1, buf.length + mMaxGrowSize), pNewcount);
+            int newSize = Math.max(Math.min(buf.length << 1, buf.length + maxGrowSize), pNewcount);
             byte newBuf[] = new byte[newSize];
             System.arraycopy(buf, 0, newBuf, 0, count);
             buf = newBuf;

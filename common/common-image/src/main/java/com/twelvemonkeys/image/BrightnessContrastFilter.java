@@ -67,7 +67,7 @@ public class BrightnessContrastFilter extends RGBImageFilter {
     }
 
     // Use a precalculated lookup table for performace
-    private int[] mLUT = null;
+    private final int[] LUT;
 
     /**
      * Creates a BrightnessContrastFilter with default values
@@ -105,7 +105,7 @@ public class BrightnessContrastFilter extends RGBImageFilter {
      * {@code -1.0,..,0.0,..,1.0}.
      */
     public BrightnessContrastFilter(float pBrightness, float pContrast) {
-        mLUT = createLUT(pBrightness, pContrast);
+        LUT = createLUT(pBrightness, pContrast);
     }
 
     private static int[] createLUT(float pBrightness, float pContrast) {
@@ -157,9 +157,9 @@ public class BrightnessContrastFilter extends RGBImageFilter {
         int b = pARGB & 0xFF;
 
         // Scale to new contrast
-        r = mLUT[r];
-        g = mLUT[g];
-        b = mLUT[b];
+        r = LUT[r];
+        g = LUT[g];
+        b = LUT[b];
 
         // Return ARGB pixel, leave transparency as is
         return (pARGB & 0xFF000000) | (r << 16) | (g << 8) | b;
