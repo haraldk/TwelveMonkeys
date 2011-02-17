@@ -105,6 +105,7 @@ public final class FileSystemViews {
 
         @Override
         public String getSystemTypeDescription(File f) {
+            // TODO: Create something that gives a proper description here on the Mac...
             return mUIView.getTypeDescription(f);
         }
 
