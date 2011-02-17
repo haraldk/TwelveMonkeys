@@ -38,20 +38,20 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 * @version $Id: XMPEntry.java,v 1.0 Nov 17, 2009 9:38:39 PM haraldk Exp$
 */
 final class XMPEntry extends AbstractEntry {
-    private final String mFieldName;
+    private final String fieldName;
 
-    public XMPEntry(final String pIdentifier, final Object pValue) {
-        this(pIdentifier, null, pValue);
+    public XMPEntry(final String identifier, final Object pValue) {
+        this(identifier, null, pValue);
     }
 
-    public XMPEntry(final String pIdentifier, final String pFieldName, final Object pValue) {
-        super(pIdentifier, pValue);
-        mFieldName = pFieldName;
+    public XMPEntry(final String identifier, final String fieldName, final Object value) {
+        super(identifier, value);
+        this.fieldName = fieldName;
     }
 
     @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override
     public String getFieldName() {
-        return mFieldName != null ? mFieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
+        return fieldName != null ? fieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
     }
 }

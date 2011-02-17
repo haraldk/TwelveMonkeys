@@ -47,7 +47,7 @@ class GRABChunk extends IFFChunk {
 //      WORD x, y;  /* relative coordinates (pixels) */
 //   } Point2D;
 
-    Point2D mPoint;
+    Point2D point;
 
     protected GRABChunk(int pChunkLength) {
         super(IFF.CHUNK_GRAB, pChunkLength);
@@ -55,22 +55,22 @@ class GRABChunk extends IFFChunk {
 
     protected GRABChunk(Point2D pPoint) {
         super(IFF.CHUNK_GRAB, 4);
-        mPoint = pPoint;
+        point = pPoint;
     }
 
     void readChunk(DataInput pInput) throws IOException {
-        if (mChunkLength != 4) {
-            throw new IIOException("Unknown GRAB chunk size: " + mChunkLength);
+        if (chunkLength != 4) {
+            throw new IIOException("Unknown GRAB chunk size: " + chunkLength);
         }
-        mPoint = new Point(pInput.readShort(), pInput.readShort());
+        point = new Point(pInput.readShort(), pInput.readShort());
     }
 
     void writeChunk(DataOutput pOutput) throws IOException {
-        pOutput.writeShort((int) mPoint.getX());
-        pOutput.writeShort((int) mPoint.getY());
+        pOutput.writeShort((int) point.getX());
+        pOutput.writeShort((int) point.getY());
     }
 
     public String toString() {
-        return super.toString() + " {point=" + mPoint + "}";
+        return super.toString() + " {point=" + point + "}";
     }
 }

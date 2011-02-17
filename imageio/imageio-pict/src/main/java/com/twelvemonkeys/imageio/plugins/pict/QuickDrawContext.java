@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.geom.*;
@@ -101,9 +103,9 @@ class QuickDrawContext {
    rgnSave:       Handle;        {region being saved, used internally}
    polySave:      Handle;        {polygon being saved, used internally}
      */
-    private final Graphics2D mGraphics;
+    private final Graphics2D graphics;
 
-    private Pattern mBackground;
+    private Pattern background;
 
     // http://developer.apple.com/documentation/mac/quickdraw/QuickDraw-68.html#HEADING68-0
     // Upon the creation of a graphics port, QuickDraw assigns these initial
@@ -113,23 +115,20 @@ class QuickDrawContext {
     // graphics pen.
 
     // TODO: Consider creating a Pen/PenState class?
-    private int mPenVisibility = 0;
-    private Point2D mPenPosition = new Point();
-    private Pattern mPenPattern;
-    private Dimension2D mPenSize = new Dimension();
-    private int mPenMode;
+    private int penVisibility = 0;
+    private Point2D penPosition = new Point();
+    private Pattern penPattern;
+    private Dimension2D penSize = new Dimension();
+    private int penMode;
 
     QuickDrawContext(Graphics2D pGraphics) {
-        if (pGraphics == null) {
-            throw new IllegalArgumentException("graphics == null");
-        }
-        mGraphics = pGraphics;
+        graphics = Validate.notNull(pGraphics, "graphics");
         
         setPenNormal();
     }
 
     protected void dispose() {
-        mGraphics.dispose();
+        graphics.dispose();
     }
 
     // ClosePicture
@@ -139,7 +138,7 @@ class QuickDrawContext {
 
     // ClipRgn
     public void setClipRegion(Shape pClip) {
-        mGraphics.setClip(pClip);
+        graphics.setClip(pClip);
     }
 
     // Font number (sic), integer
@@ -160,7 +159,7 @@ class QuickDrawContext {
     }
 
     public void setTextSize(int pSize) {
-        mGraphics.setFont(mGraphics.getFont().deriveFont((float) pSize));
+        graphics.setFont(graphics.getFont().deriveFont((float) pSize));
     }
 
     // Numerator (Point), denominator (Point)
@@ -173,16 +172,16 @@ class QuickDrawContext {
     // TODO: chExtra added width for nonspace characters
 
     public void setOrigin(Point2D pOrigin) {
-        mGraphics.translate(pOrigin.getX(), pOrigin.getY());
+        graphics.translate(pOrigin.getX(), pOrigin.getY());
     }
 
     public void setForeground(Color pColor) {
         // TODO: Is this really correct? Or does it depend on pattern mode?
-        mPenPattern = new BitMapPattern(pColor);
+        penPattern = new BitMapPattern(pColor);
     }
 
     public void setBackground(Color pColor) {
-        mBackground = new BitMapPattern(pColor);
+        background = new BitMapPattern(pColor);
     }
 
     /*
@@ -197,14 +196,14 @@ class QuickDrawContext {
      * HidePen  Visibility (decrements visibility by one!)
      */
     public void hidePen() {
-        mPenVisibility--;
+        penVisibility--;
     }
 
     /**
      * ShowPen Visibility (increments visibility by one!)
      */
     public void showPen() {
-        mPenVisibility++;
+        penVisibility++;
     }
 
     /**
@@ -213,7 +212,7 @@ class QuickDrawContext {
      * @return {@code true} if pen is visible
      */
     private boolean isPenVisible() {
-        return mPenVisibility >= 0;
+        return penVisibility >= 0;
     }
 
     /**
@@ -223,7 +222,7 @@ class QuickDrawContext {
      * @return the current pen position
      */
     public Point2D getPenPosition() {
-        return (Point2D) mPenPosition.clone();
+        return (Point2D) penPosition.clone();
     }
 
     /**
@@ -233,8 +232,8 @@ class QuickDrawContext {
      * @param pSize the new size
      */
     public void setPenSize(Dimension2D pSize) {
-        mPenSize.setSize(pSize);
-        mGraphics.setStroke(getStroke(mPenSize));
+        penSize.setSize(pSize);
+        graphics.setStroke(getStroke(penSize));
     }
 
     /**
@@ -274,7 +273,7 @@ class QuickDrawContext {
             case QuickDraw.SUB_OVER:
             case QuickDraw.AD_MIN:
             case QuickDraw.GRAYISH_TEXT_OR:
-                mPenMode = pPenMode;
+                penMode = pPenMode;
                 break;
 
             default:
@@ -288,7 +287,7 @@ class QuickDrawContext {
      * @param pPattern the new pattern
      */
     public void setPenPattern(final Pattern pPattern) {
-        mPenPattern = pPattern;
+        penPattern = pPattern;
     }
 
     /**
@@ -299,7 +298,7 @@ class QuickDrawContext {
         // TODO: What about visibility? Probably not touch
         setPenPattern(QuickDraw.BLACK);
         setPenSize(new Dimension(1, 1));
-        mPenMode = QuickDraw.SRC_COPY;
+        penMode = QuickDraw.SRC_COPY;
     }
 
     /*
@@ -308,7 +307,7 @@ class QuickDrawContext {
     *BackPixPat
     */
     public void setBackgroundPattern(Pattern pPaint) {
-        mBackground = pPaint;
+        background = pPaint;
     }
 
     private Composite getCompositeFor(final int pMode) {
@@ -354,9 +353,9 @@ class QuickDrawContext {
      * Sets up context for line drawing/painting.
      */
     protected void setupForPaint() {
-        mGraphics.setPaint(mPenPattern);
-        mGraphics.setComposite(getCompositeFor(mPenMode));
-        //mGraphics.setStroke(getStroke(mPenSize));
+        graphics.setPaint(penPattern);
+        graphics.setComposite(getCompositeFor(penMode));
+        //graphics.setStroke(getStroke(penSize));
     }
 
     private Stroke getStroke(final Dimension2D pPenSize) {
@@ -373,19 +372,19 @@ class QuickDrawContext {
      * @param pPattern the pattern to use for filling.
      */
     protected void setupForFill(final Pattern pPattern) {
-        mGraphics.setPaint(pPattern);
-        mGraphics.setComposite(getCompositeFor(QuickDraw.PAT_COPY));
+        graphics.setPaint(pPattern);
+        graphics.setComposite(getCompositeFor(QuickDraw.PAT_COPY));
     }
 
     protected void setupForErase() {
-        mGraphics.setPaint(mBackground);
-        mGraphics.setComposite(getCompositeFor(QuickDraw.PAT_COPY)); // TODO: Check spec
+        graphics.setPaint(background);
+        graphics.setComposite(getCompositeFor(QuickDraw.PAT_COPY)); // TODO: Check spec
     }
 
     protected void setupForInvert() {
         // TODO: Setup for invert
-        mGraphics.setColor(Color.BLACK);
-        mGraphics.setXORMode(Color.WHITE);
+        graphics.setColor(Color.BLACK);
+        graphics.setXORMode(Color.WHITE);
     }
 
     /*
@@ -398,7 +397,7 @@ class QuickDrawContext {
     */
 
     public void moveTo(final double pX, final double pY) {
-        mPenPosition.setLocation(pX, pY);
+        penPosition.setLocation(pX, pY);
     }
 
     public final void moveTo(final Point2D pPosition) {
@@ -406,18 +405,18 @@ class QuickDrawContext {
     }
 
     public final void move(final double pDeltaX, final double pDeltaY) {
-        moveTo(mPenPosition.getX() + pDeltaX, mPenPosition.getY() + pDeltaY);
+        moveTo(penPosition.getX() + pDeltaX, penPosition.getY() + pDeltaY);
     }
 
     public void lineTo(final double pX, final double pY) {
-        Shape line = new Line2D.Double(mPenPosition.getX(), mPenPosition.getY(), pX, pY);
+        Shape line = new Line2D.Double(penPosition.getX(), penPosition.getY(), pX, pY);
 
         // TODO: Add line to current shape if recording...
 
         if (isPenVisible()) {
             // NOTE: Workaround for known Mac JDK bug: Paint, not frame
-            //mGraphics.setStroke(getStroke(mPenSize)); // Make sure we have correct stroke
-            paintShape(mGraphics.getStroke().createStrokedShape(line));
+            //graphics.setStroke(getStroke(penSize)); // Make sure we have correct stroke
+            paintShape(graphics.getStroke().createStrokedShape(line));
 
         }
 
@@ -429,7 +428,7 @@ class QuickDrawContext {
     }
 
     public final void line(final double pDeltaX, final double pDeltaY) {
-        lineTo(mPenPosition.getX() + pDeltaX, mPenPosition.getY() + pDeltaY);
+        lineTo(penPosition.getX() + pDeltaX, penPosition.getY() + pDeltaY);
     }
 
     /*
@@ -813,27 +812,27 @@ class QuickDrawContext {
     // TODO: All other operations can delegate to these! :-)
     private void frameShape(final Shape pShape) {
         setupForPaint();
-        mGraphics.draw(pShape);
+        graphics.draw(pShape);
     }
 
     private void paintShape(final Shape pShape) {
         setupForPaint();
-        mGraphics.fill(pShape);
+        graphics.fill(pShape);
     }
 
     private void fillShape(final Shape pShape, final Pattern pPattern) {
         setupForFill(pPattern);
-        mGraphics.fill(pShape);
+        graphics.fill(pShape);
     }
 
     private void invertShape(final Shape pShape) {
         setupForInvert();
-        mGraphics.fill(pShape);
+        graphics.fill(pShape);
     }
 
     private void eraseShape(final Shape pShape) {
         setupForErase();
-        mGraphics.fill(pShape);
+        graphics.fill(pShape);
     }
 
     /*
@@ -862,12 +861,12 @@ class QuickDrawContext {
     * @param pMaskRgn the mask region
     */
    public void copyBits(BufferedImage pSrcBitmap, Rectangle pSrcRect, Rectangle pDstRect, int pMode, Shape pMaskRgn) {
-        mGraphics.setComposite(getCompositeFor(pMode));
+        graphics.setComposite(getCompositeFor(pMode));
         if (pMaskRgn != null) {
             setClipRegion(pMaskRgn);
         }
 
-        mGraphics.drawImage(
+        graphics.drawImage(
                 pSrcBitmap,
                 pDstRect.x, 
                 pDstRect.y,
@@ -927,7 +926,7 @@ class QuickDrawContext {
     * @param pString a Pascal string (a string of length less than or equal to 255 chars).
     */
    public void drawString(String pString) {
-        mGraphics.drawString(pString, (float) getPenPosition().getX(), (float) getPenPosition().getY());
+        graphics.drawString(pString, (float) getPenPosition().getX(), (float) getPenPosition().getY());
    }
 
    /*
@@ -953,14 +952,14 @@ class QuickDrawContext {
 
 
 // Color Constants
-ÝwhiteColor   =Ý30;
-ÝblackColor   = 33
-ÝyellowColor  = 69;
- magentaColor =Ý137;
-ÝredColor     =Ý205;
-ÝcyanColor    =Ý273;
-ÝgreenColor   =Ý341;
-ÝblueColor    =Ý409;
+ï¿½whiteColor   =ï¿½30;
+ï¿½blackColor   = 33
+ï¿½yellowColor  = 69;
+ magentaColor =ï¿½137;
+ï¿½redColor     =ï¿½205;
+ï¿½cyanColor    =ï¿½273;
+ï¿½greenColor   =ï¿½341;
+ï¿½blueColor    =ï¿½409;
     */
 
     // TODO: Simplify! Extract to upper level class

@@ -11,14 +11,14 @@ import java.io.IOException;
  * @version $Id: PSDPrintFlagsInfo.java,v 1.0 Jul 28, 2009 5:16:27 PM haraldk Exp$
  */
 final class PSDPrintFlags extends PSDImageResource {
-    boolean mLabels;
-    boolean mCropMasks;
-    boolean mColorBars;
-    boolean mRegistrationMarks;
-    boolean mNegative;
-    boolean mFlip;
-    boolean mInterpolate;
-    boolean mCaption;
+    boolean labels;
+    boolean cropMasks;
+    boolean colorBars;
+    boolean registrationMarks;
+    boolean negative;
+    boolean flip;
+    boolean interpolate;
+    boolean caption;
 
     PSDPrintFlags(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -26,30 +26,30 @@ final class PSDPrintFlags extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mLabels = pInput.readBoolean();
-        mCropMasks = pInput.readBoolean();
-        mColorBars = pInput.readBoolean();
-        mRegistrationMarks = pInput.readBoolean();
-        mNegative = pInput.readBoolean();
-        mFlip = pInput.readBoolean();
-        mInterpolate = pInput.readBoolean();
-        mCaption = pInput.readBoolean();
+        labels = pInput.readBoolean();
+        cropMasks = pInput.readBoolean();
+        colorBars = pInput.readBoolean();
+        registrationMarks = pInput.readBoolean();
+        negative = pInput.readBoolean();
+        flip = pInput.readBoolean();
+        interpolate = pInput.readBoolean();
+        caption = pInput.readBoolean();
 
-        pInput.skipBytes(mSize - 8);
+        pInput.skipBytes(size - 8);
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", labels: ").append(mLabels);
-        builder.append(", crop masks: ").append(mCropMasks);
-        builder.append(", color bars: ").append(mColorBars);
-        builder.append(", registration marks: ").append(mRegistrationMarks);
-        builder.append(", negative: ").append(mNegative);
-        builder.append(", flip: ").append(mFlip);
-        builder.append(", interpolate: ").append(mInterpolate);
-        builder.append(", caption: ").append(mCaption);
+        builder.append(", labels: ").append(labels);
+        builder.append(", crop masks: ").append(cropMasks);
+        builder.append(", color bars: ").append(colorBars);
+        builder.append(", registration marks: ").append(registrationMarks);
+        builder.append(", negative: ").append(negative);
+        builder.append(", flip: ").append(flip);
+        builder.append(", interpolate: ").append(interpolate);
+        builder.append(", caption: ").append(caption);
 
         builder.append("]");
 

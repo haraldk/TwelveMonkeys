@@ -41,7 +41,7 @@ import java.util.Collection;
  * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
  */
 final class EXIFDirectory extends AbstractDirectory {
-    EXIFDirectory(final Collection<? extends Entry> pEntries) {
-        super(pEntries);
+    EXIFDirectory(final Collection<? extends Entry> entries) {
+        super(entries);
     }
 }

@@ -42,18 +42,18 @@ import java.util.Arrays;
  */
 public abstract class AbstractEntry implements Entry {
 
-    private final Object mIdentifier;
-    private final Object mValue; // TODO: Might need to be mutable..
+    private final Object identifier;
+    private final Object value; // TODO: Might need to be mutable..
 
-    protected AbstractEntry(final Object pIdentifier, final Object pValue) {
-        Validate.notNull(pIdentifier, "identifier");
+    protected AbstractEntry(final Object identifier, final Object value) {
+        Validate.notNull(identifier, "identifier");
 
-        mIdentifier = pIdentifier;
-        mValue = pValue;
+        this.identifier = identifier;
+        this.value = value;
     }
 
     public final Object getIdentifier() {
-        return mIdentifier;
+        return identifier;
     }
 
     /**
@@ -66,64 +66,64 @@ public abstract class AbstractEntry implements Entry {
     }
 
     public Object getValue() {
-        return mValue;
+        return value;
     }
 
     public String getValueAsString() {
         if (valueCount() > 1) {
             if (valueCount() < 16) {
-                Class<?> type = mValue.getClass().getComponentType();
+                Class<?> type = value.getClass().getComponentType();
 
                 if (type.isPrimitive()) {
                     if (type.equals(boolean.class)) {
-                        return Arrays.toString((boolean[]) mValue);
+                        return Arrays.toString((boolean[]) value);
                     }
                     else if (type.equals(byte.class)) {
-                        return Arrays.toString((byte[]) mValue);
+                        return Arrays.toString((byte[]) value);
                     }
                     else if (type.equals(char.class)) {
-                        return new String((char[]) mValue);
+                        return new String((char[]) value);
                     }
                     else if (type.equals(double.class)) {
-                        return Arrays.toString((double[]) mValue);
+                        return Arrays.toString((double[]) value);
                     }
                     else if (type.equals(float.class)) {
-                        return Arrays.toString((float[]) mValue);
+                        return Arrays.toString((float[]) value);
                     }
                     else if (type.equals(int.class)) {
-                        return Arrays.toString((int[]) mValue);
+                        return Arrays.toString((int[]) value);
                     }
                     else if (type.equals(long.class)) {
-                        return Arrays.toString((long[]) mValue);
+                        return Arrays.toString((long[]) value);
                     }
                     else if (type.equals(short.class)) {
-                        return Arrays.toString((short[]) mValue);
+                        return Arrays.toString((short[]) value);
                     }
                     // Fall through should never happen
                 }
                 else {
-                    return Arrays.toString((Object[]) mValue);
+                    return Arrays.toString((Object[]) value);
                 }
             }
             
-            return String.valueOf(mValue) + " ("  + valueCount() + ")";
+            return String.valueOf(value) + " ("  + valueCount() + ")";
         }
 
-        return String.valueOf(mValue);
+        return String.valueOf(value);
     }
 
     public String getTypeName() {
-        if (mValue == null) {
+        if (value == null) {
             return null;
         }
 
-        return mValue.getClass().getSimpleName();
+        return value.getClass().getSimpleName();
     }
 
     public int valueCount() {
         // TODO: Collection support?
-        if (mValue != null && mValue.getClass().isArray()) {
-            return Array.getLength(mValue);
+        if (value != null && value.getClass().isArray()) {
+            return Array.getLength(value);
         }
 
         return 1;
@@ -135,7 +135,7 @@ public abstract class AbstractEntry implements Entry {
 
     @Override
     public int hashCode() {
-        return mIdentifier.hashCode() + 31 * mValue.hashCode();
+        return identifier.hashCode() + 31 * value.hashCode();
     }
 
     @Override
@@ -149,8 +149,8 @@ public abstract class AbstractEntry implements Entry {
 
         AbstractEntry other = (AbstractEntry) pOther;
         
-        return mIdentifier.equals(other.mIdentifier) && (
-                mValue == null && other.mValue == null || mValue != null && mValue.equals(other.mValue)
+        return identifier.equals(other.identifier) && (
+                value == null && other.value == null || value != null && value.equals(other.value)
         );
     }
 

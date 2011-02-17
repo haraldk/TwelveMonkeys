@@ -31,7 +31,6 @@ package com.twelvemonkeys.imageio.plugins.ico;
 import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
-import java.awt.image.BufferedImage;
 import java.awt.*;
 
 /**
@@ -43,13 +42,13 @@ import java.awt.*;
  * @see <a href="http://en.wikipedia.org/wiki/ICO_(icon_image_file_format)#Directory">Wikipedia</a>
  */
 abstract class DirectoryEntry {
-    private int mWidth;
-    private int mHeight;
-    private int mColorCount;
-    int mPlanes;
-    int mBitCount;
-    private int mSize;
-    private int mOffset;
+    private int width;
+    private int height;
+    private int colorCount;
+    int planes;
+    int bitCount;
+    private int size;
+    private int offset;
 
     private DirectoryEntry() {
     }
@@ -79,58 +78,58 @@ abstract class DirectoryEntry {
     protected void read(final DataInput pStream) throws IOException {
         // Width/height = 0, means 256
         int w = pStream.readUnsignedByte();
-        mWidth = w == 0 ? 256 : w;
+        width = w == 0 ? 256 : w;
         int h = pStream.readUnsignedByte();
-        mHeight = h == 0 ? 256 : h;
+        height = h == 0 ? 256 : h;
         
         // Color count = 0, means 256 or more colors
-        mColorCount = pStream.readUnsignedByte();
+        colorCount = pStream.readUnsignedByte();
 
         // Ignore. Should be 0, but .NET (System.Drawing.Icon.Save) sets this value to 255, according to Wikipedia
         pStream.readUnsignedByte();
 
-        mPlanes = pStream.readUnsignedShort();     // Should be 0 or 1 for ICO, x hotspot for CUR
-        mBitCount = pStream.readUnsignedShort();   // bit count for ICO, y hotspot for CUR
+        planes = pStream.readUnsignedShort();     // Should be 0 or 1 for ICO, x hotspot for CUR
+        bitCount = pStream.readUnsignedShort();   // bit count for ICO, y hotspot for CUR
 
         // Size of bitmap in bytes
-        mSize = pStream.readInt();
-        mOffset = pStream.readInt();
+        size = pStream.readInt();
+        offset = pStream.readInt();
     }
 
     public String toString() {
         return String.format(
                 "%s: width: %d, height: %d, colors: %d, planes: %d, bit count: %d, size: %d, offset: %d",
                 getClass().getSimpleName(),
-                mWidth, mHeight, mColorCount, mPlanes, mBitCount, mSize, mOffset
+                width, height, colorCount, planes, bitCount, size, offset
         );
     }
 
     public int getBitCount() {
-        return mBitCount;
+        return bitCount;
     }
 
     public int getColorCount() {
-        return mColorCount;
+        return colorCount;
     }
 
     public int getHeight() {
-        return mHeight;
+        return height;
     }
 
     public int getOffset() {
-        return mOffset;
+        return offset;
     }
 
     public int getPlanes() {
-        return mPlanes;
+        return planes;
     }
 
     public int getSize() {
-        return mSize;
+        return size;
     }
 
     public int getWidth() {
-        return mWidth;
+        return width;
     }
 
     /**
@@ -145,11 +144,11 @@ abstract class DirectoryEntry {
             super.read(pStream);
 
             // NOTE: This is a hack...
-            mXHotspot = mPlanes;
-            mYHotspot = mBitCount;
+            mXHotspot = planes;
+            mYHotspot = bitCount;
 
-            mPlanes = 1;    // Always 1 for all BMP types
-            mBitCount = 0;
+            planes = 1;    // Always 1 for all BMP types
+            bitCount = 0;
         }
 
         public Point getHotspot() {

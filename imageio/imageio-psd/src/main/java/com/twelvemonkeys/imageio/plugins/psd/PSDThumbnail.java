@@ -16,9 +16,9 @@ import java.io.IOException;
  * @version $Id: PSDThumbnail.java,v 1.0 Jul 29, 2009 4:41:06 PM haraldk Exp$
  */
 class PSDThumbnail extends PSDImageResource {
-    private BufferedImage mThumbnail;
-    private int mWidth;
-    private int mHeight;
+    private BufferedImage thumbnail;
+    private int width;
+    private int height;
 
     public PSDThumbnail(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -50,8 +50,8 @@ class PSDThumbnail extends PSDImageResource {
                 throw new IIOException(String.format("Unsupported thumbnail format (%s) in PSD document", format));
         }
 
-        mWidth = pInput.readInt();
-        mHeight = pInput.readInt();
+        width = pInput.readInt();
+        height = pInput.readInt();
 
         // This data isn't really useful, unless we're dealing with raw bytes
         int widthBytes = pInput.readInt();
@@ -59,7 +59,7 @@ class PSDThumbnail extends PSDImageResource {
 
         // Consistency check
         int sizeCompressed = pInput.readInt();
-        if (sizeCompressed != (mSize - 28)) {
+        if (sizeCompressed != (size - 28)) {
             throw new IIOException("Corrupt thumbnail in PSD document");
         }
 
@@ -72,26 +72,26 @@ class PSDThumbnail extends PSDImageResource {
 
         // TODO: Defer decoding until getThumbnail?
         // TODO: Support BGR if id == RES_THUMBNAIL_PS4? Or is that already supported in the JPEG?
-        mThumbnail = ImageIO.read(IIOUtil.createStreamAdapter(pInput, sizeCompressed));
+        thumbnail = ImageIO.read(IIOUtil.createStreamAdapter(pInput, sizeCompressed));
     }
 
     public final int getWidth() {
-        return mWidth;
+        return width;
     }
 
     public final int getHeight() {
-        return mHeight;
+        return height;
     }
 
     public final BufferedImage getThumbnail() {
-        return mThumbnail;
+        return thumbnail;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", ").append(mThumbnail);
+        builder.append(", ").append(thumbnail);
 
         builder.append("]");
 

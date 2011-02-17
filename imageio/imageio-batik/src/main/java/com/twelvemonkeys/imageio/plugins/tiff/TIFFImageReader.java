@@ -126,11 +126,11 @@ public class TIFFImageReader extends ImageReaderBase {
         checkBounds(pIndex);
     }
 
-    protected void checkBounds(int pIndex) throws IOException {
-        if (pIndex < getMinIndex()){
+    protected void checkBounds(int index) throws IOException {
+        if (index < getMinIndex()){
             throw new IndexOutOfBoundsException("index < minIndex");
         }
-        else if (pIndex >= getNumImages(true)) {
+        else if (index >= getNumImages(true)) {
             throw new IndexOutOfBoundsException("index > numImages");
         }
     }
@@ -179,9 +179,9 @@ public class TIFFImageReader extends ImageReaderBase {
         throw new UnsupportedOperationException("Method getImageTypes not implemented");// TODO: Implement
     }
 
-    public int getNumImages(boolean pAllowSearch) throws IOException {
+    public int getNumImages(boolean allowSearch) throws IOException {
         init();
-        if (pAllowSearch) {
+        if (allowSearch) {
             return mDecoder.getNumPages();
         }
         return -1;

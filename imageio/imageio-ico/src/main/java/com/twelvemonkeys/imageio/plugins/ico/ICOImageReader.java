@@ -69,13 +69,13 @@ import java.util.List;
 // Known issue: 256x256 PNG encoded icons does not have IndexColorModel even if stated in DirectoryEntry (seem impossible as the PNGs are all true color)
 public class ICOImageReader extends ImageReaderBase {
     // TODO: Consider moving the reading to inner classes (subclasses of BitmapDescriptor)
-    private Directory mDirectory;
+    private Directory directory;
 
     // TODO: Review these, make sure we don't have a memory leak
-    private Map<DirectoryEntry, DIBHeader> mHeaders = new WeakHashMap<DirectoryEntry, DIBHeader>();
-    private Map<DirectoryEntry, BitmapDescriptor> mDescriptors = new WeakWeakMap<DirectoryEntry, BitmapDescriptor>();
+    private Map<DirectoryEntry, DIBHeader> headers = new WeakHashMap<DirectoryEntry, DIBHeader>();
+    private Map<DirectoryEntry, BitmapDescriptor> descriptors = new WeakWeakMap<DirectoryEntry, BitmapDescriptor>();
 
-    private ImageReader mPNGImageReader;
+    private ImageReader pngImageReader;
 
     public ICOImageReader() {
         this(DIB.TYPE_ICO);
@@ -101,14 +101,14 @@ public class ICOImageReader extends ImageReaderBase {
     }
 
     protected void resetMembers() {
-        mDirectory = null;
+        directory = null;
         
-        mHeaders.clear();
-        mDescriptors.clear();
+        headers.clear();
+        descriptors.clear();
 
-        if (mPNGImageReader != null) {
-            mPNGImageReader.dispose();
-            mPNGImageReader = null;
+        if (pngImageReader != null) {
+            pngImageReader.dispose();
+            pngImageReader = null;
         }
     }
 
@@ -158,7 +158,7 @@ public class ICOImageReader extends ImageReaderBase {
     }
 
     @Override
-    public int getNumImages(final boolean pAllowSearch) throws IOException {
+    public int getNumImages(final boolean allowSearch) throws IOException {
         return getDirectory().count();
     }
 
@@ -260,38 +260,38 @@ public class ICOImageReader extends ImageReaderBase {
 
     private ImageReader getPNGReader() throws IIOException {
         // TODO: Prefer Sun's std JDK PNGImagerReader, because it has known behaviour?
-        if (mPNGImageReader == null) {
+        if (pngImageReader == null) {
             Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("PNG");
 
             if (readers.hasNext()) {
-                mPNGImageReader = readers.next();
+                pngImageReader = readers.next();
             }
             else {
                 throw new IIOException("No PNGImageReader found using ImageIO, can't read PNG encoded ICO format.");
             }
         }
         else {
-            mPNGImageReader.reset();
+            pngImageReader.reset();
         }
 
-        return mPNGImageReader;
+        return pngImageReader;
     }
 
     private DIBHeader getHeader(final DirectoryEntry pEntry) throws IOException {
-        if (!mHeaders.containsKey(pEntry)) {
+        if (!headers.containsKey(pEntry)) {
             imageInput.seek(pEntry.getOffset());
             DIBHeader header = DIBHeader.read(imageInput);
-            mHeaders.put(pEntry, header);
+            headers.put(pEntry, header);
         }
 
-        return mHeaders.get(pEntry);
+        return headers.get(pEntry);
     }
 
     private BufferedImage readBitmap(final DirectoryEntry pEntry) throws IOException {
         // TODO: Get rid of the caching, as the images are mutable
-        BitmapDescriptor descriptor = mDescriptors.get(pEntry);
+        BitmapDescriptor descriptor = descriptors.get(pEntry);
 
-        if (descriptor == null || !mDescriptors.containsKey(pEntry)) {
+        if (descriptor == null || !descriptors.containsKey(pEntry)) {
             DIBHeader header = getHeader(pEntry);
 
             int offset = pEntry.getOffset() + header.getSize();
@@ -333,7 +333,7 @@ public class ICOImageReader extends ImageReaderBase {
                 }
             }
 
-            mDescriptors.put(pEntry, descriptor);
+            descriptors.put(pEntry, descriptor);
         }
 
         return descriptor.getImage();
@@ -354,8 +354,8 @@ public class ICOImageReader extends ImageReaderBase {
                 break;
         }
 
-        BitmapMask mask = new BitmapMask(pBitmap.mEntry, pBitmap.mHeader);
-        readBitmapIndexed1(mask.mMask, true);
+        BitmapMask mask = new BitmapMask(pBitmap.entry, pBitmap.header);
+        readBitmapIndexed1(mask.mask, true);
         pBitmap.setMask(mask);
     }
 
@@ -364,7 +364,7 @@ public class ICOImageReader extends ImageReaderBase {
 
         for (int i = 0; i < colorCount; i++) {
             // aRGB (a is "Reserved")
-            pBitmap.mColors[i] = (imageInput.readInt() & 0xffffff) | 0xff000000;
+            pBitmap.colors[i] = (imageInput.readInt() & 0xffffff) | 0xff000000;
         }
     }
 
@@ -379,7 +379,7 @@ public class ICOImageReader extends ImageReaderBase {
             int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
 
             for (int x = 0; x < pBitmap.getWidth(); x++) {
-                pBitmap.mBits[pos++] = ((row[rowPos] & xOrVal) / xOrVal) & 0xFF;
+                pBitmap.bits[pos++] = ((row[rowPos] & xOrVal) / xOrVal) & 0xFF;
 
                 if (xOrVal == 1) {
                     xOrVal = 0x80;
@@ -423,7 +423,7 @@ public class ICOImageReader extends ImageReaderBase {
                     rowPos++;
                 }
 
-                pBitmap.mBits[pos++] = value & 0xFF;
+                pBitmap.bits[pos++] = value & 0xFF;
                 high4 = !high4;
             }
 
@@ -447,7 +447,7 @@ public class ICOImageReader extends ImageReaderBase {
             int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
 
             for (int x = 0; x < pBitmap.getWidth(); x++) {
-                pBitmap.mBits[pos++] = row[rowPos++] & 0xFF;
+                pBitmap.bits[pos++] = row[rowPos++] & 0xFF;
             }
 
             if (abortRequested()) {
@@ -480,7 +480,7 @@ public class ICOImageReader extends ImageReaderBase {
         WritableRaster raster = Raster.createPackedRaster(
                 buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
         );
-        pBitmap.mImage = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);       
+        pBitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
             int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
@@ -516,7 +516,7 @@ public class ICOImageReader extends ImageReaderBase {
         WritableRaster raster = Raster.createInterleavedRaster(
                 buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), 3, bOffs, null
         );
-        pBitmap.mImage = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+        pBitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
         
         for (int y = 0; y < pBitmap.getHeight(); y++) {
             int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
@@ -542,7 +542,7 @@ public class ICOImageReader extends ImageReaderBase {
         WritableRaster raster = Raster.createPackedRaster(
                 buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
         );
-        pBitmap.mImage = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+        pBitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
             int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
@@ -559,11 +559,11 @@ public class ICOImageReader extends ImageReaderBase {
     private Directory getDirectory() throws IOException {
         assertInput();
 
-        if (mDirectory == null) {
+        if (directory == null) {
             readFileHeader();
         }
 
-        return mDirectory;
+        return directory;
     }
 
     private void readFileHeader() throws IOException {
@@ -577,7 +577,7 @@ public class ICOImageReader extends ImageReaderBase {
         int imageCount = imageInput.readUnsignedShort();
 
         // Read directory
-        mDirectory = Directory.read(type, imageCount, imageInput);
+        directory = Directory.read(type, imageCount, imageInput);
     }
 
     final DirectoryEntry getEntry(final int pImageIndex) throws IOException {

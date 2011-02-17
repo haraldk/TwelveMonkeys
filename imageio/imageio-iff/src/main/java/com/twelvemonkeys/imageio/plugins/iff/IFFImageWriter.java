@@ -208,9 +208,9 @@ public class IFFImageWriter extends ImageWriterBase {
         }
 
         // ILBM(4) + anno(8+len) + header(8+20) + cmap(8+len)? + body(8+len);
-        int size = 4 + 8 + anno.mChunkLength + 28 + 8 + pBodyLength;
+        int size = 4 + 8 + anno.chunkLength + 28 + 8 + pBodyLength;
         if (cmap != null) {
-            size += 8 + cmap.mChunkLength;
+            size += 8 + cmap.chunkLength;
         }
 
         imageOutput.writeInt(IFF.CHUNK_FORM);

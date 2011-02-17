@@ -42,16 +42,16 @@ import java.util.Collections;
  * @version $Id: Pattern.java,v 1.0 Oct 9, 2007 1:21:38 AM haraldk Exp$
  */
 abstract class Pattern implements Paint {
-    private final Paint mPaint;
+    private final Paint paint;
     
     Pattern(final Paint pPaint) {
-        mPaint = pPaint;
+        paint = pPaint;
     }
 
     public PaintContext createContext(final ColorModel pModel, final Rectangle pDeviceBounds,
                                       final Rectangle2D pUserBounds, final AffineTransform pTransform,
                                       final RenderingHints pHints) {
-        return mPaint.createContext(
+        return paint.createContext(
                 pModel, pDeviceBounds,
                 pUserBounds, pTransform,
                 pHints != null ? pHints : new RenderingHints(Collections.<RenderingHints.Key, Object>emptyMap())
@@ -59,6 +59,6 @@ abstract class Pattern implements Paint {
     }
 
     public int getTransparency() {
-        return mPaint.getTransparency();
+        return paint.getTransparency();
     }    
 }

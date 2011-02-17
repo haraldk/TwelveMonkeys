@@ -41,22 +41,21 @@ import java.io.IOException;
  * @version $Id: CAMGChunk.java,v 1.0 28.feb.2006 02:10:07 haku Exp$
  */
 class CAMGChunk extends IFFChunk {
-
     // HIRES=0x8000, LACE=0x4
     // #define CAMG_HAM 0x800   /* hold and modify */
     // #define CAMG_EHB 0x80    /* extra halfbrite */
 
-    private int mCAMG;
+    private int camg;
 
     public CAMGChunk(int pLength) {
         super(IFF.CHUNK_CAMG, pLength);
     }
 
     void readChunk(DataInput pInput) throws IOException {
-        if (mChunkLength != 4) {
-            throw new IIOException("Unknown CAMG chunk length: " + mChunkLength);
+        if (chunkLength != 4) {
+            throw new IIOException("Unknown CAMG chunk length: " + chunkLength);
         }
-        mCAMG = pInput.readInt();
+        camg = pInput.readInt();
     }
 
     void writeChunk(DataOutput pOutput) throws IOException {
@@ -64,11 +63,11 @@ class CAMGChunk extends IFFChunk {
     }
 
     boolean isHAM() {
-        return (mCAMG & 0x800) != 0;
+        return (camg & 0x800) != 0;
     }
 
     boolean isEHB() {
-        return (mCAMG & 0x80) != 0;
+        return (camg & 0x80) != 0;
     }
 
     public String toString() {

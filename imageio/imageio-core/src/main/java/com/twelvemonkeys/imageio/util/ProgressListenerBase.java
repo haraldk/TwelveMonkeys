@@ -44,51 +44,51 @@ public abstract class ProgressListenerBase implements IIOReadProgressListener, I
     protected ProgressListenerBase() {
     }
 
-    public void imageComplete(ImageReader pSource) {
+    public void imageComplete(ImageReader source) {
     }
 
-    public void imageProgress(ImageReader pSource, float pPercentageDone) {
+    public void imageProgress(ImageReader source, float percentageDone) {
     }
 
-    public void imageStarted(ImageReader pSource, int pImageIndex) {
+    public void imageStarted(ImageReader source, int imageIndex) {
     }
 
-    public void readAborted(ImageReader pSource) {
+    public void readAborted(ImageReader source) {
     }
 
-    public void sequenceComplete(ImageReader pSource) {
+    public void sequenceComplete(ImageReader source) {
     }
 
-    public void sequenceStarted(ImageReader pSource, int pMinIndex) {
+    public void sequenceStarted(ImageReader source, int minIndex) {
     }
 
-    public void thumbnailComplete(ImageReader pSource) {
+    public void thumbnailComplete(ImageReader source) {
     }
 
-    public void thumbnailProgress(ImageReader pSource, float pPercentageDone) {
+    public void thumbnailProgress(ImageReader source, float percentageDone) {
     }
 
-    public void thumbnailStarted(ImageReader pSource, int pImageIndex, int pThumbnailIndex) {
+    public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
     }
 
-    public void imageComplete(ImageWriter pSource) {
+    public void imageComplete(ImageWriter source                        ) {
     }
 
-    public void imageProgress(ImageWriter pSource, float pPercentageDone) {
+    public void imageProgress(ImageWriter source, float percentageDone) {
     }
 
-    public void imageStarted(ImageWriter pSource, int pImageIndex) {
+    public void imageStarted(ImageWriter source, int imageIndex) {
     }
 
-    public void thumbnailComplete(ImageWriter pSource) {
+    public void thumbnailComplete(ImageWriter source) {
     }
 
-    public void thumbnailProgress(ImageWriter pSource, float pPercentageDone) {
+    public void thumbnailProgress(ImageWriter source, float percentageDone) {
     }
 
-    public void thumbnailStarted(ImageWriter pSource, int pImageIndex, int pThumbnailIndex) {
+    public void thumbnailStarted(ImageWriter source, int imageIndex, int thumbnailIndex) {
     }
 
-    public void writeAborted(ImageWriter pSource) {
+    public void writeAborted(ImageWriter source) {
     }
 }

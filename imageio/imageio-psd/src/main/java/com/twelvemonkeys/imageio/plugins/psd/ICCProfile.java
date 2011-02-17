@@ -43,7 +43,7 @@ import java.io.InputStream;
  * @version $Id: ICCProfile.java,v 1.0 May 20, 2008 6:24:10 PM haraldk Exp$
  */
 class ICCProfile extends PSDImageResource {
-    private ICC_Profile mProfile;
+    private ICC_Profile profile;
 
     ICCProfile(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -51,9 +51,9 @@ class ICCProfile extends PSDImageResource {
 
     @Override
     protected void readData(ImageInputStream pInput) throws IOException {
-        InputStream stream = IIOUtil.createStreamAdapter(pInput, mSize);
+        InputStream stream = IIOUtil.createStreamAdapter(pInput, size);
         try {
-            mProfile = ICC_Profile.getInstance(stream);
+            profile = ICC_Profile.getInstance(stream);
         }
         finally {
             // Make sure stream has correct position after read
@@ -62,14 +62,14 @@ class ICCProfile extends PSDImageResource {
     }
 
     public ICC_Profile getProfile() {
-        return mProfile;
+        return profile;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", profile: ").append(mProfile);
+        builder.append(", profile: ").append(profile);
         builder.append("]");
 
         return builder.toString();

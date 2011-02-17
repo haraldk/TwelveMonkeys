@@ -71,21 +71,21 @@ public abstract class ImageReaderBase extends ImageReader {
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
      *
-     * @param pProvider the {@code ImageReaderSpi} that is invoking this constructor, or {@code null}.
+     * @param provider the {@code ImageReaderSpi} that is invoking this constructor, or {@code null}.
      */
-    protected ImageReaderBase(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    protected ImageReaderBase(final ImageReaderSpi provider) {
+        super(provider);
     }
 
     /**
      * Overrides {@code setInput}, to allow easy access to the input, in case
      * it is an {@code ImageInputStream}.
      *
-     * @param pInput the {@code ImageInputStream} or other
+     * @param input the {@code ImageInputStream} or other
      * {@code Object} to use for future decoding.
-     * @param pSeekForwardOnly if {@code true}, images and metadata
+     * @param seekForwardOnly if {@code true}, images and metadata
      * may only be read in ascending order from this input source.
-     * @param pIgnoreMetadata if {@code true}, metadata
+     * @param ignoreMetadata if {@code true}, metadata
      * may be ignored during reads.
      *
      * @exception IllegalArgumentException if {@code input} is
@@ -96,11 +96,11 @@ public abstract class ImageReaderBase extends ImageReader {
      * @see ImageInputStream
      */
     @Override
-    public void setInput(final Object pInput, final boolean pSeekForwardOnly, final boolean pIgnoreMetadata) {
+    public void setInput(final Object input, final boolean seekForwardOnly, final boolean ignoreMetadata) {
         resetMembers();
-        super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
-        if (pInput instanceof ImageInputStream) {
-            imageInput = (ImageInputStream) pInput;
+        super.setInput(input, seekForwardOnly, ignoreMetadata);
+        if (input instanceof ImageInputStream) {
+            imageInput = (ImageInputStream) input;
         }
     }
 
@@ -130,11 +130,11 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Default implementation that always returns {@code null}.
      *
-     * @param pImageIndex ignored, unless overridden
+     * @param imageIndex ignored, unless overridden
      * @return {@code null}, unless overridden
      * @throws IOException never, unless overridden.
      */
-    public IIOMetadata getImageMetadata(int pImageIndex) throws IOException {
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         return null;
     }
 
@@ -151,11 +151,11 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Default implementation that always returns {@code 1}.
      *
-     * @param pAllowSearch ignored, unless overridden
+     * @param allowSearch ignored, unless overridden
      * @return {@code 1}, unless overridden
      * @throws IOException never, unless overridden
      */
-    public int getNumImages(boolean pAllowSearch) throws IOException {
+    public int getNumImages(boolean allowSearch) throws IOException {
         assertInput();
         return 1;
     }
@@ -163,18 +163,18 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Convenience method to make sure image index is within bounds.
      *
-     * @param pIndex the image index
+     * @param index the image index
      *
      * @throws java.io.IOException if an error occurs during reading
-     * @throws IndexOutOfBoundsException if not {@code minIndex <= pIndex < numImages}
+     * @throws IndexOutOfBoundsException if not {@code minIndex <= index < numImages}
      */
-    protected void checkBounds(int pIndex) throws IOException {
+    protected void checkBounds(int index) throws IOException {
         assertInput();
-        if (pIndex < getMinIndex()) {
+        if (index < getMinIndex()) {
             throw new IndexOutOfBoundsException("index < minIndex");
         }
-        else if (getNumImages(false) != -1 && pIndex >= getNumImages(false)) {
-            throw new IndexOutOfBoundsException("index >= numImages (" + pIndex + " >= " + getNumImages(false) + ")");
+        else if (getNumImages(false) != -1 && index >= getNumImages(false)) {
+            throw new IndexOutOfBoundsException("index >= numImages (" + index + " >= " + getNumImages(false) + ")");
         }
     }
 

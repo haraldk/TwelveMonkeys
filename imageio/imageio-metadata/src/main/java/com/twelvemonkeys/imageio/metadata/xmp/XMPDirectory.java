@@ -45,7 +45,7 @@ final class XMPDirectory extends AbstractDirectory {
     // TODO: XMPDirectory, maybe not even an AbstractDirectory
     //       - Keeping the Document would allow for easier serialization
     // TODO: Or use direct SAX parsing
-    public XMPDirectory(List<Entry> pEntries) {
-        super(pEntries);
+    public XMPDirectory(List<Entry> entries) {
+        super(entries);
     }
 }

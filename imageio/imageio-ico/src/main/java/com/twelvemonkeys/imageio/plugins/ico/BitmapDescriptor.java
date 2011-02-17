@@ -39,34 +39,34 @@ import java.awt.image.BufferedImage;
  * @version $Id: Bitmap.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
 abstract class BitmapDescriptor {
-    protected final DirectoryEntry mEntry;
-    protected final DIBHeader mHeader;
+    protected final DirectoryEntry entry;
+    protected final DIBHeader header;
 
-    protected BufferedImage mImage;
+    protected BufferedImage image;
 
     public BitmapDescriptor(final DirectoryEntry pEntry, final DIBHeader pHeader) {
         Validate.notNull(pEntry, "entry");
         Validate.notNull(pHeader, "header");
         
-        mEntry = pEntry;
-        mHeader = pHeader;
+        entry = pEntry;
+        header = pHeader;
     }
 
     abstract public BufferedImage getImage();
 
     public final int getWidth() {
-        return mEntry.getWidth();
+        return entry.getWidth();
     }
 
     public final int getHeight() {
-        return mEntry.getHeight();
+        return entry.getHeight();
     }
 
     protected final int getColorCount() {
-        return mEntry.getColorCount() != 0 ? mEntry.getColorCount() : 1 << getBitCount();
+        return entry.getColorCount() != 0 ? entry.getColorCount() : 1 << getBitCount();
     }
 
     protected final int getBitCount() {
-        return mEntry.getBitCount() != 0 ? mEntry.getBitCount() : mHeader.getBitCount();
+        return entry.getBitCount() != 0 ? entry.getBitCount() : header.getBitCount();
     }
 }

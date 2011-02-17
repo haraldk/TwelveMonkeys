@@ -56,7 +56,7 @@ import java.util.*;
  */
 public final class XMPReader extends MetadataReader {
     @Override
-    public Directory read(final ImageInputStream pInput) throws IOException {
+    public Directory read(final ImageInputStream input) throws IOException {
 //        pInput.mark();
 //
 //        BufferedReader reader = new BufferedReader(new InputStreamReader(IIOUtil.createStreamAdapter(pInput), Charset.forName("UTF-8")));
@@ -75,7 +75,7 @@ public final class XMPReader extends MetadataReader {
             // TODO: Determine encoding and parse using a Reader...
             // TODO: Refactor scanner to return inputstream?
             DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse(new InputSource(IIOUtil.createStreamAdapter(pInput)));
+            Document document = builder.parse(new InputSource(IIOUtil.createStreamAdapter(input)));
 
 //            XMLSerializer serializer = new XMLSerializer(System.err, System.getProperty("file.encoding"));
 //            serializer.serialize(document);

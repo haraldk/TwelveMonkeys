@@ -41,10 +41,10 @@ import java.util.List;
  * @version $Id: Directory.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
 class Directory {
-    private final List<DirectoryEntry> mEntries;
+    private final List<DirectoryEntry> entries;
 
     private Directory(int pImageCount) {
-        mEntries = Arrays.asList(new DirectoryEntry[pImageCount]);
+        entries = Arrays.asList(new DirectoryEntry[pImageCount]);
     }
 
     public static Directory read(final int pType, final int pImageCount, final DataInput pStream) throws IOException {
@@ -54,21 +54,21 @@ class Directory {
     }
 
     private void readEntries(final int pType, final DataInput pStream) throws IOException {
-        for (int i = 0; i < mEntries.size(); i++) {
-            mEntries.set(i, DirectoryEntry.read(pType, pStream));
+        for (int i = 0; i < entries.size(); i++) {
+            entries.set(i, DirectoryEntry.read(pType, pStream));
         }
     }
 
     public DirectoryEntry getEntry(final int pEntryIndex) {
-        return mEntries.get(pEntryIndex);
+        return entries.get(pEntryIndex);
     }
 
     public int count() {
-        return mEntries.size();
+        return entries.size();
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s", getClass().getSimpleName(), mEntries); 
+        return String.format("%s%s", getClass().getSimpleName(), entries);
     }
 }

@@ -54,8 +54,8 @@ public final class Rational extends Number implements Comparable<Rational> {
     // Inspired by http://www.cs.princeton.edu/introcs/92symbolic/Rational.java.html and java.lang.Integer
     static final Rational ZERO = new Rational(0, 1);
 
-    private final long mNumerator;
-    private final long mDenominator;
+    private final long numerator;
+    private final long denominator;
 
     public Rational(final long pNumber) {
         this(pNumber, 1);
@@ -74,8 +74,8 @@ public final class Rational extends Number implements Comparable<Rational> {
         long num = pNumerator / gcd;
         long den = pDenominator / gcd;
 
-        mNumerator = pDenominator >= 0 ? num : -num;
-        mDenominator = pDenominator >= 0 ? den : -den;
+        numerator = pDenominator >= 0 ? num : -num;
+        denominator = pDenominator >= 0 ? den : -den;
     }
 
     private static long gcd(final long m, final long n) {
@@ -95,11 +95,11 @@ public final class Rational extends Number implements Comparable<Rational> {
     }
 
     public long numerator() {
-        return mNumerator;
+        return numerator;
     }
 
     public long denominator() {
-        return mDenominator;
+        return denominator;
     }
 
     /// Number implementation
@@ -121,7 +121,7 @@ public final class Rational extends Number implements Comparable<Rational> {
 
     @Override
     public double doubleValue() {
-        return mNumerator / (double) mDenominator;
+        return numerator / (double) denominator;
     }
 
     /// Comparable implementation
@@ -147,7 +147,7 @@ public final class Rational extends Number implements Comparable<Rational> {
 
     @Override
     public String toString() {
-        return mDenominator == 1 ? Long.toString(mNumerator) : String.format("%s/%s", mNumerator, mDenominator);
+        return denominator == 1 ? Long.toString(numerator) : String.format("%s/%s", numerator, denominator);
     }
 
     /// Operations (adapted from http://www.cs.princeton.edu/introcs/92symbolic/Rational.java.html)
@@ -161,10 +161,10 @@ public final class Rational extends Number implements Comparable<Rational> {
         }
 
         // reduce p1/q2 and p2/q1, then multiply, where a = p1/q1 and b = p2/q2
-        Rational c = new Rational(mNumerator, pOther.mDenominator);
-        Rational d = new Rational(pOther.mNumerator, mDenominator);
+        Rational c = new Rational(numerator, pOther.denominator);
+        Rational d = new Rational(pOther.numerator, denominator);
 
-        return new Rational(c.mNumerator * d.mNumerator, c.mDenominator * d.mDenominator);
+        return new Rational(c.numerator * d.numerator, c.denominator * d.denominator);
     }
 
     // return a + b, staving off overflow
@@ -178,20 +178,20 @@ public final class Rational extends Number implements Comparable<Rational> {
         }
 
         // Find gcd of numerators and denominators
-        long f = gcd(mNumerator, pOther.mNumerator);
-        long g = gcd(mDenominator, pOther.mDenominator);
+        long f = gcd(numerator, pOther.numerator);
+        long g = gcd(denominator, pOther.denominator);
 
         // add cross-product terms for numerator
         // multiply back in
         return new Rational(
-                ((mNumerator / f) * (pOther.mDenominator / g) + (pOther.mNumerator / f) * (mDenominator / g)) * f,
-                lcm(mDenominator, pOther.mDenominator)
+                ((numerator / f) * (pOther.denominator / g) + (pOther.numerator / f) * (denominator / g)) * f,
+                lcm(denominator, pOther.denominator)
         );
     }
 
     // return -a
     public Rational negate() {
-        return new Rational(-mNumerator, mDenominator);
+        return new Rational(-numerator, denominator);
     }
 
     // return a - b
@@ -200,7 +200,7 @@ public final class Rational extends Number implements Comparable<Rational> {
     }
 
     public Rational reciprocal() {
-        return new Rational(mDenominator, mNumerator);
+        return new Rational(denominator, numerator);
     }
 
     // return a / b

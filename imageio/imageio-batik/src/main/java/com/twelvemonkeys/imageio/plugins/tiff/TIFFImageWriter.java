@@ -60,9 +60,9 @@ public class TIFFImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void setOutput(final Object pOutput) {
+    public void setOutput(final Object output) {
         mEncoder = null;
-        super.setOutput(pOutput);
+        super.setOutput(output);
     }
 
     public IIOMetadata getDefaultImageMetadata(final ImageTypeSpecifier imageType, final ImageWriteParam param) {

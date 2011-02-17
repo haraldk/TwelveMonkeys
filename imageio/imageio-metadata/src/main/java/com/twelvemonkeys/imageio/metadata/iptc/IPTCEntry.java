@@ -38,8 +38,8 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 * @version $Id: IPTCEntry.java,v 1.0 Nov 13, 2009 8:57:04 PM haraldk Exp$
 */
 class IPTCEntry extends AbstractEntry {
-    public IPTCEntry(final int pTagId, final Object pValue) {
-        super(pTagId, pValue);
+    public IPTCEntry(final int tagId, final Object value) {
+        super(tagId, value);
     }
 
     @Override

@@ -75,8 +75,8 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
         }
 
         ImageInputStream stream = (ImageInputStream) pSource;
-
         stream.mark();
+
         try {
             if (isPICT(stream)) {
                 // If PICT Clipping format, return true immediately
@@ -87,6 +87,7 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
                 stream.reset();
                 PICTImageReader.skipNullHeader(stream);
             }
+
             return isPICT(stream);
         }
         catch (EOFException ignore) {

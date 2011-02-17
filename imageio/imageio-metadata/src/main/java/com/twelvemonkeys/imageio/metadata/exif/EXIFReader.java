@@ -56,14 +56,14 @@ public final class EXIFReader extends MetadataReader {
     static final Collection<Integer> KNOWN_IFDS = Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD);
 
     @Override
-    public Directory read(final ImageInputStream pInput) throws IOException {
+    public Directory read(final ImageInputStream input) throws IOException {
         byte[] bom = new byte[2];
-        pInput.readFully(bom);
+        input.readFully(bom);
         if (bom[0] == 'I' && bom[1] == 'I') {
-            pInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            input.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         }
         else if (bom[0] == 'M' && bom[1] == 'M') {
-            pInput.setByteOrder(ByteOrder.BIG_ENDIAN);
+            input.setByteOrder(ByteOrder.BIG_ENDIAN);
         }
         else  {
             throw new IIOException(String.format("Invalid TIFF byte order mark '%s', expected: 'II' or 'MM'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
@@ -71,14 +71,14 @@ public final class EXIFReader extends MetadataReader {
 
         // TODO: BigTiff uses version 43 instead of TIFF's 42, and header is slightly different, see
         // http://www.awaresystems.be/imaging/tiff/bigtiff.html
-        int magic = pInput.readUnsignedShort();
+        int magic = input.readUnsignedShort();
         if (magic != TIFF.TIFF_MAGIC) {
             throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic,  TIFF.TIFF_MAGIC));
         }
 
-        long directoryOffset = pInput.readUnsignedInt();
+        long directoryOffset = input.readUnsignedInt();
 
-        return readDirectory(pInput, directoryOffset);
+        return readDirectory(input, directoryOffset);
     }
 
     private EXIFDirectory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {

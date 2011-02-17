@@ -40,10 +40,10 @@ import java.io.IOException;
  * @version $Id: PSDLayerBlendMode.java,v 1.0 May 8, 2008 4:34:35 PM haraldk Exp$
  */
 class PSDLayerBlendMode {
-    final int mBlendMode;
-    final int mOpacity; // 0-255
-    final int mClipping; // 0: base, 1: non-base
-    final int mFlags;
+    final int blendMode;
+    final int opacity; // 0-255
+    final int clipping; // 0: base, 1: non-base
+    final int flags;
 
     public PSDLayerBlendMode(final ImageInputStream pInput) throws IOException {
         int blendModeSig = pInput.readInt();
@@ -51,11 +51,11 @@ class PSDLayerBlendMode {
             throw new IIOException("Illegal PSD Blend Mode signature, expected 8BIM: " + PSDUtil.intToStr(blendModeSig));
         }
 
-        mBlendMode = pInput.readInt();
+        blendMode = pInput.readInt();
 
-        mOpacity = pInput.readUnsignedByte();
-        mClipping = pInput.readUnsignedByte();
-        mFlags = pInput.readUnsignedByte();
+        opacity = pInput.readUnsignedByte();
+        clipping = pInput.readUnsignedByte();
+        flags = pInput.readUnsignedByte();
 
         pInput.readByte(); // Pad
     }
@@ -65,10 +65,10 @@ class PSDLayerBlendMode {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
 
         builder.append("[");
-        builder.append("mode: \"").append(PSDUtil.intToStr(mBlendMode));
-        builder.append("\", opacity: ").append(mOpacity);
-        builder.append(", clipping: ").append(mClipping);
-        switch (mClipping) {
+        builder.append("mode: \"").append(PSDUtil.intToStr(blendMode));
+        builder.append("\", opacity: ").append(opacity);
+        builder.append(", clipping: ").append(clipping);
+        switch (clipping) {
             case 0:
                 builder.append(" (base)");
                 break;
@@ -79,40 +79,40 @@ class PSDLayerBlendMode {
                 builder.append(" (unknown)");
                 break;
         }
-        builder.append(", flags: ").append(byteToBinary(mFlags));
+        builder.append(", flags: ").append(byteToBinary(flags));
         /*
         bit 0 = transparency protected; bit 1 = visible; bit 2 = obsolete; 
         bit 3 = 1 for Photoshop 5.0 and later, tells if bit 4 has useful information;
         bit 4 = pixel data irrelevant to appearance of document
          */
         builder.append(" (");
-        if ((mFlags & 0x01) != 0) {
+        if ((flags & 0x01) != 0) {
             builder.append("Transp. protected, ");
         }
-        if ((mFlags & 0x02) != 0) {
+        if ((flags & 0x02) != 0) {
             builder.append("Hidden, ");
         }
-        if ((mFlags & 0x04) != 0) {
+        if ((flags & 0x04) != 0) {
             builder.append("Obsolete bit, ");
         }
-        if ((mFlags & 0x08) != 0) {
+        if ((flags & 0x08) != 0) {
             builder.append("PS 5.0 data present, "); // "tells if next bit has useful information"...
         }
-        if ((mFlags & 0x10) != 0) {
+        if ((flags & 0x10) != 0) {
             builder.append("Pixel data irrelevant, ");
         }
-        if ((mFlags & 0x20) != 0) {
+        if ((flags & 0x20) != 0) {
             builder.append("Unknown bit 5, ");
         }
-        if ((mFlags & 0x40) != 0) {
+        if ((flags & 0x40) != 0) {
             builder.append("Unknown bit 6, ");
         }
-        if ((mFlags & 0x80) != 0) {
+        if ((flags & 0x80) != 0) {
             builder.append("Unknown bit 7, ");
         }
 
         // Stupidity...
-        if (mFlags != 0) {
+        if (flags != 0) {
             builder.delete(builder.length() - 2, builder.length());
         }
                 

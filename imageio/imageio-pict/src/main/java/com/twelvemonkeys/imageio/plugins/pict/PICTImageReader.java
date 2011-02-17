@@ -110,23 +110,23 @@ public class PICTImageReader extends ImageReaderBase {
     static boolean DEBUG = false;
 
     // Private fields
-    private QuickDrawContext mContext;
-    private Rectangle mFrame;
+    private QuickDrawContext context;
+    private Rectangle frame;
 
-    private int mVersion;
+    private int version;
 
     // Variables for storing draw status
-    private Point mPenPosition = new Point(0, 0);
-    private Rectangle mLastRectangle = new Rectangle(0, 0);
+    private Point penPosition = new Point(0, 0);
+    private Rectangle lastRectangle = new Rectangle(0, 0);
 
     // Ratio between the screen resolution and the image resolution
-    private double mScreenImageXRatio;
-    private double mScreenImageYRatio;
+    private double screenImageXRatio;
+    private double screenImageYRatio;
 
     // List of images created during image import
-    private List<BufferedImage> mImages = new ArrayList<BufferedImage>();
-    private long mImageStartStreamPos;
-    protected int mPicSize;
+    private List<BufferedImage> images = new ArrayList<BufferedImage>();
+    private long imageStartStreamPos;
+    protected int picSize;
 
     public PICTImageReader() {
         this(null);
@@ -137,9 +137,9 @@ public class PICTImageReader extends ImageReaderBase {
     }
 
     protected void resetMembers() {
-        mContext = null;
-        mFrame = null;
-        mImages.clear();
+        context = null;
+        frame = null;
+        images.clear();
     }
 
     /**
@@ -149,14 +149,16 @@ public class PICTImageReader extends ImageReaderBase {
      * @throws IOException if an I/O error occurs while reading the image.
      */
     private Rectangle getPICTFrame() throws IOException {
-        if (mFrame == null) {
+        if (frame == null) {
             // Read in header information
             readPICTHeader(imageInput);
+
             if (DEBUG) {
                 System.out.println("Done reading PICT header!");
             }
         }
-        return mFrame;
+
+        return frame;
     }
 
     /**
@@ -184,9 +186,10 @@ public class PICTImageReader extends ImageReaderBase {
     
     private void readPICTHeader0(final ImageInputStream pStream) throws IOException {
         // Get size
-        mPicSize = pStream.readUnsignedShort();
+        picSize = pStream.readUnsignedShort();
+
         if (DEBUG) {
-            System.out.println("picSize: " + mPicSize);
+            System.out.println("picSize: " + picSize);
         }
 
         // Get frame at 72 dpi
@@ -197,17 +200,17 @@ public class PICTImageReader extends ImageReaderBase {
         int h = pStream.readUnsignedShort();
         int w = pStream.readUnsignedShort();
 
-        mFrame = new Rectangle(x, y, w - x, h - y);
-        if (mFrame.width < 0 || mFrame.height < 0) {
-            throw new IIOException("Error in PICT header: Invalid frame " + mFrame);
+        frame = new Rectangle(x, y, w - x, h - y);
+        if (frame.width < 0 || frame.height < 0) {
+            throw new IIOException("Error in PICT header: Invalid frame " + frame);
         }
         if (DEBUG) {
-            System.out.println("mFrame: " + mFrame);
+            System.out.println("frame: " + frame);
         }
 
         // Set default display ratios. 72 dpi is the standard Macintosh resolution.
-        mScreenImageXRatio = 1.0;
-        mScreenImageYRatio = 1.0;
+        screenImageXRatio = 1.0;
+        screenImageYRatio = 1.0;
 
         // Get the version, since the way of reading the rest depends on it
         boolean isExtendedV2 = false;
@@ -217,10 +220,10 @@ public class PICTImageReader extends ImageReaderBase {
         }
 
         if (version == (PICT.OP_VERSION << 8) + 0x01) {
-            mVersion = 1;
+            this.version = 1;
         }
         else if (version == PICT.OP_VERSION && pStream.readShort() == PICT.OP_VERSION_2) {
-            mVersion = 2;
+            this.version = 2;
 
             // Read in version 2 header op and test that it is valid: HeaderOp 0x0C00
             if (pStream.readShort() != PICT.OP_HEADER_OP) {
@@ -249,10 +252,10 @@ public class PICTImageReader extends ImageReaderBase {
                 // int h (fixed point)
                 double h2 = PICTUtil.readFixedPoint(pStream);
 
-                mScreenImageXRatio = (w - x) / (w2 - x2);
-                mScreenImageYRatio = (h - y) / (h2 - y2);
+                screenImageXRatio = (w - x) / (w2 - x2);
+                screenImageYRatio = (h - y) / (h2 - y2);
 
-                if (mScreenImageXRatio < 0 || mScreenImageYRatio < 0) {
+                if (screenImageXRatio < 0 || screenImageYRatio < 0) {
                     throw new IIOException("Error in PICT header: Invalid bounds " + new Rectangle.Double(x2, y2, w2 - x2, h2 - y2));
                 }
                 if (DEBUG) {
@@ -288,10 +291,10 @@ public class PICTImageReader extends ImageReaderBase {
                 // short w
                 short w2 = pStream.readShort();
 
-                mScreenImageXRatio = (w - x) / (double) (w2 - x2);
-                mScreenImageYRatio = (h - y) / (double) (h2 - y2);
+                screenImageXRatio = (w - x) / (double) (w2 - x2);
+                screenImageYRatio = (h - y) / (double) (h2 - y2);
 
-                if (mScreenImageXRatio < 0 || mScreenImageYRatio < 0) {
+                if (screenImageXRatio < 0 || screenImageYRatio < 0) {
                     throw new IIOException("Error in PICT header: Invalid bounds " + new Rectangle.Double(x2, y2, w2 - x2, h2 - y2));
                 }
                 if (DEBUG) {
@@ -303,8 +306,8 @@ public class PICTImageReader extends ImageReaderBase {
             }
 
             if (DEBUG) {
-                System.out.println("screenImageXRatio: " + mScreenImageXRatio);
-                System.out.println("screenImageYRatio: " + mScreenImageYRatio);
+                System.out.println("screenImageXRatio: " + screenImageXRatio);
+                System.out.println("screenImageYRatio: " + screenImageYRatio);
             }
         }
         else {
@@ -313,13 +316,13 @@ public class PICTImageReader extends ImageReaderBase {
         }
 
         if (DEBUG) {
-            System.out.println("Version: " + mVersion + (isExtendedV2 ? " extended" : ""));
+            System.out.println("Version: " + this.version + (isExtendedV2 ? " extended" : ""));
         }
 
-        mImageStartStreamPos = pStream.getStreamPosition();
+        imageStartStreamPos = pStream.getStreamPosition();
 
         // Won't need header data again (NOTE: We'll only get here if no exception is thrown)
-        pStream.flushBefore(mImageStartStreamPos);
+        pStream.flushBefore(imageStartStreamPos);
     }
 
     static void skipNullHeader(final ImageInputStream pStream) throws IOException {
@@ -341,7 +344,7 @@ public class PICTImageReader extends ImageReaderBase {
      * @throws IOException if an I/O error occurs while reading the image.
      */
     private void drawOnto(Graphics2D pGraphics) throws IOException {
-        mContext = new QuickDrawContext(pGraphics);
+        context = new QuickDrawContext(pGraphics);
 
         readPICTopcodes(imageInput);
         if (DEBUG) {
@@ -360,7 +363,7 @@ public class PICTImageReader extends ImageReaderBase {
      * @throws java.io.IOException if an I/O error occurs while reading the image.
      */
     private void readPICTopcodes(ImageInputStream pStream) throws IOException {
-        pStream.seek(mImageStartStreamPos);
+        pStream.seek(imageStartStreamPos);
 
         int opCode, dh, dv, dataLength;
         byte[] colorBuffer = new byte[3 * PICT.COLOR_COMP_SIZE];
@@ -386,7 +389,7 @@ public class PICTImageReader extends ImageReaderBase {
             // Read from file until we read the end of picture opcode
             do {
                 // Read opcode, version 1: byte, version 2: short
-                if (mVersion == 1) {
+                if (version == 1) {
                     opCode = pStream.readUnsignedByte();
                 }
                 else {
@@ -431,7 +434,7 @@ public class PICTImageReader extends ImageReaderBase {
 
                     case PICT.OP_BK_PAT:
                         // Get the data
-                        mContext.setBackgroundPattern(PICTUtil.readPattern(pStream));
+                        context.setBackgroundPattern(PICTUtil.readPattern(pStream));
                         if (DEBUG) {
                             System.out.println("bkPat");
                         }
@@ -490,7 +493,7 @@ public class PICTImageReader extends ImageReaderBase {
                         // Get the two words
                         // NOTE: This is out of order, compared to other Points
                         Dimension pnsize = new Dimension(pStream.readUnsignedShort(), pStream.readUnsignedShort());
-                        mContext.setPenSize(pnsize);
+                        context.setPenSize(pnsize);
                         if (DEBUG) {
                             System.out.println("pnsize: " + pnsize);
                         }
@@ -503,12 +506,12 @@ public class PICTImageReader extends ImageReaderBase {
                             System.out.println("pnMode: " + mode);
                         }
 
-                        mContext.setPenMode(mode);
+                        context.setPenMode(mode);
 
                         break;
 
                     case PICT.OP_PN_PAT:
-                        mContext.setPenPattern(PICTUtil.readPattern(pStream));
+                        context.setPenPattern(PICTUtil.readPattern(pStream));
                         if (DEBUG) {
                             System.out.println("pnPat");
                         }
@@ -557,7 +560,7 @@ public class PICTImageReader extends ImageReaderBase {
                         //    currentFont = mGraphics.getFont();
                         //    mGraphics.setFont(new Font(currentFont.getName(), currentFont.getStyle(), tx_size));
                         //}
-                        mContext.setTextSize(tx_size);
+                        context.setTextSize(tx_size);
                         if (DEBUG) {
                             System.out.println("txSize: " + tx_size);
                         }
@@ -599,15 +602,15 @@ public class PICTImageReader extends ImageReaderBase {
 
                     case 0x0012: // BkPixPat
                         bg = PICTUtil.readColorPattern(pStream);
-                        mContext.setBackgroundPattern(bg);
+                        context.setBackgroundPattern(bg);
                         break;
                     case 0x0013: // PnPixPat
                         pen = PICTUtil.readColorPattern(pStream);
-                        mContext.setBackgroundPattern(pen);
+                        context.setBackgroundPattern(pen);
                         break;
                     case 0x0014: // FillPixPat
                         fill = PICTUtil.readColorPattern(pStream);
-                        mContext.setBackgroundPattern(fill);
+                        context.setBackgroundPattern(fill);
                         break;
 
                     case PICT.OP_PN_LOC_H_FRAC:// TO BE DONE???
@@ -650,7 +653,7 @@ public class PICTImageReader extends ImageReaderBase {
 
                     case PICT.OP_HILITE_MODE:
                         // Change color to hilite color
-                        mContext.setPenPattern(new BitMapPattern(hilight));
+                        context.setPenPattern(new BitMapPattern(hilight));
                         if (DEBUG) {
                             System.out.println("opHiliteMode");
                         }
@@ -691,14 +694,14 @@ public class PICTImageReader extends ImageReaderBase {
 
                         y = getYPtCoord(pStream.readUnsignedShort());
                         x = getXPtCoord(pStream.readUnsignedShort());
-                        mPenPosition.setLocation(x, y);
+                        penPosition.setLocation(x, y);
 
                         // Move pen to new position, draw line
-                        mContext.moveTo(origin);
-                        mContext.lineTo(mPenPosition);
+                        context.moveTo(origin);
+                        context.lineTo(penPosition);
 
                         if (DEBUG) {
-                            System.out.println("line from: " + origin + " to: " + mPenPosition);
+                            System.out.println("line from: " + origin + " to: " + penPosition);
                         }
                         break;
 
@@ -708,10 +711,10 @@ public class PICTImageReader extends ImageReaderBase {
                         x = getXPtCoord(pStream.readUnsignedShort());
 
                         // Draw line
-                        mContext.line(x, y);
+                        context.line(x, y);
 
                         if (DEBUG) {
-                            System.out.println("lineFrom to: " + mPenPosition);
+                            System.out.println("lineFrom to: " + penPosition);
                         }
                         break;
 
@@ -726,8 +729,8 @@ public class PICTImageReader extends ImageReaderBase {
                         dh_dv = new Point(x, y);
 
                         // Move pen to new position, draw line if we have a graphics
-                        mPenPosition.setLocation(origin.x + dh_dv.x, origin.y + dh_dv.y);
-                        mContext.lineTo(mPenPosition);
+                        penPosition.setLocation(origin.x + dh_dv.x, origin.y + dh_dv.y);
+                        context.lineTo(penPosition);
 
                         if (DEBUG) {
                             System.out.println("Short line origin: " + origin + ", dh,dv: " + dh_dv);
@@ -740,7 +743,7 @@ public class PICTImageReader extends ImageReaderBase {
                         x = getXPtCoord(pStream.readByte());
 
                         // Draw line
-                        mContext.line(x, y);
+                        context.line(x, y);
 
                         if (DEBUG) {
                             System.out.println("Short line from dh,dv: " + x + "," + y);
@@ -765,30 +768,30 @@ public class PICTImageReader extends ImageReaderBase {
                         y = getYPtCoord(pStream.readUnsignedShort());
                         x = getXPtCoord(pStream.readUnsignedShort());
                         origin = new Point(x, y);
-                        mPenPosition = origin;
-                        mContext.moveTo(mPenPosition);
+                        penPosition = origin;
+                        context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
                         // TODO
                         //if (mGraphics != null) {
-                        //    mGraphics.drawString(text, mPenPosition.x, mPenPosition.y);
+                        //    mGraphics.drawString(text, penPosition.x, penPosition.y);
                         //}
-                        mContext.drawString(text);
+                        context.drawString(text);
                         if (DEBUG) {
-                            System.out.println("longText origin: " + mPenPosition + ", text:" + text);
+                            System.out.println("longText origin: " + penPosition + ", text:" + text);
                         }
                         break;
 
                     case PICT.OP_DH_TEXT:// OK, not tested
                         // Get dh
                         dh = getXPtCoord(pStream.readByte());
-                        mPenPosition.translate(dh, 0);
-                        mContext.moveTo(mPenPosition);
+                        penPosition.translate(dh, 0);
+                        context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
                         // TODO
 //                        if (mGraphics != null) {
-//                            mGraphics.drawString(text, mPenPosition.x, mPenPosition.y);
+//                            mGraphics.drawString(text, penPosition.x, penPosition.y);
 //                        }
-                        mContext.drawString(text);
+                        context.drawString(text);
                         if (DEBUG) {
                             System.out.println("DHText dh: " + dh + ", text:" + text);
                         }
@@ -797,14 +800,14 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_DV_TEXT:// OK, not tested
                         // Get dh
                         dv = getYPtCoord(pStream.readByte());
-                        mPenPosition.translate(0, dv);
-                        mContext.moveTo(mPenPosition);
+                        penPosition.translate(0, dv);
+                        context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
                         // TODO
                         //if (mGraphics != null) {
-                        //    mGraphics.drawString(text, mPenPosition.x, mPenPosition.y);
+                        //    mGraphics.drawString(text, penPosition.x, penPosition.y);
                         //}
-                        mContext.drawString(text);
+                        context.drawString(text);
                         if (DEBUG) {
                             System.out.println("DVText dv: " + dv + ", text:" + text);
                         }
@@ -814,16 +817,16 @@ public class PICTImageReader extends ImageReaderBase {
                         // Get dh, dv
                         y = getYPtCoord(pStream.readByte());
                         x = getXPtCoord(pStream.readByte());
-                        mPenPosition.translate(x, y);
-                        mContext.moveTo(mPenPosition);
+                        penPosition.translate(x, y);
+                        context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
                         // TODO
                         //if (mGraphics != null) {
-                        //    mGraphics.drawString(text, mPenPosition.x, mPenPosition.y);
+                        //    mGraphics.drawString(text, penPosition.x, penPosition.y);
                         //}
-                        mContext.drawString(text);
+                        context.drawString(text);
                         if (DEBUG) {
-                            System.out.println("DHDVText penPosition: " + mPenPosition + ", text:" + text);
+                            System.out.println("DHDVText penPosition: " + penPosition + ", text:" + text);
                         }
                         break;
 
@@ -843,7 +846,7 @@ public class PICTImageReader extends ImageReaderBase {
                         //    mGraphics.setFont(Font.decode(text)
                         //            .deriveFont(currentFont.getStyle(), currentFont.getSize()));
                         //}
-                        mContext.drawString(text);
+                        context.drawString(text);
                         if (DEBUG) {
                             System.out.println("fontName: \"" + text +"\"");
                         }
@@ -882,7 +885,7 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_INVERT_RECT:// OK, not tested
                     case PICT.OP_FILL_RECT:// OK, not tested
                         // Get the frame rectangle
-                        readRectangle(pStream, mLastRectangle);
+                        readRectangle(pStream, lastRectangle);
 
                     case PICT.OP_FRAME_SAME_RECT:// OK, not tested
                     case PICT.OP_PAINT_SAME_RECT:// OK, not tested
@@ -893,23 +896,23 @@ public class PICTImageReader extends ImageReaderBase {
                         switch (opCode) {
                             case PICT.OP_FRAME_RECT:
                             case PICT.OP_FRAME_SAME_RECT:
-                                mContext.frameRect(mLastRectangle);
+                                context.frameRect(lastRectangle);
                                 break;
                             case PICT.OP_PAINT_RECT:
                             case PICT.OP_PAINT_SAME_RECT:
-                                mContext.paintRect(mLastRectangle);
+                                context.paintRect(lastRectangle);
                                 break;
                             case PICT.OP_ERASE_RECT:
                             case PICT.OP_ERASE_SAME_RECT:
-                                mContext.eraseRect(mLastRectangle);
+                                context.eraseRect(lastRectangle);
                                 break;
                             case PICT.OP_INVERT_RECT:
                             case PICT.OP_INVERT_SAME_RECT:
-                                mContext.invertRect(mLastRectangle);
+                                context.invertRect(lastRectangle);
                                 break;
                             case PICT.OP_FILL_RECT:
                             case PICT.OP_FILL_SAME_RECT:
-                                mContext.fillRect(mLastRectangle, fill);
+                                context.fillRect(lastRectangle, fill);
                                 break;
                         }
 
@@ -917,34 +920,34 @@ public class PICTImageReader extends ImageReaderBase {
                         if (DEBUG) {
                             switch (opCode) {
                                 case PICT.OP_FRAME_RECT:
-                                    System.out.println("frameRect: " + mLastRectangle);
+                                    System.out.println("frameRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_PAINT_RECT:
-                                    System.out.println("paintRect: " + mLastRectangle);
+                                    System.out.println("paintRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_ERASE_RECT:
-                                    System.out.println("eraseRect: " + mLastRectangle);
+                                    System.out.println("eraseRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_INVERT_RECT:
-                                    System.out.println("invertRect: " + mLastRectangle);
+                                    System.out.println("invertRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_FILL_RECT:
-                                    System.out.println("fillRect: " + mLastRectangle);
+                                    System.out.println("fillRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_FRAME_SAME_RECT:
-                                    System.out.println("frameSameRect: " + mLastRectangle);
+                                    System.out.println("frameSameRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_PAINT_SAME_RECT:
-                                    System.out.println("paintSameRect: " + mLastRectangle);
+                                    System.out.println("paintSameRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_ERASE_SAME_RECT:
-                                    System.out.println("eraseSameRect: " + mLastRectangle);
+                                    System.out.println("eraseSameRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_INVERT_SAME_RECT:
-                                    System.out.println("invertSameRect: " + mLastRectangle);
+                                    System.out.println("invertSameRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_FILL_SAME_RECT:
-                                    System.out.println("fillSameRect: " + mLastRectangle);
+                                    System.out.println("fillSameRect: " + lastRectangle);
                                     break;
                             }
                         }
@@ -969,7 +972,7 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_INVERT_R_RECT:// OK, not tested
                     case PICT.OP_FILL_R_RECT:// OK, not tested
                         // Get the frame rectangle
-                        readRectangle(pStream, mLastRectangle);
+                        readRectangle(pStream, lastRectangle);
 
                     case PICT.OP_FRAME_SAME_R_RECT:// OK, not tested
                     case PICT.OP_PAINT_SAME_R_RECT:// OK, not tested
@@ -980,23 +983,23 @@ public class PICTImageReader extends ImageReaderBase {
                         switch (opCode) {
                             case PICT.OP_FRAME_R_RECT:
                             case PICT.OP_FRAME_SAME_R_RECT:
-                                mContext.frameRoundRect(mLastRectangle, ovSize.x, ovSize.y);
+                                context.frameRoundRect(lastRectangle, ovSize.x, ovSize.y);
                                 break;
                             case PICT.OP_PAINT_R_RECT:
                             case PICT.OP_PAINT_SAME_R_RECT:
-                                mContext.paintRoundRect(mLastRectangle, ovSize.x, ovSize.y);
+                                context.paintRoundRect(lastRectangle, ovSize.x, ovSize.y);
                                 break;
                             case PICT.OP_ERASE_R_RECT:
                             case PICT.OP_ERASE_SAME_R_RECT:
-                                mContext.eraseRoundRect(mLastRectangle, ovSize.x, ovSize.y);
+                                context.eraseRoundRect(lastRectangle, ovSize.x, ovSize.y);
                                 break;
                             case PICT.OP_INVERT_R_RECT:
                             case PICT.OP_INVERT_SAME_R_RECT:
-                                mContext.invertRoundRect(mLastRectangle, ovSize.x, ovSize.y);
+                                context.invertRoundRect(lastRectangle, ovSize.x, ovSize.y);
                                 break;
                             case PICT.OP_FILL_R_RECT:
                             case PICT.OP_FILL_SAME_R_RECT:
-                                mContext.fillRoundRect(mLastRectangle, ovSize.x, ovSize.y, fill);
+                                context.fillRoundRect(lastRectangle, ovSize.x, ovSize.y, fill);
                                 break;
                         }
 
@@ -1004,34 +1007,34 @@ public class PICTImageReader extends ImageReaderBase {
                         if (DEBUG) {
                             switch (opCode) {
                                 case PICT.OP_FRAME_R_RECT:
-                                    System.out.println("frameRRect: " + mLastRectangle);
+                                    System.out.println("frameRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_PAINT_R_RECT:
-                                    System.out.println("paintRRect: " + mLastRectangle);
+                                    System.out.println("paintRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_ERASE_R_RECT:
-                                    System.out.println("eraseRRect: " + mLastRectangle);
+                                    System.out.println("eraseRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_INVERT_R_RECT:
-                                    System.out.println("invertRRect: " + mLastRectangle);
+                                    System.out.println("invertRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_FILL_R_RECT:
-                                    System.out.println("fillRRect: " + mLastRectangle);
+                                    System.out.println("fillRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_FRAME_SAME_R_RECT:
-                                    System.out.println("frameSameRRect: " + mLastRectangle);
+                                    System.out.println("frameSameRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_PAINT_SAME_R_RECT:
-                                    System.out.println("paintSameRRect: " + mLastRectangle);
+                                    System.out.println("paintSameRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_ERASE_SAME_R_RECT:
-                                    System.out.println("eraseSameRRect: " + mLastRectangle);
+                                    System.out.println("eraseSameRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_INVERT_SAME_R_RECT:
-                                    System.out.println("invertSameRRect: " + mLastRectangle);
+                                    System.out.println("invertSameRRect: " + lastRectangle);
                                     break;
                                 case PICT.OP_FILL_SAME_R_RECT:
-                                    System.out.println("fillSameRRect: " + mLastRectangle);
+                                    System.out.println("fillSameRRect: " + lastRectangle);
                                     break;
                             }
                         }
@@ -1048,7 +1051,7 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_INVERT_OVAL:// OK, not tested
                     case PICT.OP_FILL_OVAL:// OK, not tested
                         // Get the frame rectangle
-                        readRectangle(pStream, mLastRectangle);
+                        readRectangle(pStream, lastRectangle);
                     case PICT.OP_FRAME_SAME_OVAL:// OK, not tested
                     case PICT.OP_PAINT_SAME_OVAL:// OK, not tested
                     case PICT.OP_ERASE_SAME_OVAL:// OK, not tested
@@ -1058,23 +1061,23 @@ public class PICTImageReader extends ImageReaderBase {
                         switch (opCode) {
                             case PICT.OP_FRAME_OVAL:
                             case PICT.OP_FRAME_SAME_OVAL:
-                                mContext.frameOval(mLastRectangle);
+                                context.frameOval(lastRectangle);
                                 break;
                             case PICT.OP_PAINT_OVAL:
                             case PICT.OP_PAINT_SAME_OVAL:
-                                mContext.paintOval(mLastRectangle);
+                                context.paintOval(lastRectangle);
                                 break;
                             case PICT.OP_ERASE_OVAL:
                             case PICT.OP_ERASE_SAME_OVAL:
-                                mContext.eraseOval(mLastRectangle);
+                                context.eraseOval(lastRectangle);
                                 break;
                             case PICT.OP_INVERT_OVAL:
                             case PICT.OP_INVERT_SAME_OVAL:
-                                mContext.invertOval(mLastRectangle);
+                                context.invertOval(lastRectangle);
                                 break;
                             case PICT.OP_FILL_OVAL:
                             case PICT.OP_FILL_SAME_OVAL:
-                                mContext.fillOval(mLastRectangle, fill);
+                                context.fillOval(lastRectangle, fill);
                                 break;
                         }
 
@@ -1082,34 +1085,34 @@ public class PICTImageReader extends ImageReaderBase {
                         if (DEBUG) {
                             switch (opCode) {
                                 case PICT.OP_FRAME_OVAL:
-                                    System.out.println("frameOval: " + mLastRectangle);
+                                    System.out.println("frameOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_PAINT_OVAL:
-                                    System.out.println("paintOval: " + mLastRectangle);
+                                    System.out.println("paintOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_ERASE_OVAL:
-                                    System.out.println("eraseOval: " + mLastRectangle);
+                                    System.out.println("eraseOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_INVERT_OVAL:
-                                    System.out.println("invertOval: " + mLastRectangle);
+                                    System.out.println("invertOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_FILL_OVAL:
-                                    System.out.println("fillOval: " + mLastRectangle);
+                                    System.out.println("fillOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_FRAME_SAME_OVAL:
-                                    System.out.println("frameSameOval: " + mLastRectangle);
+                                    System.out.println("frameSameOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_PAINT_SAME_OVAL:
-                                    System.out.println("paintSameOval: " + mLastRectangle);
+                                    System.out.println("paintSameOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_ERASE_SAME_OVAL:
-                                    System.out.println("eraseSameOval: " + mLastRectangle);
+                                    System.out.println("eraseSameOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_INVERT_SAME_OVAL:
-                                    System.out.println("invertSameOval: " + mLastRectangle);
+                                    System.out.println("invertSameOval: " + lastRectangle);
                                     break;
                                 case PICT.OP_FILL_SAME_OVAL:
-                                    System.out.println("fillSameOval: " + mLastRectangle);
+                                    System.out.println("fillSameOval: " + lastRectangle);
                                     break;
                             }
                         }
@@ -1141,7 +1144,7 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_INVERT_ARC:// OK, not tested
                     case PICT.OP_FILL_ARC:// OK, not tested
                         // Get the frame rectangle
-                        readRectangle(pStream, mLastRectangle);
+                        readRectangle(pStream, lastRectangle);
                     case PICT.OP_FRAME_SAME_ARC:// OK, not tested
                     case PICT.OP_PAINT_SAME_ARC:// OK, not tested
                     case PICT.OP_ERASE_SAME_ARC:// OK, not tested
@@ -1159,23 +1162,23 @@ public class PICTImageReader extends ImageReaderBase {
                         switch (opCode) {
                             case PICT.OP_FRAME_ARC:
                             case PICT.OP_FRAME_SAME_ARC:
-                                mContext.frameArc(mLastRectangle, arcAngles.x, arcAngles.y);
+                                context.frameArc(lastRectangle, arcAngles.x, arcAngles.y);
                                 break;
                             case PICT.OP_PAINT_ARC:
                             case PICT.OP_PAINT_SAME_ARC:
-                                mContext.paintArc(mLastRectangle, arcAngles.x, arcAngles.y);
+                                context.paintArc(lastRectangle, arcAngles.x, arcAngles.y);
                                 break;
                             case PICT.OP_ERASE_ARC:
                             case PICT.OP_ERASE_SAME_ARC:
-                                mContext.eraseArc(mLastRectangle, arcAngles.x, arcAngles.y);
+                                context.eraseArc(lastRectangle, arcAngles.x, arcAngles.y);
                                 break;
                             case PICT.OP_INVERT_ARC:
                             case PICT.OP_INVERT_SAME_ARC:
-                                mContext.invertArc(mLastRectangle, arcAngles.x, arcAngles.y);
+                                context.invertArc(lastRectangle, arcAngles.x, arcAngles.y);
                                 break;
                             case PICT.OP_FILL_ARC:
                             case PICT.OP_FILL_SAME_ARC:
-                                mContext.fillArc(mLastRectangle, arcAngles.x, arcAngles.y, fill);
+                                context.fillArc(lastRectangle, arcAngles.x, arcAngles.y, fill);
                                 break;
                         }
 
@@ -1183,34 +1186,34 @@ public class PICTImageReader extends ImageReaderBase {
                         if (DEBUG) {
                             switch (opCode) {
                                 case PICT.OP_FRAME_ARC:
-                                    System.out.println("frameArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("frameArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_PAINT_ARC:
-                                    System.out.println("paintArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("paintArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_ERASE_ARC:
-                                    System.out.println("eraseArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("eraseArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_INVERT_ARC:
-                                    System.out.println("invertArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("invertArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_FILL_ARC:
-                                    System.out.println("fillArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("fillArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_FRAME_SAME_ARC:
-                                    System.out.println("frameSameArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("frameSameArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_PAINT_SAME_ARC:
-                                    System.out.println("paintSameArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("paintSameArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_ERASE_SAME_ARC:
-                                    System.out.println("eraseSameArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("eraseSameArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_INVERT_SAME_ARC:
-                                    System.out.println("invertSameArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("invertSameArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                                 case PICT.OP_FILL_SAME_ARC:
-                                    System.out.println("fillSameArc: " + mLastRectangle + ", angles:" + arcAngles);
+                                    System.out.println("fillSameArc: " + lastRectangle + ", angles:" + arcAngles);
                                     break;
                             }
                         }
@@ -1256,23 +1259,23 @@ public class PICTImageReader extends ImageReaderBase {
                         switch (opCode) {
                             case PICT.OP_FRAME_POLY:
                             case PICT.OP_FRAME_SAME_POLY:
-                                mContext.framePoly(polygon);
+                                context.framePoly(polygon);
                                 break;
                             case PICT.OP_PAINT_POLY:
                             case PICT.OP_PAINT_SAME_POLY:
-                                mContext.paintPoly(polygon);
+                                context.paintPoly(polygon);
                                 break;
                             case PICT.OP_ERASE_POLY:
                             case PICT.OP_ERASE_SAME_POLY:
-                                mContext.erasePoly(polygon);
+                                context.erasePoly(polygon);
                                 break;
                             case PICT.OP_INVERT_POLY:
                             case PICT.OP_INVERT_SAME_POLY:
-                                mContext.invertPoly(polygon);
+                                context.invertPoly(polygon);
                                 break;
                             case PICT.OP_FILL_POLY:
                             case PICT.OP_FILL_SAME_POLY:
-                                mContext.fillPoly(polygon, fill);
+                                context.fillPoly(polygon, fill);
                                 break;
                         }
 
@@ -1346,23 +1349,23 @@ public class PICTImageReader extends ImageReaderBase {
                             switch (opCode) {
                                 case PICT.OP_FRAME_RGN:
                                 case PICT.OP_FRAME_SAME_RGN:
-                                    mContext.frameRegion(new Area(region));
+                                    context.frameRegion(new Area(region));
                                     break;
                                 case PICT.OP_PAINT_RGN:
                                 case PICT.OP_PAINT_SAME_RGN:
-                                    mContext.paintRegion(new Area(region));
+                                    context.paintRegion(new Area(region));
                                     break;
                                 case PICT.OP_ERASE_RGN:
                                 case PICT.OP_ERASE_SAME_RGN:
-                                    mContext.eraseRegion(new Area(region));
+                                    context.eraseRegion(new Area(region));
                                     break;
                                 case PICT.OP_INVERT_RGN:
                                 case PICT.OP_INVERT_SAME_RGN:
-                                    mContext.invertRegion(new Area(region));
+                                    context.invertRegion(new Area(region));
                                     break;
                                 case PICT.OP_FILL_RGN:
                                 case PICT.OP_FILL_SAME_RGN:
-                                    mContext.fillRegion(new Area(region), fill);
+                                    context.fillRegion(new Area(region), fill);
                                     break;
                             }
                         }
@@ -1461,7 +1464,7 @@ public class PICTImageReader extends ImageReaderBase {
                         readRectangle(pStream, dstRect);
 
                         mode = pStream.readUnsignedShort();
-                        mContext.setPenMode(mode); // TODO: Or parameter?
+                        context.setPenMode(mode); // TODO: Or parameter?
 
                         if (DEBUG) {
                             System.out.print("bitsRect, rowBytes: " + rowBytes);
@@ -1491,7 +1494,7 @@ public class PICTImageReader extends ImageReaderBase {
                         // Draw pixel data
                         Rectangle rect = new Rectangle(srcRect);
                         rect.translate(-bounds.x, -bounds.y);
-                        mContext.copyBits(image, rect, dstRect, mode, null);
+                        context.copyBits(image, rect, dstRect, mode, null);
                         //mGraphics.drawImage(image,
                         //                    dstRect.x,  dstRect.y,
                         //                    dstRect.x + dstRect.width, dstRect.y + dstRect.height,
@@ -1729,7 +1732,7 @@ public class PICTImageReader extends ImageReaderBase {
         BufferedImage image = QuickTime.decompress(pStream);
 
         if (image != null) {
-            mContext.copyBits(image, new Rectangle(image.getWidth(), image.getHeight()), destination, QuickDraw.SRC_COPY, null);
+            context.copyBits(image, new Rectangle(image.getWidth(), image.getHeight()), destination, QuickDraw.SRC_COPY, null);
 
             pStream.seek(pos + dataLength); // Might be word-align mismatch here
 
@@ -2068,7 +2071,7 @@ public class PICTImageReader extends ImageReaderBase {
 
         // We add all new images to it. If we are just replaying, then
         // "pPixmapCount" will never be greater than the size of the vector
-        if (mImages.size() <= pPixmapCount) {
+        if (images.size() <= pPixmapCount) {
             // Create BufferedImage and add buffer it for multiple reads
 //            DirectColorModel cm = (DirectColorModel) ColorModel.getRGBdefault();
 //            DataBuffer db = new DataBufferInt(pixArray, pixArray.length);
@@ -2077,15 +2080,15 @@ public class PICTImageReader extends ImageReaderBase {
             WritableRaster raster = Raster.createPackedRaster(db, pBounds.width, pBounds.height, cmpSize, null); // TODO: last param should ideally be srcRect.getLocation()
             BufferedImage img = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
 
-            mImages.add(img);
+            images.add(img);
         }
 
         // Draw the image
-        BufferedImage img = mImages.get(pPixmapCount);
+        BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
             // TODO: FixMe.. Seems impossible to create a bufferedImage with a raster not starting at 0,0
             srcRect.setLocation(0, 0); // should not require this line..
-            mContext.copyBits(img, srcRect, dstRect, transferMode, null);
+            context.copyBits(img, srcRect, dstRect, transferMode, null);
         }
 
         // Line break at the end
@@ -2378,7 +2381,7 @@ public class PICTImageReader extends ImageReaderBase {
 
         // We add all new images to it. If we are just replaying, then
         // "pPixmapCount" will never be greater than the size of the vector
-        if (mImages.size() <= pPixmapCount) {
+        if (images.size() <= pPixmapCount) {
             // Create BufferedImage and add buffer it for multiple reads
             DirectColorModel cm;
             WritableRaster raster;
@@ -2396,15 +2399,15 @@ public class PICTImageReader extends ImageReaderBase {
 
             BufferedImage img = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
-            mImages.add(img);
+            images.add(img);
         }
 
         // Draw the image
-        BufferedImage img = mImages.get(pPixmapCount);
+        BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
             // TODO: FixMe.. Something wrong here, might be the copyBits methods.
             srcRect.setLocation(0, 0); // should not require this line..
-            mContext.copyBits(img, srcRect, dstRect, transferMode, null);
+            context.copyBits(img, srcRect, dstRect, transferMode, null);
         }
 
         // Line break at the end
@@ -2551,7 +2554,7 @@ public class PICTImageReader extends ImageReaderBase {
      * image resolution ratio.
      */
     private int getXPtCoord(int pPoint) {
-        return (int) (pPoint / mScreenImageXRatio);
+        return (int) (pPoint / screenImageXRatio);
     }
 
     /*
@@ -2560,7 +2563,7 @@ public class PICTImageReader extends ImageReaderBase {
      * image resolution ratio.
      */
     private int getYPtCoord(int pPoint) {
-        return (int) (pPoint / mScreenImageYRatio);
+        return (int) (pPoint / screenImageYRatio);
     }
 
     /*
@@ -2621,7 +2624,7 @@ public class PICTImageReader extends ImageReaderBase {
         try {
             // TODO: Might need to clear background
 
-            g.setTransform(AffineTransform.getScaleInstance(mScreenImageXRatio / subX, mScreenImageYRatio / subY));
+            g.setTransform(AffineTransform.getScaleInstance(screenImageXRatio / subX, screenImageYRatio / subY));
 //            try {
                 drawOnto(g);
 //            }

@@ -95,8 +95,8 @@ public class SVGImageReader extends ImageReaderBase {
     }
 
     @Override
-    public void setInput(Object pInput, boolean pSeekForwardOnly, boolean pIgnoreMetadata) {
-        super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
+    public void setInput(Object pInput, boolean seekForwardOnly, boolean ignoreMetadata) {
+        super.setInput(pInput, seekForwardOnly, ignoreMetadata);
 
         if (imageInput != null) {
             TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));

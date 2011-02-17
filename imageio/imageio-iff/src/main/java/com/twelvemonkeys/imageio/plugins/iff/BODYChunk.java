@@ -40,7 +40,6 @@ import java.io.DataOutput;
  * @version $Id: BODYChunk.java,v 1.0 28.feb.2006 01:25:49 haku Exp$
  */
 class BODYChunk extends IFFChunk {
-
     protected BODYChunk(int pChunkLength) {
         super(IFF.CHUNK_BODY, pChunkLength);
     }

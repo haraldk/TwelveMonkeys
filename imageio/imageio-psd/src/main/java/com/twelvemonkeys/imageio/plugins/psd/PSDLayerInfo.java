@@ -41,34 +41,34 @@ import java.util.Arrays;
  * @version $Id: PSDLayerInfo.java,v 1.0 Apr 29, 2008 6:01:12 PM haraldk Exp$
  */
 class PSDLayerInfo {
-    final int mTop;
-    final int mLeft;
-    final int mBottom;
-    final int mRight;
+    final int top;
+    final int left;
+    final int bottom;
+    final int right;
 
-    final PSDChannelInfo[] mChannelInfo;
-    final PSDLayerBlendMode mBlendMode;
-    final PSDLayerMaskData mLayerMaskData;
-    final PSDChannelSourceDestinationRange[] mRanges;
-    final String mLayerName;
+    final PSDChannelInfo[] channelInfo;
+    final PSDLayerBlendMode blendMode;
+    final PSDLayerMaskData layerMaskData;
+    final PSDChannelSourceDestinationRange[] ranges;
+    final String layerName;
 
     PSDLayerInfo(ImageInputStream pInput) throws IOException {
-        mTop = pInput.readInt();
-        mLeft = pInput.readInt();
-        mBottom = pInput.readInt();
-        mRight = pInput.readInt();
+        top = pInput.readInt();
+        left = pInput.readInt();
+        bottom = pInput.readInt();
+        right = pInput.readInt();
 
         int channels = pInput.readUnsignedShort();
         
-        mChannelInfo = new PSDChannelInfo[channels];
+        channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
             long length = pInput.readUnsignedInt();
 
-            mChannelInfo[i] = new PSDChannelInfo(channelId, length);
+            channelInfo[i] = new PSDChannelInfo(channelId, length);
         }
 
-        mBlendMode = new PSDLayerBlendMode(pInput);
+        blendMode = new PSDLayerBlendMode(pInput);
 
         // Lenght of layer mask data
         long extraDataSize = pInput.readUnsignedInt();
@@ -78,10 +78,10 @@ class PSDLayerInfo {
         // Layer mask/adjustment layer data
         int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or 36 bytes...
         if (layerMaskDataSize != 0) {
-            mLayerMaskData = new PSDLayerMaskData(pInput, layerMaskDataSize);
+            layerMaskData = new PSDLayerMaskData(pInput, layerMaskDataSize);
         }
         else {
-            mLayerMaskData = null;
+            layerMaskData = null;
         }
 
         int layerBlendingDataSize = pInput.readInt();
@@ -89,15 +89,15 @@ class PSDLayerInfo {
             throw new IIOException("Illegal PSD Layer Blending Data size: " + layerBlendingDataSize + ", expected multiple of 8");
         }
 
-        mRanges = new PSDChannelSourceDestinationRange[layerBlendingDataSize / 8];
-        for (int i = 0; i < mRanges.length; i++) {
-            mRanges[i] = new PSDChannelSourceDestinationRange(pInput, (i == 0 ? "Gray" : "Channel " + (i - 1)));
+        ranges = new PSDChannelSourceDestinationRange[layerBlendingDataSize / 8];
+        for (int i = 0; i < ranges.length; i++) {
+            ranges[i] = new PSDChannelSourceDestinationRange(pInput, (i == 0 ? "Gray" : "Channel " + (i - 1)));
         }
 
 
-        mLayerName = PSDUtil.readPascalString(pInput);
+        layerName = PSDUtil.readPascalString(pInput);
 
-        int layerNameSize = mLayerName.length() + 1;
+        int layerNameSize = layerName.length() + 1;
 
         // Skip pad bytes for long word alignment
         if (layerNameSize % 4 != 0) {
@@ -115,18 +115,18 @@ class PSDLayerInfo {
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append("[");
-        builder.append("top: ").append(mTop);
-        builder.append(", left: ").append(mLeft);
-        builder.append(", bottom: ").append(mBottom);
-        builder.append(", right: ").append(mRight);
+        builder.append("top: ").append(top);
+        builder.append(", left: ").append(left);
+        builder.append(", bottom: ").append(bottom);
+        builder.append(", right: ").append(right);
 
-        builder.append(", channels: ").append(Arrays.toString(mChannelInfo));
-        builder.append(", blend mode: ").append(mBlendMode);
-        if (mLayerMaskData != null) {
-            builder.append(", layer mask data: ").append(mLayerMaskData);
+        builder.append(", channels: ").append(Arrays.toString(channelInfo));
+        builder.append(", blend mode: ").append(blendMode);
+        if (layerMaskData != null) {
+            builder.append(", layer mask data: ").append(layerMaskData);
         }
-        builder.append(", ranges: ").append(Arrays.toString(mRanges));
-        builder.append(", layer name: \"").append(mLayerName).append("\"");
+        builder.append(", ranges: ").append(Arrays.toString(ranges));
+        builder.append(", layer name: \"").append(layerName).append("\"");
 
         builder.append("]");
         return builder.toString();

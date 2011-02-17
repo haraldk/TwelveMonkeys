@@ -86,9 +86,9 @@ import java.io.*;
 public class PICTImageWriter extends ImageWriterBase {
 
     // TODO: Inline these?
-    private int mRowBytes;
-    private byte[] mScanlineBytes;
-    private int mScanWidthLeft;
+    private int rowBytes;
+    private byte[] scanlineBytes;
+    private int scanWidthLeft;
 
     public PICTImageWriter() {
         this(null);
@@ -171,8 +171,8 @@ public class PICTImageWriter extends ImageWriterBase {
 
         // Write rowBytes, this is 4 times the width.
         // Set the high bit, to indicate a PixMap.
-        mRowBytes = 4 * pImage.getWidth();
-        imageOutput.writeShort(0x8000 | mRowBytes);
+        rowBytes = 4 * pImage.getWidth();
+        imageOutput.writeShort(0x8000 | rowBytes);
 
         // Write bounds rectangle (same as image bounds)
         imageOutput.writeShort(0);
@@ -235,14 +235,14 @@ public class PICTImageWriter extends ImageWriterBase {
         // TODO: Move to writePICTData?
         // TODO: Alpha support
         // Set up the buffers for storing scanline bytes
-        mScanlineBytes = new byte[3 * pImage.getWidth()];
-        mScanWidthLeft = pImage.getWidth();
+        scanlineBytes = new byte[3 * pImage.getWidth()];
+        scanWidthLeft = pImage.getWidth();
     }
 
     private void writePICTData(int x, int y, int w, int h, ColorModel model,
                                byte[] pixels, int off, int scansize) throws IOException {
 
-        ByteArrayOutputStream bytes = new FastByteArrayOutputStream(mScanlineBytes.length / 2);
+        ByteArrayOutputStream bytes = new FastByteArrayOutputStream(scanlineBytes.length / 2);
 
         int components = model.getNumComponents();
 
@@ -252,36 +252,36 @@ public class PICTImageWriter extends ImageWriterBase {
         // lines (h > 1) and (w < width). This should never be the case.
         for (int i = 0; i < h; i++) {
             // Reduce the counter of bytes left on the scanline.
-            mScanWidthLeft -= w;
+            scanWidthLeft -= w;
 
             // Treat the scanline.
             for (int j = 0; j < w; j++) {
                 if (model instanceof ComponentColorModel && model.getColorSpace().getType() == ColorSpace.TYPE_RGB) {
                     // TODO: Component order?
                     // TODO: Alpha support
-                    mScanlineBytes[x + j] = pixels[off + i * scansize * components + components * j + 2];
-                    mScanlineBytes[x + w + j] = pixels[off + i * scansize * components + components * j + 1];
-                    mScanlineBytes[x + 2 * w + j] = pixels[off + i * scansize * components + components * j];
+                    scanlineBytes[x + j] = pixels[off + i * scansize * components + components * j + 2];
+                    scanlineBytes[x + w + j] = pixels[off + i * scansize * components + components * j + 1];
+                    scanlineBytes[x + 2 * w + j] = pixels[off + i * scansize * components + components * j];
                 }
                 else {
                     int rgb = model.getRGB(pixels[off + i * scansize + j] & 0xFF);
                     // Set red, green and blue components.
-                    mScanlineBytes[x + j] = (byte) ((rgb >> 16) & 0xFF);
-                    mScanlineBytes[x + w + j] = (byte) ((rgb >> 8) & 0xFF);
-                    mScanlineBytes[x + 2 * w + j] = (byte) (rgb & 0xFF);
+                    scanlineBytes[x + j] = (byte) ((rgb >> 16) & 0xFF);
+                    scanlineBytes[x + w + j] = (byte) ((rgb >> 8) & 0xFF);
+                    scanlineBytes[x + 2 * w + j] = (byte) (rgb & 0xFF);
                 }
 
             }
 
             // If we have a complete scanline, then pack it and write it out.
-            if (mScanWidthLeft == 0) {
+            if (scanWidthLeft == 0) {
                 // Pack using PackBitsEncoder/EncoderStream
                 bytes.reset();
                 DataOutput packBits = new DataOutputStream(new EncoderStream(bytes, new PackBitsEncoder(), true));
 
-                packBits.write(mScanlineBytes);
+                packBits.write(scanlineBytes);
 
-                if (mRowBytes > 250) {
+                if (rowBytes > 250) {
                     imageOutput.writeShort(bytes.size());
                 }
                 else {
@@ -290,7 +290,7 @@ public class PICTImageWriter extends ImageWriterBase {
 
                 bytes.writeTo(IIOUtil.createStreamAdapter(imageOutput));
 
-                mScanWidthLeft = w;
+                scanWidthLeft = w;
             }
         }
     }
@@ -298,7 +298,7 @@ public class PICTImageWriter extends ImageWriterBase {
     private void writePICTData(int x, int y, int w, int h, ColorModel model,
                                int[] pixels, int off, int scansize) throws IOException {
 
-        ByteArrayOutputStream bytes = new FastByteArrayOutputStream(mScanlineBytes.length / 2);
+        ByteArrayOutputStream bytes = new FastByteArrayOutputStream(scanlineBytes.length / 2);
 
         // TODO: Clean up, as we only have complete scanlines
 
@@ -306,27 +306,27 @@ public class PICTImageWriter extends ImageWriterBase {
         // lines (h > 1) and (w < width). This should never be the case.
         for (int i = 0; i < h; i++) {
             // Reduce the counter of bytes left on the scanline.
-            mScanWidthLeft -= w;
+            scanWidthLeft -= w;
 
             // Treat the scanline.
             for (int j = 0; j < w; j++) {
                 int rgb = model.getRGB(pixels[off + i * scansize + j]);
 
                 // Set red, green and blue components.
-                mScanlineBytes[x + j] = (byte) ((rgb >> 16) & 0xFF);
-                mScanlineBytes[x + w + j] = (byte) ((rgb >> 8) & 0xFF);
-                mScanlineBytes[x + 2 * w + j] = (byte) (rgb & 0xFF);
+                scanlineBytes[x + j] = (byte) ((rgb >> 16) & 0xFF);
+                scanlineBytes[x + w + j] = (byte) ((rgb >> 8) & 0xFF);
+                scanlineBytes[x + 2 * w + j] = (byte) (rgb & 0xFF);
             }
 
             // If we have a complete scanline, then pack it and write it out.
-            if (mScanWidthLeft == 0) {
+            if (scanWidthLeft == 0) {
                 // Pack using PackBitsEncoder/EncoderStream
                 bytes.reset();
                 DataOutput packBits = new DataOutputStream(new EncoderStream(bytes, new PackBitsEncoder(), true));
 
-                packBits.write(mScanlineBytes);
+                packBits.write(scanlineBytes);
 
-                if (mRowBytes > 250) {
+                if (rowBytes > 250) {
                     imageOutput.writeShort(bytes.size());
                 }
                 else {
@@ -335,7 +335,7 @@ public class PICTImageWriter extends ImageWriterBase {
 
                 bytes.writeTo(IIOUtil.createStreamAdapter(imageOutput));
 
-                mScanWidthLeft = w;
+                scanWidthLeft = w;
             }
         }
     }

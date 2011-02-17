@@ -22,7 +22,7 @@ import java.io.IOException;
 public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGImageReader> {
     private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
     
-    protected JPEGImageReaderSpi mProvider = new JPEGImageReaderSpi();
+    protected JPEGImageReaderSpi provider = new JPEGImageReaderSpi();
 
     @Override
     protected List<TestData> getTestData() {
@@ -33,7 +33,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
 
     @Override
     protected ImageReaderSpi createProvider() {
-        return mProvider;
+        return provider;
     }
 
     @Override
@@ -44,7 +44,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
     @Override
     protected JPEGImageReader createReader() {
         try {
-            return (JPEGImageReader) mProvider.createReaderInstance();
+            return (JPEGImageReader) provider.createReaderInstance();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -54,17 +54,17 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
     // These are NOT correct implementations, but I don't really care here
     @Override
     protected List<String> getFormatNames() {
-        return Arrays.asList(mProvider.getFormatNames());
+        return Arrays.asList(provider.getFormatNames());
     }
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList(mProvider.getFileSuffixes());
+        return Arrays.asList(provider.getFileSuffixes());
     }
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList(mProvider.getMIMETypes());
+        return Arrays.asList(provider.getMIMETypes());
     }
 
     @Override

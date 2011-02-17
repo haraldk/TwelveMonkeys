@@ -51,7 +51,6 @@ public class IFFImageWriterSpi extends ImageWriterSpi {
      */
     public IFFImageWriterSpi() {
         this(IIOUtil.getProviderInfo(IFFImageWriterSpi.class));
-
     }
 
     private IFFImageWriterSpi(final ProviderInfo pProviderInfo) {

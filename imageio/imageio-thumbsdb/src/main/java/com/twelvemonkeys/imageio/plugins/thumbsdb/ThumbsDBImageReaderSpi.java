@@ -49,7 +49,7 @@ import java.util.Locale;
  * @version $Id: ThumbsDBImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
 public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
-    private ImageReaderSpi mJPEGProvider;
+    private ImageReaderSpi jpegProvider;
 
     /**
      * Creates a {@code ThumbsDBImageReaderSpi}.
@@ -81,7 +81,7 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
         maybeInitJPEGProvider();
         // If this is a OLE 2 CompoundDocument, we could try...
         // TODO: How do we know it's thumbs.db format (structure), without reading quite a lot?
-        return mJPEGProvider != null && CompoundDocument.canRead(pInput);
+        return jpegProvider != null && CompoundDocument.canRead(pInput);
     }
 
     public ImageReader createReaderInstance(Object extension) throws IOException {
@@ -98,7 +98,7 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
         //       - Class path lookup of properties file with reader?
         // This way we could deregister immediately
 
-        if (mJPEGProvider == null) {
+        if (jpegProvider == null) {
             ImageReaderSpi provider = null;
             try {
                 Iterator<ImageReaderSpi> providers = getJPEGProviders();
@@ -117,7 +117,7 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
                 // In any case, we deregister the provider if there isn't one
                 IIORegistry.getDefaultInstance().deregisterServiceProvider(this, ImageReaderSpi.class);
             }
-            mJPEGProvider = provider;
+            jpegProvider = provider;
         }
     }
 
@@ -149,12 +149,12 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
      */
     ImageReader createJPEGReader() {
         maybeInitJPEGProvider();
-        if (mJPEGProvider == null) {
+        if (jpegProvider == null) {
             throw new IllegalStateException("No suitable JPEG reader provider found");
         }
 
         try {
-            return mJPEGProvider.createReaderInstance();
+            return jpegProvider.createReaderInstance();
         }
         catch (IOException e) {
             // NOTE: The default Sun version never throws IOException here
@@ -170,7 +170,7 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
 //    public void onRegistration(ServiceRegistry registry, Class<?> category) {
 //        System.out.println("ThumbsDBImageReaderSpi.onRegistration");
 //        maybeInitJPEGProvider();
-//        if (mJPEGProvider == null) {
+//        if (jpegProvider == null) {
 //            System.out.println("Deregistering");
 //            registry.deregisterServiceProvider(this, ImageReaderSpi.class);
 //        }

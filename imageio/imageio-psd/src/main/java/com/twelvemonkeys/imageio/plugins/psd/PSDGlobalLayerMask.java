@@ -39,25 +39,25 @@ import java.io.IOException;
  * @version $Id: PSDGlobalLayerMask.java,v 1.0 May 8, 2008 5:33:48 PM haraldk Exp$
  */
 class PSDGlobalLayerMask {
-    final int mColorSpace;
-    final int mColor1;
-    final int mColor2;
-    final int mColor3;
-    final int mColor4;
-    final int mOpacity;
-    final int mKind;
+    final int colorSpace;
+    final int color1;
+    final int color2;
+    final int color3;
+    final int color4;
+    final int opacity;
+    final int kind;
 
     PSDGlobalLayerMask(final ImageInputStream pInput) throws IOException {
-        mColorSpace = pInput.readUnsignedShort(); // Undocumented
+        colorSpace = pInput.readUnsignedShort(); // Undocumented
 
-        mColor1 = pInput.readUnsignedShort();
-        mColor2 = pInput.readUnsignedShort();
-        mColor3 = pInput.readUnsignedShort();
-        mColor4 = pInput.readUnsignedShort();
+        color1 = pInput.readUnsignedShort();
+        color2 = pInput.readUnsignedShort();
+        color3 = pInput.readUnsignedShort();
+        color4 = pInput.readUnsignedShort();
 
-        mOpacity = pInput.readUnsignedShort(); // 0-100
+        opacity = pInput.readUnsignedShort(); // 0-100
 
-        mKind = pInput.readUnsignedByte(); // 0: Selected (ie inverted), 1: Color protected, 128: Use value stored per layer 
+        kind = pInput.readUnsignedByte(); // 0: Selected (ie inverted), 1: Color protected, 128: Use value stored per layer
 
         // TODO: Variable: Filler zeros 
 
@@ -68,13 +68,13 @@ class PSDGlobalLayerMask {
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append("[");
-        builder.append("color space: 0x").append(Integer.toHexString(mColorSpace));
-        builder.append(", colors: [0x").append(Integer.toHexString(mColor1));
-        builder.append(", 0x").append(Integer.toHexString(mColor2));
-        builder.append(", 0x").append(Integer.toHexString(mColor3));
-        builder.append(", 0x").append(Integer.toHexString(mColor4));
-        builder.append("], opacity: ").append(mOpacity);
-        builder.append(", kind: ").append(mKind);
+        builder.append("color space: 0x").append(Integer.toHexString(colorSpace));
+        builder.append(", colors: [0x").append(Integer.toHexString(color1));
+        builder.append(", 0x").append(Integer.toHexString(color2));
+        builder.append(", 0x").append(Integer.toHexString(color3));
+        builder.append(", 0x").append(Integer.toHexString(color4));
+        builder.append("], opacity: ").append(opacity);
+        builder.append(", kind: ").append(kind);
         builder.append("]");
         return builder.toString();
     }

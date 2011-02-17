@@ -38,20 +38,20 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
  * @version $Id: EXIFEntry.java,v 1.0 Nov 13, 2009 5:47:35 PM haraldk Exp$
  */
 final class EXIFEntry extends AbstractEntry {
-    final private short mType;
+    final private short type;
 
-    EXIFEntry(final int pIdentifier, final Object pValue, final short pType) {
-        super(pIdentifier, pValue);
+    EXIFEntry(final int identifier, final Object value, final short type) {
+        super(identifier, value);
 
-//        if (pType < 1 || pType > TIFF.TYPE_NAMES.length) {
-//            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", pType));
+//        if (type < 1 || type > TIFF.TYPE_NAMES.length) {
+//            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
 //        }
         
-        mType = pType;
+        this.type = type;
     }
 
     public short getType() {
-        return mType;
+        return type;
     }
 
     @Override
@@ -110,6 +110,6 @@ final class EXIFEntry extends AbstractEntry {
 
     @Override
     public String getTypeName() {
-        return TIFF.TYPE_NAMES[mType - 1];
+        return TIFF.TYPE_NAMES[type - 1];
     }
 }

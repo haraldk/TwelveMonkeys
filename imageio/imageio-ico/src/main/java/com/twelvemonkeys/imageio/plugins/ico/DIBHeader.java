@@ -41,16 +41,16 @@ import java.io.IOException;
  * @see <a href="http://en.wikipedia.org/wiki/BMP_file_format">BMP file format (Wikipedia)</a>
  */
 abstract class DIBHeader {
-    protected int mSize;
+    protected int size;
 
-    protected int mWidth;
+    protected int width;
 
     // NOTE: If a bitmask is present, this value includes the height of the mask
     // (so often header.height = entry.height * 2)
-    protected int mHeight;
+    protected int height;
 
-    protected int mPlanes;
-    protected int mBitCount;
+    protected int planes;
+    protected int bitCount;
 
     /**
      * 0 = BI_RGB: No compression
@@ -58,18 +58,18 @@ abstract class DIBHeader {
      * 2 = BI_RLE4: 4 bit RLE Compression (4 bit only)
      * 3 = BI_BITFIELDS: No compression (16 & 32 bit only)
      */
-    protected int mCompression;
+    protected int compression;
 
     // May be 0 if not known
-    protected int mImageSize;
+    protected int imageSize;
 
-    protected int mXPixelsPerMeter;
-    protected int mYPixelsPerMeter;
+    protected int xPixelsPerMeter;
+    protected int yPixelsPerMeter;
 
-    protected int mColorsUsed;
+    protected int colorsUsed;
 
     // 0 means all colors are important
-    protected int mColorsImportant;
+    protected int colorsImportant;
 
     protected DIBHeader() {
     }
@@ -102,47 +102,47 @@ abstract class DIBHeader {
     protected abstract void read(int pSize, DataInput pStream) throws IOException;
 
     public final int getSize() {
-        return mSize;
+        return size;
     }
 
     public final int getWidth() {
-        return mWidth;
+        return width;
     }
 
     public final int getHeight() {
-        return mHeight;
+        return height;
     }
 
     public final int getPlanes() {
-        return mPlanes;
+        return planes;
     }
 
     public final int getBitCount() {
-        return mBitCount;
+        return bitCount;
     }
 
     public int getCompression() {
-        return mCompression;
+        return compression;
     }
 
     public int getImageSize() {
-        return mImageSize;
+        return imageSize;
     }
 
     public int getXPixelsPerMeter() {
-        return mXPixelsPerMeter;
+        return xPixelsPerMeter;
     }
 
     public int getYPixelsPerMeter() {
-        return mYPixelsPerMeter;
+        return yPixelsPerMeter;
     }
 
     public int getColorsUsed() {
-        return mColorsUsed;
+        return colorsUsed;
     }
 
     public int getColorsImportant() {
-        return mColorsImportant;
+        return colorsImportant;
     }
 
     public String toString() {
@@ -176,22 +176,22 @@ abstract class DIBHeader {
                 throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.WINDOWS_V3_HEADER_SIZE));
             }
 
-            mSize = pSize;
+            size = pSize;
 
-            mWidth = pStream.readInt();
-            mHeight = pStream.readInt();
+            width = pStream.readInt();
+            height = pStream.readInt();
 
-            mPlanes = pStream.readUnsignedShort();
-            mBitCount = pStream.readUnsignedShort();
-            mCompression = pStream.readInt();
+            planes = pStream.readUnsignedShort();
+            bitCount = pStream.readUnsignedShort();
+            compression = pStream.readInt();
 
-            mImageSize = pStream.readInt();
+            imageSize = pStream.readInt();
 
-            mXPixelsPerMeter = pStream.readInt();
-            mYPixelsPerMeter = pStream.readInt();
+            xPixelsPerMeter = pStream.readInt();
+            yPixelsPerMeter = pStream.readInt();
 
-            mColorsUsed = pStream.readInt();
-            mColorsImportant = pStream.readInt();
+            colorsUsed = pStream.readInt();
+            colorsImportant = pStream.readInt();
         }
     }
 }

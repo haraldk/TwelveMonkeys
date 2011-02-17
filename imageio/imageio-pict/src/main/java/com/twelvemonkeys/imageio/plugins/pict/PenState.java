@@ -38,15 +38,15 @@ import java.awt.*;
  * @version $Id: PenState.java,v 1.0 Oct 9, 2007 1:56:33 AM haraldk Exp$
  */
 class PenState {
-    public final Point        mPenLocation;   /* pen location */
-    public final Dimension    mPenSize;       /* pen size */
-    public final int          mPenMode;       /* pen's pattern mode */
-    public final Pattern      mPenPattern;    /* pen pattern */
+    public final Point penLocation;   /* pen location */
+    public final Dimension penSize;       /* pen size */
+    public final int penMode;       /* pen's pattern mode */
+    public final Pattern penPattern;    /* pen pattern */
 
     public PenState(final Point pPenLocation, final int pPenMode, final Pattern pPenPattern, final Dimension pPenSize) {
-        mPenLocation = pPenLocation;
-        mPenMode = pPenMode;
-        mPenPattern = pPenPattern;
-        mPenSize = pPenSize;
+        penLocation = pPenLocation;
+        penMode = pPenMode;
+        penPattern = pPenPattern;
+        penSize = pPenSize;
     }
 }

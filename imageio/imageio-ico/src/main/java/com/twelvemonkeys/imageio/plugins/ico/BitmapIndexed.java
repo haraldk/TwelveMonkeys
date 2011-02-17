@@ -43,17 +43,17 @@ import java.util.Hashtable;
  * @version $Id: BitmapIndexed.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
 class BitmapIndexed extends BitmapDescriptor {
-    protected final int[] mBits;
-    protected final int[] mColors;
+    protected final int[] bits;
+    protected final int[] colors;
 
-    private BitmapMask mMask;
+    private BitmapMask mask;
 
     public BitmapIndexed(final DirectoryEntry pEntry, final DIBHeader pHeader) {
         super(pEntry, pHeader);
-        mBits = new int[getWidth() * getHeight()];
+        bits = new int[getWidth() * getHeight()];
 
         // NOTE: We're adding space for one extra color, for transparency
-        mColors = new int[getColorCount() + 1];
+        colors = new int[getColorCount() + 1];
     }
 
     public BufferedImage createImageIndexed() {
@@ -64,10 +64,9 @@ class BitmapIndexed extends BitmapDescriptor {
 
         // This is slightly obscure, and should probably be moved..
         Hashtable<String, Object> properties = null;
-        if (mEntry instanceof DirectoryEntry.CUREntry) {
-            DirectoryEntry.CUREntry entry = (DirectoryEntry.CUREntry) mEntry;
+        if (entry instanceof DirectoryEntry.CUREntry) {
             properties = new Hashtable<String, Object>(1);
-            properties.put("cursor_hotspot", entry.getHotspot());
+            properties.put("cursor_hotspot", ((DirectoryEntry.CUREntry) this.entry).getHotspot());
         }
 
         BufferedImage image = new BufferedImage(
@@ -82,13 +81,13 @@ class BitmapIndexed extends BitmapDescriptor {
         final int trans = icm.getTransparentPixel();
         for (int y = 0; y < getHeight(); y++) {
             for (int x = 0; x < getWidth(); x++) {
-                if (mMask.isTransparent(x, y)) {
-                    mBits[x + getWidth() * y] = trans;
+                if (mask.isTransparent(x, y)) {
+                    bits[x + getWidth() * y] = trans;
                 }
             }
         }
 
-        raster.setSamples(0, 0, getWidth(), getHeight(), 0, mBits);
+        raster.setSamples(0, 0, getWidth(), getHeight(), 0, bits);
 
         //System.out.println("Image: " + image);
 
@@ -102,18 +101,18 @@ class BitmapIndexed extends BitmapDescriptor {
         // NOTE: This is a hack to make room for transparent pixel for mask
         int bits = getBitCount();
         
-        int colors = mColors.length;
+        int colors = this.colors.length;
         int trans = -1;
 
         // Try to avoid USHORT transfertype, as it results in BufferedImage TYPE_CUSTOM
         // NOTE: This code assumes icons are small, and is NOT optimized for performance...
         if (colors > (1 << getBitCount())) {
-            int index = BitmapIndexed.findTransIndexMaybeRemap(mColors, mBits);
+            int index = BitmapIndexed.findTransIndexMaybeRemap(this.colors, this.bits);
 
             if (index == -1) {
                 // No duplicate found, increase bitcount
                 bits++;
-                trans = mColors.length - 1;
+                trans = this.colors.length - 1;
             }
             else {
                 // Found a duplicate, use it as trans
@@ -124,7 +123,7 @@ class BitmapIndexed extends BitmapDescriptor {
 
         // NOTE: Setting hasAlpha to true, makes things work on 1.2
         return new InverseColorMapIndexColorModel(
-                bits, colors, mColors, 0, true, trans,
+                bits, colors, this.colors, 0, true, trans,
                 bits <= 8 ? DataBuffer.TYPE_BYTE : DataBuffer.TYPE_USHORT
         );
     }
@@ -170,13 +169,13 @@ class BitmapIndexed extends BitmapDescriptor {
     }
 
     public BufferedImage getImage() {
-        if (mImage == null) {
-            mImage = createImageIndexed();
+        if (image == null) {
+            image = createImageIndexed();
         }
-        return mImage;
+        return image;
     }
 
     public void setMask(final BitmapMask pMask) {
-        mMask = pMask;
+        mask = pMask;
     }
 }
