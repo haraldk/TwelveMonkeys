@@ -15,4 +15,139 @@
         The TwelveMonkeys Sandbox Swing. Experimental stuff.
     </description>
 
+    <properties>
+        <!-- TODO: Make this system independent -->
+        <javafx_home>/Library/JavaFX/Home</javafx_home>
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>com.twelvemonkeys.common</groupId>
+            <artifactId>common-lang</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.common</groupId>
+            <artifactId>common-io</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.common</groupId>
+            <artifactId>common-image</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.swing</groupId>
+            <artifactId>swing-core</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.swing</groupId>
+            <artifactId>swing-application</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <!-- JavaFX libs must be installed as well -->
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-common</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-common.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-io</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-io.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-geom</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-geom.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-ui-commmon</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-ui-common.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-ui-controls</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-ui-controls.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-ui-charts</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-ui-charts.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-ui-desktop</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-ui-desktop.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-ui-swing</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-ui-swing.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-ext-swing</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/javafx-ext-swing.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-xfdloader</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/fxdloader.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx</groupId>
+            <artifactId>javafx-websvc</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/websvc.jar</systemPath>
+        </dependency>
+        <!-- The JavaFX dependencies are taken from the profiles/desktop.properties file-->
+
+        <!-- Extra JavaFX dependencies -->
+        <dependency>
+            <groupId>com.sun.javafx.jmc</groupId>
+            <artifactId>javafx-jmc</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/jmc.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.javafx.scriptapi</groupId>
+            <artifactId>javafx-scriptapi</artifactId>
+            <version>1.3</version>
+            <scope>system</scope>
+            <systemPath>${javafx_home}/lib/desktop/script-api.jar</systemPath>
+        </dependency>
+        
+    </dependencies>
 </project>
