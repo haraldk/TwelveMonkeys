@@ -14,7 +14,7 @@
         <module>servlet</module>
         <module>imageio</module>
         <!--<module>swing</module>-->
-        <module>sandbox</module>
+        <!--<module>sandbox</module>-->
     </modules>
 
     <developers>
