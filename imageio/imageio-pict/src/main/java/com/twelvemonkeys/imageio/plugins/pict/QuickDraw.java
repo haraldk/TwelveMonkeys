@@ -93,7 +93,7 @@ interface QuickDraw {
     int SUB_OVER = 38;
     int AD_MIN = 39;
     int GRAYISH_TEXT_OR = 49;
-//    int MASK = 64; // ?! From Käry's code..
+//    int MASK = 64; // ?! From KÃ¤ry's code..
 
     /*
      * Text face masks.
