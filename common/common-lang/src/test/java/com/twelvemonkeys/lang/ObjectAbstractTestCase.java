@@ -143,7 +143,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
                 clone.setAccessible(true);
             }
 
-            Object cloned = clone.invoke(obj, null);
+            Object cloned = clone.invoke(obj);
 
             assertNotNull("Cloned object should never be null", cloned);
 

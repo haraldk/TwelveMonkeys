@@ -45,7 +45,7 @@ final class URLResource extends AbstractResource {
     // NOTE: For the time being, we rely on the URL class (and helpers) to do
     //       some smart caching and reuse of connections...
     // TODO: Change the implementation if this is a problem
-    private long mLastModified = -1;
+    private long lastModified = -1;
 
     /**
      * Creates a {@code URLResource}.
@@ -58,7 +58,7 @@ final class URLResource extends AbstractResource {
     }
 
     private URL getURL() {
-        return (URL) mWrappedResource;
+        return (URL) wrappedResource;
     }
 
     public URL asURL() {
@@ -77,13 +77,13 @@ final class URLResource extends AbstractResource {
             URLConnection connection = getURL().openConnection();
             connection.setAllowUserInteraction(false);
             connection.setUseCaches(true);
-            connection.setIfModifiedSince(mLastModified);
+            connection.setIfModifiedSince(lastModified);
 
-            mLastModified = connection.getLastModified();
+            lastModified = connection.getLastModified();
          }
         catch (IOException ignore) {
         }
 
-        return mLastModified;
+        return lastModified;
     }
 }

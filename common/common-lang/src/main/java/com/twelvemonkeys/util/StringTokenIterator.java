@@ -51,15 +51,15 @@ import java.util.NoSuchElementException;
  */
 public class StringTokenIterator extends AbstractTokenIterator {
 
-    private final String mString;
-    private final char[] mDelimiters;
-    private int mPosition;
-    private final int mMaxPosition;
-    private String mNext;
-    private String mNextDelimiter;
-    private final boolean mIncludeDelimiters;
-    private final boolean mIncludeEmpty;
-    private final boolean mReverse;
+    private final String string;
+    private final char[] delimiters;
+    private int position;
+    private final int maxPosition;
+    private String next;
+    private String nextDelimiter;
+    private final boolean includeDelimiters;
+    private final boolean includeEmpty;
+    private final boolean reverse;
 
     public final static int FORWARD = 1;
     public final static int REVERSE = -1;
@@ -68,7 +68,7 @@ public class StringTokenIterator extends AbstractTokenIterator {
      * Stores the value of the delimiter character with the highest value.
      * It is used to optimize the detection of delimiter characters.
      */
-    private final char mMaxDelimiter;
+    private final char maxDelimiter;
 
     /**
      * Creates a StringTokenIterator
@@ -141,13 +141,13 @@ public class StringTokenIterator extends AbstractTokenIterator {
             throw new IllegalArgumentException("string == null");
         }
 
-        mString = pString;
-        mMaxPosition = pString.length();
-        mDelimiters = pDelimiters;
-        mIncludeDelimiters = pIncludeDelimiters;
-        mReverse = (pDirection == REVERSE);
-        mIncludeEmpty = pIncludeEmpty;
-        mMaxDelimiter = initMaxDelimiter(pDelimiters);
+        string = pString;
+        maxPosition = pString.length();
+        delimiters = pDelimiters;
+        includeDelimiters = pIncludeDelimiters;
+        reverse = (pDirection == REVERSE);
+        includeEmpty = pIncludeEmpty;
+        maxDelimiter = initMaxDelimiter(pDelimiters);
 
         reset();
     }
@@ -184,9 +184,9 @@ public class StringTokenIterator extends AbstractTokenIterator {
      *
      */
     public void reset() {
-        mPosition = 0;
-        mNext = null;
-        mNextDelimiter = null;
+        position = 0;
+        next = null;
+        nextDelimiter = null;
     }
 
     /**
@@ -197,23 +197,23 @@ public class StringTokenIterator extends AbstractTokenIterator {
      * @return {@code true} if the iterator has more elements.
      */
     public boolean hasNext() {
-        return (mNext != null || fetchNext() != null);
+        return (next != null || fetchNext() != null);
     }
 
     private String fetchNext() {
         // If next is delimiter, return fast
-        if (mNextDelimiter != null) {
-            mNext = mNextDelimiter;
-            mNextDelimiter = null;
-            return mNext;
+        if (nextDelimiter != null) {
+            next = nextDelimiter;
+            nextDelimiter = null;
+            return next;
         }
 
         // If no more chars, return null
-        if (mPosition >= mMaxPosition) {
+        if (position >= maxPosition) {
             return null;
         }
 
-        return mReverse ? fetchReverse() : fetchForward();
+        return reverse ? fetchReverse() : fetchForward();
 
     }
 
@@ -222,20 +222,20 @@ public class StringTokenIterator extends AbstractTokenIterator {
         int prevPos = scanForPrev();
 
         // Store next string
-        mNext = mString.substring(prevPos + 1, mMaxPosition - mPosition);
+        next = string.substring(prevPos + 1, maxPosition - position);
 
-        if (mIncludeDelimiters && prevPos >= 0 && prevPos < mMaxPosition) {
-            mNextDelimiter = mString.substring(prevPos, prevPos + 1);
+        if (includeDelimiters && prevPos >= 0 && prevPos < maxPosition) {
+            nextDelimiter = string.substring(prevPos, prevPos + 1);
         }
 
-        mPosition = mMaxPosition - prevPos;
+        position = maxPosition - prevPos;
 
         // Skip empty
-        if (mNext.length() == 0 && !mIncludeEmpty) {
+        if (next.length() == 0 && !includeEmpty) {
             return fetchNext();
         }
 
-        return mNext;
+        return next;
     }
 
     private String fetchForward() {
@@ -243,33 +243,33 @@ public class StringTokenIterator extends AbstractTokenIterator {
         int nextPos = scanForNext();
 
         // Store next string
-        mNext = mString.substring(mPosition, nextPos);
+        next = string.substring(position, nextPos);
 
-        if (mIncludeDelimiters && nextPos >= 0 && nextPos < mMaxPosition) {
-            mNextDelimiter = mString.substring(nextPos, nextPos + 1);
+        if (includeDelimiters && nextPos >= 0 && nextPos < maxPosition) {
+            nextDelimiter = string.substring(nextPos, nextPos + 1);
         }
 
-        mPosition = ++nextPos;
+        position = ++nextPos;
 
         // Skip empty
-        if (mNext.length() == 0 && !mIncludeEmpty) {
+        if (next.length() == 0 && !includeEmpty) {
             return fetchNext();
         }
 
-        return mNext;
+        return next;
     }
 
     private int scanForNext() {
-        int position = mPosition;
+        int position = this.position;
 
-        while (position < mMaxPosition) {
+        while (position < maxPosition) {
             // Find next match, using all delimiters
-            char c = mString.charAt(position);
+            char c = string.charAt(position);
 
-            if (c <= mMaxDelimiter) {
+            if (c <= maxDelimiter) {
 
                 // Find first delimiter match
-                for (char delimiter : mDelimiters) {
+                for (char delimiter : delimiters) {
                     if (c == delimiter) {
                         return position;// Return if match
                     }
@@ -285,16 +285,16 @@ public class StringTokenIterator extends AbstractTokenIterator {
     }
 
     private int scanForPrev() {
-        int position = (mMaxPosition - 1) - mPosition;
+        int position = (maxPosition - 1) - this.position;
 
         while (position >= 0) {
             // Find next match, using all delimiters
-            char c = mString.charAt(position);
+            char c = string.charAt(position);
 
-            if (c <= mMaxDelimiter) {
+            if (c <= maxDelimiter) {
 
                 // Find first delimiter match
-                for (char delimiter : mDelimiters) {
+                for (char delimiter : delimiters) {
                     if (c == delimiter) {
                         return position;// Return if match
                     }
@@ -320,8 +320,8 @@ public class StringTokenIterator extends AbstractTokenIterator {
             throw new NoSuchElementException();
         }
 
-        String next = mNext;
-        mNext = fetchNext();
+        String next = this.next;
+        this.next = fetchNext();
 
         return next;
     }

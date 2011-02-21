@@ -49,14 +49,14 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
     /**
      * The wrapped map
      */
-    protected Map<K, V> mEntries;
+    protected Map<K, V> entries;
 
     /**
      * Creates a {@code TypedMap}.
      * This {@code TypedMap} will be backed by a new {@code HashMap} instance.
      */
     public TypedMap() {
-        mEntries = new HashMap<K, V>();
+        entries = new HashMap<K, V>();
     }
 
     /**
@@ -104,14 +104,14 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
 
         // This is safe, as we re-insert all values later
         //noinspection unchecked
-        mEntries = (Map<K, V>) pBacking;
+        entries = (Map<K, V>) pBacking;
 
         // Re-insert all elements to avoid undeterministic ClassCastExceptions
         if (pUseElements) {
             putAll(pBacking);
         }
-        else if (mEntries.size() > 0) {
-            mEntries.clear();
+        else if (entries.size() > 0) {
+            entries.clear();
         }
     }
 
@@ -123,7 +123,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      * @return the number of key-value mappings in this map.
      */
     public int size() {
-        return mEntries.size();
+        return entries.size();
     }
 
     /**
@@ -132,7 +132,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      * @return {@code true} if this map contains no key-value mappings.
      */
     public boolean isEmpty() {
-        return mEntries.isEmpty();
+        return entries.isEmpty();
     }
 
     /**
@@ -144,7 +144,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      *         key.
      */
     public boolean containsKey(Object pKey) {
-        return mEntries.containsKey(pKey);
+        return entries.containsKey(pKey);
     }
 
     /**
@@ -160,7 +160,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      *         specified value.
      */
     public boolean containsValue(Object pValue) {
-        return mEntries.containsValue(pValue);
+        return entries.containsValue(pValue);
     }
 
     /**
@@ -177,7 +177,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      * @see #containsKey(java.lang.Object)
      */
     public V get(Object pKey) {
-        return mEntries.get(pKey);
+        return entries.get(pKey);
     }
 
     /**
@@ -203,7 +203,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
         if (!pKey.isCompatibleValue(pValue)) {
             throw new IllegalArgumentException("incompatible value for key");
         }
-        return mEntries.put(pKey, pValue);
+        return entries.put(pKey, pValue);
     }
 
     /**
@@ -218,7 +218,7 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      *         {@code null} values.
      */
     public V remove(Object pKey) {
-        return mEntries.remove(pKey);
+        return entries.remove(pKey);
     }
 
     /**
@@ -241,19 +241,19 @@ public class TypedMap<K extends TypedMap.Key, V> implements Map<K, V>, Serializa
      * Removes all mappings from this map (optional operation).
      */
     public void clear() {
-        mEntries.clear();
+        entries.clear();
     }
 
     public Collection<V> values() {
-        return mEntries.values();
+        return entries.values();
     }
 
     public Set<Entry<K, V>> entrySet() {
-        return mEntries.entrySet();
+        return entries.entrySet();
     }
 
     public Set<K> keySet() {
-        return mEntries.keySet();
+        return entries.keySet();
     }
 
     /**

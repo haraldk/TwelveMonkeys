@@ -44,16 +44,16 @@ import java.io.Serializable;
  * <a href="http://binkley.blogspot.com/2006/08/mapping-java-bean.html>Binkley's Blog</a>
  */
 public final class BeanMap extends AbstractMap<String, Object> implements Serializable, Cloneable {
-    private final Object mBean;
-    private transient Set<PropertyDescriptor> mDescriptors;
+    private final Object bean;
+    private transient Set<PropertyDescriptor> descriptors;
 
     public BeanMap(Object pBean) throws IntrospectionException {
         if (pBean == null) {
             throw new IllegalArgumentException("bean == null");
         }
 
-        mBean = pBean;
-        mDescriptors = initDescriptors(pBean);
+        bean = pBean;
+        descriptors = initDescriptors(pBean);
     }
 
     private static Set<PropertyDescriptor> initDescriptors(Object pBean) throws IntrospectionException {
@@ -100,7 +100,7 @@ public final class BeanMap extends AbstractMap<String, Object> implements Serial
     }
 
     public int size() {
-        return mDescriptors.size();
+        return descriptors.size();
     }
 
     private String checkKey(final Object pKey) {
@@ -119,17 +119,17 @@ public final class BeanMap extends AbstractMap<String, Object> implements Serial
 
     private Object readResolve() throws IntrospectionException {
         // Initialize the property descriptors
-        mDescriptors = initDescriptors(mBean);
+        descriptors = initDescriptors(bean);
         return this;
     }
 
     private class BeanSet extends AbstractSet<Entry<String, Object>> {
         public Iterator<Entry<String, Object>> iterator() {
-            return new BeanIterator(mDescriptors.iterator());
+            return new BeanIterator(descriptors.iterator());
         }
 
         public int size() {
-            return mDescriptors.size();
+            return descriptors.size();
         }
     }
 
@@ -173,7 +173,7 @@ public final class BeanMap extends AbstractMap<String, Object> implements Serial
                         throw new UnsupportedOperationException("No getter: " + mDescriptor.getName());
                     }
 
-                    return method.invoke(mBean);
+                    return method.invoke(bean);
                 }
             });
         }
@@ -188,7 +188,7 @@ public final class BeanMap extends AbstractMap<String, Object> implements Serial
                     }
 
                     final Object old = getValue();
-                    method.invoke(mBean, pValue);
+                    method.invoke(bean, pValue);
                     return old;
                 }
             });

@@ -29,7 +29,10 @@
 
 package com.twelvemonkeys.util;
 
+import com.twelvemonkeys.lang.StringUtil;
+
 import java.text.FieldPosition;
+import java.text.Format;
 import java.text.ParsePosition;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -72,8 +75,7 @@ import java.util.Vector;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
-
-public class TimeFormat extends java.text.Format {
+public class TimeFormat extends Format {
     final static String MINUTE = "m";
     final static String SECOND = "s";
     final static String TIME = "S";
@@ -84,7 +86,7 @@ public class TimeFormat extends java.text.Format {
      */
 
     private final static TimeFormat DEFAULT_FORMAT = new TimeFormat("m:ss");
-    protected String mFormatString = null;
+    protected String formatString = null;
     
     /** 
      * Main method for testing ONLY
@@ -114,14 +116,14 @@ public class TimeFormat extends java.text.Format {
 
 	if (argv.length >= 1) {
 	    System.out.println("Parsing: \"" + argv[0] + "\" with format \""
-			       + in.mFormatString + "\"");
+			       + in.formatString + "\"");
 	    time = in.parse(argv[0]);
 	}
 	else
 	    time = new Time();
 	
 	System.out.println("Time is \"" +  out.format(time) +
-			   "\" according to format \"" + out.mFormatString + "\"");
+			   "\" according to format \"" + out.formatString + "\"");
     }
 
 
@@ -129,14 +131,14 @@ public class TimeFormat extends java.text.Format {
      * The formatter array.
      */
 
-    protected TimeFormatter[] mFormatter;
+    protected TimeFormatter[] formatter;
 
     /**
      * Creates a new TimeFormat with the given formatString,
      */
 
     public TimeFormat(String pStr) {
-	mFormatString = pStr;
+	formatString = pStr;
 
 	Vector formatter = new Vector();
 	StringTokenizer tok = new StringTokenizer(pStr, "\\msS", true);
@@ -195,10 +197,10 @@ public class TimeFormat extends java.text.Format {
 	/*
 	for (int i = 0; i < formatter.size(); i++) {
 	    System.out.println("Formatter " + formatter.get(i).getClass() 
-			       + ": length=" + ((TimeFormatter) formatter.get(i)).mDigits);
+			       + ": length=" + ((TimeFormatter) formatter.get(i)).digits);
 	}
 	*/
-	mFormatter = (TimeFormatter[])
+	this.formatter = (TimeFormatter[])
 	    formatter.toArray(new TimeFormatter[formatter.size()]);
 
     }
@@ -228,7 +230,7 @@ public class TimeFormat extends java.text.Format {
 
     /** Gets the format string.  */
     public String getFormatString() {
-	return mFormatString;
+	return formatString;
     }
 
     /** DUMMY IMPLEMENTATION!! */
@@ -247,8 +249,8 @@ public class TimeFormat extends java.text.Format {
 
     public String format(Time pTime) {
 	StringBuilder buf = new StringBuilder();
-	for (int i = 0; i < mFormatter.length; i++) {
-	    buf.append(mFormatter[i].format(pTime));
+	for (int i = 0; i < formatter.length; i++) {
+	    buf.append(formatter[i].format(pTime));
 	}
 	return buf.toString();
     }
@@ -279,45 +281,45 @@ public class TimeFormat extends java.text.Format {
 
 	boolean onlyUseSeconds = false;
 
-	for (int i = 0; (i < mFormatter.length)
+	for (int i = 0; (i < formatter.length)
 		 && (pos + skip < pStr.length()) ; i++) {
 	    // Go to next offset
 	    pos += skip;
 	    
-	    if (mFormatter[i] instanceof MinutesFormatter) {
+	    if (formatter[i] instanceof MinutesFormatter) {
 		// Parse MINUTES
-		if ((i + 1) < mFormatter.length 
-		    && mFormatter[i + 1] instanceof TextFormatter) { 
+		if ((i + 1) < formatter.length
+		    && formatter[i + 1] instanceof TextFormatter) {
 		    // Skip until next format element
-		    skip = pStr.indexOf(((TextFormatter) mFormatter[i + 1]).mText, pos);
+		    skip = pStr.indexOf(((TextFormatter) formatter[i + 1]).text, pos);
 		    // Error in format, try parsing to end
 		    if (skip < 0)
 			skip = pStr.length();
 		}
-		else if ((i + 1) >= mFormatter.length) {
+		else if ((i + 1) >= formatter.length) {
 		    // Skip until end of string
 		    skip = pStr.length();
 		}
 		else {
 		    // Hope this is correct...
-		    skip = mFormatter[i].mDigits;
+		    skip = formatter[i].digits;
 		}
 
 		// May be first char
 		if (skip > pos)
 		    min = Integer.parseInt(pStr.substring(pos, skip));
 	    }
-	    else if (mFormatter[i] instanceof SecondsFormatter) {
+	    else if (formatter[i] instanceof SecondsFormatter) {
 		// Parse SECONDS
-		if (mFormatter[i].mDigits == -1) {
+		if (formatter[i].digits == -1) {
 		    // Only seconds (or full TIME)
-		    if ((i + 1) < mFormatter.length 
-			&& mFormatter[i + 1] instanceof TextFormatter) { 
+		    if ((i + 1) < formatter.length
+			&& formatter[i + 1] instanceof TextFormatter) {
 			// Skip until next format element
-			skip = pStr.indexOf(((TextFormatter) mFormatter[i + 1]).mText, pos);
+			skip = pStr.indexOf(((TextFormatter) formatter[i + 1]).text, pos);
 
 		    }
-		    else if ((i + 1) >= mFormatter.length) {
+		    else if ((i + 1) >= formatter.length) {
 			// Skip until end of string
 			skip = pStr.length();
 		    }
@@ -336,25 +338,25 @@ public class TimeFormat extends java.text.Format {
 		}
 		else {
 		    // Normal SECONDS
-		    if ((i + 1) < mFormatter.length 
-			&& mFormatter[i + 1] instanceof TextFormatter) { 
+		    if ((i + 1) < formatter.length
+			&& formatter[i + 1] instanceof TextFormatter) {
 			// Skip until next format element
-			skip = pStr.indexOf(((TextFormatter) mFormatter[i + 1]).mText, pos);
+			skip = pStr.indexOf(((TextFormatter) formatter[i + 1]).text, pos);
 			
 		    }
-		    else if ((i + 1) >= mFormatter.length) {
+		    else if ((i + 1) >= formatter.length) {
 			// Skip until end of string
 			skip = pStr.length();
 		    }
 		    else {
-			skip = mFormatter[i].mDigits;
+			skip = formatter[i].digits;
 		    }
 		    // Get seconds
 		    sec = Integer.parseInt(pStr.substring(pos, skip));
 		}
 	    }
-	    else if (mFormatter[i] instanceof TextFormatter) {
-		skip = mFormatter[i].mDigits;
+	    else if (formatter[i] instanceof TextFormatter) {
+		skip = formatter[i].digits;
 	    }
 	    
 	}
@@ -374,7 +376,7 @@ public class TimeFormat extends java.text.Format {
  * The base class of TimeFormatters
  */
 abstract class TimeFormatter {
-    int mDigits = 0;
+    int digits = 0;
 
     abstract String format(Time t);
 }
@@ -385,23 +387,23 @@ abstract class TimeFormatter {
 class SecondsFormatter extends TimeFormatter {
 
     SecondsFormatter(int pDigits) {
-	mDigits = pDigits;
+	digits = pDigits;
     }
     
     String format(Time t) {
 	// Negative number of digits, means all seconds, no padding
-	if (mDigits < 0) {
+	if (digits < 0) {
             return Integer.toString(t.getTime());
         }
 
-        // If seconds is more than mDigits long, simply return it
-	if (t.getSeconds() >= Math.pow(10, mDigits)) {
+        // If seconds is more than digits long, simply return it
+	if (t.getSeconds() >= Math.pow(10, digits)) {
             return Integer.toString(t.getSeconds());
         }
 
         // Else return it with leading 0's
-	//return StringUtil.formatNumber(t.getSeconds(), mDigits);
-        return com.twelvemonkeys.lang.StringUtil.pad("" + t.getSeconds(), mDigits, "0", true);
+	//return StringUtil.formatNumber(t.getSeconds(), digits);
+        return StringUtil.pad("" + t.getSeconds(), digits, "0", true);
     }
 }
 
@@ -411,18 +413,18 @@ class SecondsFormatter extends TimeFormatter {
 class MinutesFormatter extends TimeFormatter {
 
     MinutesFormatter(int pDigits) {
-	mDigits = pDigits;
+	digits = pDigits;
     }
 
     String format(Time t) {
-	// If minutes is more than mDigits long, simply return it
-	if (t.getMinutes() >= Math.pow(10, mDigits)) {
+	// If minutes is more than digits long, simply return it
+	if (t.getMinutes() >= Math.pow(10, digits)) {
             return Integer.toString(t.getMinutes());
         }
 
         // Else return it with leading 0's
-	//return StringUtil.formatNumber(t.getMinutes(), mDigits);
-        return com.twelvemonkeys.lang.StringUtil.pad("" + t.getMinutes(), mDigits, "0", true);
+	//return StringUtil.formatNumber(t.getMinutes(), digits);
+        return StringUtil.pad("" + t.getMinutes(), digits, "0", true);
     }
 }
 
@@ -430,20 +432,20 @@ class MinutesFormatter extends TimeFormatter {
  * Formats text constant part of the Time
  */
 class TextFormatter extends TimeFormatter {
-    String mText = null;
+    String text = null;
 
     TextFormatter(String pText) {
-	mText = pText;
+	text = pText;
 
 	// Just to be able to skip over
 	if (pText != null) {
-	    mDigits = pText.length();
+	    digits = pText.length();
 	}
     }
 
     String format(Time t) {
 	// Simply return the text
-	return mText;
+	return text;
     }
 
 }

@@ -36,8 +36,8 @@ package com.twelvemonkeys.util;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/AbstractResource.java#1 $
  */
 abstract class AbstractResource implements Resource {
-    protected final Object mResourceId;
-    protected final Object mWrappedResource;
+    protected final Object resourceId;
+    protected final Object wrappedResource;
 
     /**
      * Creates a {@code Resource}.
@@ -53,12 +53,12 @@ abstract class AbstractResource implements Resource {
             throw new IllegalArgumentException("resource == null");
         }
 
-        mResourceId = pResourceId;
-        mWrappedResource = pWrappedResource;
+        resourceId = pResourceId;
+        wrappedResource = pWrappedResource;
     }
 
     public final Object getId() {
-        return mResourceId;
+        return resourceId;
     }
 
     /**
@@ -76,7 +76,7 @@ abstract class AbstractResource implements Resource {
      * @return {@code mWrapped.hashCode()}
      */
     public int hashCode() {
-        return mWrappedResource.hashCode();
+        return wrappedResource.hashCode();
     }
 
     /**
@@ -87,6 +87,6 @@ abstract class AbstractResource implements Resource {
      */
     public boolean equals(Object pObject) {
         return pObject instanceof AbstractResource
-                && mWrappedResource.equals(((AbstractResource) pObject).mWrappedResource);
+                && wrappedResource.equals(((AbstractResource) pObject).wrappedResource);
     }
 }

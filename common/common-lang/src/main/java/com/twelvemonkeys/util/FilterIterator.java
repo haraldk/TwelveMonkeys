@@ -49,11 +49,11 @@ import java.util.NoSuchElementException;
  */
 public class FilterIterator<E> implements Iterator<E> {
 
-    protected final Filter<E> mFilter;
-    protected final Iterator<E> mIterator;
+    protected final Filter<E> filter;
+    protected final Iterator<E> iterator;
 
-    private E mNext = null;
-    private E mCurrent = null;
+    private E next = null;
+    private E current = null;
 
     /**
      * Creates a {@code FilterIterator} that wraps the {@code Iterator}. Each
@@ -72,8 +72,8 @@ public class FilterIterator<E> implements Iterator<E> {
             throw new IllegalArgumentException("filter == null");
         }
 
-        mIterator = pIterator;
-        mFilter = pFilter;
+        iterator = pIterator;
+        filter = pFilter;
     }
 
     /**
@@ -85,16 +85,16 @@ public class FilterIterator<E> implements Iterator<E> {
      * @see FilterIterator.Filter#accept
      */
     public boolean hasNext() {
-        while (mNext == null && mIterator.hasNext()) {
-            E element = mIterator.next();
+        while (next == null && iterator.hasNext()) {
+            E element = iterator.next();
 
-            if (mFilter.accept(element)) {
-                mNext = element;
+            if (filter.accept(element)) {
+                next = element;
                 break;
             }
         }
 
-        return mNext != null;
+        return next != null;
     }
 
     /**
@@ -105,11 +105,11 @@ public class FilterIterator<E> implements Iterator<E> {
      */
     public E next() {
         if (hasNext()) {
-            mCurrent = mNext;
+            current = next;
 
             // Make sure we advance next time
-            mNext = null;
-            return mCurrent;
+            next = null;
+            return current;
         }
         else {
             throw new NoSuchElementException("Iteration has no more elements.");
@@ -124,8 +124,8 @@ public class FilterIterator<E> implements Iterator<E> {
      * progress in any way other than by calling this method.
      */
     public void remove() {
-        if (mCurrent != null) {
-            mIterator.remove();
+        if (current != null) {
+            iterator.remove();
         }
         else {
             throw new IllegalStateException("Iteration has no current element.");

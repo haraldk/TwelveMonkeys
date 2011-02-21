@@ -81,8 +81,7 @@ public final class SystemUtil {
      *
      * @return an input stream reading from the resource
      */
-    private static InputStream getResourceAsStream(ClassLoader pClassLoader, String pName,
-                                                   boolean pGuessSuffix) {
+    private static InputStream getResourceAsStream(ClassLoader pClassLoader, String pName, boolean pGuessSuffix) {
         InputStream is;
 
         if (!pGuessSuffix) {
@@ -122,8 +121,7 @@ public final class SystemUtil {
      *
      * @return an input stream reading from the resource
      */
-    private static InputStream getFileAsStream(String pName,
-                                               boolean pGuessSuffix) {
+    private static InputStream getFileAsStream(String pName, boolean pGuessSuffix) {
         InputStream is = null;
         File propertiesFile;
 
@@ -206,8 +204,7 @@ public final class SystemUtil {
      * @todo Reconsider ever using the System ClassLoader: http://www.javaworld.com/javaworld/javaqa/2003-06/01-qa-0606-load.html
      * @todo Consider using Context Classloader instead?
      */
-    public static Properties loadProperties(Class pClass, String pName)
-        throws IOException
+    public static Properties loadProperties(Class pClass, String pName) throws IOException
     {
         // Convert to name the classloader understands
         String name = !StringUtil.isEmpty(pName) ? pName : pClass.getName().replace('.', '/');
@@ -219,8 +216,7 @@ public final class SystemUtil {
 
         // TODO: WHAT IF MULTIPLE RESOURCES EXISTS?!
         // Try loading resource through the current class' classloader
-        if (pClass != null
-            && (is = getResourceAsStream(pClass.getClassLoader(), name, guessSuffix)) != null) {
+        if (pClass != null && (is = getResourceAsStream(pClass.getClassLoader(), name, guessSuffix)) != null) {
             //&& (is = getResourceAsStream(pClass, name, guessSuffix)) != null) {
             // Nothing to do
             //System.out.println(((is instanceof XMLPropertiesInputStream) ?
@@ -228,9 +224,8 @@ public final class SystemUtil {
             //                   + " from Class' ClassLoader");
         }
         // If that fails, try the system classloader
-        else if ((is = getResourceAsStream(ClassLoader.getSystemClassLoader(),
-                                           name, guessSuffix)) != null) {
-        //else if ((is = getSystemResourceAsStream(name, guessSuffix)) != null) {
+        else if ((is = getResourceAsStream(ClassLoader.getSystemClassLoader(), name, guessSuffix)) != null) {
+            //else if ((is = getSystemResourceAsStream(name, guessSuffix)) != null) {
                     // Nothing to do
             //System.out.println(((is instanceof XMLPropertiesInputStream) ?
             //                    "XML-properties" : "Normal .properties")

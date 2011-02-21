@@ -47,10 +47,10 @@ public class LinkedSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, S
 
     private final static Object DUMMY = new Object();
 
-    private final Map<E, Object> mMap;
+    private final Map<E, Object> map;
 
     public LinkedSet() {
-        mMap = new LinkedMap<E, Object>();
+        map = new LinkedMap<E, Object>();
     }
 
     public LinkedSet(Collection<E> pCollection) {
@@ -69,14 +69,14 @@ public class LinkedSet<E> extends AbstractSet<E> implements Set<E>, Cloneable, S
     }
 
     public boolean add(E pValue) {
-        return mMap.put(pValue, DUMMY) == null;
+        return map.put(pValue, DUMMY) == null;
     }
 
     public int size() {
-        return mMap.size();
+        return map.size();
     }
 
     public Iterator<E> iterator() {
-        return mMap.keySet().iterator();
+        return map.keySet().iterator();
     }
 }

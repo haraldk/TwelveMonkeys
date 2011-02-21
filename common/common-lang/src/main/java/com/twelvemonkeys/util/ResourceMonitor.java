@@ -53,9 +53,9 @@ public abstract class ResourceMonitor {
 
     private static final ResourceMonitor INSTANCE = new ResourceMonitor() {};
 
-    private Timer mTimer;
+    private Timer timer;
 
-    private Map mTimerEntries;
+    private final Map<Object, ResourceMonitorTask> timerEntries;
 
     public static ResourceMonitor getInstance() {
         return INSTANCE;
@@ -66,8 +66,8 @@ public abstract class ResourceMonitor {
      */
     protected ResourceMonitor() {
         // Create timer, run timer thread as daemon...
-        mTimer = new Timer(true);
-        mTimerEntries = new HashMap();
+        timer = new Timer(true);
+        timerEntries = new HashMap<Object, ResourceMonitorTask>();
     }
 
     /**
@@ -95,12 +95,12 @@ public abstract class ResourceMonitor {
         Object resourceId = getResourceId(pResourceId, pListener);
 
         // Remove the old task for this Id, if any, and register the new one
-        synchronized (mTimerEntries) {
+        synchronized (timerEntries) {
             removeListenerInternal(resourceId);
-            mTimerEntries.put(resourceId, task);
+            timerEntries.put(resourceId, task);
         }
 
-        mTimer.schedule(task, pPeriod, pPeriod);
+        timer.schedule(task, pPeriod, pPeriod);
     }
 
     /**
@@ -110,13 +110,13 @@ public abstract class ResourceMonitor {
      * @param pResourceId name of the resource to monitor.
      */
     public void removeResourceChangeListener(ResourceChangeListener pListener, Object pResourceId) {
-        synchronized (mTimerEntries) {
+        synchronized (timerEntries) {
             removeListenerInternal(getResourceId(pResourceId, pListener));
         }
     }
 
     private void removeListenerInternal(Object pResourceId) {
-        ResourceMonitorTask task = (ResourceMonitorTask) mTimerEntries.remove(pResourceId);
+        ResourceMonitorTask task = timerEntries.remove(pResourceId);
 
         if (task != null) {
             task.cancel();

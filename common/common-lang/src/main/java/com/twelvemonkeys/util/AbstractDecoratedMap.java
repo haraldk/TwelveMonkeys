@@ -40,12 +40,12 @@ import java.io.Serializable;
  */
 // TODO: The generics in this class looks suspicious..
 abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements Map<K, V>, Serializable, Cloneable {
-    protected Map<K, Entry<K, V>> mEntries;
-    protected transient volatile int mModCount;
+    protected Map<K, Entry<K, V>> entries;
+    protected transient volatile int modCount;
 
-    private transient volatile Set<Entry<K, V>> mEntrySet = null;
-    private transient volatile Set<K> mKeySet = null;
-    private transient volatile Collection<V> mValues = null;
+    private transient volatile Set<Entry<K, V>> entrySet = null;
+    private transient volatile Set<K> keySet = null;
+    private transient volatile Collection<V> values = null;
 
     /**
      * Creates a {@code Map} backed by a {@code HashMap}.
@@ -104,7 +104,7 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
             throw new IllegalArgumentException("backing must be empty");
         }
 
-        mEntries = pBacking;
+        this.entries = pBacking;
         init();
 
         if (pContents != null) {
@@ -125,21 +125,21 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     }
 
     public int size() {
-        return mEntries.size();
+        return entries.size();
     }
 
     public void clear() {
-        mEntries.clear();
-        mModCount++;
+        entries.clear();
+        modCount++;
         init();
     }
 
     public boolean isEmpty() {
-        return mEntries.isEmpty();
+        return entries.isEmpty();
     }
 
     public boolean containsKey(Object pKey) {
-        return mEntries.containsKey(pKey);
+        return entries.containsKey(pKey);
     }
 
     /**
@@ -166,18 +166,18 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     }
 
     public Collection<V> values() {
-        Collection<V> values = mValues;
-        return values != null ? values : (mValues = new Values());
+        Collection<V> values = this.values;
+        return values != null ? values : (this.values = new Values());
     }
 
     public Set<Entry<K, V>> entrySet() {
-        Set<Entry<K, V>> es = mEntrySet;
-        return es != null ? es : (mEntrySet = new EntrySet());
+        Set<Entry<K, V>> es = entrySet;
+        return es != null ? es : (entrySet = new EntrySet());
     }
 
     public Set<K> keySet() {
-        Set<K> ks = mKeySet;
-        return ks != null ? ks : (mKeySet = new KeySet());
+        Set<K> ks = keySet;
+        return ks != null ? ks : (keySet = new KeySet());
     }
 
     /**
@@ -189,9 +189,9 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     protected Object clone() throws CloneNotSupportedException {
         AbstractDecoratedMap map = (AbstractDecoratedMap) super.clone();
 
-        map.mValues = null;
-        map.mEntrySet = null;
-        map.mKeySet = null;
+        map.values = null;
+        map.entrySet = null;
+        map.keySet = null;
 
         // TODO: Implement: Need to clone the backing map...
 
@@ -217,7 +217,7 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     }
 
     /*protected*/  Entry<K, V> getEntry(K pKey) {
-        return mEntries.get(pKey);
+        return entries.get(pKey);
     }
 
     /**
@@ -271,7 +271,7 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
             Entry e = (Entry) o;
 
             //noinspection SuspiciousMethodCalls
-            Entry<K, V> candidate = mEntries.get(e.getKey());
+            Entry<K, V> candidate = entries.get(e.getKey());
             return candidate != null && candidate.equals(e);
         }
 
@@ -284,7 +284,7 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
             // NOTE: Extra cautions is taken, to only remove the entry if it
             // equals the entry in the map
             Object key = ((Entry) o).getKey();
-            Entry entry = (Entry) mEntries.get(key);
+            Entry entry = (Entry) entries.get(key);
 
             // Same entry?
             if (entry != null && entry.equals(o)) {

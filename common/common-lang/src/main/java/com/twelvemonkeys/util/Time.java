@@ -37,7 +37,7 @@ package com.twelvemonkeys.util;
  */
 public class Time {
 
-    private int mTime = -1;
+    private int time = -1;
     public final static int SECONDS_IN_MINUTE = 60;
 
     /**
@@ -61,14 +61,14 @@ public class Time {
         if (pTime < 0) {
             throw new IllegalArgumentException("Time argument must be 0 or positive!");
         }
-        mTime = pTime;
+        time = pTime;
     }
 
     /**
      * Gets the full time in seconds.
      */
     public int getTime() {
-        return mTime;
+        return time;
     }
 
     /**
@@ -78,7 +78,7 @@ public class Time {
      * @see java.util.Date#setTime(long)
      */
     public long getTimeInMillis() {
-        return (long) mTime * 1000L;
+        return (long) time * 1000L;
     }
 
     /**
@@ -88,7 +88,7 @@ public class Time {
      * @param pSeconds an integer that should be between 0 and 59.
      */
     public void setSeconds(int pSeconds) {
-        mTime = getMinutes() * SECONDS_IN_MINUTE + pSeconds;
+        time = getMinutes() * SECONDS_IN_MINUTE + pSeconds;
     }
 
     /**
@@ -97,7 +97,7 @@ public class Time {
      * @return an integer between 0 and 59
      */
     public int getSeconds() {
-        return mTime % SECONDS_IN_MINUTE;
+        return time % SECONDS_IN_MINUTE;
     }
 
     /**
@@ -106,7 +106,7 @@ public class Time {
      * @param pMinutes an integer
      */
     public void setMinutes(int pMinutes) {
-        mTime = pMinutes * SECONDS_IN_MINUTE + getSeconds();
+        time = pMinutes * SECONDS_IN_MINUTE + getSeconds();
     }
 
     /**
@@ -115,7 +115,7 @@ public class Time {
      * @return an integer
      */
     public int getMinutes() {
-        return mTime / SECONDS_IN_MINUTE;
+        return time / SECONDS_IN_MINUTE;
     }
 
     /**

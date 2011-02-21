@@ -55,7 +55,7 @@ final class FileResource extends AbstractResource {
     }
 
     private File getFile() {
-        return (File) mWrappedResource;
+        return (File) wrappedResource;
     }
 
     public URL asURL() {
