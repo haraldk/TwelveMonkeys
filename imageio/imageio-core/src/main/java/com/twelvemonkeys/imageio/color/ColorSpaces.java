@@ -29,6 +29,8 @@
 package com.twelvemonkeys.imageio.color;
 
 import com.twelvemonkeys.io.FileUtil;
+import com.twelvemonkeys.lang.Platform;
+import com.twelvemonkeys.lang.SystemUtil;
 import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.util.LRUHashMap;
 
@@ -39,9 +41,27 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * A helper class for working with ICC color profiles and color spaces.
+ * <p />
+ * Standard ICC color profiles are read from system-specific locations
+ * for known operating systems.
+ * <p />
+ * Color profiles may be configured by placing a property-file
+ * {@code com/twelvemonkeys/imageio/color/icc_profiles.properties}
+ * on the classpath, specifying the full path to the profile.
+ * ICC color profiles are probably already present on your system, or
+ * can be downloaded from
+ * <a href="http://www.color.org/profiles2.xalter">ICC</a>,
+ * <a href="http://www.adobe.com/downloads/">Adobe</a> or other places.
+ * <p />
+ * Example property file:
+ * <pre>probably
+ * ADOBE_RGB_1998=/path/to/Adobe RGB 1998.icc
+ * GENERIC_CMYK=/path/to/Generic CMYK.icc
+ * </pre>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -161,10 +181,6 @@ public final class ColorSpaces {
         return data[ICC_Profile.icHdrRenderingIntent] != 0;
     }
 
-    // TODO: Use internal cache (needs mapping between ID and Key...)
-    // TODO: Allow system-property/config file on class path to configure location of color profiles
-    // TODO: Document how to download, install and configure Adobe color profiles or other profiles
-
     /**
      * Returns the color space specified by the given color space constant.
      * <p />
@@ -179,6 +195,8 @@ public final class ColorSpaces {
      * @see ColorSpaces#CS_GENERIC_CMYK
      */
     public static ColorSpace getColorSpace(int colorSpace) {
+        // TODO: Use internal cache for AdobeRGB and CMYK! (needs mapping between ID and Key...)
+
         switch (colorSpace) {
             // Default cases for convenience
             case ColorSpace.CS_sRGB:
@@ -189,10 +207,9 @@ public final class ColorSpaces {
                 return ColorSpace.getInstance(colorSpace);
 
             case CS_ADOBE_RGB_1998:
-                // TODO: Read profile specified by config file instead of hard coded
                 try {
-                    // This works for OS X only
-                    return createColorSpace(ICC_Profile.getInstance("/System/Library/ColorSync/Profiles/AdobeRGB1998.icc"));
+                    String profile = Profiles.MAP.getProperty("ADOBE_RGB_1998");
+                    return createColorSpace(ICC_Profile.getInstance(profile));
                 }
                 catch (IOException ignore) {
                 }
@@ -213,19 +230,13 @@ public final class ColorSpaces {
                 throw new RuntimeException("Could not read AdobeRGB1998 profile");
 
             case CS_GENERIC_CMYK:
-                // TODO: Read profile specified by config file instead of hard coded
-                // TODO: C:\Windows\System32\spool\drivers\color\RSWOP.icm for Windows Vista?
                 try {
-                    // This works for OS X only
-//                    return createColorSpace(ICC_Profile.getInstance("/C:/Windows/System32/spool/drivers/color/RSWOP.icm"));
-                    return createColorSpace(ICC_Profile.getInstance("/System/Library/ColorSync/Profiles/Generic CMYK Profile.icc"));
-//                    return createColorSpace(ICC_Profile.getInstance("/Downloads/coated_FOGRA39L_argl.icc"));
-//                    return createColorSpace(ICC_Profile.getInstance("/Downloads/RSWOP.icm"));
-//                    return createColorSpace(ICC_Profile.getInstance("/Downloads/USWebCoatedSWOP.icc"));
+                    String profile = Profiles.MAP.getProperty("GENERIC_CMYK");
+                    return createColorSpace(ICC_Profile.getInstance(profile));
                 }
                 catch (IOException ignore) {
                 }
-                
+
                 // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
                 return CMYKColorSpace.getInstance();
             default:
@@ -269,5 +280,32 @@ public final class ColorSpaces {
     }
     private static class LINEAR_RGB {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB).getData(ICC_Profile.icSigHead);
+    }
+
+    private static class Profiles {
+        static final Properties MAP = loadProfiles(Platform.os());
+
+        private static Properties loadProfiles(Platform.OperatingSystem os) {
+            Properties systemDefaults;
+            try {
+                systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os);
+            }
+            catch (IOException ignore) {
+                ignore.printStackTrace();
+                systemDefaults = null;
+            }
+
+            // Create map with defaults and add user overrides if any
+            Properties profiles = new Properties(systemDefaults);
+
+            try {
+                Properties userOverrides = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles");
+                profiles.putAll(userOverrides);
+            }
+            catch (IOException ignore) {
+            }
+
+            return profiles;
+        }
     }
 }
