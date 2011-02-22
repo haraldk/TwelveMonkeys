@@ -39,6 +39,7 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -68,6 +69,8 @@ import java.util.Properties;
  * @version $Id: ColorSpaces.java,v 1.0 24.01.11 17.51 haraldk Exp$
  */
 public final class ColorSpaces {
+    private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
+
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
     /** The Adobe RGB 1998 (or compatible) color space. Either read from disk or built-in. */
@@ -76,6 +79,11 @@ public final class ColorSpaces {
     /** A best-effort "generic" CMYK color space. Either read from disk or built-in. */
     public static final int CS_GENERIC_CMYK = 5001;
 
+    // Weak references to hold the color spaces while cached
+    private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<ICC_Profile>(null);
+    private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<ICC_Profile>(null);
+
+    // Cache for the latest used color spaces
     private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<Key, ICC_ColorSpace>(10);
 
     private ColorSpaces() {}
@@ -122,16 +130,16 @@ public final class ColorSpaces {
         if (profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, sRGB.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_sRGB);
         }
-        if (profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && Arrays.equals(profileHeader, GRAY.header)) {
+        else if (profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && Arrays.equals(profileHeader, GRAY.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_GRAY);
         }
-        if (profile.getColorSpaceType() == ColorSpace.TYPE_3CLR && Arrays.equals(profileHeader, PYCC.header)) {
+        else if (profile.getColorSpaceType() == ColorSpace.TYPE_3CLR && Arrays.equals(profileHeader, PYCC.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_PYCC);
         }
-        if (profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, LINEAR_RGB.header)) {
+        else if (profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, LINEAR_RGB.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_LINEAR_RGB);
         }
-        if (profile.getColorSpaceType() == ColorSpace.TYPE_XYZ && Arrays.equals(profileHeader, CIEXYZ.header)) {
+        else if (profile.getColorSpaceType() == ColorSpace.TYPE_XYZ && Arrays.equals(profileHeader, CIEXYZ.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_CIEXYZ);
         }
 
@@ -178,6 +186,7 @@ public final class ColorSpaces {
         // This is particularly annoying, as the byte copying isn't really necessary,
         // except the getRenderingIntent method is package protected in java.awt.color
         byte[] data = profile.getData(ICC_Profile.icSigHead);
+
         return data[ICC_Profile.icHdrRenderingIntent] != 0;
     }
 
@@ -195,7 +204,7 @@ public final class ColorSpaces {
      * @see ColorSpaces#CS_GENERIC_CMYK
      */
     public static ColorSpace getColorSpace(int colorSpace) {
-        // TODO: Use internal cache for AdobeRGB and CMYK! (needs mapping between ID and Key...)
+        ICC_Profile profile;
 
         switch (colorSpace) {
             // Default cases for convenience
@@ -207,44 +216,99 @@ public final class ColorSpaces {
                 return ColorSpace.getInstance(colorSpace);
 
             case CS_ADOBE_RGB_1998:
-                try {
-                    String profile = Profiles.MAP.getProperty("ADOBE_RGB_1998");
-                    return createColorSpace(ICC_Profile.getInstance(profile));
-                }
-                catch (IOException ignore) {
+                profile = adobeRGB1998.get();
+
+                if (profile == null) {
+                    // Try to get system default or user-defined profile
+                    profile = readProfileFromPath(Profiles.getPath("ADOBE_RGB_1998"));
+
+                    if (profile == null) {
+                        // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
+                        // identical for all practical purposes
+                        profile = readProfileFromClasspathResource("/profiles/ClayRGB1998.icc");
+
+                        if (profile == null) {
+                            // Should never happen given we now bundle fallback profile...
+                            throw new IllegalStateException("Could not read AdobeRGB1998 profile");
+                        }
+                    }
+
+                    adobeRGB1998 = new WeakReference<ICC_Profile>(profile);
                 }
 
-                // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
-                // identical for all practical purposes
-                InputStream stream = ColorSpaces.class.getResourceAsStream("/profiles/ClayRGB1998.icc");
-                try {
-                    return createColorSpace(ICC_Profile.getInstance(stream));
-                }
-                catch (IOException ignore) {
-                }
-                finally {
-                    FileUtil.close(stream);
-                }
-
-                // Should never happen given we now bundle the profile...
-                throw new RuntimeException("Could not read AdobeRGB1998 profile");
+                return createColorSpace(profile);
 
             case CS_GENERIC_CMYK:
-                try {
-                    String profile = Profiles.MAP.getProperty("GENERIC_CMYK");
-                    return createColorSpace(ICC_Profile.getInstance(profile));
-                }
-                catch (IOException ignore) {
+                profile = genericCMYK.get();
+
+                if (profile == null) {
+                    // Try to get system default or user-defined profile
+                    profile = readProfileFromPath(Profiles.getPath("GENERIC_CMYK"));
+
+                    if (profile == null) {
+                        if (DEBUG) {
+                            System.out.println("Using fallback profile");
+                        }
+
+                        // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
+                        return CMYKColorSpace.getInstance();
+                    }
+
+                    genericCMYK = new WeakReference<ICC_Profile>(profile);
                 }
 
-                // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
-                return CMYKColorSpace.getInstance();
+                return createColorSpace(profile);
+            
             default:
 
             // TODO: Allow more customizable models based on the config file?
         }
 
         throw new IllegalArgumentException(String.format("Unsupported color space: %s", colorSpace));
+    }
+
+    private static ICC_Profile readProfileFromClasspathResource(final String profilePath) {
+        InputStream stream = ColorSpaces.class.getResourceAsStream(profilePath);
+
+        if (stream != null) {
+            if (DEBUG) {
+                System.out.println("Loading profile from classpath resource: " + profilePath);
+            }
+
+            try {
+
+                return ICC_Profile.getInstance(stream);
+            }
+            catch (IOException ignore) {
+                if (DEBUG) {
+                    ignore.printStackTrace();
+                }
+            }
+            finally {
+                FileUtil.close(stream);
+            }
+        }
+
+        return null;
+    }
+
+    private static ICC_Profile readProfileFromPath(final String profilePath) {
+        if (profilePath != null) {
+            if (DEBUG) {
+                System.out.println("Loading profilePath from: " + profilePath);
+            }
+
+            try {
+                return ICC_Profile.getInstance(profilePath);
+            }
+            catch (IOException ignore) {
+                if (DEBUG) {
+                    ignore.printStackTrace();
+                }
+            }
+        }
+
+        return null;
     }
 
     private static final class Key {
@@ -283,9 +347,9 @@ public final class ColorSpaces {
     }
 
     private static class Profiles {
-        static final Properties MAP = loadProfiles(Platform.os());
+        private static final Properties PROFILES = loadProfiles(Platform.os());
 
-        private static Properties loadProfiles(Platform.OperatingSystem os) {
+        private static Properties loadProfiles(final Platform.OperatingSystem os) {
             Properties systemDefaults;
             try {
                 systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os);
@@ -305,7 +369,16 @@ public final class ColorSpaces {
             catch (IOException ignore) {
             }
 
+            if (DEBUG) {
+                System.out.println("User ICC profiles: " + profiles);
+                System.out.println("System ICC profiles : " + systemDefaults);
+            }
+
             return profiles;
+        }
+
+        public static String getPath(final String profileName) {
+            return PROFILES.getProperty(profileName);
         }
     }
 }
