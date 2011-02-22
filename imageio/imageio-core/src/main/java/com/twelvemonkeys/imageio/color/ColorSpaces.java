@@ -260,8 +260,6 @@ public final class ColorSpaces {
                 return createColorSpace(profile);
             
             default:
-
-            // TODO: Allow more customizable models based on the config file?
         }
 
         throw new IllegalArgumentException(String.format("Unsupported color space: %s", colorSpace));
