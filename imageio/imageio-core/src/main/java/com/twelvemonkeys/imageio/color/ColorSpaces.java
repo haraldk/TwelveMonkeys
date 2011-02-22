@@ -293,7 +293,7 @@ public final class ColorSpaces {
     private static ICC_Profile readProfileFromPath(final String profilePath) {
         if (profilePath != null) {
             if (DEBUG) {
-                System.out.println("Loading profilePath from: " + profilePath);
+                System.out.println("Loading profile from: " + profilePath);
             }
 
             try {
