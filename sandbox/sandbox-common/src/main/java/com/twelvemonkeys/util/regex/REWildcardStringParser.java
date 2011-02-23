@@ -82,9 +82,9 @@ public class REWildcardStringParser /*extends EntityObject*/ {
 
   /** Field ALPHABET           */
   public static final char[] ALPHABET = {
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'æ',
-    'ø', 'å', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
-    'Z', 'Æ', 'Ø', 'Å', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '_', '-'
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'Ã¦',
+    'Ã¸', 'Ã¥', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
+    'Z', 'Ã†', 'Ã˜', 'Ã…', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '_', '-'
   };
 
   /** Field FREE_RANGE_CHARACTER           */
@@ -165,12 +165,12 @@ public class REWildcardStringParser /*extends EntityObject*/ {
       char stringMaskChar = pWildcardExpression.charAt(i);
 
       if (isFreeRangeCharacter(stringMaskChar)) {
-        regexpBuffer.append("(([a-åA-Å0-9]|.|_|-)*)");
+        regexpBuffer.append("(([a-ï¿½A-ï¿½0-9]|.|_|-)*)");
       }
 
       // Free-pass character '?'
       else if (isFreePassCharacter(stringMaskChar)) {
-        regexpBuffer.append("([a-åA_Å0-9]|.|_|-)");
+        regexpBuffer.append("([a-ï¿½A_ï¿½0-9]|.|_|-)");
       }
 
       // Valid characters
