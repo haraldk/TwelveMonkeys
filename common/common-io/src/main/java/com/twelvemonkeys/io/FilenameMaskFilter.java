@@ -56,8 +56,11 @@ import java.io.FilenameFilter;
  * @see File#list(java.io.FilenameFilter) java.io.File.list
  * @see FilenameFilter java.io.FilenameFilter
  * @see WildcardStringParser
+ * @deprecated
  */
 public class FilenameMaskFilter implements FilenameFilter {
+
+     // TODO: Rewrite to use regexp, or create new class
 
     // Members
     private String[] filenameMasksForInclusion;

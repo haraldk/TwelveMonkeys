@@ -886,6 +886,8 @@ public final class FileUtil {
             return folder.listFiles();
         }
 
+        // TODO: Rewrite to use regexp
+
         FilenameFilter filter = new FilenameMaskFilter(pFilenameMask);
         return folder.listFiles(filter);
     }
