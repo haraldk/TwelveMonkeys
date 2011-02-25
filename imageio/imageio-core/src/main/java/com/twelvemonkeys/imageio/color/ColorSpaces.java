@@ -59,7 +59,8 @@ import java.util.Properties;
  * <a href="http://www.adobe.com/downloads/">Adobe</a> or other places.
  * <p />
  * Example property file:
- * <pre>probably
+ * <pre>
+ * # icc_profiles.properties
  * ADOBE_RGB_1998=/path/to/Adobe RGB 1998.icc
  * GENERIC_CMYK=/path/to/Generic CMYK.icc
  * </pre>
@@ -103,7 +104,7 @@ public final class ColorSpaces {
 
         byte[] profileHeader = profile.getData(ICC_Profile.icSigHead);
 
-        ICC_ColorSpace cs = getInternalCS(profile, profileHeader);
+        ICC_ColorSpace cs = getInternalCS(profile.getColorSpaceType(), profileHeader);
         if (cs != null) {
             return cs;
         }
@@ -114,39 +115,39 @@ public final class ColorSpaces {
             profileHeader[ICC_Profile.icHdrRenderingIntent] = 0;
 
             // Test again if this is an internal CS
-            cs = getInternalCS(profile, profileHeader);
+            cs = getInternalCS(profile.getColorSpaceType(), profileHeader);
             if (cs != null) {
                 return cs;
             }
 
-            // Fix profile
+            // Fix profile before lookup/create
             profile.setData(ICC_Profile.icSigHead, profileHeader);
         }
 
-        return getCachedCS(profile, profileHeader);
+        return getCachedOrCreateCS(profile, profileHeader);
     }
 
-    private static ICC_ColorSpace getInternalCS(final ICC_Profile profile, final byte[] profileHeader) {
-        if (profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, sRGB.header)) {
+    private static ICC_ColorSpace getInternalCS(final int profileCSType, final byte[] profileHeader) {
+        if (profileCSType == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, sRGB.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_sRGB);
         }
-        else if (profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && Arrays.equals(profileHeader, GRAY.header)) {
+        else if (profileCSType == ColorSpace.TYPE_GRAY && Arrays.equals(profileHeader, GRAY.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_GRAY);
         }
-        else if (profile.getColorSpaceType() == ColorSpace.TYPE_3CLR && Arrays.equals(profileHeader, PYCC.header)) {
+        else if (profileCSType == ColorSpace.TYPE_3CLR && Arrays.equals(profileHeader, PYCC.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_PYCC);
         }
-        else if (profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, LINEAR_RGB.header)) {
+        else if (profileCSType == ColorSpace.TYPE_RGB && Arrays.equals(profileHeader, LINEAR_RGB.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_LINEAR_RGB);
         }
-        else if (profile.getColorSpaceType() == ColorSpace.TYPE_XYZ && Arrays.equals(profileHeader, CIEXYZ.header)) {
+        else if (profileCSType == ColorSpace.TYPE_XYZ && Arrays.equals(profileHeader, CIEXYZ.header)) {
             return (ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_CIEXYZ);
         }
 
         return null;
     }
 
-    private static ICC_ColorSpace getCachedCS(final ICC_Profile profile, final byte[] profileHeader) {
+    private static ICC_ColorSpace getCachedOrCreateCS(final ICC_Profile profile, final byte[] profileHeader) {
         Key key = new Key(profileHeader);
 
         synchronized (cache) {
