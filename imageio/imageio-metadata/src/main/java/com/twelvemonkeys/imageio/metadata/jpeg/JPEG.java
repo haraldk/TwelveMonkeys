@@ -36,9 +36,9 @@ package com.twelvemonkeys.imageio.metadata.jpeg;
  * @version $Id: JPEG.java,v 1.0 11.02.11 15.51 haraldk Exp$
  */
 public interface JPEG {
-    int SOS = 0xFFDA;
     int SOI = 0xFFD8;
     int EOI = 0xFFD9;
+    int SOS = 0xFFDA;
 
     int APP0 = 0xFFE0;
     int APP1 = 0xFFE1;

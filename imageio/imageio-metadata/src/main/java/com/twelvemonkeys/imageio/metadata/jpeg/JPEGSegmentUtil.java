@@ -32,10 +32,7 @@ import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * JPEGSegmentUtil
@@ -45,29 +42,67 @@ import java.util.Map;
  * @version $Id: JPEGSegmentUtil.java,v 1.0 24.01.11 17.37 haraldk Exp$
  */
 public final class JPEGSegmentUtil {
-    public static final Map<Integer, List<String>> ALL_SEGMENTS = Collections.emptyMap();
+    public static final List<String> ALL_IDS = Collections.unmodifiableList(new AllIdsList());
+    public static final Map<Integer, List<String>> ALL_SEGMENTS = Collections.unmodifiableMap(new AllSegmentsMap());
+    public static final Map<Integer, List<String>> APP_SEGMENTS = Collections.unmodifiableMap(createAppSegmentsMap());
 
     private JPEGSegmentUtil() {}
 
-    // TODO: Allow for multiple images (multiple SOI markers), using specified index, or document that stream must be placed before SOI of wanted image
-    public static List<Segment> readSegments(final ImageInputStream stream, final int imageIndex, final int appMarker, final String segmentName) throws IOException {
-        return readSegments(stream, Collections.singletonMap(appMarker, Collections.singletonList(segmentName)));
+    private static Map<Integer, List<String>> createAppSegmentsMap() {
+        Map<Integer, List<String>> identifiers = new HashMap<Integer, List<String>>();
+
+        for (int i = 0xFFE0; i <= 0xFFEF; i++) {
+            identifiers.put(i, JPEGSegmentUtil.ALL_IDS);
+        }
+
+        return identifiers;
     }
 
-    public static List<Segment> readSegments(final ImageInputStream stream, final Map<Integer, List<String>> segmentIdentifiers) throws IOException {
+    /**
+     * Reads the requested JPEG segments from the stream.
+     * The stream position must be directly before the SOI marker, and only segments for the current image is read.
+     *
+     * @param stream the stream to read from.
+     * @param marker the segment marker to read
+     * @param identifier the identifier to read, or {@code null} to match any segment
+     * @return a list of segments with the given app marker and optional identifier. If no segments are found, an
+     *         empty list is returned.
+     * @throws IIOException if a JPEG format exception occurs during reading
+     * @throws IOException if an I/O exception occurs during reading
+     */
+    public static List<JPEGSegment> readSegments(final ImageInputStream stream, final int marker, final String identifier) throws IOException {
+        return readSegments(stream, Collections.singletonMap(marker, identifier != null ? Collections.singletonList(identifier) : ALL_IDS));
+    }
+
+    /**
+     * Reads the requested JPEG segments from the stream.
+     * The stream position must be directly before the SOI marker, and only segments for the current image is read.
+     *
+     * @param stream the stream to read from.
+     * @param segmentIdentifiers the segment identifiers
+     * @return a list of segments with the given app markers and optional identifiers. If no segments are found, an
+     *         empty list is returned.
+     * @throws IIOException if a JPEG format exception occurs during reading
+     * @throws IOException if an I/O exception occurs during reading
+     *
+     * @see #ALL_SEGMENTS
+     * @see #APP_SEGMENTS
+     * @see #ALL_IDS
+     */
+    public static List<JPEGSegment> readSegments(final ImageInputStream stream, final Map<Integer, List<String>> segmentIdentifiers) throws IOException {
         readSOI(stream);
 
-        List<Segment> segments = Collections.emptyList();
+        List<JPEGSegment> segments = Collections.emptyList();
 
-        Segment segment;
+        JPEGSegment segment;
         try {
-            while (!isImageDone(segment = readSegment(stream, segmentIdentifiers))) {
-//            while (!isImageDone(segment = readSegment(stream, ALL_SEGMENTS))) {
-//                System.err.println("segment: " + segment);
+//            while (!isImageDone(segment = readSegment(stream, segmentIdentifiers))) {
+            while (!isImageDone(segment = readSegment(stream, ALL_SEGMENTS))) {
+                System.err.println("segment: " + segment);
 
                 if (isRequested(segment, segmentIdentifiers)) {
                     if (segments == Collections.EMPTY_LIST) {
-                        segments = new ArrayList<Segment>();
+                        segments = new ArrayList<JPEGSegment>();
                     }
 
                     segments.add(segment);
@@ -78,21 +113,23 @@ public final class JPEGSegmentUtil {
             // Just end here, in case of malformed stream
         }
 
+        // TODO: Should probably skip until EOI, so that multiple invocations succeeds for multiple image streams.
+
         return segments;
     }
 
-    private static boolean isRequested(Segment segment, Map<Integer, List<String>> segmentIdentifiers) {
+    private static boolean isRequested(JPEGSegment segment, Map<Integer, List<String>> segmentIdentifiers) {
         return segmentIdentifiers == ALL_SEGMENTS ||
-                (segmentIdentifiers.containsKey(segment.marker) &&
-                (segment.identifier() == null && segmentIdentifiers.get(segment.marker) == null || containsSafe(segment, segmentIdentifiers)));
+                (segmentIdentifiers.containsKey(segment.marker) && (segmentIdentifiers.get(segment.marker) == ALL_IDS ||
+                (segment.identifier() == null && segmentIdentifiers.get(segment.marker) == null || containsSafe(segment, segmentIdentifiers))));
     }
 
-    private static boolean containsSafe(Segment segment, Map<Integer, List<String>> segmentIdentifiers) {
+    private static boolean containsSafe(JPEGSegment segment, Map<Integer, List<String>> segmentIdentifiers) {
         List<String> identifiers = segmentIdentifiers.get(segment.marker);
         return identifiers != null && identifiers.contains(segment.identifier());
     }
 
-    private static boolean isImageDone(final Segment segment) {
+    private static boolean isImageDone(final JPEGSegment segment) {
         // We're done with this image if we encounter a SOS, EOI (or a new SOI, but that should never happen)
         return segment.marker == JPEG.SOS || segment.marker == JPEG.EOI || segment.marker == JPEG.SOI;
     }
@@ -117,7 +154,7 @@ public final class JPEGSegmentUtil {
         }
     }
 
-    static Segment readSegment(final ImageInputStream stream, Map<Integer, List<String>> segmentIdentifiers) throws IOException {
+    static JPEGSegment readSegment(final ImageInputStream stream, Map<Integer, List<String>> segmentIdentifiers) throws IOException {
         int marker = stream.readUnsignedShort();
         int length = stream.readUnsignedShort(); // Length including length field itself
 
@@ -132,55 +169,20 @@ public final class JPEGSegmentUtil {
             stream.skipBytes(length - 2);
         }
 
-        return new Segment(marker, data);
+        return new JPEGSegment(marker, data);
     }
 
-    public static final class Segment {
-        private final int marker;
-        private final byte[] data;
-        private String id;
-
-        Segment(int marker, byte[] data) {
-            this.marker = marker;
-            this.data = data;
-        }
-
-        int segmentLength() {
-            // This is the length field as read from the stream
-            return data.length + 2;
-        }
-
-        public int marker() {
-            return marker;
-        }
-
-        public String identifier() {
-            if (id == null) {
-                if (marker >= 0xFFE0 && marker <= 0xFFEF) {
-                    // Only for APPn markers
-                    id = asNullTerminatedAsciiString(data, 0);
-                }
-            }
-
-            return id;
-        }
-
-        public InputStream data() {
-            return new ByteArrayInputStream(data, offset(), length());
-        }
-
-        public int length() {
-            return data.length - offset();
-        }
-
-        private int offset() {
-            String identifier = identifier();
-            return identifier == null ? 0 : identifier.length() + 1;
-        }
-
+    private static class AllIdsList extends ArrayList<String> {
         @Override
         public String toString() {
-            return String.format("Segment[%04x/%s size: %d]", marker, identifier(), segmentLength());
+            return "[All ids]";
+        }
+    }
+
+    private static class AllSegmentsMap extends HashMap<Integer, List<String>> {
+        @Override
+        public String toString() {
+            return "{All segments}";
         }
     }
 }
