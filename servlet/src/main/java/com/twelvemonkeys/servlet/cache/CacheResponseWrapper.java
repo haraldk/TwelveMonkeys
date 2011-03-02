@@ -69,7 +69,7 @@ class CacheResponseWrapper extends HttpServletResponseWrapper {
     }
 
     /*
-     NOTE: This class defers determining if a response is cachable until the
+     NOTE: This class defers determining if a response is cacheable until the
      output stream is needed.
      This it the reason for the somewhat complicated logic in the add/setHeader
      methods below.
@@ -80,7 +80,7 @@ class CacheResponseWrapper extends HttpServletResponseWrapper {
         cachedResponse = cached.createCachedResponse();
         streamDelegate = new ServletResponseStreamDelegate(this) {
             protected OutputStream createOutputStream() throws IOException {
-                // Test if this request is really cachable, otherwise,
+                // Test if this request is really cacheable, otherwise,
                 // just write through to underlying response, and don't cache
                 if (isCachable()) {
                     return cachedResponse.getOutputStream();

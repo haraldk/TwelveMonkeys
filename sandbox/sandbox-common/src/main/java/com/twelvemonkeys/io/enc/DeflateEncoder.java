@@ -46,8 +46,8 @@ import java.util.zip.Deflater;
  */
 final class DeflateEncoder implements Encoder {
 
-    private final Deflater mDeflater;
-    private final byte[] mBuffer = new byte[1024];
+    private final Deflater deflater;
+    private final byte[] buffer = new byte[1024];
 
     public DeflateEncoder() {
 //        this(new Deflater());
@@ -59,32 +59,32 @@ final class DeflateEncoder implements Encoder {
             throw new IllegalArgumentException("deflater == null");
         }
 
-        mDeflater = pDeflater;
+        deflater = pDeflater;
     }
 
     public void encode(final OutputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength)
             throws IOException
     {
         System.out.println("DeflateEncoder.encode");
-        mDeflater.setInput(pBuffer, pOffset, pLength);
+        deflater.setInput(pBuffer, pOffset, pLength);
         flushInputToStream(pStream);
     }
 
     private void flushInputToStream(final OutputStream pStream) throws IOException {
         System.out.println("DeflateEncoder.flushInputToStream");
 
-        if (mDeflater.needsInput()) {
+        if (deflater.needsInput()) {
             System.out.println("Foo");
         }
 
-        while (!mDeflater.needsInput()) {
-            int deflated = mDeflater.deflate(mBuffer, 0, mBuffer.length);
-            pStream.write(mBuffer, 0, deflated);
+        while (!deflater.needsInput()) {
+            int deflated = deflater.deflate(buffer, 0, buffer.length);
+            pStream.write(buffer, 0, deflated);
             System.out.println("flushed " + deflated);
         }
     }
 
 //    public void flush() {
-//        mDeflater.finish();
+//        deflater.finish();
 //    }
 }

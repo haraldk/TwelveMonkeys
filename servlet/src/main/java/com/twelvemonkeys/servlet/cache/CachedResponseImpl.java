@@ -35,10 +35,7 @@ import com.twelvemonkeys.util.LinkedMap;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * CachedResponseImpl
@@ -53,7 +50,7 @@ class CachedResponseImpl implements CachedResponse {
     int status;
 
     protected CachedResponseImpl() {
-        headers = new LinkedMap<String, List<String>>(); // Keep headers in insertion order
+        headers = new LinkedHashMap<String, List<String>>(); // Keep headers in insertion order
     }
 
     // For use by HTTPCache, when recreating CachedResponses from disk cache
@@ -82,7 +79,7 @@ class CachedResponseImpl implements CachedResponse {
                 continue;
             }
 
-            // TODO: Replace Last-Modified with X-Cached-At? See CachedEntityImpl, line 50
+            // TODO: Replace Last-Modified with X-Cached-At? See CachedEntityImpl
 
             String[] headerValues = getHeaderValues(header);
 
@@ -99,7 +96,7 @@ class CachedResponseImpl implements CachedResponse {
     }
 
     /**
-     * Writes the cahced content to the response
+     * Writes the cached content to the response
      *
      * @param pStream the response stream
      * @throws java.io.IOException
@@ -132,6 +129,7 @@ class CachedResponseImpl implements CachedResponse {
      */
     public String[] getHeaderValues(final String pHeaderName) {
         List<String> values = headers.get(pHeaderName);
+
         if (values == null) {
             return null;
         }
@@ -152,6 +150,7 @@ class CachedResponseImpl implements CachedResponse {
      */
     public String getHeaderValue(final String pHeaderName) {
         List<String> values = headers.get(pHeaderName);
+
         return (values != null && values.size() > 0) ? values.get(0) : null;
     }
 

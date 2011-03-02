@@ -357,8 +357,7 @@ public class HTTPCache {
                 }
             }
 
-
-            // else if (not cached ||�stale), resolve through wrapped (caching) response
+            // else if (not cached || stale), resolve through wrapped (caching) response
             // else render to response
 
             // TODO: This is a bottleneck for uncachable resources. Should not

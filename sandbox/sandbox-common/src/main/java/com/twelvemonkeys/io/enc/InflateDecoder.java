@@ -49,9 +49,9 @@ import java.util.zip.Inflater;
  */
 final class InflateDecoder implements Decoder {
 
-    private final Inflater mInflater;
+    private final Inflater inflater;
 
-    private final byte[] mBuffer;
+    private final byte[] buffer;
 
     /**
      * Creates an {@code InflateDecoder}
@@ -71,20 +71,20 @@ final class InflateDecoder implements Decoder {
             throw new IllegalArgumentException("inflater == null");
         }
 
-        mInflater = pInflater;
-        mBuffer = new byte[1024];
+        inflater = pInflater;
+        buffer = new byte[1024];
     }
 
     public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
         try {
             int decoded;
 
-            while ((decoded = mInflater.inflate(pBuffer, 0, pBuffer.length)) == 0) {
-                if (mInflater.finished() || mInflater.needsDictionary()) {
+            while ((decoded = inflater.inflate(pBuffer, 0, pBuffer.length)) == 0) {
+                if (inflater.finished() || inflater.needsDictionary()) {
                     return 0;
                 }
 
-                if (mInflater.needsInput()) {
+                if (inflater.needsInput()) {
                     fill(pStream);
                 }
             }
@@ -98,12 +98,12 @@ final class InflateDecoder implements Decoder {
     }
 
     private void fill(final InputStream pStream) throws IOException {
-        int available = pStream.read(mBuffer, 0, mBuffer.length);
+        int available = pStream.read(buffer, 0, buffer.length);
 
         if (available == -1) {
             throw new EOFException("Unexpected end of ZLIB stream");
         }
 
-        mInflater.setInput(mBuffer, 0, available);
+        inflater.setInput(buffer, 0, available);
     }
 }

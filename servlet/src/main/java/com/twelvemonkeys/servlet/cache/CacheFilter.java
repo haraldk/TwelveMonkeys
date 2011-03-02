@@ -67,7 +67,7 @@ public class CacheFilter extends GenericFilter {
     public void init() throws ServletException {
         FilterConfig config = getFilterConfig();
 
-        // Default don't delete cache files on exit (peristent cache)
+        // Default don't delete cache files on exit (persistent cache)
         boolean deleteCacheOnExit = "TRUE".equalsIgnoreCase(config.getInitParameter("deleteCacheOnExit"));
 
         // Default expiry time 10 minutes
@@ -76,6 +76,7 @@ public class CacheFilter extends GenericFilter {
         String expiryTimeStr = config.getInitParameter("expiryTime");
         if (!StringUtil.isEmpty(expiryTimeStr)) {
             try {
+                // TODO: This is insane.. :-P Let the expiry time be in minutes or seconds..
                 expiryTime = Integer.parseInt(expiryTimeStr);
             }
             catch (NumberFormatException e) {
@@ -179,21 +180,21 @@ public class CacheFilter extends GenericFilter {
     // TODO: Extract, complete and document this class, might be useful in other cases
     // Maybe add it to the ServletUtil class
     static class ServletContextLoggerAdapter extends Logger {
-        private final ServletContext mContext;
+        private final ServletContext context;
 
         public ServletContextLoggerAdapter(String pName, ServletContext pContext) {
             super(pName, null);
-            mContext = pContext;
+            context = pContext;
         }
 
         @Override
         public void log(Level pLevel, String pMessage) {
-            mContext.log(pMessage);
+            context.log(pMessage);
         }
 
         @Override
         public void log(Level pLevel, String pMessage, Throwable pThrowable) {
-            mContext.log(pMessage, pThrowable);
+            context.log(pMessage, pThrowable);
         }
     }
 }

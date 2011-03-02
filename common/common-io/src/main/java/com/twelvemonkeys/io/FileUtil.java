@@ -568,6 +568,7 @@ public final class FileUtil {
         if (!pFile.exists()) {
             throw new FileNotFoundException(pFile.toString());
         }
+
         byte[] bytes = new byte[(int) pFile.length()];
         InputStream in = null;
 
@@ -586,6 +587,7 @@ public final class FileUtil {
         finally {
             close(in);
         }
+
         return bytes;
     }
 
