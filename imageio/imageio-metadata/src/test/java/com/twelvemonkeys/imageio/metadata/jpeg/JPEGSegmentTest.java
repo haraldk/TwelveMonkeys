@@ -73,8 +73,8 @@ public class JPEGSegmentTest extends ObjectAbstractTestCase {
 
     @Override
     protected Object makeObject() {
-        byte[] bytes = new byte[14];
-        System.arraycopy("JFIF".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
-        return new JPEGSegment(0xFFE0, bytes);
+        byte[] bytes = new byte[11];
+        System.arraycopy("Exif".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
+        return new JPEGSegment(0xFFE1, bytes);
     }
 }

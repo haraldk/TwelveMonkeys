@@ -96,9 +96,9 @@ public final class JPEGSegmentUtil {
 
         JPEGSegment segment;
         try {
-//            while (!isImageDone(segment = readSegment(stream, segmentIdentifiers))) {
-            while (!isImageDone(segment = readSegment(stream, ALL_SEGMENTS))) {
-                System.err.println("segment: " + segment);
+            while (!isImageDone(segment = readSegment(stream, segmentIdentifiers))) {
+//            while (!isImageDone(segment = readSegment(stream, ALL_SEGMENTS))) {
+//                System.err.println("segment: " + segment);
 
                 if (isRequested(segment, segmentIdentifiers)) {
                     if (segments == Collections.EMPTY_LIST) {
