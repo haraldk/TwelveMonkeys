@@ -56,7 +56,7 @@ import java.util.Enumeration;
  * most basic types, if neccessary.
  * <p/>
  * To write a generic filter, you need only override the abstract
- * {@link #doFilterImpl doFilterImpl} method.
+ * {@link #doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}  doFilterImpl} method.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -143,7 +143,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @param pConfig the filter config
      * @throws ServletException if an error occurs during init
      *
-     * @see Filter#init
+     * @see Filter#init(javax.servlet.FilterConfig)
      * @see #init() init
      * @see BeanUtil#configure(Object, java.util.Map, boolean)
      */
@@ -185,7 +185,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * client request for a resource at the end of the chain.
      * <p/>
      * Subclasses <em>should not override this method</em>, but rather the
-     * abstract {@link #doFilterImpl doFilterImpl} method.
+     * abstract {@link #doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}  doFilterImpl} method.
      *
      * @param pRequest the servlet request
      * @param pResponse the servlet response
@@ -194,8 +194,8 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @throws IOException
      * @throws ServletException
      *
-     * @see Filter#doFilter Filter.doFilter
-     * @see #doFilterImpl doFilterImpl
+     * @see Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  Filter.doFilter
+     * @see #doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  doFilterImpl
      */
     public final void doFilter(final ServletRequest pRequest, final ServletResponse pResponse, final FilterChain pFilterChain) throws IOException, ServletException {
         // If request filter and already run, continue chain and return fast
@@ -248,8 +248,8 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @throws ServletException if an exception occurs during the filter process
      *
      * @see #oncePerRequest
-     * @see #doFilter doFilter
-     * @see Filter#doFilter Filter.doFilter
+     * @see #doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  doFilter
+     * @see Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  Filter.doFilter
      */
     protected abstract void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain)
             throws IOException, ServletException;

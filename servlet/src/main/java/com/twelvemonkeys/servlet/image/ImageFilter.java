@@ -62,8 +62,8 @@ public abstract class ImageFilter extends GenericFilter {
      * {@link #oncePerRequest} member variable.
      *
      * @see #oncePerRequest
-     * @see com.twelvemonkeys.servlet.GenericFilter#doFilterImpl doFilter
-     * @see Filter#doFilter Filter.doFilter
+     * @see com.twelvemonkeys.servlet.GenericFilter#doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  doFilter
+     * @see Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  Filter.doFilter
      *
      * @param pRequest the servlet request
      * @param pResponse the servlet response
