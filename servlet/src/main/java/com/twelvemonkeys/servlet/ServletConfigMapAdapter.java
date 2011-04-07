@@ -173,19 +173,19 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
     private Set<Entry<String, String>> createEntrySet() {
         return new AbstractSet<Entry<String, String>>() {
             // Cache size, if requested, -1 means not calculated
-            private int mSize = -1;
+            private int size = -1;
 
             public Iterator<Entry<String, String>> iterator() {
                 return new Iterator<Entry<String, String>>() {
                     // Iterator is backed by initParameterNames enumeration
-                    final Enumeration mNames = getInitParameterNames();
+                    final Enumeration names = getInitParameterNames();
 
                     public boolean hasNext() {
-                        return mNames.hasMoreElements();
+                        return names.hasMoreElements();
                     }
 
                     public Entry<String, String> next() {
-                        final String key = (String) mNames.nextElement();
+                        final String key = (String) names.nextElement();
                         return new Entry<String, String>() {
                             public String getKey() {
                                 return key;
@@ -234,11 +234,11 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
             }
 
             public int size() {
-                if (mSize < 0) {
-                    mSize = calculateSize();
+                if (size < 0) {
+                    size = calculateSize();
                 }
 
-                return mSize;
+                return size;
             }
 
             private int calculateSize() {
