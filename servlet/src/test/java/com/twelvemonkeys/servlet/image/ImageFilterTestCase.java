@@ -344,8 +344,6 @@ public class ImageFilterTestCase {
         // decoded once, then encoded once
     }
 
-    // TODO: Add various test cases where resource/upstream filter fails (response.sendError + exception)
-
     @Test(expected = ServletException.class)
     public void passThroughIfNotTriggerException() throws ServletException, IOException {
         // Filter init & setup
