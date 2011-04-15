@@ -115,23 +115,25 @@ public abstract class ImageFilter extends GenericFilter {
                 imageResponse.setImage(image);
                 //System.out.println("Done.");
 
-                if (encode) {
-                    //System.out.println("Encoding image...");
-                    // Encode image to original response
-                    if (image != null) {
-                        // TODO: Be smarter than this...
-                        // TODO: Make sure ETag is same, if image content is the same...
-                        // Use ETag of original response (or derived from)
-                        // Use last modified of original response? Or keep original resource's, don't set at all? 
-                        // TODO: Why weak ETag?
-                        String etag = "W/\"" + Integer.toHexString(hashCode()) + "-" + Integer.toHexString(image.hashCode()) + "\"";
-                        // TODO: This breaks for wrapped instances, need to either unwrap or test for HttpSR...
-                        ((HttpServletResponse) pResponse).setHeader("ETag", etag);
-                        ((HttpServletResponse) pResponse).setDateHeader("Last-Modified", (System.currentTimeMillis() / 1000) * 1000);
-                        imageResponse.flush();
-                    }
-                    //System.out.println("Done encoding.");
+            }
+
+            if (encode) {
+                //System.out.println("Encoding image...");
+                // Encode image to original response
+                if (image != null) {
+                    // TODO: Be smarter than this...
+                    // TODO: Make sure ETag is same, if image content is the same...
+                    // Use ETag of original response (or derived from)
+                    // Use last modified of original response? Or keep original resource's, don't set at all?
+                    // TODO: Why weak ETag?
+                    String etag = "W/\"" + Integer.toHexString(hashCode()) + "-" + Integer.toHexString(image.hashCode()) + "\"";
+                    // TODO: This breaks for wrapped instances, need to either unwrap or test for HttpSR...
+                    ((HttpServletResponse) pResponse).setHeader("ETag", etag);
+                    ((HttpServletResponse) pResponse).setDateHeader("Last-Modified", (System.currentTimeMillis() / 1000) * 1000);
                 }
+
+                imageResponse.flush();
+                //System.out.println("Done encoding.");
             }
         }
         //System.out.println("Filtering done.");

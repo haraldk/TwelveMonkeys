@@ -242,9 +242,13 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         }
         else {
             super.setContentType(originalContentType);
+
             ServletOutputStream out = super.getOutputStream();
+
             try {
-                bufferedOut.writeTo(out);
+                if (bufferedOut != null) {
+                    bufferedOut.writeTo(out);
+                }
             }
             finally {
                 out.flush();
