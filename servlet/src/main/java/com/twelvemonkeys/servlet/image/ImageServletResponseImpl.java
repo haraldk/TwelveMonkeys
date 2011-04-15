@@ -189,7 +189,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         String outputType = getOutputContentType();
 
         // Force transcoding, if no other filtering is done
-        if (!outputType.equals(originalContentType)) {
+        if (outputType != null && !outputType.equals(originalContentType)) {
             getImage();
         }
 

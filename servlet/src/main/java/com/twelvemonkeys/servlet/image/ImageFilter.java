@@ -114,9 +114,7 @@ public abstract class ImageFilter extends GenericFilter {
                 // Make image available to other filters (avoid unnecessary serializing/deserializing)
                 imageResponse.setImage(image);
                 //System.out.println("Done.");
-
             }
-
             if (encode) {
                 //System.out.println("Encoding image...");
                 // Encode image to original response

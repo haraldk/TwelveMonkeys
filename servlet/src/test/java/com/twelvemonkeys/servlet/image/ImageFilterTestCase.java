@@ -88,6 +88,8 @@ public class ImageFilterTestCase {
 
         // Verifications
         verify(chain).doFilter(request, response);
+        verify(response, never()).getOutputStream();
+        verify(response, never()).getWriter();
     }
 
     @Test
@@ -341,6 +343,160 @@ public class ImageFilterTestCase {
         // We verify that the image is the same in both ImageFilter implementations, to make sure the image is only
         // decoded once, then encoded once
     }
+
+    // TODO: Add various test cases where resource/upstream filter fails (response.sendError + exception)
+
+    @Test(expected = ServletException.class)
+    public void passThroughIfNotTriggerException() throws ServletException, IOException {
+        // Filter init & setup
+        ServletContext context = mock(ServletContext.class);
+
+        FilterConfig filterConfig = mock(FilterConfig.class);
+        when(filterConfig.getFilterName()).thenReturn("dummy");
+        when(filterConfig.getServletContext()).thenReturn(context);
+        when(filterConfig.getInitParameterNames()).thenReturn(new StringTokenIterator("foo, bar"));
+
+        DummyFilter filter = new DummyFilter() {
+            @Override
+            protected boolean trigger(ServletRequest pRequest) {
+                return false;
+            }
+        };
+        filter.init(filterConfig);
+
+        // Request/response setup
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        FilterChain chain = mock(FilterChain.class);
+        doThrow(new ServletException("Something went terribly wrong. Take shelter.")).when(chain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
+
+        // Execute
+        try {
+            filter.doFilter(request, response, chain);
+        }
+        finally {
+            // Verifications
+            verify(chain).doFilter(request, response);
+            verify(response, never()).getOutputStream();
+            verify(response, never()).getWriter();
+        }
+    }
+
+    @Test(expected = ServletException.class)
+    public void normalFilterException() throws ServletException, IOException {
+        // Filter init & setup
+        ServletContext context = mock(ServletContext.class);
+
+        FilterConfig filterConfig = mock(FilterConfig.class);
+        when(filterConfig.getFilterName()).thenReturn("dummy");
+        when(filterConfig.getServletContext()).thenReturn(context);
+        when(filterConfig.getInitParameterNames()).thenReturn(new StringTokenIterator("foo, bar"));
+
+        DummyFilter filter = new DummyFilter();
+        filter.init(filterConfig);
+
+        // Request/response setup
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        ServletOutputStream out = spy(new OutputStreamAdapter(stream));
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(response.getOutputStream()).thenReturn(out);
+
+        FilterChain chain = mock(FilterChain.class);
+        doThrow(new ServletException("Something went terribly wrong. Take shelter.")).when(chain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
+
+        // Execute
+        try {
+            filter.doFilter(request, response, chain);
+        }
+        finally {
+            // Verifications
+            verify(chain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
+        }
+    }
+
+    @Test
+    public void passThroughIfNotTriggerSendError() throws ServletException, IOException {
+        // Filter init & setup
+        ServletContext context = mock(ServletContext.class);
+
+        FilterConfig filterConfig = mock(FilterConfig.class);
+        when(filterConfig.getFilterName()).thenReturn("dummy");
+        when(filterConfig.getServletContext()).thenReturn(context);
+        when(filterConfig.getInitParameterNames()).thenReturn(new StringTokenIterator("foo, bar"));
+
+        DummyFilter filter = new DummyFilter() {
+            @Override
+            protected boolean trigger(ServletRequest pRequest) {
+                return false;
+            }
+        };
+        filter.init(filterConfig);
+
+        // Request/response setup
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+
+        FilterChain chain = mock(FilterChain.class);
+        doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                HttpServletResponse response = (HttpServletResponse) invocation.getArguments()[1];
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "I'm afraid I can't do that.");
+
+                return null;
+            }
+        }).when(chain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
+
+        // Execute
+        filter.doFilter(request, response, chain);
+
+        // Verifications
+        verify(chain).doFilter(request, response);
+        verify(response, never()).getOutputStream();
+        verify(response, never()).getWriter();
+    }
+
+    @Test
+    public void normalFilterSendError() throws ServletException, IOException {
+        // Filter init & setup
+        ServletContext context = mock(ServletContext.class);
+
+        FilterConfig filterConfig = mock(FilterConfig.class);
+        when(filterConfig.getFilterName()).thenReturn("dummy");
+        when(filterConfig.getServletContext()).thenReturn(context);
+        when(filterConfig.getInitParameterNames()).thenReturn(new StringTokenIterator("foo, bar"));
+
+        DummyFilter filter = new DummyFilter();
+        filter.init(filterConfig);
+
+        // Request/response setup
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        ServletOutputStream out = spy(new OutputStreamAdapter(stream));
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(response.getOutputStream()).thenReturn(out);
+
+        FilterChain chain = mock(FilterChain.class);
+        doAnswer(new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                HttpServletResponse response = (HttpServletResponse) invocation.getArguments()[1];
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "I've just picked up a fault in the AE35 unit.");
+
+                return null;
+            }
+        }).when(chain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
+
+        // Execute
+        filter.doFilter(request, response, chain);
+
+        // Verifications
+        verify(chain).doFilter(any(ServletRequest.class), any(ServletResponse.class));
+        verify(response, atMost(1)).setContentLength(stream.size()); // setContentLength not implemented, avoid future bugs
+        verify(out, atLeastOnce()).flush();
+   }
 
     private static class DummyFilter extends ImageFilter {
         @Override
