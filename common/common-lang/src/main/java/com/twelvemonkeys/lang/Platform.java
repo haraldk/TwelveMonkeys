@@ -72,7 +72,7 @@ public final class Platform {
         else if (os.startsWith("linux")) {
             return OperatingSystem.Linux;
         }
-        else if (os.startsWith("mac os")) {
+        else if (os.startsWith("mac os") || os.startsWith("darwin")) {
             return OperatingSystem.MacOS;
         }
         else if (os.startsWith("solaris") || os.startsWith("sunos")) {
@@ -89,8 +89,7 @@ public final class Platform {
         }
 
         arch = arch.toLowerCase();
-        if (pOsName == OperatingSystem.Windows
-                && (arch.startsWith("x86") || arch.startsWith("i386"))) {
+        if (pOsName == OperatingSystem.Windows && (arch.startsWith("x86") || arch.startsWith("i386"))) {
             return Architecture.X86;
             // TODO: 64 bit
         }
@@ -223,14 +222,14 @@ public final class Platform {
         Solaris("Solaris", "sun"),
         MacOS("Mac OS", "osx"),
 
-        Unknown(System.getProperty("os.name"), "");
+        Unknown(System.getProperty("os.name"), null);
 
         final String id;
         final String name;// for debug only
 
         private OperatingSystem(String pName, String pId) {
             name = pName;
-            id = pId;
+            id = pId != null ? pId : pName.toLowerCase();
         }
 
         public String getName() {
