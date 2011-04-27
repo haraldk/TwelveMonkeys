@@ -70,7 +70,11 @@ import java.util.Properties;
  * @version $Id: ColorSpaces.java,v 1.0 24.01.11 17.51 haraldk Exp$
  */
 public final class ColorSpaces {
+
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
+
+    // JDK 7 seems to handle non-perceptual rendering intents gracefully, so we don't need to fiddle with the profiles
+    private final static boolean JDK_HANDLES_RENDERING_INTENTS = SystemUtil.isClassAvailable("java.lang.invoke.CallSite");
 
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
@@ -120,8 +124,13 @@ public final class ColorSpaces {
                 return cs;
             }
 
-            // Fix profile before lookup/create
-            profile.setData(ICC_Profile.icSigHead, profileHeader);
+            // NOTE: The intent change breaks JDK7: Seems to be a bug in ICC_Profile.getData/setData,
+            // as calling it with unchanged header data, still breaks when creating new ICC_ColorSpace...
+            // However, we simply skip that, as JDK7 handles the rendering intents already.
+            if (!JDK_HANDLES_RENDERING_INTENTS) {
+                // Fix profile before lookup/create
+                profile.setData(ICC_Profile.icSigHead, profileHeader);
+            }
         }
 
         return getCachedOrCreateCS(profile, profileHeader);
@@ -178,7 +187,7 @@ public final class ColorSpaces {
         Validate.notNull(profile, "profile");
 
         // NOTE:
-        // Several embedded ICC color profiles are non-compliant with Java and throws CMMException
+        // Several embedded ICC color profiles are non-compliant with Java pre JDK7 and throws CMMException
         // The problem with these embedded ICC profiles seems to be the rendering intent
         // being 1 (01000000) - "Media Relative Colormetric" in the offending profiles,
         // and 0 (00000000) - "Perceptual" in the good profiles
@@ -208,14 +217,6 @@ public final class ColorSpaces {
         ICC_Profile profile;
 
         switch (colorSpace) {
-            // Default cases for convenience
-            case ColorSpace.CS_sRGB:
-            case ColorSpace.CS_GRAY:
-            case ColorSpace.CS_PYCC:
-            case ColorSpace.CS_CIEXYZ:
-            case ColorSpace.CS_LINEAR_RGB:
-                return ColorSpace.getInstance(colorSpace);
-
             case CS_ADOBE_RGB_1998:
                 profile = adobeRGB1998.get();
 
@@ -261,9 +262,9 @@ public final class ColorSpaces {
                 return createColorSpace(profile);
             
             default:
+                // Default cases for convenience
+                return ColorSpace.getInstance(colorSpace);
         }
-
-        throw new IllegalArgumentException(String.format("Unsupported color space: %s", colorSpace));
     }
 
     private static ICC_Profile readProfileFromClasspathResource(final String profilePath) {
@@ -351,7 +352,7 @@ public final class ColorSpaces {
         private static Properties loadProfiles(final Platform.OperatingSystem os) {
             Properties systemDefaults;
             try {
-                systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os);
+                systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os.id());
             }
             catch (IOException ignore) {
                 ignore.printStackTrace();
