@@ -236,8 +236,12 @@ public final class Platform {
             return name;
         }
 
-        public String toString() {
+        public String id() {
             return id;
+        }
+
+        public String toString() {
+            return String.format("%s (%s)", id, name);
         }
     }
 }
