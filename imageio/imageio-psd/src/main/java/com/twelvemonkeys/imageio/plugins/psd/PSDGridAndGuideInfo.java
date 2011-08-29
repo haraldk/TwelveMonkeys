@@ -45,9 +45,10 @@ final class PSDGridAndGuideInfo extends PSDImageResource {
 
         guides = new GuideResource[guideCount];
 
-        for (GuideResource guide : guides) {
-            guide.location = pInput.readInt();
-            guide.direction = pInput.readByte();
+        for (int i = 0; i < guides.length; i++) {
+            guides[i] = new GuideResource();
+            guides[i].location = pInput.readInt();
+            guides[i].direction = pInput.readByte();
         }
     }
 
