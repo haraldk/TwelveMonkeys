@@ -37,5 +37,4 @@ public class IndexedImageTypeSpecifier extends ImageTypeSpecifier {
             throw new IllegalArgumentException("Array size > Integer.MAX_VALUE!");
         }
     }
-
 }
