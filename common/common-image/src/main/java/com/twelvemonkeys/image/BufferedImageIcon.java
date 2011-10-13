@@ -49,7 +49,7 @@ public class BufferedImageIcon implements Icon {
     private final boolean fast;
 
     public BufferedImageIcon(BufferedImage pImage) {
-        this(pImage, pImage.getWidth(), pImage.getHeight());
+        this(pImage, pImage != null ? pImage.getWidth() : 0, pImage != null ? pImage.getHeight() : 0);
     }
 
     public BufferedImageIcon(BufferedImage pImage, int pWidth, int pHeight) {
