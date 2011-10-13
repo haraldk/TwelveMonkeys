@@ -535,27 +535,27 @@ public final class ImageUtil {
      *
      * @param pOriginal the orignal image
      * @param pModel the original color model
-     * @param mWidth the requested width of the raster
-     * @param mHeight the requested height of the raster
+     * @param width the requested width of the raster
+     * @param height the requested height of the raster
      *
      * @return a new WritableRaster
      */
-    static WritableRaster createCompatibleWritableRaster(BufferedImage pOriginal, ColorModel pModel, int mWidth, int mHeight) {
+    static WritableRaster createCompatibleWritableRaster(BufferedImage pOriginal, ColorModel pModel, int width, int height) {
         if (pModel == null || equals(pOriginal.getColorModel(), pModel)) {
             int[] bOffs;
             switch (pOriginal.getType()) {
                 case BufferedImage.TYPE_3BYTE_BGR:
                     bOffs = new int[]{2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
                     return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                                                          mWidth, mHeight,
-                                                          mWidth * 3, 3,
+                                                          width, height,
+                                                          width * 3, 3,
                                                           bOffs, null);
                 case BufferedImage.TYPE_4BYTE_ABGR:
                 case BufferedImage.TYPE_4BYTE_ABGR_PRE:
                     bOffs = new int[] {3, 2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
                     return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                                                          mWidth, mHeight,
-                                                          mWidth * 4, 4,
+                                                          width, height,
+                                                          width * 4, 4,
                                                           bOffs, null);
                 case BufferedImage.TYPE_CUSTOM:
                     // Peek into the sample model to see if we have a sample model that will be incompatible with the default case
@@ -563,16 +563,17 @@ public final class ImageUtil {
                     if (sm instanceof ComponentSampleModel) {
                         bOffs = ((ComponentSampleModel) sm).getBandOffsets();
                         return Raster.createInterleavedRaster(sm.getDataType(),
-                                                              mWidth, mHeight,
-                                                              mWidth * bOffs.length, bOffs.length,
+                                                              width, height,
+                                                              width * bOffs.length, bOffs.length,
                                                               bOffs, null);
                     }
                     // Else fall through
                 default:
-                    return pOriginal.getColorModel().createCompatibleWritableRaster(mWidth, mHeight);
+                    return pOriginal.getColorModel().createCompatibleWritableRaster(width, height);
             }
         }
-        return pModel.createCompatibleWritableRaster(mWidth, mHeight);
+
+        return pModel.createCompatibleWritableRaster(width, height);
     }
 
     /**
