@@ -2,9 +2,12 @@ package com.twelvemonkeys.io.enc;
 
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.io.*;
 import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 /**
  * AbstractDecoderTest
@@ -22,6 +25,7 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
         return createDecoder();
     }
 
+    @Test
     public final void testNullDecode() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[20]);
@@ -34,6 +38,7 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public final void testEmptyDecode() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[0]);
@@ -81,6 +86,7 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
         assertTrue(Arrays.equals(data, decoded));
     }
 
+    @Test
     public final void testStreams() throws Exception {
         for (int i = 0; i < 100; i++) {
             try {

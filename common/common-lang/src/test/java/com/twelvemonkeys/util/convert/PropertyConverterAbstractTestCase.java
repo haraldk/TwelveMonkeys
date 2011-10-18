@@ -1,8 +1,11 @@
 package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 /**
  * PropertyConverterAbstractTestCase
@@ -13,7 +16,6 @@ import java.util.Arrays;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/util/convert/PropertyConverterAbstractTestCase.java#2 $
  */
 public abstract class PropertyConverterAbstractTestCase extends ObjectAbstractTestCase {
-
     protected Object makeObject() {
         return makePropertyConverter();
     }
@@ -22,8 +24,8 @@ public abstract class PropertyConverterAbstractTestCase extends ObjectAbstractTe
 
     protected abstract Conversion[] getTestConversions();
 
+    @Test
     public void testConvert() {
-
         PropertyConverter converter = makePropertyConverter();
 
         Conversion[] tests = getTestConversions();

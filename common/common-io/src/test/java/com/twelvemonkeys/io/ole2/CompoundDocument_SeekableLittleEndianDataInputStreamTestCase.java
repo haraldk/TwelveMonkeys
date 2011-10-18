@@ -26,57 +26,42 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.jpeg;
+package com.twelvemonkeys.io.ole2;
 
-import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import com.twelvemonkeys.io.*;
+import org.junit.Ignore;
 import org.junit.Test;
 
-import java.nio.charset.Charset;
-
-import static org.junit.Assert.assertEquals;
+import java.io.ByteArrayInputStream;
 
 /**
- * JPEGSegmentTest
+ * CompoundDocument_SeekableLittleEndianDataInputStreamTestCase
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: JPEGSegmentTest.java,v 1.0 02.03.11 10.46 haraldk Exp$
+ * @version $Id: CompoundDocument_SeekableLittleEndianDataInputStreamTestCase.java,v 1.0 18.10.11 16:35 haraldk Exp$
  */
-public class JPEGSegmentTest extends ObjectAbstractTestCase {
-    @Test
-    public void testCreate() {
-        byte[] bytes = new byte[14];
-        System.arraycopy("JFIF".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
-
-        JPEGSegment segment = new JPEGSegment(0xFFE0, bytes);
-
-        assertEquals(0xFFE0, segment.marker());
-        assertEquals("JFIF", segment.identifier());
-        assertEquals(16, segment.segmentLength());
-        assertEquals(bytes.length - 5, segment.length());
-    }
-
-    @Test
-    public void testToStringAppSegment() {
-        byte[] bytes = new byte[14];
-        System.arraycopy("JFIF".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
-        JPEGSegment segment = new JPEGSegment(0xFFE0, bytes);
-
-        assertEquals("JPEGSegment[ffe0/JFIF size: 16]", segment.toString());
-    }
-
-    @Test
-    public void testToStringNonAppSegment() {
-        byte[] bytes = new byte[40];
-        JPEGSegment segment = new JPEGSegment(0xFFC4, bytes);
-
-        assertEquals("JPEGSegment[ffc4 size: 42]", segment.toString());
-    }
+public class CompoundDocument_SeekableLittleEndianDataInputStreamTestCase extends InputStreamAbstractTestCase implements SeekableInterfaceTest {
+    private final SeekableInterfaceTest seekableTest = new SeekableAbstractTestCase() {
+        @Override
+        protected Seekable createSeekable() {
+            return (Seekable) makeInputStream();
+        }
+    };
 
     @Override
-    protected Object makeObject() {
-        byte[] bytes = new byte[11];
-        System.arraycopy("Exif".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
-        return new JPEGSegment(0xFFE1, bytes);
+    protected CompoundDocument.SeekableLittleEndianDataInputStream makeInputStream(byte[] pBytes) {
+        return new CompoundDocument.SeekableLittleEndianDataInputStream(new MemoryCacheSeekableStream(new ByteArrayInputStream(pBytes)));
+    }
+
+    @Test
+    public void testSeekable() {
+        seekableTest.testSeekable();
+    }
+
+    @Ignore("Incompatible contracts, must be revised") @Test
+    @Override
+    public void testResetAfterReset() throws Exception {
+        super.testResetAfterReset();
     }
 }

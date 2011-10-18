@@ -1,6 +1,7 @@
 package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.DateUtil;
+import org.junit.Test;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -44,6 +45,7 @@ public class DateConverterTestCase extends PropertyConverterAbstractTestCase {
         };
     }
 
+    @Test
     @Override
     public void testConvert() {
         TimeZone old = TimeZone.getDefault();

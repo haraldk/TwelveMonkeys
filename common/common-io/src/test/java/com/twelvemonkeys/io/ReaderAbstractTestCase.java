@@ -1,9 +1,12 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.io.Reader;
 import java.io.IOException;
+
+import static org.junit.Assert.*;
 
 /**
  * ReaderAbstractTestCase
@@ -36,6 +39,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
 
     protected abstract Reader makeReader(String pInput);
 
+    @Test
     public void testRead() throws IOException {
         Reader reader = makeReader();
 
@@ -51,6 +55,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
         assertEquals(mInput, buffer.toString());
     }
 
+    @Test
     public void testReadBuffer() throws IOException {
         Reader reader = makeReader();
 
@@ -70,6 +75,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
         assertEquals(mInput, new String(chars));
     }
 
+    @Test
     public void testSkipToEnd() throws IOException {
         Reader reader = makeReader();
 
@@ -83,6 +89,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
         assertEquals(0, toSkip);
     }
 
+    @Test
     public void testSkipToEndAndRead() throws IOException {
         Reader reader = makeReader();
 
@@ -95,6 +102,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
     }
 
     // TODO: It's possible to support reset and not mark (resets to beginning of stream, for example)
+    @Test
     public void testResetMarkSupported() throws IOException {
         Reader reader = makeReader();
 
@@ -154,6 +162,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testResetMarkNotSupported() throws IOException {
         Reader reader = makeReader();
 
@@ -198,7 +207,7 @@ public abstract class ReaderAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
-
+    @Test
     public void testReadAfterClose() throws IOException {
         Reader reader = makeReader("foo bar");
 

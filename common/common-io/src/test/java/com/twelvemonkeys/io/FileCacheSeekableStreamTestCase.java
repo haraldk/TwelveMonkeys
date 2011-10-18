@@ -11,10 +11,6 @@ import java.io.InputStream;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/io/FileCacheSeekableStreamTestCase.java#3 $
  */
 public class FileCacheSeekableStreamTestCase extends SeekableInputStreamAbstractTestCase {
-    public FileCacheSeekableStreamTestCase(String name) {
-        super(name);
-    }
-
     protected SeekableInputStream makeInputStream(final InputStream pStream) {
         try {
             return new FileCacheSeekableStream(pStream);

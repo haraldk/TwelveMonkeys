@@ -2,12 +2,15 @@ package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.CollectionUtil;
+import org.junit.Test;
 
 import java.io.Reader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.List;
 import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 
 /**
  * CompoundReaderTestCase
@@ -18,7 +21,6 @@ import java.util.ArrayList;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/io/CompoundReaderTestCase.java#2 $
  */
 public class CompoundReaderTestCase extends ReaderAbstractTestCase {
-
     protected Reader makeReader(String pInput) {
         // Split
         String[] input = StringUtil.toStringArray(pInput, " ");
@@ -36,6 +38,7 @@ public class CompoundReaderTestCase extends ReaderAbstractTestCase {
         return new CompoundReader(readers.iterator());
     }
 
+    @Test
     public void testNullConstructor() {
         try {
             new CompoundReader(null);
@@ -46,11 +49,13 @@ public class CompoundReaderTestCase extends ReaderAbstractTestCase {
         }
     }
 
+    @Test
     public void testEmptyIteratorConstructor() throws IOException {
         Reader reader = new CompoundReader(CollectionUtil.iterator(new Reader[0]));
         assertEquals(-1, reader.read());
     }
 
+    @Test
     public void testIteratorWithNullConstructor() throws IOException {
         try {
             new CompoundReader(CollectionUtil.iterator(new Reader[] {null}));

@@ -1,9 +1,13 @@
 package com.twelvemonkeys.servlet;
 
+import org.junit.Test;
+
 import javax.servlet.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.Assert.*;
 
 /**
  * GenericFilterTestCase
@@ -18,6 +22,7 @@ public final class GenericFilterTestCase extends FilterAbstractTestCase {
         return new GenericFilterImpl();
     }
 
+    @Test
     public void testInitOncePerRequest() {
         // Default FALSE
         GenericFilter filter = new GenericFilterImpl();
@@ -63,6 +68,7 @@ public final class GenericFilterTestCase extends FilterAbstractTestCase {
         filter.destroy();
     }
 
+    @Test
     public void testFilterOnlyOnce() {
         final GenericFilterImpl filter = new GenericFilterImpl();
         filter.setOncePerRequest(true);
@@ -91,6 +97,7 @@ public final class GenericFilterTestCase extends FilterAbstractTestCase {
         filter.destroy();
     }
 
+    @Test
     public void testFilterMultiple() {
         final GenericFilterImpl filter = new GenericFilterImpl();
 

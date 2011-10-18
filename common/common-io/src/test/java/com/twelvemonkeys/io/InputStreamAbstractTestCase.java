@@ -17,11 +17,14 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * InputStreamAbstractTestCase
@@ -37,10 +40,6 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
 
     final static private long SEED = 29487982745l;
     final static Random sRandom = new Random(SEED);
-
-    public InputStreamAbstractTestCase(String name) {
-        super(name);
-    }
 
     protected final Object makeObject() {
         return makeInputStream();
@@ -71,6 +70,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         return bytes;
     }
 
+    @Test
     public void testRead() throws Exception {
         int size = 5;
         InputStream input = makeInputStream(makeOrderedArray(size));
@@ -90,6 +90,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testAvailable() throws Exception {
         InputStream input = makeInputStream(1);
         assertFalse("Unexpected EOF", input.read() < 0);
@@ -100,6 +101,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         assertEquals("Available after End of File", 0, input.available());
     }
 
+    @Test
     public void testReadByteArray() throws Exception {
         byte[] bytes = new byte[10];
         byte[] data = makeOrderedArray(15);
@@ -145,6 +147,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testEOF() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(2));
         assertEquals("Read 1", 0, input.read());
@@ -154,6 +157,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         assertEquals("Read 5", -1, input.read());
     }
 
+    @Test
     public void testMarkResetUnsupported() throws IOException {
         InputStream input = makeInputStream(10);
         if (input.markSupported()) {
@@ -176,6 +180,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testResetNoMark() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(10));
 
@@ -196,6 +201,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testMarkReset() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(25));
 
@@ -226,6 +232,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testResetAfterReadLimit() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(25));
 
@@ -257,6 +264,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testResetAfterReset() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(25));
 
@@ -274,9 +282,9 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         assertTrue("Expected to read positive value", read >= 0);
 
         input.reset();
-        assertEquals("Expected value read differes from actual", read, input.read());
+        assertEquals("Expected value read differs from actual", read, input.read());
 
-        // Reset after read limit passed, may either throw exception, or reset to last mark
+        // Reset after read limit passed, may either throw exception, or reset to last good mark
         try {
             input.reset();
             assertEquals("Re-read of reset data should be same", read, input.read());
@@ -286,6 +294,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testSkip() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(10));
 
@@ -302,6 +311,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         assertEquals("Unexpected value read after EOF", -1, input.read());
     }
 
+    @Test
     public void testSanityOrdered() throws IOException {
         // This is to sanity check that the test itself is correct...
         byte[] bytes = makeOrderedArray(25);
@@ -314,6 +324,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testSanityOrdered2() throws IOException {
         // This is to sanity check that the test itself is correct...
         byte[] bytes = makeOrderedArray(25);
@@ -332,6 +343,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testSanityNegative() throws IOException {
         // This is to sanity check that the test itself is correct...
         byte[] bytes = new byte[25];
@@ -347,6 +359,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testSanityNegative2() throws IOException {
         // This is to sanity check that the test itself is correct...
         byte[] bytes = new byte[25];
@@ -368,6 +381,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testSanityRandom() throws IOException {
         // This is to sanity check that the test itself is correct...
         byte[] bytes = makeRandomArray(25);
@@ -380,6 +394,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         }
     }
 
+    @Test
     public void testSanityRandom2() throws IOException {
         // This is to sanity check that the test itself is correct...
         byte[] bytes = makeRandomArray(25);

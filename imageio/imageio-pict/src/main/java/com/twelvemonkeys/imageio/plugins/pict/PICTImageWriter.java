@@ -79,7 +79,7 @@ import java.io.*;
  * Images are stored using the "opDirectBitsRect" opcode, which directly
  * stores RGB values (using PackBits run-length encoding).
  *
- * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Fr�mling</a>
+ * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTWriter.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */

@@ -341,7 +341,8 @@ public class ImageFilterTestCase {
 
         // NOTE:
         // We verify that the image is the same in both ImageFilter implementations, to make sure the image is only
-        // decoded once, then encoded once
+        // decoded once, then encoded once.
+        // But this test is not necessarily 100% reliable...
     }
 
     @Test(expected = ServletException.class)

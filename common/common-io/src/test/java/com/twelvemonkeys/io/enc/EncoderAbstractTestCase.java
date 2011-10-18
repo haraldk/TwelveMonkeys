@@ -2,10 +2,13 @@ package com.twelvemonkeys.io.enc;
 
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
+
+import static org.junit.Assert.*;
 
 /**
  * AbstractEncoderTest
@@ -26,6 +29,7 @@ public abstract class EncoderAbstractTestCase extends ObjectAbstractTestCase {
         return createEncoder();
     }
 
+    @Test
     public final void testNullEncode() throws IOException {
         Encoder encoder = createEncoder();
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -79,6 +83,7 @@ public abstract class EncoderAbstractTestCase extends ObjectAbstractTestCase {
         assertTrue(Arrays.equals(data, decoded));
     }
 
+    @Test
     public final void testStreams() throws Exception {
         for (int i = 0; i < 100; i++) {
             try {
