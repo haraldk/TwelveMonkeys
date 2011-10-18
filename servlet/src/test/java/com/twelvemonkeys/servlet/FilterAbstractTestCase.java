@@ -1,13 +1,15 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
-
-import java.util.*;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.io.*;
+import org.junit.Test;
 
 import javax.servlet.*;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 /**
  * FilterAbstractTestCase
@@ -45,6 +47,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         return new MockFilterChain();
     }
 
+    @Test
     public void testInitNull() {
         Filter filter = makeFilter();
 
@@ -65,6 +68,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testInit() {
         Filter filter = makeFilter();
 
@@ -79,6 +83,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testLifeCycle() throws ServletException {
         Filter filter = makeFilter();
 
@@ -90,6 +95,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testFilterBasic() throws ServletException, IOException {
         Filter filter = makeFilter();
 
@@ -103,6 +109,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testDestroy() {
         // TODO: Implement
     }
