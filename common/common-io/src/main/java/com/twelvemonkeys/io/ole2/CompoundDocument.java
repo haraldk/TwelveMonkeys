@@ -54,11 +54,20 @@ public final class CompoundDocument {
     // TODO: Write support...
     // TODO: Properties: http://support.microsoft.com/kb/186898
     
-    private static final byte[] MAGIC = new byte[]{
+    static final byte[] MAGIC = new byte[]{
             (byte) 0xD0, (byte) 0xCF, (byte) 0x11, (byte) 0xE0,
             (byte) 0xA1, (byte) 0xB1, (byte) 0x1A, (byte) 0xE1,
     };
+
+    private static final int FREE_SID = -1;
+    private static final int END_OF_CHAIN_SID = -2;
+    private static final int SAT_SECTOR_SID = -3; // Sector used by SAT
+    private static final int MSAT_SECTOR_SID = -4; // Sector used my Master SAT
+
     public static final int HEADER_SIZE = 512;
+
+    /** The epoch offset of CompoundDocument time stamps */
+    public final static long EPOCH_OFFSET = -11644477200000L;
 
     private final DataInput input;
 
@@ -82,12 +91,6 @@ public final class CompoundDocument {
     private Entry rootEntry;
     private SIdChain shortStreamSIdChain;
     private SIdChain directorySIdChain;
-
-    private static final int END_OF_CHAIN_SID = -2;
-    private static final int FREE_SID = -1;
-
-    /** The epoch offset of CompoundDocument time stamps */
-    public final static long EPOCH_OFFSET = -11644477200000L;
 
     /**
      * Creates a (for now) read only {@code CompoundDocument}.
@@ -220,52 +223,57 @@ public final class CompoundDocument {
 
         // UID (seems to be all 0s)
         uUID = new UUID(input.readLong(), input.readLong());
+//        System.out.println("uUID: " + uUID);
 
-        /*int version = */
+        // int version =
         input.readUnsignedShort();
-        //System.out.println("version: " + version);
-        /*int revision = */
+//        System.out.println("version: " + version);
+        // int revision =
         input.readUnsignedShort();
-        //System.out.println("revision: " + revision);
+//        System.out.println("revision: " + revision);
 
         int byteOrder = input.readUnsignedShort();
-        if (byteOrder != 0xfffe) {
-            // Reversed, as I'm allready reading little-endian
+//        System.out.printf("byteOrder: 0x%04x\n", byteOrder);
+        if (byteOrder == 0xffff) {
             throw new CorruptDocumentException("Cannot read big endian OLE 2 Compound Documents");
+        }
+        else if (byteOrder != 0xfffe) {
+            // Reversed, as I'm already reading little-endian
+            throw new CorruptDocumentException(String.format("Unknown byte order marker: 0x%04x, expected 0xfffe or 0xffff", byteOrder));
         }
 
         sectorSize = 1 << input.readUnsignedShort();
-        //System.out.println("sectorSize: " + sectorSize + " bytes");
+//        System.out.println("sectorSize: " + sectorSize + " bytes");
         shortSectorSize = 1 << input.readUnsignedShort();
-        //System.out.println("shortSectorSize: " + shortSectorSize + " bytes");
+//        System.out.println("shortSectorSize: " + shortSectorSize + " bytes");
 
         // Reserved
-        if (input.skipBytes(10) != 10) {
+        if (skipBytesFully(10) != 10) {
             throw new CorruptDocumentException();
         }
 
         int SATSize = input.readInt();
-        //System.out.println("normalSATSize: " + mSATSize);
+//        System.out.println("normalSATSize: " + SATSize);
 
         directorySId = input.readInt();
-        //System.out.println("directorySId: " + directorySId);
+//        System.out.println("directorySId: " + directorySId);
 
         // Reserved
-        if (input.skipBytes(4) != 4) {
+        if (skipBytesFully(4) != 4) {
             throw new CorruptDocumentException();
         }
 
         minStreamSize = input.readInt();
-        //System.out.println("minStreamSize: " + minStreamSize + " bytes");
+//        System.out.println("minStreamSize: " + minStreamSize + " bytes");
 
         shortSATSId = input.readInt();
-        //System.out.println("shortSATSId: " + shortSATSId);
+//        System.out.println("shortSATSId: " + shortSATSId);
         shortSATSize = input.readInt();
-        //System.out.println("shortSATSize: " + shortSATSize);
+//        System.out.println("shortSATSize: " + shortSATSize);
         int masterSATSId = input.readInt();
-        //System.out.println("masterSATSId: " + mMasterSATSID);
+//        System.out.println("masterSATSId: " + masterSATSId);
         int masterSATSize = input.readInt();
-        //System.out.println("masterSATSize: " + mMasterSATSize);
+//        System.out.println("masterSATSize: " + masterSATSize);
 
         // Read masterSAT: 436 bytes, containing up to 109 SIDs
         //System.out.println("MSAT:");
@@ -279,7 +287,7 @@ public final class CompoundDocument {
         if (masterSATSId == END_OF_CHAIN_SID) {
             // End of chain
             int freeSIdLength = 436 - (SATSize * 4);
-            if (input.skipBytes(freeSIdLength) != freeSIdLength) {
+            if (skipBytesFully(freeSIdLength) != freeSIdLength) {
                 throw new CorruptDocumentException();
             }
         }
@@ -308,6 +316,21 @@ public final class CompoundDocument {
                 seekToSId(next, FREE_SID);
             }
         }
+    }
+
+    private int skipBytesFully(final int n) throws IOException {
+        int toSkip = n;
+
+        while (toSkip > 0) {
+            int skipped = input.skipBytes(n);
+            if (skipped <= 0) {
+                break;
+            }
+
+            toSkip -= skipped;
+        }
+
+        return n - toSkip;
     }
 
     private void readSAT() throws IOException {
@@ -383,19 +406,25 @@ public final class CompoundDocument {
         long pos;
 
         if (isShortStream(pStreamSize)) {
-            // The short-stream is not continouos...
+            // The short stream is not continuous...
             Entry root = getRootEntry();
             if (shortStreamSIdChain == null) {
                 shortStreamSIdChain = getSIdChain(root.startSId, root.streamSize);
             }
-
-            int shortPerStd = sectorSize / shortSectorSize;
-            int offset = pSId / shortPerStd;
-            int shortOffset = pSId - (offset * shortPerStd);
+            
+//            System.err.println("pSId: " + pSId);
+            int shortPerSId = sectorSize / shortSectorSize;
+//            System.err.println("shortPerSId: " + shortPerSId);
+            int offset = pSId / shortPerSId;
+//            System.err.println("offset: " + offset);
+            int shortOffset = pSId - (offset * shortPerSId);
+//            System.err.println("shortOffset: " + shortOffset);
+//            System.err.println("shortStreamSIdChain.offset: " + shortStreamSIdChain.get(offset));
 
             pos = HEADER_SIZE
                     + (shortStreamSIdChain.get(offset) * (long) sectorSize)
                     + (shortOffset * (long) shortSectorSize);
+//            System.err.println("pos: " + pos);
         }
         else {
             pos = HEADER_SIZE + pSId * (long) sectorSize;
@@ -439,14 +468,14 @@ public final class CompoundDocument {
         }
     }
 
-    SeekableInputStream  getInputStreamForSId(final int pStreamId, final int pStreamSize) throws IOException {
+    SeekableInputStream getInputStreamForSId(final int pStreamId, final int pStreamSize) throws IOException {
         SIdChain chain = getSIdChain(pStreamId, pStreamSize);
 
         // TODO: Detach? Means, we have to copy to a byte buffer, or keep track of
         // positions, and seek back and forth (would be cool, but difficult)..
         int sectorSize = pStreamSize < minStreamSize ? shortSectorSize : this.sectorSize;
 
-        return new Stream(chain, pStreamSize, sectorSize, this);
+        return new MemoryCacheSeekableStream(new Stream(chain, pStreamSize, sectorSize, this));
     }
 
     private InputStream getDirectoryStreamForDId(final int pDirectoryId) throws IOException {
@@ -538,9 +567,11 @@ public final class CompoundDocument {
                 throw new CorruptDocumentException("Invalid root storage type: " + rootEntry.type);
             }
         }
+
         return rootEntry;
     }
 
+    // This is useless, as most documents on file have all-zero UUIDs...
 //    @Override
 //    public int hashCode() {
 //        return uUID.hashCode();
@@ -603,29 +634,29 @@ public final class CompoundDocument {
         return ((pMSTime >> 1) / 5000) + EPOCH_OFFSET;
     }
 
-    // TODO: Enforce stream length!
-    static class Stream extends SeekableInputStream {
-        private SIdChain mChain;
-        int mNextSectorPos;
-        byte[] mBuffer;
-        int mBufferPos;
+    static class Stream extends InputStream {
+        private final SIdChain chain;
+        private final CompoundDocument document;
+        private final long length;
 
-        private final CompoundDocument mDocument;
-        private final long mLength;
+        private long streamPos;
+        private int nextSectorPos;
+        private byte[] buffer;
+        private int bufferPos;
 
-        public Stream(final SIdChain pChain, final long pLength, final int pSectorSize, final CompoundDocument pDocument) {
-            mChain = pChain;
-            mLength = pLength;
+        public Stream(SIdChain chain, int streamSize, int sectorSize, CompoundDocument document) {
+            this.chain = chain;
+            this.length = streamSize;
 
-            mBuffer = new byte[pSectorSize];
-            mBufferPos = mBuffer.length;
+            this.buffer = new byte[sectorSize];
+            this.bufferPos = buffer.length;
 
-            mDocument = pDocument;
+            this.document = document;
         }
 
         @Override
         public int available() throws IOException {
-            return (int) Math.min(mBuffer.length - mBufferPos, mLength - getStreamPosition());
+            return (int) Math.min(buffer.length - bufferPos, length - streamPos);
         }
 
         public int read() throws IOException {
@@ -635,20 +666,23 @@ public final class CompoundDocument {
                 }
             }
 
-            return mBuffer[mBufferPos++] & 0xff;
+            streamPos++;
+
+            return buffer[bufferPos++] & 0xff;
         }
 
         private boolean fillBuffer() throws IOException {
-            if (mNextSectorPos < mChain.length()) {
+            if (streamPos < length && nextSectorPos < chain.length()) {
                 // TODO: Sync on document.input here, and we are completely detached... :-)
-                // TODO: We also need to sync other places...
-                synchronized (mDocument) {
-                    mDocument.seekToSId(mChain.get(mNextSectorPos), mLength);
-                    mDocument.input.readFully(mBuffer);
+                // TODO: Update: We also need to sync other places... :-P
+                synchronized (document) {
+                    document.seekToSId(chain.get(nextSectorPos), length);
+                    document.input.readFully(buffer);
                 }
 
-                mNextSectorPos++;
-                mBufferPos = 0;
+                nextSectorPos++;
+                bufferPos = 0;
+
                 return true;
             }
 
@@ -665,99 +699,66 @@ public final class CompoundDocument {
 
             int toRead = Math.min(len, available());
 
-            System.arraycopy(mBuffer, mBufferPos, b, off, toRead);
-            mBufferPos += toRead;
+            System.arraycopy(buffer, bufferPos, b, off, toRead);
+            bufferPos += toRead;
+            streamPos += toRead;
 
             return toRead;
         }
 
-        public boolean isCached() {
-            return true;
-        }
-
-        public boolean isCachedMemory() {
-            return false;
-        }
-
-        public boolean isCachedFile() {
-            return true;
-        }
-
-        protected void closeImpl() throws IOException {
-            mBuffer = null;
-            mChain = null;
-        }
-
-        protected void seekImpl(final long pPosition) throws IOException {
-            long pos = getStreamPosition();
-
-            if (pos - mBufferPos >= pPosition && pPosition <= pos + available()) {
-                // Skip inside buffer only
-                mBufferPos += (pPosition - pos);
-            }
-            else {
-                // Skip outside buffer
-                mNextSectorPos = (int) (pPosition / mBuffer.length);
-                if (!fillBuffer()) {
-                    throw new EOFException();
-                }
-                mBufferPos = (int) (pPosition % mBuffer.length);
-            }
-        }
-
-        protected void flushBeforeImpl(long pPosition) throws IOException {
-            // No need to do anything here
+        @Override
+        public void close() throws IOException {
+            buffer = null;
         }
     }
 
-    // TODO: Add test case for this class!!!
     static class SeekableLittleEndianDataInputStream extends LittleEndianDataInputStream implements Seekable {
-        private final SeekableInputStream mSeekable;
+        private final SeekableInputStream seekable;
 
         public SeekableLittleEndianDataInputStream(final SeekableInputStream pInput) {
             super(pInput);
-            mSeekable = pInput;
+            seekable = pInput;
         }
 
         public void seek(final long pPosition) throws IOException {
-            mSeekable.seek(pPosition);
+            seekable.seek(pPosition);
         }
 
         public boolean isCachedFile() {
-            return mSeekable.isCachedFile();
+            return seekable.isCachedFile();
         }
 
         public boolean isCachedMemory() {
-            return mSeekable.isCachedMemory();
+            return seekable.isCachedMemory();
         }
 
         public boolean isCached() {
-            return mSeekable.isCached();
+            return seekable.isCached();
         }
 
         public long getStreamPosition() throws IOException {
-            return mSeekable.getStreamPosition();
+            return seekable.getStreamPosition();
         }
 
         public long getFlushedPosition() throws IOException {
-            return mSeekable.getFlushedPosition();
+            return seekable.getFlushedPosition();
         }
 
         public void flushBefore(final long pPosition) throws IOException {
-            mSeekable.flushBefore(pPosition);
+            seekable.flushBefore(pPosition);
         }
 
         public void flush() throws IOException {
-            mSeekable.flush();
+            seekable.flush();
         }
 
         @Override
         public void reset() throws IOException {
-            mSeekable.reset();
+            seekable.reset();
         }
 
         public void mark() {
-            mSeekable.mark();
+            seekable.mark();
         }
     }
 }

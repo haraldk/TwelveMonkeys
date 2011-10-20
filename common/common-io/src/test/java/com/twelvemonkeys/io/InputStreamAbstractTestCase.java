@@ -75,7 +75,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         int size = 5;
         InputStream input = makeInputStream(makeOrderedArray(size));
         for (int i = 0; i < size; i++) {
-            assertEquals("Check Size [" + i + "]", (size - i), input.available());
+            assertTrue("Check Size [" + i + "]", (size - i) >= input.available());
             assertEquals("Check Value [" + i + "]", i, input.read());
         }
         assertEquals("Available after contents all read", 0, input.available());
@@ -272,7 +272,8 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
             return; // Not supported, skip test
         }
 
-        assertTrue("Expected to read positive value", input.read() >= 0);
+        int first = input.read();
+        assertTrue("Expected to read positive value", first >= 0);
 
         int readlimit = 5;
 
@@ -281,13 +282,17 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         int read = input.read();
         assertTrue("Expected to read positive value", read >= 0);
 
+        assertTrue(input.read() >= 0);
+        assertTrue(input.read() >= 0);
+
         input.reset();
         assertEquals("Expected value read differs from actual", read, input.read());
 
         // Reset after read limit passed, may either throw exception, or reset to last good mark
         try {
             input.reset();
-            assertEquals("Re-read of reset data should be same", read, input.read());
+            int reRead = input.read();
+            assertTrue("Re-read of reset data should be same as initially marked or first", reRead == read || reRead == first);
         }
         catch (Exception e) {
             assertTrue("Wrong read-limit IOException message", e.getMessage().contains("mark"));

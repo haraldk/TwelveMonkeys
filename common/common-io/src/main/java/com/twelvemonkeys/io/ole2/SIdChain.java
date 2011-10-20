@@ -37,7 +37,7 @@ import java.util.NoSuchElementException;
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/ole2/SIdChain.java#1 $
  */
-class SIdChain {
+final class SIdChain {
     int[] chain;
     int size = 0;
     int next = 0;

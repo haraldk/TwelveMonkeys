@@ -32,6 +32,7 @@ import com.twelvemonkeys.io.SeekableInputStream;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -99,28 +100,26 @@ public final class Entry implements Comparable<Entry> {
      * @throws IOException if an i/o exception occurs during reading
      */
     private void read(final DataInput pInput) throws IOException {
-        char[] chars = new char[32];
-        for (int i = 0; i < chars.length; i++) {
-            chars[i] = pInput.readChar();
-        }
+        byte[] bytes = new byte[64];
+        pInput.readFully(bytes);
 
         // NOTE: Length is in bytes, including the null-terminator...
         int nameLength = pInput.readShort();
-        name = new String(chars, 0, (nameLength - 1) / 2);
-        //System.out.println("name: " + name);
+        name = new String(bytes, 0, nameLength - 2, Charset.forName("UTF-16LE"));
+//        System.out.println("name: " + name);
 
         type = pInput.readByte();
-        //System.out.println("type: " + type);
+//        System.out.println("type: " + type);
 
         nodeColor = pInput.readByte();
-        //System.out.println("nodeColor: " + nodeColor);
+//        System.out.println("nodeColor: " + nodeColor);
 
         prevDId = pInput.readInt();
-        //System.out.println("prevDID: " + prevDID);
+//        System.out.println("prevDId: " + prevDId);
         nextDId = pInput.readInt();
-        //System.out.println("nextDID: " + nextDID);
+//        System.out.println("nextDId: " + nextDId);
         rootNodeDId = pInput.readInt();
-        //System.out.println("rootNodeDID: " + rootNodeDID);
+//        System.out.println("rootNodeDId: " + rootNodeDId);
 
         // UID (16) + user flags (4), ignored
         if (pInput.skipBytes(20) != 20) {
@@ -131,9 +130,9 @@ public final class Entry implements Comparable<Entry> {
         modifiedTimestamp = CompoundDocument.toJavaTimeInMillis(pInput.readLong());
 
         startSId = pInput.readInt();
-        //System.out.println("startSID: " + startSID);
+//        System.out.println("startSId: " + startSId);
         streamSize = pInput.readInt();
-        //System.out.println("streamSize: " + streamSize);
+//        System.out.println("streamSize: " + streamSize);
 
         // Reserved
         pInput.readInt();
@@ -186,7 +185,7 @@ public final class Entry implements Comparable<Entry> {
      * @see #length()
      */
     public SeekableInputStream getInputStream() throws IOException {
-        if (isDirectory()) {
+        if (!isFile()) {
             return null;
         }
 
@@ -201,9 +200,10 @@ public final class Entry implements Comparable<Entry> {
      * @see #getInputStream()
      */
     public long length() {
-        if (isDirectory()) {
+        if (!isFile()) {
             return 0L;
         }
+
         return streamSize;
     }
 
@@ -284,9 +284,9 @@ public final class Entry implements Comparable<Entry> {
                 children = NO_CHILDREN;
             }
             else {
-                // Start at root node in R/B tree, and raed to the left and right,
+                // Start at root node in R/B tree, and read to the left and right,
                 // re-build tree, according to the docs
-                children = document.getEntries(rootNodeDId, this);
+                children = Collections.unmodifiableSortedSet(document.getEntries(rootNodeDId, this));
             }
         }
 

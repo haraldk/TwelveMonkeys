@@ -29,7 +29,6 @@
 package com.twelvemonkeys.io.ole2;
 
 import com.twelvemonkeys.io.*;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -57,11 +56,5 @@ public class CompoundDocument_SeekableLittleEndianDataInputStreamTestCase extend
     @Test
     public void testSeekable() {
         seekableTest.testSeekable();
-    }
-
-    @Ignore("Incompatible contracts, must be revised") @Test
-    @Override
-    public void testResetAfterReset() throws Exception {
-        super.testResetAfterReset();
     }
 }
