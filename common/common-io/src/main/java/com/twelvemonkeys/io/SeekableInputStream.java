@@ -69,15 +69,27 @@ public abstract class SeekableInputStream extends InputStream implements Seekabl
      * @throws IOException if an I/O exception occurs during skip
      */
     @Override
-    public final long skip(long pLength) throws IOException {
+    public final long skip(final long pLength) throws IOException {
         long pos = position;
-        if (pos + pLength < flushedPosition) {
+        long wantedPosition = pos + pLength;
+        if (wantedPosition < flushedPosition) {
             throw new IOException("position < flushedPosition");
         }
 
-        // Stop at stream length for compatibility, even though it's allowed
+        // Stop at stream length for compatibility, even though it might be allowed
         // to seek past end of stream
-        seek(Math.min(pos + pLength, pos + available()));
+        int available = available();
+        if (available > 0) {
+            seek(Math.min(wantedPosition, pos + available));
+        }
+        // TODO: Add optimization for streams with known length!
+        else {
+            // Slow mode...
+            int toSkip = (int) Math.max(Math.min(pLength, 512), -512);
+            while (toSkip > 0 && read() >= 0) {
+                toSkip--;
+            }
+        }
 
         return position - pos;
     }

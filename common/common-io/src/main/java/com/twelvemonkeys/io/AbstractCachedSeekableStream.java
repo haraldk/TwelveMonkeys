@@ -138,7 +138,7 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
                 }
             }
         }
-        else if (streamPosition >= pPosition) {
+        else /*if (streamPosition >= pPosition) */ {
             // Seek backwards into the cache
             cache.seek(pPosition);
         }
