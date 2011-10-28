@@ -55,20 +55,23 @@ public class CURImageReaderTestCase extends ImageReaderAbstractTestCase<CURImage
         reader.setInput(pTestData.getInputStream());
 
         BufferedImage image = reader.read(0, pParam);
-        Object hotspot = image.getProperty("cursor_hotspot");
 
-        if (hotspot == Image.UndefinedProperty) {
-            hotspot = reader.getHotSpot(0);
+        // We can only be sure the hotspot is defined, if no param, but if defined, it must be correct
+        Object hotspot = image.getProperty("cursor_hotspot");
+        if (hotspot != Image.UndefinedProperty || pParam == null) {
+
+            // Typically never happens, because of weirdness with UndefinedProperty
+            assertNotNull("Hotspot for cursor not present", hotspot);
+
+            // Image weirdness
+            assertTrue("Hotspot for cursor undefined (java.awt.Image.UndefinedProperty)", Image.UndefinedProperty != hotspot);
+
+            assertTrue(String.format("Hotspot not a java.awt.Point: %s", hotspot.getClass()), hotspot instanceof Point);
+            assertEquals(pExpected, hotspot);
         }
 
-        // Typically never happens, because of weirdness
-        assertNotNull("Hotspot for cursor not present", hotspot);
-
-        // Image weirdness
-        assertTrue("Hotspot for cursor undefined (java.awt.Image.UndefinedProperty)", Image.UndefinedProperty != hotspot);
-
-        assertTrue(String.format("Hotspot not a java.awt.Point: %s", hotspot.getClass()), hotspot instanceof Point);
-        assertEquals(pExpected, hotspot);
+        assertNotNull("Hotspot for cursor not present", reader.getHotSpot(0));
+        assertEquals(pExpected, reader.getHotSpot(0));
     }
 
     public void testHandHotspot() throws IOException {

@@ -136,23 +136,23 @@ abstract class DirectoryEntry {
      * Cursor directory entry.
      */
     static class CUREntry extends DirectoryEntry {
-        private int mXHotspot;
-        private int mYHotspot;
+        private int xHotspot;
+        private int yHotspot;
 
         @Override
         protected void read(final DataInput pStream) throws IOException {
             super.read(pStream);
 
             // NOTE: This is a hack...
-            mXHotspot = planes;
-            mYHotspot = bitCount;
+            xHotspot = planes;
+            yHotspot = bitCount;
 
             planes = 1;    // Always 1 for all BMP types
             bitCount = 0;
         }
 
         public Point getHotspot() {
-            return new Point(mXHotspot, mYHotspot);
+            return new Point(xHotspot, yHotspot);
         }
     }
 

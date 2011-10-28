@@ -43,7 +43,7 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CURImageReaderSpi.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-public class CURImageReaderSpi extends ImageReaderSpi {
+public final class CURImageReaderSpi extends ImageReaderSpi {
 
     public CURImageReaderSpi() {
         this(IIOUtil.getProviderInfo(CURImageReaderSpi.class));
