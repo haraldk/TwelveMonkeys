@@ -28,9 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Parts of this software is based on JVG/JIS.
 See http://www.cs.hut.fi/~framling/JVG/index.html for more information.
-Redistribution under BSD authorized by Kary Fr�mling:
+Redistribution under BSD authorized by Kary Främling:
 
-Copyright (c) 2003, Kary Fr�mling
+Copyright (c) 2003, Kary Främling
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,7 @@ import java.util.List;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Fr�mling</a> (original PICT/QuickDraw parsing)
+ * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a> (original PICT/QuickDraw parsing)
  * @author <a href="mailto:matthias.wiesmann@a3.epfl.ch">Matthias Wiesmann</a> (original embedded QuickTime parsing)
  * @version $Id: PICTReader.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */
