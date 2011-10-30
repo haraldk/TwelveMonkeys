@@ -32,6 +32,7 @@ import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
@@ -47,12 +48,13 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.List;
 
 /**
- * JPEGImageReader
+ * A JPEG {@code ImageReader} implementation based on the JDK {@code JPEGImageReader},
+ * with support for CMYK JPEGs and other non-standard color spaces,
+ * like embedded ICC color spaces with rendering intent other than 'perceptual'.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author LUT-based YCbCR conversion by Werner Randelshofer
@@ -63,14 +65,14 @@ public class JPEGImageReader extends ImageReaderBase {
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
-    /** Segment identifiers for the JPEG app segments we care about reading. */
+    /** Segment identifiers for the JPEG segments we care about reading. */
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
 
     private static Map<Integer, List<String>> createSegmentIds() {
         Map<Integer, List<String>> map = new HashMap<Integer, List<String>>();
 
         // JFIF APP0 markers
-        map.put(JPEG.APP0, Arrays.asList("JFIF", "JFXX"));
+        map.put(JPEG.APP0, JPEGSegmentUtil.ALL_IDS);
 
         // ICC Color Profile
         map.put(JPEG.APP2, Collections.singletonList("ICC_PROFILE"));
@@ -99,47 +101,49 @@ public class JPEGImageReader extends ImageReaderBase {
     /** Our JPEG reading delegate */
     private final ImageReader delegate;
 
-    private final ICCSpaceInterceptor iccSpaceInterceptor;
+//    private final ICCSpaceInterceptor iccSpaceInterceptor;
     private final ProgressDelegator progressDelegator;
 
-    /** Cached JFIF app segments */
-    private List<JPEGSegmentUtil.Segment> segments;
+    /** Cached JPEG app segments */
+    private List<JPEGSegment> segments;
 
-    private static Field getFieldSafely(final Class<?> cl, final String fieldName) {
-        try {
-            Field field = cl.getDeclaredField(fieldName);
-            field.setAccessible(true);
-            return field;
-        }
-        catch (NoSuchFieldException ignore) {
-        }
-        catch (SecurityException ignore) {
-        }
-
-        return null;
-    }
+//    private static Field getFieldSafely(final Class<?> cl, final String fieldName) {
+//        try {
+//            Field field = cl.getDeclaredField(fieldName);
+//            field.setAccessible(true);
+//            return field;
+//        }
+//        catch (NoSuchFieldException ignore) {
+//        }
+//        catch (SecurityException ignore) {
+//        }
+//
+//        return null;
+//    }
 
     JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
         this.delegate = Validate.notNull(delegate);
 
-        Field iccCS = getFieldSafely(delegate.getClass(), "iccCS");
-        iccSpaceInterceptor = iccCS != null ? new ICCSpaceInterceptor(iccCS) : null;
+//        Field iccCS = getFieldSafely(delegate.getClass(), "iccCS");
+//        iccSpaceInterceptor = iccCS != null ? new ICCSpaceInterceptor(iccCS) : null;
 
         progressDelegator = new ProgressDelegator();
     }
 
     public static void main(String[] args) throws IOException {
         File file = new File(args[0]);
-
         ImageInputStream input = ImageIO.createImageInputStream(file);
         Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+
         if (!readers.hasNext()) {
             System.err.println("No reader for: " + file);
             System.exit(1);
         }
+
         ImageReader myReader = readers.next();
         System.err.println("Reading using: " + myReader);
+
         myReader.addIIOReadWarningListener(new IIOReadWarningListener() {
             public void warningOccurred(ImageReader source, String warning) {
                 System.err.println("warning: " + warning);
@@ -185,23 +189,37 @@ public class JPEGImageReader extends ImageReaderBase {
 
             long start = System.currentTimeMillis();
             BufferedImage image = myReader.read(0, param);
-            System.err.println("Time: " + (System.currentTimeMillis() - start) + " ms");
+            System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
             System.err.println("image: " + image);
 
-//            image = new ResampleOp(myReader.getWidth(0) / 4, myReader.getHeight(0) / 4, ResampleOp.FILTER_BLACKMAN_SINC).filter(image, null);
+//            image = new ResampleOp(myReader.getWidth(0) / 4, myReader.getHeight(0) / 4, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
-            if (image.getWidth() > 1600 || image.getHeight() > 1000) {
+            int maxW = 1280;
+            int maxH = 800;
+            if (image.getWidth() > maxW || image.getHeight() > maxH) {
+                start = System.currentTimeMillis();
                 float aspect = myReader.getAspectRatio(0);
-                int height = Math.round(1600 / aspect);
-                if (height <= 1000) {
-                    image = ImageUtil.createResampled(image, 1600, height, Image.SCALE_DEFAULT);
+                if (aspect >= 1f) {
+                    image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_DEFAULT);
                 }
                 else {
-                    image = ImageUtil.createResampled(image, Math.round(1000 * aspect), 1000, Image.SCALE_DEFAULT);
+                    image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_DEFAULT);
                 }
+                System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
             }
 
             showIt(image, String.format("Image: %s [%d x %d]", file.getName(), myReader.getWidth(0), myReader.getHeight(0)));
+
+            try {
+                int numThumbnails = myReader.getNumThumbnails(0);
+                for (int i = 0; i < numThumbnails; i++) {
+                    BufferedImage thumbnail = myReader.readThumbnail(0, i);
+                    showIt(thumbnail, String.format("Image: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
+                }
+            }
+            catch (IIOException e) {
+                System.err.println("Could not read thumbnails: " + e.getMessage());
+            }
         }
         finally {
             input.close();
@@ -209,9 +227,9 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private void installListeners() {
-        if (iccSpaceInterceptor != null) {
-            delegate.addIIOReadProgressListener(iccSpaceInterceptor);
-        }
+//        if (iccSpaceInterceptor != null) {
+//            delegate.addIIOReadProgressListener(iccSpaceInterceptor);
+//        }
 
         delegate.addIIOReadProgressListener(progressDelegator);
         delegate.addIIOReadUpdateListener(progressDelegator);
@@ -260,9 +278,27 @@ public class JPEGImageReader extends ImageReaderBase {
         // TODO: Read header, and make sure we return valid types for the images we can now read
 
         Iterator<ImageTypeSpecifier> types = delegate.getImageTypes(imageIndex);
-        if (iccSpaceInterceptor != null) {
-            iccSpaceInterceptor.replaceCS(delegate);
+
+        ICC_Profile profile = getEmbeddedICCProfile();
+        AdobeDCT adobeDCT = getAdobeDCT();
+
+        // TODO: FixMe
+        if (types == null || !types.hasNext() || adobeDCT != null && adobeDCT.getTransform() == AdobeDCT.YCCK || profile != null && profile.getColorSpaceType() == ColorSpace.TYPE_CMYK) {
+            return Arrays.asList(
+                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR),
+                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB),
+                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR)
+
+                    // TODO: We can/should also read and return it as CMYK if it is..
+                    // + original color profile should be an option
+
+            ).iterator();
+
         }
+
+//        if (iccSpaceInterceptor != null) {
+//            iccSpaceInterceptor.replaceCS(delegate);
+//        }
         return types;
     }
 
@@ -289,12 +325,22 @@ public class JPEGImageReader extends ImageReaderBase {
         assertInput();
         checkBounds(imageIndex);
 
+        // TODO: This test is not good enough for JDK7, which seems to have fixed some of the issues.
         // NOTE: We rely on the fact that unsupported images has no valid types. This is kind of hacky.
         // Might want to look into the metadata, to see if there's a better way to identify these.
         boolean unsupported = !delegate.getImageTypes(imageIndex).hasNext();
 
         ICC_Profile profile = getEmbeddedICCProfile();
-        if (delegate.canReadRaster() && (unsupported || profile != null && ColorSpaces.isOffendingColorProfile(profile))) {
+        AdobeDCT adobeDCT = getAdobeDCT();
+
+        if (
+                delegate.canReadRaster() &&
+                (
+                        unsupported ||
+                        adobeDCT != null && adobeDCT.getTransform() == AdobeDCT.YCCK ||
+                        profile != null && (ColorSpaces.isOffendingColorProfile(profile) || profile.getColorSpaceType() == ColorSpace.TYPE_CMYK)
+                )
+            ) {
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile = " + profile);
@@ -304,8 +350,10 @@ public class JPEGImageReader extends ImageReaderBase {
         }
 
         if (DEBUG) {
-            System.out.println("Reading using " + (iccSpaceInterceptor != null ? "intercepted " : "") + "delegate");
+//            System.out.println("Reading using " + (iccSpaceInterceptor != null ? "intercepted " : "") + "delegate");
+            System.out.println("Reading using delegate");
         }
+        
         return delegate.read(imageIndex, param);
     }
 
@@ -315,7 +363,6 @@ public class JPEGImageReader extends ImageReaderBase {
         int origHeight = getHeight(imageIndex);
 
         ColorSpace srcCs = null;
-        int xform = AdobeDCT.Unknown;
 
         /*--------------------------------------------------------------------------------------------------------------
 
@@ -356,41 +403,57 @@ public class JPEGImageReader extends ImageReaderBase {
 
         --------------------------------------------------------------------------------------------------------------*/
 
-        // TODO: Fix this algorithm to behave like above, except for the presence of JFIF APP0 dictating YCbCr or gray,
-        // as it might just as well be CMYK...
+        // TODO: Fix this algorithm to behave like above, except the presence of JFIF APP0 might mean YCbCr, gray or CMYK.
         // AdobeApp14 with transform either 1 or 2 can be trusted to be YCC/YCCK respectively, transform 0 means 1 component gray, 3 comp rgb, 4 comp cmyk
         //
 
-        // 9788245605525.jpg:   JFIF App0 + Adobe App14 transform 0, channel Id's C, M, Y, K
-        // lund-logo-cmyk.jpg:  Adobe App14 transform 0 (+ flag?), channel Id's 1-4
-        // teastar_300dpi_cmyk.jpg: Adobe App14 transform 2 (+ flag), channel Id's 1-4
+        // 9788245605525.jpg:   JFIF App0 + Adobe App14 transform 0, channel Id's C, M, Y, K, no ICC
+        // lund-logo-cmyk.jpg:  No App0, Adobe App14 transform 0 (+ flag?), channel Id's 1-4, no ICC
+        // teastar_300dpi_cmyk.jpg: No App0, Adobe App14 transform 2 (+ flag), channel Id's 1-4, ICC
 
 
 //        System.err.println("----> isAPP0Present(): " + isJFIFAPP0Present());
+//        System.err.println("getAppSegments(JPEG.APP0, null): " + getAppSegments(JPEG.APP0, null));
+//        System.err.println("segments: " + segments);
         SOF startOfFrame = getSOF();
-
 //        System.err.println("startOfFrame: " + startOfFrame);
+        AdobeDCT adobeDCT = getAdobeDCT();
+//        System.err.println("adobeDCT: " + adobeDCT);
 
         Iterator<ImageTypeSpecifier> imageTypes = delegate.getImageTypes(imageIndex);
+        int transform = adobeDCT != null ? adobeDCT.getTransform() : AdobeDCT.Unknown;
 
+        // TODO: The !types.hasNext test is broken for JDK7, as it does return types...
         // CMYK Support, assuming the delegate reader can't decode, and any 4 component image is CMYK
-        if (!imageTypes.hasNext() && startOfFrame.componentsInFrame == 4) {
+        if ((!imageTypes.hasNext() || transform == AdobeDCT.YCCK || profile != null && profile.getColorSpaceType() == ColorSpace.TYPE_CMYK) && startOfFrame.componentsInFrame == 4) {
             // NOTE: Reading the metadata here chokes on some images. Instead, parse the Adobe App14 segment and read transform directly
-            AdobeDCT adobeDCT = getAdobeDCT();
-//            System.err.println("adobeDCT: " + adobeDCT);
-            xform = adobeDCT != null ? adobeDCT.getTransform() : AdobeDCT.Unknown;
 
+            // TODO: If cmyk and no ICC profile, just use FastCMYKToRGB, without attempting loading Generic CMYK profile first!
+            // TODO: Also, don't get generic CMYK if we already have a profile...
             srcCs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
-            imageTypes = Arrays.asList(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR)).iterator();
+            imageTypes = Arrays.asList(
+                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR),
+                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB),
+                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR)
+                    // TODO: Only alpha if source has alpha... (ColorConvertOp chokes otherwise)
+//                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB),
+//                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE),
+//                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR),
+//                    ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE)
+                    // TODO: Move to getImageTypes + add native color space if profile != null
+                    ).iterator();
         }
+        // ...else blow up as there's no possible types to decode into...
 
         BufferedImage image = getDestination(param, imageTypes, origWidth, origHeight);
+
+//        System.err.println("JPEGImageReader.readImageAsRasterAndReplaceColorProfile: " + image);
 
         WritableRaster destination = image.getRaster();
 
         // TODO: checkReadParamBandSettings(param, );
 
-        ColorConvertOp convert = null;
+        RasterOp convert = null;
         ICC_ColorSpace replacement = profile != null ? ColorSpaces.createColorSpace(profile) : null;
 
         if (profile != null && profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && image.getColorModel().getColorSpace().getType() == ColorSpace.CS_GRAY) {
@@ -398,12 +461,19 @@ public class JPEGImageReader extends ImageReaderBase {
             // probably because IJG native part does it already...? If applied, color looks wrong (too dark)...
         }
         else if (replacement != null) {
-            // NOTE: CCO is not really necessary if replacement == image.getCM().getCS(),
-            // but in practice it's as fast/faster than raster.setRect() (see below)
-            convert = new ColorConvertOp(replacement, image.getColorModel().getColorSpace(), null);
+            // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
+            if (replacement != image.getColorModel().getColorSpace()) {
+                convert = new ColorConvertOp(replacement, image.getColorModel().getColorSpace(), null);
+            }
+            // Else, pass through with no conversion
         }
         else if (srcCs != null) {
-            convert = new ColorConvertOp(srcCs, image.getColorModel().getColorSpace(), null);
+            if (!(srcCs instanceof ICC_ColorSpace) && image.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB && srcCs.getType() == ColorSpace.TYPE_CMYK) {
+                convert = new FastCMYKToRGB();
+            }
+            else {
+                convert = new ColorConvertOp(srcCs, image.getColorModel().getColorSpace(), null);
+            }
         }
 //        else if (!image.getColorModel().getColorSpace().isCS_sRGB()) {
         // TODO: Need to handle case where src and dest differ still
@@ -414,47 +484,53 @@ public class JPEGImageReader extends ImageReaderBase {
         }
 
         // We'll need a read param
+        Rectangle origSourceRegion;
         if (param == null) {
             param = delegate.getDefaultReadParam();
+            origSourceRegion = null;
+        }
+        else {
+            origSourceRegion = param.getSourceRegion();
         }
 
         Rectangle srcRegion = new Rectangle();
         Rectangle dstRegion = new Rectangle();
-
         computeRegions(param, origWidth, origHeight, image, srcRegion, dstRegion);
 
         // We're ready to go
         processImageStarted(imageIndex);
 
         // Unfortunately looping is slower than reading all at once, but
-        // that requires 2 x memory, so a few steps is an ok compromise I guess
+        // that requires 2 x + memory, so a few steps is an ok compromise I guess
         try {
-            int csType = srcCs != null ? srcCs.getType() : image.getColorModel().getColorSpace().getType();
-            int step = Math.max(1024, srcRegion.height / 10);
+            int srcCsType = srcCs != null ? srcCs.getType() : image.getColorModel().getColorSpace().getType();
+            int step = Math.max(1024, srcRegion.height / 10); // * param.getSourceYSubsampling(); // TODO: Using a multiple of 8 is probably a good idea for JPEG
 
+            int destY = dstRegion.y;
             for (int y = srcRegion.y; y < srcRegion.height; y += step) {
                 int scan = Math.min(step, srcRegion.height - y);
                 // Let the progress delegator handle progress, using corrected range
                 progressDelegator.updateProgressRange(100f * (y + scan) / srcRegion.height);
-//                try {
-                param.setSourceRegion(new Rectangle(srcRegion.x, y, srcRegion.width, scan));
+
+                Rectangle subRegion = new Rectangle(srcRegion.x, y, srcRegion.width, scan);
+                param.setSourceRegion(subRegion);
                 Raster raster = delegate.readRaster(imageIndex, param); // non-converted
 
                 // Apply source color conversion form implicit color space
-                if ((xform == AdobeDCT.YCC || xform == AdobeDCT.Unknown) && csType == ColorSpace.TYPE_RGB) {
+                if ((transform == AdobeDCT.YCC || transform == AdobeDCT.Unknown) && srcCsType == ColorSpace.TYPE_RGB) {
                     YCbCrConverter.convertYCbCr2RGB(raster);
                 }
-                else if (xform == AdobeDCT.YCCK && csType == ColorSpace.TYPE_CMYK) {
+                else if (transform == AdobeDCT.YCCK && srcCsType == ColorSpace.TYPE_CMYK) {
                     YCbCrConverter.convertYCCK2CMYK(raster);
                 }
-                else if (xform == AdobeDCT.Unknown && csType == ColorSpace.TYPE_CMYK) {
+                else if (transform == AdobeDCT.Unknown && srcCsType == ColorSpace.TYPE_CMYK) {
                     invertCMYK(raster);
                 }
+                // ...else assume the raster is already converted
 
-                // TODO: Subsampling
-
-                Raster src = raster.createChild(0, 0, raster.getWidth(), raster.getHeight(), 0, 0, param.getSourceBands());
-                WritableRaster dest = destination.createWritableChild(dstRegion.x, dstRegion.y + y - srcRegion.y, dstRegion.width, raster.getHeight(), 0, 0, param.getDestinationBands());
+                int destHeight = Math.min(raster.getHeight(), dstRegion.height - destY); // Avoid off-by-one
+                Raster src = raster.createChild(0, 0, raster.getWidth(), destHeight, 0, 0, param.getSourceBands());
+                WritableRaster dest = destination.createWritableChild(dstRegion.x, destY, raster.getWidth(), destHeight, 0, 0, param.getDestinationBands());
 
                 // Apply further color conversion for explicit color space, or just copy the pixels into place
                 if (convert != null) {
@@ -464,25 +540,17 @@ public class JPEGImageReader extends ImageReaderBase {
                     dest.setRect(0, 0, src);
                 }
 
+                destY += raster.getHeight();
+
                 if (abortRequested()) {
                     processReadAborted();
                     break;
                 }
-//                }
-//                catch (RasterFormatException e) {
-//                    System.err.println("y: " + y);
-//                    System.err.println("step: " + step);
-//                    System.err.println("scan: " + scan);
-//                    System.err.println("srcRegion: " + srcRegion);
-//                    System.err.println("dstRegion: " + dstRegion);
-//
-//                    throw e;
-//                }
             }
         }
         finally {
             // NOTE: Would be cleaner to clone the param, unfortunately it can't be done easily...
-            param.setSourceRegion(srcRegion);
+            param.setSourceRegion(origSourceRegion);
 
             // Restore normal read progress processing
             progressDelegator.resetProgressRange();
@@ -509,7 +577,7 @@ public class JPEGImageReader extends ImageReaderBase {
         long pos = imageInput.getStreamPosition();
 
         try {
-            imageInput.seek(0); // TODO: Seek to wanted image
+            imageInput.seek(0); // TODO: Seek to wanted image, skip images on the way
 
             segments = JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
         }
@@ -523,15 +591,15 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private List<JPEGSegmentUtil.Segment> getAppSegments(final int marker, final String identifier) throws IOException {
+    private List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
         initHeader();
 
-        List<JPEGSegmentUtil.Segment> appSegments = Collections.emptyList();
+        List<JPEGSegment> appSegments = Collections.emptyList();
 
-        for (JPEGSegmentUtil.Segment segment : segments) {
-            if (segment.marker() == marker && identifier.equals(segment.identifier())) {
+        for (JPEGSegment segment : segments) {
+            if (segment.marker() == marker && (identifier == null || identifier.equals(segment.identifier()))) {
                 if (appSegments == Collections.EMPTY_LIST) {
-                    appSegments = new ArrayList<JPEGSegmentUtil.Segment>(segments.size());
+                    appSegments = new ArrayList<JPEGSegment>(segments.size());
                 }
 
                 appSegments.add(segment);
@@ -546,7 +614,7 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private SOF getSOF() throws IOException {
-        for (JPEGSegmentUtil.Segment segment : segments) {
+        for (JPEGSegment segment : segments) {
             if (JPEG.SOF0 <= segment.marker() && segment.marker() <= JPEG.SOF3 ||
                     JPEG.SOF5 <= segment.marker() && segment.marker() <= JPEG.SOF7 ||
                     JPEG.SOF9 <= segment.marker() && segment.marker() <= JPEG.SOF11 ||
@@ -559,20 +627,16 @@ public class JPEGImageReader extends ImageReaderBase {
                     int samplesPerLine = data.readUnsignedShort();
                     int componentsInFrame = data.readUnsignedByte();
 
-                    /**
-                    // Might not need this
+                    SOFComponent[] components = new SOFComponent[componentsInFrame];
                     for (int i = 0; i < componentsInFrame; i++) {
-                        int comp = i + 1;
                         int id = data.readUnsignedByte();
-                        System.err.println(comp + " id: " + id + " '" + (char) id + "'"); // typically 1-4, but may be 'C'/'M'/'Y'/'K' or similar...
                         int hv = data.readUnsignedByte();
-                        System.err.println(comp + " horiz sub: " + ((hv & 0xF0) >> 4));
-                        System.err.println(comp + " vertical sub: " + ((hv & 0xF)));
-                        System.err.println(comp + " qt sel: " + data.readUnsignedByte());
-                    }
-                    //*/
+                        int qtsel = data.readUnsignedByte();
 
-                    return new SOF(segment.marker(), samplePrecision, lines, samplesPerLine, componentsInFrame);
+                        components[i] = new SOFComponent(id, ((hv & 0xF0) >> 4), (hv & 0xF), qtsel);
+                    }
+
+                    return new SOF(segment.marker(), samplePrecision, lines, samplesPerLine, componentsInFrame, components);
                 }
                 finally {
                     data.close();
@@ -584,7 +648,7 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private AdobeDCT getAdobeDCT() throws IOException {
-        List<JPEGSegmentUtil.Segment> adobe = getAppSegments(JPEG.APP14, "Adobe");
+        List<JPEGSegment> adobe = getAppSegments(JPEG.APP14, "Adobe");
 
         if (!adobe.isEmpty()) {
             // version (byte), flags (4bytes), color transform (byte: 0=unknown, 1=YCC, 2=YCCK)
@@ -605,11 +669,11 @@ public class JPEGImageReader extends ImageReaderBase {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
-        List<JPEGSegmentUtil.Segment> segments = getAppSegments(JPEG.APP2, "ICC_PROFILE");
+        List<JPEGSegment> segments = getAppSegments(JPEG.APP2, "ICC_PROFILE");
 
         if (segments.size() == 1) {
             // Faster code for the common case
-            JPEGSegmentUtil.Segment segment = segments.get(0);
+            JPEGSegment segment = segments.get(0);
             DataInputStream stream = new DataInputStream(segment.data());
             int chunkNumber = stream.readUnsignedByte();
             int chunkCount = stream.readUnsignedByte();
@@ -913,6 +977,7 @@ public class JPEGImageReader extends ImageReaderBase {
 
     }
 
+    /*
     private static class ICCSpaceInterceptor extends ProgressListenerBase {
         final Field iccCS;
 
@@ -957,6 +1022,7 @@ public class JPEGImageReader extends ImageReaderBase {
             }
         }
     }
+    */
 
     private static class SOF {
         private final int marker;
@@ -964,13 +1030,15 @@ public class JPEGImageReader extends ImageReaderBase {
         private final int lines;          // height
         private final int samplesPerLine; // width
         private final int componentsInFrame;
+        private final SOFComponent[] components;
 
-        public SOF(int marker, int samplePrecision, int lines, int samplesPerLine, int componentsInFrame) {
+        public SOF(int marker, int samplePrecision, int lines, int samplesPerLine, int componentsInFrame, SOFComponent[] components) {
             this.marker = marker;
             this.samplePrecision = samplePrecision;
             this.lines = lines;
             this.samplesPerLine = samplesPerLine;
             this.componentsInFrame = componentsInFrame;
+            this.components = components;
         }
 
         public int getMarker() {
@@ -996,9 +1064,30 @@ public class JPEGImageReader extends ImageReaderBase {
         @Override
         public String toString() {
             return String.format(
-                    "SOF[marker: %04x, preciscion: %d, lines: %d, samples/line: %d, components: %d]",
-                    marker, samplePrecision, lines, samplesPerLine, componentsInFrame
+                    "SOF[marker: %04x, preciscion: %d, lines: %d, samples/line: %d, components: %s]",
+                    marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
             );
+        }
+    }
+
+    private static class SOFComponent {
+        private final int id;
+        private final int hSub;
+        private final int vSub;
+        private final int qtSel;
+
+        public SOFComponent(int id, int hSub, int vSub, int qtSel) {
+            this.id = id;
+            this.hSub = hSub;
+            this.vSub = vSub;
+            this.qtSel = qtSel;
+        }
+
+        @Override
+        public String toString() {
+            // Use id either as component number or component name, based on value
+            Serializable idStr = (id >= 'a' && id <= 'z' || id >= 'A' && id <= 'Z') ? "'" + (char) id + "'" : id;
+            return String.format("id: %s, sub: %d/%d, sel: %d", idStr, hSub, vSub, qtSel);
         }
     }
 
@@ -1038,8 +1127,8 @@ public class JPEGImageReader extends ImageReaderBase {
         @Override
         public String toString() {
             return String.format(
-                    "AdobeDCT[ver: %d, flags: %s %s, transform: %d]",
-                    getVersion(), Integer.toBinaryString(getFlags0()), Integer.toBinaryString(getFlags1()), getTransform()
+                    "AdobeDCT[ver: %d.%02d, flags: %s %s, transform: %d]",
+                    getVersion() / 100, getVersion() % 100, Integer.toBinaryString(getFlags0()), Integer.toBinaryString(getFlags1()), getTransform()
             );
         }
     }

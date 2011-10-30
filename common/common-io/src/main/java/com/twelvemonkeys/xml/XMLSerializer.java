@@ -59,12 +59,6 @@ public class XMLSerializer {
     // TODO: Consider using IOException to communicate trouble, rather than RTE,
     // to be more compatible...
 
-    // TODO: Idea: Create a SerializationContext that stores attributes on
-    // serialization, to keep the serialization thread-safe
-    // Store preserveSpace attribute in this context, to avoid costly traversals
-    // Store user options here too
-    // TODO: Push/pop?
-
     private final OutputStream output;
     private final Charset encoding;
     private final SerializationContext context;
@@ -76,7 +70,7 @@ public class XMLSerializer {
     }
 
     public final void setIndentation(String pIndent) {
-        context.indent = pIndent != null ? pIndent : "  ";
+        context.indent = pIndent != null ? pIndent : "\t";
     }
 
     public final void setStripComments(boolean pStrip) {
@@ -279,11 +273,7 @@ public class XMLSerializer {
                         pos = appendAndEscape(pValue, pos, i, builder, "&gt;");
                         break;
                     //case '\'':
-                    //    pos = appendAndEscape(pString, pos, i, builder, "&apos;");
-                    //    break;
                     //case '"':
-                    //    pos = appendAndEscape(pString, pos, i, builder, "&quot;");
-                    //    break;
                     default:
                         break;
                 }
@@ -347,17 +337,6 @@ public class XMLSerializer {
                 }
             }
 
-            //StringBuilder builder = new StringBuilder(pValue.length() + 30);
-            //
-            //int start = 0;
-            //while (end >= 0) {
-            //    builder.append(pValue.substring(start, end));
-            //    builder.append("&quot;");
-            //    start = end + 1;
-            //    end = pValue.indexOf('"', start);
-            //}
-            //builder.append(pValue.substring(start));
-
             builder.append(pValue.substring(pos));
 
             return builder.toString();
@@ -389,14 +368,14 @@ public class XMLSerializer {
     }
 
     private static String validateCDataValue(final String pValue) {
-        if (pValue.indexOf("]]>") >= 0) {
+        if (pValue.contains("]]>")) {
             throw new IllegalArgumentException("Malformed input document: CDATA block may not contain the string ']]>'");
         }
         return pValue;
     }
 
     private static String validateCommentValue(final String pValue) {
-        if (pValue.indexOf("--") >= 0) {
+        if (pValue.contains("--")) {
             throw new IllegalArgumentException("Malformed input document: Comment may not contain the string '--'");
         }
         return pValue;
@@ -419,8 +398,6 @@ public class XMLSerializer {
         // TODO: Attributes should probably include namespaces, so that it works
         // even if the document was created using attributes instead of namespaces...
         // In that case, prefix will be null...
-
-        // TODO: Don't insert duplicate/unnecessary namesspace declarations
 
         // Handle namespace
         String namespace = pNode.getNamespaceURI();
@@ -570,6 +547,11 @@ public class XMLSerializer {
         pre.appendChild(document.createTextNode(" \t \n\r some text & white ' '   \n   "));
         test.appendChild(pre);
 
+        Element pre2 = document.createElementNS("http://www.twelvemonkeys.com/xml/test", "tight");
+        pre2.setAttributeNS("http://www.w3.org/XML/1998/namespace", "xml:space", "preserve");
+        pre2.appendChild(document.createTextNode("no-space-around-me"));
+        test.appendChild(pre2);
+
         // Create serializer and output document
         //XMLSerializer serializer = new XMLSerializer(pOutput, new OutputFormat(document, UTF_8_ENCODING, true));
         System.out.println("XMLSerializer:");
@@ -612,7 +594,7 @@ public class XMLSerializer {
     }
 
     static class SerializationContext implements Cloneable {
-        String indent = "  ";
+        String indent = "\t";
         int level = 0;
         boolean preserveSpace = false;
         boolean stripComments = false;
