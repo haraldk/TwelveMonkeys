@@ -10,6 +10,7 @@ import org.w3c.dom.Node;
 
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.IndexColorModel;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -33,6 +34,7 @@ public final class PSDMetadata extends AbstractMetadata {
     List<PSDImageResource> imageResources;
     PSDGlobalLayerMask globalLayerMask;
     List<PSDLayerInfo> layerInfo;
+    long layersStart;
 
     static final String[] COLOR_MODES = {
             "MONOCHROME", "GRAYSCALE", "INDEXED", "RGB", "CMYK", null, null, "MULTICHANNEL", "DUOTONE", "LAB"
@@ -240,12 +242,18 @@ public final class PSDMetadata extends AbstractMetadata {
                 node.setAttribute("fileVersion", String.valueOf(information.fileVersion));
             }
             else if (imageResource instanceof PSDThumbnail) {
-                // TODO: Revise/rethink this...
-                PSDThumbnail thumbnail = (PSDThumbnail) imageResource;
+                try {
+                    // TODO: Revise/rethink this...
+                    PSDThumbnail thumbnail = (PSDThumbnail) imageResource;
 
-                node = new IIOMetadataNode("Thumbnail");
-                // TODO: Thumbnail attributes + access to data, to avoid JPEG re-compression problems
-                node.setUserObject(thumbnail.getThumbnail());
+                    node = new IIOMetadataNode("Thumbnail");
+                    // TODO: Thumbnail attributes + access to data, to avoid JPEG re-compression problems
+                    node.setUserObject(thumbnail.getThumbnail());
+                }
+                catch (IOException e) {
+                    // TODO: Warning
+                    continue;
+                }
             }
             else if (imageResource instanceof PSDIPTCData) {
                 // TODO: Revise/rethink this...
@@ -662,7 +670,7 @@ public final class PSDMetadata extends AbstractMetadata {
             }
             else if (textResource instanceof PSDXMPData) {
                 // TODO: Parse XMP (heavy) ONLY if we don't have required fields from IPTC/EXIF?
-                // TODO: Use XMP IPTC/EXIF/TIFFF NativeDigest field to validate if the values are in sync...
+                // TODO: Use XMP IPTC/EXIF/TIFF NativeDigest field to validate if the values are in sync..?
                 PSDXMPData xmp = (PSDXMPData) textResource;
             }
         }

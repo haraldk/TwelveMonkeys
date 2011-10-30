@@ -1,11 +1,12 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.imageio.util.IIOUtil;
-
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.image.BufferedImage;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 /**
@@ -16,9 +17,11 @@ import java.io.IOException;
  * @version $Id: PSDThumbnail.java,v 1.0 Jul 29, 2009 4:41:06 PM haraldk Exp$
  */
 class PSDThumbnail extends PSDImageResource {
-    private BufferedImage thumbnail;
+    private int format;
     private int width;
     private int height;
+    private int widthBytes;
+    private byte[] data;
 
     public PSDThumbnail(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -37,25 +40,14 @@ class PSDThumbnail extends PSDImageResource {
      */
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        // TODO: Support for RAW RGB (format == 0): Extract RAW reader from PICT RAW QuickTime decompressor
-        int format = pInput.readInt();
-        switch (format) {
-            case 0:
-                // RAW RGB
-                throw new IIOException("RAW RGB format thumbnail not supported yet");
-            case 1:
-                // JPEG
-                break;
-            default:
-                throw new IIOException(String.format("Unsupported thumbnail format (%s) in PSD document", format));
-        }
+        format = pInput.readInt();
 
         width = pInput.readInt();
         height = pInput.readInt();
 
         // This data isn't really useful, unless we're dealing with raw bytes
-        int widthBytes = pInput.readInt();
-        int totalSize = pInput.readInt();
+        widthBytes = pInput.readInt();
+        int totalSize = pInput.readInt(); // Hmm.. Is this really useful at all?
 
         // Consistency check
         int sizeCompressed = pInput.readInt();
@@ -70,9 +62,21 @@ class PSDThumbnail extends PSDImageResource {
             // TODO: Warning/Exception
         }
 
-        // TODO: Defer decoding until getThumbnail?
-        // TODO: Support BGR if id == RES_THUMBNAIL_PS4? Or is that already supported in the JPEG?
-        thumbnail = ImageIO.read(IIOUtil.createStreamAdapter(pInput, sizeCompressed));
+        data = new byte[sizeCompressed];
+        pInput.readFully(data);
+    }
+
+    BufferedImage imageFromRawData(int width, int height, int scanLine, byte[] data) {
+        DataBuffer buffer = new DataBufferByte(data, data.length);
+        WritableRaster raster = Raster.createInterleavedRaster(
+                buffer, width, height,
+                scanLine, 3,
+                new int[]{0, 1, 2},
+                null
+        );
+        ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+
+        return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
     }
 
     public final int getWidth() {
@@ -83,15 +87,40 @@ class PSDThumbnail extends PSDImageResource {
         return height;
     }
 
-    public final BufferedImage getThumbnail() {
-        return thumbnail;
+    public final BufferedImage getThumbnail() throws IOException {
+        switch (format) {
+            case 0:
+                // RAW RGB
+                return imageFromRawData(width, height, widthBytes, data.clone()); // Clone data, as image is mutable
+            case 1:
+                // JPEG
+                // TODO: Support BGR if id == RES_THUMBNAIL_PS4? Or is that already supported in the JPEG reader?
+                return ImageIO.read(new ByteArrayInputStream(data));
+            default:
+                throw new IIOException(String.format("Unsupported thumbnail format (%s) in PSD document", format));
+        }
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", ").append(thumbnail);
+        builder.append(", format: ");
+        switch (format) {
+            case 0:
+                // RAW RGB
+                builder.append("RAW RGB");
+                break;
+            case 1:
+                // JPEG
+                builder.append("JPEG");
+                break;
+            default:
+                builder.append("Unknown");
+                break;
+        }
+
+        builder.append(", size: ").append(data != null ? data.length : -1);
 
         builder.append("]");
 

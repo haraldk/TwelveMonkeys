@@ -62,6 +62,7 @@ class ICCProfile extends PSDImageResource {
     }
 
     public ICC_Profile getProfile() {
+        // Warning: Mutable... 
         return profile;
     }
 
@@ -74,5 +75,4 @@ class ICCProfile extends PSDImageResource {
 
         return builder.toString();
     }
-
 }
