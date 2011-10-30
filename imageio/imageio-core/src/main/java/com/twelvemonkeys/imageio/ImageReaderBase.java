@@ -325,21 +325,12 @@ public abstract class ImageReaderBase extends ImageReader {
                         }
                     });
                     frame.getRootPane().getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_W, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "window-close");
-
-                    frame.addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosed(WindowEvent e) {
-                            Window[] windows = Window.getWindows();
-                            if (windows == null || windows.length == 0) {
-                                System.exit(0);
-                            }
-                        }
-                    });
+                    frame.addWindowListener(new ExitIfNoWindowPresentHandler());
                     frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
                     frame.setLocationByPlatform(true);
                     JPanel pane = new JPanel(new BorderLayout());
-                    JScrollPane scroll = new JScrollPane(new ImageLabel(pImage));
+                    JScrollPane scroll = new JScrollPane(pImage != null ? new ImageLabel(pImage) : new JLabel("(no image data)", JLabel.CENTER));
                     scroll.setBorder(null);
                     pane.add(scroll);
                     frame.setContentPane(pane);
@@ -361,22 +352,22 @@ public abstract class ImageReaderBase extends ImageReader {
     }
 
     private static class ImageLabel extends JLabel {
-        Paint mBackground;
+        Paint backgroundPaint;
 
-        final Paint mCheckeredBG;
-        final Color mDefaultBG;
+        final Paint checkeredBG;
+        final Color defaultBG;
 
         public ImageLabel(final BufferedImage pImage) {
             super(new BufferedImageIcon(pImage));
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 
-            mCheckeredBG = createTexture();
+            checkeredBG = createTexture();
 
             // For indexed color, default to the color of the transparent pixel, if any 
-            mDefaultBG = getDefaultBackground(pImage);
+            defaultBG = getDefaultBackground(pImage);
 
-            mBackground = mDefaultBG != null ? mDefaultBG : mCheckeredBG;
+            backgroundPaint = defaultBG != null ? defaultBG : checkeredBG;
 
             JPopupMenu popup = createBackgroundPopup();
 
@@ -395,7 +386,7 @@ public abstract class ImageReaderBase extends ImageReader {
             JPopupMenu popup = new JPopupMenu();
             ButtonGroup group = new ButtonGroup();
 
-            addCheckBoxItem(new ChangeBackgroundAction("Checkered", mCheckeredBG), popup, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Checkered", checkeredBG), popup, group);
             popup.addSeparator();
             addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), popup, group);
             addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), popup, group);
@@ -403,7 +394,7 @@ public abstract class ImageReaderBase extends ImageReader {
             addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), popup, group);
             addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), popup, group);
             popup.addSeparator();
-            addCheckBoxItem(new ChooseBackgroundAction("Choose...", mDefaultBG != null ? mDefaultBG : Color.BLUE), popup, group);
+            addCheckBoxItem(new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE), popup, group);
 
             return popup;
         }
@@ -447,21 +438,21 @@ public abstract class ImageReaderBase extends ImageReader {
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D gr = (Graphics2D) g;
-            gr.setPaint(mBackground);
+            gr.setPaint(backgroundPaint);
             gr.fillRect(0, 0, getWidth(), getHeight());
             super.paintComponent(g);
         }
 
         private class ChangeBackgroundAction extends AbstractAction {
-            protected Paint mPaint;
+            protected Paint paint;
 
             public ChangeBackgroundAction(final String pName, final Paint pPaint) {
                 super(pName);
-                mPaint = pPaint;
+                paint = pPaint;
             }
 
             public void actionPerformed(ActionEvent e) {
-                mBackground = mPaint;
+                backgroundPaint = paint;
                 repaint();
             }
         }
@@ -472,7 +463,7 @@ public abstract class ImageReaderBase extends ImageReader {
                 putValue(Action.SMALL_ICON, new Icon() {
                     public void paintIcon(Component c, Graphics pGraphics, int x, int y) {
                         Graphics g = pGraphics.create();
-                        g.setColor((Color) mPaint);
+                        g.setColor((Color) paint);
                         g.fillRect(x, y, 16, 16);
                         g.dispose();
                     }
@@ -489,11 +480,22 @@ public abstract class ImageReaderBase extends ImageReader {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                Color selected = JColorChooser.showDialog(ImageLabel.this, "Choose background", (Color) mPaint);
+                Color selected = JColorChooser.showDialog(ImageLabel.this, "Choose background", (Color) paint);
                 if (selected != null) {
-                    mPaint = selected;
+                    paint = selected;
                     super.actionPerformed(e);
                 }
+            }
+        }
+    }
+
+    private static class ExitIfNoWindowPresentHandler extends WindowAdapter {
+        @Override
+        public void windowClosed(final WindowEvent e) {
+            Window[] windows = Window.getWindows();
+
+            if (windows == null || windows.length == 0) {
+                System.exit(0);
             }
         }
     }

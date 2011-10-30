@@ -694,6 +694,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         catch (IOException e) {
             fail(e.getMessage());
         }
+
         assertTrue(num > 0);
     }
 
