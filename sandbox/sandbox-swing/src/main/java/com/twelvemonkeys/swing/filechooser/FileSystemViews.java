@@ -82,126 +82,126 @@ public final class FileSystemViews {
             return view;
         }
 
-        private final FileView mUIView;
-        private final FileSystemView mDefaultView;
+        private final FileView uiView;
+        private final FileSystemView defaultView;
 
         public ProxyFileSystemView(final FileView pUIView, final FileSystemView pDefaultView) {
             Validate.notNull(pUIView, "uiView");
             Validate.notNull(pDefaultView, "defaultFileSystemView");
 
-            mUIView = pUIView;
-            mDefaultView = pDefaultView;
+            uiView = pUIView;
+            defaultView = pDefaultView;
         }
 
         @Override
         public Boolean isTraversable(File f) {
-            return mUIView.isTraversable(f);
+            return uiView.isTraversable(f);
         }
 
         @Override
         public String getSystemDisplayName(File f) {
-            return mUIView.getName(f);
+            return uiView.getName(f);
         }
 
         @Override
         public String getSystemTypeDescription(File f) {
             // TODO: Create something that gives a proper description here on the Mac...
-            return mUIView.getTypeDescription(f);
+            return uiView.getTypeDescription(f);
         }
 
         @Override
         public Icon getSystemIcon(File f) {
-            return mUIView.getIcon(f);
+            return uiView.getIcon(f);
         }
 
         @Override
         public boolean isRoot(File f) {
-            return mDefaultView.isRoot(f);
+            return defaultView.isRoot(f);
         }
 
         @Override
         public boolean isParent(File folder, File file) {
-            return mDefaultView.isParent(folder, file);
+            return defaultView.isParent(folder, file);
         }
 
         @Override
         public File getChild(File parent, String fileName) {
-            return mDefaultView.getChild(parent, fileName);
+            return defaultView.getChild(parent, fileName);
         }
 
         @Override
         public boolean isFileSystem(File f) {
-            return mDefaultView.isFileSystem(f);
+            return defaultView.isFileSystem(f);
         }
 
         @Override
         public boolean isHiddenFile(File f) {
-            return mDefaultView.isHiddenFile(f);
+            return defaultView.isHiddenFile(f);
         }
 
         @Override
         public boolean isFileSystemRoot(File dir) {
-            return mDefaultView.isFileSystemRoot(dir);
+            return defaultView.isFileSystemRoot(dir);
         }
 
         @Override
         public boolean isDrive(File dir) {
-            return mDefaultView.isDrive(dir);
+            return defaultView.isDrive(dir);
         }
 
         @Override
         public boolean isFloppyDrive(File dir) {
-            return mDefaultView.isFloppyDrive(dir);
+            return defaultView.isFloppyDrive(dir);
         }
 
         @Override
         public boolean isComputerNode(File dir) {
-            return mDefaultView.isComputerNode(dir);
+            return defaultView.isComputerNode(dir);
         }
 
         @Override
         public File[] getRoots() {
-            return mDefaultView.getRoots();
+            return defaultView.getRoots();
         }
 
         @Override
         public File getHomeDirectory() {
-            return mDefaultView.getHomeDirectory();
+            return defaultView.getHomeDirectory();
         }
 
         @Override
         public File getDefaultDirectory() {
-            return mDefaultView.getDefaultDirectory();
+            return defaultView.getDefaultDirectory();
         }
 
         @Override
         public File createFileObject(File dir, String filename) {
-            return mDefaultView.createFileObject(dir, filename);
+            return defaultView.createFileObject(dir, filename);
         }
 
         @Override
         public File createFileObject(String path) {
-            return mDefaultView.createFileObject(path);
+            return defaultView.createFileObject(path);
         }
 
         @Override
         public File[] getFiles(File dir, boolean useFileHiding) {
-            return mDefaultView.getFiles(dir, useFileHiding);
+            return defaultView.getFiles(dir, useFileHiding);
         }
 
         @Override
         public File getParentDirectory(File dir) {
-            return mDefaultView.getParentDirectory(dir);
+            return defaultView.getParentDirectory(dir);
         }
 
         @Override
         public File createNewFolder(File containingDir) throws IOException {
-            return mDefaultView.createNewFolder(containingDir);
+            return defaultView.createNewFolder(containingDir);
         }
 
         @Override
         public String toString() {
-            return super.toString() + "[" + mUIView + ", " + mDefaultView + "]";
+            return super.toString() + "[" + uiView + ", " + defaultView + "]";
         }
     }
 }
