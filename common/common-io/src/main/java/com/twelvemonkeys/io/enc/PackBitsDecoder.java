@@ -28,9 +28,9 @@
 
 package com.twelvemonkeys.io.enc;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.EOFException;
 
 /**
  * Decoder implementation for Apple PackBits run-length encoding.
@@ -63,6 +63,8 @@ import java.io.EOFException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/PackBitsDecoder.java#1 $
  */
 public final class PackBitsDecoder implements Decoder {
+    // TODO: Look at ICNSImageReader#unpackbits... What is this weirdness?
+
     private final boolean disableNoop;
 
     private int leftOfRun;
@@ -78,10 +80,8 @@ public final class PackBitsDecoder implements Decoder {
      * Creates a {@code PackBitsDecoder}, with optional compatibility mode.
      * <p/>
      * As some implementations of PackBits-like encoders treat {@code -128} as length of
-     * a compressed run, instead of a no-op, it's possible to disable no-ops
-     * for compatibility.
-     * Should be used with caution, even though, most known encoders never write
-     * no-ops in the compressed streams.
+     * a compressed run, instead of a no-op, it's possible to disable no-ops for compatibility.
+     * Should be used with caution, even though, most known encoders never write no-ops in the compressed streams.
      *
      * @param pDisableNoop {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
      */
@@ -93,11 +93,10 @@ public final class PackBitsDecoder implements Decoder {
      * Decodes bytes from the given input stream, to the given buffer.
      *
      * @param pStream the stream to decode from
-     * @param pBuffer a byte array, minimum 128 (or 129 if no-op is disabled)
-     * bytes long
+     * @param pBuffer a byte array, minimum 128 (or 129 if no-op is disabled) bytes long
      * @return The number of bytes decoded
      *
-     * @throws IOException
+     * @throws java.io.IOException
      */
     public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
         if (reachedEOF) {
@@ -164,7 +163,7 @@ public final class PackBitsDecoder implements Decoder {
         return read;
     }
 
-    private static byte readByte(final InputStream pStream) throws IOException {
+    static byte readByte(final InputStream pStream) throws IOException {
         int read = pStream.read();
 
         if (read < 0) {
@@ -174,21 +173,21 @@ public final class PackBitsDecoder implements Decoder {
         return (byte) read;
     }
 
-    private static void readFully(final InputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
+    static void readFully(final InputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
         if (pLength < 0) {
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException(String.format("Negative length: %d", pLength));
         }
 
-        int read = 0;
+        int total = 0;
 
-        while (read < pLength) {
-            int count = pStream.read(pBuffer, pOffset + read, pLength - read);
+        while (total < pLength) {
+            int count = pStream.read(pBuffer, pOffset + total, pLength - total);
 
             if (count < 0) {
                 throw new EOFException("Unexpected end of PackBits stream");
             }
 
-            read += count;
+            total += count;
         }
     }
 }
