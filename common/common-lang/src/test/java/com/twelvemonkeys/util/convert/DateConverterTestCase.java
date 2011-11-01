@@ -4,9 +4,7 @@ import com.twelvemonkeys.lang.DateUtil;
 import org.junit.Test;
 
 import java.text.DateFormat;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * DateConverterTestCase
@@ -48,13 +46,16 @@ public class DateConverterTestCase extends PropertyConverterAbstractTestCase {
     @Test
     @Override
     public void testConvert() {
-        TimeZone old = TimeZone.getDefault();
+        // Custom setup, to make test cases stable: Always use GMT
+        TimeZone oldTZ = TimeZone.getDefault();
+
         try {
             TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             super.testConvert();
         }
         finally {
-            TimeZone.setDefault(old);
+            // Restore
+            TimeZone.setDefault(oldTZ);
         }
     }
 }

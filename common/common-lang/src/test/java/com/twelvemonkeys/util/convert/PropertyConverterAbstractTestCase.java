@@ -1,6 +1,7 @@
 package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import com.twelvemonkeys.lang.Validate;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -35,114 +36,119 @@ public abstract class PropertyConverterAbstractTestCase extends ObjectAbstractTe
             try {
                 obj = converter.toObject(test.original(), test.type(), test.format());
 
-                assertEquals("'" + test.original() + "' converted to incorrect type", test.type(), obj.getClass());
+                assertEquals(String.format("'%s' converted to incorrect type", test.original()), test.type(), obj.getClass());
                 if (test.type().isArray()) {
-                    assertTrue("'" + test.original() + "' not converted", arrayEquals(test.value(), obj));
+                    assertArrayEquals0(String.format("'%s' not converted", test.original()), test.value(), obj);
                 }
                 else {
-                    assertEquals("'" + test.original() + "' not converted", test.value(), obj);
+                    assertEquals(String.format("'%s' not converted", test.original()), test.value(), obj);
                 }
 
                 String result = converter.toString(test.value(), test.format());
 
-                assertEquals("'" + test.converted() + "' does not match", test.converted(), result);
+                assertEquals(String.format("'%s' does not match", test.converted()), test.converted(), result);
 
                 obj = converter.toObject(result, test.type(), test.format());
-                assertEquals("'" + test.original() + "' converted to incorrect type", test.type(), obj.getClass());
+                assertEquals(String.format("'%s' converted to incorrect type", test.original()), test.type(), obj.getClass());
 
                 if (test.type().isArray()) {
-                    assertTrue("'" + test.original() + "' did not survive round trip conversion", arrayEquals(test.value(), obj));
+                    assertArrayEquals0(String.format("'%s' did not survive round trip conversion", test.original()), test.value(), obj);
                 }
                 else {
-                    assertEquals("'" + test.original() + "' did not survive round trip conversion", test.value(), obj);
+                    assertEquals(String.format("'%s' did not survive round trip conversion", test.original()), test.value(), obj);
                 }
             }
             catch (ConversionException e) {
-                e.printStackTrace();
-                fail("Converting '" + test.original() + "' to " + test.type() + " failed: " + e.getMessage());
+                failBecause(String.format("Converting '%s' to %s failed", test.original(), test.type()), e);
             }
         }
     }
 
-    // TODO: Util method?
-    private boolean arrayEquals(final Object left, final Object right) {
-        if (left.getClass().getComponentType().isPrimitive()) {
-            if (int.class == left.getClass().getComponentType()) {
-                return Arrays.equals((int[]) left, (int[]) right);
+    private static void assertArrayEquals0(final String message, final Object left, final Object right) {
+        Class<?> componentType = left.getClass().getComponentType();
+        if (componentType.isPrimitive()) {
+            if (int.class == componentType) {
+                assertArrayEquals(message, (int[]) left, (int[]) right);
             }
-            if (short.class == left.getClass().getComponentType()) {
-                return Arrays.equals((short[]) left, (short[]) right);
+            else if (short.class == componentType) {
+                assertArrayEquals(message, (short[]) left, (short[]) right);
             }
-            if (long.class == left.getClass().getComponentType()) {
-                return Arrays.equals((long[]) left, (long[]) right);
+            else if (long.class == componentType) {
+                assertArrayEquals(message, (long[]) left, (long[]) right);
             }
-            if (float.class == left.getClass().getComponentType()) {
-                return Arrays.equals((float[]) left, (float[]) right);
+            else if (float.class == componentType) {
+                assertArrayEquals(message, (float[]) left, (float[]) right, 0f);
             }
-            if (double.class == left.getClass().getComponentType()) {
-                return Arrays.equals((double[]) left, (double[]) right);
+            else if (double.class == componentType) {
+                assertArrayEquals(message, (double[]) left, (double[]) right, 0d);
             }
-            if (boolean.class == left.getClass().getComponentType()) {
-                return Arrays.equals((boolean[]) left, (boolean[]) right);
+            else if (boolean.class == componentType) {
+                assertTrue(message, Arrays.equals((boolean[]) left, (boolean[]) right));
             }
-            if (byte.class == left.getClass().getComponentType()) {
-                return Arrays.equals((byte[]) left, (byte[]) right);
+            else if (byte.class == componentType) {
+                assertArrayEquals(message, (byte[]) left, (byte[]) right);
             }
-            if (char.class == left.getClass().getComponentType()) {
-                return Arrays.equals((char[]) left, (char[]) right);
+            else if (char.class == componentType) {
+                assertArrayEquals(message, (char[]) left, (char[]) right);
             }
-            // Else blow up below...
+            else {
+                fail(String.format("Unknown primitive type: %s", componentType));
+            }
         }
+        else {
+            assertArrayEquals(message, (Object[]) left, (Object[]) right);
+        }
+    }
 
-        return Arrays.equals((Object[]) left, (Object[]) right);
+    private static void failBecause(String message, Throwable exception) {
+        AssertionError error = new AssertionError(message);
+        error.initCause(exception);
+        throw error;
     }
 
     public static final class Conversion {
-        private final String mStrVal;
-        private final Object mObjVal;
-        private final String mFormat;
-        private final String mConvertedStrVal;
+        private final String strVal;
+        private final Object objVal;
+        private final String format;
+        private final String convertedStrVal;
 
         public Conversion(String pStrVal, Object pObjVal) {
-            this(pStrVal, pObjVal, null, null);
+            this(pStrVal, pObjVal, null);
         }
 
         public Conversion(String pStrVal, Object pObjVal, String pFormat) {
-            this(pStrVal, pObjVal, pFormat, null);
+            this(pStrVal, pObjVal, pFormat, pStrVal);
         }
 
         public Conversion(String pStrVal, Object pObjVal, String pFormat, String pConvertedStrVal) {
-            if (pStrVal == null) {
-                throw new IllegalArgumentException("pStrVal == null");
-            }
-            if (pObjVal == null) {
-                throw new IllegalArgumentException("pObjVal == null");
-            }
+            Validate.notNull(pStrVal, "strVal");
+            Validate.notNull(pObjVal, "objVal");
+            Validate.notNull(pConvertedStrVal, "convertedStrVal");
 
-            mStrVal = pStrVal;
-            mObjVal = pObjVal;
-            mFormat = pFormat;
-            mConvertedStrVal = pConvertedStrVal != null ? pConvertedStrVal : pStrVal;
+            strVal = pStrVal;
+            objVal = pObjVal;
+            format = pFormat;
+            convertedStrVal = pConvertedStrVal;
         }
 
         public String original() {
-            return mStrVal;
+            return strVal;
         }
 
         public Object value() {
-            return mObjVal;
+            return objVal;
         }
 
         public Class type() {
-            return mObjVal.getClass();
+            return objVal.getClass();
         }
 
         public String format() {
-            return mFormat;
+            return format;
         }
 
         public String converted() {
-            return mConvertedStrVal;
+            return convertedStrVal;
         }
     }
 }
