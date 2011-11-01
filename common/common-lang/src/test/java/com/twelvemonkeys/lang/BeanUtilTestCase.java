@@ -3,10 +3,9 @@ package com.twelvemonkeys.lang;
 import junit.framework.TestCase;
 
 import java.io.Serializable;
-import java.util.Map;
-import java.util.HashMap;
 import java.lang.reflect.InvocationTargetException;
-import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * BeanUtilTestCase
@@ -95,7 +94,7 @@ public class BeanUtilTestCase extends TestCase {
 
         map.put("stringValue", 1);
         map.put("intValue", "2");
-        map.put("doubleValue", NumberFormat.getNumberInstance().format(0.3)); // Note, format is locale specific...
+        map.put("doubleValue", ".3");
 
         try {
             BeanUtil.configure(bean, map);
@@ -106,7 +105,7 @@ public class BeanUtilTestCase extends TestCase {
 
         assertEquals("1", bean.getStringValue());
         assertEquals(2, bean.getIntValue());
-        assertEquals(.3, bean.getDoubleValue());
+        assertEquals(0.3, bean.getDoubleValue());
     }
 
     public void testConfigureAmbigious1() {

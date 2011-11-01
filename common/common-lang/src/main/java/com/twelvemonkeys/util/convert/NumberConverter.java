@@ -91,7 +91,6 @@ public class NumberConverter implements PropertyConverter {
 	    
             if (pFormat == null) {
                 // Use system default format, using default locale
-//                format = NumberFormat.getNumberInstance();
                 format = sDefaultFormat;
             }
             else {
@@ -160,7 +159,6 @@ public class NumberConverter implements PropertyConverter {
         try {
             // Convert to string, default way
             if (StringUtil.isEmpty(pFormat)) {
-//                return NumberFormat.getNumberInstance().format(pObject);
                 return sDefaultFormat.format(pObject);
             }
 	    
@@ -196,13 +194,11 @@ public class NumberConverter implements PropertyConverter {
                     return null;
                 }
 
-
                 // ...and store in cache
                 sFormats.put(key, format);
             }
 
             return format;
         }
-	
     }
 }
