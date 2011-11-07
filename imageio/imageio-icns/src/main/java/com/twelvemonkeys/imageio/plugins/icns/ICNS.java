@@ -51,7 +51,7 @@ interface ICNS {
     /** 16×12 8 bit icon */
     int icm8 = ('i' << 24) + ('c' << 16) + ('m' << 8) + '8';
 
-    /** 16×16 1-bit mask */
+    /** 16×16 1-bit icon with 1-bit mask */
     int ics_ = ('i' << 24) + ('c' << 16) + ('s' << 8) + '#';
     /** 16×16 4-bit icon */
     int ics4 = ('i' << 24) + ('c' << 16) + ('s' << 8) + '4';
@@ -71,7 +71,7 @@ interface ICNS {
     /** 32×32 8-bit mask */
     int l8mk = ('l' << 24) + ('8' << 16) + ('m' << 8) + 'k';
 
-    /** 48×48 1-bit mask */
+    /** 48×48 1-bit icon with 1 bit mask */
     int ich_ = ('i' << 24) + ('c' << 16) + ('h' << 8) + '#';
     /** 48×48 4-bit icon */
     int ich4 = ('i' << 24) + ('c' << 16) + ('h' << 8) + '4';
@@ -87,41 +87,21 @@ interface ICNS {
     /** 128×128 8-bit mask */
     int t8mk = ('t' << 24) + ('8' << 16) + ('m' << 8) + 'k';
 
-    /** 256×256 JPEG 2000 or PNG icon */
+    /** 256×256 JPEG 2000 or PNG icon (10.x+) */
     int ic08 = ('i' << 24) + ('c' << 16) + ('0' << 8) + '8';
 
-    /** 512×512 JPEG 2000 or PNG icon */
+    /** 512×512 JPEG 2000 or PNG icon (10.x+) */
     int ic09 = ('i' << 24) + ('c' << 16) + ('0' << 8) + '9';
 
-    /** 1024×1024 PNG icon (10.7)*/
+    /** 1024×1024 PNG icon (10.7+)*/
     int ic10 = ('i' << 24) + ('c' << 16) + ('1' << 8) + '0';
 
-    /*
-    ICN#	256	32	32×32 1-bit mono icon with 1-bit mask
-    icm#	24	16	16×12 1 bit mask
-    icm4	96	16	16×12 4 bit icon
-    icm8	192	16	16×12 8 bit icon
-    ics#	32	16	16×16 1-bit mask
-    ics4	128	16	16×16 4-bit icon
-    ics8	256	16	16x16 8 bit icon
-    is32	varies (768)	16	16×16 24-bit icon
-    s8mk	256	16	16x16 8-bit mask
-    icl4	512	32	32×32 4-bit icon
-    icl8	1,024	32	32×32 8-bit icon
-    il32	varies (3,072)	32	32x32 24-bit icon
-    l8mk	1,024	32	32×32 8-bit mask
-    ich#	288	48	48×48 1-bit mask
-    ich4	1,152	48	48×48 4-bit icon
-    ich8	2,304	48	48×48 8-bit icon
-    ih32	varies (6,912)	48	48×48 24-bit icon
-    h8mk	2,304	48	48×48 8-bit mask
-    it32	varies (49,152)	128	128×128 24-bit icon
-    t8mk	16,384	128	128×128 8-bit mask
-    ic08	varies	256	256×256 icon in JPEG 2000 or PNG format
-    ic09	varies	512	512×512 icon in JPEG 2000 or PNG format
-    ic10	varies	1024	1024×1024 icon in PNG format (added in Mac OS X 10.7)
-    */
+    /** Unknown */
+    int icnV = ('i' << 24) + ('c' << 16) + ('n' << 8) + 'V';
 
+    /** JPEG 2000 magic header */
     byte[] JPEG_2000_MAGIC = new byte[] {0x00, 0x00, 0x00, 0x0C, 'j', 'P', 0x20, 0x20, 0x0D, 0x0A, (byte) 0x87, 0x0A};
+
+    /** PNG magic header */
     byte[] PNG_MAGIC = new byte[] {(byte) 0x89, (byte) 'P', (byte) 'N', (byte) 'G', 0x0d, 0x0a, 0x1a, 0x0a};
 }

@@ -49,20 +49,28 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
         return Arrays.asList(
                 new TestData(
                         getClassLoaderResource("/icns/GenericJavaApp.icns"),
-                        new Dimension(16, 16), new Dimension(16, 16), // 1 bit, 8 bit
-                        new Dimension(16, 16), new Dimension(16, 16), // 24 bit + 8 bit mask
-                        new Dimension(32, 32), new Dimension(32, 32),
-                        new Dimension(32, 32), new Dimension(32, 32),
-                        new Dimension(128, 128), new Dimension(128, 128)
+                        new Dimension(16, 16),                          // 1 bit + 1 bit mask
+                        new Dimension(16, 16), new Dimension(16, 16),   // 8 bit CMAP, 32 bit
+                        new Dimension(32, 32),                          // 1 bit + 1 bit mask
+                        new Dimension(32, 32), new Dimension(32, 32),   // 8 bit CMAP, 32 bit
+                        new Dimension(128, 128)                         // 32 bit
                 ),
                 new TestData(
                         getClassLoaderResource("/icns/Apple Retro.icns"),
-                        new Dimension(16, 16), new Dimension(16, 16), // 24 bit + 8 bit mask
-                        new Dimension(32, 32), new Dimension(32, 32), // 24 bit + 8 bit mask
-                        new Dimension(48, 48), new Dimension(48, 48) ,// 24 bit + 8 bit mask
-                        new Dimension(128, 128), new Dimension(128, 128), // 24 bit + 8 bit mask
-                        new Dimension(256, 256), // JPEG 2000
-                        new Dimension(512, 512)  // JPEG 2000
+                        new Dimension(16, 16),                          // 24 bit + 8 bit mask
+                        new Dimension(32, 32),                          // 24 bit + 8 bit mask
+                        new Dimension(48, 48),                          // 24 bit + 8 bit mask
+                        new Dimension(128, 128)                         // 24 bit + 8 bit mask
+//,                       new Dimension(256, 256), // JPEG 2000, not readable without JAI or other JPEG 2000 support
+//                        new Dimension(512, 512)  // JPEG 2000
+                ),
+                new TestData(
+                        getClassLoaderResource("/icns/7zIcon.icns"), // Contains the icnV resource, that isn't an icon
+                        new Dimension(16, 16),                          // 24 bit + 8 bit mask
+                        new Dimension(32, 32),                          // 24 bit + 8 bit mask
+                        new Dimension(128, 128)                         // 24 bit + 8 bit mask
+//,                       new Dimension(256, 256), // JPEG 2000
+//                        new Dimension(512, 512)  // JPEG 2000
                 )
         );
     }
@@ -86,7 +94,6 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
     protected List<String> getFormatNames() {
         return Arrays.asList("icns");
     }
-
 
     @Override
     protected List<String> getSuffixes() {

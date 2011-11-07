@@ -30,6 +30,8 @@ package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.*;
 import javax.imageio.spi.ImageReaderSpi;
@@ -57,7 +59,9 @@ public final class ICNSImageReader extends ImageReaderBase {
     // TODO: Merge masks with icon in front + calculate image count based on this...
 
     private static final int HEADER_SIZE = 8;
-    private List<IconHeader> iconHeaders = new ArrayList<IconHeader>();
+    private List<IconHeader> icons = new ArrayList<IconHeader>();
+    private List<IconHeader> masks = new ArrayList<IconHeader>();
+
     private int length;
 
     public ICNSImageReader() {
@@ -70,6 +74,10 @@ public final class ICNSImageReader extends ImageReaderBase {
 
     @Override
     protected void resetMembers() {
+        length = 0;
+        
+        icons.clear();
+        masks.clear();
     }
 
     @Override
@@ -83,29 +91,50 @@ public final class ICNSImageReader extends ImageReaderBase {
     }
 
     @Override
+    public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
+        IconHeader header = readIconHeader(imageIndex);
+
+        switch (header.depth()) {
+            case 1:
+                return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS1BitColorModel.INSTANCE);
+            case 4:
+                return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS4BitColorModel.INSTANCE);
+            case 8:
+                return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS8BitColorModel.INSTANCE);
+            case 32:
+                int bandLen = header.size().width * header.size().height;
+                return ImageTypeSpecifier.createBanded(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{0, 1, 2, 3}, new int[]{0, bandLen, 2 * bandLen, 3 * bandLen}, DataBuffer.TYPE_BYTE, true, false);
+            default:
+                throw new IllegalStateException(String.format("Unknown bit depth: %d", header.depth()));
+        }
+    }
+
+    @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+        ImageTypeSpecifier rawType = getRawImageType(imageIndex);
         IconHeader header = readIconHeader(imageIndex);
 
         List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
 
         switch (header.depth()) {
             case 1:
-                specifiers.add(ImageTypeSpecifier.createGrayscale(1, DataBuffer.TYPE_BYTE, false));
-                // Fall through
+//                break;
+                // TODO: Fall through & convert during read?
             case 4:
-                specifiers.add(ImageTypeSpecifier.createGrayscale(4, DataBuffer.TYPE_BYTE, false));
-                // Fall through
+//                break;
+                // TODO: Fall through & convert during read?
             case 8:
-                specifiers.add(ImageTypeSpecifier.createGrayscale(8, DataBuffer.TYPE_BYTE, false));
-                // Fall through
-            case 24:
-                specifiers.add(ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{0, 1, 2}, DataBuffer.TYPE_BYTE, false, false));
+//                break;
+                // TODO: Fall through & convert during read?
             case 32:
-                specifiers.add(ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{0, 1, 2, 3}, DataBuffer.TYPE_BYTE, true, false));
+                specifiers.add(ImageTypeSpecifier.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB), 0xff0000, 0x00ff00, 0x0000ff, 0xff000000, DataBuffer.TYPE_INT, false));
+                specifiers.add(ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                 break;
             default:
                 throw new IllegalStateException(String.format("Unknown bit depth: %d", header.depth()));
         }
+
+        specifiers.add(rawType);
 
         return specifiers.iterator();
     }
@@ -115,21 +144,21 @@ public final class ICNSImageReader extends ImageReaderBase {
         assertInput();
 
         if (!allowSearch) {
+            // Return icons.size if we know we have read all?
             return -1;
         }
 
-        int num = iconHeaders.size();
+        int num = icons.size();
         while (true) {
             try {
-                readIconHeader(num);
-                num++;
+                readIconHeader(num++);
             }
             catch (IndexOutOfBoundsException expected) {
                 break;
             }
         }
 
-        return num;
+        return icons.size();
     }
 
     @Override
@@ -139,86 +168,55 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         imageInput.seek(header.start + HEADER_SIZE);
 
-        // TODO: Extract in separate method/class
         // Special handling of PNG/JPEG 2000 icons
         if (header.isForeignFormat()) {
-            ImageInputStream stream = ImageIO.createImageInputStream(IIOUtil.createStreamAdapter(imageInput, header.length));
-            try {
-                //                       1  2  3  4  5  6  7  8  9  10 11 12  13 14 15 16 17 18 19 20 21 22 23
-                // JPEG2000 magic bytes: 00 00 00 0C 6A 50 20 20 0D 0A 87 0A  00 00 00 14 66 74 79 70 6A 70 32
-                //                       00 00 00 0C 6A 50 20 20 0D 0A 87 0A
-                //                                12  j  P sp sp \r \n
-                byte[] magic = new byte[12];
-                stream.readFully(magic);
-//                System.out.println("magic: " + Arrays.toString(magic));
-
-                String format;
-                if (Arrays.equals(ICNS.PNG_MAGIC, magic)) {
-                    format = "PNG";
-                }
-                else if (Arrays.equals(ICNS.JPEG_2000_MAGIC, magic)) {
-                    format = "JPEG 2000";
-                }
-                else {
-                    format = "unknown";
-                }
-
-                stream.seek(0);
-
-                Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
-
-                while (readers.hasNext()) {
-                    ImageReader reader = readers.next();
-                    reader.setInput(stream);
-
-                    try {
-                        return reader.read(0, param);
-                    }
-                    catch (IOException ignore) {
-                    }
-
-                    stream.seek(0);
-                }
-
-                // TODO: There's no JPEG 2000 reader installed in ImageIO by default (requires JAI ImageIO installed)
-                // TODO: Return blank icon? We know the image dimensions, we just can't read the data... Return blank image? Pretend it's not in the stream? ;-)
-                // TODO: Create JPEG 2000 reader..? :-P
-                throw new IIOException(String.format(
-                        "Cannot read %s format in type '%s' icon (no reader; installed: %s)",
-                        format, ICNSUtil.intToStr(header.type), Arrays.toString(ImageIO.getReaderFormatNames())
-                ));
-            }
-            finally {
-                stream.close();
-            }
+            return readForeignFormat(param, header);
         }
 
+        return readICNSFormat(imageIndex, param, header);
+    }
+
+    private BufferedImage readICNSFormat(final int imageIndex, final ImageReadParam param, final IconHeader header) throws IOException {
         Dimension size = header.size();
+
         int width = size.width;
         int height = size.height;
 
         BufferedImage image = getDestination(param, getImageTypes(imageIndex), width, height);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
-        checkReadParamBandSettings(param, rawType.getNumBands(), image.getSampleModel().getNumBands());
+        if (rawType instanceof IndexedImageTypeSpecifier && rawType.getBufferedImageType() != image.getType()) {
+            checkReadParamBandSettings(param, 4, image.getSampleModel().getNumBands());
+        }
+        else {
+            checkReadParamBandSettings(param, rawType.getNumBands(), image.getSampleModel().getNumBands());
+        }
 
         final Rectangle source = new Rectangle();
         final Rectangle dest = new Rectangle();
         computeRegions(param, width, height, image, source, dest);
 
+        processImageStarted(imageIndex);
+
         // Read image data
         byte[] data;
-        if (header.isPackbits()) {
+        if (header.isCompressed()) {
+            // Only 32 bit icons may be compressed
             data = new byte[width * height * header.depth() / 8];
 
             int packedSize = header.length - HEADER_SIZE;
+
             if (width >= 128 && height >= 128) {
-                imageInput.skipBytes(4);
+                imageInput.skipBytes(4); // Seems to be 4 byte 0-pad
                 packedSize -= 4;
             }
 
             InputStream input = IIOUtil.createStreamAdapter(imageInput, packedSize);
-            unpackbits(new DataInputStream(input), data, 0, data.length);
-            input.close();
+            try {
+                decompress(new DataInputStream(input), data, 0, (data.length * 24) / 32); // 24 bit data
+            }
+            finally {
+                input.close();
+            }
         }
         else {
             data = new byte[header.length - HEADER_SIZE];
@@ -232,47 +230,183 @@ public final class ICNSImageReader extends ImageReaderBase {
                 break;
             case 8:
                 break;
-            case 24:
+            case 32:
                 break;
             default:
                 throw new IllegalStateException(String.format("Unknown bit depth for icon: %d", header.depth()));
         }
 
-        if (header.depth() <= 8) {
+        if (header.depth() == 1) {
+            DataBufferByte buffer = new DataBufferByte(data, data.length / 2, 0);
+            WritableRaster raster = Raster.createPackedRaster(buffer, width, height, header.depth(), null);
+
+            if (image.getType() == rawType.getBufferedImageType() && ((IndexColorModel) image.getColorModel()).getMapSize() == 2) {
+                image.setData(raster);
+            }
+            else {
+                DataBufferByte maskBuffer = new DataBufferByte(data, data.length / 2, data.length / 2);
+                WritableRaster mask = Raster.createPackedRaster(maskBuffer, width, height, header.depth(), null);
+
+                Graphics2D graphics = image.createGraphics();
+                try {
+                    BufferedImage temp = new BufferedImage(rawType.getColorModel(), raster, false, null);
+                    graphics.drawImage(temp, 0, 0, null);
+
+                    temp = new BufferedImage(ICNSBitMaskColorModel.INSTANCE, mask, false, null);
+                    temp.setData(mask);
+                    graphics.setComposite(AlphaComposite.DstIn);
+                    graphics.drawImage(temp, 0, 0, null);
+                }
+                finally {
+                    graphics.dispose();
+                }
+            }
+        }
+        else if (header.depth() <= 8) {
             DataBufferByte buffer = new DataBufferByte(data, data.length);
-            image.setData(Raster.createPackedRaster(buffer, width, height, header.depth(), null));
+            WritableRaster raster = Raster.createPackedRaster(buffer, width, height, header.depth(), null);
+            
+            if (image.getType() == rawType.getBufferedImageType()) {
+                image.setData(raster);
+            }
+            else {
+                Graphics2D graphics = image.createGraphics();
+                try {
+                    BufferedImage temp = new BufferedImage(rawType.getColorModel(), raster, false, null);
+                    graphics.drawImage(temp, 0, 0, null);
+                }
+                finally {
+                    graphics.dispose();
+                }
+
+                processImageProgress(50f);
+
+                // Look up/read mask from later IconHeader and apply
+                Raster mask = readMask(findMask(header));
+                image.getAlphaRaster().setRect(mask);
+            }
         }
         else {
-//            System.err.println("image: " + image);
-//            DataBufferByte buffer = new DataBufferByte(data, data.length);
-//            WritableRaster raster = Raster.createInterleavedRaster(buffer, width, height, width * header.depth() / 8, header.depth() / 8, new int[]{0, 1, 2}, null);
-//            WritableRaster raster = Raster.createInterleavedRaster(buffer, width, height, width * header.depth() / 8, header.depth() / 8, new int[]{0, 1, 2, 3}, null);
-//            int bandLen = data.length / 4;
-//            DataBufferByte buffer = new DataBufferByte(data, data.length);
-//            WritableRaster raster = Raster.createBandedRaster(buffer, width, height, width, new int[]{0, 0, 0, 0}, new int[]{0, bandLen, bandLen * 2, bandLen * 3}, null);
-            int bandLen = data.length / 3;
+            int bandLen = data.length / 4;
+
             DataBufferByte buffer = new DataBufferByte(data, data.length);
-            WritableRaster raster = Raster.createBandedRaster(buffer, width, height, width, new int[]{0, 0, 0}, new int[]{0, bandLen, bandLen * 2}, null);
-            ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+            WritableRaster raster = Raster.createBandedRaster(buffer, width, height, width, new int[]{0, 0, 0, 0}, new int[]{0, bandLen, bandLen * 2, bandLen * 3}, null);
+            image.setData(raster);
 
-            BufferedImage temp = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
-//            showIt(temp, "foo");
+            processImageProgress(75f);
 
-//            image.setData(raster);
-            Graphics2D graphics = image.createGraphics();
-            try {
-                graphics.drawImage(temp, 0, 0, null);
-            }
-            finally {
-                graphics.dispose();
-            }
+            // Read mask from later IconHeader and apply
+            Raster mask = readMask(findMask(header));
+            image.getAlphaRaster().setRect(mask);
+        }
+
+        // For now: Make listener tests happy
+        // TODO: Implement more sophisticated reading
+        processImageProgress(100f);
+
+        if (abortRequested()) {
+            processReadAborted();
+        }
+        else {
+            processImageComplete();
         }
 
         return image;
     }
 
+    private Raster readMask(IconHeader header) throws IOException {
+        Dimension size = header.size();
+
+        int width = size.width;
+        int height = size.height;
+
+        byte[] alpha = new byte[header.length - HEADER_SIZE];
+
+        imageInput.seek(header.start + HEADER_SIZE);
+        imageInput.readFully(alpha);
+
+        return Raster.createBandedRaster(new DataBufferByte(alpha, alpha.length), width, height, width, new int[]{0}, new int[]{0}, null);
+    }
+
+    private IconHeader findMask(final IconHeader icon) throws IOException {
+        try {
+            int i = 0;
+
+            while (true) {
+                IconHeader mask = i < masks.size() ? masks.get(i++) : readNextIconHeader();
+
+                if (mask.isMask() && mask.size().equals(icon.size())) {
+                    return mask;
+                }
+            }
+        }
+        catch (IndexOutOfBoundsException ignore) {
+        }
+
+        throw new IIOException(String.format("No mask for icon: %s", icon));
+    }
+
+    private BufferedImage readForeignFormat(final ImageReadParam param, final IconHeader header) throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(IIOUtil.createStreamAdapter(imageInput, header.length));
+
+        try {
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
+
+            while (readers.hasNext()) {
+                ImageReader reader = readers.next();
+                reader.setInput(stream);
+
+                try {
+                    return reader.read(0, param);
+                }
+                catch (IOException ignore) {
+                }
+                finally {
+                    stream.seek(0);
+                }
+            }
+
+            // There's no JPEG 2000 reader installed in ImageIO by default (requires JAI ImageIO installed).
+            // The current implementation is correct, but a bit harsh maybe..? Other options:
+            // TODO: Return blank icon + issue warning? We know the image dimensions, we just can't read the data...
+            // TODO: Pretend it's not in the stream + issue warning?
+            // TODO: Create JPEG 2000 reader..? :-P
+            throw new IIOException(String.format(
+                    "Cannot read %s format in type '%s' icon (no reader; installed: %s)",
+                    getForeignFormat(stream), ICNSUtil.intToStr(header.type), Arrays.toString(ImageIO.getReaderFormatNames())
+            ));
+        }
+        finally {
+            stream.close();
+        }
+    }
+
+    private String getForeignFormat(final ImageInputStream stream) throws IOException {
+        byte[] magic = new byte[12]; // Length of JPEG 2000 magic
+        try {
+            stream.readFully(magic);
+        }
+        finally {
+            stream.seek(0);
+        }
+
+        String format;
+        if (Arrays.equals(ICNS.PNG_MAGIC, magic)) {
+            format = "PNG";
+        }
+        else if (Arrays.equals(ICNS.JPEG_2000_MAGIC, magic)) {
+            format = "JPEG 2000";
+        }
+        else {
+            format = "unknown";
+        }
+
+        return format;
+    }
+
+    // http://www.macdisk.com/maciconen.php
     // TODO: Is this really packbits?! Don't think so, but it's very close...
-    static void unpackbits(final DataInputStream input, final byte[] result, int offset, int length) throws IOException {
+    static void decompress(final DataInputStream input, final byte[] result, int offset, int length) throws IOException {
         int resultPos = offset;
         int remaining = length;
 
@@ -282,11 +416,11 @@ public final class ICNSImageReader extends ImageReaderBase {
 
             if ((run & 0x80) != 0) {
                 // Repeated run
-                runLength = run + 131; // Packbits says: -run + 1 and 0x80 should be no-op... This inverts the lengths, but allows longer runs...
+                runLength = run + 131; // Packbits: -run + 1 and run == 0x80 is no-op... This allows 1 byte longer runs...
 
                 byte runData = input.readByte();
                 for (int i = 0; i < runLength; i++) {
-                    result[resultPos++] = runData;
+                    result[resultPos++] = runData;  
                 }
             }
             else {
@@ -301,27 +435,43 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
     }
 
-    private IconHeader readIconHeader(int imageIndex) throws IOException {
+    private IconHeader readIconHeader(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readeFileHeader();
 
-        if (iconHeaders.size() <= imageIndex) {
-            int lastReadIndex = iconHeaders.size() - 1;
-            IconHeader lastRead = iconHeaders.isEmpty() ? null : iconHeaders.get(lastReadIndex);
-
-            for (int i = lastReadIndex; i < imageIndex; i++) {
-                imageInput.seek(lastRead == null ? HEADER_SIZE : lastRead.start + lastRead.length);
-
-                if (imageInput.getStreamPosition() >= length) {
-                    throw new IndexOutOfBoundsException();
-                }
-
-                lastRead = IconHeader.read(imageInput);
-                iconHeaders.add(lastRead);
-            }
+        while (icons.size() <= imageIndex) {
+            readNextIconHeader();
         }
 
-        return iconHeaders.get(imageIndex);
+        return icons.get(imageIndex);
+    }
+
+    private IconHeader readNextIconHeader() throws IOException {
+        IconHeader lastIcon = icons.isEmpty() ? null : icons.get(icons.size() - 1);
+        IconHeader lastMask = masks.isEmpty() ? null : masks.get(masks.size() - 1);
+
+        long lastReadPos = Math.max(
+                lastIcon == null ? HEADER_SIZE : lastIcon.start + lastIcon.length,
+                lastMask == null ? HEADER_SIZE : lastMask.start + lastMask.length
+        );
+
+        imageInput.seek(lastReadPos);
+
+        if (imageInput.getStreamPosition() >= length) {
+            throw new IndexOutOfBoundsException();
+        }
+
+        IconHeader header = IconHeader.read(imageInput);
+
+        // Filter out special case icnV (version?), as this isn't really an icon..
+        if (header.isMask() || header.type == ICNS.icnV) {
+            masks.add(header);
+        }
+        else {
+            icons.add(header);
+        }
+
+        return header;
     }
 
     private void readeFileHeader() throws IOException {
@@ -359,64 +509,51 @@ public final class ICNSImageReader extends ImageReaderBase {
         private void validate(int type, int length) {
             switch (type) {
                 case ICNS.ICON:
-                    if (length == 128) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 128);
+                    break;
                 case ICNS.ICN_:
-                    if (length == 256) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 256);
+                    break;
                 case ICNS.icm_:
-                    if (length == 24) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 24);
+                    break;
                 case ICNS.icm4:
-                    if (length == 96) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 96);
+                    break;
                 case ICNS.icm8:
-                    if (length == 192) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 192);
+                    break;
                 case ICNS.ics_:
-                    if (length == 32) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 64);
+                    break;
                 case ICNS.ics4:
-                    if (length == 128) {
-                        return;
-                    }
+                    validateLengthForType(type, length, 128);
+                    break;
                 case ICNS.ics8:
                 case ICNS.s8mk:
-                    if (length == 256) {
-                            return;
-                    }
+                    validateLengthForType(type, length, 256);
+                    break;
                 case ICNS.icl4:
-                    if (length == 512) {
-                            return;
-                    }
+                    validateLengthForType(type, length, 512);
+                    break;
                 case ICNS.icl8:
                 case ICNS.l8mk:
-                    if (length == 1024) {
-                            return;
-                    }
+                    validateLengthForType(type, length, 1024);
+                    break;
                 case ICNS.ich_:
-                    if (length == 288) {
-                            return;
-                    }
+//                    validateLengthForType(type, length, 288);
+                    validateLengthForType(type, length, 576);
+                    break;
                 case ICNS.ich4:
-                    if (length == 1152) {
-                            return;
-                    }
+                    validateLengthForType(type, length, 1152);
+                    break;
                 case ICNS.ich8:
                 case ICNS.h8mk:
-                    if (length == 2034) {
-                            return;
-                    }
+                    validateLengthForType(type, length, 2304);
+                    break;
                 case ICNS.t8mk:
-                    if (length == 16384) {
-                            return;
-                    }
+                    validateLengthForType(type, length, 16384);
+                    break;
                 case ICNS.ih32:
                 case ICNS.is32:
                 case ICNS.il32:
@@ -425,12 +562,26 @@ public final class ICNSImageReader extends ImageReaderBase {
                 case ICNS.ic09:
                 case ICNS.ic10:
                     if (length > 0) {
-                        return;
+                        break;
                     }
                     throw new IllegalArgumentException(String.format("Wrong combination of icon type '%s' and length: %d", ICNSUtil.intToStr(type), length));
+                case ICNS.icnV:
+                    validateLengthForType(type, length, 4);
+                    break;
                 default:
                     throw new IllegalStateException(String.format("Unknown icon type: '%s'", ICNSUtil.intToStr(type)));
             }
+
+        }
+
+        private void validateLengthForType(int type, int length, final int expectedLength) {
+            Validate.isTrue(
+                    length == expectedLength + HEADER_SIZE, // Compute to make lengths more logical
+                    String.format(
+                            "Wrong combination of icon type '%s' and length: %d (expected: %d)",
+                            ICNSUtil.intToStr(type), length - HEADER_SIZE, expectedLength
+                    )
+            );
         }
 
         public Dimension size() {
@@ -502,17 +653,29 @@ public final class ICNSImageReader extends ImageReaderBase {
                 case ICNS.ic08:
                 case ICNS.ic09:
                 case ICNS.ic10:
-                    return 24;
+                    return 32;
                 default:
                     throw new IllegalStateException(String.format("Unknown icon type: '%s'", ICNSUtil.intToStr(type)));
             }
         }
 
-        public boolean isPackbits() {
+        public boolean isMask() {
             switch (type) {
-                case ICNS.ih32:
-                case ICNS.il32:
+                case ICNS.s8mk:
+                case ICNS.l8mk:
+                case ICNS.h8mk:
+                case ICNS.t8mk:
+                    return true;
+            }
+
+            return false;
+        }
+
+        public boolean isCompressed() {
+            switch (type) {
                 case ICNS.is32:
+                case ICNS.il32:
+                case ICNS.ih32:
                 case ICNS.it32:
                     return true;
             }
@@ -550,6 +713,7 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
     }
 
+    @SuppressWarnings({"UnusedAssignment"})
     public static void main(String[] args) throws IOException {
         int argIndex = 0;
 
@@ -568,12 +732,20 @@ public final class ICNSImageReader extends ImageReaderBase {
         for (int i = start; i < numImages; i++) {
             try {
                 BufferedImage image = reader.read(i);
-                System.err.println("image: " + image);
+//                System.err.println("image: " + image);
                 showIt(image, String.format("%s - %d", input.getName(), i));
             }
             catch (IIOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private static final class ICNSBitMaskColorModel extends IndexColorModel {
+        static final IndexColorModel INSTANCE = new ICNSBitMaskColorModel();
+
+        private ICNSBitMaskColorModel() {
+            super(1, 2, new int[]{0, 0xffffffff}, 0, true, 0, DataBuffer.TYPE_BYTE);
         }
     }
 }
