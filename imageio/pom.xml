@@ -32,6 +32,7 @@
 
         <!-- Stand-alone readers/writers -->
         <module>imageio-ico</module>
+        <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>
         <module>imageio-pdf</module>
@@ -43,6 +44,7 @@
         <module>imageio-batik</module>
         <module>imageio-jmagick</module>
 
+        <!-- Test cases for the JRE provided ImageIO plugins -->
         <module>imageio-reference</module>        
     </modules>
 
