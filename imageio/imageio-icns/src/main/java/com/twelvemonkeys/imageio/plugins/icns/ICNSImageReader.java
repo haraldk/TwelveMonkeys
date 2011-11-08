@@ -294,7 +294,7 @@ public final class ICNSImageReader extends ImageReaderBase {
             int bandLen = data.length / 4;
 
             DataBufferByte buffer = new DataBufferByte(data, data.length);
-            WritableRaster raster = Raster.createBandedRaster(buffer, width, height, width, new int[]{0, 0, 0, 0}, new int[]{0, bandLen, bandLen * 2, bandLen * 3}, null);
+            WritableRaster raster = Raster.createBandedRaster(buffer, width, height, width, new int[]{0, 0, 0, 0}, createBandOffsets(bandLen), null);
             image.setData(raster);
 
             processImageProgress(75f);
