@@ -54,10 +54,11 @@ import java.util.List;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: ICNSImageReader.java,v 1.0 25.10.11 18:42 haraldk Exp$
+ *
+ * @see <a href="http://www.macdisk.com/maciconen.php">Macintosh Icons</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Apple_Icon_Image_format">Apple Icon Image format (Wikipedia)</a>
  */
 public final class ICNSImageReader extends ImageReaderBase {
-    // TODO: Merge masks with icon in front + calculate image count based on this...
-
     private static final int HEADER_SIZE = 8;
     private List<IconHeader> icons = new ArrayList<IconHeader>();
     private List<IconHeader> masks = new ArrayList<IconHeader>();
@@ -102,11 +103,18 @@ public final class ICNSImageReader extends ImageReaderBase {
             case 8:
                 return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS8BitColorModel.INSTANCE);
             case 32:
-                int bandLen = header.size().width * header.size().height;
-                return ImageTypeSpecifier.createBanded(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{0, 1, 2, 3}, new int[]{0, bandLen, 2 * bandLen, 3 * bandLen}, DataBuffer.TYPE_BYTE, true, false);
+                return ImageTypeSpecifier.createBanded(
+                        ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                        new int[]{0, 1, 2, 3}, createBandOffsets(header.size().width * header.size().height),
+                        DataBuffer.TYPE_BYTE, true, false
+                );
             default:
                 throw new IllegalStateException(String.format("Unknown bit depth: %d", header.depth()));
         }
+    }
+
+    private static int[] createBandOffsets(int bandLen) {
+        return new int[]{0, bandLen, 2 * bandLen, 3 * bandLen};
     }
 
     @Override
@@ -118,14 +126,9 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         switch (header.depth()) {
             case 1:
-//                break;
-                // TODO: Fall through & convert during read?
             case 4:
-//                break;
-                // TODO: Fall through & convert during read?
             case 8:
-//                break;
-                // TODO: Fall through & convert during read?
+                // Fall through & convert during read
             case 32:
                 specifiers.add(ImageTypeSpecifier.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB), 0xff0000, 0x00ff00, 0x0000ff, 0xff000000, DataBuffer.TYPE_INT, false));
                 specifiers.add(ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
@@ -164,7 +167,6 @@ public final class ICNSImageReader extends ImageReaderBase {
     @Override
     public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
         IconHeader header = readIconHeader(imageIndex);
-//        System.err.println("header: " + header);
 
         imageInput.seek(header.start + HEADER_SIZE);
 
@@ -184,6 +186,7 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         BufferedImage image = getDestination(param, getImageTypes(imageIndex), width, height);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+
         if (rawType instanceof IndexedImageTypeSpecifier && rawType.getBufferedImageType() != image.getType()) {
             checkReadParamBandSettings(param, 4, image.getSampleModel().getNumBands());
         }
@@ -206,11 +209,14 @@ public final class ICNSImageReader extends ImageReaderBase {
             int packedSize = header.length - HEADER_SIZE;
 
             if (width >= 128 && height >= 128) {
+                // http://www.macdisk.com/maciconen.php:
+                // "In some icon sizes, there is a 32bit integer at the beginning of the run, whose role remains unknown."
                 imageInput.skipBytes(4); // Seems to be 4 byte 0-pad
                 packedSize -= 4;
             }
 
             InputStream input = IIOUtil.createStreamAdapter(imageInput, packedSize);
+
             try {
                 decompress(new DataInputStream(input), data, 0, (data.length * 24) / 32); // 24 bit data
             }
@@ -223,35 +229,28 @@ public final class ICNSImageReader extends ImageReaderBase {
             imageInput.readFully(data);
         }
 
-        switch (header.depth()) {
-            case 1:
-                break;
-            case 4:
-                break;
-            case 8:
-                break;
-            case 32:
-                break;
-            default:
-                throw new IllegalStateException(String.format("Unknown bit depth for icon: %d", header.depth()));
-        }
-
         if (header.depth() == 1) {
+            // Binary
             DataBufferByte buffer = new DataBufferByte(data, data.length / 2, 0);
             WritableRaster raster = Raster.createPackedRaster(buffer, width, height, header.depth(), null);
 
             if (image.getType() == rawType.getBufferedImageType() && ((IndexColorModel) image.getColorModel()).getMapSize() == 2) {
+                // Preserve raw data as read (binary), discard mask
                 image.setData(raster);
             }
             else {
+                // Convert to 32 bit ARGB
                 DataBufferByte maskBuffer = new DataBufferByte(data, data.length / 2, data.length / 2);
                 WritableRaster mask = Raster.createPackedRaster(maskBuffer, width, height, header.depth(), null);
 
                 Graphics2D graphics = image.createGraphics();
+
                 try {
+                    // Apply image data
                     BufferedImage temp = new BufferedImage(rawType.getColorModel(), raster, false, null);
                     graphics.drawImage(temp, 0, 0, null);
 
+                    // Apply mask
                     temp = new BufferedImage(ICNSBitMaskColorModel.INSTANCE, mask, false, null);
                     temp.setData(mask);
                     graphics.setComposite(AlphaComposite.DstIn);
@@ -263,14 +262,18 @@ public final class ICNSImageReader extends ImageReaderBase {
             }
         }
         else if (header.depth() <= 8) {
+            // Indexed
             DataBufferByte buffer = new DataBufferByte(data, data.length);
             WritableRaster raster = Raster.createPackedRaster(buffer, width, height, header.depth(), null);
             
             if (image.getType() == rawType.getBufferedImageType()) {
+                // Preserve raw data as read (indexed), discard mask
                 image.setData(raster);
             }
             else {
+                // Convert to 32 bit ARGB
                 Graphics2D graphics = image.createGraphics();
+
                 try {
                     BufferedImage temp = new BufferedImage(rawType.getColorModel(), raster, false, null);
                     graphics.drawImage(temp, 0, 0, null);
@@ -281,12 +284,13 @@ public final class ICNSImageReader extends ImageReaderBase {
 
                 processImageProgress(50f);
 
-                // Look up/read mask from later IconHeader and apply
+                // Read mask and apply
                 Raster mask = readMask(findMask(header));
                 image.getAlphaRaster().setRect(mask);
             }
         }
         else {
+            // 32 bit ARGB (true color)
             int bandLen = data.length / 4;
 
             DataBufferByte buffer = new DataBufferByte(data, data.length);
@@ -295,7 +299,7 @@ public final class ICNSImageReader extends ImageReaderBase {
 
             processImageProgress(75f);
 
-            // Read mask from later IconHeader and apply
+            // Read mask and apply
             Raster mask = readMask(findMask(header));
             image.getAlphaRaster().setRect(mask);
         }
@@ -404,8 +408,22 @@ public final class ICNSImageReader extends ImageReaderBase {
         return format;
     }
 
-    // http://www.macdisk.com/maciconen.php
-    // TODO: Is this really packbits?! Don't think so, but it's very close...
+    /*
+     * http://www.macdisk.com/maciconen.php:
+     * "For [...] (width * height of the icon), read a byte.
+     * if bit 8 of the byte is set:
+     *   This is a compressed run, for some value (next byte).
+     *   The length is byte - 125. (*
+     *   Put so many copies of the byte in the current color channel.
+     * Else:
+     *   This is an uncompressed run, whose values follow.
+     *   The length is byte + 1.
+     *   Read the bytes and put them in the current color channel."
+     *
+     *   *): With signed bytes, byte is always negative in this case, so it's actually -byte - 125,
+     *       which is the same as byte + 131.
+     */
+    // NOTE: This is very close to PackBits (as described by the Wikipedia article), but it is not PackBits!
     static void decompress(final DataInputStream input, final byte[] result, int offset, int length) throws IOException {
         int resultPos = offset;
         int remaining = length;
@@ -415,16 +433,17 @@ public final class ICNSImageReader extends ImageReaderBase {
             int runLength;
 
             if ((run & 0x80) != 0) {
-                // Repeated run
-                runLength = run + 131; // Packbits: -run + 1 and run == 0x80 is no-op... This allows 1 byte longer runs...
+                // Compressed run
+                runLength = run + 131; // PackBits: -run + 1 and run == 0x80 is no-op... This allows 1 byte longer runs...
 
                 byte runData = input.readByte();
+
                 for (int i = 0; i < runLength; i++) {
-                    result[resultPos++] = runData;  
+                    result[resultPos++] = runData;
                 }
             }
             else {
-                // Literal run
+                // Uncompressed run
                 runLength = run + 1;
 
                 input.readFully(result, resultPos, runLength);
@@ -541,7 +560,6 @@ public final class ICNSImageReader extends ImageReaderBase {
                     validateLengthForType(type, length, 1024);
                     break;
                 case ICNS.ich_:
-//                    validateLengthForType(type, length, 288);
                     validateLengthForType(type, length, 576);
                     break;
                 case ICNS.ich4:
@@ -627,7 +645,7 @@ public final class ICNSImageReader extends ImageReaderBase {
         public int depth() {
             switch (type) {
                 case ICNS.ICON:
-                case ICNS.ICN_: // Specical case? Wikipedi say 1 bit + 1 bit mask
+                case ICNS.ICN_:
                 case ICNS.icm_:
                 case ICNS.ics_:
                 case ICNS.ich_:
@@ -677,7 +695,12 @@ public final class ICNSImageReader extends ImageReaderBase {
                 case ICNS.il32:
                 case ICNS.ih32:
                 case ICNS.it32:
-                    return true;
+                    // http://www.macdisk.com/maciconen.php
+                    // "One should check whether the data length corresponds to the theoretical length (width * height)."
+                    Dimension size = size();
+                    if (length != size.width * size.height) {
+                        return true;
+                    }
             }
 
             return false;
