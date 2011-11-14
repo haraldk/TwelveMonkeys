@@ -96,8 +96,11 @@ interface ICNS {
     /** 1024×1024 PNG icon (10.7+)*/
     int ic10 = ('i' << 24) + ('c' << 16) + ('1' << 8) + '0';
 
-    /** Unknown */
+    /** Unknown (Version) */
     int icnV = ('i' << 24) + ('c' << 16) + ('n' << 8) + 'V';
+
+    /** Unknown (Table of Contents) */
+    int TOC_ = ('T' << 24) + ('O' << 16) + ('C' << 8) + ' ';
 
     /** JPEG 2000 magic header */
     byte[] JPEG_2000_MAGIC = new byte[] {0x00, 0x00, 0x00, 0x0C, 'j', 'P', 0x20, 0x20, 0x0D, 0x0A, (byte) 0x87, 0x0A};
