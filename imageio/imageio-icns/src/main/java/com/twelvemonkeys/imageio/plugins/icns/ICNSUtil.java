@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.icns;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+
 /**
  * ICNSUtil
  *
@@ -49,5 +52,51 @@ final class ICNSUtil {
                         (byte) ((pChunkId & 0x000000ff))
                 }
         );
+    }
+
+    /*
+    * http://www.macdisk.com/maciconen.php:
+    * "For [...] (width * height of the icon), read a byte.
+    * if bit 8 of the byte is set:
+    *   This is a compressed run, for some value (next byte).
+    *   The length is byte - 125. (*
+    *   Put so many copies of the byte in the current color channel.
+    * Else:
+    *   This is an uncompressed run, whose values follow.
+    *   The length is byte + 1.
+    *   Read the bytes and put them in the current color channel."
+    *
+    *   *): With signed bytes, byte is always negative in this case, so it's actually -byte - 125,
+    *       which is the same as byte + 131.
+    */
+    // NOTE: This is very close to PackBits (as described by the Wikipedia article), but it is not PackBits!
+    static void decompress(final DataInputStream input, final byte[] result, int offset, int length) throws IOException {
+        int resultPos = offset;
+        int remaining = length;
+
+        while (remaining > 0) {
+            byte run = input.readByte();
+            int runLength;
+
+            if ((run & 0x80) != 0) {
+                // Compressed run
+                runLength = run + 131; // PackBits: -run + 1 and run == 0x80 is no-op... This allows 1 byte longer runs...
+
+                byte runData = input.readByte();
+
+                for (int i = 0; i < runLength; i++) {
+                    result[resultPos++] = runData;
+                }
+            }
+            else {
+                // Uncompressed run
+                runLength = run + 1;
+
+                input.readFully(result, resultPos, runLength);
+                resultPos += runLength;
+            }
+
+            remaining -= runLength;
+        }
     }
 }

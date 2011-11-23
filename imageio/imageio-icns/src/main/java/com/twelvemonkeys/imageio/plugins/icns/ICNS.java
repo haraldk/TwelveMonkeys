@@ -36,75 +36,78 @@ package com.twelvemonkeys.imageio.plugins.icns;
  * @version $Id: ICNS.java,v 1.0 25.10.11 19:10 haraldk Exp$
  */
 interface ICNS {
-    /** "icns" magic identifier */
+    /** Resource header size (8). */
+    int RESOURCE_HEADER_SIZE = 8;
+
+    /** ICNS magic identifier ("icns"). */
     int MAGIC = ('i' << 24) + ('c' << 16) + ('n' << 8) + 's';
 
-    /** 32×32 1-bit mono icon */
+    /** 32×32 1-bit mono icon. */
     int ICON = ('I' << 24) + ('C' << 16) + ('O' << 8) + 'N';
-    /** 32×32 1-bit mono icon with 1-bit mask*/
+    /** 32×32 1-bit mono icon with 1-bit mask. */
     int ICN_ = ('I' << 24) + ('C' << 16) + ('N' << 8) + '#';
 
-    /** 16×12 1 bit mask*/
+    /** 16×12 1 bit mask. */
     int icm_ = ('i' << 24) + ('c' << 16) + ('m' << 8) + '#';
-    /** 16×12 4 bit icon */
+    /** 16×12 4 bit icon. */
     int icm4 = ('i' << 24) + ('c' << 16) + ('m' << 8) + '4';
-    /** 16×12 8 bit icon */
+    /** 16×12 8 bit icon. */
     int icm8 = ('i' << 24) + ('c' << 16) + ('m' << 8) + '8';
 
-    /** 16×16 1-bit icon with 1-bit mask */
+    /** 16×16 1-bit icon with 1-bit mask. */
     int ics_ = ('i' << 24) + ('c' << 16) + ('s' << 8) + '#';
-    /** 16×16 4-bit icon */
+    /** 16×16 4-bit icon. */
     int ics4 = ('i' << 24) + ('c' << 16) + ('s' << 8) + '4';
-    /** 16×16 8-bit icon */
+    /** 16×16 8-bit icon. */
     int ics8 = ('i' << 24) + ('c' << 16) + ('s' << 8) + '8';
-    /** 16×16 24-bit icon, run-length compressed */
+    /** 16×16 24-bit icon, possibly run-length compressed. */
     int is32 = ('i' << 24) + ('s' << 16) + ('3' << 8) + '2';
-    /** 16x16 8-bit mask */
+    /** 16x16 8-bit mask. */
     int s8mk = ('s' << 24) + ('8' << 16) + ('m' << 8) + 'k';
 
-    /** 32×32 4-bit icon */
+    /** 32×32 4-bit icon. */
     int icl4 = ('i' << 24) + ('c' << 16) + ('l' << 8) + '4';
-    /** 32×32 8-bit icon */
+    /** 32×32 8-bit icon. */
     int icl8 = ('i' << 24) + ('c' << 16) + ('l' << 8) + '8';
-    /** 32×32 24-bit icon, run-length compressed */
+    /** 32×32 24-bit icon, possibly run-length compressed. */
     int il32 = ('i' << 24) + ('l' << 16) + ('3' << 8) + '2';
-    /** 32×32 8-bit mask */
+    /** 32×32 8-bit mask. */
     int l8mk = ('l' << 24) + ('8' << 16) + ('m' << 8) + 'k';
 
-    /** 48×48 1-bit icon with 1 bit mask */
+    /** 48×48 1-bit icon with 1 bit mask. */
     int ich_ = ('i' << 24) + ('c' << 16) + ('h' << 8) + '#';
-    /** 48×48 4-bit icon */
+    /** 48×48 4-bit icon. */
     int ich4 = ('i' << 24) + ('c' << 16) + ('h' << 8) + '4';
-    /** 48×48 8-bit icon */
+    /** 48×48 8-bit icon. */
     int ich8 = ('i' << 24) + ('c' << 16) + ('h' << 8) + '8';
-    /** 48×48 24-bit icon, run-length compressed */
+    /** 48×48 24-bit icon, possibly run-length compressed. */
     int ih32 = ('i' << 24) + ('h' << 16) + ('3' << 8) + '2';
-    /** 48×48 8-bit mask */
+    /** 48×48 8-bit mask. */
     int h8mk = ('h' << 24) + ('8' << 16) + ('m' << 8) + 'k';
 
-    /** 128×128 24-bit icon, run-length compressed */
+    /** 128×128 24-bit icon, possibly run-length compressed. */
     int it32 = ('i' << 24) + ('t' << 16) + ('3' << 8) + '2';
-    /** 128×128 8-bit mask */
+    /** 128×128 8-bit mask. */
     int t8mk = ('t' << 24) + ('8' << 16) + ('m' << 8) + 'k';
 
-    /** 256×256 JPEG 2000 or PNG icon (10.x+) */
+    /** 256×256 JPEG 2000 or PNG icon (10.x+). */
     int ic08 = ('i' << 24) + ('c' << 16) + ('0' << 8) + '8';
 
-    /** 512×512 JPEG 2000 or PNG icon (10.x+) */
+    /** 512×512 JPEG 2000 or PNG icon (10.x+). */
     int ic09 = ('i' << 24) + ('c' << 16) + ('0' << 8) + '9';
 
-    /** 1024×1024 PNG icon (10.7+)*/
+    /** 1024×1024 PNG icon (10.7+). */
     int ic10 = ('i' << 24) + ('c' << 16) + ('1' << 8) + '0';
 
-    /** Unknown (Version) */
+    /** Unknown (Version). */
     int icnV = ('i' << 24) + ('c' << 16) + ('n' << 8) + 'V';
 
-    /** Unknown (Table of Contents) */
+    /** Unknown (Table of Contents). */
     int TOC_ = ('T' << 24) + ('O' << 16) + ('C' << 8) + ' ';
 
-    /** JPEG 2000 magic header */
+    /** JPEG 2000 magic header. */
     byte[] JPEG_2000_MAGIC = new byte[] {0x00, 0x00, 0x00, 0x0C, 'j', 'P', 0x20, 0x20, 0x0D, 0x0A, (byte) 0x87, 0x0A};
 
-    /** PNG magic header */
+    /** PNG magic header. */
     byte[] PNG_MAGIC = new byte[] {(byte) 0x89, (byte) 'P', (byte) 'N', (byte) 'G', 0x0d, 0x0a, 0x1a, 0x0a};
 }

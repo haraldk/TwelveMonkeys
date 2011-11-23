@@ -31,7 +31,6 @@ package com.twelvemonkeys.imageio.plugins.icns;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
-import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.*;
 import javax.imageio.spi.ImageReaderSpi;
@@ -49,7 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * ICNSImageReader
+ * ImageReader for Apple Icon Image (ICNS) format.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -61,9 +60,6 @@ import java.util.List;
 public final class ICNSImageReader extends ImageReaderBase {
     // TODO: Support ToC resource for faster parsing/faster determine number of icons?
     // TODO: Subsampled reading for completeness, even if never used?
-
-    private static final int RESOURCE_HEADER_SIZE = 8;
-
     private List<IconResource> icons = new ArrayList<IconResource>();
     private List<IconResource> masks = new ArrayList<IconResource>();
     private IconResource lastResourceRead;
@@ -163,6 +159,7 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         if (!allowSearch) {
             // Return icons.size if we know we have read all?
+            // TODO: If the first resource is a TOC_ resource, we don't need to perform a search.
             return -1;
         }
 
@@ -183,7 +180,7 @@ public final class ICNSImageReader extends ImageReaderBase {
     public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
         IconResource resource = readIconResource(imageIndex);
 
-        imageInput.seek(resource.start + RESOURCE_HEADER_SIZE);
+        imageInput.seek(resource.start + ICNS.RESOURCE_HEADER_SIZE);
 
         // Special handling of PNG/JPEG 2000 icons
         if (resource.isForeignFormat()) {
@@ -221,7 +218,7 @@ public final class ICNSImageReader extends ImageReaderBase {
             // Only 32 bit icons may be compressed
             data = new byte[width * height * resource.depth() / 8];
 
-            int packedSize = resource.length - RESOURCE_HEADER_SIZE;
+            int packedSize = resource.length - ICNS.RESOURCE_HEADER_SIZE;
 
             if (width >= 128 && height >= 128) {
                 // http://www.macdisk.com/maciconen.php:
@@ -233,14 +230,14 @@ public final class ICNSImageReader extends ImageReaderBase {
             InputStream input = IIOUtil.createStreamAdapter(imageInput, packedSize);
 
             try {
-                decompress(new DataInputStream(input), data, 0, (data.length * 24) / 32); // 24 bit data
+                ICNSUtil.decompress(new DataInputStream(input), data, 0, (data.length * 24) / 32); // 24 bit data
             }
             finally {
                 input.close();
             }
         }
         else {
-            data = new byte[resource.length - RESOURCE_HEADER_SIZE];
+            data = new byte[resource.length - ICNS.RESOURCE_HEADER_SIZE];
             imageInput.readFully(data);
         }
 
@@ -365,15 +362,15 @@ public final class ICNSImageReader extends ImageReaderBase {
         int height = size.height;
 
         byte[] mask = new byte[width * height];
-        imageInput.seek(resource.start + RESOURCE_HEADER_SIZE);
+        imageInput.seek(resource.start + ICNS.RESOURCE_HEADER_SIZE);
 
         if (resource.isMaskType()) {
             // 8 bit mask
-            imageInput.readFully(mask, 0, resource.length - RESOURCE_HEADER_SIZE);
+            imageInput.readFully(mask, 0, resource.length - ICNS.RESOURCE_HEADER_SIZE);
         }
         else if (resource.hasMask()) {
             // Embedded 1bit mask
-            byte[] maskData = new byte[(resource.length - RESOURCE_HEADER_SIZE) / 2];
+            byte[] maskData = new byte[(resource.length - ICNS.RESOURCE_HEADER_SIZE) / 2];
             imageInput.skipBytes(maskData.length); // Skip the 1 bit image data
             imageInput.readFully(maskData);
 
@@ -482,52 +479,6 @@ public final class ICNSImageReader extends ImageReaderBase {
         return format;
     }
 
-    /*
-     * http://www.macdisk.com/maciconen.php:
-     * "For [...] (width * height of the icon), read a byte.
-     * if bit 8 of the byte is set:
-     *   This is a compressed run, for some value (next byte).
-     *   The length is byte - 125. (*
-     *   Put so many copies of the byte in the current color channel.
-     * Else:
-     *   This is an uncompressed run, whose values follow.
-     *   The length is byte + 1.
-     *   Read the bytes and put them in the current color channel."
-     *
-     *   *): With signed bytes, byte is always negative in this case, so it's actually -byte - 125,
-     *       which is the same as byte + 131.
-     */
-    // NOTE: This is very close to PackBits (as described by the Wikipedia article), but it is not PackBits!
-    static void decompress(final DataInputStream input, final byte[] result, int offset, int length) throws IOException {
-        int resultPos = offset;
-        int remaining = length;
-
-        while (remaining > 0) {
-            byte run = input.readByte();
-            int runLength;
-
-            if ((run & 0x80) != 0) {
-                // Compressed run
-                runLength = run + 131; // PackBits: -run + 1 and run == 0x80 is no-op... This allows 1 byte longer runs...
-
-                byte runData = input.readByte();
-
-                for (int i = 0; i < runLength; i++) {
-                    result[resultPos++] = runData;
-                }
-            }
-            else {
-                // Uncompressed run
-                runLength = run + 1;
-
-                input.readFully(result, resultPos, runLength);
-                resultPos += runLength;
-            }
-
-            remaining -= runLength;
-        }
-    }
-
     private IconResource readIconResource(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readeFileHeader();
@@ -540,7 +491,7 @@ public final class ICNSImageReader extends ImageReaderBase {
     }
 
     private IconResource readNextIconResource() throws IOException {
-        long lastReadPos = lastResourceRead == null ? RESOURCE_HEADER_SIZE : lastResourceRead.start + lastResourceRead.length;
+        long lastReadPos = lastResourceRead == null ? ICNS.RESOURCE_HEADER_SIZE : lastResourceRead.start + lastResourceRead.length;
 
         imageInput.seek(lastReadPos);
 
@@ -578,280 +529,11 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
     }
 
-    // TODO: Rewrite using subclasses/instances!
-    static final class IconResource {
-        private final long start;
-        private final int type;
-        private final int length;
+    private static final class ICNSBitMaskColorModel extends IndexColorModel {
+        static final IndexColorModel INSTANCE = new ICNSBitMaskColorModel();
 
-        IconResource(long start, int type, int length) {
-            validate(type, length);
-
-            this.start = start;
-            this.type = type;
-            this.length = length;
-        }
-
-        public static IconResource read(ImageInputStream input) throws IOException {
-            return new IconResource(input.getStreamPosition(), input.readInt(), input.readInt());
-        }
-
-        private void validate(int type, int length) {
-            switch (type) {
-                case ICNS.ICON:
-                    validateLengthForType(type, length, 128);
-                    break;
-                case ICNS.ICN_:
-                    validateLengthForType(type, length, 256);
-                    break;
-                case ICNS.icm_:
-                    validateLengthForType(type, length, 48);
-                    break;
-                case ICNS.icm4:
-                    validateLengthForType(type, length, 96);
-                    break;
-                case ICNS.icm8:
-                    validateLengthForType(type, length, 192);
-                    break;
-                case ICNS.ics_:
-                    validateLengthForType(type, length, 64);
-                    break;
-                case ICNS.ics4:
-                    validateLengthForType(type, length, 128);
-                    break;
-                case ICNS.ics8:
-                case ICNS.s8mk:
-                    validateLengthForType(type, length, 256);
-                    break;
-                case ICNS.icl4:
-                    validateLengthForType(type, length, 512);
-                    break;
-                case ICNS.icl8:
-                case ICNS.l8mk:
-                    validateLengthForType(type, length, 1024);
-                    break;
-                case ICNS.ich_:
-                    validateLengthForType(type, length, 576);
-                    break;
-                case ICNS.ich4:
-                    validateLengthForType(type, length, 1152);
-                    break;
-                case ICNS.ich8:
-                case ICNS.h8mk:
-                    validateLengthForType(type, length, 2304);
-                    break;
-                case ICNS.t8mk:
-                    validateLengthForType(type, length, 16384);
-                    break;
-                case ICNS.ih32:
-                case ICNS.is32:
-                case ICNS.il32:
-                case ICNS.it32:
-                case ICNS.ic08:
-                case ICNS.ic09:
-                case ICNS.ic10:
-                    if (length > RESOURCE_HEADER_SIZE) {
-                        break;
-                    }
-                    throw new IllegalArgumentException(String.format("Wrong combination of icon type '%s' and length: %d", ICNSUtil.intToStr(type), length));
-                case ICNS.icnV:
-                    validateLengthForType(type, length, 4);
-                    break;
-                case ICNS.TOC_:
-                default:
-                    if (length > RESOURCE_HEADER_SIZE) {
-                        break;
-                    }
-                    throw new IllegalStateException(String.format("Unknown icon type: '%s' length: %d", ICNSUtil.intToStr(type), length));
-            }
-        }
-
-        private void validateLengthForType(int type, int length, final int expectedLength) {
-            Validate.isTrue(
-                    length == expectedLength + RESOURCE_HEADER_SIZE, // Compute to make lengths more logical
-                    String.format(
-                            "Wrong combination of icon type '%s' and length: %d (expected: %d)",
-                            ICNSUtil.intToStr(type), length - RESOURCE_HEADER_SIZE, expectedLength
-                    )
-            );
-        }
-
-        public Dimension size() {
-            switch (type) {
-                case ICNS.ICON:
-                case ICNS.ICN_:
-                    return new Dimension(32, 32);
-                case ICNS.icm_:
-                case ICNS.icm4:
-                case ICNS.icm8:
-                    return new Dimension(16, 12);
-                case ICNS.ics_:
-                case ICNS.ics4:
-                case ICNS.ics8:
-                case ICNS.is32:
-                case ICNS.s8mk:
-                    return new Dimension(16, 16);
-                case ICNS.icl4:
-                case ICNS.icl8:
-                case ICNS.il32:
-                case ICNS.l8mk:
-                    return new Dimension(32, 32);
-                case ICNS.ich_:
-                case ICNS.ich4:
-                case ICNS.ich8:
-                case ICNS.ih32:
-                case ICNS.h8mk:
-                    return new Dimension(48, 48);
-                case ICNS.it32:
-                case ICNS.t8mk:
-                    return new Dimension(128, 128);
-                case ICNS.ic08:
-                    return new Dimension(256, 256);
-                case ICNS.ic09:
-                    return new Dimension(512, 512);
-                case ICNS.ic10:
-                    return new Dimension(1024, 1024);
-                default:
-                    throw new IllegalStateException(String.format("Unknown icon type: '%s'", ICNSUtil.intToStr(type)));
-            }
-        }
-
-        public int depth() {
-            switch (type) {
-                case ICNS.ICON:
-                case ICNS.ICN_:
-                case ICNS.icm_:
-                case ICNS.ics_:
-                case ICNS.ich_:
-                    return 1;
-                case ICNS.icm4:
-                case ICNS.ics4:
-                case ICNS.icl4:
-                case ICNS.ich4:
-                    return 4;
-                case ICNS.icm8:
-                case ICNS.ics8:
-                case ICNS.icl8:
-                case ICNS.ich8:
-                case ICNS.s8mk:
-                case ICNS.l8mk:
-                case ICNS.h8mk:
-                case ICNS.t8mk:
-                    return 8;
-                case ICNS.is32:
-                case ICNS.il32:
-                case ICNS.ih32:
-                case ICNS.it32:
-                case ICNS.ic08:
-                case ICNS.ic09:
-                case ICNS.ic10:
-                    return 32;
-                default:
-                    throw new IllegalStateException(String.format("Unknown icon type: '%s'", ICNSUtil.intToStr(type)));
-            }
-        }
-
-        public boolean isUnknownType() {
-            // These should simply be skipped
-            switch (type) {
-                case ICNS.ICON:
-                case ICNS.ICN_:
-                case ICNS.icm_:
-                case ICNS.ics_:
-                case ICNS.ich_:
-                case ICNS.icm4:
-                case ICNS.ics4:
-                case ICNS.icl4:
-                case ICNS.ich4:
-                case ICNS.icm8:
-                case ICNS.ics8:
-                case ICNS.icl8:
-                case ICNS.ich8:
-                case ICNS.s8mk:
-                case ICNS.l8mk:
-                case ICNS.h8mk:
-                case ICNS.t8mk:
-                case ICNS.is32:
-                case ICNS.il32:
-                case ICNS.ih32:
-                case ICNS.it32:
-                case ICNS.ic08:
-                case ICNS.ic09:
-                case ICNS.ic10:
-                    return false;
-            }
-
-            return true;
-        }
-
-        public boolean hasMask() {
-            switch (type) {
-                case ICNS.ICN_:
-                case ICNS.icm_:
-                case ICNS.ics_:
-                case ICNS.ich_:
-                    return true;
-            }
-
-            return false;
-        }
-
-        public boolean isMaskType() {
-            switch (type) {
-                case ICNS.s8mk:
-                case ICNS.l8mk:
-                case ICNS.h8mk:
-                case ICNS.t8mk:
-                    return true;
-            }
-
-            return false;
-        }
-
-        public boolean isCompressed() {
-            switch (type) {
-                case ICNS.is32:
-                case ICNS.il32:
-                case ICNS.ih32:
-                case ICNS.it32:
-                    // http://www.macdisk.com/maciconen.php
-                    // "One should check whether the data length corresponds to the theoretical length (width * height)."
-                    Dimension size = size();
-                    if (length != (size.width * size.height * depth() / 8 + RESOURCE_HEADER_SIZE)) {
-                        return true;
-                    }
-            }
-
-            return false;
-        }
-
-        public boolean isForeignFormat() {
-            switch (type) {
-                case ICNS.ic08:
-                case ICNS.ic09:
-                case ICNS.ic10:
-                    return true;
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            return (int) start ^ type;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            return other == this || other != null && other.getClass() == getClass() && isEqual((IconResource) other);
-        }
-
-        private boolean isEqual(IconResource other) {
-            return start == other.start && type == other.type && length == other.length;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("%s['%s' start: %d, length: %d%s]", getClass().getSimpleName(), ICNSUtil.intToStr(type), start, length, isCompressed() ? " (compressed)" : "");
+        private ICNSBitMaskColorModel() {
+            super(1, 2, new int[]{0, 0xffffffff}, 0, true, 0, DataBuffer.TYPE_BYTE);
         }
     }
 
@@ -909,13 +591,5 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
 
         System.err.printf("Read %s images (%d skipped) in %d files\n", imagesRead, imagesSkipped, args.length);
-    }
-
-    private static final class ICNSBitMaskColorModel extends IndexColorModel {
-        static final IndexColorModel INSTANCE = new ICNSBitMaskColorModel();
-
-        private ICNSBitMaskColorModel() {
-            super(1, 2, new int[]{0, 0xffffffff}, 0, true, 0, DataBuffer.TYPE_BYTE);
-        }
     }
 }
