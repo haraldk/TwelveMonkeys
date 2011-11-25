@@ -52,7 +52,7 @@ import java.util.*;
 import java.util.List;
 
 /**
- * A JPEG {@code ImageReader} implementation based on the JDK {@code JPEGImageReader},
+ * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
  * with support for CMYK JPEGs and other non-standard color spaces,
  * like embedded ICC color spaces with rendering intent other than 'perceptual'.
  *
@@ -101,136 +101,19 @@ public class JPEGImageReader extends ImageReaderBase {
     /** Our JPEG reading delegate */
     private final ImageReader delegate;
 
-//    private final ICCSpaceInterceptor iccSpaceInterceptor;
     private final ProgressDelegator progressDelegator;
 
     /** Cached JPEG app segments */
     private List<JPEGSegment> segments;
 
-//    private static Field getFieldSafely(final Class<?> cl, final String fieldName) {
-//        try {
-//            Field field = cl.getDeclaredField(fieldName);
-//            field.setAccessible(true);
-//            return field;
-//        }
-//        catch (NoSuchFieldException ignore) {
-//        }
-//        catch (SecurityException ignore) {
-//        }
-//
-//        return null;
-//    }
-
     JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
         this.delegate = Validate.notNull(delegate);
 
-//        Field iccCS = getFieldSafely(delegate.getClass(), "iccCS");
-//        iccSpaceInterceptor = iccCS != null ? new ICCSpaceInterceptor(iccCS) : null;
-
         progressDelegator = new ProgressDelegator();
     }
 
-    public static void main(String[] args) throws IOException {
-        File file = new File(args[0]);
-        ImageInputStream input = ImageIO.createImageInputStream(file);
-        Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
-
-        if (!readers.hasNext()) {
-            System.err.println("No reader for: " + file);
-            System.exit(1);
-        }
-
-        ImageReader myReader = readers.next();
-        System.err.println("Reading using: " + myReader);
-
-        myReader.addIIOReadWarningListener(new IIOReadWarningListener() {
-            public void warningOccurred(ImageReader source, String warning) {
-                System.err.println("warning: " + warning);
-            }
-        });
-        myReader.addIIOReadProgressListener(new ProgressListenerBase() {
-            private static final int MAX_W = 78;
-            int lastProgress = 0;
-
-            @Override
-            public void imageStarted(ImageReader source, int imageIndex) {
-                System.out.print("[");
-            }
-
-            @Override
-            public void imageProgress(ImageReader source, float percentageDone) {
-                int steps = ((int) (percentageDone * MAX_W) / 100);
-//                System.err.println("percentageDone: " + percentageDone);
-                for (int i = lastProgress; i < steps; i++) {
-                    System.out.print(".");
-                }
-                System.out.flush();
-                lastProgress = steps;
-            }
-
-            @Override
-            public void imageComplete(ImageReader source) {
-                for (int i = lastProgress; i < MAX_W; i++) {
-                    System.out.print(".");
-                }
-                System.out.println("]");
-            }
-        });
-
-        myReader.setInput(input);
-
-        try {
-            ImageReadParam param = myReader.getDefaultReadParam();
-            if (args.length > 1) {
-                int sub = Integer.parseInt(args[1]);
-                param.setSourceSubsampling(sub, sub, 1, 1);
-            }
-
-            long start = System.currentTimeMillis();
-            BufferedImage image = myReader.read(0, param);
-            System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
-            System.err.println("image: " + image);
-
-//            image = new ResampleOp(myReader.getWidth(0) / 4, myReader.getHeight(0) / 4, ResampleOp.FILTER_LANCZOS).filter(image, null);
-
-            int maxW = 1280;
-            int maxH = 800;
-            if (image.getWidth() > maxW || image.getHeight() > maxH) {
-                start = System.currentTimeMillis();
-                float aspect = myReader.getAspectRatio(0);
-                if (aspect >= 1f) {
-                    image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_DEFAULT);
-                }
-                else {
-                    image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_DEFAULT);
-                }
-                System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
-            }
-
-            showIt(image, String.format("Image: %s [%d x %d]", file.getName(), myReader.getWidth(0), myReader.getHeight(0)));
-
-            try {
-                int numThumbnails = myReader.getNumThumbnails(0);
-                for (int i = 0; i < numThumbnails; i++) {
-                    BufferedImage thumbnail = myReader.readThumbnail(0, i);
-                    showIt(thumbnail, String.format("Image: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
-                }
-            }
-            catch (IIOException e) {
-                System.err.println("Could not read thumbnails: " + e.getMessage());
-            }
-        }
-        finally {
-            input.close();
-        }
-    }
-
     private void installListeners() {
-//        if (iccSpaceInterceptor != null) {
-//            delegate.addIIOReadProgressListener(iccSpaceInterceptor);
-//        }
-
         delegate.addIIOReadProgressListener(progressDelegator);
         delegate.addIIOReadUpdateListener(progressDelegator);
         delegate.addIIOReadWarningListener(progressDelegator);
@@ -296,9 +179,6 @@ public class JPEGImageReader extends ImageReaderBase {
 
         }
 
-//        if (iccSpaceInterceptor != null) {
-//            iccSpaceInterceptor.replaceCS(delegate);
-//        }
         return types;
     }
 
@@ -977,53 +857,6 @@ public class JPEGImageReader extends ImageReaderBase {
 
     }
 
-    /*
-    private static class ICCSpaceInterceptor extends ProgressListenerBase {
-        final Field iccCS;
-
-        public ICCSpaceInterceptor(final Field iccField) {
-            iccCS = iccField;
-        }
-
-        @Override
-        public void imageStarted(final ImageReader source, final int imageIndex) {
-            replaceCS(source);
-        }
-
-        private void replaceCS(final ImageReader source) {
-            // Intercept and modify the ICC color profile just before the read starts
-            if (iccCS != null) {
-                try {
-                    ICC_ColorSpace cs = (ICC_ColorSpace) iccCS.get(source);
-
-                    if (cs != null) {
-                        ICC_Profile profile = cs.getProfile();
-
-                        byte[] header = profile.getData(ICC_Profile.icSigHead);
-
-                        // ColorConvertOp (or the sun.awt.color.CMM class, really) seems to choke on
-                        // rendering intent other than perceptual (0), so we'll change the intent
-                        // NOTE: Rendering intent is really a 4 byte value,
-                        // but legal values are 0-3 (see ICC1v42_2006_05_1.pdf, 7.2.15, p. 19)
-                        if (header[ICC_Profile.icHdrRenderingIntent] != 0) {
-                            header[ICC_Profile.icHdrRenderingIntent] = 0;
-
-                            // NOTE: We are mutating the current profile in place,
-                            // so we don't need to write the iccCS field back..
-                            profile.setData(ICC_Profile.icSigHead, header);
-
-                            // But do it anyway, just in case...
-                            iccCS.set(source, ColorSpaces.createColorSpace(profile));
-                        }
-                    }
-                }
-                catch (IllegalAccessException ignore) {
-                }
-            }
-        }
-    }
-    */
-
     private static class SOF {
         private final int marker;
         private final int samplePrecision;
@@ -1130,6 +963,101 @@ public class JPEGImageReader extends ImageReaderBase {
                     "AdobeDCT[ver: %d.%02d, flags: %s %s, transform: %d]",
                     getVersion() / 100, getVersion() % 100, Integer.toBinaryString(getFlags0()), Integer.toBinaryString(getFlags1()), getTransform()
             );
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        File file = new File(args[0]);
+        ImageInputStream input = ImageIO.createImageInputStream(file);
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+
+        if (!readers.hasNext()) {
+            System.err.println("No reader for: " + file);
+            System.exit(1);
+        }
+
+        ImageReader myReader = readers.next();
+        System.err.println("Reading using: " + myReader);
+
+        myReader.addIIOReadWarningListener(new IIOReadWarningListener() {
+            public void warningOccurred(ImageReader source, String warning) {
+                System.err.println("warning: " + warning);
+            }
+        });
+        myReader.addIIOReadProgressListener(new ProgressListenerBase() {
+            private static final int MAX_W = 78;
+            int lastProgress = 0;
+
+            @Override
+            public void imageStarted(ImageReader source, int imageIndex) {
+                System.out.print("[");
+            }
+
+            @Override
+            public void imageProgress(ImageReader source, float percentageDone) {
+                int steps = ((int) (percentageDone * MAX_W) / 100);
+//                System.err.println("percentageDone: " + percentageDone);
+                for (int i = lastProgress; i < steps; i++) {
+                    System.out.print(".");
+                }
+                System.out.flush();
+                lastProgress = steps;
+            }
+
+            @Override
+            public void imageComplete(ImageReader source) {
+                for (int i = lastProgress; i < MAX_W; i++) {
+                    System.out.print(".");
+                }
+                System.out.println("]");
+            }
+        });
+
+        myReader.setInput(input);
+
+        try {
+            ImageReadParam param = myReader.getDefaultReadParam();
+            if (args.length > 1) {
+                int sub = Integer.parseInt(args[1]);
+                param.setSourceSubsampling(sub, sub, 1, 1);
+            }
+
+            long start = System.currentTimeMillis();
+            BufferedImage image = myReader.read(0, param);
+            System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
+            System.err.println("image: " + image);
+
+//            image = new ResampleOp(myReader.getWidth(0) / 4, myReader.getHeight(0) / 4, ResampleOp.FILTER_LANCZOS).filter(image, null);
+
+            int maxW = 1280;
+            int maxH = 800;
+            if (image.getWidth() > maxW || image.getHeight() > maxH) {
+                start = System.currentTimeMillis();
+                float aspect = myReader.getAspectRatio(0);
+                if (aspect >= 1f) {
+                    image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_DEFAULT);
+                }
+                else {
+                    image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_DEFAULT);
+                }
+                System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
+            }
+
+            showIt(image, String.format("Image: %s [%d x %d]", file.getName(), myReader.getWidth(0), myReader.getHeight(0)));
+
+            try {
+                int numThumbnails = myReader.getNumThumbnails(0);
+                for (int i = 0; i < numThumbnails; i++) {
+                    BufferedImage thumbnail = myReader.readThumbnail(0, i);
+                    showIt(thumbnail, String.format("Image: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
+                }
+            }
+            catch (IIOException e) {
+                System.err.println("Could not read thumbnails: " + e.getMessage());
+            }
+        }
+        finally {
+            input.close();
         }
     }
 }

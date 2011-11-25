@@ -47,16 +47,15 @@ import java.util.List;
  */
 public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageReader> {
 
-    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi();
+    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
-    static {
-        IIORegistry.getDefaultInstance().registerServiceProvider(SPI);
+    private static ImageReaderSpi lookupDelegateProvider() {
+        return JPEGImageReaderSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
     }
 
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                // TODO: Create JPEG with broken profile from Anders' photos..
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
                 new TestData(getClassLoaderResource("/jpeg/gray-sample.jpg"), new Dimension(386, 396)),

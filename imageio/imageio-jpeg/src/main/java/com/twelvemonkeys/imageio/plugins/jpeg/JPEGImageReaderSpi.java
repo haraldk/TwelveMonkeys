@@ -83,7 +83,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
         this.delegateProvider = Validate.notNull(delegateProvider);
     }
 
-    ImageReaderSpi lookupDelegate(final ServiceRegistry registry) {
+    static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
         // Should be safe to lookup now, as the bundled providers are hardcoded usually
         try {
             return (ImageReaderSpi) registry.getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi"));
@@ -102,15 +102,16 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {
             // Install delegate now
-            delegateProvider = lookupDelegate(registry);
+            delegateProvider = lookupDelegateProvider(registry);
         }
 
-        if (delegateProvider == null) {
-             IIOUtil.deregisterProvider(registry, this, category);
-        }
-        else {
+        if (delegateProvider != null) {
             // Order before com.sun provider, to aid ImageIO in selecting our reader
             registry.setOrdering((Class<ImageReaderSpi>) category, this, delegateProvider);
+        }
+        else {
+            // Or, if no delegate is found, silently deregister from the registry
+            IIOUtil.deregisterProvider(registry, this, category);
         }
     }
 
@@ -158,7 +159,6 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     @Override
     public String getPluginClassName() {
         return "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader";
-//        return delegateProvider.getPluginClassName();
     }
 
     @Override
