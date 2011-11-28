@@ -463,7 +463,7 @@ public final class ICNSImageReader extends ImageReaderBase {
             // Return blank icon + issue warning. We know the image dimensions, we just can't read the data.
             processWarningOccurred(String.format(
                     "Cannot read %s format in type '%s' icon (no reader; installed: %s)",
-                    format, ICNSUtil.intToStr(resource.type), Arrays.toString(ImageIO.getReaderFormatNames())
+                    format, ICNSUtil.intToStr(resource.type), Arrays.toString(IIOUtil.getNormalizedReaderFormatNames())
             ));
 
             Dimension size = resource.size();

@@ -4,6 +4,7 @@ import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.spi.ProviderInfo;
 
 import javax.imageio.IIOParam;
+import javax.imageio.ImageIO;
 import javax.imageio.spi.IIOServiceProvider;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
@@ -14,6 +15,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * IIOUtil
@@ -146,4 +149,35 @@ public final class IIOUtil {
         pRegistry.deregisterServiceProvider(pCategory.cast(pProvider), pCategory);
     }
 
+    /**
+     * Returns a sorted array of format names, that can be read by ImageIO.
+     * The names are all upper-case, and contains no duplicates.
+     *
+     * @return a normalized array of {@code String}s.
+     * @see javax.imageio.ImageIO#getReaderFormatNames()
+     */
+    public static String[] getNormalizedReaderFormatNames() {
+        return normalizeNames(ImageIO.getReaderFormatNames());
+    }
+
+    /**
+     * Returns a sorted array of format names, that can be written by ImageIO.
+     * The names are all upper-case, and contains no duplicates.
+     *
+     * @return a normalized array of {@code String}s.
+     * @see javax.imageio.ImageIO#getWriterFormatNames()  
+     */
+    public static String[] getNormalizedWriterFormatNames() {
+        return normalizeNames(ImageIO.getWriterFormatNames());
+    }
+
+    private static String[] normalizeNames(final String[] names) {
+        SortedSet<String> normalizedNames = new TreeSet<String>();
+
+        for (String name : names) {
+            normalizedNames.add(name.toUpperCase());
+        }
+
+        return normalizedNames.toArray(new String[normalizedNames.size()]);
+    }
 }

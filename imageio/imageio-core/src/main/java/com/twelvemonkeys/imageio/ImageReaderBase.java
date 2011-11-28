@@ -302,10 +302,21 @@ public abstract class ImageReaderBase extends ImageReader {
         return IIOUtil.fakeSubsampling(pImage, pParam);
     }
 
+    /**
+     * Tests if param has explicit destination.
+     *
+     * @param pParam the image read parameter, or {@code null}
+     * @return true if {@code pParam} is non-{@code null} and either its {@code getDestination},
+     * {@code getDestinationType} or {@code getDestinationOffset} returns a non-{@code null} value.
+     */
+    protected static boolean hasExplicitDestination(final ImageReadParam pParam) {
+        return (pParam != null && (pParam.getDestination() != null || pParam.getDestinationType() != null || pParam.getDestinationOffset() != null));
+    }
+
     public static void main(String[] pArgs) throws IOException {
         BufferedImage image = ImageIO.read(new File(pArgs[0]));
         if (image == null) {
-            System.err.println("Supported formats: " + Arrays.toString(ImageIO.getReaderFormatNames()));
+            System.err.println("Supported formats: " + Arrays.toString(IIOUtil.getNormalizedReaderFormatNames()));
             System.exit(1);
         }
         showIt(image, pArgs[0]);
@@ -345,10 +356,6 @@ public abstract class ImageReaderBase extends ImageReader {
         catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    protected static boolean hasExplicitDestination(final ImageReadParam pParam) {
-        return (pParam != null && (pParam.getDestination() != null || pParam.getDestinationType() != null || pParam.getDestinationOffset() != null));
     }
 
     private static class ImageLabel extends JLabel {
