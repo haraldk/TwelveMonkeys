@@ -184,7 +184,7 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         // Special handling of PNG/JPEG 2000 icons
         if (resource.isForeignFormat()) {
-            return readForeignFormat(param, resource);
+            return readForeignFormat(imageIndex, param, resource);
         }
 
         return readICNSFormat(imageIndex, param, resource);
@@ -418,10 +418,11 @@ public final class ICNSImageReader extends ImageReaderBase {
         return null;
     }
 
-    private BufferedImage readForeignFormat(final ImageReadParam param, final IconResource resource) throws IOException {
+    private BufferedImage readForeignFormat(int imageIndex, final ImageReadParam param, final IconResource resource) throws IOException {
         ImageInputStream stream = ImageIO.createImageInputStream(IIOUtil.createStreamAdapter(imageInput, resource.length));
 
         try {
+            // Try first using ImageIO
             Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
 
             while (readers.hasNext()) {
@@ -436,20 +437,38 @@ public final class ICNSImageReader extends ImageReaderBase {
                         stream.seek(0);
                     }
                     else {
+                        stream.close();
                         stream = ImageIO.createImageInputStream(IIOUtil.createStreamAdapter(imageInput, resource.length));
                     }
+                }
+                finally {
+                    reader.dispose();
+                }
+            }
+
+            String format = getForeignFormat(stream);
+
+            // OS X quick fix
+            if ("JPEG 2000".equals(format) && SipsJP2Reader.isAvailable()) {
+                SipsJP2Reader reader = new SipsJP2Reader();
+                reader.setInput(stream);
+                BufferedImage image = reader.read(0, param);
+
+                if (image != null) {
+                    return image;
                 }
             }
 
             // There's no JPEG 2000 reader installed in ImageIO by default (requires JAI ImageIO installed).
-            // The current implementation is correct, but a bit harsh maybe..? Other options:
-            // TODO: Return blank icon + issue warning? We know the image dimensions, we just can't read the data...
-            // TODO: Pretend it's not in the stream + issue warning?
-            // TODO: Create JPEG 2000 reader..? :-P
-            throw new IIOException(String.format(
+            // Return blank icon + issue warning. We know the image dimensions, we just can't read the data.
+            processWarningOccurred(String.format(
                     "Cannot read %s format in type '%s' icon (no reader; installed: %s)",
-                    getForeignFormat(stream), ICNSUtil.intToStr(resource.type), Arrays.toString(ImageIO.getReaderFormatNames())
+                    format, ICNSUtil.intToStr(resource.type), Arrays.toString(ImageIO.getReaderFormatNames())
             ));
+
+            Dimension size = resource.size();
+
+            return getDestination(param, getImageTypes(imageIndex), size.width, size.height);
         }
         finally {
             stream.close();
@@ -458,6 +477,7 @@ public final class ICNSImageReader extends ImageReaderBase {
 
     private String getForeignFormat(final ImageInputStream stream) throws IOException {
         byte[] magic = new byte[12]; // Length of JPEG 2000 magic
+
         try {
             stream.readFully(magic);
         }
@@ -466,6 +486,7 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
 
         String format;
+
         if (Arrays.equals(ICNS.PNG_MAGIC, magic)) {
             format = "PNG";
         }
@@ -575,7 +596,7 @@ public final class ICNSImageReader extends ImageReaderBase {
                     catch (IOException e) {
                         imagesSkipped++;
                         if (e.getMessage().contains("JPEG 2000")) {
-//                            System.err.printf("%s: %s\n", input, e.getMessage());
+                            System.err.printf("%s: %s\n", input, e.getMessage());
                         }
                         else {
                             System.err.printf("%s: ", input);

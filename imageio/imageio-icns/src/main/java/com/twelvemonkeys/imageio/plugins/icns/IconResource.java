@@ -216,7 +216,7 @@ final class IconResource {
     }
 
     public boolean isUnknownType() {
-        // These should simply be skipped
+        // Unknown types should simply be skipped when reading
         switch (type) {
             case ICNS.ICON:
             case ICNS.ICN_:
@@ -290,12 +290,14 @@ final class IconResource {
     }
 
     public boolean isForeignFormat() {
+        // Recent entries contains full JPEG 2000 or PNG streams
         switch (type) {
             case ICNS.ic08:
             case ICNS.ic09:
             case ICNS.ic10:
                 return true;
         }
+
         return false;
     }
 
@@ -310,6 +312,7 @@ final class IconResource {
     }
 
     private boolean isEqual(IconResource other) {
+        // This isn't strictly true, as resource must reside in same stream as well, but good enough for now
         return start == other.start && type == other.type && length == other.length;
     }
 
