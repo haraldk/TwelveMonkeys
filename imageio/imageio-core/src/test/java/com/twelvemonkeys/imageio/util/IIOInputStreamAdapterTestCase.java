@@ -51,6 +51,11 @@ public class IIOInputStreamAdapterTestCase extends InputStreamAbstractTestCase {
         return new IIOInputStreamAdapter(new MemoryCacheImageInputStream(new ByteArrayInputStream(pBytes)), pBytes.length);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateNull() {
+        new IIOInputStreamAdapter(null);
+    }
+
     @Test
     public void testReadSubstreamOpenEnd() throws IOException {
         byte[] bytes = new byte[20];

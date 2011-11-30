@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2011, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,61 +28,60 @@
 
 package com.twelvemonkeys.imageio.util;
 
-import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.io.OutputStreamAbstractTestCase;
+import org.junit.Test;
 
-import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import static org.junit.Assert.*;
+
 /**
- * IIOOutputStreamAdapter
+ * IIOOutputStreamAdapterTestCase
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: IIOOutputStreamAdapter.java,v 1.0 Sep 26, 2007 11:50:38 AM haraldk Exp$
+ * @version $Id: IIOOutputStreamAdapterTestCase.java,v 1.0 30.11.11 12:21 haraldk Exp$
  */
-class IIOOutputStreamAdapter extends OutputStream {
-    private ImageOutputStream output;
-
-    public IIOOutputStreamAdapter(final ImageOutputStream pOutput) {
-        Validate.notNull(pOutput, "stream == null");
-
-        output = pOutput;
-    }
-
+public class IIOOutputStreamAdapterTestCase extends OutputStreamAbstractTestCase {
     @Override
-    public void write(final byte[] pBytes) throws IOException {
-        assertOpen();
-        output.write(pBytes);
+    protected OutputStream makeObject() {
+        return new IIOOutputStreamAdapter(new MemoryCacheImageOutputStream(new ByteArrayOutputStream()));
     }
 
-    @Override
-    public void write(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        assertOpen();
-        output.write(pBytes, pOffset, pLength);
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateNull() {
+        new IIOOutputStreamAdapter(null);
     }
 
-    @Override
-    public void write(final int pByte) throws IOException {
-        assertOpen();
-        output.write(pByte);
-    }
+    @Test
+    public void testFlushOnAdapterDoesNotMoveFlushedPositionInBacking() throws IOException {
+        MemoryCacheImageOutputStream backing = new MemoryCacheImageOutputStream(new ByteArrayOutputStream());
+        IIOOutputStreamAdapter adapter = new IIOOutputStreamAdapter(backing);
 
-    @Override
-    public void flush() throws IOException {
-        // NOTE: The contract of OutputStream.flush is very different from ImageOutputStream.flush. We can't delegate.
-        // TODO: Fulfill the contract of OutputStream.flush? This seems to be good enough for now.
-        assertOpen();
-    }
+        // Sanity check
+        assertEquals(0, backing.getFlushedPosition());
 
-    private void assertOpen() throws IOException {
-        if (output == null) {
-            throw new IOException("stream already closed");
-        }
-    }
+        // Write & flush
+        adapter.write(0xCA);
+        adapter.write(new byte[8]);
+        adapter.write(0xFE);
+        adapter.flush();
 
-    @Override
-    public void close() throws IOException {
-        output = null;
+        // Assertions
+        assertEquals(10, backing.length());
+        assertEquals(10, backing.getStreamPosition());
+        assertEquals(0, backing.getFlushedPosition());
+
+        // Just make sure we can safely seek back to start and read data back
+        backing.seek(0);
+        assertEquals(0, backing.getStreamPosition());
+
+        // If this can be read, I think the contract of flush is also fulfilled (kind of)
+        assertEquals(0xCA, backing.read());
+        assertEquals(8, backing.skipBytes(8));
+        assertEquals(0xFE, backing.read());
     }
 }

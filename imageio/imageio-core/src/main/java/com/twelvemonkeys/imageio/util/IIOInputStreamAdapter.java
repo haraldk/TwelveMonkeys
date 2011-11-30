@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,16 +77,12 @@ class IIOInputStreamAdapter extends InputStream {
     }
 
     private IIOInputStreamAdapter(ImageInputStream pInput, long pLength, boolean pHasLength) {
-        if (pInput == null) {
-            throw new IllegalArgumentException("stream == null");
-        }
-        if (pHasLength && pLength < 0) {
-            throw new IllegalArgumentException("length < 0");
-        }
+        Validate.notNull(pInput, "stream");
+        Validate.isTrue(!pHasLength || pLength >= 0, pLength, "length < 0: %f");
 
         input = pInput;
-        hasLength = pHasLength;
         left = pLength;
+        hasLength = pHasLength;
     }
 
 
@@ -105,6 +103,7 @@ class IIOInputStreamAdapter extends InputStream {
         if (hasLength) {
             return left > 0 ? (int) Math.min(Integer.MAX_VALUE, left) : 0;
         }
+
         return 0; // We don't really know, so we say 0 to be safe.
     }
 
