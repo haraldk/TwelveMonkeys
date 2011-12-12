@@ -110,10 +110,6 @@ public class IFFImageWriter extends ImageWriterBase {
             imageOutput.writeByte(0); // PAD
         }
 
-        // NOTE: Most progress is done in packImageData, however, as we need to
-        // buffer, to write correct size, we defer the last 10 percent until now.
-        processImageProgress(100f);
-
         imageOutput.flush();
     }
 
@@ -167,7 +163,7 @@ public class IFFImageWriter extends ImageWriterBase {
                 }
             }
 
-            processImageProgress(y * 90f / height);
+            processImageProgress(y * 100f / height);
         }
 
         output.flush();
@@ -220,6 +216,7 @@ public class IFFImageWriter extends ImageWriterBase {
 
         anno.writeChunk(imageOutput);
         header.writeChunk(imageOutput);
+
         if (cmap != null) {
             //System.out.println("CMAP written");
             cmap.writeChunk(imageOutput);
