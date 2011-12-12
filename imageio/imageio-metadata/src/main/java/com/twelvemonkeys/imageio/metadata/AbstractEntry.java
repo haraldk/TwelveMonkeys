@@ -109,6 +109,10 @@ public abstract class AbstractEntry implements Entry {
             return String.valueOf(value) + " ("  + valueCount() + ")";
         }
 
+        if (value.getClass().isArray() && Array.getLength(value) == 1) {
+            return String.valueOf(Array.get(value, 0));
+        }
+
         return String.valueOf(value);
     }
 
@@ -129,9 +133,7 @@ public abstract class AbstractEntry implements Entry {
         return 1;
     }
 
-
     /// Object
-
 
     @Override
     public int hashCode() {

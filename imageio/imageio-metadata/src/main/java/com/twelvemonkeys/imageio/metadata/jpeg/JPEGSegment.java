@@ -43,16 +43,19 @@ import java.util.Arrays;
 public final class JPEGSegment implements Serializable {
     final int marker;
     final byte[] data;
+    final int length;
+
     private transient String id;
 
-    JPEGSegment(int marker, byte[] data) {
+    JPEGSegment(int marker, byte[] data, int length) {
         this.marker = marker;
         this.data = data;
+        this.length = length;
     }
 
     int segmentLength() {
         // This is the length field as read from the stream
-        return data != null ? data.length + 2 : 0;
+        return length;
     }
 
     public int marker() {
@@ -61,13 +64,17 @@ public final class JPEGSegment implements Serializable {
 
     public String identifier() {
         if (id == null) {
-            if (marker >= 0xFFE0 && marker <= 0xFFEF) {
+            if (isAppSegmentMarker(marker)) {
                 // Only for APPn markers
                 id = JPEGSegmentUtil.asNullTerminatedAsciiString(data, 0);
             }
         }
 
         return id;
+    }
+
+    static boolean isAppSegmentMarker(final int marker) {
+        return marker >= 0xFFE0 && marker <= 0xFFEF;
     }
 
     public InputStream data() {
@@ -80,26 +87,31 @@ public final class JPEGSegment implements Serializable {
 
     private int offset() {
         String identifier = identifier();
+
         return identifier == null ? 0 : identifier.length() + 1;
     }
 
     @Override
     public String toString() {
         String identifier = identifier();
+
         if (identifier != null) {
             return String.format("JPEGSegment[%04x/%s size: %d]", marker, identifier, segmentLength());
         }
+
         return String.format("JPEGSegment[%04x size: %d]", marker, segmentLength());
     }
 
     @Override
     public int hashCode() {
         String identifier = identifier();
+
         return marker() << 16 | (identifier != null ? identifier.hashCode() : 0) & 0xFFFF;
     }
 
     @Override
-    public boolean equals(Object other) {
-        return other instanceof JPEGSegment && ((JPEGSegment) other).marker == marker && Arrays.equals(((JPEGSegment) other).data, data);
+    public boolean equals(final Object other) {
+        return other instanceof JPEGSegment &&
+                ((JPEGSegment) other).marker == marker && Arrays.equals(((JPEGSegment) other).data, data);
     }
 }

@@ -131,6 +131,7 @@ public interface TIFF {
     int TAG_MODEL = 272;
     int TAG_SOFTWARE = 305;
     int TAG_ARTIST = 315;
+    int TAG_HOST_COMPUTER = 316;
     int TAG_COPYRIGHT = 33432;
 
     int TAG_SUB_IFD = 330;

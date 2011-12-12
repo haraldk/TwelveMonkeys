@@ -59,6 +59,7 @@ public final class EXIFReader extends MetadataReader {
     public Directory read(final ImageInputStream input) throws IOException {
         byte[] bom = new byte[2];
         input.readFully(bom);
+
         if (bom[0] == 'I' && bom[1] == 'I') {
             input.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         }
@@ -102,6 +103,7 @@ public final class EXIFReader extends MetadataReader {
         }
 
         // TODO: Make what sub-IFDs to parse optional? Or leave this to client code? At least skip the non-TIFF data?
+        // TODO: Put it in the constructor?
         readSubdirectories(pInput, entries,
                 Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD
 //                        , TIFF.TAG_IPTC, TIFF.TAG_XMP

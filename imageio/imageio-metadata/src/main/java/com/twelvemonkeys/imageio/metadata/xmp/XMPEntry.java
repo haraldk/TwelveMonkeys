@@ -54,4 +54,12 @@ final class XMPEntry extends AbstractEntry {
     public String getFieldName() {
         return fieldName != null ? fieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
     }
+
+    @Override
+    public String toString() {
+        String type = getTypeName();
+        String typeStr = type != null ? " (" + type + ")" : "";
+
+        return String.format("%s: %s%s", getIdentifier(), getValueAsString(), typeStr);
+    }
 }

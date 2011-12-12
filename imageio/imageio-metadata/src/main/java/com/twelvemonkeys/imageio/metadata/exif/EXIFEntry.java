@@ -66,7 +66,7 @@ final class EXIFEntry extends AbstractEntry {
             case TIFF.TAG_PHOTOSHOP:
                 return "Adobe";
             case TIFF.TAG_ICC_PROFILE:
-                return "ICC Profile";
+                return "ICCProfile";
 
             case TIFF.TAG_IMAGE_WIDTH:
                 return "ImageWidth";
@@ -86,14 +86,40 @@ final class EXIFEntry extends AbstractEntry {
                 return "JPEGInterchangeFormat";
             case TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH:
                 return "JPEGInterchangeFormatLength";
+            case TIFF.TAG_MAKE:
+                return "Make";
+            case TIFF.TAG_MODEL:
+                return "Model";
             case TIFF.TAG_SOFTWARE:
                 return "Software";
             case TIFF.TAG_DATE_TIME:
                 return "DateTime";
             case TIFF.TAG_ARTIST:
                 return "Artist";
+            case TIFF.TAG_HOST_COMPUTER:
+                return "HostComputer";
             case TIFF.TAG_COPYRIGHT:
                 return "Copyright";
+
+            case EXIF.TAG_EXPOSURE_TIME:
+                return "ExposureTime";
+            case EXIF.TAG_F_NUMBER:
+                return "FNUmber";
+            case EXIF.TAG_EXPOSURE_PROGRAM:
+                return "ExposureProgram";
+            case EXIF.TAG_ISO_SPEED_RATINGS:
+                return "ISOSpeedRatings";
+
+            case EXIF.TAG_EXIF_VERSION:
+                return "ExifVersion";
+            case EXIF.TAG_DATE_TIME_ORIGINAL:
+                return "DateTimeOriginal";
+            case EXIF.TAG_DATE_TIME_DIGITIZED:
+                return "DateTimeDigitized";
+            case EXIF.TAG_IMAGE_NUMBER:
+                return "ImageNumber";
+            case EXIF.TAG_USER_COMMENT:
+                return "UserComment";
 
             case EXIF.TAG_COLOR_SPACE:
                 return "ColorSpace";

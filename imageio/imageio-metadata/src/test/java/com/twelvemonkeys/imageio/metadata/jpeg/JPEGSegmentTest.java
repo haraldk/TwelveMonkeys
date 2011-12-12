@@ -48,7 +48,7 @@ public class JPEGSegmentTest extends ObjectAbstractTestCase {
         byte[] bytes = new byte[14];
         System.arraycopy("JFIF".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
 
-        JPEGSegment segment = new JPEGSegment(0xFFE0, bytes);
+        JPEGSegment segment = new JPEGSegment(0xFFE0, bytes, 16);
 
         assertEquals(0xFFE0, segment.marker());
         assertEquals("JFIF", segment.identifier());
@@ -60,7 +60,7 @@ public class JPEGSegmentTest extends ObjectAbstractTestCase {
     public void testToStringAppSegment() {
         byte[] bytes = new byte[14];
         System.arraycopy("JFIF".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
-        JPEGSegment segment = new JPEGSegment(0xFFE0, bytes);
+        JPEGSegment segment = new JPEGSegment(0xFFE0, bytes, 16);
 
         assertEquals("JPEGSegment[ffe0/JFIF size: 16]", segment.toString());
     }
@@ -68,7 +68,7 @@ public class JPEGSegmentTest extends ObjectAbstractTestCase {
     @Test
     public void testToStringNonAppSegment() {
         byte[] bytes = new byte[40];
-        JPEGSegment segment = new JPEGSegment(0xFFC4, bytes);
+        JPEGSegment segment = new JPEGSegment(0xFFC4, bytes, 42);
 
         assertEquals("JPEGSegment[ffc4 size: 42]", segment.toString());
     }
@@ -77,6 +77,6 @@ public class JPEGSegmentTest extends ObjectAbstractTestCase {
     protected Object makeObject() {
         byte[] bytes = new byte[11];
         System.arraycopy("Exif".getBytes(Charset.forName("ascii")), 0, bytes, 0, 4);
-        return new JPEGSegment(0xFFE1, bytes);
+        return new JPEGSegment(0xFFE1, bytes, 16);
     }
 }

@@ -28,9 +28,17 @@
 
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
+import com.twelvemonkeys.imageio.metadata.xmp.XMP;
+import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
+
 import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -44,19 +52,9 @@ import java.util.*;
 public final class JPEGSegmentUtil {
     public static final List<String> ALL_IDS = Collections.unmodifiableList(new AllIdsList());
     public static final Map<Integer, List<String>> ALL_SEGMENTS = Collections.unmodifiableMap(new AllSegmentsMap());
-    public static final Map<Integer, List<String>> APP_SEGMENTS = Collections.unmodifiableMap(createAppSegmentsMap());
+    public static final Map<Integer, List<String>> APP_SEGMENTS = Collections.unmodifiableMap(new AllAppSegmentsMap());
 
     private JPEGSegmentUtil() {}
-
-    private static Map<Integer, List<String>> createAppSegmentsMap() {
-        Map<Integer, List<String>> identifiers = new HashMap<Integer, List<String>>();
-
-        for (int i = 0xFFE0; i <= 0xFFEF; i++) {
-            identifiers.put(i, JPEGSegmentUtil.ALL_IDS);
-        }
-
-        return identifiers;
-    }
 
     /**
      * Reads the requested JPEG segments from the stream.
@@ -97,7 +95,6 @@ public final class JPEGSegmentUtil {
         JPEGSegment segment;
         try {
             while (!isImageDone(segment = readSegment(stream, segmentIdentifiers))) {
-//            while (!isImageDone(segment = readSegment(stream, ALL_SEGMENTS))) {
 //                System.err.println("segment: " + segment);
 
                 if (isRequested(segment, segmentIdentifiers)) {
@@ -119,9 +116,8 @@ public final class JPEGSegmentUtil {
     }
 
     private static boolean isRequested(JPEGSegment segment, Map<Integer, List<String>> segmentIdentifiers) {
-        return segmentIdentifiers == ALL_SEGMENTS ||
-                (segmentIdentifiers.containsKey(segment.marker) && (segmentIdentifiers.get(segment.marker) == ALL_IDS ||
-                (segment.identifier() == null && segmentIdentifiers.get(segment.marker) == null || containsSafe(segment, segmentIdentifiers))));
+        return (segmentIdentifiers.containsKey(segment.marker) &&
+                (segment.identifier() == null && segmentIdentifiers.get(segment.marker) == null || containsSafe(segment, segmentIdentifiers)));
     }
 
     private static boolean containsSafe(JPEGSegment segment, Map<Integer, List<String>> segmentIdentifiers) {
@@ -160,16 +156,31 @@ public final class JPEGSegmentUtil {
 
         byte[] data;
 
-        if (segmentIdentifiers == ALL_SEGMENTS || segmentIdentifiers.containsKey(marker)) {
+        if (segmentIdentifiers.containsKey(marker)) {
             data = new byte[length - 2];
             stream.readFully(data);
         }
         else {
-            data = null;
-            stream.skipBytes(length - 2);
+            if (JPEGSegment.isAppSegmentMarker(marker)) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream(32);
+                int read;
+
+                // NOTE: Read until null-termination (0) or EOF
+                while ((read = stream.read()) > 0) {
+                    buffer.write(read);
+                }
+
+                data = buffer.toByteArray();
+
+                stream.skipBytes(length - 3 - data.length);
+            }
+            else {
+                data = null;
+                stream.skipBytes(length - 2);
+            }
         }
 
-        return new JPEGSegment(marker, data);
+        return new JPEGSegment(marker, data, length);
     }
 
     private static class AllIdsList extends ArrayList<String> {
@@ -177,12 +188,102 @@ public final class JPEGSegmentUtil {
         public String toString() {
             return "[All ids]";
         }
+
+        @Override
+        public boolean contains(Object o) {
+            return true;
+        }
     }
 
     private static class AllSegmentsMap extends HashMap<Integer, List<String>> {
         @Override
         public String toString() {
             return "{All segments}";
+        }
+
+        @Override
+        public List<String> get(Object key) {
+            return key instanceof Integer && JPEGSegment.isAppSegmentMarker((Integer) key) ? ALL_IDS : null;
+
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            return true;
+        }
+    }
+
+    private static class AllAppSegmentsMap extends HashMap<Integer, List<String>> {
+        @Override
+        public String toString() {
+            return "{All APPn segments}";
+        }
+
+        @Override
+        public List<String> get(Object key) {
+            return containsKey(key) ? ALL_IDS : null;
+
+        }
+
+        @Override
+        public boolean containsKey(Object key) {
+            return key instanceof Integer && JPEGSegment.isAppSegmentMarker((Integer) key);
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        List<JPEGSegment> segments = readSegments(ImageIO.createImageInputStream(new File(args[0])), ALL_SEGMENTS);
+
+        for (JPEGSegment segment : segments) {
+            System.err.println("segment: " + segment);
+
+            if ("Exif".equals(segment.identifier())) {
+                InputStream data = segment.data();
+                //noinspection ResultOfMethodCallIgnored
+                data.read(); // Pad
+
+                ImageInputStream stream = ImageIO.createImageInputStream(data);
+
+                // Root entry is TIFF, that contains the EXIF sub-IFD
+                Directory tiff = new EXIFReader().read(stream);
+                System.err.println("EXIF: " + tiff);
+            }
+            else if (XMP.NS_XAP.equals(segment.identifier())) {
+                Directory xmp = new XMPReader().read(ImageIO.createImageInputStream(segment.data()));
+                System.err.println("XMP: " + xmp);
+            }
+            else if ("Photoshop 3.0".equals(segment.identifier())) {
+                // TODO: It's probably a good idea to move some of the Photoshop ImageResource parsing code
+                //       to the metadata sub project, as it may be contained in other formats (such as JFIF).
+                // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
+                //       IPTC metadata. Probably duplicated in the XMP though...
+                try {
+                    Class cl = Class.forName("com.twelvemonkeys.imageio.plugins.psd.PSDImageResource");
+                    Method method = cl.getMethod("read", ImageInputStream.class);
+                    method.setAccessible(true);
+                    ImageInputStream stream = ImageIO.createImageInputStream(segment.data());
+
+                    while (true) {
+                        try {
+                            Object photoShop = method.invoke(null, stream);
+                            System.err.println("PhotoShop: " + photoShop);
+                        }
+                        catch (InvocationTargetException e) {
+                            if (e.getTargetException() instanceof EOFException) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ignore) {
+                }
+            }
+            else if ("ICC_PROFILE".equals(segment.identifier())) {
+                // Skip
+            }
+            else {
+                System.err.println(EXIFReader.HexDump.dump(segment.data));
+            }
         }
     }
 }
