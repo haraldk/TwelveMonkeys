@@ -70,7 +70,7 @@ import java.util.StringTokenizer;
  *
  * @author Harald Kuhr
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/taglib/CSVToTableTag.java#1 $
+ * @version $Id: jsp/taglib/CSVToTableTag.java#1 $
  */
 public class CSVToTableTag extends ExBodyTagSupport {
     public final static String TAB = "\t";

@@ -1,4 +1,3 @@
-
 package com.twelvemonkeys.servlet.jsp.taglib.logic;
 
 import javax.servlet.jsp.tagext.*;

@@ -27,8 +27,6 @@ import com.twelvemonkeys.servlet.jsp.taglib.BodyReaderTag;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.BodyTag;
-import javax.servlet.jsp.tagext.Tag;
 import java.io.File;
 import java.io.IOException;
 
@@ -38,7 +36,7 @@ import java.io.IOException;
  * @author Thomas Purcell (CSC Australia)
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/droplet/taglib/OparamTag.java#1 $
+ * @version $Id: jsp/droplet/taglib/OparamTag.java#1 $
  */
 public class OparamTag extends BodyReaderTag {
 
@@ -78,13 +76,11 @@ public class OparamTag extends BodyReaderTag {
     }
 
     /**
-     * Ensure that the tag implemented by this class is enclosed by an {@code
-     * IncludeTag}.  If the tag is not enclosed by an
-     * {@code IncludeTag} then a {@code JspException} is thrown.
+     * Ensure that the tag implemented by this class is enclosed by an {@code IncludeTag}.
+     * If the tag is not enclosed by an {@code IncludeTag} then a {@code JspException} is thrown.
      *
-     * @return If this tag is enclosed within an {@code IncludeTag}, then
-     *         the default return value from this method is the {@code
-     *         TagSupport.EVAL_BODY_TAG} value.
+     * @return If this tag is enclosed within an {@code IncludeTag}, then the default return value
+     * from this method is the {@code TagSupport.EVAL_BODY_TAG} value.
      *
      * @throws JspException
      */
@@ -102,15 +98,14 @@ public class OparamTag extends BodyReaderTag {
         includeTag.addParameter(parameterName, new Oparam(subpage.getName()));
 
         // if ! subpage.exist || jsp newer than subpage, write new
-        File jsp = new File(pageContext.getServletContext()
-                .getRealPath(request.getServletPath()));
+        File jsp = new File(pageContext.getServletContext().getRealPath(request.getServletPath()));
 
         if (!subpage.exists() || jsp.lastModified() > subpage.lastModified()) {
-            return BodyTag.EVAL_BODY_BUFFERED;
+            return EVAL_BODY_BUFFERED;
         }
 
         // No need to evaluate body again!
-        return Tag.SKIP_BODY;
+        return SKIP_BODY;
     }
 
     /**

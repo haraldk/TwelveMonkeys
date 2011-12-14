@@ -2,8 +2,8 @@
  * Copyright (c) 2002 TwelveMonkeys.
  * All rights reserved.
  *
- * $Log: ExTagSupport.java,v $
- * Revision 1.3  2003/10/06 14:25:11  WMHAKUR
+ * $Log: ExBodyTagSupport.java,v $
+ * Revision 1.3  2003/10/06 14:24:57  WMHAKUR
  * Code clean-up only.
  *
  * Revision 1.2  2002/11/18 22:10:27  WMHAKUR
@@ -14,28 +14,30 @@
 
 package com.twelvemonkeys.servlet.jsp.taglib;
 
-
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.JspWriter;
+import javax.servlet.jsp.PageContext;
+import javax.servlet.jsp.tagext.BodyTagSupport;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
+import java.util.StringTokenizer;
 
 /**
- * This is the class that should be extended by all jsp pages that don't use
- * their body. It contains a lot of helper methods for simplifying common
- * tasks.
+ * This is the class that should be extended by all jsp pages that do use their
+ * body. It contains a lot of helper methods for simplifying common tasks.
  *
  * @author Thomas Purcell (CSC Australia)
  * @author Harald Kuhr
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/taglib/ExTagSupport.java#1 $
+ * @version $Id: jsp/taglib/ExBodyTagSupport.java#1 $
  */
 
-public class ExTagSupport extends TagSupport implements ExTag {
+public class ExBodyTagSupport extends BodyTagSupport implements ExTag {
     /**
      * writeHtml ensures that the text being outputted appears as it was
      * entered.  This prevents users from hacking the system by entering
@@ -275,7 +277,7 @@ public class ExTagSupport extends TagSupport implements ExTag {
      */
 
     public InputStream getResourceAsStream(String pPath) {
-        //throws MalformedURLException {
+        //        throws MalformedURLException {
         String path = pPath;
 
         if (pPath != null && !pPath.startsWith("/")) {
@@ -284,6 +286,5 @@ public class ExTagSupport extends TagSupport implements ExTag {
 
         return pageContext.getServletContext().getResourceAsStream(path);
     }
-
 
 }

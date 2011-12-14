@@ -1,10 +1,8 @@
-
 package com.twelvemonkeys.servlet.jsp.taglib;
 
 import java.io.IOException;
 
 import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.BodyTag;
 
 /**
  * This tag truncates all consecutive whitespace in sequence inside its body,
@@ -26,7 +24,7 @@ public class TrimWhiteSpaceTag extends ExBodyTagSupport {
      */
 
     public int doStartTag() throws JspException {
-        return BodyTag.EVAL_BODY_BUFFERED;
+        return EVAL_BODY_BUFFERED;
     }
 
     /**

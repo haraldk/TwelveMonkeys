@@ -20,7 +20,7 @@ import java.util.Set;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/log4j/Log4JContextWrapper.java#1 $
+ * @version $Id: log4j/Log4JContextWrapper.java#1 $
  */
 final class Log4JContextWrapper implements ServletContext {
     // TODO: Move to sandbox

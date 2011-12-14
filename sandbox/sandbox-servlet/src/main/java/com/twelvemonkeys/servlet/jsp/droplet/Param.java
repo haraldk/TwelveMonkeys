@@ -1,4 +1,3 @@
-
 package com.twelvemonkeys.servlet.jsp.droplet;
 
 import javax.servlet.ServletException;

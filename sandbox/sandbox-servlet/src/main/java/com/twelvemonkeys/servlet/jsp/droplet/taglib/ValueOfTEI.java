@@ -17,10 +17,8 @@
 
 package com.twelvemonkeys.servlet.jsp.droplet.taglib;
 
-import java.io.IOException;
-
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
+import javax.servlet.jsp.tagext.TagData;
+import javax.servlet.jsp.tagext.TagExtraInfo;
 
 /**
  * TagExtraInfo for ValueOf.

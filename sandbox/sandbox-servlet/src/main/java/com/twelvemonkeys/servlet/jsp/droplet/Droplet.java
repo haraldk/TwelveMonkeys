@@ -37,7 +37,6 @@ import java.io.IOException;
  */
 public abstract class Droplet extends HttpServlet implements JspFragment {
 
-    // Copy doc
     public abstract void service(PageContext pPageContext)
             throws ServletException, IOException;
 

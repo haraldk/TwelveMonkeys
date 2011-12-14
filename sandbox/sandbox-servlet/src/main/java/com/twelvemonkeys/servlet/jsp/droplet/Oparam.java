@@ -1,10 +1,8 @@
-
 package com.twelvemonkeys.servlet.jsp.droplet;
 
-import java.io.*;
-
-import javax.servlet.*;
-import javax.servlet.jsp.*;
+import javax.servlet.ServletException;
+import javax.servlet.jsp.PageContext;
+import java.io.IOException;
 
 /**
  * Oparam (Open parameter)

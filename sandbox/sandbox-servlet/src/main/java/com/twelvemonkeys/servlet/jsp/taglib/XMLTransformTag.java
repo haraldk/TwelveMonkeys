@@ -16,13 +16,9 @@ package com.twelvemonkeys.servlet.jsp.taglib;
 import java.io.*;
 import java.net.*;
 
-import javax.servlet.*;
 import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
 import javax.xml.transform.*;
 import javax.xml.transform.stream.*;
-
-import com.twelvemonkeys.servlet.jsp.*;
 
 /**
  * This tag performs XSL Transformations (XSLT) on a given XML document or its
@@ -30,7 +26,7 @@ import com.twelvemonkeys.servlet.jsp.*;
  *
  * @author Harald Kuhr
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/taglib/XMLTransformTag.java#1 $
+ * @version $Id: jsp/taglib/XMLTransformTag.java#1 $
  */
 
 public class XMLTransformTag extends ExBodyTagSupport {
@@ -86,11 +82,11 @@ public class XMLTransformTag extends ExBodyTagSupport {
                 throw new JspException(ioe.getMessage(), ioe);
             }
 
-            return Tag.SKIP_BODY;
+            return SKIP_BODY;
         }
 
         // ...else process the body
-        return BodyTag.EVAL_BODY_BUFFERED;
+        return EVAL_BODY_BUFFERED;
     }
 
     /**

@@ -15,12 +15,13 @@
 package com.twelvemonkeys.servlet.jsp.taglib;
 
 
-import java.io.*;
-import java.util.*;
-
-import javax.servlet.*;
-import javax.servlet.jsp.*;
-import javax.servlet.jsp.tagext.*;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.jsp.JspWriter;
+import javax.servlet.jsp.tagext.Tag;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Enumeration;
 
 /**
  * This interface contains a lot of helper methods for simplifying common
@@ -28,7 +29,7 @@ import javax.servlet.jsp.tagext.*;
  *
  * @author Harald Kuhr
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/jsp/taglib/ExTag.java#1 $
+ * @version $Id: jsp/taglib/ExTag.java#1 $
  */
 
 public interface ExTag extends Tag {

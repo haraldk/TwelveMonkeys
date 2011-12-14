@@ -21,6 +21,7 @@
 
     <modules>
         <module>sandbox-common</module>
+        <module>sandbox-servlet</module>
         <module>sandbox-swing</module>
     </modules>
 
@@ -55,6 +56,12 @@
             <dependency>
                 <groupId>com.twelvemonkeys.common</groupId>
                 <artifactId>common-image</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.servlet</groupId>
+                <artifactId>servlet</artifactId>
                 <version>${project.version}</version>
                 <scope>compile</scope>
             </dependency>
