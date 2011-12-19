@@ -1,5 +1,5 @@
 - These readers/writers could probably benefit alot from using JNI with nio
     bytechannel buffers... RFE to JMagick guys?
-- Create stream providers and allow creatig a ImageInputStream from a
+- Create stream providers and allow creating an ImageInputStream from a
     MagickImage? Does that even make sense? Or maybe create File based streams
     that exposes the file name for JMagick to write directly. 

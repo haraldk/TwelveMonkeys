@@ -28,8 +28,8 @@
 
 package com.twelvemonkeys.imageio.util;
 
-import org.jmock.Mock;
-import org.jmock.cglib.MockObjectTestCase;
+import org.junit.Test;
+import org.mockito.InOrder;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -39,6 +39,10 @@ import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.*;
+
 /**
  * ImageReaderAbstractTestCase class description.
  *
@@ -46,12 +50,13 @@ import java.io.IOException;
  * @author last modified by $Author: haku $
  * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 18.nov.2004 17:38:33 haku Exp $
  */
-public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
+public abstract class ImageWriterAbstractTestCase {
 
     protected abstract ImageWriter createImageWriter();
 
     protected abstract RenderedImage getTestData();
 
+    @Test
     public void testSetOutput() throws IOException {
         // Should just pass with no exceptions
         ImageWriter writer = createImageWriter();
@@ -59,6 +64,7 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         writer.setOutput(ImageIO.createImageOutputStream(new ByteArrayOutputStream()));
     }
 
+    @Test
     public void testSetOutputNull() {
         // Should just pass with no exceptions
         ImageWriter writer = createImageWriter();
@@ -66,25 +72,30 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         writer.setOutput(null);
     }
 
+    @Test
     public void testWrite() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
+
         try {
             writer.write(getTestData());
         }
         catch (IOException e) {
             fail(e.getMessage());
         }
+
         assertTrue("No image data written", buffer.size() > 0);
     }
 
+    @Test
     public void testWrite2() {
         // Note: There's a difference between new ImageOutputStreamImpl and
         // ImageIO.createImageOutputStream... Make sure writers handle both
         // cases
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
         try {
             writer.setOutput(ImageIO.createImageOutputStream(buffer));
             writer.write(getTestData());
@@ -96,10 +107,12 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         assertTrue("No image data written", buffer.size() > 0);
     }
 
+    @Test
     public void testWriteNull() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
+
         try {
             writer.write((RenderedImage) null);
         }
@@ -108,11 +121,14 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         catch (IOException e) {
             fail(e.getMessage());
         }
+
         assertTrue("Image data written", buffer.size() == 0);
     }
 
+    @Test
     public void testWriteNoOutput() {
         ImageWriter writer = createImageWriter();
+
         try {
             writer.write(getTestData());
         }
@@ -123,6 +139,7 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
     }
 
+    @Test
     public void testGetDefaultWriteParam() {
         ImageWriter writer = createImageWriter();
         ImageWriteParam param = writer.getDefaultWriteParam();
@@ -132,29 +149,26 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
     // TODO: Test writing with params
     // TODO: Source region and subsampling at least
 
+    @Test
     public void testAddIIOWriteProgressListener() {
         ImageWriter writer = createImageWriter();
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        writer.addIIOWriteProgressListener(mock(IIOWriteProgressListener.class));
     }
 
+    @Test
     public void testAddIIOWriteProgressListenerNull() {
         ImageWriter writer = createImageWriter();
         writer.addIIOWriteProgressListener(null);
     }
 
+    @Test
     public void testAddIIOWriteProgressListenerCallbacks() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        String started = "Started";
-        mockListener.expects(once()).method("imageStarted").withAnyArguments().id(started);
-        mockListener.stubs().method("imageProgress").withAnyArguments().after(started);
-        mockListener.expects(once()).method("imageComplete").withAnyArguments().after(started);
-
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        IIOWriteProgressListener listener = mock(IIOWriteProgressListener.class);
+        writer.addIIOWriteProgressListener(listener);
 
         try {
             writer.write(getTestData());
@@ -164,36 +178,25 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
 
         // At least imageStarted and imageComplete, plus any number of imageProgress
-        mockListener.verify();
+        InOrder ordered = inOrder(listener);
+        ordered.verify(listener).imageStarted(writer, 0);
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listener).imageComplete(writer);
     }
 
+    @Test
     public void testMultipleAddIIOWriteProgressListenerCallbacks() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        String started = "Started";
-        mockListener.expects(once()).method("imageStarted").withAnyArguments().id(started);
-        mockListener.stubs().method("imageProgress").withAnyArguments().after(started);
-        mockListener.expects(once()).method("imageComplete").withAnyArguments().after(started);
+        IIOWriteProgressListener listener = mock(IIOWriteProgressListener.class);
+        IIOWriteProgressListener listenerToo = mock(IIOWriteProgressListener.class);
+        IIOWriteProgressListener listenerThree = mock(IIOWriteProgressListener.class);
 
-        Mock mockListenerToo = new Mock(IIOWriteProgressListener.class);
-        String startedToo = "Started Two";
-        mockListenerToo.expects(once()).method("imageStarted").withAnyArguments().id(startedToo);
-        mockListenerToo.stubs().method("imageProgress").withAnyArguments().after(startedToo);
-        mockListenerToo.expects(once()).method("imageComplete").withAnyArguments().after(startedToo);
-
-        Mock mockListenerThree = new Mock(IIOWriteProgressListener.class);
-        String startedThree = "Started Three";
-        mockListenerThree.expects(once()).method("imageStarted").withAnyArguments().id(startedThree);
-        mockListenerThree.stubs().method("imageProgress").withAnyArguments().after(startedThree);
-        mockListenerThree.expects(once()).method("imageComplete").withAnyArguments().after(startedThree);
-
-
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListenerToo.proxy());
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListenerThree.proxy());
+        writer.addIIOWriteProgressListener(listener);
+        writer.addIIOWriteProgressListener(listenerToo);
+        writer.addIIOWriteProgressListener(listenerThree);
 
         try {
             writer.write(getTestData());
@@ -203,30 +206,40 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
 
         // At least imageStarted and imageComplete, plus any number of imageProgress
-        mockListener.verify();
-        mockListenerToo.verify();
-        mockListenerThree.verify();
+        InOrder ordered = inOrder(listener, listenerToo, listenerThree);
+
+        ordered.verify(listener).imageStarted(writer, 0);
+        ordered.verify(listenerToo).imageStarted(writer, 0);
+        ordered.verify(listenerThree).imageStarted(writer, 0);
+
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listenerThree, atLeastOnce()).imageProgress(eq(writer), anyInt());
+
+        ordered.verify(listener).imageComplete(writer);
+        ordered.verify(listenerToo).imageComplete(writer);
+        ordered.verify(listenerThree).imageComplete(writer);
     }
 
-
+    @Test
     public void testRemoveIIOWriteProgressListenerNull() {
         ImageWriter writer = createImageWriter();
         writer.removeIIOWriteProgressListener(null);
     }
 
+    @Test
     public void testRemoveIIOWriteProgressListenerNone() {
         ImageWriter writer = createImageWriter();
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        writer.removeIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        writer.removeIIOWriteProgressListener(mock(IIOWriteProgressListener.class));
     }
 
+    @Test
     public void testRemoveIIOWriteProgressListener() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        IIOWriteProgressListener listener = (IIOWriteProgressListener) mockListener.proxy();
+        IIOWriteProgressListener listener = mock(IIOWriteProgressListener.class);
         writer.addIIOWriteProgressListener(listener);
         writer.removeIIOWriteProgressListener(listener);
 
@@ -238,25 +251,22 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
 
         // Should not have called any methods...
-        mockListener.verify();
+        verifyZeroInteractions(listener);
     }
 
+    @Test
     public void testRemoveIIOWriteProgressListenerMultiple() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
+        IIOWriteProgressListener listener = mock(IIOWriteProgressListener.class);
+        writer.addIIOWriteProgressListener(listener);
 
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        IIOWriteProgressListener listenerToo = mock(IIOWriteProgressListener.class);
+        writer.addIIOWriteProgressListener(listenerToo);
 
-        Mock mockListenerToo = new Mock(IIOWriteProgressListener.class);
-        mockListenerToo.stubs().method("imageStarted").withAnyArguments();
-        mockListenerToo.stubs().method("imageProgress").withAnyArguments();
-        mockListenerToo.stubs().method("imageComplete").withAnyArguments();
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListenerToo.proxy());
-
-        writer.removeIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        writer.removeIIOWriteProgressListener(listener);
 
         try {
             writer.write(getTestData());
@@ -266,19 +276,25 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
 
         // Should not have called any methods...
-        mockListener.verify();
-        mockListenerToo.verify();
+        verifyZeroInteractions(listener);
+
+        // At least imageStarted and imageComplete, plus any number of imageProgress
+        InOrder ordered = inOrder(listenerToo);
+        ordered.verify(listenerToo).imageStarted(writer, 0);
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listenerToo).imageComplete(writer);
+
     }
 
-
+    @Test
     public void testRemoveAllIIOWriteProgressListeners() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
 
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        IIOWriteProgressListener listener = mock(IIOWriteProgressListener.class);
+        writer.addIIOWriteProgressListener(listener);
 
         writer.removeAllIIOWriteProgressListeners();
 
@@ -290,20 +306,21 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
 
         // Should not have called any methods...
-        mockListener.verify();
+        verifyZeroInteractions(listener);
     }
 
+    @Test
     public void testRemoveAllIIOWriteProgressListenersMultiple() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
 
-        Mock mockListener = new Mock(IIOWriteProgressListener.class);
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListener.proxy());
+        IIOWriteProgressListener listener = mock(IIOWriteProgressListener.class);
+        writer.addIIOWriteProgressListener(listener);
 
-        Mock mockListenerToo = new Mock(IIOWriteProgressListener.class);
-        writer.addIIOWriteProgressListener((IIOWriteProgressListener) mockListenerToo.proxy());
+        IIOWriteProgressListener listenerToo = mock(IIOWriteProgressListener.class);
+        writer.addIIOWriteProgressListener(listenerToo);
 
         writer.removeAllIIOWriteProgressListeners();
 
@@ -315,8 +332,7 @@ public abstract class ImageWriterAbstractTestCase extends MockObjectTestCase {
         }
 
         // Should not have called any methods...
-        mockListener.verify();
-        mockListenerToo.verify();
+        verifyZeroInteractions(listener);
+        verifyZeroInteractions(listenerToo);
     }
-
 }

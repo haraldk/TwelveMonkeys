@@ -29,6 +29,10 @@
 package com.twelvemonkeys.imageio.plugins.jmagick;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Rule;
+import org.junit.rules.MethodRule;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
 
 import javax.imageio.ImageReader;
 
@@ -40,14 +44,20 @@ import javax.imageio.ImageReader;
  * @version $Id: JMagickImageReaderAbstractTestCase.java,v 1.0 Apr 1, 2008 2:59:05 PM haraldk Exp$
  */
 public abstract class JMagickImageReaderAbstractTestCase<T extends ImageReader> extends ImageReaderAbstractTestCase<T> {
-
-    @Override
-    protected void runTest() throws Throwable {
-        if (JMagickImageReaderSpiSupport.AVAILABLE) {
-            super.runTest();
+    @Rule
+    public MethodRule rule = new MethodRule() {
+        public Statement apply(final Statement base, final FrameworkMethod method, final Object target) {
+            if (JMagickImageReaderSpiSupport.AVAILABLE) {
+                return base;
+            }
+            
+            return new Statement() {
+                @Override
+                public void evaluate() throws Throwable {
+                    // TODO: Make this increase "skipped" count, rather than run/success
+                    System.err.println("WARNING: JMagick not installed. Skipping test " + method.getName());
+                }
+            };
         }
-        else {
-            System.err.println("WARNING: JMagick not installed. Skipping test " + getName());
-        }
-    }
+    };
 }

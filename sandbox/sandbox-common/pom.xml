@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
     <name>TwelveMonkeys :: Sandbox :: Common</name>
     <description>
-        The TwelveMonkeys Sandbox Common. Experimental stuff.
+        The TwelveMonkeys Common Sandbox. Experimental stuff.
     </description>
 
     <dependencies>
@@ -25,6 +25,12 @@
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-image</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
             <scope>compile</scope>
         </dependency>
 

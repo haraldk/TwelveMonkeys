@@ -29,12 +29,11 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import org.jmock.Mock;
-import org.jmock.cglib.MockObjectTestCase;
-import org.jmock.core.Invocation;
-import org.jmock.core.Stub;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadProgressListener;
@@ -55,6 +54,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
+
 /**
  * ImageReaderAbstractTestCase
  *
@@ -62,7 +64,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 Apr 1, 2008 10:36:46 PM haraldk Exp$
  */
-public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends MockObjectTestCase {
+public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
     // TODO: Should we really test if he provider is installed?
     //       - Pro: Tests the META-INF/services config
     //       - Con: Not all providers should be installed at runtime...
@@ -948,8 +950,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
     @Test
     public void testAddIIOReadProgressListener() {
         ImageReader reader = createReader();
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListener.proxy());
+        reader.addIIOReadProgressListener(mock(IIOReadProgressListener.class));
     }
 
     @Test
@@ -964,13 +965,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        String started = "Started";
-        mockListener.expects(once()).method("imageStarted").withAnyArguments().id(started);
-        mockListener.stubs().method("imageProgress").withAnyArguments().after(started);
-        mockListener.expects(once()).method("imageComplete").withAnyArguments().after(started);
-
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListener.proxy());
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
 
         try {
             reader.read(0);
@@ -980,7 +976,10 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
 
         // At least imageStarted and imageComplete, plus any number of imageProgress
-        mockListener.verify();
+        InOrder ordered = inOrder(listener);
+        ordered.verify(listener).imageStarted(reader, 0);
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener).imageComplete(reader);
     }
 
     @Test
@@ -989,28 +988,13 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        String started = "Started";
-        mockListener.expects(once()).method("imageStarted").withAnyArguments().id(started);
-        mockListener.stubs().method("imageProgress").withAnyArguments().after(started);
-        mockListener.expects(once()).method("imageComplete").withAnyArguments().after(started);
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        IIOReadProgressListener listenerToo = mock(IIOReadProgressListener.class);
+        IIOReadProgressListener listenerThree = mock(IIOReadProgressListener.class);
 
-        Mock mockListenerToo = new Mock(IIOReadProgressListener.class);
-        String startedToo = "Started Two";
-        mockListenerToo.expects(once()).method("imageStarted").withAnyArguments().id(startedToo);
-        mockListenerToo.stubs().method("imageProgress").withAnyArguments().after(startedToo);
-        mockListenerToo.expects(once()).method("imageComplete").withAnyArguments().after(startedToo);
-
-        Mock mockListenerThree = new Mock(IIOReadProgressListener.class);
-        String startedThree = "Started Three";
-        mockListenerThree.expects(once()).method("imageStarted").withAnyArguments().id(startedThree);
-        mockListenerThree.stubs().method("imageProgress").withAnyArguments().after(startedThree);
-        mockListenerThree.expects(once()).method("imageComplete").withAnyArguments().after(startedThree);
-
-
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListener.proxy());
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListenerToo.proxy());
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListenerThree.proxy());
+        reader.addIIOReadProgressListener(listener);
+        reader.addIIOReadProgressListener(listenerToo);
+        reader.addIIOReadProgressListener(listenerThree);
 
         try {
             reader.read(0);
@@ -1020,9 +1004,19 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
 
         // At least imageStarted and imageComplete, plus any number of imageProgress
-        mockListener.verify();
-        mockListenerToo.verify();
-        mockListenerThree.verify();
+        InOrder ordered = inOrder(listener, listenerToo, listenerThree);
+
+        ordered.verify(listener).imageStarted(reader, 0);
+        ordered.verify(listenerToo).imageStarted(reader, 0);
+        ordered.verify(listenerThree).imageStarted(reader, 0);
+
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listenerThree, atLeastOnce()).imageProgress(eq(reader), anyInt());
+
+        ordered.verify(listener).imageComplete(reader);
+        ordered.verify(listenerToo).imageComplete(reader);
+        ordered.verify(listenerThree).imageComplete(reader);
     }
 
     @Test
@@ -1034,8 +1028,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
     @Test
     public void testRemoveIIOReadProgressListenerNone() {
         ImageReader reader = createReader();
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        reader.removeIIOReadProgressListener((IIOReadProgressListener) mockListener.proxy());
+        reader.removeIIOReadProgressListener(mock(IIOReadProgressListener.class));
     }
 
     @Test
@@ -1043,8 +1036,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        IIOReadProgressListener listener = (IIOReadProgressListener) mockListener.proxy();
+        
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
         reader.addIIOReadProgressListener(listener);
         reader.removeIIOReadProgressListener(listener);
 
@@ -1056,7 +1049,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
 
         // Should not have called any methods...
-        mockListener.verify();
+        verifyZeroInteractions(listener);
     }
 
     @Test
@@ -1065,15 +1058,11 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        Mock mockListener = new Mock(IIOReadProgressListener.class, "Listener1");
-        IIOReadProgressListener listener = (IIOReadProgressListener) mockListener.proxy();
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class, "Listener1");
         reader.addIIOReadProgressListener(listener);
 
-        Mock mockListenerToo = new Mock(IIOReadProgressListener.class, "Listener2");
-        mockListenerToo.expects(once()).method("imageStarted").with(eq(reader), eq(0));
-        mockListenerToo.stubs().method("imageProgress").withAnyArguments();
-        mockListenerToo.expects(once()).method("imageComplete").with(eq(reader));
-        IIOReadProgressListener listenerToo = (IIOReadProgressListener) mockListenerToo.proxy();
+
+        IIOReadProgressListener listenerToo = mock(IIOReadProgressListener.class, "Listener2");
         reader.addIIOReadProgressListener(listenerToo);
 
         reader.removeIIOReadProgressListener(listener);
@@ -1085,9 +1074,13 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             fail("Could not read image");
         }
 
-        // Should not have called any methods...
-        mockListener.verify();
-        mockListenerToo.verify();
+        // Should not have called any methods on listener1...
+        verifyZeroInteractions(listener);
+
+        InOrder ordered = inOrder(listenerToo);
+        ordered.verify(listenerToo).imageStarted(reader, 0);
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listenerToo).imageComplete(reader);
     }
 
     @Test
@@ -1096,8 +1089,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListener.proxy());
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
 
         reader.removeAllIIOReadProgressListeners();
 
@@ -1109,7 +1102,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
 
         // Should not have called any methods...
-        mockListener.verify();
+        verifyZeroInteractions(listener);
     }
 
     @Test
@@ -1118,11 +1111,11 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        Mock mockListener = new Mock(IIOReadProgressListener.class);
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListener.proxy());
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
 
-        Mock mockListenerToo = new Mock(IIOReadProgressListener.class);
-        reader.addIIOReadProgressListener((IIOReadProgressListener) mockListenerToo.proxy());
+        IIOReadProgressListener listenerToo = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listenerToo);
 
         reader.removeAllIIOReadProgressListeners();
 
@@ -1134,8 +1127,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         }
 
         // Should not have called any methods...
-        mockListener.verify();
-        mockListenerToo.verify();
+        verifyZeroInteractions(listener);
+        verifyZeroInteractions(listenerToo);
     }
 
     @Test
@@ -1144,41 +1137,24 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        Mock mockListener = new Mock(IIOReadProgressListener.class, "Progress1");
-        mockListener.stubs().method("imageStarted").withAnyArguments();
-        mockListener.stubs().method("imageProgress").withAnyArguments();
-        mockListener.expects(once()).method("readAborted").with(eq(reader));
-        mockListener.stubs().method("imageComplete").withAnyArguments();
-        IIOReadProgressListener listener = (IIOReadProgressListener) mockListener.proxy();
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class, "Progress1");
         reader.addIIOReadProgressListener(listener);
 
-        Mock mockListenerToo = new Mock(IIOReadProgressListener.class, "Progress2");
-        mockListenerToo.stubs().method("imageStarted").withAnyArguments();
-        mockListenerToo.stubs().method("imageProgress").withAnyArguments();
-        mockListenerToo.expects(once()).method("readAborted").with(eq(reader));
-        mockListenerToo.stubs().method("imageComplete").withAnyArguments();
-        IIOReadProgressListener listenerToo = (IIOReadProgressListener) mockListenerToo.proxy();
+        IIOReadProgressListener listenerToo = mock(IIOReadProgressListener.class, "Progress2");
         reader.addIIOReadProgressListener(listenerToo);
 
         // Create a listener that just makes the reader abort immediately...
-        Mock abortingListener = new Mock(IIOReadProgressListener.class, "Aborter");
-        abortingListener.stubs().method("readAborted").withAnyArguments();
-        abortingListener.stubs().method("imageComplete").withAnyArguments();
-        Stub abort = new Stub() {
-            public Object invoke(Invocation pInvocation) throws Throwable {
+        IIOReadProgressListener abortingListener = mock(IIOReadProgressListener.class, "Aborter");
+        Answer<Void> abort = new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) throws Throwable {
                 reader.abort();
                 return null;
             }
-
-            public StringBuffer describeTo(StringBuffer pStringBuffer) {
-                pStringBuffer.append("aborting");
-                return pStringBuffer;
-            }
         };
-        abortingListener.stubs().method("imageProgress").will(abort);
-        abortingListener.stubs().method("imageStarted").will(abort);
+        doAnswer(abort).when(abortingListener).imageStarted(any(ImageReader.class), anyInt());
+        doAnswer(abort).when(abortingListener).imageProgress(any(ImageReader.class), anyInt());
 
-        reader.addIIOReadProgressListener((IIOReadProgressListener) abortingListener.proxy());
+        reader.addIIOReadProgressListener(abortingListener);
 
         try {
             reader.read(0);
@@ -1187,8 +1163,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> extends
             failBecause("Image could not be read", e);
         }
 
-        mockListener.verify();
-        mockListenerToo.verify();
+        verify(listener).readAborted(reader);
+        verify(listenerToo).readAborted(reader);
     }
 
     @Test

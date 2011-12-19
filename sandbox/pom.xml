@@ -32,11 +32,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>jmock</groupId>
-            <artifactId>jmock-cglib</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     
     <dependencyManagement>
@@ -102,14 +97,7 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.3.1</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>jmock</groupId>
-                <artifactId>jmock-cglib</artifactId>
-                <version>1.0.1</version>
+                <version>4.7</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

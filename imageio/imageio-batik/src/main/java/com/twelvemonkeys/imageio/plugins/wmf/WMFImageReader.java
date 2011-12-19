@@ -81,6 +81,7 @@ public class WMFImageReader extends ImageReaderBase {
             processReadAborted();
             return image;
         }
+        processImageProgress(100f);
 
         processImageComplete();
 

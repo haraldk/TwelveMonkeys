@@ -33,6 +33,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 import com.twelvemonkeys.lang.SystemUtil;
+import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -53,7 +54,7 @@ import java.util.List;
 public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<ThumbsDBImageReader> {
     private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
 
-    private ThumbsDBImageReaderSpi mProvider = new ThumbsDBImageReaderSpi();
+    private ThumbsDBImageReaderSpi provider = new ThumbsDBImageReaderSpi();
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -82,12 +83,12 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
     }
 
     protected ImageReaderSpi createProvider() {
-        return mProvider;
+        return provider;
     }
 
     @Override
     protected ThumbsDBImageReader createReader() {
-        return new ThumbsDBImageReader(mProvider);
+        return new ThumbsDBImageReader(provider);
     }
 
     protected Class<ThumbsDBImageReader> getReaderClass() {
@@ -106,6 +107,7 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
         return Arrays.asList("image/x-thumbs-db");
     }
 
+    @Test
     public void testArrayIndexOutOfBoundsBufferedReadBug() throws IOException {
         ImageInputStream input = new BufferedImageInputStream(new MemoryCacheImageInputStream(getClass().getResourceAsStream("/thumbsdb/Thumbs-camera.db")));
         input.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -115,6 +117,7 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
         child.getInputStream();
     }
 
+    @Test
     @Override
     public void testSetDestination() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
@@ -126,6 +129,7 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
         }
     }
 
+    @Test
     @Override
     public void testSetDestinationType() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6

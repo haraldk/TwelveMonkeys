@@ -82,16 +82,9 @@
         </dependency>
 
         <dependency>
-            <groupId>jmock</groupId>
-            <artifactId>jmock-cglib</artifactId>
-            <version>1.0.1</version>
-            <scope>test</scope>
-        </dependency>
-        
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
-            <version>1.8.0</version>
+            <version>1.8.5</version>
         </dependency>
     </dependencies>
 

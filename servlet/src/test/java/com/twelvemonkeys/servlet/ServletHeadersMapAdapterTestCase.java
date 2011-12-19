@@ -1,20 +1,21 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.util.MapAbstractTestCase;
-import org.jmock.Mock;
-import org.jmock.core.Invocation;
-import org.jmock.core.Stub;
-import org.jmock.core.stub.CustomStub;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+
+import static org.mockito.Mockito.when;
 
 /**
  * ServletConfigMapAdapterTestCase
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/ServletHeadersMapAdapterTestCase.java#1 $
+ * @version $Id: ServletHeadersMapAdapterTestCase.java#1 $
  */
 public class ServletHeadersMapAdapterTestCase extends MapAbstractTestCase {
     private static final List<String> HEADER_VALUE_ETAG = Arrays.asList("\"1234567890abcdef\"");
@@ -43,24 +44,21 @@ public class ServletHeadersMapAdapterTestCase extends MapAbstractTestCase {
     }
 
     public Map makeEmptyMap() {
-        Mock mockRequest = mock(HttpServletRequest.class);
-        mockRequest.stubs().method("getHeaderNames").will(returnValue(Collections.enumeration(Collections.emptyList())));
-        mockRequest.stubs().method("getHeaders").will(returnValue(null));
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        when(request.getHeaderNames()).thenAnswer(returnEnumeration(Collections.emptyList()));
 
-        return new ServletHeadersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletHeadersMapAdapter(request);
     }
 
     @Override
     public Map makeFullMap() {
-        Mock mockRequest = mock(HttpServletRequest.class);
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        when(request.getHeaderNames()).thenAnswer(returnEnumeration(Arrays.asList(getSampleKeys())));
+        when(request.getHeaders("Date")).thenAnswer(returnEnumeration(HEADER_VALUE_DATE));
+        when(request.getHeaders("ETag")).thenAnswer(returnEnumeration(HEADER_VALUE_ETAG));
+        when(request.getHeaders("X-Foo")).thenAnswer(returnEnumeration(HEADER_VALUE_FOO));
 
-        mockRequest.stubs().method("getHeaderNames").will(returnEnumeration("ETag", "Date", "X-Foo"));
-        mockRequest.stubs().method("getHeaders").with(eq("Date")).will(returnEnumeration(HEADER_VALUE_DATE));
-        mockRequest.stubs().method("getHeaders").with(eq("ETag")).will(returnEnumeration(HEADER_VALUE_ETAG));
-        mockRequest.stubs().method("getHeaders").with(eq("X-Foo")).will(returnEnumeration(HEADER_VALUE_FOO));
-        mockRequest.stubs().method("getHeaders").with(not(or(eq("Date"), or(eq("ETag"), eq("X-Foo"))))).will(returnValue(null));
-
-        return new ServletHeadersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletHeadersMapAdapter(request);
     }
 
     @Override
@@ -73,31 +71,25 @@ public class ServletHeadersMapAdapterTestCase extends MapAbstractTestCase {
         return new Object[] {HEADER_VALUE_DATE, HEADER_VALUE_ETAG, HEADER_VALUE_FOO};
     }
 
-
     @Override
     public Object[] getNewSampleValues() {
         // Needs to be same length but different values
         return new Object[3];
     }
 
-    protected Stub returnEnumeration(final Object... pValues) {
-        return new EnumerationStub(Arrays.asList(pValues));
+    protected static <T> ReturnNewEnumeration<T> returnEnumeration(final Collection<T> collection) {
+        return new ReturnNewEnumeration<T>(collection);
     }
 
-    protected Stub returnEnumeration(final List<?> pValues) {
-        return new EnumerationStub(pValues);
-    }
+    private static class ReturnNewEnumeration<T> implements Answer<Enumeration<T>> {
+        private final Collection<T> collection;
 
-    private static class EnumerationStub extends CustomStub {
-        private List<?> mValues;
-
-        public EnumerationStub(final List<?> pValues) {
-            super("Returns a new enumeration");
-            mValues = pValues;
+        private ReturnNewEnumeration(final Collection<T> collection) {
+            this.collection = collection;
         }
 
-        public Object invoke(Invocation invocation) throws Throwable {
-            return Collections.enumeration(mValues);
+        public Enumeration<T> answer(InvocationOnMock invocation) throws Throwable {
+            return Collections.enumeration(collection);
         }
     }
 }

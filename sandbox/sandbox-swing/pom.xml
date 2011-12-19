@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
     <name>TwelveMonkeys :: Sandbox :: Swing</name>
     <description>
-        The TwelveMonkeys Sandbox Swing. Experimental stuff.
+        The TwelveMonkeys Swing Sandbox. Experimental stuff.
     </description>
 
     <properties>

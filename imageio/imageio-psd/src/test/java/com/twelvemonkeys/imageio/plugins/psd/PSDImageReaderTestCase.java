@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
 
+import static org.junit.Assert.*;
+
 /**
  * PSDImageReaderTestCase
  *

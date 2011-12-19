@@ -1,6 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.ico;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Test;
 
 import javax.imageio.ImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
@@ -9,6 +10,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  * CURImageReaderTestCase
@@ -74,19 +77,23 @@ public class CURImageReaderTestCase extends ImageReaderAbstractTestCase<CURImage
         assertEquals(pExpected, reader.getHotSpot(0));
     }
 
+    @Test
     public void testHandHotspot() throws IOException {
         assertHotSpot(getTestData().get(0), null, new Point(15, 15));
     }
 
+    @Test
     public void testZoomHotspot() throws IOException {
         assertHotSpot(getTestData().get(1), null, new Point(13, 11));
     }
 
+    @Test
     public void testHandHotspotWithParam() throws IOException {
         ImageReadParam param = new ImageReadParam();
         assertHotSpot(getTestData().get(0), param, new Point(15, 15));
     }
 
+    @Test
     public void testHandHotspotExplicitDestination() throws IOException {
         CURImageReader reader = createReader();
         reader.setInput(getTestData().get(0).getInputStream());

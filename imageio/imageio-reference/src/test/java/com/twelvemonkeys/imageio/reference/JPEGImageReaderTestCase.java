@@ -4,13 +4,14 @@ import com.sun.imageio.plugins.jpeg.JPEGImageReader;
 import com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import com.twelvemonkeys.lang.SystemUtil;
+import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.spi.ImageReaderSpi;
-import java.util.Arrays;
-import java.util.List;
 import java.awt.*;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * JPEGImageReaderTestCase
@@ -67,6 +68,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
         return Arrays.asList(provider.getMIMETypes());
     }
 
+    @Test
     @Override
     public void testSetDestination() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
@@ -78,6 +80,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
         }
     }
 
+    @Test
     @Override
     public void testSetDestinationType() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
@@ -89,6 +92,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
         }
     }
 
+    @Test
     @Override
     public void testReadAsRenderedImageIndexOutOfBounds() throws IIOException {
         try {

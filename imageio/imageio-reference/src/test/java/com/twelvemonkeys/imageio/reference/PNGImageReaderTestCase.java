@@ -3,6 +3,7 @@ package com.twelvemonkeys.imageio.reference;
 import com.sun.imageio.plugins.png.PNGImageReader;
 import com.sun.imageio.plugins.png.PNGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.spi.ImageReaderSpi;
@@ -64,6 +65,7 @@ public class PNGImageReaderTestCase extends ImageReaderAbstractTestCase<PNGImage
         return Arrays.asList(provider.getMIMETypes());
     }
 
+    @Test
     @Override
     public void testSetDestinationTypeIllegal() throws IOException {
         try {

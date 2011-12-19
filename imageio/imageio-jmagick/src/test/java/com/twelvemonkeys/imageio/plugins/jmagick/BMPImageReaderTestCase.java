@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class BMPImageReaderTestCase extends JMagickImageReaderAbstractTestCase<BMPImageReader> {
-    private BMPImageReaderSpi mProvider = new BMPImageReaderSpi();
+    private BMPImageReaderSpi provider = new BMPImageReaderSpi();
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -63,7 +63,7 @@ public class BMPImageReaderTestCase extends JMagickImageReaderAbstractTestCase<B
     }
 
     protected BMPImageReader createReader() {
-        return new BMPImageReader(mProvider);
+        return new BMPImageReader(provider);
     }
 
     protected ImageReaderSpi createProvider() {
