@@ -53,7 +53,7 @@ import java.util.Map;
  * @author Harald Kuhr
  * @author Eirik Torske
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ServletUtil.java#3 $
+ * @version $Id: ServletUtil.java#3 $
  */
 public final class ServletUtil {
 

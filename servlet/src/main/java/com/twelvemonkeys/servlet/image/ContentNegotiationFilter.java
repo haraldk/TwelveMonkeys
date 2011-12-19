@@ -54,6 +54,9 @@ import java.util.*;
  * unneccessary conversion (as IE supports PNG, the latests FireFox supports
  * JPEG and GIF, etc. even though they both don't explicitly list these formats
  * in their Accept headers).
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: ContentNegotiationFilter.java#1 $
  */
 public class ContentNegotiationFilter extends ImageFilter {
 

@@ -7,7 +7,7 @@ import java.util.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/AbstractCacheResponse.java#1 $
+ * @version $Id: AbstractCacheResponse.java#1 $
  */
 public abstract class AbstractCacheResponse implements CacheResponse {
     private int status;
@@ -32,10 +32,12 @@ public abstract class AbstractCacheResponse implements CacheResponse {
 
     private void setHeader(String pHeaderName, String pHeaderValue, boolean pAdd) {
         List<String> values = pAdd ? headers.get(pHeaderName) : null;
+
         if (values == null) {
             values = new ArrayList<String>();
             headers.put(pHeaderName, values);
         }
+
         values.add(pHeaderValue);
     }
 

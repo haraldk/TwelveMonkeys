@@ -46,19 +46,16 @@ import java.util.Map;
 
 /**
  * ThrottleFilter, a filter for easing server during heavy load.
- * <!--
- * Renamed from LoadShutoffFilter...
- * Happened to be listening to Xploding Plastix' Shakedown Shutoff at the time..
- * -->
- * Intercepts requests, and returns HTTP response code 503
- * (Service Unavailable), if there are more than a given number of concurrent
+ * <p/>
+ * Intercepts requests, and returns HTTP response code {@code 503 (Service Unavailable)},
+ * if there are more than a given number of concurrent
  * requests, to avoid large backlogs. The number of concurrent requests and the
  * response messages sent to the user agent, is configurable from the web
  * descriptor.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ThrottleFilter.java#1 $
+ * @version $Id: ThrottleFilter.java#1 $
  * @see #setMaxConcurrentThreadCount
  * @see #setResponseMessages
  */
@@ -195,7 +192,7 @@ public class ThrottleFilter extends GenericFilter {
     /**
      * Marks the beginning of a request
      *
-     * @return <CODE>true<CODE> if the request should be handled.
+     * @return {@code true} if the request should be handled.
      */
     private boolean beginRequest() {
         synchronized (runningThreadsLock) {

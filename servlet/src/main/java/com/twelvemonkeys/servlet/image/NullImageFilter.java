@@ -35,8 +35,8 @@ import java.awt.image.RenderedImage;
 /**
  * An {@code ImageFilter} that does nothing. Useful for debugging purposes.
  *
- * @author $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/NullImageFilter.java#2 $
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: NullImageFilter.java $
  * 
  */
 public final class NullImageFilter extends ImageFilter {

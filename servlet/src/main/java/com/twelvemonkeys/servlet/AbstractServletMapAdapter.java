@@ -9,7 +9,7 @@ import java.util.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/AbstractServletMapAdapter.java#1 $
+ * @version $Id: AbstractServletMapAdapter.java#1 $
  */
 abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String>> {
     // TODO: This map is now a little too lazy.. Should cache entries too (instead?) !

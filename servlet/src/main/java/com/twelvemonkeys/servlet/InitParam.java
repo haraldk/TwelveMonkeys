@@ -36,7 +36,7 @@ import java.lang.annotation.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/InitParam.java#1 $
+ * @version $Id: InitParam.java#1 $
  * @see com.twelvemonkeys.servlet.ServletConfigurator
  * @see com.twelvemonkeys.servlet.GenericFilter#init(javax.servlet.FilterConfig)
  * @see com.twelvemonkeys.servlet.GenericServlet#init(javax.servlet.ServletConfig)

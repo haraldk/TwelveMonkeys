@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequest;
  * <a href="http://www.ietf.org/rfc/rfc1867.txt">Form-based File Upload in HTML (RFC1867)</a>.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/HttpFileUploadRequest.java#1 $
+ * @version $Id: HttpFileUploadRequest.java#1 $
  */
 public interface HttpFileUploadRequest extends HttpServletRequest {
     /**

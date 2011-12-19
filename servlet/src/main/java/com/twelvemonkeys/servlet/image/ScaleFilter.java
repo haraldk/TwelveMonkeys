@@ -69,7 +69,7 @@ import java.lang.reflect.Field;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ScaleFilter.java#1 $
+ * @version $Id: ScaleFilter.java#1 $
  *
  * @example &lt;IMG src="/scale/test.jpg?scaleX=500&scaleUniform=false"&gt;
  * @example &lt;IMG src="/scale/test.png?scaleY=50&scaleUnits=PERCENT"&gt;

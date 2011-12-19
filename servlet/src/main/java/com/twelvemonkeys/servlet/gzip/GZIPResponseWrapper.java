@@ -48,7 +48,7 @@ import java.util.zip.GZIPOutputStream;
  * @author Jayson Falkner
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/gzip/GZIPResponseWrapper.java#1 $
+ * @version $Id: GZIPResponseWrapper.java#1 $
  */
 public class GZIPResponseWrapper extends HttpServletResponseWrapper {
     protected ServletOutputStream out;
@@ -121,7 +121,8 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
         if (out == null) {
             out = createOutputStream();
         }
-        return (out);
+
+        return out;
     }
 
     public PrintWriter getWriter() throws IOException {
@@ -134,9 +135,11 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
         }
 
         out = createOutputStream();
-        // TODO: This is wrong. Should use getCharacterEncoding() or "ISO-8859-1" if gCE returns null.
+
+        // TODO: This is wrong. Should use getCharacterEncoding() or "ISO-8859-1" if getCE returns null.
         writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"));
-        return (writer);
+
+        return writer;
     }
 
     public void setContentLength(int pLength) {

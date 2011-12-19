@@ -12,7 +12,7 @@ import java.util.Iterator;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ServletHeadersMapAdapter.java#1 $
+ * @version $Id: ServletHeadersMapAdapter.java#1 $
  */
 class ServletHeadersMapAdapter extends AbstractServletMapAdapter {
 

@@ -9,7 +9,7 @@ import java.net.URI;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/AbstractCacheRequest.java#1 $
+ * @version $Id: AbstractCacheRequest.java#1 $
  */
 public abstract class AbstractCacheRequest implements CacheRequest {
     private final URI requestURI;

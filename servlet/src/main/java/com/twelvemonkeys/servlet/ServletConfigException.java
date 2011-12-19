@@ -34,9 +34,11 @@ import javax.servlet.ServletException;
  * ServletConfigException.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ServletConfigException.java#2 $
+ * @version $Id: ServletConfigException.java#2 $
  */
 public class ServletConfigException extends ServletException {
+
+    // TODO: Parameters for init-param at fault, and possibly servlet name?
 
     /**
      * Creates a {@code ServletConfigException} with the given message.
@@ -55,9 +57,8 @@ public class ServletConfigException extends ServletException {
      */
     public ServletConfigException(final String pMessage, final Throwable pCause) {
         super(pMessage, pCause);
-        if (getCause() == null) {
-            initCause(pCause);
-        }
+
+        maybeInitCause(pCause);
     }
 
     /**
@@ -66,7 +67,13 @@ public class ServletConfigException extends ServletException {
      * @param pCause the exception cause
      */
     public ServletConfigException(final Throwable pCause) {
-        super("Error in Servlet configuration: " + pCause.getMessage(), pCause);
+        super(String.format("Error in Servlet configuration: %s", pCause.getMessage()), pCause);
+
+        maybeInitCause(pCause);
+    }
+
+    private void maybeInitCause(Throwable pCause) {
+        // Workaround for ServletExceptions that does not do proper exception chaining
         if (getCause() == null) {
             initCause(pCause);
         }

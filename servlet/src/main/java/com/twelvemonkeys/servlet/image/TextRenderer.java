@@ -144,7 +144,7 @@ import java.awt.geom.Rectangle2D;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/TextRenderer.java#2 $
+ * @version $Id: TextRenderer.java#2 $
  */
 
 class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
@@ -342,7 +342,4 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
 
         return angle;
     }
-
 }
-
-

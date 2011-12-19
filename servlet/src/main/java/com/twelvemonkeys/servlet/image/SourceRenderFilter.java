@@ -21,69 +21,69 @@ import java.io.IOException;
  * @see ImageServletResponse#ATTRIB_AOI
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/SourceRenderFilter.java#1 $
+ * @version $Id: SourceRenderFilter.java#1 $
  */
 public class SourceRenderFilter extends ImageFilter {
-    private String mSizeWidthParam = "size.w";
-    private String mSizeHeightParam = "size.h";
-    private String mSizePercentParam = "size.percent";
-    private String mSizeUniformParam = "size.uniform";
+    private String sizeWidthParam = "size.w";
+    private String sizeHeightParam = "size.h";
+    private String sizePercentParam = "size.percent";
+    private String sizeUniformParam = "size.uniform";
 
-    private String mRegionWidthParam = "aoi.w";
-    private String mRegionHeightParam = "aoi.h";
-    private String mRegionLeftParam = "aoi.x";
-    private String mRegionTopParam = "aoi.y";
-    private String mRegionPercentParam = "aoi.percent";
-    private String mRegionUniformParam = "aoi.uniform";
+    private String regionWidthParam = "aoi.w";
+    private String regionHeightParam = "aoi.h";
+    private String regionLeftParam = "aoi.x";
+    private String regionTopParam = "aoi.y";
+    private String regionPercentParam = "aoi.percent";
+    private String regionUniformParam = "aoi.uniform";
 
     public void setRegionHeightParam(String pRegionHeightParam) {
-        mRegionHeightParam = pRegionHeightParam;
+        regionHeightParam = pRegionHeightParam;
     }
 
     public void setRegionWidthParam(String pRegionWidthParam) {
-        mRegionWidthParam = pRegionWidthParam;
+        regionWidthParam = pRegionWidthParam;
     }
 
     public void setRegionLeftParam(String pRegionLeftParam) {
-        mRegionLeftParam = pRegionLeftParam;
+        regionLeftParam = pRegionLeftParam;
     }
 
     public void setRegionTopParam(String pRegionTopParam) {
-        mRegionTopParam = pRegionTopParam;
+        regionTopParam = pRegionTopParam;
     }
 
     public void setSizeHeightParam(String pSizeHeightParam) {
-        mSizeHeightParam = pSizeHeightParam;
+        sizeHeightParam = pSizeHeightParam;
     }
 
     public void setSizeWidthParam(String pSizeWidthParam) {
-        mSizeWidthParam = pSizeWidthParam;
+        sizeWidthParam = pSizeWidthParam;
     }
 
     public void setRegionPercentParam(String pRegionPercentParam) {
-        mRegionPercentParam = pRegionPercentParam;
+        regionPercentParam = pRegionPercentParam;
     }
 
     public void setRegionUniformParam(String pRegionUniformParam) {
-        mRegionUniformParam = pRegionUniformParam;
+        regionUniformParam = pRegionUniformParam;
     }
 
     public void setSizePercentParam(String pSizePercentParam) {
-        mSizePercentParam = pSizePercentParam;
+        sizePercentParam = pSizePercentParam;
     }
 
     public void setSizeUniformParam(String pSizeUniformParam) {
-        mSizeUniformParam = pSizeUniformParam;
+        sizeUniformParam = pSizeUniformParam;
     }
 
     public void init() throws ServletException {
         if (triggerParams == null) {
             // Add all params as triggers
-            triggerParams = new String[]{mSizeWidthParam, mSizeHeightParam,
-                    mSizeUniformParam, mSizePercentParam,
-                    mRegionLeftParam, mRegionTopParam,
-                    mRegionWidthParam, mRegionHeightParam,
-                    mRegionUniformParam, mRegionPercentParam};
+            triggerParams = new String[]{sizeWidthParam, sizeHeightParam,
+                    sizeUniformParam, sizePercentParam,
+                    regionLeftParam, regionTopParam,
+                    regionWidthParam, regionHeightParam,
+                    regionUniformParam, regionPercentParam};
         }
     }
 
@@ -101,37 +101,37 @@ public class SourceRenderFilter extends ImageFilter {
         // TODO: Max size configuration, to avoid DOS attacks? OutOfMemory
 
         // Size parameters
-        int width = ServletUtil.getIntParameter(pRequest, mSizeWidthParam, -1);
-        int height = ServletUtil.getIntParameter(pRequest, mSizeHeightParam, -1);
+        int width = ServletUtil.getIntParameter(pRequest, sizeWidthParam, -1);
+        int height = ServletUtil.getIntParameter(pRequest, sizeHeightParam, -1);
         if (width > 0 || height > 0) {
             pRequest.setAttribute(ImageServletResponse.ATTRIB_SIZE, new Dimension(width, height));
         }
 
         // Size uniform/percent
-        boolean uniform = ServletUtil.getBooleanParameter(pRequest, mSizeUniformParam, true);
+        boolean uniform = ServletUtil.getBooleanParameter(pRequest, sizeUniformParam, true);
         if (!uniform) {
             pRequest.setAttribute(ImageServletResponse.ATTRIB_SIZE_UNIFORM, Boolean.FALSE);
         }
-        boolean percent = ServletUtil.getBooleanParameter(pRequest, mSizePercentParam, false);
+        boolean percent = ServletUtil.getBooleanParameter(pRequest, sizePercentParam, false);
         if (percent) {
             pRequest.setAttribute(ImageServletResponse.ATTRIB_SIZE_PERCENT, Boolean.TRUE);
         }
 
         // Area of interest parameters
-        int x = ServletUtil.getIntParameter(pRequest, mRegionLeftParam, -1); // Default is center
-        int y = ServletUtil.getIntParameter(pRequest, mRegionTopParam, -1);  // Default is center
-        width = ServletUtil.getIntParameter(pRequest, mRegionWidthParam, -1);
-        height = ServletUtil.getIntParameter(pRequest, mRegionHeightParam, -1);
+        int x = ServletUtil.getIntParameter(pRequest, regionLeftParam, -1); // Default is center
+        int y = ServletUtil.getIntParameter(pRequest, regionTopParam, -1);  // Default is center
+        width = ServletUtil.getIntParameter(pRequest, regionWidthParam, -1);
+        height = ServletUtil.getIntParameter(pRequest, regionHeightParam, -1);
         if (width > 0 || height > 0) {
             pRequest.setAttribute(ImageServletResponse.ATTRIB_AOI, new Rectangle(x, y, width, height));
         }
 
         // AOI uniform/percent
-        uniform = ServletUtil.getBooleanParameter(pRequest, mRegionUniformParam, false);
+        uniform = ServletUtil.getBooleanParameter(pRequest, regionUniformParam, false);
         if (uniform) {
             pRequest.setAttribute(ImageServletResponse.ATTRIB_SIZE_UNIFORM, Boolean.TRUE);
         }
-        percent = ServletUtil.getBooleanParameter(pRequest, mRegionPercentParam, false);
+        percent = ServletUtil.getBooleanParameter(pRequest, regionPercentParam, false);
         if (percent) {
             pRequest.setAttribute(ImageServletResponse.ATTRIB_SIZE_PERCENT, Boolean.TRUE);
         }

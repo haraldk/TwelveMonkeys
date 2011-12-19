@@ -47,7 +47,7 @@ import java.lang.reflect.InvocationTargetException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * 
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/GenericServlet.java#1 $
+ * @version $Id: GenericServlet.java#1 $
  */
 public abstract class GenericServlet extends javax.servlet.GenericServlet {
 
@@ -72,7 +72,7 @@ public abstract class GenericServlet extends javax.servlet.GenericServlet {
     @Override
     public void init(final ServletConfig pConfig) throws ServletException {
         if (pConfig == null) {
-            throw new ServletConfigException("servletconfig == null");
+            throw new ServletConfigException("servlet config == null");
         }
 
         try {

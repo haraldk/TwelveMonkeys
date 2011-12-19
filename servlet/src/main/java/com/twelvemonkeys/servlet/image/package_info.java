@@ -1,7 +1,6 @@
 /**
- * Contains various image-outputting servlets, that should run under any servlet engine. To create your own image servlet, simply subclass the servlet
- * {@code ImageServlet}. Optionally implement the interface
- * {@code ImagePainterServlet}, if you want to do painting.
+ * Contains various image-outputting filters, that should run under any
+ * servlet engine.
  * <P>
  * Some of these methods may require use of the native graphics libraries
  * supported by the JVM, like the X libraries on Unix systems, and should be
@@ -13,8 +12,8 @@
  * <A href="http://java.sun.com/j2se/1.4/docs/guide/awt/AWTChanges.html#headless">AWT Enhancements</A> and bugtraq report
  * <A href="http://developer.java.sun.com/developer/bugParade/bugs/4281163.html">4281163</A> for more information on this issue.
  * <P>
- * If you cannot use JRE 1.4 for any reason, or do not want to use the X
- * libraries, a possibilty is to use the
+ * If you cannot use JRE 1.4 or later, or do not want to use the X
+ * libraries, one possibility is to use the
  * <A href="http://www.eteks.com/pja/en/">PJA package</A> (com.eteks.pja),
  * and start the JVM with the following options:
  * <DL>

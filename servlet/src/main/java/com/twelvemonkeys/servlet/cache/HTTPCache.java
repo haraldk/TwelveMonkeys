@@ -34,10 +34,10 @@ import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.net.MIMEUtil;
 import com.twelvemonkeys.net.NetUtil;
 import com.twelvemonkeys.util.LRUHashMap;
-import com.twelvemonkeys.util.LinkedMap;
 import com.twelvemonkeys.util.NullMap;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
@@ -48,7 +48,7 @@ import java.util.logging.Logger;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/HTTPCache.java#4 $
+ * @version $Id: HTTPCache.java#4 $
  * @todo OMPTIMIZE: Cache parsed vary-info objects, not the properties-files
  * @todo BUG: Better filename handling, as some filenames become too long..
  * - Use a mix of parameters and hashcode + lenght with fixed (max) lenght?
@@ -148,8 +148,6 @@ public class HTTPCache {
      * The file extension for varation-info files ({@code ".vary"})
      */
     protected static final String FILE_EXT_VARY = ".vary";
-
-    protected static final int STATUS_OK = 200;
 
     /**
      * The directory used for the disk-based cache
@@ -446,7 +444,7 @@ public class HTTPCache {
     }
 
     private boolean isCachable(final CacheResponse pResponse) {
-        if (pResponse.getStatus() != STATUS_OK) {
+        if (pResponse.getStatus() != HttpServletResponse.SC_OK) {
             return false;
         }
 
@@ -898,7 +896,7 @@ public class HTTPCache {
                 int headerSize = (int) headers.length();
 
                 BufferedReader reader = new BufferedReader(new FileReader(headers));
-                LinkedMap<String, List<String>> headerMap = new LinkedMap<String, List<String>>();
+                LinkedHashMap<String, List<String>> headerMap = new LinkedHashMap<String, List<String>>();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     int colIdx = line.indexOf(':');
@@ -916,7 +914,7 @@ public class HTTPCache {
                     headerMap.put(name, Arrays.asList(StringUtil.toStringArray(value, "\\")));
                 }
 
-                response = new CachedResponseImpl(STATUS_OK, headerMap, headerSize, contents);
+                response = new CachedResponseImpl(HttpServletResponse.SC_OK, headerMap, headerSize, contents);
                 contentCache.put(pCacheURI + '.' + FileUtil.getExtension(content), response);
             }
         }

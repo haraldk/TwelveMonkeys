@@ -41,13 +41,13 @@ import java.lang.reflect.InvocationTargetException;
  * the method matching the signature {@code void setX(&lt;Type&gt;)},
  * for every init-parameter {@code x}. Both camelCase and lisp-style paramter
  * naming is supported, lisp-style names will be converted to camelCase.
- * Parameter values are automatically converted from string represenation to
- * most basic types, if neccessary.
+ * Parameter values are automatically converted from string representation to
+ * most basic types, if necessary.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * 
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/HttpServlet.java#1 $
+ * @version $Id: HttpServlet.java#1 $
  */
 public abstract class HttpServlet extends javax.servlet.http.HttpServlet {
 
@@ -63,7 +63,7 @@ public abstract class HttpServlet extends javax.servlet.http.HttpServlet {
      * have a matching setter method annotated with {@link InitParam}.
      *
      * @param pConfig the servlet config
-     * @throws ServletException if an error ouccured during init
+     * @throws ServletException if an error occurred during init
      *
      * @see javax.servlet.GenericServlet#init
      * @see #init() init
@@ -72,7 +72,7 @@ public abstract class HttpServlet extends javax.servlet.http.HttpServlet {
     @Override
     public void init(ServletConfig pConfig) throws ServletException {
         if (pConfig == null) {
-            throw new ServletConfigException("servletconfig == null");
+            throw new ServletConfigException("servlet config == null");
         }
 
         try {

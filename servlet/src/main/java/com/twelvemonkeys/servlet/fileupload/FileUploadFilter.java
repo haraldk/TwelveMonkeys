@@ -51,7 +51,7 @@ import java.net.MalformedURLException;
  * @see HttpFileUploadRequest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/FileUploadFilter.java#1 $
+ * @version $Id: FileUploadFilter.java#1 $
  */
 public class FileUploadFilter extends GenericFilter {
     private File uploadDir;

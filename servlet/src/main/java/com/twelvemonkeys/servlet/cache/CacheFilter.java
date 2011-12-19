@@ -52,7 +52,7 @@ import java.util.logging.Logger;
  * @author Jayson Falkner
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/CacheFilter.java#4 $
+ * @version $Id: CacheFilter.java#4 $
  *
  */
 public class CacheFilter extends GenericFilter {

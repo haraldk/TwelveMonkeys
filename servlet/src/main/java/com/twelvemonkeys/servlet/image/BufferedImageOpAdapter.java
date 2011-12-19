@@ -36,8 +36,8 @@ import java.awt.image.RenderedImage;
 /**
  * BufferedImageOpAdapter
  *
- * @author $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/BufferedImageOpAdapter.java#1 $
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: BufferedImageOpAdapter.java#1 $
  * 
  */
 public class BufferedImageOpAdapter extends ImageFilter {

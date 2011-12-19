@@ -42,7 +42,7 @@ import java.util.Map;
  * WritableCachedResponseImpl
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/WritableCachedResponseImpl.java#3 $
+ * @version $Id: WritableCachedResponseImpl.java#3 $
  */
 class WritableCachedResponseImpl implements WritableCachedResponse {
     private final CachedResponseImpl cachedResponse;
@@ -81,10 +81,7 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
     private void setHeader(String pName, String pValue, boolean pAdd) {
         // System.out.println(" ++ CachedResponse ++ " + (pAdd ? "addHeader(" : "setHeader(") + pName + ", " + pValue + ")");
         // If adding, get list and append, otherwise replace list
-        List<String> values = null;
-        if (pAdd) {
-            values = cachedResponse.headers.get(pName);
-        }
+        List<String> values = pAdd ? cachedResponse.headers.get(pName) : null;
 
         if (values == null) {
             values = new ArrayList<String>();
@@ -96,6 +93,7 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
             else {
                 // Remove length of potential replaced old values + pName
                 String[] oldValues = getHeaderValues(pName);
+
                 if (oldValues != null) {
                     for (String oldValue : oldValues) {
                         cachedResponse.headersSize -= oldValue.length();

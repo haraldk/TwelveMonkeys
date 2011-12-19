@@ -36,7 +36,7 @@ import java.io.IOException;
  * This class represents an uploaded file.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/UploadedFile.java#1 $
+ * @version $Id: UploadedFile.java#1 $
  */
 public interface UploadedFile {
     /**

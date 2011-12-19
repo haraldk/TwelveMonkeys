@@ -38,7 +38,7 @@ import java.io.IOException;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ComposeFilter.java#1 $
+ * @version $Id: ComposeFilter.java#1 $
  */
 public class ComposeFilter extends ImageFilter {
     protected RenderedImage doFilter(BufferedImage pImage, ServletRequest pRequest, ImageServletResponse pResponse) throws IOException {

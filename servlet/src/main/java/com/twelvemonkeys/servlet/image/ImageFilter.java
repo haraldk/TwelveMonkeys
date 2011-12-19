@@ -45,7 +45,7 @@ import java.io.IOException;
  * @see #doFilter(java.awt.image.BufferedImage,javax.servlet.ServletRequest,ImageServletResponse)
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ImageFilter.java#2 $
+ * @version $Id: ImageFilter.java#2 $
  *
  */
 public abstract class ImageFilter extends GenericFilter {

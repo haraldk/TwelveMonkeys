@@ -30,7 +30,6 @@ package com.twelvemonkeys.servlet.cache;
 
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.lang.Validate;
-import com.twelvemonkeys.util.LinkedMap;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.*;
  * CachedResponseImpl
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/CachedResponseImpl.java#4 $
+ * @version $Id: CachedResponseImpl.java#4 $
  */
 class CachedResponseImpl implements CachedResponse {
     final protected Map<String, List<String>> headers;
@@ -54,7 +53,7 @@ class CachedResponseImpl implements CachedResponse {
     }
 
     // For use by HTTPCache, when recreating CachedResponses from disk cache
-    CachedResponseImpl(final int pStatus, final LinkedMap<String, List<String>> pHeaders, final int pHeaderSize, final byte[] pContent) {
+    CachedResponseImpl(final int pStatus, final LinkedHashMap<String, List<String>> pHeaders, final int pHeaderSize, final byte[] pContent) {
         status = pStatus;
         headers = Validate.notNull(pHeaders, "headers");
         headersSize = pHeaderSize;
@@ -85,6 +84,7 @@ class CachedResponseImpl implements CachedResponse {
 
             for (int i = 0; i < headerValues.length; i++) {
                 String headerValue = headerValues[i];
+
                 if (i == 0) {
                     pResponse.setHeader(header, headerValue);
                 }
@@ -116,6 +116,7 @@ class CachedResponseImpl implements CachedResponse {
      */
     public String[] getHeaderNames() {
         Set<String> headers = this.headers.keySet();
+
         return headers.toArray(new String[headers.size()]);
     }
 
@@ -130,12 +131,7 @@ class CachedResponseImpl implements CachedResponse {
     public String[] getHeaderValues(final String pHeaderName) {
         List<String> values = headers.get(pHeaderName);
 
-        if (values == null) {
-            return null;
-        }
-        else {
-            return values.toArray(new String[values.size()]);
-        }
+        return values == null ? null : values.toArray(new String[values.size()]);
     }
 
     /**

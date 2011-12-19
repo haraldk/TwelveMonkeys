@@ -65,7 +65,7 @@ import java.util.Iterator;
  * <p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ImageServletResponseImpl.java#10 $
+ * @version $Id: ImageServletResponseImpl.java#10 $
  *
  */
 // TODO: Refactor out HTTP specifics (if possible).
@@ -178,6 +178,20 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         originalContentLength = pLength;
     }
 
+    @Override
+    public void setHeader(String name, String value) {
+        // NOTE: Clients could also specify content type/content length using the setHeader method, special handling
+        if (name != null && name.equals("Content-Length")) {
+            setContentLength(Integer.valueOf(value)); // Value might be too large, but we don't support that anyway
+        }
+        else if (name != null && name.equals("Content-Type")) {
+            setContentType(value);
+        }
+        else {
+            super.setHeader(name, value);
+        }
+    }
+
     /**
      * Writes the image to the original {@code ServletOutputStream}.
      * If no format is set in this response, the image is encoded in the same
@@ -211,13 +225,55 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
                         Float requestQuality = (Float) originalRequest.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY);
 
-                        // The default JPEG quality is not good enough, so always apply compression
+                        // The default JPEG quality is not good enough, so always adjust compression/quality
                         if ((requestQuality != null || "jpeg".equalsIgnoreCase(getFormatNameSafe(writer))) && param.canWriteCompressed()) {
                             param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+
+                            // WORKAROUND: Known bug in GIFImageWriter in certain JDK versions, compression type is not set
+                            if (param.getCompressionTypes() != null && param.getCompressionType() == null) {
+                                param.setCompressionType(param.getCompressionTypes()[0]); // Just choose any, to keep param happy
+                            }
+
                             param.setCompressionQuality(requestQuality != null ? requestQuality : 0.8f);
+                        }
+
+                        if ("gif".equalsIgnoreCase(getFormatNameSafe(writer)) && !(image.getColorModel() instanceof IndexColorModel) 
+                                && image.getColorModel().getTransparency() != Transparency.OPAQUE) {
+                            // WORKAROUND: Bug in GIFImageWriter may throw NPE if transparent pixels
+                            // http://bugs.sun.com/view_bug.do?bug_id=6287936
+                            image = ImageUtil.createIndexed(ImageUtil.toBuffered(image), 256, null, ImageUtil.TRANSPARENCY_BITMASK);
                         }
     //////////////////
                         ImageOutputStream stream = ImageIO.createImageOutputStream(out);
+
+                        /*
+                        try {
+                            SwingUtilities.invokeAndWait(new Runnable() {
+                                public void run() {
+                                    JScrollPane scroll = new JScrollPane(new JLabel(new BufferedImageIcon(ImageUtil.toBuffered(image))) {
+                                        {
+                                            setOpaque(true);
+                                            setBackground(Color.ORANGE);
+                                        }
+                                    });
+                                    scroll.setBorder(BorderFactory.createEmptyBorder());
+                                    JOptionPane.showMessageDialog(null, scroll);
+                                }
+                            });
+                        }
+                        catch (InterruptedException ignore) {
+                        }
+                        catch (InvocationTargetException ignore) {
+                        }
+
+                        image = ImageUtil.createIndexed(ImageUtil.toBuffered(image));
+                        // */
+
+                        // Bug in GIF writer, if pixel at 0,0 is transparent.. :-P
+//                        BufferedImage bufferedImage = ImageUtil.toBuffered(image);
+//                        bufferedImage.setRGB(0, 0, bufferedImage.getRGB(0, 0) | 0xFF000000);
+//                        image = bufferedImage;
+
 
                         writer.setOutput(stream);
                         try {

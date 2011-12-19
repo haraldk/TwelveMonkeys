@@ -47,7 +47,7 @@ import java.util.zip.CRC32;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ColorServlet.java#2 $
+ * @version $Id: ColorServlet.java#2 $
  */
 public class ColorServlet extends GenericServlet {
     private final static String RGB_PARAME = "color";

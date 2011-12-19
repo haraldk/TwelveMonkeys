@@ -38,7 +38,7 @@ import java.util.List;
  * CachedEntity
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/CachedEntityImpl.java#3 $
+ * @version $Id: CachedEntityImpl.java#3 $
  */
 class CachedEntityImpl implements CachedEntity {
     private String cacheURI;
@@ -131,7 +131,7 @@ class CachedEntityImpl implements CachedEntity {
 //
 //        CacheResponseWrapper response = (CacheResponseWrapper) pResponse;
 
-//        if (response.isCachable()) {
+//        if (response.isCacheable()) {
             cache.registerContent(
                     cacheURI,
                     pRequest,
