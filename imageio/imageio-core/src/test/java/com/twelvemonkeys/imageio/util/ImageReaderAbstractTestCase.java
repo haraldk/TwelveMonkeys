@@ -893,32 +893,32 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        float aspect = 0f;
+        float aspectRatio = 0f;
         try {
-            aspect = reader.getAspectRatio(0);
+            aspectRatio = reader.getAspectRatio(0);
         }
         catch (IOException e) {
-            fail("Could not read image aspectratio" + e);
+            fail("Could not read image aspect ratio" + e);
         }
         Dimension d = data.getDimension(0);
-        assertEquals("Wrong aspect aspectratio", d.getWidth() / d.getHeight(), aspect, 0.001);
+        assertEquals("Wrong aspect aspect ratio", d.getWidth() / d.getHeight(), aspectRatio, 0.001);
     }
 
     @Test
     public void testGetAspectRatioNoInput() {
         ImageReader reader = createReader();
 
-        float aspect = 0f;
+        float aspectRatio = 0f;
         try {
-            aspect = reader.getAspectRatio(0);
-            fail("aspect read without imput");
+            aspectRatio = reader.getAspectRatio(0);
+            fail("aspect read without input");
         }
         catch (IllegalStateException ignore) {
         }
         catch (IOException e) {
-            fail("Could not read image aspectratio" + e);
+            fail("Could not read image aspect ratio" + e);
         }
-        assertEquals("Wrong aspect aspectratio", 0f, aspect, 0f);
+        assertEquals("Wrong aspect aspect ratio", 0f, aspectRatio, 0f);
     }
 
     @Test
@@ -927,24 +927,32 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        //float aspectratio = 0f;
+        //float aspectRatio = 0f;
         try {
             // NOTE: Some readers (like the com.sun.imageio stuff) ignores
             // index in getWidth/getHeight for formats with only one image...
-            /*aspectratio =*/ reader.getAspectRatio(-1);
-            //assertEquals("Wrong aspectratio aspectratio", data.getDimension().width / (float) data.getDimension().height, aspectratio, 0f);
+            /*aspectRatio =*/ reader.getAspectRatio(-1);
+            //assertEquals("Wrong aspect ratio", data.getDimension().width / (float) data.getDimension().height, aspectRatio, 0f);
         }
-        catch (IndexOutOfBoundsException ignore) {
+        catch (IndexOutOfBoundsException expected) {
         }
         catch (IOException e) {
-            fail("Could not read image aspectratio" + e);
+            fail("Could not read image aspect ratio" + e);
         }
     }
 
-    @Ignore("Not implemented")
     @Test
-    public void testDispose() {
-        // TODO: Implement
+    public void testDisposeBeforeRead() {
+        ImageReader reader = createReader();
+        reader.dispose(); // Just pass with no exceptions
+    }
+
+    @Test
+    public void testDisposeAfterRead() {
+        ImageReader reader = createReader();
+        TestData data = getTestData().get(0);
+        reader.setInput(data.getInputStream());
+        reader.dispose(); // Just pass with no exceptions
     }
 
     @Test
@@ -1433,13 +1441,17 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         }
     }
 
-//    public void testSetDestinationBands() throws IOException {
-//        throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
-//    }
-//
-//    public void testSetSourceBands() throws IOException {
-//        throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
-//    }
+    @Ignore("TODO: Implement")
+    @Test
+    public void testSetDestinationBands() throws IOException {
+        throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
+    }
+
+    @Ignore("TODO: Implement")
+    @Test
+    public void testSetSourceBands() throws IOException {
+        throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
+    }
 
     @Test
     public void testProviderAndMetadataFormatNamesMatch() throws IOException {
@@ -1458,7 +1470,6 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             assertEquals(provider.getNativeStreamMetadataFormatName(), streamMetadata.getNativeMetadataFormatName());
         }
     }
-
 
     protected URL getClassLoaderResource(final String pName) {
         return getClass().getResource(pName);
