@@ -28,6 +28,9 @@
 
 package com.twelvemonkeys.image;
 
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.lang.StringUtil;
+
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -42,6 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -55,14 +59,19 @@ import java.util.concurrent.TimeUnit;
  */
 public class MappedBufferImage {
     private static int threads = Runtime.getRuntime().availableProcessors();
+    private static ExecutorService executorService = Executors.newFixedThreadPool(threads);
 
     public static void main(String[] args) throws IOException {
+        int argIndex = 0;
+        File file = args.length > 0 ? new File(args[argIndex]) : null;
+        
         int w;
         int h;
         BufferedImage image;
-        File file = args.length > 0 ? new File(args[0]) : null;
-        
+
         if (file != null && file.exists()) {
+            argIndex++;
+
             // Load image using ImageIO
             ImageInputStream input = ImageIO.createImageInputStream(file);
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
@@ -74,36 +83,47 @@ public class MappedBufferImage {
             }
 
             ImageReader reader = readers.next();
-            reader.setInput(input);
+            try {
+                reader.setInput(input);
 
-            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
-            ImageTypeSpecifier type = types.next();
+                Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+                ImageTypeSpecifier type = types.next();
 
-            // TODO: Negotiate best layout according to the GraphicsConfiguration.
+                // TODO: Negotiate best layout according to the GraphicsConfiguration.
 
-            w = reader.getWidth(0);
-            h = reader.getHeight(0);
+                w = reader.getWidth(0);
+                h = reader.getHeight(0);
 
-//            GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
-//            ColorModel cm2 = configuration.getColorModel(cm.getTransparency());
+    //            GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+    //            ColorModel cm2 = configuration.getColorModel(cm.getTransparency());
 
-//            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm2);
-//            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm);
-//            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
-//            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_INT_BGR);
-            image = MappedImageFactory.createCompatibleMappedImage(w, h, type);
-//            image = type.createBufferedImage(w, h);
+    //            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm2);
+    //            image = MappedImageFactory.createCompatibleMappedImage(w, h, cm);
+    //            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
+    //            image = MappedImageFactory.createCompatibleMappedImage(w, h, BufferedImage.TYPE_INT_BGR);
+//                image = MappedImageFactory.createCompatibleMappedImage(w, h, type);
+//                if (w > 1024 || h > 1024) {
+                    image = MappedImageFactory.createCompatibleMappedImage(w, h, type);
+//                }
+//                else {
+//                    image = type.createBufferedImage(w, h);
+//                }
 
-            System.out.println("image = " + image);
+                System.out.println("image = " + image);
 
-            ImageReadParam param = reader.getDefaultReadParam();
-            param.setDestination(image);
+                ImageReadParam param = reader.getDefaultReadParam();
+                param.setDestination(image);
 
-            reader.read(0, param);
+                reader.addIIOReadProgressListener(new ConsoleProgressListener());
+                reader.read(0, param);
+            }
+            finally {
+                reader.dispose();
+            }
         }
         else {
-            w = args.length > 0 ? Integer.parseInt(args[0]) : 6000;
-            h = args.length > 1 ? Integer.parseInt(args[1]) : w * 2 / 3;
+            w = args.length > argIndex && StringUtil.isNumber(args[argIndex]) ? Integer.parseInt(args[argIndex++]) : 6000;
+            h = args.length > argIndex && StringUtil.isNumber(args[argIndex]) ? Integer.parseInt(args[argIndex++]) : w * 2 / 3;
 
             GraphicsConfiguration configuration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
             image = MappedImageFactory.createCompatibleMappedImage(w, h, configuration, Transparency.TRANSLUCENT);
@@ -122,8 +142,8 @@ public class MappedBufferImage {
             paintDots(w, h, image);
         }
 
-        // TODO: Make re-sampling optional
-        if (true) {
+        // Resample down to some fixed size
+        if (args.length > argIndex && "-scale".equals(args[argIndex++])) {
             image = resampleImage(image, 800);
         }
 
@@ -161,13 +181,13 @@ public class MappedBufferImage {
         float aspect = image.getHeight() / (float) image.getWidth();
         int height = Math.round(width * aspect);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(threads);
-
         // NOTE: The createCompatibleDestImage takes the byte order/layout into account, unlike the cm.createCompatibleWritableRaster
         final BufferedImage output = new ResampleOp(width, height).createCompatibleDestImage(image, null);
 
         final int inStep = (int) Math.ceil(image.getHeight() / (double) threads);
         final int outStep = (int) Math.ceil(height / (double) threads);
+
+        final CountDownLatch latch = new CountDownLatch(threads);
 
         // Resample image in slices
         for (int i = 0; i < threads; i++) {
@@ -181,14 +201,16 @@ public class MappedBufferImage {
                         BufferedImage in = image.getSubimage(0, inY, image.getWidth(), inHeight);
                         BufferedImage out = output.getSubimage(0, outY, width, outHeight);
                         new ResampleOp(width, outHeight, ResampleOp.FILTER_LANCZOS).filter(in, out);
+//                        new ResampleOp(width, outHeight, ResampleOp.FILTER_LANCZOS).resample(in, out, ResampleOp.createFilter(ResampleOp.FILTER_LANCZOS));
 //                        BufferedImage out = new ResampleOp(width, outHeight, ResampleOp.FILTER_LANCZOS).filter(in, null);
 //                        ImageUtil.drawOnto(output.getSubimage(0, outY, width, outHeight), out);
-
-//                        showIt(width, outHeight, out, "foo");
                     }
                     catch (RuntimeException e) {
                         e.printStackTrace();
                         throw e;
+                    }
+                    finally {
+                        latch.countDown();
                     }
                 }
             });
@@ -200,8 +222,7 @@ public class MappedBufferImage {
 
         Boolean done = null;
         try {
-            executorService.shutdown();
-            done = executorService.awaitTermination(5L, TimeUnit.MINUTES);
+            done = latch.await(5L, TimeUnit.MINUTES);
         }
         catch (InterruptedException ignore) {
         }
@@ -223,21 +244,19 @@ public class MappedBufferImage {
                 Color.GRAY, Color.GREEN, Color.YELLOW, Color.PINK, Color.LIGHT_GRAY, Color.DARK_GRAY
         };
 
-        ExecutorService executorService = Executors.newFixedThreadPool(threads);
-
+        CountDownLatch latch = new CountDownLatch(threads);
         int step = (int) Math.ceil(hs / (double) threads);
         Random r = new Random();
 
         for (int i = 0; i < threads; i++) {
-            executorService.submit(new PaintDotsTask(image, s, ws, colors, r, i * step, i * step + step));
+            executorService.submit(new PaintDotsTask(image, s, ws, colors, r, i * step, i * step + step, latch));
         }
 
         System.err.printf("Started painting in %d threads, waiting for execution to complete...%n", threads);
 
         Boolean done = null;
         try {
-            executorService.shutdown();
-            done = executorService.awaitTermination(3L, TimeUnit.MINUTES);
+            done = latch.await(3L, TimeUnit.MINUTES);
         }
         catch (InterruptedException ignore) {
         }
@@ -279,16 +298,15 @@ public class MappedBufferImage {
 
         int step = (int) Math.ceil(h / (double) threads);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        CountDownLatch latch = new CountDownLatch(threads);
         for (int i = 0; i < threads; i++) {
-            executorService.submit(new PaintBackgroundTask(w, h, buffer, alpha, i * step, i * step + step));
+            executorService.submit(new PaintBackgroundTask(w, h, buffer, alpha, i * step, i * step + step, latch));
         }
         System.err.printf("Started painting in %d threads, waiting for execution to complete...%n", threads);
 
         Boolean done = null;
         try {
-            executorService.shutdown();
-            done = executorService.awaitTermination(3L, TimeUnit.MINUTES);
+            done = latch.await(3L, TimeUnit.MINUTES);
         }
         catch (InterruptedException ignore) {
         }
@@ -474,8 +492,9 @@ public class MappedBufferImage {
         private final Random random;
         private final int last;
         private final int first;
+        private final CountDownLatch latch;
 
-        public PaintDotsTask(BufferedImage image, int s, int wstep, Color[] colors, Random random, int first, int last) {
+        public PaintDotsTask(BufferedImage image, int s, int wstep, Color[] colors, Random random, int first, int last, CountDownLatch latch) {
             this.image = image;
             this.s = s;
             this.wstep = wstep;
@@ -483,10 +502,16 @@ public class MappedBufferImage {
             this.random = random;
             this.last = last;
             this.first = first;
+            this.latch = latch;
         }
 
         public void run() {
-            paintDots0(image, s, wstep, colors, random, first, last);
+            try {
+                paintDots0(image, s, wstep, colors, random, first, last);
+            }
+            finally {
+                latch.countDown();
+            }
         }
     }
 
@@ -497,18 +522,53 @@ public class MappedBufferImage {
         private final boolean alpha;
         private final int first;
         private final int last;
+        private final CountDownLatch latch;
 
-        public PaintBackgroundTask(int w, int h, DataBuffer buffer, boolean alpha, int first, int last) {
+        public PaintBackgroundTask(int w, int h, DataBuffer buffer, boolean alpha, int first, int last, CountDownLatch latch) {
             this.w = w;
             this.h = h;
             this.buffer = buffer;
             this.alpha = alpha;
             this.first = first;
             this.last = last;
+            this.latch = latch;
         }
 
         public void run() {
-            paintBackground0(w, h, buffer, alpha, first, last);
+            try {
+                paintBackground0(w, h, buffer, alpha, first, last);
+            }
+            finally {
+                latch.countDown();
+            }
+        }
+    }
+
+    private static class ConsoleProgressListener extends ProgressListenerBase {
+        static final int COLUMNS = System.getenv("COLUMNS") != null ? Integer.parseInt(System.getenv("COLUMNS")) - 2 : 78;
+        int left = COLUMNS;
+
+        @Override
+        public void imageComplete(ImageReader source) {
+            for (; left > 0; left--) {
+                System.out.print(".");
+            }
+            System.out.println("]");
+        }
+
+        @Override
+        public void imageProgress(ImageReader source, float percentageDone) {
+            int progress = COLUMNS - Math.round(COLUMNS * percentageDone / 100f);
+            if (progress < left) {
+                for (; left > progress; left--) {
+                    System.out.print(".");
+                }
+            }
+        }
+
+        @Override
+        public void imageStarted(ImageReader source, int imageIndex) {
+            System.out.print("[");
         }
     }
 }

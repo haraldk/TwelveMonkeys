@@ -46,6 +46,10 @@ import java.io.IOException;
  * @version $Id: MappedImageFactory.java,v 1.0 May 26, 2010 5:07:01 PM haraldk Exp$
  */
 public final class MappedImageFactory {
+
+    // TODO: Create a way to do ColorConvertOp (or other color space conversion) on these images. 
+    // - Current implementation of CCOp delegates to internal sun.awt classes that assumes java.awt.DataBufferByte for type byte buffers :-/
+
     private MappedImageFactory() {}
 
     public static BufferedImage createCompatibleMappedImage(int width, int height, int type) throws IOException {
@@ -69,8 +73,6 @@ public final class MappedImageFactory {
     static BufferedImage createCompatibleMappedImage(int width, int height, SampleModel sm, ColorModel cm) throws IOException {
         DataBuffer buffer = MappedFileBuffer.create(sm.getTransferType(), width * height * sm.getNumDataElements(), 1);
 
-        // TODO: Figure out if it's better to use SunWritableRaster when available? -- Haven't seen any improvements yet
-//        return new BufferedImage(cm, new SunWritableRaster(sm, buffer, new Point()), cm.isAlphaPremultiplied(), null);
         return new BufferedImage(cm, new GenericWritableRaster(sm, buffer, new Point()), cm.isAlphaPremultiplied(), null);
     }
 }
