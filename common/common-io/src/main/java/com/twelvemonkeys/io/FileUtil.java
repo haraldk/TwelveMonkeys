@@ -186,6 +186,7 @@ public final class FileUtil {
         if (!pOverWrite && pToFile.exists()) {
             return false;
         }
+
         InputStream in = null;
         OutputStream out = null;
 
@@ -202,6 +203,7 @@ public final class FileUtil {
             close(in);
             close(out);
         }
+
         return true;  // If we got here, everything's probably okay.. ;-)
     }
 
@@ -307,6 +309,8 @@ public final class FileUtil {
         Validate.notNull(pFrom, "from");
         Validate.notNull(pTo, "to");
 
+        // TODO: Consider using file channels for faster copy where possible
+
         // Use buffer size two times byte array, to avoid i/o bottleneck
         // TODO: Consider letting the client decide as this is sometimes not a good thing!
         InputStream in = new BufferedInputStream(pFrom, BUF_SIZE * 2);
@@ -322,30 +326,8 @@ public final class FileUtil {
         // Flush out stream, to write any remaining buffered data
         out.flush();
 
-        return true;  // If we got here, everything's probably okay.. ;-)
+        return true;  // If we got here, everything is probably okay.. ;-)
     }
-
-    /*
-    // Consider using the example from
-    // http://developer.java.sun.com/developer/Books/performance/ch04.pdf
-    // Test if this is really faster. And what about a lot of concurrence?
-    // Have a pool of buffers? :-)
-
-    static final int BUFF_SIZE = 100000;
-    static final byte[] buffer = new byte[BUFF_SIZE];
-
-    public static void copy(InputStream in, OutputStream out) throws IOException {
-        while (true) {
-            synchronized (buffer) {
-                int amountRead = in.read(buffer);
-                if (amountRead == -1) {
-                    break;
-                }
-                out.write(buffer, 0, amountRead);
-            }
-        }
-    }
-    */
 
     /**
      * Gets the file (type) extension of the given file.

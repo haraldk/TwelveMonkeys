@@ -36,15 +36,16 @@ import java.util.Random;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/DiffusionDither.java#1 $
+ * @version $Id: DiffusionDither.java#1 $
  *
  */
 public class DiffusionDither implements BufferedImageOp, RasterOp {
 
-    protected IndexColorModel indexColorModel = null;
-    private boolean alternateScans = true;
     private static final int FS_SCALE = 1 << 8;
     private static final Random RANDOM = new Random();
+
+    protected final IndexColorModel indexColorModel;
+    private boolean alternateScans = true;
 
     /**
      * Creates a {@code DiffusionDither}, using the given
@@ -52,18 +53,19 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      *
      * @param pICM an IndexColorModel.
      */
-    public DiffusionDither(IndexColorModel pICM) {
-        // Store colormodel
+    public DiffusionDither(final IndexColorModel pICM) {
+        // Store color model
         indexColorModel = pICM;
     }
 
     /**
      * Creates a {@code DiffusionDither}, with no fixed
-     * {@code IndexColorModel}. The colormodel will be generated for each
-     * filtering, unless the dest image allready has an
+     * {@code IndexColorModel}. The color model will be generated for each
+     * filtering, unless the destination image already has an
      * {@code IndexColorModel}.
      */
     public DiffusionDither() {
+        this(null);
     }
 
     /**
@@ -86,8 +88,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * @throws ImageFilterException if {@code pDestCM} is not {@code null} or
      * an instance of {@code IndexColorModel}.
      */
-    public final BufferedImage createCompatibleDestImage(BufferedImage pSource,
-                                                         ColorModel pDestCM) {
+    public final BufferedImage createCompatibleDestImage(BufferedImage pSource, ColorModel pDestCM) {
         if (pDestCM == null) {
             return new BufferedImage(pSource.getWidth(), pSource.getHeight(),
                                      BufferedImage.TYPE_BYTE_INDEXED,
@@ -107,7 +108,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * Creates a compatible {@code Raster} to dither into.
      * Only {@code IndexColorModel} allowed.
      *
-     * @param pSrc
+     * @param pSrc the source raster
      *
      * @return a {@code WritableRaster}
      */
@@ -115,14 +116,16 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
         return createCompatibleDestRaster(pSrc, getICM(pSrc));
     }
 
-    public final WritableRaster createCompatibleDestRaster(Raster pSrc,
-                                                           IndexColorModel pIndexColorModel) {
+    /**
+     * Creates a compatible {@code Raster} to dither into.
+     *
+     * @param pSrc the source raster.
+     * @param pIndexColorModel the index color model used to create a {@code Raster}.
+     *
+     * @return a {@code WritableRaster}
+     */
+    public final WritableRaster createCompatibleDestRaster(Raster pSrc, IndexColorModel pIndexColorModel) {
         return pIndexColorModel.createCompatibleWritableRaster(pSrc.getWidth(), pSrc.getHeight());
-        /*
-        return new BufferedImage(pSrc.getWidth(), pSrc.getHeight(),
-                                 BufferedImage.TYPE_BYTE_INDEXED,
-                                 pIndexColorModel).getRaster();
-        */
     }
 
 
@@ -221,8 +224,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * @return the destination image, or a new image, if {@code pDest} was
      * {@code null}.
      */
-    public final BufferedImage filter(BufferedImage pSource,
-                                      BufferedImage pDest) {
+    public final BufferedImage filter(BufferedImage pSource, BufferedImage pDest) {
         // Create destination image, if none provided
         if (pDest == null) {
             pDest = createCompatibleDestImage(pSource, getICM(pSource));
@@ -265,8 +267,6 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
         return IndexImage.getIndexColorModel(image, 256, IndexImage.TRANSPARENCY_BITMASK);
     }
 
-
-
     /**
      * Performs a single-input/single-output dither operation, applying basic
      * Floyd-Steinberg error-diffusion to the image.
@@ -278,8 +278,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * @return the destination raster, or a new raster, if {@code pDest} was
      * {@code null}.
      */
-    public final WritableRaster filter(final Raster pSource, WritableRaster pDest,
-                                       IndexColorModel pColorModel) {
+    public final WritableRaster filter(final Raster pSource, WritableRaster pDest, IndexColorModel pColorModel) {
         int width = pSource.getWidth();
         int height = pSource.getHeight();
 
@@ -460,6 +459,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
                 forward = !forward;
             }
         }
+
         return pDest;
     }
 }

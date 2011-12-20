@@ -39,7 +39,7 @@ import java.io.ByteArrayInputStream;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/FastByteArrayOutputStream.java#2 $
+ * @version $Id: FastByteArrayOutputStream.java#2 $
  */
 // TODO: Performance test of a stream impl that uses list of fixed size blocks, rather than contiguous block 
 public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
@@ -78,23 +78,24 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
         else if (pLength == 0) {
             return;
         }
-        int newcount = count + pLength;
-        growIfNeeded(newcount);
+
+        int newCount = count + pLength;
+        growIfNeeded(newCount);
         System.arraycopy(pBytes, pOffset, buf, count, pLength);
-        count = newcount;
+        count = newCount;
     }
 
     @Override
     public synchronized void write(int pByte) {
-        int newcount = count + 1;
-        growIfNeeded(newcount);
+        int newCount = count + 1;
+        growIfNeeded(newCount);
         buf[count] = (byte) pByte;
-        count = newcount;
+        count = newCount;
     }
 
-    private void growIfNeeded(int pNewcount) {
-        if (pNewcount > buf.length) {
-            int newSize = Math.max(Math.min(buf.length << 1, buf.length + maxGrowSize), pNewcount);
+    private void growIfNeeded(int pNewCount) {
+        if (pNewCount > buf.length) {
+            int newSize = Math.max(Math.min(buf.length << 1, buf.length + maxGrowSize), pNewCount);
             byte newBuf[] = new byte[newSize];
             System.arraycopy(buf, 0, newBuf, 0, count);
             buf = newBuf;
@@ -110,9 +111,10 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     // Non-synchronized version of toByteArray
     @Override
     public byte[] toByteArray() {
-        byte newbuf[] = new byte[count];
-        System.arraycopy(buf, 0, newbuf, 0, count);
-        return newbuf;
+        byte newBuf[] = new byte[count];
+        System.arraycopy(buf, 0, newBuf, 0, count);
+
+        return newBuf;
     }
 
     /**

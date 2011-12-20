@@ -89,6 +89,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 import java.awt.image.RenderedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -127,7 +129,7 @@ import java.util.List;
  * @author <A href="mailto:deweese@apache.org">Thomas DeWeese</A>
  * @author <A href="mailto:jun@oop-reserch.com">Jun Inamori</A>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/IndexImage.java#1 $
+ * @version $Id: IndexImage.java#1 $
  * @see DiffusionDither
  */
 class IndexImage {
@@ -237,19 +239,22 @@ class IndexImage {
             if (this.val != val) {
                 return false;
             }
+
             count++;
+
             return true;
         }
     }
 
     /**
-     * Used to define a cube of the colorspace.  The cube can be split
-     * approximagely in half to generate two cubes.
+     * Used to define a cube of the color space.  The cube can be split
+     * approximately in half to generate two cubes.
      */
     private static class Cube {
-        int[] min = {0, 0, 0}, max = {255, 255, 255};
+        int[] min = {0, 0, 0};
+        int[] max = {255, 255, 255};
         boolean done = false;
-        List[] colors = null;
+        List<Counter>[] colors = null;
         int count = 0;
         static final int RED = 0;
         static final int GRN = 1;
@@ -261,7 +266,7 @@ class IndexImage {
          * @param colors contains the 3D color histogram to be subdivided
          * @param count  the total number of pixels in the 3D histogram.
          */
-        public Cube(List[] colors, int count) {
+        public Cube(List<Counter>[] colors, int count) {
             this.colors = colors;
             this.count = count;
         }
@@ -312,20 +317,27 @@ class IndexImage {
                 c0 = RED;
                 c1 = GRN;
             }
+            
             Cube ret;
 
             ret = splitChannel(splitChannel, c0, c1);
+            
             if (ret != null) {
                 return ret;
             }
+            
             ret = splitChannel(c0, splitChannel, c1);
+            
             if (ret != null) {
                 return ret;
             }
+            
             ret = splitChannel(c1, splitChannel, c0);
+            
             if (ret != null) {
                 return ret;
             }
+            
             done = true;
 
             return null;
@@ -381,16 +393,13 @@ class IndexImage {
 
                     for (int k = minIdx[c1]; k <= maxIdx[c1]; k++) {
                         int idx = idx2 | (k << c1Sh4);
-                        List v = colors[idx];
+                        List<Counter> v = colors[idx];
 
                         if (v == null) {
                             continue;
                         }
-                        Iterator itr = v.iterator();
-                        Counter c;
-
-                        while (itr.hasNext()) {
-                            c = (Counter) itr.next();
+                        
+                        for (Counter c : v) {
                             val = c.val;
                             vals[0] = (val & 0xFF0000) >> 16;
                             vals[1] = (val & 0xFF00) >> 8;
@@ -425,7 +434,6 @@ class IndexImage {
                 int c = counts[i];
 
                 if (c == 0) {
-
                     // No counts below this so move up bottom of cube.
                     if ((tcount == 0) && (i < max[splitChannel])) {
                         this.min[splitChannel] = i + 1;
@@ -438,10 +446,8 @@ class IndexImage {
                     continue;
                 }
                 if ((half - tcount) <= ((tcount + c) - half)) {
-
                     // Then lastAdd is a better top idx for this then i.
                     if (lastAdd == -1) {
-
                         // No lower place to break.
                         if (c == this.count) {
 
@@ -465,13 +471,11 @@ class IndexImage {
                 else {
                     if (i == this.max[splitChannel]) {
                         if (c == this.count) {
-
                             // would move min up but that should
                             // have happened already.
                             return null;// no split to make.
                         }
                         else {
-
                             // Would like to break between i and i+1
                             // but no i+1 so use lastAdd and i;
                             splitLo = lastAdd;
@@ -503,6 +507,7 @@ class IndexImage {
             ret.max[c0] = this.max[c0];
             ret.min[c1] = this.min[c1];
             ret.max[c1] = this.max[c1];
+            
             return ret;
         }
 
@@ -515,6 +520,7 @@ class IndexImage {
             if (this.count == 0) {
                 return 0;
             }
+            
             float red = 0, grn = 0, blu = 0;
             int minR = min[0], minG = min[1], minB = min[2];
             int maxR = max[0], maxG = max[1], maxB = max[2];
@@ -531,20 +537,18 @@ class IndexImage {
 
                     for (int k = minIdx[2]; k <= maxIdx[2]; k++) {
                         int idx = idx2 | k;
-                        List v = colors[idx];
+                        List<Counter> v = colors[idx];
 
                         if (v == null) {
                             continue;
                         }
-                        Iterator itr = v.iterator();
-                        Counter c;
 
-                        while (itr.hasNext()) {
-                            c = (Counter) itr.next();
+                        for (Counter c : v) {
                             val = c.val;
                             ired = (val & 0xFF0000) >> 16;
                             igrn = (val & 0x00FF00) >> 8;
                             iblu = (val & 0x0000FF);
+                            
                             if (((ired >= minR) && (ired <= maxR)) && ((igrn >= minG) && (igrn <= maxG)) && ((iblu >= minB) && (iblu <= maxB))) {
                                 weight = (c.count / (float) this.count);
                                 red += ((float) ired) * weight;
@@ -579,10 +583,7 @@ class IndexImage {
      *             This version will be removed in a later version of the API.
      */
     public static IndexColorModel getIndexColorModel(Image pImage, int pNumberOfColors, boolean pFast) {
-
-        return getIndexColorModel(pImage, pNumberOfColors, pFast
-                ? COLOR_SELECTION_FAST
-                : COLOR_SELECTION_QUALITY);
+        return getIndexColorModel(pImage, pNumberOfColors, pFast ? COLOR_SELECTION_FAST : COLOR_SELECTION_QUALITY);
     }
 
     /**
@@ -636,17 +637,12 @@ class IndexImage {
         // We now have at least a buffered image, create model from it
         if (icm == null) {
             icm = createIndexColorModel(ImageUtil.toBuffered(image), pNumberOfColors, pHints);
-
-            //System.out.println("IndexColorModel created from colors.");
-        }
+       }
         else if (!(icm instanceof InverseColorMapIndexColorModel)) {
             // If possible, use faster code
-            //System.out.println("Wrappimg IndexColorModel in InverseColorMapIndexColorModel");
             icm = new InverseColorMapIndexColorModel(icm);
         }
-        //else {
-        //System.out.println("Allredy InverseColorMapIndexColorModel");
-        //}
+        
         return icm;
     }
 
@@ -674,7 +670,8 @@ class IndexImage {
         int height = pImage.getHeight();
 
         // Using 4 bits from R, G & B.
-        List[] colors = new List[1 << 12];// [4096]
+        @SuppressWarnings("unchecked")
+        List<Counter>[] colors = new List[1 << 12];// [4096]
 
         // Speedup, doesn't decrease image quality much
         int step = 1;
@@ -739,13 +736,16 @@ class IndexImage {
         while (numberOfCubes < pNumberOfColors) {
             while (cubes[fCube].isDone()) {
                 fCube++;
+                
                 if (fCube == numberOfCubes) {
                     break;
                 }
             }
+            
             if (fCube == numberOfCubes) {
                 break;
             }
+            
             Cube cube = cubes[fCube];
             Cube newCube = cube.split();
 
@@ -756,6 +756,7 @@ class IndexImage {
                     cube = newCube;
                     newCube = tmp;
                 }
+
                 int j = fCube;
                 int count = cube.count;
 
@@ -765,17 +766,19 @@ class IndexImage {
                     }
                     cubes[j++] = cubes[i];
                 }
+
                 cubes[j++] = cube;
                 count = newCube.count;
+
                 while (j < numberOfCubes) {
                     if (cubes[j].count < count) {
                         break;
                     }
                     j++;
                 }
-                for (int i = numberOfCubes; i > j; i--) {
-                    cubes[i] = cubes[i - 1];
-                }
+
+                System.arraycopy(cubes, j, cubes, j + 1, numberOfCubes - j);
+
                 cubes[j/*++*/] = newCube;
                 numberOfCubes++;
             }
@@ -803,15 +806,13 @@ class IndexImage {
         //  - transparency added to all totally black colors?
         int numOfBits = 8;
 
-        // -- haraldK, 20021024, as suggested by Thomas E Deweese
+        // -- haraldK, 20021024, as suggested by Thomas E. Deweese
         // plus adding a transparent pixel
         IndexColorModel icm;
         if (useTransparency) {
-            //icm = new IndexColorModel(numOfBits, r.length, r, g, b, r.length - 1);
             icm = new InverseColorMapIndexColorModel(numOfBits, r.length, r, g, b, r.length - 1);
         }
         else {
-            //icm = new IndexColorModel(numOfBits, r.length, r, g, b);
             icm = new InverseColorMapIndexColorModel(numOfBits, r.length, r, g, b);
         }
         return icm;
@@ -925,7 +926,7 @@ class IndexImage {
      * @see IndexColorModel
      */
     public static BufferedImage getIndexedImage(BufferedImage pImage, int pNumberOfColors, Color pMatte, int pHints) {
-        // NOTE: We need to apply matte before creating colormodel, otherwise we
+        // NOTE: We need to apply matte before creating color model, otherwise we
         // won't have colors for potential faded transitions
         IndexColorModel icm;
 
@@ -985,15 +986,16 @@ class IndexImage {
         final int width = pImage.getWidth();
         final int height = pImage.getHeight();
 
-        // Support transparancy?
+        // Support transparency?
         boolean transparency = isTransparent(pHints) && (pImage.getColorModel().getTransparency() != Transparency.OPAQUE) && (pColors.getTransparency() != Transparency.OPAQUE);
 
         // Create image with solid background
         BufferedImage solid = pImage;
 
-        if (pMatte != null) {// transparency doesn't really matter
+        if (pMatte != null) { // transparency doesn't really matter
             solid = createSolid(pImage, pMatte);
         }
+
         BufferedImage indexed;
 
         // Support TYPE_BYTE_BINARY, but only for 2 bit images, as the default
@@ -1044,12 +1046,12 @@ class IndexImage {
                 finally {
                     g2d.dispose();
                 }
+
                 break;
         }
 
         // Transparency support, this approach seems lame, but it's the only
         // solution I've found until now (that actually works).
-        // Got anything to do with isPremultiplied? Hmm...
         if (transparency) {
             // Re-apply the alpha-channel of the original image
             applyAlpha(indexed, pImage);
@@ -1183,14 +1185,14 @@ class IndexImage {
      * @param pAlpha the image containing the alpha
      */
     private static void applyAlpha(BufferedImage pImage, BufferedImage pAlpha) {
-        // Apply alpha as transparancy, using threshold of 25%
+        // Apply alpha as transparency, using threshold of 25%
         for (int y = 0; y < pAlpha.getHeight(); y++) {
             for (int x = 0; x < pAlpha.getWidth(); x++) {
 
                 // Get alpha component of pixel, if less than 25% opaque
                 // (0x40 = 64 => 25% of 256), the pixel will be transparent
                 if (((pAlpha.getRGB(x, y) >> 24) & 0xFF) < 0x40) {
-                    pImage.setRGB(x, y, 0x00FFFFFF);// 100% transparent
+                    pImage.setRGB(x, y, 0x00FFFFFF); // 100% transparent
                 }
             }
         }
@@ -1200,7 +1202,6 @@ class IndexImage {
      * This class is also a command-line utility.
      */
     public static void main(String pArgs[]) {
-
         // Defaults
         int argIdx = 0;
         int speedTest = -1;
@@ -1237,14 +1238,13 @@ class IndexImage {
                     speedTest = 10;
                 }
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'w') || pArgs[argIdx].equals("--overwrite")) {
+            else if ((pArgs[argIdx].charAt(1) == 'w') || pArgs[argIdx].equals("--overwrite")) {
                 overWrite = true;
                 argIdx++;
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'c') || pArgs[argIdx].equals("--colors")) {
+            else if ((pArgs[argIdx].charAt(1) == 'c') || pArgs[argIdx].equals("--colors")) {
                 argIdx++;
+
                 try {
                     numColors = Integer.parseInt(pArgs[argIdx++]);
                 }
@@ -1253,34 +1253,28 @@ class IndexImage {
                     break;
                 }
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'g') || pArgs[argIdx].equals("--grayscale")) {
+            else if ((pArgs[argIdx].charAt(1) == 'g') || pArgs[argIdx].equals("--grayscale")) {
                 argIdx++;
                 gray = true;
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'm') || pArgs[argIdx].equals("--monochrome")) {
+            else if ((pArgs[argIdx].charAt(1) == 'm') || pArgs[argIdx].equals("--monochrome")) {
                 argIdx++;
                 numColors = 2;
                 monochrome = true;
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'd') || pArgs[argIdx].equals("--dither")) {
+            else if ((pArgs[argIdx].charAt(1) == 'd') || pArgs[argIdx].equals("--dither")) {
                 argIdx++;
                 dither = pArgs[argIdx++];
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'p') || pArgs[argIdx].equals("--palette")) {
+            else if ((pArgs[argIdx].charAt(1) == 'p') || pArgs[argIdx].equals("--palette")) {
                 argIdx++;
                 paletteFileName = pArgs[argIdx++];
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'q') || pArgs[argIdx].equals("--quality")) {
+            else if ((pArgs[argIdx].charAt(1) == 'q') || pArgs[argIdx].equals("--quality")) {
                 argIdx++;
                 quality = pArgs[argIdx++];
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'b') || pArgs[argIdx].equals("--bgcolor")) {
+            else if ((pArgs[argIdx].charAt(1) == 'b') || pArgs[argIdx].equals("--bgcolor")) {
                 argIdx++;
                 try {
                     background = StringUtil.toColor(pArgs[argIdx++]);
@@ -1290,18 +1284,15 @@ class IndexImage {
                     break;
                 }
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 't') || pArgs[argIdx].equals("--transparency")) {
+            else if ((pArgs[argIdx].charAt(1) == 't') || pArgs[argIdx].equals("--transparency")) {
                 argIdx++;
                 transparency = true;
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'f') || pArgs[argIdx].equals("--outputformat")) {
+            else if ((pArgs[argIdx].charAt(1) == 'f') || pArgs[argIdx].equals("--outputformat")) {
                 argIdx++;
                 format = StringUtil.toLowerCase(pArgs[argIdx++]);
             }
-            else
-            if ((pArgs[argIdx].charAt(1) == 'h') || pArgs[argIdx].equals("--help")) {
+            else if ((pArgs[argIdx].charAt(1) == 'h') || pArgs[argIdx].equals("--help")) {
                 argIdx++;
 
                 // Setting errArgs to true, to print usage
@@ -1321,6 +1312,7 @@ class IndexImage {
                         ? ", "
                         : "\n"));
             }
+
             System.err.print("Output format names: ");
             String[] writers = ImageIO.getWriterFormatNames();
 
@@ -1333,7 +1325,7 @@ class IndexImage {
         }
 
         // Read in image
-        java.io.File in = new java.io.File(pArgs[argIdx++]);
+        File in = new File(pArgs[argIdx++]);
 
         if (!in.exists()) {
             System.err.println("File \"" + in.getAbsolutePath() + "\" does not exist!");
@@ -1341,10 +1333,10 @@ class IndexImage {
         }
 
         // Read palette if needed
-        java.io.File paletteFile = null;
+        File paletteFile = null;
 
         if (paletteFileName != null) {
-            paletteFile = new java.io.File(paletteFileName);
+            paletteFile = new File(paletteFileName);
             if (!paletteFile.exists()) {
                 System.err.println("File \"" + in.getAbsolutePath() + "\" does not exist!");
                 System.exit(5);
@@ -1352,10 +1344,10 @@ class IndexImage {
         }
 
         // Make sure we can write
-        java.io.File out;
+        File out;
 
         if (argIdx < pArgs.length) {
-            out = new java.io.File(pArgs[argIdx/*++*/]);
+            out = new File(pArgs[argIdx/*++*/]);
 
             // Get format from file extension
             if (format == null) {
@@ -1363,7 +1355,6 @@ class IndexImage {
             }
         }
         else {
-
             // Create new file in current dir, same name + format extension
             String baseName = FileUtil.getBasename(in);
 
@@ -1371,8 +1362,9 @@ class IndexImage {
             if (format == null) {
                 format = "png";
             }
-            out = new java.io.File(baseName + '.' + format);
+            out = new File(baseName + '.' + format);
         }
+
         if (!overWrite && out.exists()) {
             System.err.println("The file \"" + out.getAbsolutePath() + "\" allready exists!");
             System.exit(5);
@@ -1396,7 +1388,7 @@ class IndexImage {
                 }
             }
         }
-        catch (java.io.IOException ioe) {
+        catch (IOException ioe) {
             ioe.printStackTrace(System.err);
             System.exit(5);
         }
@@ -1441,16 +1433,14 @@ class IndexImage {
         ///////////////////////////////
         // Index
         long start = 0;
-        long end;
 
         if (speedTest > 0) {
-
             // SPEED TESTING
             System.out.println("Measuring speed!");
             start = System.currentTimeMillis();
-
             // END SPEED TESTING
         }
+
         BufferedImage indexed;
         IndexColorModel colors;
 
@@ -1459,7 +1449,6 @@ class IndexImage {
             colors = MonochromeColorModel.getInstance();
         }
         else if (gray) {
-
             //indexed = ImageUtil.toBuffered(ImageUtil.grayscale(image), BufferedImage.TYPE_BYTE_GRAY);
             image = ImageUtil.toBuffered(ImageUtil.grayscale(image));
             indexed = getIndexedImage(image, colors = getIndexColorModel(image, numColors, hints), background, hints);
@@ -1470,7 +1459,6 @@ class IndexImage {
             }
         }
         else if (paletteImg != null) {
-
             // Get palette from image
             indexed = getIndexedImage(ImageUtil.toBuffered(image, BufferedImage.TYPE_INT_ARGB),
                                       colors = getIndexColorModel(paletteImg, numColors, hints), background, hints);
@@ -1479,12 +1467,10 @@ class IndexImage {
             image = ImageUtil.toBuffered(image, BufferedImage.TYPE_INT_ARGB);
             indexed = getIndexedImage(image, colors = getIndexColorModel(image, numColors, hints), background, hints);
         }
+
         if (speedTest > 0) {
-
             // SPEED TESTING
-            end = System.currentTimeMillis();
-            System.out.println("Color selection + dither: " + (end - start) + " ms");
-
+            System.out.println("Color selection + dither: " + (System.currentTimeMillis() - start) + " ms");
             // END SPEED TESTING
         }
 
@@ -1494,11 +1480,11 @@ class IndexImage {
                 System.err.println("No writer for format: \"" + format + "\"!");
             }
         }
-        catch (java.io.IOException ioe) {
+        catch (IOException ioe) {
             ioe.printStackTrace(System.err);
         }
-        if (speedTest > 0) {
 
+        if (speedTest > 0) {
             // SPEED TESTING
             System.out.println("Measuring speed!");
 
@@ -1513,17 +1499,16 @@ class IndexImage {
             for (int i = 0; i < speedTest; i++) {
                 start = System.currentTimeMillis();
                 getIndexedImage(image, colors, background, hints);
-                end = System.currentTimeMillis();
-                time += (end - start);
+                time += (System.currentTimeMillis() - start);
                 System.out.print('.');
                 if ((i + 1) % 10 == 0) {
                     System.out.println("\nAverage (after " + (i + 1) + " iterations): " + (time / (i + 1)) + "ms");
                 }
             }
+
             System.out.println("\nDither only:");
             System.out.println("Total time (" + speedTest + " invocations): " + time + "ms");
             System.out.println("Average: " + time / speedTest + "ms");
-
             // END SPEED TESTING
         }
     }
