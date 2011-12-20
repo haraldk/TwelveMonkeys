@@ -127,10 +127,6 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         this((HttpServletRequest) pRequest, (HttpServletResponse) pResponse, pContext);
     }
 
-    public void setRequest(ServletRequest pRequest) {
-        originalRequest = pRequest;
-    }
-
     /**
      * Called by the container, do not invoke.
      *
@@ -229,7 +225,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         if ((requestQuality != null || "jpeg".equalsIgnoreCase(getFormatNameSafe(writer))) && param.canWriteCompressed()) {
                             param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 
-                            // WORKAROUND: Known bug in GIFImageWriter in certain JDK versions, compression type is not set
+                            // WORKAROUND: Known bug in GIFImageWriter in certain JDK versions, compression type is not set by default
                             if (param.getCompressionTypes() != null && param.getCompressionType() == null) {
                                 param.setCompressionType(param.getCompressionTypes()[0]); // Just choose any, to keep param happy
                             }
@@ -240,40 +236,11 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         if ("gif".equalsIgnoreCase(getFormatNameSafe(writer)) && !(image.getColorModel() instanceof IndexColorModel) 
                                 && image.getColorModel().getTransparency() != Transparency.OPAQUE) {
                             // WORKAROUND: Bug in GIFImageWriter may throw NPE if transparent pixels
-                            // http://bugs.sun.com/view_bug.do?bug_id=6287936
-                            image = ImageUtil.createIndexed(ImageUtil.toBuffered(image), 256, null, ImageUtil.TRANSPARENCY_BITMASK);
+                            // See: http://bugs.sun.com/view_bug.do?bug_id=6287936
+                            image = ImageUtil.createIndexed(ImageUtil.toBuffered(image), 256, null, ImageUtil.TRANSPARENCY_BITMASK | ImageUtil.DITHER_DIFFUSION_ALTSCANS);
                         }
     //////////////////
                         ImageOutputStream stream = ImageIO.createImageOutputStream(out);
-
-                        /*
-                        try {
-                            SwingUtilities.invokeAndWait(new Runnable() {
-                                public void run() {
-                                    JScrollPane scroll = new JScrollPane(new JLabel(new BufferedImageIcon(ImageUtil.toBuffered(image))) {
-                                        {
-                                            setOpaque(true);
-                                            setBackground(Color.ORANGE);
-                                        }
-                                    });
-                                    scroll.setBorder(BorderFactory.createEmptyBorder());
-                                    JOptionPane.showMessageDialog(null, scroll);
-                                }
-                            });
-                        }
-                        catch (InterruptedException ignore) {
-                        }
-                        catch (InvocationTargetException ignore) {
-                        }
-
-                        image = ImageUtil.createIndexed(ImageUtil.toBuffered(image));
-                        // */
-
-                        // Bug in GIF writer, if pixel at 0,0 is transparent.. :-P
-//                        BufferedImage bufferedImage = ImageUtil.toBuffered(image);
-//                        bufferedImage.setRGB(0, 0, bufferedImage.getRGB(0, 0) | 0xFF000000);
-//                        image = bufferedImage;
-
 
                         writer.setOutput(stream);
                         try {
@@ -382,6 +349,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         // TODO: AOI strategy?
                         // Extract AOI from request
                         Rectangle aoi = extractAOIFromRequest(originalWidth, originalHeight, originalRequest);
+
                         if (aoi != null) {
                             param.setSourceRegion(aoi);
                             originalWidth = aoi.width;
@@ -392,14 +360,15 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         // If possible, extract size from request
                         Dimension size = extractSizeFromRequest(originalWidth, originalHeight, originalRequest);
                         double readSubSamplingFactor = getReadSubsampleFactorFromRequest(originalRequest);
+
                         if (size != null) {
                             //System.out.println("Size: " + size);
                             if (param.canSetSourceRenderSize()) {
                                 param.setSourceRenderSize(size);
                             }
                             else {
-                                int subX = (int) Math.max(originalWidth / (double) (size.width * readSubSamplingFactor), 1.0);
-                                int subY = (int) Math.max(originalHeight / (double) (size.height * readSubSamplingFactor), 1.0);
+                                int subX = (int) Math.max(originalWidth / (size.width * readSubSamplingFactor), 1.0);
+                                int subY = (int) Math.max(originalHeight / (size.height * readSubSamplingFactor), 1.0);
 
                                 if (subX > 1 || subY > 1) {
                                     param.setSourceSubsampling(subX, subY, subX > 1 ? subX / 2 : 0, subY > 1 ? subY / 2 : 0);
@@ -414,6 +383,9 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
                         // Finally, read the image using the supplied parameter
                         BufferedImage image = reader.read(0, param);
+
+                        // TODO: If we sub-sampled, it would be a good idea to blur before resampling,
+                        // to avoid jagged lines artifacts
 
                         // If reader doesn't support dynamic sizing, scale now
                         image = resampleImage(image, size);
@@ -544,6 +516,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                 String baseURI = ServletUtil.getContextRelativeURI((HttpServletRequest) originalRequest);
 
                 URL resourceURL = context.getResource(baseURI);
+
                 if (resourceURL == null) {
                     resourceURL = ServletUtil.getRealURL(context, baseURI);
                 }

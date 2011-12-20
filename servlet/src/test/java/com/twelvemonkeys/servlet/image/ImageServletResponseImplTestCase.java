@@ -5,7 +5,6 @@ import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.servlet.OutputStreamAdapter;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -56,12 +55,6 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-//        mockRequest.stubs().method("getAttribute").will(returnValue(null));
-//        mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-//        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
-//        mockRequest.stubs().method("getParameter").will(returnValue(null));
-//        request = (HttpServletRequest) mockRequest.proxy();
-
         context = mock(ServletContext.class);
         when(context.getResource("/" + IMAGE_NAME_PNG)).thenReturn(getClass().getResource(IMAGE_NAME_PNG));
         when(context.getResource("/" + IMAGE_NAME_GIF)).thenReturn(getClass().getResource(IMAGE_NAME_GIF));
@@ -71,19 +64,6 @@ public class ImageServletResponseImplTestCase {
         when(context.getMimeType("file.jpeg")).thenReturn(CONTENT_TYPE_JPEG);
         when(context.getMimeType("file.png")).thenReturn(CONTENT_TYPE_PNG);
         when(context.getMimeType("file.txt")).thenReturn(CONTENT_TYPE_TEXT);
-
-
-//        Mock mockContext = mock(ServletContext.class);
-//        mockContext.stubs().method("getResource").with(eq("/" + IMAGE_NAME_PNG)).will(returnValue(getClass().getResource(IMAGE_NAME_PNG)));
-//        mockContext.stubs().method("getResource").with(eq("/" + IMAGE_NAME_GIF)).will(returnValue(getClass().getResource(IMAGE_NAME_GIF)));
-//        mockContext.stubs().method("log").withAnyArguments(); // Just suppress the logging
-//        mockContext.stubs().method("getMimeType").with(eq("file.bmp")).will(returnValue(CONTENT_TYPE_BMP));
-//        mockContext.stubs().method("getMimeType").with(eq("file.foo")).will(returnValue(CONTENT_TYPE_FOO));
-//        mockContext.stubs().method("getMimeType").with(eq("file.gif")).will(returnValue(CONTENT_TYPE_GIF));
-//        mockContext.stubs().method("getMimeType").with(eq("file.jpeg")).will(returnValue(CONTENT_TYPE_JPEG));
-//        mockContext.stubs().method("getMimeType").with(eq("file.png")).will(returnValue(CONTENT_TYPE_PNG));
-//        mockContext.stubs().method("getMimeType").with(eq("file.txt")).will(returnValue(CONTENT_TYPE_TEXT));
-//        context = (ServletContext) mockContext.proxy();
     }
 
     private void fakeResponse(HttpServletRequest pRequest, ImageServletResponseImpl pImageResponse) throws IOException {
@@ -120,10 +100,6 @@ public class ImageServletResponseImplTestCase {
     public void testBasicResponse() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_PNG));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -161,9 +137,6 @@ public class ImageServletResponseImplTestCase {
         
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_PNG));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
@@ -182,17 +155,12 @@ public class ImageServletResponseImplTestCase {
     }
 
     // Transcode original PNG to JPEG with no other changes
-
     @Test
     public void testTranscodeResponsePNGToJPEG() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_JPEG));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
@@ -236,25 +204,21 @@ public class ImageServletResponseImplTestCase {
         verify(response).getOutputStream();
     }
 
-    @Ignore
-    @Test
+    // WORKAROUND: Bug in GIFImageWriteParam, compression type is not set by default
+    // (even if there's only one possible compression mode/type combo; MODE_EXPLICIT/"LZW")
+   @Test
     public void testTranscodeResponsePNGToGIFWithQuality() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_GIF));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
+        when(request.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY)).thenReturn(.5f); // Force quality setting in param
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
 
         // Force transcode to GIF
         imageResponse.setOutputContentType("image/gif");
-        // TODO: Set quality...!
 
         // Flush image to wrapped response
         imageResponse.flush();
@@ -269,29 +233,21 @@ public class ImageServletResponseImplTestCase {
 
         BufferedImage image = ImageIO.read(context.getResource("/" + IMAGE_NAME_PNG));
 
-        /*
-        showIt(outImage, image);
-        */
-
         // Should keep transparency, but is now binary
-        assertSimilarImageTransparent(image, outImage, 5f);
+        assertSimilarImageTransparent(image, outImage, 120f);
 
         verify(response).setContentType(CONTENT_TYPE_GIF);
         verify(response).getOutputStream();
     }
 
-    @Ignore
+    // WORKAROUND: Bug in GIFImageWriter may throw NPE if transparent pixels
+    // See: http://bugs.sun.com/view_bug.do?bug_id=6287936
     @Test
     public void testTranscodeResponsePNGToGIF() throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_GIF));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
-
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
 
@@ -311,30 +267,8 @@ public class ImageServletResponseImplTestCase {
 
         BufferedImage image = ImageIO.read(context.getResource("/" + IMAGE_NAME_PNG));
 
-        BufferedImage diff = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                int rgbIn = image.getRGB(x, y);
-                int rgbOut = outImage.getRGB(x, y);
-                
-                int aDiff = (rgbIn >> 24) & 0xff - (rgbOut >> 24) & 0xff;
-                int rDiff = (rgbIn >> 16) & 0xff - (rgbOut >> 16) & 0xff;
-                int gDiff = (rgbIn >> 8) & 0xff - (rgbOut >> 8) & 0xff;
-                int bDiff = rgbIn & 0xff - rgbOut & 0xff;
-                
-                int gray = Math.min((int) Math.round((Math.abs(rDiff) + Math.abs(gDiff) + Math.abs(bDiff)) / 3d), 255);
-                
-                diff.setRGB(x, y, gray << 16 | gray << 8 | gray);
-            }
-        }
-        
-        
-        /**/
-        showIt(image, outImage, diff);
-        //*/
-
         // Should keep transparency, but is now binary
-        assertSimilarImageTransparent(image, outImage, 5f);
+        assertSimilarImageTransparent(image, outImage, 120f);
 
         verify(response).setContentType(CONTENT_TYPE_GIF);
         verify(response).getOutputStream();
@@ -368,20 +302,10 @@ public class ImageServletResponseImplTestCase {
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_GIF);
-//        Mock mockRequest = mock(HttpServletRequest.class);
-//        mockRequest.stubs().method("getAttribute").will(returnValue(null));
-//        mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-//        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_GIF));
-//        mockRequest.stubs().method("getParameter").will(returnValue(null));
-//        HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_JPEG));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
@@ -451,15 +375,19 @@ public class ImageServletResponseImplTestCase {
                 int actual = pActual.getRGB(x, y);
 
                 int alpha = (expected >> 24) & 0xff;
-                boolean transparent = alpha < 40;
-                if (transparent) {
-                    assertEquals(0, (actual >> 24) & 0xff);
-                }
-                else {
-                    assertEquals((expected >> 16) & 0xff, (actual >> 16) & 0xff, pArtifactThreshold);
-                    assertEquals((expected >>  8) & 0xff, (actual >>  8) & 0xff, pArtifactThreshold);
-                    assertEquals( expected        & 0xff,  actual        & 0xff, pArtifactThreshold);
-                }
+
+                boolean transparent = alpha < 0x40;
+
+                // Multiply out alpha for each component
+                int expectedR = (int) ((((expected >> 16) & 0xff) * alpha) / 255f);
+                int expectedG = (int) ((((expected >> 8 ) & 0xff) * alpha) / 255f);
+                int expectedB = (int) ((( expected        & 0xff) * alpha) / 255f);
+
+
+                assertEquals("a(" + x + "," + y + ")", transparent ? 0 : 0xff, (actual >> 24) & 0xff);
+                assertEquals("R(" + x + "," + y + ")", expectedR, (actual >> 16) & 0xff, pArtifactThreshold);
+                assertEquals("G(" + x + "," + y + ")", expectedG, (actual >>  8) & 0xff, pArtifactThreshold);
+                assertEquals("B(" + x + "," + y + ")", expectedB,  actual        & 0xff, pArtifactThreshold);
             }
         }
     }
@@ -469,10 +397,6 @@ public class ImageServletResponseImplTestCase {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_BMP));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
@@ -516,17 +440,8 @@ public class ImageServletResponseImplTestCase {
         request = mock(HttpServletRequest.class);
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/monkey-business.gif");
-//        Mock mockRequest = mock(HttpServletRequest.class);
-//        mockRequest.stubs().method("getAttribute").will(returnValue(null));
-//        mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-//        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/monkey-business.gif"));
-//        mockRequest.stubs().method("getParameter").will(returnValue(null));
-//        request = (HttpServletRequest) mockRequest.proxy();
 
         HttpServletResponse response = mock(HttpServletResponse.class);
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("sendError").with(eq(404), ANYTHING);
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
@@ -544,16 +459,8 @@ public class ImageServletResponseImplTestCase {
         request =  mock(HttpServletRequest.class);
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/foo.txt");
-//        Mock mockRequest = mock(HttpServletRequest.class);
-//        mockRequest.stubs().method("getAttribute").will(returnValue(null));
-//        mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-//        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/foo.txt"));
-//        mockRequest.stubs().method("getParameter").will(returnValue(null));
-//        request = (HttpServletRequest) mockRequest.proxy();
 
         HttpServletResponse response = mock(HttpServletResponse.class);
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
 
@@ -582,8 +489,6 @@ public class ImageServletResponseImplTestCase {
         assertFalse("Test is invalid, rewrite test", ImageIO.getImageWritersByFormatName("foo").hasNext());
 
         HttpServletResponse response = mock(HttpServletResponse.class);
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
 
@@ -621,22 +526,10 @@ public class ImageServletResponseImplTestCase {
         when(request.getAttribute(ImageServletResponse.ATTRIB_AOI)).thenReturn(sourceRegion);
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
-        
-//        Mock mockRequest = mock(HttpServletRequest.class);
-//        mockRequest.stubs().method("getAttribute").withAnyArguments().will(returnValue(null));
-//        mockRequest.stubs().method("getAttribute").with(eq(ImageServletResponse.ATTRIB_AOI)).will(returnValue(sourceRegion));
-//        mockRequest.stubs().method("getContextPath").will(returnValue("/ape"));
-//        mockRequest.stubs().method("getRequestURI").will(returnValue("/ape/" + IMAGE_NAME_PNG));
-//        mockRequest.stubs().method("getParameter").will(returnValue(null));
-//        HttpServletRequest request = (HttpServletRequest) mockRequest.proxy();
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-//        Mock mockResponse = mock(HttpServletResponse.class);
-//        mockResponse.expects(once()).method("setContentType").with(eq(CONTENT_TYPE_PNG));
-//        mockResponse.expects(once()).method("getOutputStream").will(returnValue(new OutputStreamAdapter(out)));
-//        HttpServletResponse response = (HttpServletResponse) mockResponse.proxy();
 
         ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
         fakeResponse(request, imageResponse);
