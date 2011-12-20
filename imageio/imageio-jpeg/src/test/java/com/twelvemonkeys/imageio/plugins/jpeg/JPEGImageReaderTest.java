@@ -29,14 +29,20 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
-import org.junit.Ignore;
+import org.junit.Test;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  * JPEGImageReaderTest
@@ -105,10 +111,36 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         return Arrays.asList("image/jpeg");
     }
 
+    /*
     @Ignore("TODO: This method currently fails, fix it")
     @Override
     public void testSetDestinationType() throws IOException {
         // TODO: This method currently fails, fix it
         super.testSetDestinationType();
+    }
+*/
+    // TODO: Test that subsampling is actually reading something
+
+    @Test
+    public void testICCProfileClassOutputColors() throws IOException {
+        // Make sure ICC profile with class output isn't converted to too bright values
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/cmyk-sample-custom-icc-bright.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(800, 800, 64, 8));
+        param.setSourceSubsampling(8, 8, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+        assertNotNull(image);
+
+        byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+        byte[] expectedData = {34, 37, 34, 47, 47, 44, 22, 26, 28, 23, 26, 28, 20, 23, 26, 20, 22, 25, 22, 25, 27, 18, 21, 24};
+
+        assertEquals(expectedData.length, data.length);
+        
+        for (int i = 0; i < expectedData.length; i++) {
+            assertEquals(expectedData[i], data[i], 5);
+        }
     }
 }
