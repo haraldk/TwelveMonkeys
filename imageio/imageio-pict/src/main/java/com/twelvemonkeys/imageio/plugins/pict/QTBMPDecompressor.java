@@ -43,7 +43,6 @@ import java.io.*;
  * @version $Id: QTBMPDecompressor.java,v 1.0 Feb 16, 2009 9:18:28 PM haraldk Exp$
  */
 final class QTBMPDecompressor extends QTDecompressor {
-
     public boolean canDecompress(final QuickTime.ImageDesc pDescription) {
         return QuickTime.VENDOR_APPLE.equals(pDescription.compressorVendor) && "WRLE".equals(pDescription.compressorIdentifer)
                 && "bmp ".equals(idString(pDescription.extraDesc, 4));

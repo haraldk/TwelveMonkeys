@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
  * @version $Id: TestPICTClippingApp.java,v 1.0 Feb 16, 2009 3:05:16 PM haraldk Exp$
  */
 public class TestPICTClippingApp {
-
     public static void main(final String[] pArgs) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {

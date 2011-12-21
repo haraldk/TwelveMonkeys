@@ -40,9 +40,8 @@ import java.io.InputStream;
  * @version $Id: QTDecompressor.java,v 1.0 Feb 16, 2009 7:21:27 PM haraldk Exp$
  */
 abstract class QTDecompressor {
-
     /**
-     * Returns wether this decompressor is capable of decompressing the image
+     * Returns whether this decompressor is capable of decompressing the image
      * data described by the given image description.
      *
      * @param pDescription the image description ({@code 'idsc'} Atom).
