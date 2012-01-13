@@ -28,10 +28,10 @@
 
 package com.twelvemonkeys.imageio.metadata.xmp;
 
-import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
-import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
+import com.twelvemonkeys.imageio.metadata.Directory;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
 * XMPDirectory
@@ -40,12 +40,30 @@ import java.util.List;
 * @author last modified by $Author: haraldk$
 * @version $Id: XMPDirectory.java,v 1.0 Nov 17, 2009 9:38:58 PM haraldk Exp$
 */
-final class XMPDirectory extends AbstractDirectory {
-    // TODO: Store size of root directory, to allow serializing
+final class XMPDirectory extends AbstractCompoundDirectory {
+    // TODO: Allow lookup of directories by namespace?
+    // TODO: Allow merge/sync/comparison with IPTC/EXIF/TIFF metadata
+    // TODO: Store size of root directory, to allow easy serializing (see isReadOnly comment)
     // TODO: XMPDirectory, maybe not even an AbstractDirectory
     //       - Keeping the Document would allow for easier serialization
     // TODO: Or use direct SAX parsing
-    public XMPDirectory(List<Entry> entries) {
+    private final String toolkit;
+
+    public XMPDirectory(Collection<? extends Directory> entries, String toolkit) {
         super(entries);
+
+        this.toolkit = toolkit;
+    }
+
+    // TODO: Expose x:xmptk (getXMPToolkit(): String)
+    /*public*/ String getWriterToolkit() {
+        return toolkit;
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        // TODO: Depend on <?xpacket end="w"?>/<?xpacket end="r"?> for writable/read-only respectively?
+        // Spec says allow writing (even if "r"), if the container format is understood (ie. single file, known format, update checksums etc)
+        return super.isReadOnly();
     }
 }

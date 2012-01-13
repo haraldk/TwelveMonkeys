@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,41 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.xmp;
 
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 
 import java.util.Collection;
 
 /**
- * EXIFDirectory
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
- */
-final class EXIFDirectory extends AbstractCompoundDirectory {
-    EXIFDirectory(final Collection<? extends Directory> directories) {
-        super(directories);
+* RDFDescription
+*
+* @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+* @author last modified by $Author: haraldk$
+* @version $Id: RDFDescription.java,v 1.0 Nov 17, 2009 9:38:58 PM haraldk Exp$
+*/
+final class RDFDescription extends AbstractDirectory {
+    private final String namespace;
+
+    // TODO: Store size of root directory, to allow serializing
+    // TODO: XMPDirectory, maybe not even an AbstractDirectory
+    //       - Keeping the Document would allow for easier serialization
+    // TODO: Or use direct SAX parsing
+    public RDFDescription(Collection<? extends Entry> entries) {
+        this(null, entries);
+    }
+
+    public RDFDescription(String key, Collection<? extends Entry> entries) {
+        super(entries);
+        
+        namespace = key;
+    }
+
+    @Override
+    public String toString() {
+        return namespace != null ? 
+                super.toString().replaceAll("^RDFDescription\\[", String.format("%s[%s|%s, ", getClass().getSimpleName(), XMP.DEFAULT_NS_MAPPING.get(namespace), namespace)) :
+                super.toString();
     }
 }

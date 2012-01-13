@@ -28,10 +28,12 @@
 
 package com.twelvemonkeys.imageio.metadata.exif;
 
+import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReader;
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -40,10 +42,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * EXIFReader
@@ -53,10 +52,12 @@ import java.util.List;
  * @version $Id: EXIFReader.java,v 1.0 Nov 13, 2009 5:42:51 PM haraldk Exp$
  */
 public final class EXIFReader extends MetadataReader {
-    static final Collection<Integer> KNOWN_IFDS = Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD);
+    static final Collection<Integer> KNOWN_IFDS = Collections.unmodifiableCollection(Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD));
 
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
+        Validate.notNull(input, "input");
+
         byte[] bom = new byte[2];
         input.readFully(bom);
 
@@ -82,7 +83,8 @@ public final class EXIFReader extends MetadataReader {
         return readDirectory(input, directoryOffset);
     }
 
-    private EXIFDirectory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
+    private Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
+        List<IFD> ifds = new ArrayList<IFD>();
         List<Entry> entries = new ArrayList<Entry>();
         pInput.seek(pOffset);
         int entryCount = pInput.readUnsignedShort();
@@ -92,14 +94,15 @@ public final class EXIFReader extends MetadataReader {
         }
 
         long nextOffset = pInput.readUnsignedInt();
-
+        
         // Read linked IFDs
         if (nextOffset != 0) {
-            EXIFDirectory next = readDirectory(pInput, nextOffset);
-
-            for (Entry entry : next) {
-                entries.add(entry);
-            }
+            // TODO: This is probably not okay anymore.. Replace recursion with while loop
+            Directory next = readDirectory(pInput, nextOffset);
+            ifds.add((IFD) ((AbstractCompoundDirectory) next).getDirectory(0));
+//            for (Entry entry : next) {
+//                entries.add(entry);
+//            }
         }
 
         // TODO: Make what sub-IFDs to parse optional? Or leave this to client code? At least skip the non-TIFF data?
@@ -113,7 +116,9 @@ public final class EXIFReader extends MetadataReader {
                 )
         );
 
-        return new EXIFDirectory(entries);
+        ifds.add(0, new IFD(entries));
+        
+        return new EXIFDirectory(ifds);
     }
 
 //    private Directory readForeignMetadata(final MetadataReader reader, final byte[] bytes) throws IOException {
@@ -161,7 +166,7 @@ public final class EXIFReader extends MetadataReader {
                         directory = new CompoundDocument(new ByteArrayInputStream((byte[]) entry.getValue())).getRootEntry();
                     }
                     else*/ if (KNOWN_IFDS.contains(tagId)) {
-                        directory = readDirectory(input, getPointerOffset(entry));
+                        directory = ((AbstractCompoundDirectory) readDirectory(input, getPointerOffset(entry))).getDirectory(0);
                     }
                     else {
                         continue;
@@ -273,9 +278,11 @@ public final class EXIFReader extends MetadataReader {
         switch (pType) {
             case 2: // ASCII
                 // TODO: This might be UTF-8 or ISO-8859-x, even though spec says ASCII
+                // TODO: Fail if unknown chars, try parsing with ISO-8859-1 or file.encoding
                 byte[] ascii = new byte[pCount];
                 pInput.readFully(ascii);
-                return StringUtil.decode(ascii, 0, ascii.length, "UTF-8"); // UTF-8 is ASCII compatible
+                int len = ascii[ascii.length - 1] == 0 ? ascii.length - 1 : ascii.length;
+                return StringUtil.decode(ascii, 0, len, "UTF-8"); // UTF-8 is ASCII compatible
             case 1: // BYTE
                 if (pCount == 1) {
                     return pInput.readUnsignedByte();
@@ -399,10 +406,8 @@ public final class EXIFReader extends MetadataReader {
                 return longs;
 
             default:
-                // Spec says skip unknown values:
-                // TODO: Rather just return null, UNKNOWN_TYPE or new Unknown(type, count, offset) for value?
+                // Spec says skip unknown values
                 return new Unknown(pType, pCount, pos);
-//                throw new IIOException(String.format("Unknown EXIF type '%s' at pos %d", pType, pInput.getStreamPosition()));
         }
     }
 

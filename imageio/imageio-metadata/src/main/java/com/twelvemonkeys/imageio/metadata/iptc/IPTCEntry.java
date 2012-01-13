@@ -45,11 +45,19 @@ class IPTCEntry extends AbstractEntry {
     @Override
     public String getFieldName() {
         switch ((Integer) getIdentifier()) {
+            case IPTC.TAG_RECORD_VERSION:
+                return "RecordVersion";
             case IPTC.TAG_SOURCE:
                 return "Source";
             // TODO: More tags...
         }
 
         return null;
+    }
+
+    @Override
+    protected String getNativeIdentifier() {
+        int identifier = (Integer) getIdentifier();
+        return String.format("%d:%02d", identifier >> 8, identifier & 0xff);
     }
 }

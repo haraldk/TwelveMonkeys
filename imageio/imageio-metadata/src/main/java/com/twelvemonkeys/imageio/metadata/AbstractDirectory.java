@@ -28,10 +28,9 @@
 
 package com.twelvemonkeys.imageio.metadata;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+
+import static com.twelvemonkeys.lang.Validate.noNullElements;
 
 /**
  * AbstractDirectory
@@ -42,10 +41,11 @@ import java.util.List;
  */
 public abstract class AbstractDirectory implements Directory {
     private final List<Entry> entries = new ArrayList<Entry>();
+    private final List<Entry> unmodifiable = Collections.unmodifiableList(entries);
 
-    protected AbstractDirectory(final Collection<? extends Entry> pEntries) {
-        if (pEntries != null) {
-            entries.addAll(pEntries);
+    protected AbstractDirectory(final Collection<? extends Entry> entries) {
+        if (entries != null) {
+            this.entries.addAll(noNullElements(entries));
         }
     }
 
@@ -70,7 +70,7 @@ public abstract class AbstractDirectory implements Directory {
     }
 
     public Iterator<Entry> iterator() {
-        return entries.iterator();
+        return isReadOnly() ? unmodifiable.iterator() : entries.iterator();
     }
 
     /**
@@ -127,7 +127,7 @@ public abstract class AbstractDirectory implements Directory {
             return true;
         }
 
-        if (getClass() != pOther.getClass()) {
+        if (pOther == null || getClass() != pOther.getClass()) {
             return false;
         }
 

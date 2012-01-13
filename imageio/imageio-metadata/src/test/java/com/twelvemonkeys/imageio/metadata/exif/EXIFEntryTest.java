@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,20 +28,31 @@
 
 package com.twelvemonkeys.imageio.metadata.exif;
 
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
-
-import java.util.Collection;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
+import org.junit.Test;
 
 /**
- * EXIFDirectory
+ * EXIFEntryTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
+ * @version $Id: EXIFEntryTest.java,v 1.0 02.01.12 17:35 haraldk Exp$
  */
-final class EXIFDirectory extends AbstractCompoundDirectory {
-    EXIFDirectory(final Collection<? extends Directory> directories) {
-        super(directories);
+public class EXIFEntryTest extends EntryAbstractTest {
+    @Override
+    protected Entry createEntry(final Object value) {
+        return createEXIFEntry(TIFF.TAG_COPYRIGHT, value, (short) 2);
     }
+
+    private EXIFEntry createEXIFEntry(final int identifier, final Object value, final int type) {
+        return new EXIFEntry(identifier, value, (short) type);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateEXIFEntryIllegalType() {
+        createEXIFEntry(0, null, -1);
+    }
+    
+    // TODO: TIFF/EXIF specific tests
 }

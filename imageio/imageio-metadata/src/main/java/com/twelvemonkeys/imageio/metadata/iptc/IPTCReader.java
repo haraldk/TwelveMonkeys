@@ -32,6 +32,7 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReader;
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
@@ -62,7 +63,9 @@ public final class IPTCReader extends MetadataReader {
 
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
-        final List<Entry> entries = new ArrayList<Entry>();
+        Validate.notNull(input, "input");
+
+        List<Entry> entries = new ArrayList<Entry>();
 
         // 0x1c identifies start of a tag
         while (input.read() == 0x1c) {

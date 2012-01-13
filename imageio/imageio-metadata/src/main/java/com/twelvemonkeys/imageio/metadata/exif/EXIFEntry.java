@@ -43,9 +43,9 @@ final class EXIFEntry extends AbstractEntry {
     EXIFEntry(final int identifier, final Object value, final short type) {
         super(identifier, value);
 
-//        if (type < 1 || type > TIFF.TYPE_NAMES.length) {
-//            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
-//        }
+        if (type < 1 || type > TIFF.TYPE_NAMES.length) {
+            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
+        }
         
         this.type = type;
     }
@@ -74,12 +74,20 @@ final class EXIFEntry extends AbstractEntry {
                 return "ImageHeight";
             case TIFF.TAG_COMPRESSION:
                 return "Compression";
+            case TIFF.TAG_PHOTOMETRIC_INTERPRETATION:
+                return "PhotometricInterpretation";
+            case TIFF.TAG_IMAGE_DESCRIPTION:
+                return "ImageDescription";
             case TIFF.TAG_ORIENTATION:
                 return "Orientation";
+            case TIFF.TAG_SAMPLES_PER_PIXELS:
+                return "SamplesPerPixels";
             case TIFF.TAG_X_RESOLUTION:
                 return "XResolution";
             case TIFF.TAG_Y_RESOLUTION:
                 return "YResolution";
+            case TIFF.TAG_PLANAR_CONFIGURATION:
+                return "PlanarConfiguration";
             case TIFF.TAG_RESOLUTION_UNIT:
                 return "ResolutionUnit";
             case TIFF.TAG_JPEG_INTERCHANGE_FORMAT:

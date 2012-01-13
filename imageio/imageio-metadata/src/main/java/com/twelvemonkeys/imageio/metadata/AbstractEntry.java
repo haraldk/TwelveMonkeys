@@ -57,6 +57,17 @@ public abstract class AbstractEntry implements Entry {
     }
 
     /**
+     * Returns a format-native identifier. 
+     * For example {@code "2:00"} for IPTC "Record Version" field, or {@code "0x040c"} for PSD "Thumbnail" resource. 
+     * This default implementation simply returns {@code String.valueOf(getIdentifier())}.
+     * 
+     * @return a format-native identifier.
+     */
+    protected String getNativeIdentifier() {
+        return String.valueOf(getIdentifier());
+    }
+
+    /**
      * Returns {@code null}, meaning unknown or undefined.
      *
      * @return {@code null}.
@@ -109,7 +120,7 @@ public abstract class AbstractEntry implements Entry {
             return String.valueOf(value) + " ("  + valueCount() + ")";
         }
 
-        if (value.getClass().isArray() && Array.getLength(value) == 1) {
+        if (value != null && value.getClass().isArray() && Array.getLength(value) == 1) {
             return String.valueOf(Array.get(value, 0));
         }
 
@@ -137,7 +148,7 @@ public abstract class AbstractEntry implements Entry {
 
     @Override
     public int hashCode() {
-        return identifier.hashCode() + 31 * value.hashCode();
+        return identifier.hashCode() + (value != null ? 31 * value.hashCode() : 0);
     }
 
     @Override
@@ -164,6 +175,6 @@ public abstract class AbstractEntry implements Entry {
         String type = getTypeName();
         String typeStr = type != null ? " (" + type + ")" : "";
 
-        return String.format("%s%s: %s%s", getIdentifier(), nameStr, getValueAsString(), typeStr);
+        return String.format("%s%s: %s%s", getNativeIdentifier(), nameStr, getValueAsString(), typeStr);
     }
 }

@@ -40,6 +40,7 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 final class XMPEntry extends AbstractEntry {
     private final String fieldName;
 
+    // TODO: Rewrite to use namespace + field instead of identifier (for the nativeIdentifier) method
     public XMPEntry(final String identifier, final Object pValue) {
         this(identifier, null, pValue);
     }
@@ -47,6 +48,13 @@ final class XMPEntry extends AbstractEntry {
     public XMPEntry(final String identifier, final String fieldName, final Object value) {
         super(identifier, value);
         this.fieldName = fieldName;
+    }
+
+    @Override
+    protected String getNativeIdentifier() {
+        String identifier = (String) getIdentifier();
+        String namespace = fieldName != null && identifier.endsWith(fieldName) ? XMP.DEFAULT_NS_MAPPING.get(identifier.substring(0, identifier.length() - fieldName.length())) : null;
+        return namespace != null ?  namespace + ":" + fieldName : identifier;
     }
 
     @SuppressWarnings({"SuspiciousMethodCalls"})
@@ -60,6 +68,6 @@ final class XMPEntry extends AbstractEntry {
         String type = getTypeName();
         String typeStr = type != null ? " (" + type + ")" : "";
 
-        return String.format("%s: %s%s", getIdentifier(), getValueAsString(), typeStr);
+        return String.format("%s: %s%s", getNativeIdentifier(), getValueAsString(), typeStr);
     }
 }

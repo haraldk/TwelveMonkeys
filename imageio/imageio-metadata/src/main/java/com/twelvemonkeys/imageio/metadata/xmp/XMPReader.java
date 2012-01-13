@@ -32,6 +32,7 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReader;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.Validate;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -55,17 +56,13 @@ import java.util.*;
  * @version $Id: XMPReader.java,v 1.0 Nov 14, 2009 11:04:30 PM haraldk Exp$
  */
 public final class XMPReader extends MetadataReader {
+    // See http://www.scribd.com/doc/56852716/XMPSpecificationPart1
+
+    // TODO: Types? Probably defined in XMP/RDF XML schema. Or are we happy that everything is a string?
+
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
-//        pInput.mark();
-//
-//        BufferedReader reader = new BufferedReader(new InputStreamReader(IIOUtil.createStreamAdapter(pInput), Charset.forName("UTF-8")));
-//        String line;
-//        while ((line = reader.readLine()) != null) {
-//            System.out.println(line);
-//        }
-//
-//        pInput.reset();
+        Validate.notNull(input, "input");
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
@@ -80,14 +77,11 @@ public final class XMPReader extends MetadataReader {
 //            XMLSerializer serializer = new XMLSerializer(System.err, System.getProperty("file.encoding"));
 //            serializer.serialize(document);
 
-
-            // Each rdf:Description is a Directory (but we can't really rely on that structure.. it's only convention)
-            //  - Each element inside the rdf:Desc is an Entry
-
+            String toolkit = getToolkit(document);
             Node rdfRoot = document.getElementsByTagNameNS(XMP.NS_RDF, "RDF").item(0);
             NodeList descriptions = document.getElementsByTagNameNS(XMP.NS_RDF, "Description");
 
-            return parseDirectories(rdfRoot, descriptions);
+            return parseDirectories(rdfRoot, descriptions, toolkit);
         }
         catch (SAXException e) {
             throw new IIOException(e.getMessage(), e);
@@ -97,13 +91,28 @@ public final class XMPReader extends MetadataReader {
         }
     }
 
-    private XMPDirectory parseDirectories(final Node pParentNode, NodeList pNodes) {
+    private String getToolkit(Document document) {
+        NodeList xmpmeta = document.getElementsByTagNameNS(XMP.NS_X, "xmpmeta");
+
+        if (xmpmeta == null || xmpmeta.getLength() <= 0) {
+            return null;
+        }
+
+        Node toolkit = xmpmeta.item(0).getAttributes().getNamedItemNS(XMP.NS_X, "xmptk");
+
+        return toolkit != null ? toolkit.getNodeValue() : null;
+    }
+
+    private XMPDirectory parseDirectories(final Node pParentNode, NodeList pNodes, String toolkit) {
         Map<String, List<Entry>> subdirs = new LinkedHashMap<String, List<Entry>>();
 
         for (Node desc : asIterable(pNodes)) {
             if (desc.getParentNode() != pParentNode) {
                 continue;
             }
+
+            // Support attribute short-hand syntax
+            parseAttributesForKnownElements(subdirs, desc);
 
             for (Node node : asIterable(desc.getChildNodes())) {
                 if (node.getNodeType() != Node.ELEMENT_NODE) {
@@ -121,6 +130,7 @@ public final class XMPReader extends MetadataReader {
 
                 Node parseType = node.getAttributes().getNamedItemNS(XMP.NS_RDF, "parseType");
                 if (parseType != null && "Resource".equals(parseType.getNodeValue())) {
+                    // See: http://www.w3.org/TR/REC-rdf-syntax/#section-Syntax-parsetype-resource
                     List<Entry> entries = new ArrayList<Entry>();
 
                     for (Node child : asIterable(node.getChildNodes())) {
@@ -130,60 +140,119 @@ public final class XMPReader extends MetadataReader {
 
                         entries.add(new XMPEntry(child.getNamespaceURI() + child.getLocalName(), child.getLocalName(), getChildTextValue(child)));
                     }
-                    value = new XMPDirectory(entries);
+
+                    value = new RDFDescription(entries);
                 }
                 else {
-                    // TODO: Support alternative RDF syntax (short-form), using attributes on desc
-//                    NamedNodeMap attributes = node.getAttributes();
-//
-//                    for (Node attr : asIterable(attributes)) {
-//                        System.out.println("attr.getNodeName(): " + attr.getNodeName());
-//                        System.out.println("attr.getNodeValue(): " + attr.getNodeValue());
-//                    }
+                    // TODO: This method contains loads of duplication an should be cleaned up...
+                    // Support attribute short-hand syntax
+                    Map<String, List<Entry>> subsubdirs = new LinkedHashMap<String, List<Entry>>();
 
-                    value = getChildTextValue(node);
+                    parseAttributesForKnownElements(subsubdirs, node);
+
+                    if (!subsubdirs.isEmpty()) {
+                        List<Entry> entries = new ArrayList<Entry>();
+
+                        for (Map.Entry<String, List<Entry>> entry : subsubdirs.entrySet()) {
+                            entries.addAll(entry.getValue());
+                        }
+
+                        value = new RDFDescription(entries);
+                    }
+                    else {
+                        value = getChildTextValue(node);
+                    }
                 }
 
-                XMPEntry entry = new XMPEntry(node.getNamespaceURI() + node.getLocalName(), node.getLocalName(), value);
-                dir.add(entry);
+                dir.add(new XMPEntry(node.getNamespaceURI() + node.getLocalName(), node.getLocalName(), value));
             }
         }
 
-        // TODO: Consider flattening the somewhat artificial directory structure
-        List<Entry> entries = new ArrayList<Entry>();
+        List<Directory> entries = new ArrayList<Directory>();
 
+        // TODO: Should we still allow asking for a subdirectory by item id?
         for (Map.Entry<String, List<Entry>> entry : subdirs.entrySet()) {
-            entries.add(new XMPEntry(entry.getKey(), new XMPDirectory(entry.getValue())));
+            entries.add(new RDFDescription(entry.getKey(), entry.getValue()));
         }
 
-        return new XMPDirectory(entries);
+        return new XMPDirectory(entries, toolkit);
     }
 
-    private Object getChildTextValue(Node node) {
-        Object value;
-        Node child = node.getFirstChild();
+    private void parseAttributesForKnownElements(Map<String, List<Entry>> subdirs, Node desc) {
+        // NOTE: NamedNodeMap does not have any particular order...
+        NamedNodeMap attributes = desc.getAttributes();
 
-        String strVal = null;
-        if (child != null) {
-            strVal = child.getNodeValue();
+        for (Node attr : asIterable(attributes)) {
+            if (!XMP.ELEMENTS.contains(attr.getNamespaceURI())) {
+                continue;
+            }
+
+            List<Entry> dir = subdirs.get(attr.getNamespaceURI());
+
+            if (dir == null) {
+                dir = new ArrayList<Entry>();
+                subdirs.put(attr.getNamespaceURI(), dir);
+            }
+
+            dir.add(new XMPEntry(attr.getNamespaceURI() + attr.getLocalName(), attr.getLocalName(), attr.getNodeValue()));
+        }
+    }
+
+    private Object getChildTextValue(final Node node) {
+        for (Node child : asIterable(node.getChildNodes())) {
+            if (XMP.NS_RDF.equals(child.getNamespaceURI()) && "Alt".equals(child.getLocalName())) {
+                // Support for <rdf:Alt><rdf:li> -> return a Map<String, Object> (keyed on xml:lang?)
+                Map<String, Object> alternatives = new LinkedHashMap<String, Object>();
+                for (Node alternative : asIterable(child.getChildNodes())) {
+                    if (XMP.NS_RDF.equals(alternative.getNamespaceURI()) && "li".equals(alternative.getLocalName())) {
+                        //return getChildTextValue(alternative);
+                        NamedNodeMap attributes = alternative.getAttributes();
+                        Node key = attributes.getNamedItem("xml:lang");
+
+                        alternatives.put(key.getTextContent(), getChildTextValue(alternative));
+                    }
+                }
+
+                return alternatives;
+            }
+            else if (XMP.NS_RDF.equals(child.getNamespaceURI()) && ("Seq".equals(child.getLocalName()) || "Bag".equals(child.getLocalName()))) {
+                // Support for <rdf:Seq><rdf:li> -> return array
+                // Support for <rdf:Bag><rdf:li> -> return array/unordered collection (how can a serialized collection not have order?)
+                List<Object> seq = new ArrayList<Object>();
+
+                for (Node sequence : asIterable(child.getChildNodes())) {
+                    if (XMP.NS_RDF.equals(sequence.getNamespaceURI()) && "li".equals(sequence.getLocalName())) {
+                        Object value = getChildTextValue(sequence);
+                        seq.add(value);
+                    }
+                }
+
+                // TODO: Strictly a bag should not be a list, but there's no Bag type (or similar) in Java.
+                // Consider something like Google collections Multiset or Apache commons Bag (the former seems more well-defined)
+                // Note: Collection does not have defined equals() semantics, and so using
+                // Collections.unmodifiableCollection() doesn't work for comparing values (uses Object.equals())
+                return Collections.unmodifiableList(seq);
+            }
         }
 
-        value = strVal != null ? strVal.trim() : "";
-        return value;
+        Node child = node.getFirstChild();
+        String strVal = child != null ? child.getNodeValue() : null;
+
+        return strVal != null ? strVal.trim() : "";
     }
 
     private Iterable<? extends Node> asIterable(final NamedNodeMap pNodeList) {
         return new Iterable<Node>() {
             public Iterator<Node> iterator() {
                 return new Iterator<Node>() {
-                    private int mIndex;
+                    private int index;
 
                     public boolean hasNext() {
-                        return pNodeList != null && pNodeList.getLength() > mIndex;
+                        return pNodeList != null && pNodeList.getLength() > index;
                     }
 
                     public Node next() {
-                        return pNodeList.item(mIndex++);
+                        return pNodeList.item(index++);
                     }
 
                     public void remove() {
@@ -198,14 +267,14 @@ public final class XMPReader extends MetadataReader {
         return new Iterable<Node>() {
             public Iterator<Node> iterator() {
                 return new Iterator<Node>() {
-                    private int mIndex;
+                    private int index;
 
                     public boolean hasNext() {
-                        return pNodeList != null && pNodeList.getLength() > mIndex;
+                        return pNodeList != null && pNodeList.getLength() > index;
                     }
 
                     public Node next() {
-                        return pNodeList.item(mIndex++);
+                        return pNodeList.item(index++);
                     }
 
                     public void remove() {
@@ -215,5 +284,4 @@ public final class XMPReader extends MetadataReader {
             }
         };
     }
-
 }

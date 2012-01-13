@@ -43,6 +43,7 @@ public interface JPEG {
     int APP0 = 0xFFE0;
     int APP1 = 0xFFE1;
     int APP2 = 0xFFE2;
+    int APP13 = 0xFFED;
     int APP14 = 0xFFEE;
 
     int SOF0 = 0xFFC0;

@@ -140,8 +140,8 @@ public final class XMPScanner {
                     // UTF 32 BIG endian
                     cs = Charset.forName("UTF-32BE");
                 }
-                else if (bom[0] == (byte) 0xFF && bom[1] == (byte) 0xFE && bom[2] == 0x00 && bom[3] == 0x00) {
-                    // TODO: FixMe..
+                else if (bom[0] == 0x00 && bom[1] == 0x00 && bom[2] == 0x00 && bom[3] == (byte) 0xFF && stream.read() == 0xFE) {
+                    stream.skipBytes(2); // Alignment
                     // NOTE: 32-bit character set not supported by default
                     // UTF 32 little endian
                     cs = Charset.forName("UTF-32LE");
@@ -220,8 +220,6 @@ public final class XMPScanner {
         return -1l;
     }
 
-    //static public XMPDirectory parse(input);
-
     public static void main(final String[] pArgs) throws IOException {
         ImageInputStream stream = ImageIO.createImageInputStream(new File(pArgs[0]));
 
@@ -236,8 +234,5 @@ public final class XMPScanner {
         }
 
         stream.close();
-//        else {
-//            System.err.println("XMP not found");
-//        }
     }
 }

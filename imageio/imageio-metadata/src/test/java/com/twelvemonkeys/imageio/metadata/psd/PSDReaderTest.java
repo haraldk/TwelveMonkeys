@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.psd;
 
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import org.junit.Test;
 
-import java.util.Collection;
+import java.io.IOException;
+import java.io.InputStream;
+
+import static org.junit.Assert.*;
 
 /**
- * EXIFDirectory
+ * PhotoshopReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
+ * @version $Id: PhotoshopReaderTest.java,v 1.0 04.01.12 12:01 haraldk Exp$
  */
-final class EXIFDirectory extends AbstractCompoundDirectory {
-    EXIFDirectory(final Collection<? extends Directory> directories) {
-        super(directories);
+public class PSDReaderTest extends MetadataReaderAbstractTest {
+    @Override
+    protected InputStream getData() throws IOException {
+        return getResource("/psd/psd-jpeg-segment.bin").openStream();
+    }
+
+    @Override
+    protected PSDReader createReader() {
+        return new PSDReader();
+    }
+
+    @Test
+    public void testPhotoshopDirectoryContents() throws IOException {
+        Directory directory = createReader().read(getDataAsIIS());
+
+        assertEquals(23, directory.size());
+
+        assertNotNull(directory.getEntryById(0x0404));
+        assertNotNull(directory.getEntryById(0x0425));
+        assertNotNull(directory.getEntryById(0x03ea));
+        assertNotNull(directory.getEntryById(0x03e9));
+        assertNotNull(directory.getEntryById(0x03ed));
+        assertNotNull(directory.getEntryById(0x0426));
+
+        // TODO: More
     }
 }

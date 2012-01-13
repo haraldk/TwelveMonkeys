@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.iptc;
 
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import org.junit.Test;
 
-import java.util.Collection;
+import javax.imageio.ImageIO;
+import java.io.IOException;
+import java.io.InputStream;
+
+import static org.junit.Assert.*;
 
 /**
- * EXIFDirectory
+ * IPTCReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
+ * @version $Id: IPTCReaderTest.java,v 1.0 04.01.12 09:43 haraldk Exp$
  */
-final class EXIFDirectory extends AbstractCompoundDirectory {
-    EXIFDirectory(final Collection<? extends Directory> directories) {
-        super(directories);
+public class IPTCReaderTest extends MetadataReaderAbstractTest {
+    @Override
+    protected InputStream getData() throws IOException {
+        return getResource("/iptc/iptc-jpeg-segment.bin").openStream();
+    }
+
+    @Override
+    protected IPTCReader createReader() {
+        return new IPTCReader();
+    }
+
+    @Test
+    public void testDirectoryContent() throws IOException {
+        Directory directory = createReader().read(ImageIO.createImageInputStream(getData()));
+
+        assertEquals(4, directory.size());
+
+        assertThat(directory.getEntryById(IPTC.TAG_RECORD_VERSION), hasValue(2));  // Mandatory
+        assertThat(directory.getEntryById(IPTC.TAG_CAPTION), hasValue("Picture 71146"));
+        assertThat(directory.getEntryById(IPTC.TAG_DATE_CREATED), hasValue("20080701"));
+
+        // Weirdness: An undefined tag 2:56/0x0238 ??
+        // Looks like it should be 2:60/TAG_TIME_CREATED, but doesn't match the time in the corresponding XMP/EXIF tags
+        assertThat(directory.getEntryById(IPTC.APPLICATION_RECORD | 56), hasValue("155029+0100"));
     }
 }

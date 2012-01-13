@@ -39,7 +39,7 @@ public interface Entry {
     // "tag" identifier from spec
     Object getIdentifier();
 
-    // Human readable "tag" (field) name from sepc
+    // Human readable "tag" (field) name from spec
     String getFieldName();
 
     // The internal "tag" value as stored in the stream, may be a Directory

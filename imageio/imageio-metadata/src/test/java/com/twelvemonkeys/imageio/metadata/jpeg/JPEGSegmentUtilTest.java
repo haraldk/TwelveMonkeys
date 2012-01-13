@@ -58,8 +58,6 @@ public class JPEGSegmentUtilTest {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
     }
 
-    // TODO: Test the JPEGSegment class?!
-
     protected ImageInputStream getData(final String name) throws IOException {
         return ImageIO.createImageInputStream(getClass().getResource(name));
     }
@@ -97,7 +95,7 @@ public class JPEGSegmentUtilTest {
 
     @Test
     public void testReadAPP13Photoshop() throws IOException {
-        List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/ts_open_300dpi.jpg"), 0xFFED, "Photoshop 3.0");
+        List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/ts_open_300dpi.jpg"), JPEG.APP13, "Photoshop 3.0");
 
         assertEquals(1, segments.size());
         JPEGSegment segment = segments.get(0);

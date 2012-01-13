@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,17 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
-
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
-
-import java.util.Collection;
+package com.twelvemonkeys.imageio.metadata;
 
 /**
- * EXIFDirectory
+ * CompoundDirectory
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
+ * @version $Id: CompoundDirectory.java,v 1.0 02.01.12 12:37 haraldk Exp$
  */
-final class EXIFDirectory extends AbstractCompoundDirectory {
-    EXIFDirectory(final Collection<? extends Directory> directories) {
-        super(directories);
-    }
+public interface CompoundDirectory extends Directory {
+    Directory getDirectory(int index);
+
+    int directoryCount();
 }

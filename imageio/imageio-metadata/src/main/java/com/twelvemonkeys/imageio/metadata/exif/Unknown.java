@@ -6,6 +6,7 @@ package com.twelvemonkeys.imageio.metadata.exif;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: Unknown.java,v 1.0 Oct 8, 2010 3:38:45 PM haraldk Exp$
+ * @see <a href="http://en.wikipedia.org/wiki/There_are_known_knowns">There are known knowns</a>
  */
 final class Unknown {
     private final short type;
@@ -24,8 +25,8 @@ final class Unknown {
     }
 
     @Override
-    public boolean equals(Object other) {
-        if (other != null && other.getClass() == getClass()){
+    public boolean equals(final Object other) {
+        if (other != null && other.getClass() == getClass()) {
             Unknown unknown = (Unknown) other;
             return pos == unknown.pos && type == unknown.type && count == unknown.count;
         }

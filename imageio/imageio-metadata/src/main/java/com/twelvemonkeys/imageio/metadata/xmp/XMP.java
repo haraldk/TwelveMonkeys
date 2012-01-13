@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.metadata.xmp;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * XMP
@@ -59,6 +60,10 @@ public interface XMP {
 
     String NS_XAP_MM = "http://ns.adobe.com/xap/1.0/mm/";
 
+    String NS_X = "adobe:ns:meta/";
+
     /** Contains the mapping from URI to default namespace prefix. */
-    Map<String, String> DEFAULT_NS_MAPPING = Collections.unmodifiableMap(new XMPNamespaceMapping());
+    Map<String, String> DEFAULT_NS_MAPPING = Collections.unmodifiableMap(new XMPNamespaceMapping(true));
+
+    Set<String> ELEMENTS = Collections.unmodifiableSet(new XMPNamespaceMapping(false).keySet());
 }

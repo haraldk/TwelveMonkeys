@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,22 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.psd;
 
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 
 import java.util.Collection;
 
 /**
- * EXIFDirectory
+ * PhotoshopDirectory
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
+ * @version $Id: PhotoshopDirectory.java,v 1.0 04.01.12 11:58 haraldk Exp$
  */
-final class EXIFDirectory extends AbstractCompoundDirectory {
-    EXIFDirectory(final Collection<? extends Directory> directories) {
-        super(directories);
+final class PSDDirectory extends AbstractDirectory {
+    public PSDDirectory(final Collection<? extends Entry> entries) {
+        super(entries);
     }
 }
