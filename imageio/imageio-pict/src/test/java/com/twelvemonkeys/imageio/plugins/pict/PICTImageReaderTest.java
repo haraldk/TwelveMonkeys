@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: ICOImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class PICTImageReaderTestCase extends ImageReaderAbstractTestCase<PICTImageReader> {
+public class PICTImageReaderTest extends ImageReaderAbstractTestCase<PICTImageReader> {
 
     static ImageReaderSpi sProvider = new PICTImageReaderSpi();
 

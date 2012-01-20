@@ -112,7 +112,7 @@ public class PICTImageWriter extends ImageWriterBase {
         super(pProvider);
     }
 
-    private void writePICTHeader(RenderedImage pImage) throws IOException {
+    private void writePICTHeader(final RenderedImage pImage) throws IOException {
         // TODO: Make 512 byte header optional
         // Write empty 512-byte header
         byte[] buf = new byte[PICT.PICT_NULL_HEADER_SIZE];
@@ -337,6 +337,8 @@ public class PICTImageWriter extends ImageWriterBase {
 
                 scanWidthLeft = w;
             }
+            
+            processImageProgress((100f * i) / h);
         }
     }
 
@@ -350,10 +352,11 @@ public class PICTImageWriter extends ImageWriterBase {
         if ((length & 1) > 0) {
             imageOutput.writeByte(0);
         }
+
         imageOutput.writeShort(PICT.OP_END_OF_PICTURE);
     }
 
-    public void write(IIOMetadata pStreamMetadata, IIOImage pImage, ImageWriteParam pParam) throws IOException {
+    public void write(final IIOMetadata pStreamMetadata, final IIOImage pImage, final ImageWriteParam pParam) throws IOException {
         assertOutput();
 
         if (pImage.hasRaster()) {
@@ -369,14 +372,18 @@ public class PICTImageWriter extends ImageWriterBase {
         Raster raster = image instanceof BufferedImage ? ((BufferedImage) image).getRaster() : image.getData();
         DataBuffer buf = raster.getDataBuffer();
         if (buf instanceof DataBufferByte) {
-            writePICTData(0, 0, image.getWidth(), image.getHeight(),
+            writePICTData(
+                    0, 0, image.getWidth(), image.getHeight(),
                     image.getColorModel(), ((DataBufferByte) buf).getData(),
-                    0, image.getWidth());
+                    0, image.getWidth()
+            );
         }
         else if (buf instanceof DataBufferInt) {
-            writePICTData(0, 0, image.getWidth(), image.getHeight(),
+            writePICTData(
+                    0, 0, image.getWidth(), image.getHeight(),
                     image.getColorModel(), ((DataBufferInt) buf).getData(),
-                    0, image.getWidth());
+                    0, image.getWidth()
+            );
         }
         else {
             throw new IIOException("DataBuffer type " + buf.getDataType() + " not supported");

@@ -42,7 +42,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: IFFImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class IFFImageReaderTestCase extends ImageReaderAbstractTestCase<IFFImageReader> {
+public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageReader> {
     // TODO: Need test for IFF PBM
     protected List<TestData> getTestData() {
         return Arrays.asList(

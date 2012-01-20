@@ -35,6 +35,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteProgressListener;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -76,7 +77,8 @@ public abstract class ImageWriterAbstractTestCase {
     public void testWrite() throws IOException {
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        writer.setOutput(ImageIO.createImageOutputStream(buffer));
+        ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
+        writer.setOutput(stream);
 
         try {
             writer.write(getTestData());
@@ -84,24 +86,8 @@ public abstract class ImageWriterAbstractTestCase {
         catch (IOException e) {
             fail(e.getMessage());
         }
-
-        assertTrue("No image data written", buffer.size() > 0);
-    }
-
-    @Test
-    public void testWrite2() {
-        // Note: There's a difference between new ImageOutputStreamImpl and
-        // ImageIO.createImageOutputStream... Make sure writers handle both
-        // cases
-        ImageWriter writer = createImageWriter();
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-        try {
-            writer.setOutput(ImageIO.createImageOutputStream(buffer));
-            writer.write(getTestData());
-        }
-        catch (IOException e) {
-            fail(e.getMessage());
+        finally {
+            stream.close(); // Force data to be written
         }
 
         assertTrue("No image data written", buffer.size() > 0);
@@ -125,14 +111,12 @@ public abstract class ImageWriterAbstractTestCase {
         assertTrue("Image data written", buffer.size() == 0);
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void testWriteNoOutput() {
         ImageWriter writer = createImageWriter();
 
         try {
             writer.write(getTestData());
-        }
-        catch (IllegalStateException ignore) {
         }
         catch (IOException e) {
             fail(e.getMessage());
