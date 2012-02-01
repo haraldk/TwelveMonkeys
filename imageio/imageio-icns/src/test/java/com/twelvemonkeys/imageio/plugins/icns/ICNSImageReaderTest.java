@@ -60,16 +60,16 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
                         new Dimension(16, 16),                          // 24 bit + 8 bit mask
                         new Dimension(32, 32),                          // 24 bit + 8 bit mask
                         new Dimension(48, 48),                          // 24 bit + 8 bit mask
-                        new Dimension(128, 128)                         // 24 bit + 8 bit mask
-,                       new Dimension(256, 256),                        // JPEG 2000 ic08
+                        new Dimension(128, 128),                         // 24 bit + 8 bit mask
+                       new Dimension(256, 256),                        // JPEG 2000 ic08
                         new Dimension(512, 512)                         // JPEG 2000 ic09
                 ),
                 new TestData(
                         getClassLoaderResource("/icns/7zIcon.icns"),    // Contains the icnV resource, that isn't an icon
                         new Dimension(16, 16),                          // 24 bit + 8 bit mask
                         new Dimension(32, 32),                          // 24 bit + 8 bit mask
-                        new Dimension(128, 128)                         // 24 bit + 8 bit mask
-,                       new Dimension(256, 256),                        // JPEG 2000 ic08
+                        new Dimension(128, 128),                         // 24 bit + 8 bit mask
+                       new Dimension(256, 256),                        // JPEG 2000 ic08
                         new Dimension(512, 512)                         // JPEG 2000 ic09
                 ),
                 new TestData(

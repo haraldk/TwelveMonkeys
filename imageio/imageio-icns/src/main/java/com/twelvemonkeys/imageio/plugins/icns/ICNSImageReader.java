@@ -419,6 +419,7 @@ public final class ICNSImageReader extends ImageReaderBase {
     }
 
     private BufferedImage readForeignFormat(int imageIndex, final ImageReadParam param, final IconResource resource) throws IOException {
+        // TODO: Optimize by caching readers that work?
         ImageInputStream stream = ImageIO.createImageInputStream(IIOUtil.createStreamAdapter(imageInput, resource.length));
 
         try {
@@ -588,9 +589,11 @@ public final class ICNSImageReader extends ImageReaderBase {
                 int numImages = requested != -1 ? requested + 1 : reader.getNumImages(true);
                 for (int i = start; i < numImages; i++) {
                     try {
+                        long begin = System.currentTimeMillis();
                         BufferedImage image = reader.read(i);
                         imagesRead++;
 //                        System.err.println("image: " + image);
+                        System.err.println(System.currentTimeMillis() - begin + "ms");
                         showIt(image, String.format("%s - %d", input.getName(), i));
                     }
                     catch (IOException e) {
