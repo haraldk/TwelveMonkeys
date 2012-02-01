@@ -66,8 +66,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
                 new TestData(getClassLoaderResource("/jpeg/gray-sample.jpg"), new Dimension(386, 396)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(160, 227)),
-                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804))
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804)),
+                new TestData(getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"), new Dimension(640, 480))
         );
+
+        // More test data in specific tests below
     }
 
     @Override
@@ -111,18 +114,12 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         return Arrays.asList("image/jpeg");
     }
 
-    /*
-    @Ignore("TODO: This method currently fails, fix it")
-    @Override
-    public void testSetDestinationType() throws IOException {
-        // TODO: This method currently fails, fix it
-        super.testSetDestinationType();
-    }
-*/
     // TODO: Test that subsampling is actually reading something
 
+    // Special cases found in the wild below
+
     @Test
-    public void testICCProfileClassOutputColors() throws IOException {
+    public void testICCProfileCMYKClassOutputColors() throws IOException {
         // Make sure ICC profile with class output isn't converted to too bright values
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/cmyk-sample-custom-icc-bright.jpg")));
@@ -142,5 +139,182 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         for (int i = 0; i < expectedData.length; i++) {
             assertEquals(expectedData[i], data[i], 5);
         }
+    }
+
+    @Test
+    public void testICCDuplicateSequence() throws IOException {
+        // Variation of the above, file contains multiple ICC chunks, with all counts and sequence numbers == 1
+
+        // TODO: As the IIOException is thrown even from the readRaster method (ends up in readImageHeader native
+        // method), we could probably intercept at the byte/stream level, and insert correct count/sequence numbers,
+        // as seen by the native code.
+        // Should be doable, but will make reading slower. We want to avoid that in the common case.
+
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-internal-kodak-srgb-jfif.jpg")));
+
+        assertEquals(345, reader.getWidth(0));
+        assertEquals(540, reader.getHeight(0));
+
+        BufferedImage image = reader.read(0);
+
+        assertNotNull(image);
+        assertEquals(345, image.getWidth());
+        assertEquals(540, image.getHeight());
+    }
+
+    @Test
+    public void testICCDuplicateSequenceZeroBased() throws IOException {
+        // File contains multiple ICC chunks, with all counts and sequence numbers == 0
+
+        // TODO: As the IIOException is thrown even from the readRaster method (ends up in readImageHeader native
+        // method), we could probably intercept at the byte/stream level, and insert correct count/sequence numbers,
+        // as seen by the native code.
+        // Should be doable, but will make reading slower. We want to avoid that in the common case.
+
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-xerox-dc250-heavyweight-1-progressive-jfif.jpg")));
+
+        assertEquals(3874, reader.getWidth(0));
+        assertEquals(5480, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, 3874, 16)); // Save some memory
+        BufferedImage image = reader.read(0, param);
+
+
+        assertNotNull(image);
+        assertEquals(3874, image.getWidth());
+        assertEquals(16, image.getHeight());
+    }
+
+    @Test
+    public void testCCOIllegalArgument() throws IOException {
+        // File contains CMYK ICC profile ("Coated FOGRA27 (ISO 12647-2:2004)"), but image data is 3 channel YCC/RGB
+        // JFIF 1.1 with unknown origin.
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/cco-illegalargument-rgb-coated-fogra27.jpg")));
+
+        assertEquals(281, reader.getWidth(0));
+        assertEquals(449, reader.getHeight(0));
+
+        BufferedImage image = reader.read(0);
+
+        assertNotNull(image);
+        assertEquals(281, image.getWidth());
+        assertEquals(449, image.getHeight());
+
+        // TODO: Need to test colors!
+    }
+
+    @Test
+    public void testNoImageTypesRGBWithCMYKProfile() throws IOException {
+        // File contains CMYK ICC profile ("U.S. Web Coated (SWOP) v2") AND Adobe App14 specifying YCCK conversion (!),
+        // but image data is plain 3 channel YCC/RGB.
+        // EXIF/TIFF metadata says Software: "Microsoft Windows Photo Gallery 6.0.6001.18000"...
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/no-image-types-rgb-us-web-coated-v2-ms-photogallery-exif.jpg")));
+
+        assertEquals(1743, reader.getWidth(0));
+        assertEquals(2551, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, 1743, 16)); // Save some memory
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(1743, image.getWidth());
+        assertEquals(16, image.getHeight());
+
+        // TODO: Need to test colors!
+        
+        assertTrue(reader.hasThumbnails(0)); // Should not blow up!
+    }
+
+    @Test
+    public void testWarningEmbeddedColorProfileInvalidIgnored() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/warning-embedded-color-profile-invalid-ignored-cmyk.jpg")));
+
+        assertEquals(183, reader.getWidth(0));
+        assertEquals(283, reader.getHeight(0));
+
+        BufferedImage image = reader.read(0);
+
+        assertNotNull(image);
+        assertEquals(183, image.getWidth());
+        assertEquals(283, image.getHeight());
+
+        // TODO: Need to test colors!
+    }
+
+    @Test
+    public void testHasThumbnailNoIFD1() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/srgb-exif-no-ifd1.jpg")));
+
+        assertEquals(150, reader.getWidth(0));
+        assertEquals(207, reader.getHeight(0));
+
+        BufferedImage image = reader.read(0);
+
+        assertNotNull(image);
+        assertEquals(150, image.getWidth());
+        assertEquals(207, image.getHeight());
+
+        assertFalse(reader.hasThumbnails(0)); // Should just not blow up, even if the EXIF IFD1 is missing
+    }
+
+    // TODO: Test JFIF raw thumbnail
+    // TODO: Test JFXX indexed thumbnail
+    // TODO: Test JFXX RGB thumbnail
+
+    @Test
+    public void testJFXXJPEGThumbnail() throws IOException {
+        // JFIF with JFXX JPEG encoded thumbnail
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg")));
+        
+        assertTrue(reader.hasThumbnails(0));
+        assertEquals(1, reader.getNumThumbnails(0));
+        assertEquals(80, reader.getThumbnailWidth(0, 0));
+        assertEquals(60, reader.getThumbnailHeight(0, 0));
+
+        BufferedImage thumbnail = reader.readThumbnail(0, 0);
+        assertNotNull(thumbnail);
+        assertEquals(80, thumbnail.getWidth());
+        assertEquals(60, thumbnail.getHeight());
+    }
+
+    @Test
+    public void testEXIFJPEGThumbnail() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg")));
+
+        assertTrue(reader.hasThumbnails(0));
+        assertEquals(1, reader.getNumThumbnails(0));
+        assertEquals(114, reader.getThumbnailWidth(0, 0));
+        assertEquals(160, reader.getThumbnailHeight(0, 0));
+
+        BufferedImage thumbnail = reader.readThumbnail(0, 0);
+        assertNotNull(thumbnail);
+        assertEquals(114, thumbnail.getWidth());
+        assertEquals(160, thumbnail.getHeight());
+    }
+
+    @Test
+    public void testEXIFRAWThumbnail() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-rgb-thumbnail-sony-d700.jpg")));
+
+        assertTrue(reader.hasThumbnails(0));
+        assertEquals(1, reader.getNumThumbnails(0));
+        assertEquals(80, reader.getThumbnailWidth(0, 0));
+        assertEquals(60, reader.getThumbnailHeight(0, 0));
+
+        BufferedImage thumbnail = reader.readThumbnail(0, 0);
+        assertNotNull(thumbnail);
+        assertEquals(80, thumbnail.getWidth());
+        assertEquals(60, thumbnail.getHeight());
     }
 }
