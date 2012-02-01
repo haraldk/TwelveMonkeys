@@ -63,7 +63,7 @@ import java.util.List;
  * @see <a href="http://en.wikipedia.org/wiki/ICO_(icon_image_file_format)">ICO file format (Wikipedia)</a>
  */
 // SEE http://en.wikipedia.org/wiki/ICO_(icon_image_file_format)
-// TODO: Decide wether DirectoryEntry or DIBHeader should be primary source for color count/bit count
+// TODO: Decide whether DirectoryEntry or DIBHeader should be primary source for color count/bit count
 // TODO: Support loading icons from DLLs, see
 // <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dnwui/html/msdn_icons.asp">MSDN</a>
 // Known issue: 256x256 PNG encoded icons does not have IndexColorModel even if stated in DirectoryEntry (seem impossible as the PNGs are all true color)

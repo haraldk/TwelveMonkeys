@@ -33,6 +33,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 import com.twelvemonkeys.lang.SystemUtil;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
@@ -139,5 +140,12 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
         else {
             System.err.println("WARNING: Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
         }
+    }
+
+    @Test
+    @Ignore("Known issue")
+    @Override
+    public void testNotBadCaching() throws IOException {
+        super.testNotBadCaching();
     }
 }

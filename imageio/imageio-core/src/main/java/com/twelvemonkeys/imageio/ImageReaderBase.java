@@ -354,6 +354,10 @@ public abstract class ImageReaderBase extends ImageReader {
             Thread.currentThread().interrupt();
         }
         catch (InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
+
             throw new RuntimeException(e);
         }
     }

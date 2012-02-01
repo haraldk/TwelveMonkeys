@@ -1441,6 +1441,72 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         }
     }
 
+    @Test
+    public void testNotBadCaching() throws IOException {
+        T reader = createReader();
+        TestData data = getTestData().get(0);
+        reader.setInput(data.getInputStream());
+        
+        BufferedImage one = reader.read(0);
+        BufferedImage two = reader.read(0);
+       
+        assertNotSame("Multiple reads return same (mutable) image", one, two);
+
+        Graphics2D g = one.createGraphics();
+        try {
+            g.setColor(Color.WHITE);
+            g.setXORMode(Color.BLACK);
+            g.fillRect(0, 0, one.getWidth(), one.getHeight());
+        }
+        finally {
+            g.dispose();
+        }
+
+        assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
+    }
+
+    @Test
+    public void testNotBadCachingThumbnails() throws IOException {
+        T reader = createReader();
+        
+        if (reader.readerSupportsThumbnails()) {
+            for (TestData data : getTestData()) {
+                reader.setInput(data.getInputStream());
+
+                int images = reader.getNumImages(true);
+                for (int i = 0; i < images; i++) {
+                    int thumbnails = reader.getNumThumbnails(0);
+                    
+                    for (int j = 0; j < thumbnails; j++) {
+                        BufferedImage one = reader.readThumbnail(i, j);
+                        BufferedImage two = reader.readThumbnail(i, j);
+
+                        assertNotSame("Multiple reads return same (mutable) image", one, two);
+
+                        Graphics2D g = one.createGraphics();
+                        try {
+                            g.setColor(Color.WHITE);
+                            g.setXORMode(Color.BLACK);
+                            g.fillRect(0, 0, one.getWidth(), one.getHeight());
+                        }
+                        finally {
+                            g.dispose();
+                        }
+
+                        assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
+                    }
+                    
+                    if (thumbnails > 0) {
+                        // We've tested thumbnails, let's get out of here
+                        return;
+                    }
+                }
+            }
+
+            fail("No thumbnails tested for reader that supports thumbnails.");
+        }
+    }
+    
     @Ignore("TODO: Implement")
     @Test
     public void testSetDestinationBands() throws IOException {
