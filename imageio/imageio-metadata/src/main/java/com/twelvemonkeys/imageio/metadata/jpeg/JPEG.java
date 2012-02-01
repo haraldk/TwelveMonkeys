@@ -36,16 +36,32 @@ package com.twelvemonkeys.imageio.metadata.jpeg;
  * @version $Id: JPEG.java,v 1.0 11.02.11 15.51 haraldk Exp$
  */
 public interface JPEG {
+    /** Start of Image segment marker. */
     int SOI = 0xFFD8;
+    /** End of Image segment marker. */
     int EOI = 0xFFD9;
+    /** Start of Stream segment marker. */
     int SOS = 0xFFDA;
 
+    // App segment markers (APPn)
     int APP0 = 0xFFE0;
     int APP1 = 0xFFE1;
     int APP2 = 0xFFE2;
+    int APP3 = 0xFFE3;
+    int APP4 = 0xFFE4;
+    int APP5 = 0xFFE5;
+    int APP6 = 0xFFE6;
+    int APP7 = 0xFFE7;
+    int APP8 = 0xFFE8;
+    int APP9 = 0xFFE9;
+    int APP10 = 0xFFEA;
+    int APP11 = 0xFFEB;
+    int APP12 = 0xFFEC;
     int APP13 = 0xFFED;
     int APP14 = 0xFFEE;
+    int APP15 = 0xFFEF;
 
+    // Start of Frame segment markers (SOFn)
     int SOF0 = 0xFFC0;
     int SOF1 = 0xFFC1;
     int SOF2 = 0xFFC2;
@@ -59,4 +75,15 @@ public interface JPEG {
     int SOF13 = 0xFFCD;
     int SOF14 = 0xFFCE;
     int SOF15 = 0xFFCF;
+
+    // TODO: Known/Important APPn markers
+    // "JFIF" APP0
+    // "JFXX" APP0
+    // "Exif" APP1
+    // "ICC_PROFILE" APP2
+    // "Adobe" APP14
+
+    // Possibly
+    // "http://ns.adobe.com/xap/1.0/" (XMP)
+    // "Photoshop 3.0" (Contains IPTC)
 }

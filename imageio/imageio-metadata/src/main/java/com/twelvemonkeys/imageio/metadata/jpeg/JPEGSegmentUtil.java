@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
+import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMP;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 
@@ -37,8 +38,6 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -253,30 +252,11 @@ public final class JPEGSegmentUtil {
                 System.err.println("XMP: " + xmp);
             }
             else if ("Photoshop 3.0".equals(segment.identifier())) {
-                // TODO: It's probably a good idea to move some of the Photoshop ImageResource parsing code
-                //       to the metadata sub project, as it may be contained in other formats (such as JFIF).
                 // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
                 //       IPTC metadata. Probably duplicated in the XMP though...
-                try {
-                    Class cl = Class.forName("com.twelvemonkeys.imageio.plugins.psd.PSDImageResource");
-                    Method method = cl.getMethod("read", ImageInputStream.class);
-                    method.setAccessible(true);
-                    ImageInputStream stream = ImageIO.createImageInputStream(segment.data());
-
-                    while (true) {
-                        try {
-                            Object photoShop = method.invoke(null, stream);
-                            System.err.println("PhotoShop: " + photoShop);
-                        }
-                        catch (InvocationTargetException e) {
-                            if (e.getTargetException() instanceof EOFException) {
-                                break;
-                            }
-                        }
-                    }
-                }
-                catch (Exception ignore) {
-                }
+                ImageInputStream stream = ImageIO.createImageInputStream(segment.data());
+                Directory psd = new PSDReader().read(stream);
+                System.err.println("PSD: " + psd);
             }
             else if ("ICC_PROFILE".equals(segment.identifier())) {
                 // Skip

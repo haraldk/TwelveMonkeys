@@ -65,14 +65,14 @@ public final class PSDReader extends MetadataReader {
             try {
                 int type = input.readInt();
                 
-                if (type != PSDResource.RESOURCE_TYPE) {
+                if (type != PSD.RESOURCE_TYPE) {
                     throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%08x'", type));
                 }
 
                 short id = input.readShort();
 
                 PSDResource resource = new PSDResource(id, input);
-                entries.add(new PSDEntry(id, resource.data()));
+                entries.add(new PSDEntry(id, resource.name(), resource.data()));
 
             }
             catch (EOFException e) {
@@ -84,9 +84,6 @@ public final class PSDReader extends MetadataReader {
     }
 
     protected static class PSDResource {
-        static final int RES_IPTC_NAA = 0x0404;
-        static final int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
-
         static String readPascalString(final DataInput pInput) throws IOException {
             int length = pInput.readUnsignedByte();
 
@@ -122,7 +119,7 @@ public final class PSDReader extends MetadataReader {
 
             readData(new SubImageInputStream(input, size));
 
-            // NOTE: This should never happen, however it's safer to keep it here to
+            // NOTE: This should never happen, however it's safer to keep it here for future compatibility
             if (input.getStreamPosition() != startPos + size) {
                 input.seek(startPos + size);
             }
@@ -141,6 +138,10 @@ public final class PSDReader extends MetadataReader {
 
         public final byte[] data() {
             return data;
+        }
+
+        public String name() {
+            return name;
         }
 
         @Override

@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.util.CollectionUtil;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -83,41 +84,13 @@ public abstract class AbstractEntry implements Entry {
     public String getValueAsString() {
         if (valueCount() > 1) {
             if (valueCount() < 16) {
-                Class<?> type = value.getClass().getComponentType();
-
-                if (type.isPrimitive()) {
-                    if (type.equals(boolean.class)) {
-                        return Arrays.toString((boolean[]) value);
-                    }
-                    else if (type.equals(byte.class)) {
-                        return Arrays.toString((byte[]) value);
-                    }
-                    else if (type.equals(char.class)) {
-                        return new String((char[]) value);
-                    }
-                    else if (type.equals(double.class)) {
-                        return Arrays.toString((double[]) value);
-                    }
-                    else if (type.equals(float.class)) {
-                        return Arrays.toString((float[]) value);
-                    }
-                    else if (type.equals(int.class)) {
-                        return Arrays.toString((int[]) value);
-                    }
-                    else if (type.equals(long.class)) {
-                        return Arrays.toString((long[]) value);
-                    }
-                    else if (type.equals(short.class)) {
-                        return Arrays.toString((short[]) value);
-                    }
-                    // Fall through should never happen
-                }
-                else {
-                    return Arrays.toString((Object[]) value);
-                }
+                return arrayToString(value);
             }
-            
-            return String.valueOf(value) + " ("  + valueCount() + ")";
+            else {
+                String first = arrayToString(CollectionUtil.subArray(value, 0, 4));
+                String last = arrayToString(CollectionUtil.subArray(value, valueCount() - 4, 4));
+                return String.format("%s ... %s (%d)", first.substring(0, first.length() - 1), last.substring(1), valueCount());
+            }
         }
 
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 1) {
@@ -125,6 +98,44 @@ public abstract class AbstractEntry implements Entry {
         }
 
         return String.valueOf(value);
+    }
+
+    private static String arrayToString(final Object value) {
+        Class<?> type = value.getClass().getComponentType();
+
+        if (type.isPrimitive()) {
+            if (type.equals(boolean.class)) {
+                return Arrays.toString((boolean[]) value);
+            }
+            else if (type.equals(byte.class)) {
+                return Arrays.toString((byte[]) value);
+            }
+            else if (type.equals(char.class)) {
+                return new String((char[]) value);
+            }
+            else if (type.equals(double.class)) {
+                return Arrays.toString((double[]) value);
+            }
+            else if (type.equals(float.class)) {
+                return Arrays.toString((float[]) value);
+            }
+            else if (type.equals(int.class)) {
+                return Arrays.toString((int[]) value);
+            }
+            else if (type.equals(long.class)) {
+                return Arrays.toString((long[]) value);
+            }
+            else if (type.equals(short.class)) {
+                return Arrays.toString((short[]) value);
+            }
+            else {
+                // Fall through should never happen
+                throw new AssertionError("Unknown type: " + type);
+            }
+        }
+        else {
+            return Arrays.toString((Object[]) value);
+        }
     }
 
     public String getTypeName() {

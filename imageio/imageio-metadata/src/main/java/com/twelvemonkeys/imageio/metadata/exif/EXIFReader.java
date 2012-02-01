@@ -213,6 +213,7 @@ public final class EXIFReader extends MetadataReader {
         short type = pInput.readShort();
         int count = pInput.readInt(); // Number of values
 
+        // TODO: Read up what the spec says about value-count == 0, it makes no sense.
         if (count < 0) {
             throw new IIOException(String.format("Illegal count %d for tag %s type %s @%08x", count, tagId, type, pInput.getStreamPosition()));
         }
@@ -242,7 +243,7 @@ public final class EXIFReader extends MetadataReader {
             }
         }
 
-        // TODO: For BigTiff allow size <= 8
+        // TODO: For BigTiff allow size > 4 && <= 8
         if (valueLength > 0 && valueLength <= 4) {
             value = readValueInLine(pInput, type, count);
             pInput.skipBytes(4 - valueLength);

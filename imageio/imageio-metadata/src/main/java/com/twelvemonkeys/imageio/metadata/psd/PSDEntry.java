@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio.metadata.psd;
 
 import com.twelvemonkeys.imageio.metadata.AbstractEntry;
+import com.twelvemonkeys.lang.StringUtil;
 
 /**
  * PhotoshopEntry
@@ -38,12 +39,20 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
  * @version $Id: PhotoshopEntry.java,v 1.0 04.01.12 11:58 haraldk Exp$
  */
 class PSDEntry extends AbstractEntry {
-    public PSDEntry(final int resourceId, final Object value) {
+    private final String name;
+
+    public PSDEntry(final int resourceId, String name, final Object value) {
         super(resourceId, value);
+        this.name = StringUtil.isEmpty(name) ? null : name;
     }
 
     @Override
     protected String getNativeIdentifier() {
         return String.format("0x%04x", (Integer) getIdentifier());
+    }
+
+    @Override
+    public String getFieldName() {
+        return name;
     }
 }

@@ -72,6 +72,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "ImageWidth";
             case TIFF.TAG_IMAGE_HEIGHT:
                 return "ImageHeight";
+            case TIFF.TAG_BITS_PER_SAMPLE:
+                return "BitsPerSample";
             case TIFF.TAG_COMPRESSION:
                 return "Compression";
             case TIFF.TAG_PHOTOMETRIC_INTERPRETATION:

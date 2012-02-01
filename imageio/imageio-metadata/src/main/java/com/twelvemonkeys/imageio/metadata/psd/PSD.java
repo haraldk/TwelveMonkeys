@@ -28,19 +28,15 @@
 
 package com.twelvemonkeys.imageio.metadata.psd;
 
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
-
 /**
- * PhotoshopEntryTest
+ * PSD
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PhotoshopEntryTest.java,v 1.0 04.01.12 12:00 haraldk Exp$
+ * @version $Id: PSD.java,v 1.0 24.01.12 16:51 haraldk Exp$
  */
-public class PSDEntryTest extends EntryAbstractTest {
-    @Override
-    protected Entry createEntry(final Object value) {
-        return new PSDEntry(0x404, "", value);
-    }
+interface PSD {
+    static final int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
+
+    static final int RES_IPTC_NAA = 0x0404;
 }
