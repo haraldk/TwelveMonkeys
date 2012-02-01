@@ -59,7 +59,7 @@ import java.util.*;
  * </small>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/service/ServiceRegistry.java#2 $
+ * @version $Id: com/twelvemonkeys/util/service/ServiceRegistry.java#2 $
  * @see RegisterableService
  * @see <a href="http://java.sun.com/j2se/1.3/docs/guide/jar/jar.html#Service%20Provider">JAR File Specification</a>
  */
@@ -110,7 +110,7 @@ public class ServiceRegistry {
      * Registers all provider implementations for this {@code ServiceRegistry}
      * found in the application classpath.
      *
-     * @throws ServiceConfigurationError if an error occured during registration
+     * @throws ServiceConfigurationError if an error occurred during registration
      */
     public void registerApplicationClasspathSPIs() {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -140,7 +140,7 @@ public class ServiceRegistry {
      *
      * @param pResource the resource to load SPIs from
      * @param pCategory the category class
-     * @param pLoader   the classloader to use
+     * @param pLoader   the class loader to use
      */
     <T> void registerSPIs(final URL pResource, final Class<T> pCategory, final ClassLoader pLoader) {
         Properties classNames = new Properties();
@@ -242,7 +242,7 @@ public class ServiceRegistry {
      * The iterator supports removal.
      * <p/>
      * <small>
-     * NOTE: Removing a category from the iterator, deregisters
+     * NOTE: Removing a category from the iterator, de-registers
      * {@code pProvider} from the current category (as returned by the last
      * invocation of {@code next()}), it does <em>not</em> remove the category
      * itself from the registry.
@@ -257,7 +257,7 @@ public class ServiceRegistry {
         return new FilterIterator<Class<?>>(categories(),
                                   new FilterIterator.Filter<Class<?>>() {
                                       public boolean accept(Class<?> pElement) {
-                                          return getRegistry(pElement).contatins(pProvider);
+                                          return getRegistry(pElement).contains(pProvider);
                                       }
                                   }) {
             Class<?> current;
@@ -297,7 +297,7 @@ public class ServiceRegistry {
      *
      * @param pProvider the provider instance
      * @return {@code true} if {@code pProvider} is now registered in
-     *         one or more categories
+     *         one or more categories it was not registered in before.
      * @see #compatibleCategories(Object)
      */
     public boolean register(final Object pProvider) {
@@ -329,12 +329,12 @@ public class ServiceRegistry {
     }
 
     /**
-     * Deregisters the given provider from all categories it's currently
+     * De-registers the given provider from all categories it's currently
      * registered in.
      *
      * @param pProvider the provider instance
      * @return {@code true} if {@code pProvider} was previously registered in
-     *         any category
+     *         any category and is now de-registered.
      * @see #containingCategories(Object)
      */
     public boolean deregister(final Object pProvider) {
@@ -384,9 +384,8 @@ public class ServiceRegistry {
         public boolean register(final T pProvider) {
             checkCategory(pProvider);
 
-            // NOTE: We only register the new instance, if we don't allready
-            // have an instance of pProvider's class.
-            if (!contatins(pProvider)) {
+            // NOTE: We only register the new instance, if we don't already have an instance of pProvider's class.
+            if (!contains(pProvider)) {
                 providers.put(pProvider.getClass(), pProvider);
                 processRegistration(pProvider);
                 return true;
@@ -424,8 +423,8 @@ public class ServiceRegistry {
             }
         }
 
-        public boolean contatins(final Object pProvider) {
-            return providers.containsKey(pProvider.getClass());
+        public boolean contains(final Object pProvider) {
+            return providers.containsKey(pProvider != null ? pProvider.getClass() : null);
         }
 
         public Iterator<T> providers() {
