@@ -598,7 +598,7 @@ public class JPEGImageReader extends ImageReaderBase {
                                 }
                                 break;
                             default:
-                                throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbail: " + interpretation);
+                                throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbnail: " + interpretation);
                         }
 
                         thumbnails.add(readRawThumbnail(thumbData, thumbData.length, 0, w, h));
@@ -835,7 +835,6 @@ public class JPEGImageReader extends ImageReaderBase {
         delegate.abort();
     }
 
-    // TODO: Fix thumbnails based on JFIF and EXIF thumbnails
     @Override
     public boolean readerSupportsThumbnails() {
         return true; // We support EXIF thumbnails, even if no JFIF thumbnail is present
