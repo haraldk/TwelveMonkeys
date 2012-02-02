@@ -213,12 +213,11 @@ public final class EXIFReader extends MetadataReader {
         short type = pInput.readShort();
         int count = pInput.readInt(); // Number of values
 
-        // TODO: Read up what the spec says about value-count == 0, it makes no sense.
+        // It's probably a spec violation to have count 0, but we'll be lenient about it
         if (count < 0) {
             throw new IIOException(String.format("Illegal count %d for tag %s type %s @%08x", count, tagId, type, pInput.getStreamPosition()));
         }
 
-        Object value;
         int valueLength = getValueLength(type, count);
 
         if (type < 0 || type > 13) {
@@ -243,7 +242,8 @@ public final class EXIFReader extends MetadataReader {
             }
         }
 
-        // TODO: For BigTiff allow size > 4 && <= 8
+        Object value;
+        // TODO: For BigTiff allow size > 4 && <= 8 in addition
         if (valueLength > 0 && valueLength <= 4) {
             value = readValueInLine(pInput, type, count);
             pInput.skipBytes(4 - valueLength);
@@ -278,8 +278,11 @@ public final class EXIFReader extends MetadataReader {
 
         switch (pType) {
             case 2: // ASCII
-                // TODO: This might be UTF-8 or ISO-8859-x, even though spec says ASCII
+                // TODO: This might be UTF-8 or ISO-8859-x, even though spec says NULL-terminated 7 bit ASCII
                 // TODO: Fail if unknown chars, try parsing with ISO-8859-1 or file.encoding
+                if (pCount == 0) {
+                    return "";
+                }
                 byte[] ascii = new byte[pCount];
                 pInput.readFully(ascii);
                 int len = ascii[ascii.length - 1] == 0 ? ascii.length - 1 : ascii.length;
@@ -364,23 +367,23 @@ public final class EXIFReader extends MetadataReader {
 
             case 5: // RATIONAL
                 if (pCount == 1) {
-                    return new Rational(pInput.readUnsignedInt(), pInput.readUnsignedInt());
+                    return createSafeRational(pInput.readUnsignedInt(), pInput.readUnsignedInt());
                 }
 
                 Rational[] rationals = new Rational[pCount];
                 for (int i = 0; i < rationals.length; i++) {
-                    rationals[i] = new Rational(pInput.readUnsignedInt(), pInput.readUnsignedInt());
+                    rationals[i] = createSafeRational(pInput.readUnsignedInt(), pInput.readUnsignedInt());
                 }
 
                 return rationals;
             case 10: // SRATIONAL
                 if (pCount == 1) {
-                    return new Rational(pInput.readInt(), pInput.readInt());
+                    return createSafeRational(pInput.readInt(), pInput.readInt());
                 }
 
                 Rational[] srationals = new Rational[pCount];
                 for (int i = 0; i < srationals.length; i++) {
-                    srationals[i] = new Rational(pInput.readInt(), pInput.readInt());
+                    srationals[i] = createSafeRational(pInput.readInt(), pInput.readInt());
                 }
 
                 return srationals;
@@ -410,6 +413,15 @@ public final class EXIFReader extends MetadataReader {
                 // Spec says skip unknown values
                 return new Unknown(pType, pCount, pos);
         }
+    }
+
+    private static Rational createSafeRational(final long numerator, final long denominator) throws IOException {
+        if (denominator == 0) {
+            // Bad data.
+            return Rational.NaN;
+        }
+
+        return new Rational(numerator, denominator);
     }
 
     private int getValueLength(final int pType, final int pCount) {

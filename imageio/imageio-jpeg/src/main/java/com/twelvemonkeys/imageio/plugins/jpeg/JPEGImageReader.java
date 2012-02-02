@@ -70,7 +70,7 @@ import java.util.List;
  */
 public class JPEGImageReader extends ImageReaderBase {
     // TODO: Fix the (stream) metadata inconsistency issues.
-    // - Sun JPEGMetadata class does not (and can not be made to) support CMYK data.. We need to create all new metadata classes
+    // - Sun JPEGMetadata class does not (and can not be made to) support CMYK data.. We need to create all new metadata classes.. :-/
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
@@ -543,7 +543,7 @@ public class JPEGImageReader extends ImageReaderBase {
             ImageInputStream stream = ImageIO.createImageInputStream(data);
 
             CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
-            /**/
+
             if (exifMetadata.directoryCount() == 2) {
                 Directory ifd1 = exifMetadata.getDirectory(1);
                 Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
@@ -556,7 +556,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     if (width == null || height == null) {
                         throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
                     }
-                    
+
                     Entry bitsPerSample = ifd1.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
                     Entry samplesPerPixel = ifd1.getEntryById(TIFF.TAG_SAMPLES_PER_PIXELS);
                     Entry photometricInterpretation = ifd1.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
@@ -578,41 +578,49 @@ public class JPEGImageReader extends ImageReaderBase {
                     
                     int interpretation = photometricInterpretation != null ? ((Number) photometricInterpretation.getValue()).intValue() : 2;
 
-                    // Read raw image data, either RGB or YCbCr
-                    byte[] thumbData = readFully(stream, w * h * 3);
-                    DataBuffer buffer = new DataBufferByte(thumbData, thumbData.length);
-                    WritableRaster raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
+                    // IFD1 should contain strip offsets for uncompressed images
+                    Entry offset = ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS);
+                    if (offset != null) {
+                        stream.seek(((Number) offset.getValue()).longValue());
 
-                    switch (interpretation) {
-                        case 2:
-                            // RGB
-                            break;
-                        case 6:
-                            // YCbCr
-                            YCbCrConverter.convertYCbCr2RGB(raster);
-                            break;
-                        default:
-                            throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbail: " + interpretation);
+                        // Read raw image data, either RGB or YCbCr
+                        int thumbSize = w * h * 3;
+                        byte[] thumbData = readFully(stream, thumbSize);
+
+                        switch (interpretation) {
+                            case 2:
+                                // RGB
+                                break;
+                            case 6:
+                                // YCbCr
+                                for (int i = 0, thumbDataLength = thumbData.length; i < thumbDataLength; i++) {
+                                    YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
+                                }
+                                break;
+                            default:
+                                throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbail: " + interpretation);
+                        }
+
+                        thumbnails.add(readRawThumbnail(thumbData, thumbData.length, 0, w, h));
                     }
-
-                    ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-
-                    thumbnails.add(new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null));
                 }
                 else if (compression == null || compression.getValue().equals(6)) {
                     Entry jpegOffset = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+
+                    // IFD1 should contain jpeg offset for JPEG thumbnail
                     if (jpegOffset != null) {
-                        stream.seek((Long) jpegOffset.getValue());
+                        stream.seek(((Number) jpegOffset.getValue()).longValue());
                         InputStream adapter = IIOUtil.createStreamAdapter(stream);
                         BufferedImage exifThumb = ImageIO.read(adapter);
+
                         if (exifThumb != null) {
                             thumbnails.add(exifThumb);
                         }
+
                         adapter.close();
                     }
                 }
             }
-            //*/
 
             return exifMetadata;
         }
@@ -841,8 +849,7 @@ public class JPEGImageReader extends ImageReaderBase {
 
             JFIF jfif = getJFIF();
             if (jfif != null && jfif.thumbnail != null) {
-                // TODO: Actually decode jfif
-                thumbnails.add(new BufferedImage(jfif.xThumbnail, jfif.yThumbnail, BufferedImage.TYPE_3BYTE_BGR));
+                thumbnails.add(readRawThumbnail(jfif.thumbnail, jfif.thumbnail.length, 0, jfif.xThumbnail, jfif.yThumbnail));
             }
 
             JFXX jfxx = getJFXX();
@@ -861,10 +868,10 @@ public class JPEGImageReader extends ImageReaderBase {
                         
                         int[] rgbs = new int[256];
                         for (int i = 0; i < rgbs.length; i++) {
-                            int rgb = (jfxx.thumbnail[3 * i] & 0xff) << 16|
-                                    (jfxx.thumbnail[3 * i] & 0xff) << 8 |
-                                    (jfxx.thumbnail[3 * i] & 0xff);
-                            
+                            int rgb = (jfxx.thumbnail[3 * i] & 0xff) << 16
+                                    | (jfxx.thumbnail[3 * i] & 0xff) << 8
+                                    | (jfxx.thumbnail[3 * i] & 0xff);
+
                             rgbs[i] = rgb;
                         }
 
@@ -881,19 +888,13 @@ public class JPEGImageReader extends ImageReaderBase {
                         w = jfxx.thumbnail[0] & 0xff;
                         h = jfxx.thumbnail[1] & 0xff;
 
-                        buffer = new DataBufferByte(jfxx.thumbnail, jfxx.thumbnail.length - 2, 2);
-                        raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
-                        ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-
-                        thumbnails.add(new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null));
+                        thumbnails.add(readRawThumbnail(jfxx.thumbnail, jfxx.thumbnail.length - 2, 2, w, h));
                         break;
-
                     default:
                         processWarningOccurred("Unknown JFXX extension code: " + jfxx.extensionCode);
                 }
             }
 
-            
             // TODO: Ideally we want to decode image data in getThumbnail, less ideally here, but at least not in getEXIFMetadata()
             CompoundDirectory exifMetadata = getEXIFMetadata();
 //            System.err.println("exifMetadata: " + exifMetadata);
@@ -903,6 +904,16 @@ public class JPEGImageReader extends ImageReaderBase {
 //                }
 //            }
         }
+    }
+
+    // TODO: Candidate for util method
+    private BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {
+        DataBufferByte buffer;WritableRaster raster;
+        buffer = new DataBufferByte(thumbnail, size, offset);
+        raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
+        ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+
+        return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
     }
 
     @Override
@@ -935,12 +946,10 @@ public class JPEGImageReader extends ImageReaderBase {
     public BufferedImage readThumbnail(int imageIndex, int thumbnailIndex) throws IOException {
         checkThumbnailBounds(imageIndex, thumbnailIndex);
 
-        // TODO: Thumbnail progress listeners...
-
-        BufferedImage thumbnail = thumbnails.get(thumbnailIndex);
         processThumbnailStarted(imageIndex, thumbnailIndex);
         // For now: Clone. TODO: Do the actual decoding/reading here.
-        thumbnail = new BufferedImage(thumbnail.getColorModel(), thumbnail.copyData(null), thumbnail.getColorModel().isAlphaPremultiplied(), null);
+        BufferedImage cached = thumbnails.get(thumbnailIndex);
+        BufferedImage thumbnail = new BufferedImage(cached.getColorModel(), cached.copyData(null), cached.getColorModel().isAlphaPremultiplied(), null);
         processThumbnailProgress(100f);
         processThumbnailComplete();
 

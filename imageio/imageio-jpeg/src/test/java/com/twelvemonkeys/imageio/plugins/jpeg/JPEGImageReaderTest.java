@@ -303,7 +303,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
-    public void testEXIFRAWThumbnail() throws IOException {
+    public void testEXIFRawThumbnail() throws IOException {
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-rgb-thumbnail-sony-d700.jpg")));
 
@@ -316,5 +316,21 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(thumbnail);
         assertEquals(80, thumbnail.getWidth());
         assertEquals(60, thumbnail.getHeight());
+    }
+
+    @Test
+    public void testBadEXIFRawThumbnail() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-rgb-thumbnail-bad-exif-kodak-dc210.jpg")));
+
+        assertTrue(reader.hasThumbnails(0));
+        assertEquals(1, reader.getNumThumbnails(0));
+        assertEquals(96, reader.getThumbnailWidth(0, 0));
+        assertEquals(72, reader.getThumbnailHeight(0, 0));
+
+        BufferedImage thumbnail = reader.readThumbnail(0, 0);
+        assertNotNull(thumbnail);
+        assertEquals(96, thumbnail.getWidth());
+        assertEquals(72, thumbnail.getHeight());
     }
 }

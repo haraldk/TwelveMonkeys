@@ -30,10 +30,13 @@ package com.twelvemonkeys.imageio.metadata.exif;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -130,5 +133,32 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
 
         assertNull(ifd1.getEntryById(TIFF.TAG_IMAGE_WIDTH));
         assertNull(ifd1.getEntryById(TIFF.TAG_IMAGE_HEIGHT));
+    }
+
+    @Test
+    public void testReadBadDataZeroCount() throws IOException {
+        // This image seems to contain bad Exif. But as other tools are able to read, so should we..
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-rgb-thumbnail-bad-exif-kodak-dc210.jpg"));
+        stream.seek(12);
+        Directory directory = createReader().read(new SubImageInputStream(stream, 21674));
+
+        assertEquals(22, directory.size());
+
+        // Special case: Ascii string with count == 0, not ok according to spec (?), but we'll let it pass
+        assertEquals("", directory.getEntryById(TIFF.TAG_IMAGE_DESCRIPTION).getValue());
+    }
+
+    @Test
+    public void testReadBadDataRationalZeroDenominator() throws IOException {
+        // This image seems to contain bad Exif. But as other tools are able to read, so should we..
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-rgb-thumbnail-bad-exif-kodak-dc210.jpg"));
+        stream.seek(12);
+        Directory directory = createReader().read(new SubImageInputStream(stream, 21674));
+
+        // Special case: Rational with zero-denominator inside EXIF data
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        Entry entry = exif.getEntryById(EXIF.TAG_COMPRESSED_BITS_PER_PIXEL);
+        assertNotNull(entry);
+        assertEquals(Rational.NaN, entry.getValue());
     }
 }

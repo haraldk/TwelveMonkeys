@@ -53,9 +53,15 @@ public final class Rational extends Number implements Comparable<Rational> {
     // TODO: Move to com.tm.lang?
     // Inspired by http://www.cs.princeton.edu/introcs/92symbolic/Rational.java.html and java.lang.Integer
     static final Rational ZERO = new Rational(0, 1);
+    static final Rational NaN = new Rational(); // TODO: This field needs thoughts/tests/spec/consistency check, see Float.NaN
 
     private final long numerator;
     private final long denominator;
+
+    private Rational() {
+        numerator = 0;
+        denominator = 0;
+    }
 
     public Rational(final long pNumber) {
         this(pNumber, 1);
@@ -121,6 +127,10 @@ public final class Rational extends Number implements Comparable<Rational> {
 
     @Override
     public double doubleValue() {
+        if (this == NaN) {
+            return Double.NaN;
+        }
+
         return numerator / (double) denominator;
     }
 
@@ -147,6 +157,10 @@ public final class Rational extends Number implements Comparable<Rational> {
 
     @Override
     public String toString() {
+        if (this == NaN) {
+            return "NaN";
+        }
+
         return denominator == 1 ? Long.toString(numerator) : String.format("%s/%s", numerator, denominator);
     }
 

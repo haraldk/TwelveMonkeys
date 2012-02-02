@@ -208,6 +208,12 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         return total;
     }
 
+    @SuppressWarnings({"FinalizeDoesntCallSuperFinalize"})
+    @Override
+    protected void finalize() throws Throwable {
+        // Empty finalizer (for improved performance; no need to call super.finalize() in this case)
+    }
+
     static class Segment {
         private final int marker;
 

@@ -80,6 +80,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "PhotometricInterpretation";
             case TIFF.TAG_IMAGE_DESCRIPTION:
                 return "ImageDescription";
+            case TIFF.TAG_STRIP_OFFSETS:
+                return "StripOffsets";
             case TIFF.TAG_ORIENTATION:
                 return "Orientation";
             case TIFF.TAG_SAMPLES_PER_PIXELS:
