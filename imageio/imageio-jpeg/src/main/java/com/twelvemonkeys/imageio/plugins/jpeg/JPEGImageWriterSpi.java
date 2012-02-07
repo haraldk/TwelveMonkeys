@@ -1,17 +1,17 @@
 /*
- * Copyright (c) 2011, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *  Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *  Neither the name "TwelveMonkeys" nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -32,61 +32,63 @@ import com.twelvemonkeys.imageio.spi.ProviderInfo;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.Validate;
 
-import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadataFormat;
-import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
+import java.awt.image.RenderedImage;
 import java.io.IOException;
 import java.util.Locale;
 
 /**
- * JPEGImageReaderSpi
+ * JPEGImageWriterSpi
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: JPEGImageReaderSpi.java,v 1.0 24.01.11 22.12 haraldk Exp$
+ * @version $Id: JPEGImageWriterSpi.java,v 1.0 06.02.12 16:09 haraldk Exp$
  */
-public class JPEGImageReaderSpi extends ImageReaderSpi {
-    private ImageReaderSpi delegateProvider;
+public class JPEGImageWriterSpi extends ImageWriterSpi {
+    private ImageWriterSpi delegateProvider;
 
     /**
      * Constructor for use by {@link javax.imageio.spi.IIORegistry} only.
      * The instance created will not work without being properly registered.
      */
-    public JPEGImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(JPEGImageReaderSpi.class));
+    public JPEGImageWriterSpi() {
+        this(IIOUtil.getProviderInfo(JPEGImageWriterSpi.class));
     }
 
-    private JPEGImageReaderSpi(final ProviderInfo providerInfo) {
+    private JPEGImageWriterSpi(final ProviderInfo providerInfo) {
         super(
                 providerInfo.getVendorName(),
                 providerInfo.getVersion(),
                 new String[]{"JPEG", "jpeg", "JPG", "jpg"},
                 new String[]{"jpg", "jpeg"},
                 new String[]{"image/jpeg"},
-                "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader",
-                STANDARD_INPUT_TYPE,
-                new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi"},
+                "twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
+                STANDARD_OUTPUT_TYPE,
+                new String[] {"twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"}, 
                 true, null, null, null, null,
                 true, null, null, null, null
         );
     }
 
     /**
-     * Creates a {@code JPEGImageReaderSpi} with the given delegate.
+     * Creates a {@code JPEGImageWriterSpi} with the given delegate.
      *
-     * @param delegateProvider a {@code ImageReaderSpi} that can read JPEG.
+     * @param delegateProvider a {@code ImageWriterSpi} that can write JPEG.
      */
-    protected JPEGImageReaderSpi(final ImageReaderSpi delegateProvider) {
+    protected JPEGImageWriterSpi(final ImageWriterSpi delegateProvider) {
         this(IIOUtil.getProviderInfo(JPEGImageReaderSpi.class));
 
         this.delegateProvider = Validate.notNull(delegateProvider);
     }
-
-    static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
+    
+    static ImageWriterSpi lookupDelegateProvider(final ServiceRegistry registry) {
         // Should be safe to lookup now, as the bundled providers are hardcoded usually
         try {
-            return (ImageReaderSpi) registry.getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi"));
+            return (ImageWriterSpi) registry.getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi"));
         }
         catch (ClassNotFoundException ignore) {
         }
@@ -107,7 +109,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
 
         if (delegateProvider != null) {
             // Order before com.sun provider, to aid ImageIO in selecting our reader
-            registry.setOrdering((Class<ImageReaderSpi>) category, this, delegateProvider);
+            registry.setOrdering((Class<ImageWriterSpi>) category, this, delegateProvider);
         }
         else {
             // Or, if no delegate is found, silently deregister from the registry
@@ -126,13 +128,8 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     }
 
     @Override
-    public ImageReader createReaderInstance(Object extension) throws IOException {
-        return new JPEGImageReader(this, delegateProvider.createReaderInstance(extension));
-    }
-
-    @Override
-    public boolean canDecodeInput(Object source) throws IOException {
-        return delegateProvider.canDecodeInput(source);
+    public ImageWriter createWriterInstance(Object extension) throws IOException {
+        return new JPEGImageWriter(this, delegateProvider.createWriterInstance(extension));
     }
 
     @Override
@@ -191,12 +188,27 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     }
 
     @Override
+    public boolean canEncodeImage(ImageTypeSpecifier type) {
+        return delegateProvider.canEncodeImage(type);
+    }
+
+    @Override
+    public boolean canEncodeImage(RenderedImage im) {
+        return delegateProvider.canEncodeImage(im);
+    }
+
+    @Override
     public String getDescription(Locale locale) {
         return delegateProvider.getDescription(locale);
     }
 
     @Override
-    public Class[] getInputTypes() {
-        return delegateProvider.getInputTypes();
+    public boolean isFormatLossless() {
+        return delegateProvider.isFormatLossless();
+    }
+
+    @Override
+    public Class[] getOutputTypes() {
+        return delegateProvider.getOutputTypes();
     }
 }
