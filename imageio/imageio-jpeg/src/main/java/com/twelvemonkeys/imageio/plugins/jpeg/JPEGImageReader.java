@@ -321,7 +321,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     ).iterator();
         }
         else if (!imageTypes.hasNext() && profile != null) {
-            // TODO: Bad ICC profiles need these substitute types here, but it will still crash in readRaster
+            // TODO: Merge with above?
             srcCs = null;
             imageTypes = Arrays.asList(
                     ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR),
@@ -352,9 +352,9 @@ public class JPEGImageReader extends ImageReaderBase {
             if (startOfFrame.componentsInFrame != replacement.getNumComponents()) {
                 if (startOfFrame.componentsInFrame < 4 && transform == AdobeDCT.YCCK) {
                     processWarningOccurred(String.format(
-                            "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOFn has %d color components. " +
+                            "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOF%d has %d color components. " +
                                     "Ignoring Adobe App14 marker, assuming YCC/RGB data.",
-                            startOfFrame.componentsInFrame
+                            startOfFrame.marker & 0xf, startOfFrame.componentsInFrame
                     ));
                     transform = AdobeDCT.YCC;
                 }
@@ -362,9 +362,9 @@ public class JPEGImageReader extends ImageReaderBase {
                 // If ICC profile number of components and startOfFrame does not match, ignore ICC profile
                 processWarningOccurred(String.format(
                         "Embedded ICC color profile is incompatible with image data. " +
-                                "Profile indicates %d components, but SOFn has %d color components. " +
+                                "Profile indicates %d components, but SOF%d has %d color components. " +
                                 "Ignoring ICC profile, assuming YCC/RGB data.",
-                        replacement.getNumComponents(), startOfFrame.componentsInFrame
+                        replacement.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame
                 ));
                 srcCs = null;
             }
@@ -648,10 +648,10 @@ public class JPEGImageReader extends ImageReaderBase {
 
     private SOF getSOF() throws IOException {
         for (JPEGSegment segment : segments) {
-            if (JPEG.SOF0 <= segment.marker() && segment.marker() <= JPEG.SOF3 ||
-                    JPEG.SOF5 <= segment.marker() && segment.marker() <= JPEG.SOF7 ||
-                    JPEG.SOF9 <= segment.marker() && segment.marker() <= JPEG.SOF11 ||
-                    JPEG.SOF13 <= segment.marker() && segment.marker() <= JPEG.SOF15) {
+            if (JPEG.SOF0 >= segment.marker() && segment.marker() <= JPEG.SOF3 ||
+                    JPEG.SOF5 >= segment.marker() && segment.marker() <= JPEG.SOF7 ||
+                    JPEG.SOF9 >= segment.marker() && segment.marker() <= JPEG.SOF11 ||
+                    JPEG.SOF13 >= segment.marker() && segment.marker() <= JPEG.SOF15) {
 
                 DataInputStream data = new DataInputStream(segment.data());
 
@@ -1137,11 +1137,6 @@ public class JPEGImageReader extends ImageReaderBase {
             processThumbnailStarted(imageIndex, thumbnailIndex);
         }
 
-        @Override
-        public void imageComplete(ImageWriter source) {
-            processImageComplete();
-        }
-
         public void passStarted(ImageReader source, BufferedImage theImage, int pass, int minPass, int maxPass, int minX, int minY, int periodX, int periodY, int[] bands) {
             processPassStarted(theImage, pass, minPass, maxPass, minX, minY, periodX, periodY, bands);
         }
@@ -1211,8 +1206,8 @@ public class JPEGImageReader extends ImageReaderBase {
         @Override
         public String toString() {
             return String.format(
-                    "SOF[marker: %04x, preciscion: %d, lines: %d, samples/line: %d, components: %s]",
-                    marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
+                    "SOF%d[%04x, precision: %d, lines: %d, samples/line: %d, components: %s]",
+                    marker & 0xf, marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
             );
         }
     }
