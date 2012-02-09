@@ -71,7 +71,7 @@ public abstract class ProgressListenerBase implements IIOReadProgressListener, I
     public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
     }
 
-    public void imageComplete(ImageWriter source                        ) {
+    public void imageComplete(ImageWriter source) {
     }
 
     public void imageProgress(ImageWriter source, float percentageDone) {
