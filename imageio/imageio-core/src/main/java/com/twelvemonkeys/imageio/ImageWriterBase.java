@@ -77,6 +77,7 @@ public abstract class ImageWriterBase extends ImageWriter {
 
     @Override
     public void setOutput(final Object output) {
+        resetMembers();
         super.setOutput(output);
 
         if (output instanceof ImageOutputStream) {
@@ -93,6 +94,15 @@ public abstract class ImageWriterBase extends ImageWriter {
         if (getOutput() == null) {
             throw new IllegalStateException("getOutput() == null");
         }
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        resetMembers();
+    }
+
+    protected void resetMembers() {
     }
 
     /**
