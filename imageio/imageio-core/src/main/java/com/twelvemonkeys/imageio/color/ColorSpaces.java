@@ -218,49 +218,53 @@ public final class ColorSpaces {
 
         switch (colorSpace) {
             case CS_ADOBE_RGB_1998:
-                profile = adobeRGB1998.get();
-
-                if (profile == null) {
-                    // Try to get system default or user-defined profile
-                    profile = readProfileFromPath(Profiles.getPath("ADOBE_RGB_1998"));
+                synchronized (ColorSpaces.class) {
+                    profile = adobeRGB1998.get();
 
                     if (profile == null) {
-                        // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
-                        // identical for all practical purposes
-                        profile = readProfileFromClasspathResource("/profiles/ClayRGB1998.icc");
+                        // Try to get system default or user-defined profile
+                        profile = readProfileFromPath(Profiles.getPath("ADOBE_RGB_1998"));
 
                         if (profile == null) {
-                            // Should never happen given we now bundle fallback profile...
-                            throw new IllegalStateException("Could not read AdobeRGB1998 profile");
-                        }
-                    }
+                            // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
+                            // identical for all practical purposes
+                            profile = readProfileFromClasspathResource("/profiles/ClayRGB1998.icc");
 
-                    adobeRGB1998 = new WeakReference<ICC_Profile>(profile);
+                            if (profile == null) {
+                                // Should never happen given we now bundle fallback profile...
+                                throw new IllegalStateException("Could not read AdobeRGB1998 profile");
+                            }
+                        }
+
+                        adobeRGB1998 = new WeakReference<ICC_Profile>(profile);
+                    }
                 }
 
                 return createColorSpace(profile);
 
             case CS_GENERIC_CMYK:
-                profile = genericCMYK.get();
-
-                if (profile == null) {
-                    // Try to get system default or user-defined profile
-                    profile = readProfileFromPath(Profiles.getPath("GENERIC_CMYK"));
+                synchronized (ColorSpaces.class) {
+                    profile = genericCMYK.get();
 
                     if (profile == null) {
-                        if (DEBUG) {
-                            System.out.println("Using fallback profile");
+                        // Try to get system default or user-defined profile
+                        profile = readProfileFromPath(Profiles.getPath("GENERIC_CMYK"));
+
+                        if (profile == null) {
+                            if (DEBUG) {
+                                System.out.println("Using fallback profile");
+                            }
+
+                            // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
+                            return CMYKColorSpace.getInstance();
                         }
 
-                        // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
-                        return CMYKColorSpace.getInstance();
+                        genericCMYK = new WeakReference<ICC_Profile>(profile);
                     }
-
-                    genericCMYK = new WeakReference<ICC_Profile>(profile);
                 }
 
                 return createColorSpace(profile);
-            
+
             default:
                 // Default cases for convenience
                 return ColorSpace.getInstance(colorSpace);
