@@ -6,7 +6,7 @@ package com.twelvemonkeys.imageio.metadata.exif;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: Unknown.java,v 1.0 Oct 8, 2010 3:38:45 PM haraldk Exp$
- * @see <a href="http://en.wikipedia.org/wiki/There_are_known_knowns">There are known knowns</a>
+ * @see <a href="http://en.wikipedia.org/wiki/There_are_known_knowns">We also know there are known unknowns</a>
  */
 final class Unknown {
     private final short type;
