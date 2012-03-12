@@ -35,16 +35,25 @@ import java.net.SocketException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * A factory for creating UUIDs not directly supported by {@link java.util.UUID}.
+ * <p>
  * This class can create
- * version 1 (time based, using either MAC aka IEEE 802 address or Random "node" value)
- * and version 5 (SHA1 hash based) UUIDs.
+ * version 1 time based, using either IEEE 802 (mac) address or random "node" value
+ * and version 5 SHA1 hash based UUIDs.
+ * </p>
+ * <p>
+ * The node value for version 1 UUIDs will, by default, reflect the IEEE 802 (mac) address of one of
+ * the network interfaces of the local computer.
+ * This node value can be manually overridden by setting
+ * the system property {@code "com.twelvemonkeys.util.UUID.node"} to a valid IEEE 802 address, on the form
+ * {@code 12:34:56:78:9a:bc} or {@code 12-34-45-78-9a-bc}.
+ * </p>
+ * <p>
+ * The node value for the random "node" based version 1 UUIDs will be stable for the lifetime of the VM.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -54,14 +63,14 @@ import java.util.UUID;
  * @see <a href="http://en.wikipedia.org/wiki/Universally_unique_identifier">Wikipedia</a>
  * @see java.util.UUID
  */
-public class UUIDFactory {
+public final class UUIDFactory {
     private static final String NODE_PROPERTY = "com.twelvemonkeys.util.UUID.node";
     
     /**
      * Nil UUID: {@code "00000000-0000-0000-0000-000000000000"}.
      *
      * The nil UUID is special form of UUID that is specified to have all
-     * 128 bits set to zero.
+     * 128 bits set to zero. Not particularly useful.
      *
      * @see <a href="http://tools.ietf.org/html/rfc4122#section-4.1.7">RFC 4122</a>
      */
@@ -69,8 +78,9 @@ public class UUIDFactory {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    // Assumes MAC address is constant, which it may not be on clients moving from ethernet to wifi etc...
-    // TODO: Update at some interval
+    private static final Comparator<UUID> COMPARATOR = new UUIDComparator();
+
+    // Assumes MAC address is constant, which it may not be if a network card is replaced
     static final long MAC_ADDRESS_NODE = getMacAddressNode();
 
     static final long SECURE_RANDOM_NODE = getSecureRandomNode();
@@ -134,7 +144,7 @@ public class UUIDFactory {
             String nodesString = nodesStrings[i];
 
             try {
-                String[] nodes = nodesString.split("(?<=(^|\\W)[0-9a-fA-F]{2})\\W(?=[0-9a-fA-F]{2}($|\\W))", 6);
+                String[] nodes = nodesString.split("(?<=(^|\\W)[0-9a-fA-F]{2})\\W(?=[0-9a-fA-F]{2}(\\W|$))", 6);
 
                 long nodeAddress = 0;
 
@@ -158,6 +168,8 @@ public class UUIDFactory {
 
         return addressNodes;
     }
+
+    private UUIDFactory() {}
 
     // See also http://tools.ietf.org/html/rfc4122#appendix-B
     // See http://tools.ietf.org/html/rfc4122: 4.3. Algorithm for Creating a Name-Based UUID
@@ -213,6 +225,7 @@ public class UUIDFactory {
     // See http://tools.ietf.org/html/rfc4122#appendix-B
     // TODO: Naming (of the method)
     // TODO: Document that these can never clash with node based v1 UUIDs due to unicast/multicast bit
+    // However, no uniqueness between multiple mavhines/vms/nodes can be guaranteed.
     static UUID timeRandomBasedV1() {
         return new UUID(createTimeAndVersion(), createClockSeqAndNode(SECURE_RANDOM_NODE));
     }
@@ -241,8 +254,52 @@ public class UUIDFactory {
         return time;
     }
 
-    // TODO: Implement compare as spec'ed, see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7025832
-    //  - Probably create a comparator
+    /**
+     * Returns a comparator that compares UUIDs as 128 bit unsigned entities, as mentioned in RFC 4122.
+     * This is different than {@link UUID#compareTo(Object)} that compares the UUIDs as signed entities.
+     *
+     * @return a comparator that compares UUIDs as 128 bit unsigned entities.
+     *
+     * @see <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7025832">java.lang.UUID compareTo() does not do an unsigned compare</a>
+     * @see
+     */
+    public static Comparator<UUID> comparator() {
+        return COMPARATOR;
+    }
+
+    static final class UUIDComparator implements Comparator<UUID> {
+        public int compare(UUID left, UUID right) {
+            // The ordering is intentionally set up so that the UUIDs
+            // can simply be numerically compared as two *UNSIGNED* numbers
+            if (left.getMostSignificantBits() >>> 32 < right.getMostSignificantBits() >>> 32) {
+                return -1;
+            }
+            else if (left.getMostSignificantBits() >>> 32 > right.getMostSignificantBits() >>> 32) {
+                return 1;
+            }
+            else if ((left.getMostSignificantBits() & 0xffffffffl) < (right.getMostSignificantBits() & 0xffffffffl)) {
+                return -1;
+            }
+            else if ((left.getMostSignificantBits() & 0xffffffffl) > (right.getMostSignificantBits() & 0xffffffffl)) {
+                return 1;
+            }
+            else if (left.getLeastSignificantBits() >>> 32 < right.getLeastSignificantBits() >>> 32) {
+                return -1;
+            }
+            else if (left.getLeastSignificantBits() >>> 32 > right.getLeastSignificantBits() >>> 32) {
+                return 1;
+            }
+            else if ((left.getLeastSignificantBits() & 0xffffffffl) < (right.getLeastSignificantBits() & 0xffffffffl)) {
+                return -1;
+            }
+            else if ((left.getLeastSignificantBits() & 0xffffffffl) > (right.getLeastSignificantBits() & 0xffffffffl)) {
+                return 1;
+            }
+
+            return 0;
+        }
+    }
+    
 
     /**
      * A high-resolution timer for use in creating version 1 UUIDs.
