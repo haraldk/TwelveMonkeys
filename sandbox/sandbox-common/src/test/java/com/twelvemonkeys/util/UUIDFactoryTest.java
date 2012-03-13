@@ -51,7 +51,7 @@ public class UUIDFactoryTest {
     @Test
     public void testVersion3NameBasedMD5NotEqualSHA1() throws UnsupportedEncodingException {
         UUID a = UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
-        assertFalse(a.equals(UUIDFactory.nameUUIDFromBytesSHA1(EXAMPLE_COM_UUID.getBytes("UTF-8"))));
+        assertFalse(a.equals(UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"))));
     }
 
     @Test
@@ -64,27 +64,27 @@ public class UUIDFactoryTest {
 
     @Test
     public void testVersion5NameBasedSHA1VariantVersion() throws UnsupportedEncodingException {
-        UUID a = UUIDFactory.nameUUIDFromBytesSHA1(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
         assertEquals(2, a.variant());
         assertEquals(5, a.version());
     }
 
     @Test
     public void testVersion5NameBasedSHA1Equals() throws UnsupportedEncodingException {
-        UUID a = UUIDFactory.nameUUIDFromBytesSHA1(EXAMPLE_COM_UUID.getBytes("UTF-8"));
-        UUID b = UUIDFactory.nameUUIDFromBytesSHA1(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        UUID b = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
         assertEquals(a, b);
     }
 
     @Test
     public void testVersion5NameBasedSHA1NotEqualMD5() throws UnsupportedEncodingException {
-        UUID a = UUIDFactory.nameUUIDFromBytesSHA1(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
         assertFalse(a.equals(UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"))));
     }
 
     @Test
     public void testVersion5NameBasedSHA1FromStringRep() throws UnsupportedEncodingException {
-        UUID a = UUIDFactory.nameUUIDFromBytesSHA1(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
         assertEquals(a, UUID.fromString(a.toString()));
     }
 
@@ -92,37 +92,36 @@ public class UUIDFactoryTest {
 
     @Test
     public void testVersion1NodeBasedVariantVersion() {
-        UUID uuid = UUIDFactory.timeNodeBasedV1();
+        UUID uuid = UUIDFactory.timeNodeBasedUUID();
         assertEquals(2, uuid.variant());
         assertEquals(1, uuid.version());
     }
 
     @Test
     public void testVersion1NodeBasedMacAddress() {
-        UUID uuid = UUIDFactory.timeNodeBasedV1();
+        UUID uuid = UUIDFactory.timeNodeBasedUUID();
         assertEquals(UUIDFactory.MAC_ADDRESS_NODE, uuid.node());
         // TODO: Test that this is actually a Mac address from the local computer, or specified through system property?
     }
 
     @Test
     public void testVersion1NodeBasedFromStringRep() {
-        UUID uuid = UUIDFactory.timeNodeBasedV1();
+        UUID uuid = UUIDFactory.timeNodeBasedUUID();
         assertEquals(uuid, UUID.fromString(uuid.toString()));
     }
 
     @Test
     public void testVersion1NodeBasedClockSeq() {
-        UUID uuid = UUIDFactory.timeNodeBasedV1();
+        UUID uuid = UUIDFactory.timeNodeBasedUUID();
         assertEquals(UUIDFactory.Clock.getClockSequence(), uuid.clockSequence());
 
         // Test time fields (within reasonable limits +/- 100 ms or so?)
-        // TODO: Compare with system clock for sloppier resolution
         assertEquals(UUIDFactory.Clock.currentTimeHundredNanos(), uuid.timestamp(), 1e6);
     }
 
     @Test
     public void testVersion1NodeBasedTimestamp() {
-        UUID uuid = UUIDFactory.timeNodeBasedV1();
+        UUID uuid = UUIDFactory.timeNodeBasedUUID();
         // Test time fields (within reasonable limits +/- 100 ms or so?)
         assertEquals(UUIDFactory.Clock.currentTimeHundredNanos(), uuid.timestamp(), 1e6);
     }
@@ -131,7 +130,7 @@ public class UUIDFactoryTest {
     public void testVersion1NodeBasedUniMulticastBitUnset() {
         // Do it a couple of times, to avoid accidentally have correct bit
         for (int i = 0; i < 100; i++) {
-            UUID uuid = UUIDFactory.timeNodeBasedV1();
+            UUID uuid = UUIDFactory.timeNodeBasedUUID();
             assertEquals(0, (uuid.node() >> 40) & 1);
         }
     }
@@ -139,15 +138,15 @@ public class UUIDFactoryTest {
     @Test
     public void testVersion1NodeBasedUnique() {
         for (int i = 0; i < 100; i++) {
-            UUID a = UUIDFactory.timeNodeBasedV1();
-            UUID b = UUIDFactory.timeNodeBasedV1();
+            UUID a = UUIDFactory.timeNodeBasedUUID();
+            UUID b = UUIDFactory.timeNodeBasedUUID();
             assertFalse(a.equals(b));
         }
     }
 
     @Test
     public void testVersion1SecureRandomVariantVersion() {
-        UUID uuid = UUIDFactory.timeRandomBasedV1();
+        UUID uuid = UUIDFactory.timeRandomBasedUUID();
 
         assertEquals(2, uuid.variant());
         assertEquals(1, uuid.version());
@@ -155,25 +154,25 @@ public class UUIDFactoryTest {
 
     @Test
     public void testVersion1SecureRandomNode() {
-        UUID uuid = UUIDFactory.timeRandomBasedV1();
+        UUID uuid = UUIDFactory.timeRandomBasedUUID();
         assertEquals(UUIDFactory.SECURE_RANDOM_NODE, uuid.node());
     }
 
     @Test
     public void testVersion1SecureRandomFromStringRep() {
-        UUID uuid = UUIDFactory.timeRandomBasedV1();
+        UUID uuid = UUIDFactory.timeRandomBasedUUID();
         assertEquals(uuid, UUID.fromString(uuid.toString()));
     }
 
     @Test
     public void testVersion1SecureRandomClockSeq() {
-        UUID uuid = UUIDFactory.timeRandomBasedV1();
+        UUID uuid = UUIDFactory.timeRandomBasedUUID();
         assertEquals(UUIDFactory.Clock.getClockSequence(), uuid.clockSequence());
     }
 
     @Test
     public void testVersion1SecureRandomTimestamp() {
-        UUID uuid = UUIDFactory.timeRandomBasedV1();
+        UUID uuid = UUIDFactory.timeRandomBasedUUID();
 
         // Test time fields (within reasonable limits +/- 100 ms or so?)
         assertEquals(UUIDFactory.Clock.currentTimeHundredNanos(), uuid.timestamp(), 1e6);
@@ -183,7 +182,7 @@ public class UUIDFactoryTest {
     public void testVersion1SecureRandomUniMulticastBit() {
         // Do it a couple of times, to avoid accidentally have correct bit
         for (int i = 0; i < 100; i++) {
-            UUID uuid = UUIDFactory.timeRandomBasedV1();
+            UUID uuid = UUIDFactory.timeRandomBasedUUID();
             assertEquals(1, (uuid.node() >> 40) & 1);
         }
     }
@@ -191,8 +190,8 @@ public class UUIDFactoryTest {
     @Test
     public void testVersion1SecureRandomUnique() {
         for (int i = 0; i < 100; i++) {
-            UUID a = UUIDFactory.timeRandomBasedV1();
-            UUID b = UUIDFactory.timeRandomBasedV1();
+            UUID a = UUIDFactory.timeRandomBasedUUID();
+            UUID b = UUIDFactory.timeRandomBasedUUID();
             assertFalse(a.equals(b));
         }
     }
@@ -217,7 +216,7 @@ public class UUIDFactoryTest {
         service.shutdown();
         assertTrue("Execution timed out", service.awaitTermination(10, TimeUnit.SECONDS));
 
-        Arrays.sort(times);
+        Arrays.sort(times); // This is what really takes time...
 
         for (int i = 0, timesLength = times.length; i < timesLength; i++) {
             if (i == 0) {
