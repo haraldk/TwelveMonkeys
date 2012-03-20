@@ -51,10 +51,9 @@ import java.util.*;
  * <p>
  * <a name="mac-node"></a>
  * The node value for version 1 {@code UUID}s will, by default, reflect the IEEE 802 (mac) address of one of
- * the network interfaces of the local computer.
- * This node value can be manually overridden by setting
+ * the network interfaces of the local computer. This node value can be manually overridden by setting
  * the system property {@code "com.twelvemonkeys.util.UUID.node"} to a valid IEEE 802 address, on the form
- * {@code 12:34:56:78:9a:bc} or {@code 12-34-45-78-9a-bc}.
+ * {@code "12:34:56:78:9a:bc"} or {@code "12-34-45-78-9a-bc"}.
  * </p>
  * <p>
  * <a name="random-node"></a>
@@ -211,7 +210,7 @@ public final class UUIDFactory {
             throw new IllegalStateException("Could not determine IEEE 802 (mac) address for node");
         }
 
-        return new UUID(createTimeAndVersion(), createClockSeqAndNode(MAC_ADDRESS_NODE));
+        return createTimeBasedUUIDforNode(MAC_ADDRESS_NODE);
     }
 
     /**
@@ -228,7 +227,11 @@ public final class UUIDFactory {
      * @throws IllegalStateException if the IEEE 802 (mac) address of the computer (node) cannot be found.
      */
     public static UUID timeRandomBasedUUID() {
-        return new UUID(createTimeAndVersion(), createClockSeqAndNode(SECURE_RANDOM_NODE));
+        return createTimeBasedUUIDforNode(SECURE_RANDOM_NODE);
+    }
+
+    private static UUID createTimeBasedUUIDforNode(final long node) {
+        return new UUID(createTimeAndVersion(), createClockSeqAndNode(node));
     }
 
     // TODO: Version 2 UUID?

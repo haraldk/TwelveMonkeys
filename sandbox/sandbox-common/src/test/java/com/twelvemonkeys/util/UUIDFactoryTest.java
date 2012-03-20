@@ -7,6 +7,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,25 +21,33 @@ public class UUIDFactoryTest {
     // Nil UUID
 
     @Test
-    public void testNilUUID() {
-        UUID a = UUID.fromString("00000000-0000-0000-0000-000000000000");
-        UUID b = new UUID(0l, 0l);
-
-        assertEquals(UUIDFactory.NIL, b);
-        assertEquals(UUIDFactory.NIL, a);
-        assertEquals(a, b); // Sanity
-
+    public void testNilUUIDVariant() {
         assertEquals(0, UUIDFactory.NIL.variant());
+    }
+    @Test
+    public void testNilUUIDVersion() {
         assertEquals(0, UUIDFactory.NIL.version());
+    }
+
+    @Test
+    public void testNilUUIDFromStringRep() {
+        assertEquals(UUID.fromString("00000000-0000-0000-0000-000000000000"), UUIDFactory.NIL);
+    }
+
+    @Test
+    public void testNilUUIDFromLong() {
+        assertEquals(new UUID(0l, 0l), UUIDFactory.NIL);
     }
 
     // Version 3 UUIDs (for comparison with v5)
 
     @Test
-    public void testVersion3NameBasedMD5VariantVersion() throws UnsupportedEncodingException {
-        UUID a = UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
-        assertEquals(2, a.variant());
-        assertEquals(3, a.version());
+    public void testVersion3NameBasedMD5Variant() throws UnsupportedEncodingException {
+        assertEquals(2, UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8")).variant());
+    }
+    @Test
+    public void testVersion3NameBasedMD5Version() throws UnsupportedEncodingException {
+        assertEquals(3, UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8")).version());
     }
 
     @Test
@@ -51,7 +60,8 @@ public class UUIDFactoryTest {
     @Test
     public void testVersion3NameBasedMD5NotEqualSHA1() throws UnsupportedEncodingException {
         UUID a = UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
-        assertFalse(a.equals(UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"))));
+        UUID b = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        assertFalse(a.equals(b));
     }
 
     @Test
@@ -63,9 +73,13 @@ public class UUIDFactoryTest {
     // Version 5 UUIDs
 
     @Test
-    public void testVersion5NameBasedSHA1VariantVersion() throws UnsupportedEncodingException {
+    public void testVersion5NameBasedSHA1Variant() throws UnsupportedEncodingException {
         UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
         assertEquals(2, a.variant());
+    }
+    @Test
+    public void testVersion5NameBasedSHA1Version() throws UnsupportedEncodingException {
+        UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
         assertEquals(5, a.version());
     }
 
@@ -77,9 +91,28 @@ public class UUIDFactoryTest {
     }
 
     @Test
+    public void testVersion5NameBasedSHA1Different() throws UnsupportedEncodingException {
+        Random random = new Random();
+        byte[] data = new byte[128];
+        random.nextBytes(data);
+        
+        UUID a = UUIDFactory.nameUUIDv5FromBytes(data);
+
+        // Swap a random byte with its "opposite"
+        int i;
+        while (data[i = random.nextInt(data.length)] == data[data.length - 1 -  i]) {}
+        data[i] = data[data.length - 1 - i];
+
+        UUID b = UUIDFactory.nameUUIDv5FromBytes(data);
+
+        assertFalse(a.equals(b));
+    }
+
+    @Test
     public void testVersion5NameBasedSHA1NotEqualMD5() throws UnsupportedEncodingException {
         UUID a = UUIDFactory.nameUUIDv5FromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
-        assertFalse(a.equals(UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"))));
+        UUID b = UUID.nameUUIDFromBytes(EXAMPLE_COM_UUID.getBytes("UTF-8"));
+        assertFalse(a.equals(b));
     }
 
     @Test
@@ -91,10 +124,19 @@ public class UUIDFactoryTest {
     // Version 1 UUIDs
 
     @Test
-    public void testVersion1NodeBasedVariantVersion() {
+    public void testVersion1NodeBasedVariant() {
+        assertEquals(2, UUIDFactory.timeNodeBasedUUID().variant());
+    }
+
+    @Test
+    public void testVersion1NodeBasedVersion() {
+        assertEquals(1, UUIDFactory.timeNodeBasedUUID().version());
+    }
+
+    @Test
+    public void testVersion1NodeBasedFromStringRep() {
         UUID uuid = UUIDFactory.timeNodeBasedUUID();
-        assertEquals(2, uuid.variant());
-        assertEquals(1, uuid.version());
+        assertEquals(uuid, UUID.fromString(uuid.toString()));
     }
 
     @Test
@@ -102,12 +144,6 @@ public class UUIDFactoryTest {
         UUID uuid = UUIDFactory.timeNodeBasedUUID();
         assertEquals(UUIDFactory.MAC_ADDRESS_NODE, uuid.node());
         // TODO: Test that this is actually a Mac address from the local computer, or specified through system property?
-    }
-
-    @Test
-    public void testVersion1NodeBasedFromStringRep() {
-        UUID uuid = UUIDFactory.timeNodeBasedUUID();
-        assertEquals(uuid, UUID.fromString(uuid.toString()));
     }
 
     @Test
@@ -145,23 +181,25 @@ public class UUIDFactoryTest {
     }
 
     @Test
-    public void testVersion1SecureRandomVariantVersion() {
-        UUID uuid = UUIDFactory.timeRandomBasedUUID();
-
-        assertEquals(2, uuid.variant());
-        assertEquals(1, uuid.version());
+    public void testVersion1SecureRandomVariant() {
+        assertEquals(2, UUIDFactory.timeRandomBasedUUID().variant());
     }
 
     @Test
-    public void testVersion1SecureRandomNode() {
-        UUID uuid = UUIDFactory.timeRandomBasedUUID();
-        assertEquals(UUIDFactory.SECURE_RANDOM_NODE, uuid.node());
+    public void testVersion1SecureRandomVersion() {
+        assertEquals(1, UUIDFactory.timeRandomBasedUUID().version());
     }
 
     @Test
     public void testVersion1SecureRandomFromStringRep() {
         UUID uuid = UUIDFactory.timeRandomBasedUUID();
         assertEquals(uuid, UUID.fromString(uuid.toString()));
+    }
+
+    @Test
+    public void testVersion1SecureRandomNode() {
+        UUID uuid = UUIDFactory.timeRandomBasedUUID();
+        assertEquals(UUIDFactory.SECURE_RANDOM_NODE, uuid.node());
     }
 
     @Test
@@ -296,8 +334,7 @@ public class UUIDFactoryTest {
 
     @Test(expected = NumberFormatException.class)
     public void testParseNodeAddressesBadAddress4() {
-        long[] longs = UUIDFactory.parseMacAddressNodes("00:11:22:33:44:550");
-        System.err.println("Long: " + Long.toHexString(longs[0]));
+        UUIDFactory.parseMacAddressNodes("00:11:22:33:44:550");
     }
 
     @Test(expected = NumberFormatException.class)
@@ -347,7 +384,7 @@ public class UUIDFactoryTest {
     public void testComparatorRandom() {
         final Comparator<UUID> comparator = UUIDFactory.comparator();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
             UUID one = UUID.randomUUID();
             UUID two = UUID.randomUUID();
 
