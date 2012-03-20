@@ -168,6 +168,38 @@ public class BufferedImageFactoryTestCase {
     }
 
     @Test
+    public void testAbort() throws Exception {
+        URL resource = getClass().getResource("/sunflower.jpg");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        final BufferedImageFactory factory = new BufferedImageFactory(source);
+
+        // Listener should abort ASAP
+        factory.addProgressListener(new BufferedImageFactory.ProgressListener() {
+            public void progress(BufferedImageFactory pFactory, float pPercentage) {
+                if (pPercentage > 5) {
+                    pFactory.abort();
+                }
+            }
+        });
+
+        BufferedImage image = factory.getBufferedImage();
+
+        assertEquals(187, image.getWidth());
+        assertEquals(283, image.getHeight());
+
+        // Upper right should be loaded
+        assertEquals((image.getRGB(186, 0) & 0xFF0000) >> 16 , 0x68, 10);
+        assertEquals((image.getRGB(186, 0) & 0xFF00) >> 8, 0x91, 10);
+        assertEquals(image.getRGB(186, 0) & 0xFF, 0xE0, 10);
+
+        // Lower right should be blank
+        assertEquals(image.getRGB(186, 282) & 0xFFFFFF, 0);
+    }
+
+    @Test
     public void testListener() {
         URL resource = getClass().getResource("/sunflower.jpg");
         assertNotNull(resource);
@@ -180,7 +212,82 @@ public class BufferedImageFactoryTestCase {
         factory.addProgressListener(listener);
         factory.getBufferedImage();
 
-        listener.verify();
+        listener.verify(100f);
+    }
+
+    @Test
+    public void testRemoveListener() {
+        URL resource = getClass().getResource("/sunflower.jpg");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+
+        VerifyingListener listener = new VerifyingListener(factory);
+        factory.addProgressListener(listener);
+        factory.removeProgressListener(listener);
+        factory.getBufferedImage();
+
+        listener.verify(0);
+    }
+
+    @Test
+    public void testRemoveNullListener() {
+        URL resource = getClass().getResource("/sunflower.jpg");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+
+        VerifyingListener listener = new VerifyingListener(factory);
+        factory.addProgressListener(listener);
+        factory.removeProgressListener(null);
+        factory.getBufferedImage();
+
+        listener.verify(100);
+    }
+
+    @Test
+    public void testRemoveNotAdddedListener() {
+        URL resource = getClass().getResource("/sunflower.jpg");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+
+        VerifyingListener listener = new VerifyingListener(factory);
+        factory.addProgressListener(listener);
+        factory.removeProgressListener(new BufferedImageFactory.ProgressListener() {
+            public void progress(BufferedImageFactory pFactory, float pPercentage) {
+            }
+        });
+        factory.getBufferedImage();
+
+        listener.verify(100);
+    }
+
+    @Test
+    public void testRemoveAllListeners() {
+        URL resource = getClass().getResource("/sunflower.jpg");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+
+        VerifyingListener listener = new VerifyingListener(factory);
+        VerifyingListener listener2 = new VerifyingListener(factory);
+        factory.addProgressListener(listener);
+        factory.addProgressListener(listener);
+        factory.addProgressListener(listener2);
+        factory.removeAllProgressListeners();
+        factory.getBufferedImage();
+
+        listener.verify(0);
+        listener2.verify(0);
     }
 
     private static class VerifyingListener implements BufferedImageFactory.ProgressListener {
@@ -199,8 +306,8 @@ public class BufferedImageFactoryTestCase {
         }
 
 
-        public void verify() {
-            assertEquals(100f, progress, .1f); // Sanity test that the listener was invoked
+        public void verify(final float expectedProgress) {
+            assertEquals(expectedProgress, progress, .1f); // Sanity test that the listener was invoked
         }
     }
 }
