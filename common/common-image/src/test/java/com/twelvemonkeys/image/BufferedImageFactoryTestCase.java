@@ -1,5 +1,6 @@
 package com.twelvemonkeys.image;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.awt.*;
@@ -7,9 +8,11 @@ import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.ImageProducer;
+import java.awt.image.IndexColorModel;
 import java.net.URL;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * BufferedImageFactoryTestCase
@@ -29,19 +32,24 @@ public class BufferedImageFactoryTestCase {
         new BufferedImageFactory((ImageProducer) null);
     }
 
-    // Image source = Toolkit.getDefaultToolkit().createImage((byte[]) null);      // - NPE in Toolkit, ok
+    // NPE in Toolkit, ok
+    @Test(expected = RuntimeException.class)
+    public void testGetBufferedImageErrorSourceByteArray() {
+        Image source = Toolkit.getDefaultToolkit().createImage((byte[]) null);
 
-    @Test(timeout = 1000, expected = IllegalArgumentException.class)
-    public void testGetBufferedImageErrorSourceIP() {
+        new BufferedImageFactory(source);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetBufferedImageErrorSourceImageProducer() {
         Image source = Toolkit.getDefaultToolkit().createImage((ImageProducer) null);
 
         new BufferedImageFactory(source);
     }
 
-    // TODO: This is a quite serious bug, but it can be argued that the bug is in the
-    // Toolkit, allowing such images in the first place... In any case, there's
-    // not much we can do, except until someone is bored and kills the app... :-P
-/*
+    // TODO: This is a quite serious bug, however, the bug is in the Toolkit, allowing such images in the first place...
+    // In any case, there's not much we can do, except until someone is bored and kills the app/thread... :-P
+    @Ignore("Bug in Toolkit")
     @Test(timeout = 1000, expected = ImageConversionException.class)
     public void testGetBufferedImageErrorSourceString() {
         Image source = Toolkit.getDefaultToolkit().createImage((String) null);
@@ -49,7 +57,6 @@ public class BufferedImageFactoryTestCase {
         BufferedImageFactory factory = new BufferedImageFactory(source);
         factory.getBufferedImage();
     }
-*/
 
     // This is a little random, and it would be nicer if we could throw an IllegalArgumentException on create.
     // Unfortunately, the API doesn't allow this...
@@ -94,7 +101,53 @@ public class BufferedImageFactoryTestCase {
         }
     }
 
-    // TODO: Test a GIF or PNG with PLTE chunk, and make sure we get an IndexColorModel
+    @Test
+    public void testGetBufferedImageGIF() {
+        URL resource = getClass().getResource("/tux.gif");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+        BufferedImage image = factory.getBufferedImage();
+
+        assertEquals(250, image.getWidth());
+        assertEquals(250, image.getHeight());
+        
+        assertEquals(Transparency.BITMASK, image.getTransparency());
+
+        // All corners of image should be fully transparent
+        assertEquals(0, image.getRGB(0, 0) >>> 24);
+        assertEquals(0, image.getRGB(249, 0) >>> 24);
+        assertEquals(0, image.getRGB(0, 249) >>> 24);
+        assertEquals(0, image.getRGB(249, 249) >>> 24);
+    }
+
+    @Test
+    public void testGetColorModelGIF() {
+        URL resource = getClass().getResource("/tux.gif");
+        assertNotNull(resource);
+        Image source = Toolkit.getDefaultToolkit().createImage(resource);
+        assertNotNull(source);
+
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+        ColorModel colorModel = factory.getColorModel();
+
+        assertNotNull(colorModel);
+
+        assertEquals(3, colorModel.getNumColorComponents());
+        assertEquals(ColorSpace.getInstance(ColorSpace.CS_sRGB), colorModel.getColorSpace());
+        assertTrue(colorModel instanceof IndexColorModel);
+
+        assertTrue(colorModel.hasAlpha());
+        assertEquals(4, colorModel.getNumComponents());
+        assertTrue(((IndexColorModel) colorModel).getTransparentPixel() >= 0);
+        assertEquals(Transparency.BITMASK, colorModel.getTransparency());
+
+        for (int i = 0; i < colorModel.getNumComponents(); i++) {
+            assertEquals(8, colorModel.getComponentSize(i));
+        }
+    }
 
     @Test
     public void testGetBufferedImageSubsampled() {

@@ -59,7 +59,7 @@ public final class BufferedImageFactory {
     private int percentageDone;
 
     private ImageProducer producer;
-    private boolean error;
+    private ImageConversionException consumerException;
     private volatile boolean fetching;
     private boolean readColorModelOnly;
 
@@ -217,8 +217,8 @@ public final class BufferedImageFactory {
                 }
             }
 
-            if (error) {
-                throw new ImageConversionException("Image conversion failed: ImageConsumer.IMAGEERROR.");
+            if (consumerException != null) {
+                throw new ImageConversionException("Image conversion failed: " + consumerException.getMessage(), consumerException);
             }
 
             if (pColorModelOnly) {
@@ -475,8 +475,7 @@ public final class BufferedImageFactory {
 
             switch (pStatus) {
                 case ImageConsumer.IMAGEERROR:
-                    Thread.dumpStack();
-                    error = true;
+                    consumerException = new ImageConversionException("ImageConsumer.IMAGEERROR");
                 break;
             }
 
