@@ -99,8 +99,12 @@ public abstract class ImageReaderBase extends ImageReader {
     public void setInput(final Object input, final boolean seekForwardOnly, final boolean ignoreMetadata) {
         resetMembers();
         super.setInput(input, seekForwardOnly, ignoreMetadata);
+
         if (input instanceof ImageInputStream) {
             imageInput = (ImageInputStream) input;
+        }
+        else {
+            imageInput = null;
         }
     }
 

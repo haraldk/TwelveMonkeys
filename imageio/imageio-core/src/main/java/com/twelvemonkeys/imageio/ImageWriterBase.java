@@ -83,6 +83,9 @@ public abstract class ImageWriterBase extends ImageWriter {
         if (output instanceof ImageOutputStream) {
             imageOutput = (ImageOutputStream) output;
         }
+        else {
+            imageOutput = null;
+        }
     }
 
     /**

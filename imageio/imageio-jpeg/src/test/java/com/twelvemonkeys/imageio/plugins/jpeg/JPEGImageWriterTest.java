@@ -36,6 +36,8 @@ import javax.imageio.spi.ImageWriterSpi;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * JPEGImageWriterTest
@@ -63,7 +65,14 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
     }
 
     @Override
-    protected RenderedImage getTestData() {
-        return new BufferedImage(320, 200, BufferedImage.TYPE_3BYTE_BGR);
+    protected List<? extends RenderedImage> getTestData() {
+        return Arrays.asList(
+                new BufferedImage(320, 200, BufferedImage.TYPE_3BYTE_BGR),
+                new BufferedImage(32, 20, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(32, 20, BufferedImage.TYPE_INT_BGR),
+                new BufferedImage(32, 20, BufferedImage.TYPE_INT_ARGB),
+                new BufferedImage(32, 20, BufferedImage.TYPE_4BYTE_ABGR),
+                new BufferedImage(32, 20, BufferedImage.TYPE_BYTE_GRAY)
+        );
     }
 }

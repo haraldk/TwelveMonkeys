@@ -198,6 +198,7 @@ public class PICTImageWriter extends ImageWriterBase {
         // Pixel type, 16 is allright for direct pixels
         imageOutput.writeShort(16);
 
+        // TODO: Support others?
         // Pixel size
         imageOutput.writeShort(32);
 
@@ -257,20 +258,19 @@ public class PICTImageWriter extends ImageWriterBase {
             // Treat the scanline.
             for (int j = 0; j < w; j++) {
                 if (model instanceof ComponentColorModel && model.getColorSpace().getType() == ColorSpace.TYPE_RGB) {
-                    // TODO: Component order?
+                    // NOTE: Assumes component order always (A)BGR
                     // TODO: Alpha support
-                    scanlineBytes[x + j] = pixels[off + i * scansize * components + components * j + 2];
-                    scanlineBytes[x + w + j] = pixels[off + i * scansize * components + components * j + 1];
-                    scanlineBytes[x + 2 * w + j] = pixels[off + i * scansize * components + components * j];
+                    scanlineBytes[x         + j] = pixels[off + i * scansize * components + components * j + components - 1];
+                    scanlineBytes[x +     w + j] = pixels[off + i * scansize * components + components * j + components - 2];
+                    scanlineBytes[x + 2 * w + j] = pixels[off + i * scansize * components + components * j + components - 3];
                 }
                 else {
                     int rgb = model.getRGB(pixels[off + i * scansize + j] & 0xFF);
                     // Set red, green and blue components.
-                    scanlineBytes[x + j] = (byte) ((rgb >> 16) & 0xFF);
-                    scanlineBytes[x + w + j] = (byte) ((rgb >> 8) & 0xFF);
-                    scanlineBytes[x + 2 * w + j] = (byte) (rgb & 0xFF);
+                    scanlineBytes[x         + j] = (byte) ((rgb >> 16) & 0xFF);
+                    scanlineBytes[x +     w + j] = (byte) ((rgb >>  8) & 0xFF);
+                    scanlineBytes[x + 2 * w + j] = (byte) ((rgb      ) & 0xFF);
                 }
-
             }
 
             // If we have a complete scanline, then pack it and write it out.
@@ -288,7 +288,9 @@ public class PICTImageWriter extends ImageWriterBase {
                     imageOutput.writeByte(bytes.size());
                 }
 
-                bytes.writeTo(IIOUtil.createStreamAdapter(imageOutput));
+                OutputStream adapter = IIOUtil.createStreamAdapter(imageOutput);
+                bytes.writeTo(adapter);
+                adapter.flush();
 
                 scanWidthLeft = w;
             }
@@ -313,9 +315,9 @@ public class PICTImageWriter extends ImageWriterBase {
                 int rgb = model.getRGB(pixels[off + i * scansize + j]);
 
                 // Set red, green and blue components.
-                scanlineBytes[x + j] = (byte) ((rgb >> 16) & 0xFF);
-                scanlineBytes[x + w + j] = (byte) ((rgb >> 8) & 0xFF);
-                scanlineBytes[x + 2 * w + j] = (byte) (rgb & 0xFF);
+                scanlineBytes[x         + j] = (byte) ((rgb >> 16) & 0xFF);
+                scanlineBytes[x +     w + j] = (byte) ((rgb >>  8) & 0xFF);
+                scanlineBytes[x + 2 * w + j] = (byte) ((rgb      ) & 0xFF);
             }
 
             // If we have a complete scanline, then pack it and write it out.
@@ -333,7 +335,9 @@ public class PICTImageWriter extends ImageWriterBase {
                     imageOutput.writeByte(bytes.size());
                 }
 
-                bytes.writeTo(IIOUtil.createStreamAdapter(imageOutput));
+                OutputStream adapter = IIOUtil.createStreamAdapter(imageOutput);
+                bytes.writeTo(adapter);
+                adapter.flush();
 
                 scanWidthLeft = w;
             }

@@ -36,9 +36,12 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteProgressListener;
 import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyInt;
@@ -55,7 +58,32 @@ public abstract class ImageWriterAbstractTestCase {
 
     protected abstract ImageWriter createImageWriter();
 
-    protected abstract RenderedImage getTestData();
+    protected abstract List<? extends RenderedImage> getTestData();
+
+    protected static BufferedImage drawSomething(final BufferedImage image) {
+        Graphics2D g = image.createGraphics();
+        try {
+            int width = image.getWidth();
+            int height = image.getHeight();
+
+            g.clearRect(0, 0, width, height);
+            g.setPaint(new LinearGradientPaint(0, 0, width, 0, new float[] {0.2f, 1}, new Color[] {new Color(0x0, true), Color.BLUE}));
+            g.fillRect(0, 0, width, height);
+            g.setPaint(new LinearGradientPaint(0, 0, 0, height, new float[] {0.2f, 1}, new Color[] {new Color(0x0, true), Color.RED}));
+            g.fillRect(0, 0, width, height);
+            g.setPaint(new LinearGradientPaint(0, 0, 0, height, new float[] {0, 1}, new Color[] {new Color(0x00ffffff, true), Color.WHITE}));
+            g.fill(new Polygon(new int[] {0, width, width}, new int[] {0, height, 0}, 3));
+        }
+        finally {
+            g.dispose();
+        }
+
+        return image;
+    }
+    
+    protected final RenderedImage getTestData(final int index) {
+        return getTestData().get(index);
+    }
 
     @Test
     public void testSetOutput() throws IOException {
@@ -76,21 +104,24 @@ public abstract class ImageWriterAbstractTestCase {
     @Test
     public void testWrite() throws IOException {
         ImageWriter writer = createImageWriter();
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
-        writer.setOutput(stream);
 
-        try {
-            writer.write(getTestData());
-        }
-        catch (IOException e) {
-            fail(e.getMessage());
-        }
-        finally {
-            stream.close(); // Force data to be written
-        }
+        for (RenderedImage testData : getTestData()) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
+            writer.setOutput(stream);
 
-        assertTrue("No image data written", buffer.size() > 0);
+            try {
+                writer.write(drawSomething((BufferedImage) testData));
+            }
+            catch (IOException e) {
+                fail(e.getMessage());
+            }
+            finally {
+                stream.close(); // Force data to be written
+            }
+
+            assertTrue("No image data written", buffer.size() > 0);
+        }
     }
 
     @Test
@@ -116,7 +147,7 @@ public abstract class ImageWriterAbstractTestCase {
         ImageWriter writer = createImageWriter();
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail(e.getMessage());
@@ -155,7 +186,7 @@ public abstract class ImageWriterAbstractTestCase {
         writer.addIIOWriteProgressListener(listener);
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail("Could not write image");
@@ -183,7 +214,7 @@ public abstract class ImageWriterAbstractTestCase {
         writer.addIIOWriteProgressListener(listenerThree);
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail("Could not write image");
@@ -228,7 +259,7 @@ public abstract class ImageWriterAbstractTestCase {
         writer.removeIIOWriteProgressListener(listener);
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail("Could not write image");
@@ -253,7 +284,7 @@ public abstract class ImageWriterAbstractTestCase {
         writer.removeIIOWriteProgressListener(listener);
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail("Could not write image");
@@ -283,7 +314,7 @@ public abstract class ImageWriterAbstractTestCase {
         writer.removeAllIIOWriteProgressListeners();
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail("Could not write image");
@@ -309,7 +340,7 @@ public abstract class ImageWriterAbstractTestCase {
         writer.removeAllIIOWriteProgressListeners();
 
         try {
-            writer.write(getTestData());
+            writer.write(getTestData(0));
         }
         catch (IOException e) {
             fail("Could not write image");
