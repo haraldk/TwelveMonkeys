@@ -63,7 +63,7 @@ public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageRead
                 // 16 color indexed, multi palette (PCHG) - Ok
                 new TestData(getClassLoaderResource("/iff/Manhattan.PCHG"), new Dimension(704, 440)),
                 // 16 color indexed, multi palette (PCHG + SHAM) - Ok
-                new TestData(getClassLoaderResource("/iff/Manhattan.PCHG"), new Dimension(704, 440))
+                new TestData(getClassLoaderResource("/iff/Somnambulist-2.SHAM"), new Dimension(704, 440))
         );
     }
 
