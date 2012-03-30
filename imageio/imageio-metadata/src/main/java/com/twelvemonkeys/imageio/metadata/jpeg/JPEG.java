@@ -36,14 +36,17 @@ package com.twelvemonkeys.imageio.metadata.jpeg;
  * @version $Id: JPEG.java,v 1.0 11.02.11 15.51 haraldk Exp$
  */
 public interface JPEG {
-    /** Start of Image segment marker. */
+    /** Start of Image segment marker (SOI). */
     int SOI = 0xFFD8;
-    /** End of Image segment marker. */
+    /** End of Image segment marker (EOI). */
     int EOI = 0xFFD9;
-    /** Start of Stream segment marker. */
+    /** Start of Stream segment marker (SOS). */
     int SOS = 0xFFDA;
 
-    // App segment markers (APPn)
+    /** Define Quantization Tables segment marker (DQT). */
+    int DQT = 0xFFDB;
+
+    // App segment markers (APPn).
     int APP0 = 0xFFE0;
     int APP1 = 0xFFE1;
     int APP2 = 0xFFE2;
@@ -61,7 +64,7 @@ public interface JPEG {
     int APP14 = 0xFFEE;
     int APP15 = 0xFFEF;
 
-    // Start of Frame segment markers (SOFn)
+    // Start of Frame segment markers (SOFn).
     int SOF0 = 0xFFC0;
     int SOF1 = 0xFFC1;
     int SOF2 = 0xFFC2;
@@ -76,7 +79,7 @@ public interface JPEG {
     int SOF14 = 0xFFCE;
     int SOF15 = 0xFFCF;
 
-    // TODO: Known/Important APPn markers
+    // TODO: Known/Important APPn marker identifiers
     // "JFIF" APP0
     // "JFXX" APP0
     // "Exif" APP1

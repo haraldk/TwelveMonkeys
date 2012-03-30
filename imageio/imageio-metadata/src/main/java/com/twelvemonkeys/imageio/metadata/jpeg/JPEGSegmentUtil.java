@@ -41,6 +41,8 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 /**
  * JPEGSegmentUtil
  *
@@ -87,7 +89,7 @@ public final class JPEGSegmentUtil {
      * @see #ALL_IDS
      */
     public static List<JPEGSegment> readSegments(final ImageInputStream stream, final Map<Integer, List<String>> segmentIdentifiers) throws IOException {
-        readSOI(stream);
+        readSOI(notNull(stream, "stream"));
 
         List<JPEGSegment> segments = Collections.emptyList();
 
