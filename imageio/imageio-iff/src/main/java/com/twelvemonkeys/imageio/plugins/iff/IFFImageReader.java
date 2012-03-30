@@ -705,11 +705,10 @@ public class IFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void multiPaletteToRGB(final int srcY, final byte[] indexed, final IndexColorModel colorModel, final byte[] dest, final int destOffset) {
+    private void multiPaletteToRGB(final int row, final byte[] indexed, final IndexColorModel colorModel, final byte[] dest, final int destOffset) {
         final int width = header.width;
 
-        // TODO: Assure we have applied color change for all rows up until rowIndex, in case of source region/subsampling
-        ColorModel palette = paletteChange.getColorModel(colorModel, srcY, isLaced());
+        ColorModel palette = paletteChange.getColorModel(colorModel, row, isLaced());
 
         for (int x = 0; x < width; x++) {
             int pixel = indexed[x] & 0xff;

@@ -63,6 +63,7 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
     protected MutableIndexColorModel.PaletteChange[] initialChanges;
     protected MutableIndexColorModel.PaletteChange[][] changes;
 
+    protected int lastRow;
     protected WeakReference<IndexColorModel> originalPalette;
     protected MutableIndexColorModel mutablePalette;
 
@@ -105,7 +106,7 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
 
 
     public ColorModel getColorModel(final IndexColorModel colorModel, final int rowIndex, final boolean laced) {
-        if (mutablePalette == null || originalPalette != null && originalPalette.get() != colorModel) {
+        if (rowIndex < lastRow || mutablePalette == null || originalPalette != null && originalPalette.get() != colorModel) {
             originalPalette = new WeakReference<IndexColorModel>(colorModel);
             mutablePalette = new MutableIndexColorModel(colorModel);
 
@@ -114,9 +115,23 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
             }
         }
 
-        int row = laced && skipLaced() ? rowIndex / 2 : rowIndex;
-        if (row < changes.length && changes[row] != null) {
-            mutablePalette.adjustColorMap(changes[row]);
+        for (int i = lastRow + 1; i <= rowIndex; i++) {
+            int row;
+
+            if (laced && skipLaced()) {
+                if (i % 2 != 0) {
+                    continue;
+                }
+
+                row = i / 2;
+            }
+            else {
+                row = i;
+            }
+
+            if (row < changes.length && changes[row] != null) {
+                mutablePalette.adjustColorMap(changes[row]);
+            }
         }
 
         return mutablePalette;
