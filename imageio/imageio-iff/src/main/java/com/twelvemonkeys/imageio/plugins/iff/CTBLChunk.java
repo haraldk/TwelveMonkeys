@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,44 +28,15 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import java.io.DataInput;
-import java.io.IOException;
-import java.io.DataOutput;
-
 /**
- * IFFChunk
- * <p/>
+ * CTBLChunk
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: IFFChunk.java,v 1.0 28.feb.2006 00:00:45 haku Exp$
+ * @author last modified by $Author: haraldk$
+ * @version $Id: CTBLChunk.java,v 1.0 30.03.12 14:53 haraldk Exp$
  */
-abstract class IFFChunk {
-    int chunkId;
-    int chunkLength;
-
-    protected IFFChunk(int pChunkId, int pChunkLength) {
-        chunkId = pChunkId;
-        chunkLength = pChunkLength;
-    }
-
-    abstract void readChunk(DataInput pInput) throws IOException;
-
-    abstract void writeChunk(DataOutput pOutput) throws IOException;
-
-    protected static void skipData(final DataInput pInput, final int chunkLength, final int dataReadSoFar) throws IOException {
-        int toSkip = chunkLength - dataReadSoFar;
-
-        while (toSkip > 0) {
-            toSkip -= pInput.skipBytes(toSkip);
-        }
-
-        // Read pad
-        if (chunkLength % 2 != 0) {
-            pInput.readByte();
-        }
-    }
-
-    public String toString() {
-        return IFFUtil.toChunkStr(chunkId) + " chunk (" + chunkLength + " bytes)";
+final class CTBLChunk extends AbstractMultiPaletteChunk {
+    protected CTBLChunk(int pChunkLength) {
+        super(IFF.CHUNK_CTBL, pChunkLength);
     }
 }

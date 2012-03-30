@@ -39,7 +39,7 @@ import java.io.DataOutput;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: UnknownChunk.java,v 1.0 28.feb.2006 00:53:47 haku Exp$
  */
-class GenericChunk extends IFFChunk {
+final class GenericChunk extends IFFChunk {
 
     byte[] data;
 
@@ -56,15 +56,7 @@ class GenericChunk extends IFFChunk {
     void readChunk(DataInput pInput) throws IOException {
         pInput.readFully(data, 0, data.length);
 
-        int toSkip = chunkLength - data.length;
-        while (toSkip > 0) {
-            toSkip -= pInput.skipBytes(toSkip);
-        }
-
-        // Read pad
-        if (chunkLength % 2 != 0) {
-            pInput.readByte();
-        }
+        skipData(pInput, chunkLength, data.length);
     }
 
     void writeChunk(DataOutput pOutput) throws IOException {

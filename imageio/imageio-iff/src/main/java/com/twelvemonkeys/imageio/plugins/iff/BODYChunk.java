@@ -39,7 +39,7 @@ import java.io.DataOutput;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BODYChunk.java,v 1.0 28.feb.2006 01:25:49 haku Exp$
  */
-class BODYChunk extends IFFChunk {
+final class BODYChunk extends IFFChunk {
     protected BODYChunk(int pChunkLength) {
         super(IFF.CHUNK_BODY, pChunkLength);
     }

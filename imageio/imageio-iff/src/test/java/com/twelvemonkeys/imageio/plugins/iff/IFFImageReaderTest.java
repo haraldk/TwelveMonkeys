@@ -52,14 +52,18 @@ public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageRead
                 new TestData(getClassLoaderResource("/iff/survivor.iff"), new Dimension(800, 600)), // 24 bit
                 // HAM6 - Ok (a lot of visual "fringe", would be interesting to see on a real HAM display)
                 new TestData(getClassLoaderResource("/iff/A4000T_HAM6.IFF"), new Dimension(320, 512)), // ham6
-                // HAM8 - Ok (PackBits decoder chokes on padding byte)
+                // HAM8 - Ok
                 new TestData(getClassLoaderResource("/iff/A4000T_HAM8.IFF"), new Dimension(628, 512)), // ham8
                 // 8 color indexed - Ok
-                new TestData(getClassLoaderResource("/iff/AmigaBig.iff"), new Dimension(300, 200)), // 8 color
-                // 8 color indexed - Ok
                 new TestData(getClassLoaderResource("/iff/AmigaAmiga.iff"), new Dimension(200, 150)), // 8 color
-                // Ok (PackBits decoder chokes on padding byte)
-                new TestData(getClassLoaderResource("/iff/Abyss.iff"), new Dimension(320, 400))
+                // HAM6 - Ok
+                new TestData(getClassLoaderResource("/iff/Abyss.iff"), new Dimension(320, 400)),
+                // 256 color indexed - Ok
+                new TestData(getClassLoaderResource("/iff/IKKEGOD.iff"), new Dimension(640, 256)),
+                // 16 color indexed, multi palette (PCHG) - Ok
+                new TestData(getClassLoaderResource("/iff/Manhattan.PCHG"), new Dimension(704, 440)),
+                // 16 color indexed, multi palette (PCHG + SHAM) - Ok
+                new TestData(getClassLoaderResource("/iff/Manhattan.PCHG"), new Dimension(704, 440))
         );
     }
 

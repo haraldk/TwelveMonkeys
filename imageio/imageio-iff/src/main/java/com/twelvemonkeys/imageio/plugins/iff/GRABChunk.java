@@ -42,7 +42,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: GRABChunk.java,v 1.0 28.feb.2006 01:55:05 haku Exp$
  */
-class GRABChunk extends IFFChunk {
+final class GRABChunk extends IFFChunk {
 //   typedef struct {
 //      WORD x, y;  /* relative coordinates (pixels) */
 //   } Point2D;
