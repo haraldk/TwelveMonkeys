@@ -43,7 +43,6 @@ import java.util.List;
  * @version $Id: IFFImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageReader> {
-    // TODO: Need test for IFF PBM
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // 32 bit - Ok
@@ -58,6 +57,8 @@ public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageRead
                 new TestData(getClassLoaderResource("/iff/AmigaAmiga.iff"), new Dimension(200, 150)), // 8 color
                 // HAM6 - Ok
                 new TestData(getClassLoaderResource("/iff/Abyss.iff"), new Dimension(320, 400)),
+                // PBM, indexed - Ok
+                new TestData(getClassLoaderResource("/iff/ASH.PBM"), new Dimension(320, 240)),
                 // 256 color indexed - Ok
                 new TestData(getClassLoaderResource("/iff/IKKEGOD.iff"), new Dimension(640, 256)),
                 // 16 color indexed, multi palette (PCHG) - Ok

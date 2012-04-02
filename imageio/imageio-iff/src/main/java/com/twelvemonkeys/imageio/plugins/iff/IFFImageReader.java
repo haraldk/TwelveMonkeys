@@ -141,15 +141,16 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     private void readMeta() throws IOException {
-        if (imageInput.readInt() != IFF.CHUNK_FORM) {
-            throw new IIOException("Unknown file format for IFFImageReader");
+        int chunkType = imageInput.readInt();
+        if (chunkType != IFF.CHUNK_FORM) {
+            throw new IIOException(String.format("Unknown file format for IFFImageReader, expected 'FORM': %s", IFFUtil.toChunkStr(chunkType)));
         }
 
         int remaining = imageInput.readInt() - 4; // We'll read 4 more in a sec
 
         formType = imageInput.readInt();
         if (formType != IFF.TYPE_ILBM && formType != IFF.TYPE_PBM) {
-            throw new IIOException("Only IFF FORM types ILBM and PBM supported: " + IFFUtil.toChunkStr(formType));
+            throw new IIOException(String.format("Only IFF FORM types 'ILBM' and 'PBM ' supported: %s", IFFUtil.toChunkStr(formType)));
         }
 
         //System.out.println("IFF type FORM " + toChunkStr(type));
@@ -243,7 +244,7 @@ public class IFFImageReader extends ImageReaderBase {
                     CTBLChunk ctbl = new CTBLChunk(length);
                     ctbl.readChunk(imageInput);
 
-                    // NOTE: We prefer PHCG to ctbl style palette changes, if both are present
+                    // NOTE: We prefer PHCG to CTBL style palette changes, if both are present
                     if (paletteChange == null) {
                         paletteChange = ctbl;
                     }
@@ -494,17 +495,12 @@ public class IFFImageReader extends ImageReaderBase {
                 else if (isConvertToRGB()) {
                     multiPaletteToRGB(srcY, row, pModel, data, 0);
                 }
-                else if (isSHAM()) {
-                    throw new UnsupportedOperationException("SHAM not supported (yet)");
-                }
                 else {
                     raster.setDataElements(0, 0, width, 1, row);
                 }
             }
             else if (formType == IFF.TYPE_PBM) {
-                // TODO: Arraycopy might not be necessary, if it's okay with row larger than width
-                System.arraycopy(planeData, 0, row, 0, header.bitplanes * planeWidth);
-                raster.setDataElements(0, 0, width, 1, row);
+                raster.setDataElements(0, 0, width, 1, planeData);
             }
             else {
                 throw new AssertionError(String.format("Unsupported FORM type: %s", formType));
@@ -611,7 +607,6 @@ public class IFFImageReader extends ImageReaderBase {
 
         for (int srcY = 0; srcY < height; srcY++) {
             for (int c = 0; c < channels; c++) {
-
                 for (int p = 0; p < planesPerChannel; p++) {
                     readPlaneData(pInput, planeData, p * planeWidth, planeWidth);
                 }
