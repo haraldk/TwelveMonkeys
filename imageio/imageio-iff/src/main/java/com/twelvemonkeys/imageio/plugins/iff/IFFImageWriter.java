@@ -102,9 +102,15 @@ public class IFFImageWriter extends ImageWriterBase {
         imageOutput.writeInt(IFF.CHUNK_BODY);
         imageOutput.writeInt(pImageData.size());
 
-        // NOTE: This is much faster than mOutput.write(pImageData.toByteArray())
+        // NOTE: This is much faster than imageOutput.write(pImageData.toByteArray())
         // as the data array is not duplicated
-        pImageData.writeTo(IIOUtil.createStreamAdapter(imageOutput));
+        OutputStream adapter = IIOUtil.createStreamAdapter(imageOutput);
+        try {
+            pImageData.writeTo(adapter);
+        }
+        finally {
+            adapter.close();
+        }
 
         if (pImageData.size() % 2 == 0) {
             imageOutput.writeByte(0); // PAD
@@ -162,6 +168,8 @@ public class IFFImageWriter extends ImageWriterBase {
                     }
                 }
             }
+
+            output.flush();
 
             processImageProgress(y * 100f / height);
         }
