@@ -116,9 +116,7 @@ public final class EncoderStream extends FilterOutputStream {
         }
         else {
             // Encode data already in the buffer
-            if (bufferPos != 0) {
-                encodeBuffer();
-            }
+            encodeBuffer();
 
             // Encode rest without buffering
             encoder.encode(out, pBytes, pOffset, pLength);
