@@ -75,6 +75,7 @@ final class MutableIndexColorModel extends ColorModel {
         for (int i = 0; i < changes.length; i++) {
             int index = changes[i].index;
 
+            // TODO: Move validation to chunk (when reading)
             if (index >= rgbs.length) {
                 // TODO: Issue IIO warning
                 System.err.printf("warning - palette change register out of range\n");

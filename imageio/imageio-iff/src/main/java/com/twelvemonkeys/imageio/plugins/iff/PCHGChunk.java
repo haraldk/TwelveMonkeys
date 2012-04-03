@@ -83,68 +83,111 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
         changedLines = pInput.readUnsignedShort();
         minReg = pInput.readUnsignedShort();
         int maxReg = pInput.readUnsignedShort();
-        int maxChanges = pInput.readUnsignedShort(); // We don't really care, as we're not limited by the Amiga display hardware
+        /*int maxChangesPerLine = */pInput.readUnsignedShort(); // We don't really care, as we're not limited by the Amiga display hardware
         totalChanges = pInput.readInt();
 
-//        System.err.println("compression: " + compression);
-//        System.err.println("flags: " + Integer.toBinaryString(flags));
-//        System.err.println("startLine: " + startLine);
-//        System.err.println("lineCount: " + lineCount);
-//        System.err.println("changedLines: " + changedLines);
-//        System.err.println("minReg: " + minReg);
-//        System.err.println("maxReg: " + maxReg);
-//        System.err.println("maxChanges: " + maxChanges);
-//        System.err.println("totalChanges: " + totalChanges);
+        byte[] data;
 
         switch (compression) {
             case PCHG_COMP_NONE:
-                byte[] data = new byte[chunkLength - 20];
+                data = new byte[chunkLength - 20];
                 pInput.readFully(data);
-
-                changes = new MutableIndexColorModel.PaletteChange[startLine + lineCount][];
-
-                if (startLine < 0) {
-                    int numChanges = maxReg - minReg + 1;
-
-                    initialChanges = new MutableIndexColorModel.PaletteChange[numChanges];
-                    for (int i = 0; i < initialChanges.length; i++) {
-                        initialChanges[i] = new MutableIndexColorModel.PaletteChange();
-                    }
-
-                    for (int i = 0; i < numChanges; i++) {
-                        initialChanges[i].index = MutableIndexColorModel.MP_REG_IGNORE;
-                    }
-                }
-
-                // TODO: Postpone conversion to actually needed
-                if ((flags & PCHGF_12BIT) != 0) {
-                    convertSmallChanges(data);
-                }
-                else if ((flags & PCHGF_32BIT) != 0) {
-                    System.err.println("BigLineChanges");
-
-                    if ((flags & PCHGF_USE_ALPHA) != 0) {
-                        System.err.println("Alpha should be used...");
-                    }
-
-                    // TODO: Implement 32 bit/alpha support
-                    throw new UnsupportedOperationException("BigLineChanges not supported (yet)");
-                }
 
                 break;
             case PCHG_COMP_HUFFMAN:
-                // TODO: Implement Huffman decoding
-                throw new IIOException("Huffman PCHG compression not supported");
+                // NOTE: Huffman decompression is completely untested, due to lack of source data (read: Probably broken).
+                int compInfoSize = pInput.readInt();
+                int originalDataSize = pInput.readInt();
+
+                short[] compTree = new short[compInfoSize / 2];
+                for (int i = 0; i < compTree.length; i++) {
+                    compTree[i] = pInput.readShort();
+                }
+
+                byte[] compData = new byte[chunkLength - 20 - 8 - compInfoSize];
+                pInput.readFully(compData);
+
+                data = new byte[originalDataSize];
+
+                // decompress the change structure data
+                decompressHuffman(compData, data, compTree, data.length);
+
             default:
                 throw new IIOException("Unknown PCHG compression: " + compression);
         }
+
+        changes = new MutableIndexColorModel.PaletteChange[startLine + lineCount][];
+
+        if (startLine < 0) {
+            int numChanges = maxReg - minReg + 1;
+
+            initialChanges = new MutableIndexColorModel.PaletteChange[numChanges];
+        }
+
+        // TODO: Postpone conversion to when the data is actually needed
+        parseChanges(data, flags);
     }
 
-    private void convertSmallChanges(byte[] data) throws IIOException {
+    static void decompressHuffman(byte[] src, byte[] dest, short[] tree, int origSize) {
+        int i = 0;
+        int bits = 0;
+        int thisbyte = 0;
+
+        int treeIdx = tree.length - 1;
+        int srcIdx = 0;
+        int destIdx = 0;
+
+        while (i < origSize) {
+            if (bits == 0) {
+                thisbyte = src[srcIdx++];
+                bits = 8;
+            }
+
+            if ((thisbyte & (1 << 7)) != 0) {
+                if (tree[treeIdx] >= 0) {
+                    dest[destIdx++] = (byte) tree[treeIdx];
+                    i++;
+                    treeIdx = tree.length - 1;
+                }
+                else {
+                    treeIdx += tree[treeIdx] / 2;
+                }
+            }
+            else {
+                treeIdx--;
+
+                if (tree[treeIdx] > 0 && (tree[treeIdx] & 0x100) != 0) {
+                    dest[destIdx++] = (byte) tree[treeIdx];
+                    i++;
+                    treeIdx = tree.length - 1;
+                }
+            }
+
+            thisbyte <<= 1;
+            bits--;
+        }
+    }
+
+    private void parseChanges(final byte[] data, int flags) throws IIOException {
+        boolean small;
+
+        if ((flags & PCHGF_12BIT) != 0) {
+            small = true;
+        }
+        else if ((flags & PCHGF_32BIT) != 0) {
+            if ((flags & PCHGF_USE_ALPHA) != 0) {
+                // TODO: Warning, or actually implement
+                new IIOException("Alpha currently not supported.").printStackTrace();
+            }
+
+            small = false;
+        }
+        else {
+            throw new IIOException("Missing PCHG 12/32 bit flag.");
+        }
+
         int thismask = 0;
-        int changeCount, reg;
-        int changeCount16, changeCount32;
-        int smallChange;
+        int changeCount;
         int totalchanges = 0;
         int changedlines = changedLines;
 
@@ -158,7 +201,7 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
         for (int row = startLine; changedlines != 0 && row < 0; row++) {
             if (bits == 0) {
                 if (maskBytesLeft == 0) {
-                    throw new IIOException("insufficient data in line mask");
+                    throw new IIOException("Insufficient data in line mask");
                 }
 
                 thismask = data[maskIdx++];
@@ -168,31 +211,53 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
 
             if ((thismask & (1 << 7)) != 0) {
                 if (dataBytesLeft < 2) {
-                    throw new IIOException("insufficient data in SmallLineChanges structures: " + dataBytesLeft);
+                    throw new IIOException("Insufficient data in SmallLineChanges structures: " + dataBytesLeft);
                 }
 
-                changeCount16 = data[dataIdx++];
-                changeCount32 = data[dataIdx++];
+                int changeCount16 = 0;
+                if (small) {
+                    changeCount16 = data[dataIdx++] & 0xff;
+                    changeCount = changeCount16 + (data[dataIdx++] & 0xff);
+                }
+                else {
+                    changeCount = toShort(data, dataIdx);
+                    dataIdx += 2;
+                }
                 dataBytesLeft -= 2;
-
-                changeCount = changeCount16 + changeCount32;
 
                 for (int i = 0; i < changeCount; i++) {
                     if (totalchanges >= this.totalChanges) {
-                        throw new IIOException("insufficient data in SmallLineChanges structures (changeCount): " + totalchanges);
+                        throw new IIOException("Insufficient data in SmallLineChanges structures (changeCount): " + totalchanges);
                     }
                     if (dataBytesLeft < 2) {
-                        throw new IIOException("insufficient data in SmallLineChanges structures: " + dataBytesLeft);
+                        throw new IIOException("Insufficient data in SmallLineChanges structures: " + dataBytesLeft);
                     }
 
-                    smallChange = toShort(data, dataIdx);
-                    dataIdx += 2;
-                    dataBytesLeft -= 2;
-                    reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
-                    initialChanges[reg - minReg].index = reg;
-                    initialChanges[reg - minReg].r = (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT);
-                    initialChanges[reg - minReg].g = (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT);
-                    initialChanges[reg - minReg].b = (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT);
+                    // TODO: Make PaletteChange immutable with constructor params, assign outside test?
+                    if (small) {
+                        int smallChange = toShort(data, dataIdx);
+                        dataIdx += 2;
+                        dataBytesLeft -= 2;
+                        int reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
+                        initialChanges[reg - minReg] = new MutableIndexColorModel.PaletteChange();
+                        initialChanges[reg - minReg].index = reg;
+                        initialChanges[reg - minReg].r = (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT);
+                        initialChanges[reg - minReg].g = (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT);
+                        initialChanges[reg - minReg].b = (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT);
+                    }
+                    else {
+                        int reg = toShort(data, dataIdx);
+                        dataIdx += 2;
+                        initialChanges[reg - minReg] = new MutableIndexColorModel.PaletteChange();
+                        initialChanges[reg - minReg].index = reg;
+                        dataIdx++; /* skip alpha */
+                        initialChanges[reg - minReg].r = data[dataIdx++];
+                        initialChanges[reg - minReg].b = data[dataIdx++];    /* yes, RBG */
+                        initialChanges[reg - minReg].g = data[dataIdx++];
+                        dataBytesLeft -= 6;
+
+                    }
+
                     ++totalchanges;
                 }
 
@@ -203,10 +268,10 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
             bits--;
         }
 
-        for (int row = startLine; changedlines != 0 && row < this.changes.length; row++) {
+        for (int row = startLine; changedlines != 0 && row < changes.length; row++) {
             if (bits == 0) {
                 if (maskBytesLeft == 0) {
-                    throw new IIOException("insufficient data in line mask");
+                    throw new IIOException("Insufficient data in line mask");
                 }
 
                 thismask = data[maskIdx++];
@@ -216,37 +281,60 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
 
             if ((thismask & (1 << 7)) != 0) {
                 if (dataBytesLeft < 2) {
-                    throw new IIOException("insufficient data in SmallLineChanges structures: " + dataBytesLeft);
+                    throw new IIOException("Insufficient data in SmallLineChanges structures: " + dataBytesLeft);
                 }
 
-                changeCount16 = data[dataIdx++];
-                changeCount32 = data[dataIdx++];
+                int changeCount16 = 0;
+                if (small) {
+                    changeCount16 = data[dataIdx++] & 0xff;
+                    changeCount = changeCount16 + (data[dataIdx++] & 0xff);
+                }
+                else {
+                    changeCount = toShort(data, dataIdx);
+                    dataIdx += 2;
+                }
                 dataBytesLeft -= 2;
-
-                changeCount = changeCount16 + changeCount32;
 
                 changes[row] = new MutableIndexColorModel.PaletteChange[changeCount];
 
                 for (int i = 0; i < changeCount; i++) {
-                    changes[row][i] = new MutableIndexColorModel.PaletteChange();
-                }
-
-                for (int i = 0; i < changeCount; i++) {
                     if (totalchanges >= this.totalChanges) {
-                        throw new IIOException("insufficient data in SmallLineChanges structures");
-                    }
-                    if (dataBytesLeft < 2) {
-                        throw new IIOException("insufficient data in SmallLineChanges structures");
+                        throw new IIOException("Insufficient data in SmallLineChanges structures (changeCount): " + totalchanges);
                     }
 
-                    smallChange = toShort(data, dataIdx);
-                    dataIdx += 2;
-                    dataBytesLeft -= 2;
-                    reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
-                    changes[row][i].index = reg;
-                    changes[row][i].r = (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT);
-                    changes[row][i].g = (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT);
-                    changes[row][i].b = (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT);
+                    if (dataBytesLeft < 2) {
+                        throw new IIOException("Insufficient data in SmallLineChanges structures: " + dataBytesLeft);
+                    }
+
+                    if (small) {
+                        int smallChange = toShort(data, dataIdx);
+                        dataIdx += 2;
+                        dataBytesLeft -= 2;
+                        int reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
+
+                        MutableIndexColorModel.PaletteChange paletteChange = new MutableIndexColorModel.PaletteChange();
+                        paletteChange.index = reg;
+                        paletteChange.r = (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT);
+                        paletteChange.g = (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT);
+                        paletteChange.b = (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT);
+
+                        changes[row][i] = paletteChange;
+                    }
+                    else {
+                        int reg = toShort(data, dataIdx);
+                        dataIdx += 2;
+
+                        MutableIndexColorModel.PaletteChange paletteChange = new MutableIndexColorModel.PaletteChange();
+                        paletteChange.index = reg;
+                        dataIdx++; /* skip alpha */
+                        paletteChange.r = data[dataIdx++];
+                        paletteChange.b = data[dataIdx++];    /* yes, RBG */
+                        paletteChange.g = data[dataIdx++];
+                        changes[row][i] = paletteChange;
+
+                        dataBytesLeft -= 6;
+                    }
+
                     ++totalchanges;
                 }
 
@@ -259,7 +347,7 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
 
         if (totalchanges != this.totalChanges) {
             // TODO: Issue IIO warning
-            System.err.printf("warning - got %d change structures, chunk header reports %d", totalchanges, this.totalChanges);
+            new IIOException(String.format("Got %d change structures, chunk header reports %d", totalchanges, this.totalChanges)).printStackTrace();
         }
     }
 
