@@ -183,7 +183,8 @@ public class IFFImageReader extends ImageReaderBase {
                     if (colorMap != null) {
                         throw new IIOException("Multiple CMAP chunks not allowed");
                     }
-                    colorMap = new CMAPChunk(length, header, viewPort);
+
+                    colorMap = new CMAPChunk(length);
                     colorMap.readChunk(imageInput);
 
                     //System.out.println(colorMap);
@@ -204,7 +205,7 @@ public class IFFImageReader extends ImageReaderBase {
                     viewPort = new CAMGChunk(length);
                     viewPort.readChunk(imageInput);
 
-                    //System.out.println(viewPort);
+//                    System.out.println(viewPort);
                     break;
                 case IFF.CHUNK_PCHG:
                     if (paletteChange instanceof PCHGChunk) {
@@ -217,7 +218,7 @@ public class IFFImageReader extends ImageReaderBase {
                     // Always prefer PCHG style palette changes
                     paletteChange = pchg;
 
-//                    System.out.println(paletteChange);
+//                    System.out.println(pchg);
                     break;
 
                 case IFF.CHUNK_SHAM:
@@ -233,7 +234,7 @@ public class IFFImageReader extends ImageReaderBase {
                         paletteChange = sham;
                     }
 
-//                    System.out.println(paletteChange);
+//                    System.out.println(sham);
                     break;
 
                 case IFF.CHUNK_CTBL:
@@ -249,7 +250,7 @@ public class IFFImageReader extends ImageReaderBase {
                         paletteChange = ctbl;
                     }
 
-//                    System.out.println(paletteChange);
+//                    System.out.println(ctbl);
                     break;
 
                 case IFF.CHUNK_JUNK:
@@ -297,7 +298,7 @@ public class IFFImageReader extends ImageReaderBase {
             //System.out.println(colorMap);
             if (colorMap != null) {
                 //System.out.println("Creating palette!");
-                image = colorMap.createPaletteImage();
+                image = colorMap.createPaletteImage(header, isEHB());
             }
         }
 
@@ -355,7 +356,7 @@ public class IFFImageReader extends ImageReaderBase {
                 // May be HAM8
                 if (!isConvertToRGB()) {
                     if (colorMap != null) {
-                        IndexColorModel cm = colorMap.getIndexColorModel();
+                        IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
                         specifier = IndexedImageTypeSpecifier.createFromIndexColorModel(cm);
                         break;
                     }
@@ -389,7 +390,7 @@ public class IFFImageReader extends ImageReaderBase {
 
         // NOTE: colorMap may be null for 8 bit (gray), 24 bit or 32 bit only
         if (colorMap != null) {
-            IndexColorModel cm = colorMap.getIndexColorModel();
+            IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
             readIndexed(pParam, imageInput, cm);
         }
         else {
@@ -765,6 +766,10 @@ public class IFFImageReader extends ImageReaderBase {
         return paletteChange != null;
     }
 
+    private boolean isEHB() {
+        return viewPort != null && viewPort.isEHB();
+    }
+
     private boolean isHAM() {
         return viewPort != null && viewPort.isHAM();
     }
@@ -782,32 +787,41 @@ public class IFFImageReader extends ImageReaderBase {
                 scale = true;
                 continue;
             }
-            ImageInputStream input = new BufferedImageInputStream(ImageIO.createImageInputStream(new File(arg)));
-            boolean canRead = reader.getOriginatingProvider().canDecodeInput(input);
 
-            System.out.println("Can read: " + canRead);
-
-            if (canRead) {
-                reader.setInput(input);
-                ImageReadParam param = reader.getDefaultReadParam();
-//            param.setSourceRegion(new Rectangle(0, 0, 160, 200));
-//            param.setSourceRegion(new Rectangle(160, 200, 160, 200));
-//            param.setSourceRegion(new Rectangle(80, 100, 160, 200));
-//            param.setDestinationOffset(new Point(80, 100));
-//            param.setSourceSubsampling(3, 3, 0, 0);
-//            param.setSourceBands(new int[]{0, 1, 2});
-//            param.setDestinationBands(new int[]{1, 0, 2});
-                BufferedImage image = reader.read(0, param);
-                System.out.println("image = " + image);
-
-                if (scale) {
-                    image = new ResampleOp(image.getWidth() / 2, image.getHeight(), ResampleOp.FILTER_LANCZOS).filter(image, null);
-//                image = ImageUtil.createResampled(image, image.getWidth(), image.getHeight() * 2, Image.SCALE_FAST);
-                }
-
-                showIt(image, arg);
+            File file = new File(arg);
+            if (!file.isFile()) {
+                continue;
             }
 
+            try {
+                ImageInputStream input = new BufferedImageInputStream(ImageIO.createImageInputStream(file));
+                boolean canRead = reader.getOriginatingProvider().canDecodeInput(input);
+
+                if (canRead) {
+                    reader.setInput(input);
+                    ImageReadParam param = reader.getDefaultReadParam();
+    //            param.setSourceRegion(new Rectangle(0, 0, 160, 200));
+    //            param.setSourceRegion(new Rectangle(160, 200, 160, 200));
+    //            param.setSourceRegion(new Rectangle(80, 100, 160, 200));
+    //            param.setDestinationOffset(new Point(80, 100));
+    //            param.setSourceSubsampling(3, 3, 0, 0);
+    //            param.setSourceBands(new int[]{0, 1, 2});
+    //            param.setDestinationBands(new int[]{1, 0, 2});
+                    BufferedImage image = reader.read(0, param);
+                    System.out.println("image = " + image);
+
+                    if (scale) {
+                        image = new ResampleOp(image.getWidth() / 2, image.getHeight(), ResampleOp.FILTER_LANCZOS).filter(image, null);
+    //                image = ImageUtil.createResampled(image, image.getWidth(), image.getHeight() * 2, Image.SCALE_FAST);
+                    }
+
+                    showIt(image, arg);
+                }
+            }
+            catch (IOException e) {
+                System.err.println("Error reading file: " + file);
+                e.printStackTrace();
+            }
         }
     }
 }
