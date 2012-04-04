@@ -325,7 +325,7 @@ public class IFFImageReader extends ImageReaderBase {
         List<ImageTypeSpecifier> types = Arrays.asList(
                 getRawImageType(pIndex),
                 ImageTypeSpecifier.createFromBufferedImageType(header.bitplanes == 32 ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR)
-// TODO:               ImageTypeSpecifier.createFromBufferedImageType(header.bitplanes == 32 ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB),
+                // TODO: ImageTypeSpecifier.createFromBufferedImageType(header.bitplanes == 32 ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB),
                 // TODO: Allow 32 bit always. Allow RGB and discard alpha, if present?
         );
         return types.iterator();

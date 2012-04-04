@@ -63,6 +63,8 @@ public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageRead
                 new TestData(getClassLoaderResource("/iff/A4000T_HAM6.IFF"), new Dimension(320, 512)),
                 // HAM8 - Ok
                 new TestData(getClassLoaderResource("/iff/A4000T_HAM8.IFF"), new Dimension(628, 512)),
+                // 2 color indexed - Ok
+                new TestData(getClassLoaderResource("/iff/owl.iff"), new Dimension(160, 174)),
                 // 8 color indexed - Ok
                 new TestData(getClassLoaderResource("/iff/AmigaAmiga.iff"), new Dimension(200, 150)),
                 // 16 color indexed - Ok
