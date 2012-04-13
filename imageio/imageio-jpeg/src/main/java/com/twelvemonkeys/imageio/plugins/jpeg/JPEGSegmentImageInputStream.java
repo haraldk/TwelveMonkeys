@@ -89,8 +89,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 long realPosition = stream.getStreamPosition();
                 int marker = stream.readUnsignedShort();
 
-                // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment
-                if (isAppSegmentMarker(marker) && marker != JPEG.APP0 && marker != JPEG.APP14) {
+                // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment, 'Exif' APP1 and very few others
+                if (isAppSegmentMarker(marker) && marker != JPEG.APP0 && marker != JPEG.APP1 && marker != JPEG.APP14) {
                     int length = stream.readUnsignedShort(); // Length including length field itself
                     stream.seek(realPosition + 2 + length);  // Skip marker (2) + length
                 }
