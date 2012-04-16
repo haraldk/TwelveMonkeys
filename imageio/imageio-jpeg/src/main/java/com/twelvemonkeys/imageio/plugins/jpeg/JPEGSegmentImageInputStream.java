@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
-import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
@@ -141,7 +140,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     private static boolean isAppSegmentWithId(String segmentId, ImageInputStream stream) throws IOException {
-        Validate.notNull(segmentId, "segmentId");
+        notNull(segmentId, "segmentId");
 
         stream.mark();
 
@@ -160,7 +159,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
     static String asNullTerminatedAsciiString(final byte[] data, final int offset) {
         for (int i = 0; i < data.length - offset; i++) {
-            if (data[i] == 0 || i > 255) {
+            if (data[offset + i] == 0 || i > 255) {
                 return asAsciiString(data, offset, offset + i);
             }
         }

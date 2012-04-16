@@ -133,7 +133,7 @@ public final class JPEGSegmentUtil {
 
     static String asNullTerminatedAsciiString(final byte[] data, final int offset) {
         for (int i = 0; i < data.length - offset; i++) {
-            if (data[i] == 0 || i > 255) {
+            if (data[offset + i] == 0 || i > 255) {
                 return asAsciiString(data, offset, offset + i);
             }
         }

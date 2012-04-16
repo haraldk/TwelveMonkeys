@@ -71,6 +71,7 @@ import java.util.List;
 public class JPEGImageReader extends ImageReaderBase {
     // TODO: Fix the (stream) metadata inconsistency issues.
     // - Sun JPEGMetadata class does not (and can not be made to) support CMYK data.. We need to create all new metadata classes.. :-/
+    // TODO: Split thumbnail reading into separate class
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
@@ -306,7 +307,7 @@ public class JPEGImageReader extends ImageReaderBase {
             // NOTE: Reading the metadata here chokes on some images. Instead, parse the Adobe App14 segment and read transform directly
 
             // TODO: If cmyk and no ICC profile, just use FastCMYKToRGB, without attempting loading Generic CMYK profile first?
-            // TODO: Also, don't get generic CMYK if we already have a profile...
+            // TODO: Don't get generic CMYK if we already have a CMYK profile...
             srcCs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
             imageTypes = Arrays.asList(
                     ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR),
@@ -544,88 +545,108 @@ public class JPEGImageReader extends ImageReaderBase {
 
             CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
 
-            if (exifMetadata.directoryCount() == 2) {
-                Directory ifd1 = exifMetadata.getDirectory(1);
-                Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-                if (compression != null && compression.getValue().equals(1)) {
-                    // Read ImageWidth, ImageLength (height) and BitsPerSample (=8 8 8, always)
-                    // PhotometricInterpretation (2=RGB, 6=YCbCr), SamplesPerPixel (=3, always),
-                    Entry width = ifd1.getEntryById(TIFF.TAG_IMAGE_WIDTH);
-                    Entry height = ifd1.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
-                    
-                    if (width == null || height == null) {
-                        throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
-                    }
-
-                    Entry bitsPerSample = ifd1.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
-                    Entry samplesPerPixel = ifd1.getEntryById(TIFF.TAG_SAMPLES_PER_PIXELS);
-                    Entry photometricInterpretation = ifd1.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
-
-                    // Required
-                    int w = ((Number) width.getValue()).intValue();
-                    int h = ((Number) height.getValue()).intValue();
-                    
-                    if (bitsPerSample != null) {
-                        int[] bpp = (int[]) bitsPerSample.getValue();
-                        if (!Arrays.equals(bpp, new int[]{8, 8, 8})) {
-                            throw new IIOException("Unknown bits per sample for RAW EXIF thumbnail: " + bitsPerSample.getValueAsString());
-                        }
-                    }
-                    
-                    if (samplesPerPixel != null && (Integer) samplesPerPixel.getValue() != 3) {
-                        throw new IIOException("Unknown samples per pixel for RAW EXIF thumbnail: " + samplesPerPixel.getValueAsString());
-                    }
-                    
-                    int interpretation = photometricInterpretation != null ? ((Number) photometricInterpretation.getValue()).intValue() : 2;
-
-                    // IFD1 should contain strip offsets for uncompressed images
-                    Entry offset = ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS);
-                    if (offset != null) {
-                        stream.seek(((Number) offset.getValue()).longValue());
-
-                        // Read raw image data, either RGB or YCbCr
-                        int thumbSize = w * h * 3;
-                        byte[] thumbData = readFully(stream, thumbSize);
-
-                        switch (interpretation) {
-                            case 2:
-                                // RGB
-                                break;
-                            case 6:
-                                // YCbCr
-                                for (int i = 0, thumbDataLength = thumbData.length; i < thumbDataLength; i++) {
-                                    YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
-                                }
-                                break;
-                            default:
-                                throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbnail: " + interpretation);
-                        }
-
-                        thumbnails.add(readRawThumbnail(thumbData, thumbData.length, 0, w, h));
-                    }
-                }
-                else if (compression == null || compression.getValue().equals(6)) {
-                    Entry jpegOffset = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
-
-                    // IFD1 should contain jpeg offset for JPEG thumbnail
-                    if (jpegOffset != null) {
-                        stream.seek(((Number) jpegOffset.getValue()).longValue());
-                        InputStream adapter = IIOUtil.createStreamAdapter(stream);
-                        BufferedImage exifThumb = ImageIO.read(adapter);
-
-                        if (exifThumb != null) {
-                            thumbnails.add(exifThumb);
-                        }
-
-                        adapter.close();
-                    }
-                }
-            }
+            extractEXIFThumbnails(stream, exifMetadata);
 
             return exifMetadata;
         }
 
         return null;
+    }
+
+    private void extractEXIFThumbnails(ImageInputStream stream, CompoundDirectory exifMetadata) throws IOException {
+        if (exifMetadata.directoryCount() == 2) {
+            Directory ifd1 = exifMetadata.getDirectory(1);
+            Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
+
+            if (compression != null && compression.getValue().equals(1)) { // 1 = no compression
+                // Read ImageWidth, ImageLength (height) and BitsPerSample (=8 8 8, always)
+                // PhotometricInterpretation (2=RGB, 6=YCbCr), SamplesPerPixel (=3, always),
+                Entry width = ifd1.getEntryById(TIFF.TAG_IMAGE_WIDTH);
+                Entry height = ifd1.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
+
+                if (width == null || height == null) {
+                    throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
+                }
+
+                Entry bitsPerSample = ifd1.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
+                Entry samplesPerPixel = ifd1.getEntryById(TIFF.TAG_SAMPLES_PER_PIXELS);
+                Entry photometricInterpretation = ifd1.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
+
+                // Required
+                int w = ((Number) width.getValue()).intValue();
+                int h = ((Number) height.getValue()).intValue();
+
+                if (bitsPerSample != null) {
+                    int[] bpp = (int[]) bitsPerSample.getValue();
+                    if (!Arrays.equals(bpp, new int[] {8, 8, 8})) {
+                        throw new IIOException("Unknown bits per sample for RAW EXIF thumbnail: " + bitsPerSample.getValueAsString());
+                    }
+                }
+
+                if (samplesPerPixel != null && (Integer) samplesPerPixel.getValue() != 3) {
+                    throw new IIOException("Unknown samples per pixel for RAW EXIF thumbnail: " + samplesPerPixel.getValueAsString());
+                }
+
+                int interpretation = photometricInterpretation != null ? ((Number) photometricInterpretation.getValue()).intValue() : 2;
+
+                // IFD1 should contain strip offsets for uncompressed images
+                Entry offset = ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS);
+                if (offset != null) {
+                    stream.seek(((Number) offset.getValue()).longValue());
+
+                    // Read raw image data, either RGB or YCbCr
+                    int thumbSize = w * h * 3;
+                    byte[] thumbData = readFully(stream, thumbSize);
+
+                    switch (interpretation) {
+                        case 2:
+                            // RGB
+                            break;
+                        case 6:
+                            // YCbCr
+                            for (int i = 0, thumbDataLength = thumbData.length; i < thumbDataLength; i += 3) {
+                                YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
+                            }
+                            break;
+                        default:
+                            throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbnail: " + interpretation);
+                    }
+
+                    thumbnails.add(readRawThumbnail(thumbData, thumbData.length, 0, w, h));
+                }
+            }
+            else if (compression == null || compression.getValue().equals(6)) { // 6 = JPEG compression
+                // IFD1 should contain JPEG offset for JPEG thumbnail
+                Entry jpegOffset = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+
+                if (jpegOffset != null) {
+                    stream.seek(((Number) jpegOffset.getValue()).longValue());
+                    InputStream input = IIOUtil.createStreamAdapter(stream);
+
+                    // For certain EXIF files (encoded with TIFF.TAG_YCBCR_POSITIONING = 2?), we need
+                    // EXIF information to read the thumbnail correctly (otherwise the colors are messed up).
+
+                    // HACK: Splice empty EXIF information into the thumbnail stream
+                    byte[] fakeEmptyExif = {
+                            // SOI (from original data)
+                            (byte) input.read(), (byte) input.read(),
+                            // APP1 + len (016) + 'Exif' + 0-term + pad
+                            (byte) 0xFF, (byte) 0xE1, 0, 16, 'E', 'x', 'i', 'f', 0, 0,
+                            // Big-endian BOM (MM), TIFF magic (042), offset (0000)
+                            'M', 'M', 0, 42, 0, 0, 0, 0,
+                    };
+                    input = new SequenceInputStream(new ByteArrayInputStream(fakeEmptyExif), input);
+
+                    BufferedImage exifThumb = ImageIO.read(input);
+
+                    if (exifThumb != null) {
+                        thumbnails.add(exifThumb);
+                    }
+
+                    input.close();
+                }
+            }
+        }
     }
 
     private List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
@@ -1362,14 +1383,19 @@ public class JPEGImageReader extends ImageReaderBase {
 
     public static void main(final String[] args) throws IOException {
         for (final String arg : args) {
-//            File file = new File(args[0]);
             File file = new File(arg);
+
             ImageInputStream input = ImageIO.createImageInputStream(file);
+            if (input == null) {
+                System.err.println("Could not read file: " + file);
+                continue;
+            }
+
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 
             if (!readers.hasNext()) {
                 System.err.println("No reader for: " + file);
-                System.exit(1);
+                continue;
             }
 
             ImageReader reader = readers.next();
@@ -1411,7 +1437,6 @@ public class JPEGImageReader extends ImageReaderBase {
                 }
             });
 
-
             reader.setInput(input);
 
             try {
@@ -1452,6 +1477,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     int numThumbnails = reader.getNumThumbnails(0);
                     for (int i = 0; i < numThumbnails; i++) {
                         BufferedImage thumbnail = reader.readThumbnail(0, i);
+//                        System.err.println("thumbnail: " + thumbnail);
                         showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
                     }
                 }

@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * JPEGImageReaderTest
@@ -135,9 +136,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         byte[] expectedData = {34, 37, 34, 47, 47, 44, 22, 26, 28, 23, 26, 28, 20, 23, 26, 20, 22, 25, 22, 25, 27, 18, 21, 24};
 
         assertEquals(expectedData.length, data.length);
-        
-        for (int i = 0; i < expectedData.length; i++) {
-            assertEquals(expectedData[i], data[i], 5);
+
+        assertJPEGPixelsEqual(expectedData, data, 0);
+    }
+
+    private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, int actualOffset) {
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals(expected[i], actual[i + actualOffset], 5);
         }
     }
 
@@ -332,5 +337,66 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(thumbnail);
         assertEquals(96, thumbnail.getWidth());
         assertEquals(72, thumbnail.getHeight());
+    }
+
+    @Test
+    public void testInvertedColors() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg")));
+
+        assertEquals(2437, reader.getWidth(0));
+        assertEquals(1662, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, reader.getWidth(0), 8));
+        BufferedImage strip = reader.read(0, param);
+
+        assertNotNull(strip);
+        assertEquals(2437, strip.getWidth());
+        assertEquals(8, strip.getHeight());
+
+        int[] expectedRGB = new int[] {
+                0xffe9d0bc, 0xfff3decd, 0xfff5e6d3, 0xfff8ecdc, 0xfff8f0e5, 0xffe3ceb9, 0xff6d3923, 0xff5a2d18,
+                0xff00170b, 0xff131311, 0xff52402c, 0xff624a30, 0xff6a4f34, 0xfffbf8f1, 0xfff4efeb, 0xffefeae6,
+                0xffebe6e2, 0xffe3e0d9, 0xffe1d6d0, 0xff10100e
+        };
+
+        // Validate strip colors
+        for (int i = 0; i < strip.getWidth() / 128; i++) {
+            int actualRGB = strip.getRGB(i * 128, 4);
+            assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
+            assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
+            assertEquals((actualRGB)       & 0xff, (expectedRGB[i])       & 0xff, 5);
+        }
+    }
+
+    @Test
+    public void testThumbnailInvertedColors() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg")));
+
+        assertTrue(reader.hasThumbnails(0));
+        assertEquals(1, reader.getNumThumbnails(0));
+        assertEquals(160, reader.getThumbnailWidth(0, 0));
+        assertEquals(109, reader.getThumbnailHeight(0, 0));
+
+        BufferedImage thumbnail = reader.readThumbnail(0, 0);
+        assertNotNull(thumbnail);
+        assertEquals(160, thumbnail.getWidth());
+        assertEquals(109, thumbnail.getHeight());
+
+        int[] expectedRGB = new int[] {
+                0xffefd5c4, 0xffead3b1, 0xff55392d, 0xff55403b, 0xff6d635a, 0xff7b726b, 0xff68341f, 0xff5c2f1c,
+                0xff250f12, 0xff6d7c77, 0xff414247, 0xff6a4f3a, 0xff6a4e39, 0xff564438, 0xfffcf7f1, 0xffefece7,
+                0xfff0ebe7, 0xff464040, 0xffe3deda, 0xffd4cfc9,
+        };
+
+        // Validate strip colors
+        for (int i = 0; i < thumbnail.getWidth() / 8; i++) {
+            int actualRGB = thumbnail.getRGB(i * 8, 4);
+            assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
+            assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
+            assertEquals((actualRGB)       & 0xff, (expectedRGB[i])       & 0xff, 5);
+        }
     }
 }

@@ -59,6 +59,10 @@ final class EXIFEntry extends AbstractEntry {
         switch ((Integer) getIdentifier()) {
             case TIFF.TAG_EXIF_IFD:
                 return "EXIF";
+            case TIFF.TAG_INTEROP_IFD:
+                return "Interoperability";
+            case TIFF.TAG_GPS_IFD:
+                return "GPS";
             case TIFF.TAG_XMP:
                 return "XMP";
             case TIFF.TAG_IPTC:
@@ -112,6 +116,10 @@ final class EXIFEntry extends AbstractEntry {
                 return "HostComputer";
             case TIFF.TAG_COPYRIGHT:
                 return "Copyright";
+            case TIFF.TAG_YCBCR_SUB_SAMPLING:
+                return "YCbCrSubSampling";
+            case TIFF.TAG_YCBCR_POSITIONING:
+                return "YCbCrPositioning";
 
             case EXIF.TAG_EXPOSURE_TIME:
                 return "ExposureTime";
@@ -121,6 +129,55 @@ final class EXIFEntry extends AbstractEntry {
                 return "ExposureProgram";
             case EXIF.TAG_ISO_SPEED_RATINGS:
                 return "ISOSpeedRatings";
+            case EXIF.TAG_SHUTTER_SPEED_VALUE:
+                return "ShutterSpeedValue";
+            case EXIF.TAG_APERTURE_VALUE:
+                return "ApertureValue";
+            case EXIF.TAG_BRIGHTNESS_VALUE:
+                return "BrightnessValue";
+            case EXIF.TAG_EXPOSURE_BIAS_VALUE:
+                return "ExposureBiasValue";
+            case EXIF.TAG_MAX_APERTURE_VALUE:
+                return "MaxApertureValue";
+            case EXIF.TAG_SUBJECT_DISTANCE:
+                return "SubjectDistance";
+            case EXIF.TAG_METERING_MODE:
+                return "MeteringMode";
+            case EXIF.TAG_LIGHT_SOURCE:
+                return "LightSource";
+            case EXIF.TAG_FLASH:
+                return "Flash";
+            case EXIF.TAG_FOCAL_LENGTH:
+                return "FocalLength";
+            case EXIF.TAG_FILE_SOURCE:
+                return "FileSource";
+            case EXIF.TAG_SCENE_TYPE:
+                return "SceneType";
+            case EXIF.TAG_CFA_PATTERN:
+                return "CFAPattern";
+            case EXIF.TAG_CUSTOM_RENDERED:
+                return "CustomRendered";
+            case EXIF.TAG_EXPOSURE_MODE:
+                return "ExposureMode";
+            case EXIF.TAG_WHITE_BALANCE:
+                return "WhiteBalance";
+            case EXIF.TAG_DIGITAL_ZOOM_RATIO:
+                return "DigitalZoomRation";
+            case EXIF.TAG_FOCAL_LENGTH_IN_35_MM_FILM:
+                return "FocalLengthIn35mmFilm";
+            case EXIF.TAG_SCENE_CAPTURE_TYPE:
+                return "SceneCaptureType";
+            case EXIF.TAG_GAIN_CONTROL:
+                return "GainControl";
+            case EXIF.TAG_CONTRAST:
+                return "Contrast";
+            case EXIF.TAG_SATURATION:
+                return "Saturation";
+            case EXIF.TAG_SHARPNESS:
+                return "Sharpness";
+
+            case EXIF.TAG_FLASHPIX_VERSION:
+                return "FlashpixVersion";
 
             case EXIF.TAG_EXIF_VERSION:
                 return "ExifVersion";
@@ -132,6 +189,11 @@ final class EXIFEntry extends AbstractEntry {
                 return "ImageNumber";
             case EXIF.TAG_USER_COMMENT:
                 return "UserComment";
+
+            case EXIF.TAG_COMPONENTS_CONFIGURATION:
+                return "ComponentsConfiguration";
+            case EXIF.TAG_COMPRESSED_BITS_PER_PIXEL:
+                return "CompressedBitsPerPixel";
 
             case EXIF.TAG_COLOR_SPACE:
                 return "ColorSpace";
