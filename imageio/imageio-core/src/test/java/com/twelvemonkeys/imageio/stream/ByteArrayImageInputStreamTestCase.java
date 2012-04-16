@@ -35,6 +35,71 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    public void testCreateNullOffLen() {
+        try {
+            new ByteArrayImageInputStream(null, 0, -1);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            assertNotNull("Null exception message", expected.getMessage());
+            String message = expected.getMessage().toLowerCase();
+            assertTrue("Exception message does not contain parameter name", message.contains("data"));
+            assertTrue("Exception message does not contain null", message.contains("null"));
+        }
+    }
+
+    public void testCreateNegativeOff() {
+        try {
+            new ByteArrayImageInputStream(new byte[0], -1, 1);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            assertNotNull("Null exception message", expected.getMessage());
+            String message = expected.getMessage().toLowerCase();
+            assertTrue("Exception message does not contain parameter name", message.contains("offset"));
+            assertTrue("Exception message does not contain -1", message.contains("-1"));
+        }
+    }
+
+    public void testCreateBadOff() {
+        try {
+            new ByteArrayImageInputStream(new byte[1], 2, 0);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            assertNotNull("Null exception message", expected.getMessage());
+            String message = expected.getMessage().toLowerCase();
+            assertTrue("Exception message does not contain parameter name", message.contains("offset"));
+            assertTrue("Exception message does not contain 2", message.contains("2"));
+        }
+    }
+
+    public void testCreateNegativeLen() {
+        try {
+            new ByteArrayImageInputStream(new byte[0], 0, -1);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            assertNotNull("Null exception message", expected.getMessage());
+            String message = expected.getMessage().toLowerCase();
+            assertTrue("Exception message does not contain parameter name", message.contains("length"));
+            assertTrue("Exception message does not contain -1", message.contains("-1"));
+        }
+    }
+
+    public void testCreateBadLen() {
+        try {
+            new ByteArrayImageInputStream(new byte[1], 0, 2);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            assertNotNull("Null exception message", expected.getMessage());
+            String message = expected.getMessage().toLowerCase();
+            assertTrue("Exception message does not contain parameter name", message.contains("length"));
+            assertTrue("Exception message does not contain ™", message.contains("2"));
+        }
+    }
+
     public void testRead() throws IOException {
         byte[] data = new byte[1024 * 1024];
         random.nextBytes(data);
@@ -45,6 +110,21 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
 
         for (byte b : data) {
             assertEquals("Wrong data read", b & 0xff, stream.read());
+        }
+    }
+
+    public void testReadOffsetLen() throws IOException {
+        byte[] data = new byte[1024 * 1024];
+        random.nextBytes(data);
+
+        int offset = random.nextInt(data.length / 10);
+        int length = random.nextInt(data.length - offset);
+        ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data, offset, length);
+
+        assertEquals("Data length should be same as stream length", length, stream.length());
+
+        for (int i = offset; i < offset + length; i++) {
+            assertEquals("Wrong data read", data[i] & 0xff, stream.read());
         }
     }
 
@@ -61,6 +141,24 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         for (int i = 0; i < data.length / result.length; i++) {
             stream.readFully(result);
             assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+        }
+    }
+
+    public void testReadArrayOffLen() throws IOException {
+        byte[] data = new byte[1024 * 1024];
+        random.nextBytes(data);
+
+        int offset = random.nextInt(data.length - 10240);
+        int length = 10240;
+        ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data, offset, length);
+
+        assertEquals("Data length should be same as stream length", length, stream.length());
+
+        byte[] result = new byte[1024];
+
+        for (int i = 0; i < length / result.length; i++) {
+            stream.readFully(result);
+            assertTrue("Wrong data read: " + i, rangeEquals(data, offset + i * result.length, result, 0, result.length));
         }
     }
 

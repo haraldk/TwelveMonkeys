@@ -14,30 +14,41 @@ import java.io.IOException;
  */
 public final class ByteArrayImageInputStream extends ImageInputStreamImpl {
     private final byte[] data;
+    private int dataOffset;
+    private int dataLength;
 
     public ByteArrayImageInputStream(final byte[] pData) {
+        this(pData, 0, pData != null ? pData.length : -1);
+    }
+
+    public ByteArrayImageInputStream(final byte[] pData, int offset, int length) {
         Validate.notNull(pData, "data");
+        Validate.isTrue(offset >= 0 && offset <= pData.length, offset, "offset out of range: %d");
+        Validate.isTrue(length >= 0 && length <= pData.length - offset, length, "length out of range: %d");
+
         data = pData;
+        dataOffset = offset;
+        dataLength = length;
     }
 
     public int read() throws IOException {
-        if (streamPos >= data.length) {
+        if (streamPos >= dataLength) {
             return -1;
         }
 
         bitOffset = 0;
 
-        return data[((int) streamPos++)] & 0xff;
+        return data[((int) streamPos++) + dataOffset] & 0xff;
     }
 
     public int read(byte[] pBuffer, int pOffset, int pLength) throws IOException {
-        if (streamPos >= data.length) {
+        if (streamPos >= dataLength) {
             return -1;
         }
 
-        int length = (int) Math.min(data.length - streamPos, pLength);
+        int length = (int) Math.min(this.dataLength - streamPos, pLength);
         bitOffset = 0;
-        System.arraycopy(data, (int) streamPos, pBuffer, pOffset, length);
+        System.arraycopy(data, (int) streamPos + dataOffset, pBuffer, pOffset, length);
         streamPos += length;
 
         return length;
@@ -45,7 +56,7 @@ public final class ByteArrayImageInputStream extends ImageInputStreamImpl {
 
     @Override
     public long length() {
-        return data.length;
+        return dataLength;
     }
 
     @Override
