@@ -14,8 +14,8 @@ import java.io.IOException;
  */
 public final class ByteArrayImageInputStream extends ImageInputStreamImpl {
     private final byte[] data;
-    private int dataOffset;
-    private int dataLength;
+    private final int dataOffset;
+    private final int dataLength;
 
     public ByteArrayImageInputStream(final byte[] pData) {
         this(pData, 0, pData != null ? pData.length : -1);
