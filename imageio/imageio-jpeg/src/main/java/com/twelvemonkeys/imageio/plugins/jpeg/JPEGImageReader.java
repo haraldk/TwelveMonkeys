@@ -739,7 +739,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 stream.readUnsignedShort(),
                 x = stream.readUnsignedByte(),
                 y = stream.readUnsignedByte(),
-                readFully(stream, x * y)
+                readFully(stream, x * y * 3)
             );
         }
         
@@ -928,9 +928,8 @@ public class JPEGImageReader extends ImageReaderBase {
 
     // TODO: Candidate for util method
     private BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {
-        DataBufferByte buffer;WritableRaster raster;
-        buffer = new DataBufferByte(thumbnail, size, offset);
-        raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
+        DataBufferByte buffer = new DataBufferByte(thumbnail, size, offset);
+        WritableRaster raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
         ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
 
         return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);

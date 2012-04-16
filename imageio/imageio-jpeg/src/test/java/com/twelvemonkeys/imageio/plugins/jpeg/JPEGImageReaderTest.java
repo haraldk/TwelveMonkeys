@@ -270,7 +270,34 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertFalse(reader.hasThumbnails(0)); // Should just not blow up, even if the EXIF IFD1 is missing
     }
 
-    // TODO: Test JFIF raw thumbnail
+    @Test
+    public void testJFIFRawRGBThumbnail() throws IOException {
+        // JFIF with raw RGB thumbnail (+ EXIF thumbnail)
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-jfif-and-exif-thumbnail-sharpshot-iphone.jpg")));
+
+        assertTrue(reader.hasThumbnails(0));
+        assertEquals(2, reader.getNumThumbnails(0));
+
+        // RAW JFIF
+        assertEquals(131, reader.getThumbnailWidth(0, 0));
+        assertEquals(122, reader.getThumbnailHeight(0, 0));
+
+        BufferedImage rawJFIFThumb = reader.readThumbnail(0, 0);
+        assertNotNull(rawJFIFThumb);
+        assertEquals(131, rawJFIFThumb.getWidth());
+        assertEquals(122, rawJFIFThumb.getHeight());
+
+        // Exif (old thumbnail, from original image, should probably been removed by the software...)
+        assertEquals(160, reader.getThumbnailWidth(0, 1));
+        assertEquals(120, reader.getThumbnailHeight(0, 1));
+
+        BufferedImage exifThumb = reader.readThumbnail(0, 1);
+        assertNotNull(exifThumb);
+        assertEquals(160, exifThumb.getWidth());
+        assertEquals(120, exifThumb.getHeight());
+    }
+
     // TODO: Test JFXX indexed thumbnail
     // TODO: Test JFXX RGB thumbnail
 
