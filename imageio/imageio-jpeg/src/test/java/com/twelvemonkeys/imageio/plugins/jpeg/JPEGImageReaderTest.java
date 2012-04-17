@@ -149,12 +149,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     @Test
     public void testICCDuplicateSequence() throws IOException {
         // Variation of the above, file contains multiple ICC chunks, with all counts and sequence numbers == 1
-
-        // TODO: As the IIOException is thrown even from the readRaster method (ends up in readImageHeader native
-        // method), we could probably intercept at the byte/stream level, and insert correct count/sequence numbers,
-        // as seen by the native code.
-        // Should be doable, but will make reading slower. We want to avoid that in the common case.
-
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-internal-kodak-srgb-jfif.jpg")));
 
@@ -171,12 +165,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     @Test
     public void testICCDuplicateSequenceZeroBased() throws IOException {
         // File contains multiple ICC chunks, with all counts and sequence numbers == 0
-
-        // TODO: As the IIOException is thrown even from the readRaster method (ends up in readImageHeader native
-        // method), we could probably intercept at the byte/stream level, and insert correct count/sequence numbers,
-        // as seen by the native code.
-        // Should be doable, but will make reading slower. We want to avoid that in the common case.
-
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-xerox-dc250-heavyweight-1-progressive-jfif.jpg")));
 
