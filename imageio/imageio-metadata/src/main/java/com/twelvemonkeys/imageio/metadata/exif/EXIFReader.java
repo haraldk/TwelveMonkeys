@@ -86,23 +86,34 @@ public final class EXIFReader extends MetadataReader {
     private Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
         List<IFD> ifds = new ArrayList<IFD>();
         List<Entry> entries = new ArrayList<Entry>();
+
         pInput.seek(pOffset);
+        long nextOffset = -1;
         int entryCount = pInput.readUnsignedShort();
 
         for (int i = 0; i < entryCount; i++) {
-            entries.add(readEntry(pInput));
+            EXIFEntry entry = readEntry(pInput);
+
+            if (entry == null) {
+                // TODO: Log warning?
+                nextOffset = 0;
+                break;
+            }
+
+            entries.add(entry);
         }
 
-        long nextOffset = pInput.readUnsignedInt();
-        
+        if (nextOffset == -1) {
+            nextOffset = pInput.readUnsignedInt();
+        }
+
         // Read linked IFDs
         if (nextOffset != 0) {
             // TODO: This is probably not okay anymore.. Replace recursion with while loop
-            Directory next = readDirectory(pInput, nextOffset);
-            ifds.add((IFD) ((AbstractCompoundDirectory) next).getDirectory(0));
-//            for (Entry entry : next) {
-//                entries.add(entry);
-//            }
+            AbstractCompoundDirectory next = (AbstractCompoundDirectory) readDirectory(pInput, nextOffset);
+            for (int i = 0; i < next.directoryCount(); i++) {
+                ifds.add((IFD) next.getDirectory(i));
+            }
         }
 
         // TODO: Make what sub-IFDs to parse optional? Or leave this to client code? At least skip the non-TIFF data?
@@ -209,8 +220,13 @@ public final class EXIFReader extends MetadataReader {
     private EXIFEntry readEntry(final ImageInputStream pInput) throws IOException {
         // TODO: BigTiff entries are different
         int tagId = pInput.readUnsignedShort();
-
         short type = pInput.readShort();
+
+        // This isn't really an entry, and the directory entry count was wront
+        if (tagId == 0 && type == 0) {
+            return null;
+        }
+
         int count = pInput.readInt(); // Number of values
 
         // It's probably a spec violation to have count 0, but we'll be lenient about it
@@ -218,11 +234,9 @@ public final class EXIFReader extends MetadataReader {
             throw new IIOException(String.format("Illegal count %d for tag %s type %s @%08x", count, tagId, type, pInput.getStreamPosition()));
         }
 
-        int valueLength = getValueLength(type, count);
-
-        if (type < 0 || type > 13) {
+        if (type <= 0 || type > 13) {
             // Invalid tag, this is just for debugging
-            System.err.printf("offset: %08x%n", pInput.getStreamPosition() - 8l);
+            System.err.printf("Bad EXIF data at offset: %08x\n", pInput.getStreamPosition() - 8l);
             System.err.println("tagId: " + tagId);
             System.err.println("type: " + type + " (INVALID)");
             System.err.println("count: " + count);
@@ -231,16 +245,18 @@ public final class EXIFReader extends MetadataReader {
             pInput.seek(pInput.getStreamPosition() - 8);
 
             try {
-                byte[] bytes = new byte[8 + Math.max(20, valueLength)];
-                pInput.readFully(bytes);
+                byte[] bytes = new byte[8 + Math.max(20, count)];
+                int len = pInput.read(bytes);
 
-                System.err.print("data: " + HexDump.dump(bytes));
-                System.err.println(bytes.length < valueLength ? "..." : "");
+                System.err.print("data: " + HexDump.dump(bytes, 0, len));
+                System.err.println(len < count ? "[...]" : "");
             }
             finally {
                 pInput.reset();
             }
         }
+
+        int valueLength = getValueLength(type, count);
 
         Object value;
         // TODO: For BigTiff allow size > 4 && <= 8 in addition

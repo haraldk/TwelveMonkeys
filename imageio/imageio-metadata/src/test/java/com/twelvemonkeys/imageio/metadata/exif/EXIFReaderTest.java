@@ -161,4 +161,18 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(entry);
         assertEquals(Rational.NaN, entry.getValue());
     }
+
+    @Test
+    public void testReadBadDirectoryCount() throws IOException {
+        // This image seems to contain bad Exif. But as other tools are able to read, so should we..
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-bad-directory-entry-count.jpg"));
+        stream.seek(4424 + 10);
+
+        Directory directory = createReader().read(new SubImageInputStream(stream, 214 - 6));
+        assertEquals(7, directory.size()); // TIFF structure says 8, but the last entry isn't there
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(3, exif.size());
+    }
 }
