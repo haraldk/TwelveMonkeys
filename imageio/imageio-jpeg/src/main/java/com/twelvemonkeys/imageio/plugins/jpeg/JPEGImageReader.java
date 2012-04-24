@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.image.InverseColorMapIndexColorModel;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
@@ -40,7 +39,6 @@ import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
 
@@ -71,7 +69,7 @@ import java.util.List;
 public class JPEGImageReader extends ImageReaderBase {
     // TODO: Fix the (stream) metadata inconsistency issues.
     // - Sun JPEGMetadata class does not (and can not be made to) support CMYK data.. We need to create all new metadata classes.. :-/
-    // TODO: Split thumbnail reading into separate class
+    // TODO: Split thumbnail reading into separate class(es)
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
@@ -120,7 +118,7 @@ public class JPEGImageReader extends ImageReaderBase {
     /** Cached JPEG app segments */
     private List<JPEGSegment> segments;
 
-    private List<BufferedImage> thumbnails;
+    private List<ThumbnailReader> thumbnails;
 
     JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
@@ -532,123 +530,6 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private CompoundDirectory getEXIFMetadata() throws IOException {
-        List<JPEGSegment> exifSegments = getAppSegments(JPEG.APP1, "Exif");
-
-        if (!exifSegments.isEmpty()) {
-            JPEGSegment exif = exifSegments.get(0);
-            InputStream data = exif.data();
-            //noinspection ResultOfMethodCallIgnored
-            data.read(); // Pad
-
-            ImageInputStream stream = ImageIO.createImageInputStream(data);
-
-            CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
-
-            extractEXIFThumbnails(stream, exifMetadata);
-
-            return exifMetadata;
-        }
-
-        return null;
-    }
-
-    private void extractEXIFThumbnails(ImageInputStream stream, CompoundDirectory exifMetadata) throws IOException {
-        if (exifMetadata.directoryCount() == 2) {
-            Directory ifd1 = exifMetadata.getDirectory(1);
-            Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-
-            if (compression != null && compression.getValue().equals(1)) { // 1 = no compression
-                // Read ImageWidth, ImageLength (height) and BitsPerSample (=8 8 8, always)
-                // PhotometricInterpretation (2=RGB, 6=YCbCr), SamplesPerPixel (=3, always),
-                Entry width = ifd1.getEntryById(TIFF.TAG_IMAGE_WIDTH);
-                Entry height = ifd1.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
-
-                if (width == null || height == null) {
-                    throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
-                }
-
-                Entry bitsPerSample = ifd1.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
-                Entry samplesPerPixel = ifd1.getEntryById(TIFF.TAG_SAMPLES_PER_PIXELS);
-                Entry photometricInterpretation = ifd1.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
-
-                // Required
-                int w = ((Number) width.getValue()).intValue();
-                int h = ((Number) height.getValue()).intValue();
-
-                if (bitsPerSample != null) {
-                    int[] bpp = (int[]) bitsPerSample.getValue();
-                    if (!Arrays.equals(bpp, new int[] {8, 8, 8})) {
-                        throw new IIOException("Unknown bits per sample for RAW EXIF thumbnail: " + bitsPerSample.getValueAsString());
-                    }
-                }
-
-                if (samplesPerPixel != null && (Integer) samplesPerPixel.getValue() != 3) {
-                    throw new IIOException("Unknown samples per pixel for RAW EXIF thumbnail: " + samplesPerPixel.getValueAsString());
-                }
-
-                int interpretation = photometricInterpretation != null ? ((Number) photometricInterpretation.getValue()).intValue() : 2;
-
-                // IFD1 should contain strip offsets for uncompressed images
-                Entry offset = ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS);
-                if (offset != null) {
-                    stream.seek(((Number) offset.getValue()).longValue());
-
-                    // Read raw image data, either RGB or YCbCr
-                    int thumbSize = w * h * 3;
-                    byte[] thumbData = readFully(stream, thumbSize);
-
-                    switch (interpretation) {
-                        case 2:
-                            // RGB
-                            break;
-                        case 6:
-                            // YCbCr
-                            for (int i = 0, thumbDataLength = thumbData.length; i < thumbDataLength; i += 3) {
-                                YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
-                            }
-                            break;
-                        default:
-                            throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbnail: " + interpretation);
-                    }
-
-                    thumbnails.add(readRawThumbnail(thumbData, thumbData.length, 0, w, h));
-                }
-            }
-            else if (compression == null || compression.getValue().equals(6)) { // 6 = JPEG compression
-                // IFD1 should contain JPEG offset for JPEG thumbnail
-                Entry jpegOffset = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
-
-                if (jpegOffset != null) {
-                    stream.seek(((Number) jpegOffset.getValue()).longValue());
-                    InputStream input = IIOUtil.createStreamAdapter(stream);
-
-                    // For certain EXIF files (encoded with TIFF.TAG_YCBCR_POSITIONING = 2?), we need
-                    // EXIF information to read the thumbnail correctly (otherwise the colors are messed up).
-
-                    // HACK: Splice empty EXIF information into the thumbnail stream
-                    byte[] fakeEmptyExif = {
-                            // SOI (from original data)
-                            (byte) input.read(), (byte) input.read(),
-                            // APP1 + len (016) + 'Exif' + 0-term + pad
-                            (byte) 0xFF, (byte) 0xE1, 0, 16, 'E', 'x', 'i', 'f', 0, 0,
-                            // Big-endian BOM (MM), TIFF magic (042), offset (0000)
-                            'M', 'M', 0, 42, 0, 0, 0, 0,
-                    };
-                    input = new SequenceInputStream(new ByteArrayInputStream(fakeEmptyExif), input);
-
-                    BufferedImage exifThumb = ImageIO.read(input);
-
-                    if (exifThumb != null) {
-                        thumbnails.add(exifThumb);
-                    }
-
-                    input.close();
-                }
-            }
-        }
-    }
-
     private List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
         initHeader();
 
@@ -704,7 +585,7 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private AdobeDCT getAdobeDCT() throws IOException {
-        // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe app14 markers
+        // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe APP14 markers
         List<JPEGSegment> adobe = getAppSegments(JPEG.APP14, "Adobe");
 
         if (!adobe.isEmpty()) {
@@ -722,7 +603,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    private JFIF getJFIF() throws IOException{
+    private JFIFSegment getJFIF() throws IOException{
         List<JPEGSegment> jfif = getAppSegments(JPEG.APP0, "JFIF");
         
         if (!jfif.isEmpty()) {
@@ -731,7 +612,7 @@ public class JPEGImageReader extends ImageReaderBase {
             
             int x, y;
             
-            return new JFIF(
+            return new JFIFSegment(
                 stream.readUnsignedByte(),
                 stream.readUnsignedByte(),
                 stream.readUnsignedByte(),
@@ -746,7 +627,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    private JFXX getJFXX() throws IOException {
+    private JFXXSegment getJFXX() throws IOException {
         List<JPEGSegment> jfxx = getAppSegments(JPEG.APP0, "JFXX");
 
         if (!jfxx.isEmpty()) {
@@ -754,7 +635,7 @@ public class JPEGImageReader extends ImageReaderBase {
 
             DataInputStream stream = new DataInputStream(segment.data());
 
-            return new JFXX(
+            return new JFXXSegment(
                     stream.readUnsignedByte(),
                     readFully(stream, segment.length() - 1)
             );
@@ -763,8 +644,8 @@ public class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-
-    private byte[] readFully(DataInput stream, int len) throws IOException {
+    // TODO: Util method?
+    static byte[] readFully(DataInput stream, int len) throws IOException {
         if (len == 0) {
             return null;
         }
@@ -858,81 +739,59 @@ public class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public boolean readerSupportsThumbnails() {
-        return true; // We support EXIF thumbnails, even if no JFIF thumbnail is present
+        return true; // We support EXIF, JFIF and JFXX style thumbnails, if present
     }
 
     private void readThumbnailMetadata(int imageIndex) throws IOException {
         checkBounds(imageIndex);
 
         if (thumbnails == null) {
-            thumbnails = new ArrayList<BufferedImage>();
+            thumbnails = new ArrayList<ThumbnailReader>();
 
-            JFIF jfif = getJFIF();
+            JFIFSegment jfif = getJFIF();
             if (jfif != null && jfif.thumbnail != null) {
-                thumbnails.add(readRawThumbnail(jfif.thumbnail, jfif.thumbnail.length, 0, jfif.xThumbnail, jfif.yThumbnail));
+                thumbnails.add(new JFIFThumbnailReader(this, imageIndex, thumbnails.size(), jfif));
             }
 
-            JFXX jfxx = getJFXX();
+            JFXXSegment jfxx = getJFXX();
             if (jfxx != null && jfxx.thumbnail != null) {
                 switch (jfxx.extensionCode) {
-                    case JFXX.JPEG:
-                        thumbnails.add(ImageIO.read(new ByteArrayInputStream(jfxx.thumbnail)));
-                        break;
-                    case JFXX.INDEXED:
-                        // 1 byte: xThumb
-                        // 1 byte: yThumb
-                        // 768 bytes: palette
-                        // x * y bytes: 8 bit indexed pixels
-                        int w = jfxx.thumbnail[0] & 0xff;
-                        int h = jfxx.thumbnail[1] & 0xff;
-                        
-                        int[] rgbs = new int[256];
-                        for (int i = 0; i < rgbs.length; i++) {
-                            int rgb = (jfxx.thumbnail[3 * i] & 0xff) << 16
-                                    | (jfxx.thumbnail[3 * i] & 0xff) << 8
-                                    | (jfxx.thumbnail[3 * i] & 0xff);
-
-                            rgbs[i] = rgb;
-                        }
-
-                        IndexColorModel icm = new InverseColorMapIndexColorModel(8, rgbs.length, rgbs, 0, false, -1, DataBuffer.TYPE_BYTE);
-                        DataBufferByte buffer = new DataBufferByte(jfxx.thumbnail, jfxx.thumbnail.length - 770, 770);
-                        WritableRaster raster = Raster.createPackedRaster(buffer, w, h, 8, null);
-
-                        thumbnails.add(new BufferedImage(icm, raster, icm.isAlphaPremultiplied(), null));
-                        break;
-                    case JFXX.RGB:
-                        // 1 byte: xThumb
-                        // 1 byte: yThumb
-                        // 3 * x * y bytes: 24 bit RGB pixels
-                        w = jfxx.thumbnail[0] & 0xff;
-                        h = jfxx.thumbnail[1] & 0xff;
-
-                        thumbnails.add(readRawThumbnail(jfxx.thumbnail, jfxx.thumbnail.length - 2, 2, w, h));
+                    case JFXXSegment.JPEG:
+                    case JFXXSegment.INDEXED:
+                    case JFXXSegment.RGB:
+                        thumbnails.add(new JFXXThumbnailReader(this, imageIndex, thumbnails.size(), jfxx));
                         break;
                     default:
                         processWarningOccurred("Unknown JFXX extension code: " + jfxx.extensionCode);
                 }
             }
 
-            // TODO: Ideally we want to decode image data in getThumbnail, less ideally here, but at least not in getEXIFMetadata()
-            CompoundDirectory exifMetadata = getEXIFMetadata();
-//            System.err.println("exifMetadata: " + exifMetadata);
-//            if (exifMetadata != null && exifMetadata.directoryCount() >= 2) {
-//                Directory ifd1 = exifMetadata.getDirectory(1);
-//                if (ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) != null) {
-//                }
-//            }
+            List<JPEGSegment> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+
+            if (!exifSegments.isEmpty()) {
+                JPEGSegment exif = exifSegments.get(0);
+                InputStream data = exif.data();
+                //noinspection ResultOfMethodCallIgnored
+                data.read(); // Pad
+
+                ImageInputStream stream = ImageIO.createImageInputStream(data);
+                CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
+
+                if (exifMetadata.directoryCount() == 2) {
+                    Directory ifd1 = exifMetadata.getDirectory(1);
+
+                    Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
+
+                    // 1 = no compression, 6 = JPEG compression (default)
+                    if (compression == null || compression.getValue().equals(1) || compression.getValue().equals(6)) {
+                        thumbnails.add(new EXIFThumbnailReader(this, 0, thumbnails.size(), ifd1, stream));
+                    }
+                    else {
+                        processWarningOccurred("EXIF IFD with unknown compression: " + compression.getValue());
+                    }
+                }
+            }
         }
-    }
-
-    // TODO: Candidate for util method
-    private BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {
-        DataBufferByte buffer = new DataBufferByte(thumbnail, size, offset);
-        WritableRaster raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
-        ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-
-        return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
     }
 
     @Override
@@ -965,14 +824,27 @@ public class JPEGImageReader extends ImageReaderBase {
     public BufferedImage readThumbnail(int imageIndex, int thumbnailIndex) throws IOException {
         checkThumbnailBounds(imageIndex, thumbnailIndex);
 
-        processThumbnailStarted(imageIndex, thumbnailIndex);
-        // For now: Clone. TODO: Do the actual decoding/reading here.
-        BufferedImage cached = thumbnails.get(thumbnailIndex);
-        BufferedImage thumbnail = new BufferedImage(cached.getColorModel(), cached.copyData(null), cached.getColorModel().isAlphaPremultiplied(), null);
-        processThumbnailProgress(100f);
-        processThumbnailComplete();
+        return thumbnails.get(thumbnailIndex).read();
+    }
 
-        return thumbnail;
+    @Override
+    protected void processWarningOccurred(String warning) {
+        super.processWarningOccurred(warning);
+    }
+
+    @Override
+    protected void processThumbnailStarted(int imageIndex, int thumbnailIndex) {
+        super.processThumbnailStarted(imageIndex, thumbnailIndex);
+    }
+
+    @Override
+    protected void processThumbnailProgress(float percentageDone) {
+        super.processThumbnailProgress(percentageDone);
+    }
+
+    @Override
+    protected void processThumbnailComplete() {
+        super.processThumbnailComplete();
     }
 
     private static void invertCMYK(final Raster raster) {
@@ -1037,7 +909,7 @@ public class JPEGImageReader extends ImageReaderBase {
             }
         }
 
-        private static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
+        static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
             int y  = yCbCr[offset    ] & 0xff;
             int cr = yCbCr[offset + 2] & 0xff;
             int cb = yCbCr[offset + 1] & 0xff;
@@ -1192,7 +1064,7 @@ public class JPEGImageReader extends ImageReaderBase {
         private final int lines;          // height
         private final int samplesPerLine; // width
         private final int componentsInFrame;
-        private final SOFComponent[] components;
+        final SOFComponent[] components;
 
         public SOF(int marker, int samplePrecision, int lines, int samplesPerLine, int componentsInFrame, SOFComponent[] components) {
             this.marker = marker;
@@ -1233,10 +1105,10 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private static class SOFComponent {
-        private final int id;
-        private final int hSub;
-        private final int vSub;
-        private final int qtSel;
+        final int id;
+        final int hSub;
+        final int vSub;
+        final int qtSel;
 
         public SOFComponent(int id, int hSub, int vSub, int qtSel) {
             this.id = id;
@@ -1250,129 +1122,6 @@ public class JPEGImageReader extends ImageReaderBase {
             // Use id either as component number or component name, based on value
             Serializable idStr = (id >= 'a' && id <= 'z' || id >= 'A' && id <= 'Z') ? "'" + (char) id + "'" : id;
             return String.format("id: %s, sub: %d/%d, sel: %d", idStr, hSub, vSub, qtSel);
-        }
-    }
-
-    private static class JFIF {
-        private final int majorVersion;
-        private final int minorVersion;
-        private final int units;
-        private final int xDensity;
-        private final int yDensity;
-        private final int xThumbnail;
-        private final int yThumbnail;
-        private final byte[] thumbnail;
-
-        public JFIF(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail) {
-            this.majorVersion = majorVersion;
-            this.minorVersion = minorVersion;
-            this.units = units;
-            this.xDensity = xDensity;
-            this.yDensity = yDensity;
-            this.xThumbnail = xThumbnail;
-            this.yThumbnail = yThumbnail;
-            this.thumbnail = thumbnail;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("JFIF v%d.%02d %dx%d %s (%s)", majorVersion, minorVersion, xDensity, yDensity, unitsAsString(), thumbnailToString());
-        }
-
-        private String unitsAsString() {
-            switch (units) {
-                case 0:
-                    return "(aspect only)";
-                case 1:
-                    return "dpi";
-                case 2:
-                    return "dpcm";
-                default:
-                    return "(unknown unit)";
-            }
-        }
-
-        private String thumbnailToString() {
-            if (xThumbnail == 0 || yThumbnail == 0) {
-                return "no thumbnail";
-            }
-
-            return String.format("thumbnail: %dx%d", xThumbnail, yThumbnail);
-        }
-    }
-
-    private static class JFXX {
-        public static final int JPEG = 0x10;
-        public static final int INDEXED = 0x11;
-        public static final int RGB  = 0x13;
-
-        private final int extensionCode;
-        private final byte[] thumbnail;
-
-        public JFXX(int extensionCode, byte[] thumbnail) {
-            this.extensionCode = extensionCode;
-            this.thumbnail = thumbnail;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("JFXX extension (%s thumb size: %d)", extensionAsString(), thumbnail.length);
-        }
-
-        private String extensionAsString() {
-            switch (extensionCode) {
-                case JPEG:
-                    return "JPEG";
-                case INDEXED:
-                    return "Indexed";
-                case RGB:
-                    return "RGB";
-                default:
-                    return String.valueOf(extensionCode);
-            }
-        }
-    }
-
-    
-    private static class AdobeDCT {
-        public static final int Unknown = 0;
-        public static final int YCC = 1;
-        public static final int YCCK = 2;
-
-        private final int version;
-        private final int flags0;
-        private final int flags1;
-        private final int transform;
-
-        public AdobeDCT(int version, int flags0, int flags1, int transform) {
-            this.version = version; // 100 or 101
-            this.flags0 = flags0;
-            this.flags1 = flags1;
-            this.transform = transform;
-        }
-
-        public int getVersion() {
-            return version;
-        }
-
-        public int getFlags0() {
-            return flags0;
-        }
-
-        public int getFlags1() {
-            return flags1;
-        }
-
-        public int getTransform() {
-            return transform;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(
-                    "AdobeDCT[ver: %d.%02d, flags: %s %s, transform: %d]",
-                    getVersion() / 100, getVersion() % 100, Integer.toBinaryString(getFlags0()), Integer.toBinaryString(getFlags1()), getTransform()
-            );
         }
     }
 
