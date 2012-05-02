@@ -132,7 +132,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             }
         }
 
-        return null;
+        throw new IIOException("Missing JPEGInterchangeFormat tag for JPEG compressed EXIF thumbnail");
     }
 
     private BufferedImage readUncompressed() throws IOException {
@@ -142,7 +142,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
         Entry height = ifd.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
 
         if (width == null || height == null) {
-            throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
+            throw new IIOException("Missing dimensions for uncompressed EXIF thumbnail");
         }
 
         Entry bitsPerSample = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
@@ -156,12 +156,12 @@ final class EXIFThumbnailReader extends ThumbnailReader {
         if (bitsPerSample != null) {
             int[] bpp = (int[]) bitsPerSample.getValue();
             if (!Arrays.equals(bpp, new int[] {8, 8, 8})) {
-                throw new IIOException("Unknown bits per sample for RAW EXIF thumbnail: " + bitsPerSample.getValueAsString());
+                throw new IIOException("Unknown BitsPerSample value for uncompressed EXIF thumbnail (expected [8, 8, 8]): " + bitsPerSample.getValueAsString());
             }
         }
 
         if (samplesPerPixel != null && (Integer) samplesPerPixel.getValue() != 3) {
-            throw new IIOException("Unknown samples per pixel for RAW EXIF thumbnail: " + samplesPerPixel.getValueAsString());
+            throw new IIOException("Unknown SamplesPerPixel value for uncompressed EXIF thumbnail (expected 3): " + samplesPerPixel.getValueAsString());
         }
 
         int interpretation = photometricInterpretation != null ? ((Number) photometricInterpretation.getValue()).intValue() : 2;
@@ -186,22 +186,22 @@ final class EXIFThumbnailReader extends ThumbnailReader {
                     }
                     break;
                 default:
-                    throw new IIOException("Unknown photometric interpretation for RAW EXIF thumbnail: " + interpretation);
+                    throw new IIOException("Unknown PhotometricInterpretation value for uncompressed EXIF thumbnail (expected 2 or 6): " + interpretation);
             }
 
             return ThumbnailReader.readRawThumbnail(thumbData, thumbData.length, 0, w, h);
         }
 
-        return null;
+        throw new IIOException("Missing StripOffsets tag for uncompressed EXIF thumbnail");
     }
 
     @Override
     public int getWidth() throws IOException {
         if (compression == 1) { // 1 = no compression
-                Entry width = ifd.getEntryById(TIFF.TAG_IMAGE_WIDTH);
+            Entry width = ifd.getEntryById(TIFF.TAG_IMAGE_WIDTH);
 
             if (width == null) {
-                throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
+                throw new IIOException("Missing dimensions for unknown EXIF thumbnail");
             }
 
             return ((Number) width.getValue()).intValue();
@@ -210,7 +210,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             return readJPEGCached(false).getWidth();
         }
         else {
-            throw new IIOException("Unsupported EXIF thumbnail compression: " + compression);
+            throw new IIOException("Unsupported EXIF thumbnail compression (expected 1 or 6): " + compression);
         }
     }
 
@@ -220,7 +220,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             Entry height = ifd.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
 
             if (height == null) {
-                throw new IIOException("Missing dimensions for RAW EXIF thumbnail");
+                throw new IIOException("Missing dimensions for unknown EXIF thumbnail");
             }
 
             return ((Number) height.getValue()).intValue();
@@ -229,7 +229,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             return readJPEGCached(false).getHeight();
         }
         else {
-            throw new IIOException("Unsupported EXIF thumbnail compression: " + compression);
+            throw new IIOException("Unsupported EXIF thumbnail compression  (expected 1 or 6): " + compression);
         }
     }
 }

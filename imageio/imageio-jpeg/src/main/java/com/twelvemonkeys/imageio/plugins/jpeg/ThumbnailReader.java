@@ -65,10 +65,6 @@ abstract class ThumbnailReader {
         parent.processThumbnailComplete();
     }
 
-    protected final void processWarningOccurred(String warning) {
-        parent.processWarningOccurred(warning);
-    }
-
     static protected BufferedImage readJPEGThumbnail(InputStream stream) throws IOException {
         return ImageIO.read(stream);
     }
