@@ -28,13 +28,17 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
 /**
-* JFIFSegment
-*
-* @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
-* @author last modified by $Author: haraldk$
-* @version $Id: JFIFSegment.java,v 1.0 23.04.12 16:52 haraldk Exp$
-*/
+ * JFIFSegment
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: haraldk$
+ * @version $Id: JFIFSegment.java,v 1.0 23.04.12 16:52 haraldk Exp$
+ */
 class JFIFSegment {
     final int majorVersion;
     final int minorVersion;
@@ -45,7 +49,7 @@ class JFIFSegment {
     final int yThumbnail;
     final byte[] thumbnail;
 
-    public JFIFSegment(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail) {
+    private JFIFSegment(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail) {
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
         this.units = units;
@@ -80,5 +84,22 @@ class JFIFSegment {
         }
 
         return String.format("thumbnail: %dx%d", xThumbnail, yThumbnail);
+    }
+
+    public static JFIFSegment read(final InputStream data) throws IOException {
+        DataInputStream stream = new DataInputStream(data);
+
+        int x, y;
+
+        return new JFIFSegment(
+                stream.readUnsignedByte(),
+                stream.readUnsignedByte(),
+                stream.readUnsignedByte(),
+                stream.readUnsignedShort(),
+                stream.readUnsignedShort(),
+                x = stream.readUnsignedByte(),
+                y = stream.readUnsignedByte(),
+                JPEGImageReader.readFully(stream, x * y * 3)
+        );
     }
 }

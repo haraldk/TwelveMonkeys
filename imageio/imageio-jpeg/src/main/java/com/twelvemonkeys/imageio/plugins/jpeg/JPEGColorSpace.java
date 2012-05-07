@@ -28,54 +28,22 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
 /**
- * JFXXSegment
+ * JPEGColorSpace
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: JFXXSegment.java,v 1.0 23.04.12 16:54 haraldk Exp$
+ * @version $Id: JPEGColorSpace.java,v 1.0 26.04.12 15:05 haraldk Exp$
  */
-class JFXXSegment {
-    public static final int JPEG = 0x10;
-    public static final int INDEXED = 0x11;
-    public static final int RGB  = 0x13;
-
-    final int extensionCode;
-    final byte[] thumbnail;
-
-    private JFXXSegment(int extensionCode, byte[] thumbnail) {
-        this.extensionCode = extensionCode;
-        this.thumbnail = thumbnail;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("JFXX extension (%s thumb size: %d)", extensionAsString(), thumbnail.length);
-    }
-
-    private String extensionAsString() {
-        switch (extensionCode) {
-            case JPEG:
-                return "JPEG";
-            case INDEXED:
-                return "Indexed";
-            case RGB:
-                return "RGB";
-            default:
-                return String.valueOf(extensionCode);
-        }
-    }
-
-    public static JFXXSegment read(InputStream data, int length) throws IOException {
-        DataInputStream stream = new DataInputStream(data);
-
-        return new JFXXSegment(
-                stream.readUnsignedByte(),
-                JPEGImageReader.readFully(stream, length - 1)
-        );
-    }
+enum JPEGColorSpace {
+    Gray,
+    GrayA,
+    RGB,
+    RGBA,
+    YCbCr,
+    YCbCrA,
+    PhotoYCC,
+    PhotoYCCA,
+    CMYK,
+    YCCK
 }

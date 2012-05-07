@@ -49,8 +49,8 @@ final class JFXXThumbnailReader extends ThumbnailReader {
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    protected JFXXThumbnailReader(final JPEGImageReader parent, final int imageIndex, final int thumbnailIndex, final JFXXSegment segment) {
-        super(parent, imageIndex, thumbnailIndex);
+    protected JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex, final JFXXSegment segment) {
+        super(progressListener, imageIndex, thumbnailIndex);
         this.segment = segment;
     }
 

@@ -41,8 +41,8 @@ import java.io.IOException;
 final class JFIFThumbnailReader extends ThumbnailReader {
     private final JFIFSegment segment;
 
-    public JFIFThumbnailReader(JPEGImageReader parent, int imageIndex, int thumbnailIndex, JFIFSegment segment) {
-        super(parent, imageIndex, thumbnailIndex);
+    public JFIFThumbnailReader(ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, JFIFSegment segment) {
+        super(progressListener, imageIndex, thumbnailIndex);
         this.segment = segment;
     }
 
@@ -50,7 +50,6 @@ final class JFIFThumbnailReader extends ThumbnailReader {
     public BufferedImage read() {
         processThumbnailStarted();
         BufferedImage thumbnail = readRawThumbnail(segment.thumbnail, segment.thumbnail.length, 0, segment.xThumbnail, segment.yThumbnail);
-
         processThumbnailProgress(100f);
         processThumbnailComplete();
 

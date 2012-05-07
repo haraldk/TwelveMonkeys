@@ -57,8 +57,8 @@ final class EXIFThumbnailReader extends ThumbnailReader {
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    public EXIFThumbnailReader(JPEGImageReader parent, int imageIndex, int thumbnailIndex, Directory ifd, ImageInputStream stream) {
-        super(parent, imageIndex, thumbnailIndex);
+    public EXIFThumbnailReader(ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, Directory ifd, ImageInputStream stream) {
+        super(progressListener, imageIndex, thumbnailIndex);
         this.ifd = ifd;
         this.stream = stream;
 
@@ -112,6 +112,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
 
             // For certain EXIF files (encoded with TIFF.TAG_YCBCR_POSITIONING = 2?), we need
             // EXIF information to read the thumbnail correctly (otherwise the colors are messed up).
+            // Probably related to: http://bugs.sun.com/view_bug.do?bug_id=4881314
 
             // HACK: Splice empty EXIF information into the thumbnail stream
             byte[] fakeEmptyExif = {

@@ -44,25 +44,25 @@ import java.io.InputStream;
  */
 abstract class ThumbnailReader {
 
-    private final JPEGImageReader parent;
+    private final ThumbnailReadProgressListener progressListener;
     protected final int imageIndex;
     protected final int thumbnailIndex;
 
-    protected ThumbnailReader(final JPEGImageReader parent, final int imageIndex, final int thumbnailIndex) {
-        this.parent = parent;
+    protected ThumbnailReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex) {
+        this.progressListener = progressListener;
         this.imageIndex = imageIndex;
         this.thumbnailIndex = thumbnailIndex;
     }
     protected final void processThumbnailStarted() {
-        parent.processThumbnailStarted(imageIndex, thumbnailIndex);
+        progressListener.processThumbnailStarted(imageIndex, thumbnailIndex);
     }
 
     protected final void processThumbnailProgress(float percentageDone) {
-        parent.processThumbnailProgress(percentageDone);
+        progressListener.processThumbnailProgress(percentageDone);
     }
 
     protected final void processThumbnailComplete() {
-        parent.processThumbnailComplete();
+        progressListener.processThumbnailComplete();
     }
 
     static protected BufferedImage readJPEGThumbnail(InputStream stream) throws IOException {

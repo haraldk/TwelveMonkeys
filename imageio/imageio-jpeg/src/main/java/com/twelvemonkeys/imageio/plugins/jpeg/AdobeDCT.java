@@ -29,12 +29,12 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 /**
-* AdobeDCT
-*
-* @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
-* @author last modified by $Author: haraldk$
-* @version $Id: AdobeDCT.java,v 1.0 23.04.12 16:55 haraldk Exp$
-*/
+ * AdobeDCT
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: haraldk$
+ * @version $Id: AdobeDCT.java,v 1.0 23.04.12 16:55 haraldk Exp$
+ */
 class AdobeDCT {
     public static final int Unknown = 0;
     public static final int YCC = 1;

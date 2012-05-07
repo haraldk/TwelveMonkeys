@@ -33,17 +33,19 @@ import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 /**
  * JPEGImageReaderTest
@@ -138,6 +140,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(expectedData.length, data.length);
 
         assertJPEGPixelsEqual(expectedData, data, 0);
+
+        reader.dispose();
     }
 
     private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, int actualOffset) {
@@ -160,6 +164,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
         assertEquals(345, image.getWidth());
         assertEquals(540, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
@@ -175,10 +181,33 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         param.setSourceRegion(new Rectangle(0, 0, 3874, 16)); // Save some memory
         BufferedImage image = reader.read(0, param);
 
-
         assertNotNull(image);
         assertEquals(3874, image.getWidth());
         assertEquals(16, image.getHeight());
+
+        reader.dispose();
+    }
+
+    @Test
+    public void testTruncatedICCProfile() throws IOException {
+        // File contains single 'ICC_PROFILE' chunk, with a truncated (32 000 bytes) "Europe ISO Coated FOGRA27" ICC profile (by Adobe).
+        // Profile should have been about 550 000 bytes, split into multiple chunks. Written by GIMP 2.6.11
+        // See: https://bugzilla.redhat.com/show_bug.cgi?id=695246
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/cmm-exception-invalid-icc-profile-data.jpg")));
+
+        assertEquals(1993, reader.getWidth(0));
+        assertEquals(1038, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(reader.getWidth(0), 8));
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(1993, image.getWidth());
+        assertEquals(8, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
@@ -198,6 +227,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(449, image.getHeight());
 
         // TODO: Need to test colors!
+        reader.dispose();
     }
 
     @Test
@@ -414,4 +444,112 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             assertEquals((actualRGB)       & 0xff, (expectedRGB[i])       & 0xff, 5);
         }
     }
+
+    private List<TestData> getCMYKData() {
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-custom-icc-bright.jpg"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-no-icc.jpg"), new Dimension(100, 100))
+        );
+    }
+
+    @Test
+    public void testGetImageTypesCMYK() throws IOException {
+        // Make sure CMYK images will report their embedded color profile among image types
+        JPEGImageReader reader = createReader();
+
+        List<TestData> cmykData = getCMYKData();
+
+        for (TestData data : cmykData) {
+            reader.setInput(data.getInputStream());
+            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+
+            assertTrue(data + " has no image types", types.hasNext());
+
+            boolean hasRGBType = false;
+            boolean hasCMYKType = false;
+
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+
+                int csType = type.getColorModel().getColorSpace().getType();
+                if (csType == ColorSpace.TYPE_RGB) {
+                    hasRGBType = true;
+                }
+                else if (csType == ColorSpace.TYPE_CMYK) {
+                    assertTrue("CMYK types should be delivered after RGB types (violates \"contract\" of more \"natural\" type first) for " + data, hasRGBType);
+
+                    hasCMYKType = true;
+                    break;
+                }
+            }
+
+            assertTrue("No RGB types for " + data, hasRGBType);
+            assertTrue("No CMYK types for " + data, hasCMYKType);
+        }
+
+        reader.dispose();
+    }
+
+    @Test
+    public void testGetRawImageTypeCMYK() throws IOException {
+        // Make sure images that are encoded as CMYK (not YCCK) actually return non-null for getRawImageType
+        JPEGImageReader reader = createReader();
+
+        List<TestData> cmykData = Arrays.asList(
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-no-icc.jpg"), new Dimension(100, 100))
+        );
+
+
+        for (TestData data : cmykData) {
+            reader.setInput(data.getInputStream());
+
+            ImageTypeSpecifier rawType = reader.getRawImageType(0);
+            assertNotNull("No raw type for " + data, rawType);
+        }
+    }
+
+    @Test
+    public void testReadCMYKAsCMYK() throws IOException {
+        // Make sure CMYK images can be read and still contain their original (embedded) color profile
+        JPEGImageReader reader = createReader();
+
+        List<TestData> cmykData = getCMYKData();
+
+        for (TestData data : cmykData) {
+            reader.setInput(data.getInputStream());
+            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+
+            assertTrue(data + " has no image types", types.hasNext());
+
+            ImageTypeSpecifier cmykType = null;
+
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+
+                int csType = type.getColorModel().getColorSpace().getType();
+                if (csType == ColorSpace.TYPE_CMYK) {
+                    cmykType = type;
+                    break;
+                }
+            }
+
+            assertNotNull("No CMYK types for " + data, cmykType);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setDestinationType(cmykType);
+            param.setSourceRegion(new Rectangle(reader.getWidth(0), 8)); // We don't really need to read it all
+
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(ColorSpace.TYPE_CMYK, image.getColorModel().getColorSpace().getType());
+        }
+
+        reader.dispose();
+    }
+
+    // TODO: Test RGBA/YCbCrA handling
 }
