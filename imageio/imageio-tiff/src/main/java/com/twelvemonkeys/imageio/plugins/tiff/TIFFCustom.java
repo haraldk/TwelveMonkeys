@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Harald Kuhr
+ * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,69 +26,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.jpeg;
+package com.twelvemonkeys.imageio.plugins.tiff;
 
 /**
- * JPEG
+ * TIFFCustom
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: JPEG.java,v 1.0 11.02.11 15.51 haraldk Exp$
+ * @version $Id: TIFFCustom.java,v 1.0 10.05.12 17:35 haraldk Exp$
  */
-public interface JPEG {
-    /** Start of Image segment marker (SOI). */
-    int SOI = 0xFFD8;
-    /** End of Image segment marker (EOI). */
-    int EOI = 0xFFD9;
-    /** Start of Stream segment marker (SOS). */
-    int SOS = 0xFFDA;
+interface TIFFCustom {
+    int PHOTOMETRIC_LOGL = 32844;
+    int PHOTOMETRIC_LOGLUV = 32845;
 
-    /** Define Quantization Tables segment marker (DQT). */
-    int DQT = 0xFFDB;
-    /** Define Huffman Tables segment marker (DHT). */
-    int DHT = 0xFFC4;
+    /** DNG: CFA (Color Filter Array)*/
+    int PHOTOMETRIC_CFA = 32803;
+    /** DNG: LinearRaw*/
+    int PHOTOMETRIC_LINEAR_RAW = 34892;
 
-    // App segment markers (APPn).
-    int APP0 = 0xFFE0;
-    int APP1 = 0xFFE1;
-    int APP2 = 0xFFE2;
-    int APP3 = 0xFFE3;
-    int APP4 = 0xFFE4;
-    int APP5 = 0xFFE5;
-    int APP6 = 0xFFE6;
-    int APP7 = 0xFFE7;
-    int APP8 = 0xFFE8;
-    int APP9 = 0xFFE9;
-    int APP10 = 0xFFEA;
-    int APP11 = 0xFFEB;
-    int APP12 = 0xFFEC;
-    int APP13 = 0xFFED;
-    int APP14 = 0xFFEE;
-    int APP15 = 0xFFEF;
-
-    // Start of Frame segment markers (SOFn).
-    int SOF0 = 0xFFC0;
-    int SOF1 = 0xFFC1;
-    int SOF2 = 0xFFC2;
-    int SOF3 = 0xFFC3;
-    int SOF5 = 0xFFC5;
-    int SOF6 = 0xFFC6;
-    int SOF7 = 0xFFC7;
-    int SOF9 = 0xFFC9;
-    int SOF10 = 0xFFCA;
-    int SOF11 = 0xFFCB;
-    int SOF13 = 0xFFCD;
-    int SOF14 = 0xFFCE;
-    int SOF15 = 0xFFCF;
-
-    // TODO: Known/Important APPn marker identifiers
-    // "JFIF" APP0
-    // "JFXX" APP0
-    // "Exif" APP1
-    // "ICC_PROFILE" APP2
-    // "Adobe" APP14
-
-    // Possibly
-    // "http://ns.adobe.com/xap/1.0/" (XMP)
-    // "Photoshop 3.0" (Contains IPTC)
+    int SAMPLEFORMAT_COMPLEXINT = 5;
+    int SAMPLEFORMAT_COMPLEXIEEEFP = 6;
 }

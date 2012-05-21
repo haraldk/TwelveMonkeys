@@ -145,6 +145,10 @@ public class JPEGQualityTest {
         }
     }
 
+    @Test
+    public void testGetQTables() {
+        fail("Not implemented");
+    }
 
     private BufferedImage createTestImage() {
         BufferedImage image = new BufferedImage(90, 60, BufferedImage.TYPE_3BYTE_BGR);

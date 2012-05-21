@@ -10,7 +10,6 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
     <artifactId>imageio</artifactId>
-    <version>3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>TwelveMonkeys :: ImageIO</name>
 
@@ -39,6 +38,7 @@
         <module>imageio-pict</module>
         <module>imageio-psd</module>
         <module>imageio-thumbsdb</module>
+        <module>imageio-tiff</module>
 
         <!-- Wrappers for 3rd party libs  -->
         <module>imageio-batik</module>

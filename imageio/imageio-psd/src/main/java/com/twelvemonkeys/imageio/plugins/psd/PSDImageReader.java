@@ -441,7 +441,7 @@ public class PSDImageReader extends ImageReaderBase {
             case PSD.COMPRESSION_ZIP:
                 // TODO: Could probably use the ZIPDecoder (DeflateDecoder) here..
             case PSD.COMPRESSION_ZIP_PREDICTION:
-                // TODO: Need to find out if the normal java.util.zip can handle this...
+                // TODO: Look at TIFF prediction reading
                 // Could be same as PNG prediction? Read up...
                 throw new IIOException("PSD with ZIP compression not supported");
             default:

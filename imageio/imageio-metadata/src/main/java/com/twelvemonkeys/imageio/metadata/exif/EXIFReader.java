@@ -95,6 +95,7 @@ public final class EXIFReader extends MetadataReader {
             EXIFEntry entry = readEntry(pInput);
 
             if (entry == null) {
+//                System.err.println("Expected: " + entryCount + " values, found only " + i);
                 // TODO: Log warning?
                 nextOffset = 0;
                 break;
@@ -199,13 +200,13 @@ public final class EXIFReader extends MetadataReader {
         Object value = entry.getValue();
 
         if (value instanceof Byte) {
-            offset = ((Byte) value & 0xff);
+            offset = (Byte) value & 0xff;
         }
         else if (value instanceof Short) {
-            offset = ((Short) value & 0xffff);
+            offset = (Short) value & 0xffff;
         }
         else if (value instanceof Integer) {
-            offset = ((Integer) value & 0xffffffffL);
+            offset = (Integer) value & 0xffffffffL;
         }
         else if (value instanceof Long) {
             offset = (Long) value;
@@ -222,7 +223,7 @@ public final class EXIFReader extends MetadataReader {
         int tagId = pInput.readUnsignedShort();
         short type = pInput.readShort();
 
-        // This isn't really an entry, and the directory entry count was wront
+        // This isn't really an entry, and the directory entry count was wrong OR bad data...
         if (tagId == 0 && type == 0) {
             return null;
         }
@@ -236,24 +237,28 @@ public final class EXIFReader extends MetadataReader {
 
         if (type <= 0 || type > 13) {
             // Invalid tag, this is just for debugging
-            System.err.printf("Bad EXIF data at offset: %08x\n", pInput.getStreamPosition() - 8l);
-            System.err.println("tagId: " + tagId);
+            long offset = pInput.getStreamPosition() - 8l;
+
+            System.err.printf("Bad EXIF");
+            System.err.println("tagId: " + tagId + (tagId <= 0 ? "(INVALID)" : ""));
             System.err.println("type: " + type + " (INVALID)");
             System.err.println("count: " + count);
 
             pInput.mark();
-            pInput.seek(pInput.getStreamPosition() - 8);
+            pInput.seek(offset);
 
             try {
                 byte[] bytes = new byte[8 + Math.max(20, count)];
                 int len = pInput.read(bytes);
 
-                System.err.print("data: " + HexDump.dump(bytes, 0, len));
+                System.err.print(HexDump.dump(offset, bytes, 0, len));
                 System.err.println(len < count ? "[...]" : "");
             }
             finally {
                 pInput.reset();
             }
+
+            return null;
         }
 
         int valueLength = getValueLength(type, count);
@@ -484,7 +489,7 @@ public final class EXIFReader extends MetadataReader {
                 Object value = entry.getValue();
                 if (value instanceof byte[]) {
                     byte[] bytes = (byte[]) value;
-                    System.err.println(HexDump.dump(bytes, 0, Math.min(bytes.length, 128)));
+                    System.err.println(HexDump.dump(0, bytes, 0, Math.min(bytes.length, 128)));
                 }
             }
         }
@@ -501,10 +506,10 @@ public final class EXIFReader extends MetadataReader {
         private static final int WIDTH = 32;
 
         public static String dump(byte[] bytes) {
-            return dump(bytes, 0, bytes.length);
+            return dump(0, bytes, 0, bytes.length);
         }
 
-        public static String dump(byte[] bytes, int off, int len) {
+        public static String dump(long offset, byte[] bytes, int off, int len) {
             StringBuilder builder = new StringBuilder();
 
             int i;
@@ -513,7 +518,7 @@ public final class EXIFReader extends MetadataReader {
                     if (i > 0 ) {
                         builder.append("\n");
                     }
-                    builder.append(String.format("%08x: ", i + off));
+                    builder.append(String.format("%08x: ", i + off + offset));
                 }
                 else if (i > 0 && i % 2 == 0) {
                     builder.append(" ");

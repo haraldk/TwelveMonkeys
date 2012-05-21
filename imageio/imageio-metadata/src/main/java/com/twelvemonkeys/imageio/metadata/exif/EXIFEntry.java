@@ -90,6 +90,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "Orientation";
             case TIFF.TAG_SAMPLES_PER_PIXELS:
                 return "SamplesPerPixels";
+            case TIFF.TAG_ROWS_PER_STRIP:
+                return "RowsPerStrip";
             case TIFF.TAG_X_RESOLUTION:
                 return "XResolution";
             case TIFF.TAG_Y_RESOLUTION:
@@ -120,6 +122,10 @@ final class EXIFEntry extends AbstractEntry {
                 return "YCbCrSubSampling";
             case TIFF.TAG_YCBCR_POSITIONING:
                 return "YCbCrPositioning";
+            case TIFF.TAG_COLOR_MAP:
+                return "ColorMap";
+            case TIFF.TAG_EXTRA_SAMPLES:
+                return "ExtraSamples";
 
             case EXIF.TAG_EXPOSURE_TIME:
                 return "ExposureTime";

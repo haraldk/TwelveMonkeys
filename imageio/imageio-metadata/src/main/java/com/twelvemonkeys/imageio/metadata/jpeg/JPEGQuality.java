@@ -30,10 +30,12 @@ package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
+import javax.imageio.plugins.jpeg.JPEGQTable;
 import javax.imageio.stream.ImageInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -83,7 +85,7 @@ public final class JPEGQuality {
     }
 
     // Adapted from ImageMagick coders/jpeg.c & http://blog.apokalyptik.com/2009/09/16/quality-time-with-your-jpegs/
-    private static int getJPEGQuality(final short[][] quantizationTables) throws IOException {
+    private static int getJPEGQuality(final int[][] quantizationTables) throws IOException {
 //        System.err.println("tables: " + Arrays.deepToString(tables));
 
         // TODO: Determine lossless JPEG
@@ -188,8 +190,24 @@ public final class JPEGQuality {
         return -1;
     }
 
-    private static short[][] getQuantizationTables(List<JPEGSegment> dqtSegments) throws IOException {
-        short[][] tables = new short[4][];
+    public static JPEGQTable[] getQTables(final List<JPEGSegment> dqtSegments) throws IOException {
+        int[][] tables = getQuantizationTables(dqtSegments);
+
+        List<JPEGQTable> qTables = new ArrayList<JPEGQTable>();
+        for (int[] table : tables) {
+            if (table != null) {
+                qTables.add(new JPEGQTable(table));
+            }
+            else {
+                break;
+            }
+        }
+
+        return qTables.toArray(new JPEGQTable[qTables.size()]);
+    }
+
+    private static int[][] getQuantizationTables(final List<JPEGSegment> dqtSegments) throws IOException {
+        int[][] tables = new int[4][];
 
         // JPEG may contain multiple DQT marker segments
         for (JPEGSegment segment : dqtSegments) {
@@ -223,7 +241,7 @@ public final class JPEGQuality {
                 byte[] qtData = new byte[DCT_SIZE_2 * (bits + 1)];
                 data.readFully(qtData);
                 read += qtData.length;
-                tables[num] = new short[DCT_SIZE_2];
+                tables[num] = new int[DCT_SIZE_2];
 
                 // Expand (this is slightly inefficient)
                 switch (bits) {

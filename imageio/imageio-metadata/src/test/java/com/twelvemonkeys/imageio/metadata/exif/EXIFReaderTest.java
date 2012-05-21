@@ -175,4 +175,19 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(exif);
         assertEquals(3, exif.size());
     }
+
+    @Test
+    public void testTIFFWithBadExifIFD() throws IOException {
+        // This image seems to contain bad TIFF data. But as other tools are able to read, so should we..
+        // It seems that the EXIF data (at offset 494196 or 0x78a74) overlaps with a custom
+        // Microsoft 'OLE Property Set' entry at 0x78a70 (UNDEFINED, count 5632)...
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/tiff/chifley_logo.tif"));
+        Directory directory = createReader().read(stream);
+        assertEquals(22, directory.size());
+
+        // Some (all?) of the EXIF data is duplicated in the XMP, meaning PhotoShop can probably re-create it
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(0, exif.size()); // EXIFTool reports "Warning: Bad ExifIFD directory"
+    }
 }
