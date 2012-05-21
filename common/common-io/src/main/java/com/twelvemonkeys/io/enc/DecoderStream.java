@@ -143,7 +143,7 @@ public final class DecoderStream extends FilterInputStream {
             // Update offset (rest)
             off += dstLen;
 
-            // Inrease count
+            // Increase count
             count += dstLen;
         }
 

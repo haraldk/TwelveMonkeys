@@ -77,6 +77,10 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
 
     @Test
     public final void testStreams() throws Exception {
+        if (createCompatibleEncoder() == null) {
+            return;
+        }
+
         for (int i = 1; i < 100; i++) {
             try {
                 runStreamTest(i);

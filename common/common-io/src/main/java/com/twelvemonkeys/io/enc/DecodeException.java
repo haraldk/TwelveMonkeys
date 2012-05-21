@@ -31,7 +31,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.IOException;
 
 /**
- * Thrown by {@code Decoder}s when encoded data can not be decocded.
+ * Thrown by {@code Decoder}s when encoded data can not be decoded.
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
