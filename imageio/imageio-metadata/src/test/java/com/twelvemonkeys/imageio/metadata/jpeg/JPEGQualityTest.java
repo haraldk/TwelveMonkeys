@@ -36,12 +36,14 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
+import javax.imageio.plugins.jpeg.JPEGQTable;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
@@ -50,7 +52,7 @@ import static org.junit.Assert.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: JPEGQualityTest.java,v 1.0 10.04.12 12:39 haraldk Exp$
+ * @version $Id: JPEGQualityTest.java,v 1.0, 10.04.12, 12:39 haraldk Exp$
  */
 public class JPEGQualityTest {
 
@@ -146,8 +148,121 @@ public class JPEGQualityTest {
     }
 
     @Test
-    public void testGetQTables() {
-        fail("Not implemented");
+    public void testGetQTables() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getClass().getResourceAsStream("/jpeg/9788245605525.jpg"));
+
+        try {
+            JPEGQTable[] tables = JPEGQuality.getQTables(JPEGSegmentUtil.readSegments(stream, JPEG.DQT, null));
+            assertEquals(1, tables.length);
+            int[] table = {
+                    3, 2, 2, 2, 2, 2, 3, 2,
+                    2, 2, 3, 3, 3, 3, 4, 6,
+                    4, 4, 4, 4, 4, 8, 6, 6,
+                    5, 6, 9, 8, 10, 10, 9, 8,
+                    9, 9, 10, 12, 15, 12, 10, 11,
+                    14, 11, 9, 9, 13, 17, 13, 14,
+                    15, 16, 16, 17, 16, 10, 12, 18,
+                    19, 18, 16, 19, 15, 16, 16, 16
+            };
+            assertArrayEquals(table, tables[0].getTable());
+
+            // JPEGQTable has no useful equals method..
+            // assertArrayEquals(new JPEGQTable[] {new JPEGQTable(table)}, tables);
+        }
+        finally {
+            stream.close();
+        }
+    }
+
+    @Test
+    public void testGetQTablesAlt1() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getClass().getResourceAsStream("/jpeg/exif-rgb-thumbnail-bad-exif-kodak-dc210.jpg"));
+
+        try {
+            JPEGQTable[] tables = JPEGQuality.getQTables(JPEGSegmentUtil.readSegments(stream, JPEG.DQT, null));
+            assertEquals(2, tables.length);
+
+            assertArrayEquals(
+                    new int[] {
+                            6, 6, 6, 6, 6, 6, 7, 7,
+                            7, 7, 9, 8, 8, 8, 9, 12,
+                            10, 11, 11, 10, 12, 15, 13, 13,
+                            14, 13, 13, 15, 19, 16, 15, 17,
+                            17, 15, 16, 19, 20, 19, 20, 22,
+                            20, 19, 20, 23, 24, 26, 26, 24,
+                            23, 29, 32, 34, 32, 29, 38, 42,
+                            42, 38, 50, 53, 50, 66, 66, 86,
+                    },
+                    tables[0].getTable()
+            );
+            assertArrayEquals(
+                    new int[] {
+                            6, 6, 6, 6, 6, 6, 7, 6,
+                            6, 7, 8, 7, 8, 7, 8, 10,
+                            9, 9, 9, 9, 10, 13, 11, 11,
+                            12, 11, 11, 13, 16, 14, 13, 15,
+                            15, 13, 14, 16, 17, 16, 17, 18,
+                            17, 16, 17, 20, 20, 22, 22, 20,
+                            20, 24, 26, 27, 26, 24, 30, 33,
+                            33, 30, 39, 41, 39, 50, 50, 63,
+                    },
+                    tables[1].getTable()
+            );
+        }
+        finally {
+            stream.close();
+        }
+    }
+
+    @Test
+    public void testGetQTablesAlt2() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getClass().getResourceAsStream("/jpeg/ts_open_300dpi.jpg"));
+
+        try {
+            JPEGQTable[] tables = JPEGQuality.getQTables(JPEGSegmentUtil.readSegments(stream, JPEG.DQT, null));
+            assertEquals(2, tables.length);
+
+            assertArrayEquals(
+                    new int[] {
+                            1, 1, 1, 1, 1, 1, 1, 1,
+                            1, 1, 1, 1, 1, 1, 1, 1,
+                            1, 1, 1, 1, 1, 1, 1, 1,
+                            1, 1, 1, 1, 2, 1, 1, 1,
+                            1, 1, 1, 2, 2, 2, 2, 2,
+                            2, 2, 2, 2, 2, 2, 2, 2,
+                            2, 3, 3, 3, 3, 3, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                    },
+                    tables[0].getTable()
+            );
+            assertArrayEquals(
+                    new int[] {
+                            1, 1, 1, 1, 1, 1, 2, 1,
+                            1, 2, 3, 2, 2, 2, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                            3, 3, 3, 3, 3, 3, 3, 3,
+                    },
+                    tables[1].getTable()
+            );
+        }
+        finally {
+            stream.close();
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetQTablesNull() throws IOException {
+        JPEGQuality.getQTables(null);
+    }
+
+    @Test
+    public void testGetQTablesEmpty() throws IOException {
+        JPEGQTable[] tables = JPEGQuality.getQTables(Collections.<JPEGSegment>emptyList());
+        assertEquals(0, tables.length);
     }
 
     private BufferedImage createTestImage() {

@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.plugins.jpeg.JPEGQTable;
@@ -190,16 +192,13 @@ public final class JPEGQuality {
         return -1;
     }
 
-    public static JPEGQTable[] getQTables(final List<JPEGSegment> dqtSegments) throws IOException {
-        int[][] tables = getQuantizationTables(dqtSegments);
+    public static JPEGQTable[] getQTables(final List<JPEGSegment> segments) throws IOException {
+        int[][] tables = getQuantizationTables(segments);
 
         List<JPEGQTable> qTables = new ArrayList<JPEGQTable>();
         for (int[] table : tables) {
             if (table != null) {
                 qTables.add(new JPEGQTable(table));
-            }
-            else {
-                break;
             }
         }
 
@@ -207,6 +206,8 @@ public final class JPEGQuality {
     }
 
     private static int[][] getQuantizationTables(final List<JPEGSegment> dqtSegments) throws IOException {
+        Validate.notNull(dqtSegments, "segments");
+
         int[][] tables = new int[4][];
 
         // JPEG may contain multiple DQT marker segments
