@@ -55,6 +55,8 @@ import java.util.Iterator;
  */
 public abstract class ImageReaderBase extends ImageReader {
 
+    private static final Point ORIGIN = new Point(0, 0);
+
     /**
      * For convenience. Only set if the input is an {@code ImageInputStream}.
      * @see #setInput(Object, boolean, boolean)
@@ -194,50 +196,56 @@ public abstract class ImageReaderBase extends ImageReader {
     }
 
     /**
-     * Returns the {@code BufferedImage} to which decoded pixel
-     * data should be written.
+     * Returns the {@code BufferedImage} to which decoded pixel data should be written.
      * <p/>
      * As {@link javax.imageio.ImageReader#getDestination} but tests if the explicit destination
-     * image (if set) is valid according to the {@code ImageTypeSpecifier}s given in {@code pTypes}
+     * image (if set) is valid according to the {@code ImageTypeSpecifier}s given in {@code types}.
      *
-     *
-     * @param pParam an {@code ImageReadParam} to be used to get
+     * @param param an {@code ImageReadParam} to be used to get
      * the destination image or image type, or {@code null}.
-     * @param pTypes an {@code Iterator} of
+     * @param types an {@code Iterator} of
      * {@code ImageTypeSpecifier}s indicating the legal image
      * types, with the default first.
-     * @param pWidth the true width of the image or tile begin decoded.
-     * @param pHeight the true width of the image or tile being decoded.
+     * @param width the true width of the image or tile begin decoded.
+     * @param height the true width of the image or tile being decoded.
      *
      * @return the {@code BufferedImage} to which decoded pixel
      * data should be written.
      *
-     * @exception IIOException if the {@code ImageTypeSpecifier} or {@code BufferedImage}
-     * specified by {@code pParam} does not match any of the legal
-     * ones from {@code pTypes}.
-     * @throws IllegalArgumentException if {@code pTypes}
+     * @exception javax.imageio.IIOException if the {@code ImageTypeSpecifier} or {@code BufferedImage}
+     * specified by {@code param} does not match any of the legal
+     * ones from {@code types}.
+     * @throws IllegalArgumentException if {@code types}
      * is {@code null} or empty, or if an object not of type
      * {@code ImageTypeSpecifier} is retrieved from it.
      * Or, if the resulting image would have a width or height less than 1,
-     * or if the product of {@code pWidth} and {@code pHeight} is greater than
+     * or if the product of {@code width} and {@code height} of the resulting image is greater than
      * {@code Integer.MAX_VALUE}.
      */
-    public static BufferedImage getDestination(final ImageReadParam pParam, final Iterator<ImageTypeSpecifier> pTypes,
-                                               final int pWidth, final int pHeight) throws IIOException {
-        BufferedImage image = ImageReader.getDestination(pParam, pTypes, pWidth, pHeight);
+    public static BufferedImage getDestination(final ImageReadParam param, final Iterator<ImageTypeSpecifier> types,
+                                               final int width, final int height) throws IIOException {
+        // Adapted from http://java.net/jira/secure/attachment/29712/TIFFImageReader.java.patch,
+        // to allow reading parts/tiles of huge images.
 
-        if (pParam != null) {
-            BufferedImage dest = pParam.getDestination();
+        if (types == null || !types.hasNext()) {
+            throw new IllegalArgumentException("imageTypes null or empty!");
+        }
+
+        ImageTypeSpecifier imageType = null;
+
+        // If param is non-null, use it
+        if (param != null) {
+            // Try to get the explicit destinaton image
+            BufferedImage dest = param.getDestination();
+
             if (dest != null) {
                 boolean found = false;
 
-                // NOTE: This is bad, as it relies on implementation details of "super" method...
-                // We know that the iterator has not been touched if explicit destination..
-                while (pTypes.hasNext()) {
-                    ImageTypeSpecifier specifier = pTypes.next();
-                    int imageType = specifier.getBufferedImageType();
+                while (types.hasNext()) {
+                    ImageTypeSpecifier specifier = types.next();
+                    int bufferedImageType = specifier.getBufferedImageType();
 
-                    if (imageType != 0 && imageType == dest.getType()) {
+                    if (bufferedImageType != 0 && bufferedImageType == dest.getType()) {
                         // Known types equal, perfect match
                         found = true;
                         break;
@@ -256,12 +264,50 @@ public abstract class ImageReaderBase extends ImageReader {
                 }
 
                 if (!found) {
-                    throw new IIOException(String.format("Illegal explicit destination image %s", dest));
+                    throw new IIOException(String.format("Destination image from ImageReadParam does not match legal imageTypes from reader: %s", dest));
                 }
+
+                return dest;
+            }
+
+            // No image, get the image type
+            imageType = param.getDestinationType();
+        }
+
+        // No info from param, use fallback image type
+        if (imageType == null) {
+            imageType = types.next();
+        }
+        else {
+            boolean foundIt = false;
+
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+
+                if (type.equals(imageType)) {
+                    foundIt = true;
+                    break;
+                }
+            }
+
+            if (!foundIt) {
+                throw new IIOException(String.format("Destination type from ImageReadParam does not match legal imageTypes from reader: %s", imageType));
             }
         }
 
-        return image;
+        Rectangle srcRegion = new Rectangle(0, 0, 0, 0);
+        Rectangle destRegion = new Rectangle(0, 0, 0, 0);
+        computeRegions(param, width, height, null, srcRegion, destRegion);
+
+        int destWidth = destRegion.x + destRegion.width;
+        int destHeight = destRegion.y + destRegion.height;
+
+        if ((long) destWidth * destHeight > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(String.format("destination width * height > Integer.MAX_VALUE: %d", (long) destWidth * destHeight));
+        }
+
+        // Create a new image based on the type specifier
+        return imageType.createBufferedImage(destWidth, destHeight);
     }
 
     /**
@@ -311,10 +357,15 @@ public abstract class ImageReaderBase extends ImageReader {
      *
      * @param pParam the image read parameter, or {@code null}
      * @return true if {@code pParam} is non-{@code null} and either its {@code getDestination},
-     * {@code getDestinationType} or {@code getDestinationOffset} returns a non-{@code null} value.
+     * {@code getDestinationType} returns a non-{@code null} value,
+     * or {@code getDestinationOffset} returns a {@link Point} that is not the upper left corner {@code (0, 0)}.
      */
     protected static boolean hasExplicitDestination(final ImageReadParam pParam) {
-        return (pParam != null && (pParam.getDestination() != null || pParam.getDestinationType() != null || pParam.getDestinationOffset() != null));
+        return pParam != null &&
+                (
+                        pParam.getDestination() != null || pParam.getDestinationType() != null ||
+                                !ORIGIN.equals(pParam.getDestinationOffset())
+                );
     }
 
     public static void main(String[] pArgs) throws IOException {
