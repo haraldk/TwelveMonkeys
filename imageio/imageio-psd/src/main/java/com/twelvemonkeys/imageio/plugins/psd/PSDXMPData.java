@@ -2,13 +2,11 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.nio.charset.Charset;
 
 /**
@@ -32,9 +30,17 @@ final class PSDXMPData extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         data = new byte[(int) size]; // TODO: Fix potential overflow, or document why that can't happen (read spec)
-        //pInput.readFully(data);
+        pInput.readFully(data);
 
-        directory = new XMPReader().read(pInput);
+        // Chop off potential trailing null-termination/padding that SAX parsers don't like...
+        int len = data.length;
+        for (; len > 0; len--) {
+            if (data[len - 1] != 0) {
+                break;
+            }
+        }
+
+        directory = new XMPReader().read(new ByteArrayImageInputStream(data, 0, len));
     }
 
     @Override
