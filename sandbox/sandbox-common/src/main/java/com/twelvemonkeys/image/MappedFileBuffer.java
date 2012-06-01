@@ -52,7 +52,7 @@ public abstract class MappedFileBuffer extends DataBuffer {
     private final Buffer buffer;
 
     private MappedFileBuffer(final int type, final int size, final int numBanks) throws IOException {
-        super(type, Validate.isTrue(size >= 0, size, "Integer overflow for size: %d"), numBanks);
+        super(type, Validate.isTrue(size >= 0, size, "Integer overflow for size: %d"), Validate.isTrue(numBanks >= 0, numBanks, "Number of banks must be positive"));
 
         int componentSize = DataBuffer.getDataTypeSize(type) / 8;
 
@@ -125,7 +125,7 @@ public abstract class MappedFileBuffer extends DataBuffer {
 
         @Override
         public int getElem(int bank, int i) {
-            return buffer.get(bank * size + i);
+            return buffer.get(bank * size + i) & 0xff;
         }
 
         @Override
@@ -144,12 +144,12 @@ public abstract class MappedFileBuffer extends DataBuffer {
 
         @Override
         public int getElem(int bank, int i) {
-            return buffer.get(bank * size + i);
+            return buffer.get(bank * size + i) & 0xffff;
         }
 
         @Override
         public void setElem(int bank, int i, int val) {
-            buffer.put(bank * size + i, (short) (val & 0xffff));
+            buffer.put(bank * size + i, (short) val);
         }
     }
 
