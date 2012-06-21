@@ -122,7 +122,6 @@ public class GZIPFilter extends GenericFilter {
             String accept = request.getHeader("Accept-Encoding");
             if (accept != null && accept.contains("gzip")) {
                 //System.out.println("GZIP supported, compressing.");
-                // TODO: Set Vary: Accept-Encoding ?!
                 GZIPResponseWrapper wrapped = new GZIPResponseWrapper(response);
 
                 try {

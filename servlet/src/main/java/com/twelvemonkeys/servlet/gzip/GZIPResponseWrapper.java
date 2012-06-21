@@ -51,6 +51,8 @@ import java.util.zip.GZIPOutputStream;
  * @version $Id: GZIPResponseWrapper.java#1 $
  */
 public class GZIPResponseWrapper extends HttpServletResponseWrapper {
+    // TODO: Remove/update ETags if needed? Read the spec (RFC 2616) on Vary/ETag for caching
+
     protected ServletOutputStream out;
     protected PrintWriter writer;
     protected GZIPOutputStream gzipOut;
@@ -58,7 +60,9 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
 
     public GZIPResponseWrapper(final HttpServletResponse response) {
         super(response);
+
         response.addHeader("Content-Encoding", "gzip");
+        response.addHeader("Vary", "Accept");
     }
 
     public ServletOutputStream createOutputStream() throws IOException {
@@ -76,31 +80,25 @@ public class GZIPResponseWrapper extends HttpServletResponseWrapper {
     }
 
     // TODO: Move this to flushbuffer or something? Hmmm..
-    public void flushResponse() {
+    public void flushResponse() throws IOException {
         try {
-            try {
-                // Finish GZIP encodig
-                if (gzipOut != null) {
-                    gzipOut.finish();
-                }
+            // Finish GZIP encodig
+            if (gzipOut != null) {
+                gzipOut.finish();
+            }
 
-                flushBuffer();
-            }
-            finally {
-                // Close stream
-                if (writer != null) {
-                    writer.close();
-                }
-                else {
-                    if (out != null) {
-                        out.close();
-                    }
-                }
-            }
+            flushBuffer();
         }
-        catch (IOException e) {
-            // TODO: Fix this one...
-            e.printStackTrace();
+        finally {
+            // Close stream
+            if (writer != null) {
+                writer.close();
+            }
+            else {
+                if (out != null) {
+                    out.close();
+                }
+            }
         }
     }
 
