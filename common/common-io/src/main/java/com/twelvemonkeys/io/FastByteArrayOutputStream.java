@@ -70,7 +70,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     }
 
     @Override
-    public synchronized void write(byte pBytes[], int pOffset, int pLength) {
+    public void write(byte pBytes[], int pOffset, int pLength) {
         if ((pOffset < 0) || (pOffset > pBytes.length) || (pLength < 0) ||
                 ((pOffset + pLength) > pBytes.length) || ((pOffset + pLength) < 0)) {
             throw new IndexOutOfBoundsException();
@@ -86,7 +86,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     }
 
     @Override
-    public synchronized void write(int pByte) {
+    public void write(int pByte) {
         int newCount = count + 1;
         growIfNeeded(newCount);
         buf[count] = (byte) pByte;
