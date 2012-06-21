@@ -64,10 +64,32 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.util.zip.ZipInputStream;
 
 /**
  * ImageReader implementation for Aldus/Adobe Tagged Image File Format (TIFF).
+ * <p/>
+ * The reader is supposed to be fully "Baseline TIFF" compliant, and supports the following image types:
+ * <ul>
+ *     <li>Class B (Bi-level), all relevant compression types, 1 bit per sample</li>
+ *     <li>Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer</li>
+ *     <li>Class P (Palette/indexed color), all relevant compression types, 1, 2, 4, 8 or 16 bits per sample, unsigned integer</li>
+ *     <li>Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer</li>
+ * </ul>
+ * In addition, it supports many common TIFF extensions such as:
+ * <ul>
+ *     <li>Tiling</li>
+ *     <li>LZW Compression (type 5)</li>
+ *     <li>JPEG Compression (type 7)</li>
+ *     <li>ZLib (aka Adobe-style Deflate) Compression (type 8)</li>
+ *     <li>Deflate Compression (type 32946)</li>
+ *     <li>Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate and PackBits compression</li>
+ *     <li>Alpha channel (ExtraSamples type 1/Associated Alpha)</li>
+ *     <li>CMYK data (PhotometricInterpretation type 5/Separated)</li>
+ *     <li>YCbCr data (PhotometricInterpretation type 6/YCbCr) for JPEG</li>
+ *     <li>Planar data (PlanarConfiguration type 2/Planar)</li>
+ *     <li>ICC profiles (ICCProfile)</li>
+ *     <li>BitsPerSample values up to 16 for most PhotometricInterpretations</li>
+ * </ul>
  *
  * @see <a href="http://partners.adobe.com/public/developer/tiff/index.html">Adobe TIFF developer resources</a>
  * @see <a href="http://en.wikipedia.org/wiki/Tagged_Image_File_Format">Wikipedia</a>
@@ -78,16 +100,22 @@ import java.util.zip.ZipInputStream;
  * @version $Id: TIFFImageReader.java,v 1.0 08.05.12 15:14 haraldk Exp$
  */
 public class TIFFImageReader extends ImageReaderBase {
-    // TODO: Full BaseLine support
-    // TODO: Support ExtraSamples (an array!) (1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
-    // TODO: Handle SampleFormat (and give up if not == 1)
+    // TODOs ImageIO basic functionality:
+    // TODO: Subsampling (*tests should be failing*)
+    // TODO: Source region (*tests should be failing*)
+    // TODO: TIFFImageWriter + Spi
+
+    // TODOs ImageIO advanced functionality:
+    // TODO: Implement readAsRenderedImage to allow tiled renderImage?
+    //       For some layouts, we could do reads super-fast with a memory mapped buffer.
+    // TODO: Implement readAsRaster directly
+
+    // TODOs Full BaseLine support:
+    // TODO: Support ExtraSamples (an array, if multiple extra samples!)
+    //       (0: Unspecified (not alpha), 1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
     // TODO: Support Compression 2 (CCITT Modified Huffman) for bi-level images
 
-    // TODO: ImageIO functionality
-    // TODO: Subsampling
-    // TODO: Source region
-
-    // TODO: Extension support
+    // TODOs Extension support
     // TODO: Support PlanarConfiguration 2
     // TODO: Support ICCProfile (fully)
     // TODO: Support Compression 3 & 4 (CCITT T.4 & T.6)
@@ -96,11 +124,11 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Support Compression 34661 (JBIG)? Depends on JBIG ImageReader
 
     // DONE:
-    // Delete the old Batik-based TIFFImageReader/Spi
+    // Handle SampleFormat (and give up if not == 1)
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
-    private CompoundDirectory ifds;
+    private CompoundDirectory IFDs;
     private Directory currentIFD;
 
     TIFFImageReader(final TIFFImageReaderSpi provider) {
@@ -109,7 +137,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
     @Override
     protected void resetMembers() {
-        ifds = null;
+        IFDs = null;
         currentIFD = null;
     }
 
@@ -118,16 +146,16 @@ public class TIFFImageReader extends ImageReaderBase {
             throw new IllegalStateException("input not set");
         }
 
-        if (ifds == null) {
-            ifds = (CompoundDirectory) new EXIFReader().read(imageInput); // NOTE: Sets byte order as a side effect
+        if (IFDs == null) {
+            IFDs = (CompoundDirectory) new EXIFReader().read(imageInput); // NOTE: Sets byte order as a side effect
 
             if (DEBUG) {
-                for (int i = 0; i < ifds.directoryCount(); i++) {
-                    System.err.printf("ifd[%d]: %s\n", i, ifds.getDirectory(i));
+                for (int i = 0; i < IFDs.directoryCount(); i++) {
+                    System.err.printf("ifd[%d]: %s\n", i, IFDs.getDirectory(i));
                 }
 
                 System.err.println("Byte order: " + imageInput.getByteOrder());
-                System.err.println("numImages: " + ifds.directoryCount());
+                System.err.println("numImages: " + IFDs.directoryCount());
             }
         }
     }
@@ -135,13 +163,14 @@ public class TIFFImageReader extends ImageReaderBase {
     private void readIFD(final int imageIndex) throws IOException {
         readMetadata();
         checkBounds(imageIndex);
-        currentIFD = ifds.getDirectory(imageIndex);
+        currentIFD = IFDs.getDirectory(imageIndex);
     }
 
     @Override
     public int getNumImages(final boolean allowSearch) throws IOException {
         readMetadata();
-        return ifds.directoryCount();
+
+        return IFDs.directoryCount();
     }
 
     private int getValueAsIntWithDefault(final int tag, String tagName, Integer defaultValue) throws IIOException {
@@ -184,6 +213,7 @@ public class TIFFImageReader extends ImageReaderBase {
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         readIFD(imageIndex);
 
+        getSampleFormat(); // We don't support anything but SAMPLEFORMAT_UINT at the moment, just sanity checking input
         int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFExtension.PLANARCONFIG_PLANAR);
         int interpretation = getValueAsInt(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation");
         int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXELS, 1);
@@ -206,7 +236,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 switch (samplesPerPixel) {
                     case 1:
                         // TIFF 6.0 Spec says: 1, 4 or 8 for baseline (1 for bi-level, 4/8 for gray)
-                        // ImageTypeSpecifier supports only 1, 2, 4, 8 or 16 bits, we'll go with that for now
+                        // ImageTypeSpecifier supports 1, 2, 4, 8 or 16 bits, we'll go with that for now
                         cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
 
                         if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16)) {
@@ -216,13 +246,14 @@ public class TIFFImageReader extends ImageReaderBase {
                             return ImageTypeSpecifier.createInterleaved(cs, new int[] {0}, dataType, false, false);
                         }
                     default:
+                        // TODO: If ExtraSamples is used, PlanarConfiguration must be taken into account also for gray data
+
                         throw new IIOException(String.format("Unsupported SamplesPerPixel/BitsPerSample combination for Bi-level/Gray TIFF (expected 1/1, 1/2, 1/4, 1/8 or 1/16): %d/%d", samplesPerPixel, bitsPerSample));
                 }
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:
                 // JPEG reader will handle YCbCr to RGB for us, we'll have to do it ourselves if not JPEG...
                 // TODO: Handle YCbCrSubsampling (up-scaler stream, or read data as-is + up-sample (sub-)raster after read? Apply smoothing?)
-                // TODO: We might want to handle USHORT_565 type, and allow different samplesPerPixel in that case especially
             case TIFFBaseline.PHOTOMETRIC_RGB:
                 // RGB
                 cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_sRGB) : ColorSpaces.createColorSpace(profile);
@@ -269,6 +300,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 else if (bitsPerSample <= 0 || bitsPerSample > 16) {
                     throw new IIOException("Bad BitsPerSample value for Palette TIFF (expected <= 16): " + bitsPerSample);
                 }
+                // NOTE: If ExtraSamples is used, PlanarConfiguration must be taken into account also for pixel data
 
                 Entry colorMap = currentIFD.getEntryById(TIFF.TAG_COLOR_MAP);
                 if (colorMap == null) {
@@ -291,11 +323,12 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFExtension.PHOTOMETRIC_SEPARATED:
                 // Separated (CMYK etc)
+                // TODO: Consult the 332/InkSet (1=CMYK, 2=Not CMYK; see InkNames), 334/NumberOfInks (def=4) and optionally 333/InkNames
+                // If "Not CMYK" we'll need an ICC profile to be able to display (in a useful way), readAsRaster should still work.
                 cs = profile == null ? ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK) : ColorSpaces.createColorSpace(profile);
 
                 switch (samplesPerPixel) {
                     case 4:
-                        // TODO: Consult the 332/InkSet (1=CMYK, 2=Not CMYK; see InkNames), 334/NumberOfInks (def=4) and optionally 333/InkNames
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
@@ -322,6 +355,27 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
+    private int getSampleFormat() throws IIOException {
+        long[] value = getValueAsLongArray(TIFF.TAG_SAMPLE_FORMAT, "SampleFormat", false);
+
+        if (value != null) {
+            long sampleFormat = value[0];
+
+            for (int i = 1; i < value.length; i++) {
+                if (value[i] != sampleFormat) {
+                    throw new IIOException("Variable TIFF SampleFormat not supported: " + Arrays.toString(value));
+                }
+            }
+
+            if (sampleFormat != TIFFBaseline.SAMPLEFORMAT_UINT) {
+                throw new IIOException("Unsupported TIFF SampleFormat (expected 1/Unsigned Integer): " + sampleFormat);
+            }
+        }
+
+        // The default, and the only value we support
+        return TIFFBaseline.SAMPLEFORMAT_UINT;
+    }
+
     private int getBitsPerSample() throws IIOException {
         long[] value = getValueAsLongArray(TIFF.TAG_BITS_PER_SAMPLE, "BitsPerSample", false);
 
@@ -331,11 +385,9 @@ public class TIFFImageReader extends ImageReaderBase {
         else {
             int bitsPerSample = (int) value[0];
 
-            if (value.length > 1) {
-                for (long bps : value) {
-                    if (bps != bitsPerSample) {
-                        throw new IIOException("Varying BitsPerSample not supported: " + Arrays.toString(value));
-                    }
+            for (int i = 1; i < value.length; i++) {
+                if (value[i] != bitsPerSample) {
+                    throw new IIOException("Variable BitsPerSample not supported: " + Arrays.toString(value));
                 }
             }
 
@@ -352,6 +404,18 @@ public class TIFFImageReader extends ImageReaderBase {
 
         // TODO: Based on raw type, we can probably convert to most RGB types at least, maybe gray etc
         // TODO: Planar to chunky by default
+        if (!rawType.getColorModel().getColorSpace().isCS_sRGB() && rawType.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB) {
+            if (rawType.getNumBands() == 3 && rawType.getBitsPerBand(0) == 8) {
+                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
+                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+            }
+            else if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 8) {
+                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
+            }
+        }
 
         specs.add(rawType);
 
@@ -431,6 +495,8 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_ZLIB:
                 // 'Adobe-style' Deflate
 
+                // TODO: Read only tiles that lies within region
+
                 // General uncompressed/compressed reading
                 for (int y = 0; y < tilesDown; y++) {
                     int col = 0;
@@ -482,6 +548,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFExtension.COMPRESSION_JPEG:
                 // JPEG ('new-style' JPEG)
+                // TODO: Refactor all JPEG reading out to separate JPEG support class?
 
                 // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
                 ImageReader jpegReader = new JPEGImageReader(getOriginatingProvider());
@@ -500,8 +567,8 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     jpegReader.setInput(new ByteArrayImageInputStream(tablesValue));
 
-                    // NOTE: This initializes the tables AND MORE for the reader (as if by magic).
-                    // This is probably a bug, as later setInput calls should clear/override the tables
+                    // NOTE: This initializes the tables AND MORE secret internal settings for the reader (as if by magic).
+                    // This is probably a bug, as later setInput calls should clear/override the tables.
                     // However, it would be extremely convenient, not having to actually fiddle with the stream meta data (as below)
                     /*IIOMetadata streamMetadata = */jpegReader.getStreamMetadata();
 
@@ -568,7 +635,8 @@ public class TIFFImageReader extends ImageReaderBase {
                             jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
                             jpegParam.setDestinationOffset(new Point(col, row));
                             jpegParam.setDestination(destination);
-                            // TODO: This works only if Gray/YCbCr/RGB, not CMYK...
+                            // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
+                            // In the latter case we will have to use readAsRaster
                             jpegReader.read(0, jpegParam);
                         }
                         finally {
@@ -596,14 +664,13 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFBaseline.COMPRESSION_CCITT_HUFFMAN:
                 // CCITT modified Huffman
-
-            // Additionally, the specification defines these values as part of the TIFF extensions:
+                // Additionally, the specification defines these values as part of the TIFF extensions:
             case TIFFExtension.COMPRESSION_CCITT_T4:
-            // CCITT Group 3 fax encoding
+                // CCITT Group 3 fax encoding
             case TIFFExtension.COMPRESSION_CCITT_T6:
                 // CCITT Group 4 fax encoding
             case TIFFExtension.COMPRESSION_OLD_JPEG:
-            // JPEG ('old-style' JPEG, later overridden in Technote2)
+                // JPEG ('old-style' JPEG, later overridden in Technote2)
 
                 throw new IIOException("Unsupported TIFF Compression value: " + compression);
             default:
@@ -625,27 +692,33 @@ public class TIFFImageReader extends ImageReaderBase {
                 for (int j = 0; j < rowsInStrip; j++) {
                     int row = startRow + j;
 
-//                    input.readFully(rowData);
-                    for (int k = 0; k < rowData.length; k++) {
-                        try {
-                            rowData[k] = input.readByte();
-                        }
-                        catch (IOException e) {
-                            Arrays.fill(rowData, k, rowData.length, (byte) -1);
-                            System.err.printf("Unexpected EOF or bad data at [%d %d]\n", col + k, row);
-                            break;
-                        }
+                    if (row >= raster.getHeight()) {
+                        break;
                     }
+
+                    input.readFully(rowData);
+
+//                    for (int k = 0; k < rowData.length; k++) {
+//                        try {
+//                            rowData[k] = input.readByte();
+//                        }
+//                        catch (IOException e) {
+//                            Arrays.fill(rowData, k, rowData.length, (byte) -1);
+//                            System.err.printf("Unexpected EOF or bad data at [%d %d]\n", col + k, row);
+//                            break;
+//                        }
+//                    }
 
                     unPredict(predictor, colsInStrip, 1, numBands, rowData);
                     normalizeBlack(interpretation, rowData);
 
-                    if (colsInStrip == rowRaster.getWidth()) {
+                    if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
                         raster.setDataElements(col, row, rowRaster);
                     }
-                    else {
-                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, colsInStrip, 1, 0, 0, null));
+                    else if (col >= raster.getMinX() && col < raster.getWidth()) {
+                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, Math.min(colsInStrip, raster.getWidth() - col), 1, 0, 0, null));
                     }
+                    // Else skip data
                 }
 
                 break;
@@ -654,19 +727,24 @@ public class TIFFImageReader extends ImageReaderBase {
                 for (int j = 0; j < rowsInStrip; j++) {
                     int row = startRow + j;
 
+                    if (row >= raster.getHeight()) {
+                        break;
+                    }
+
                     for (int k = 0; k < rowDataShort.length; k++) {
                         rowDataShort[k] = input.readShort();
                     }
 
-                    // TODO: Not sure how this works for USHORT... unpredict on byte level? In that case, we'll have to rewrite...
                     unPredict(predictor, colsInStrip, 1, numBands, rowDataShort);
                     normalizeBlack(interpretation, rowDataShort);
-                    if (colsInStrip == rowRaster.getWidth()) {
+
+                    if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
                         raster.setDataElements(col, row, rowRaster);
                     }
-                    else {
-                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, colsInStrip, 1, 0, 0, null));
+                    else if (col >= raster.getMinX() && col < raster.getWidth()) {
+                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, Math.min(colsInStrip, raster.getWidth() - col), 1, 0, 0, null));
                     }
+                    // Else skip data
                 }
 
                 break;
@@ -675,19 +753,24 @@ public class TIFFImageReader extends ImageReaderBase {
                 for (int j = 0; j < rowsInStrip; j++) {
                     int row = startRow + j;
 
+                    if (row >= raster.getHeight()) {
+                        break;
+                    }
+
                     for (int k = 0; k < rowDataInt.length; k++) {
                         rowDataInt[k] = input.readInt();
                     }
 
-                    // TODO: Not sure how this works for USHORT... unpredict on byte level? In that case, we'll have to rewrite...
-//                    unPredict(predictor, colsInStrip, 1, numBands, rowDataInt);
+                    unPredict(predictor, colsInStrip, 1, numBands, rowDataInt);
                     normalizeBlack(interpretation, rowDataInt);
-                    if (colsInStrip == rowRaster.getWidth()) {
+
+                    if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
                         raster.setDataElements(col, row, rowRaster);
                     }
-                    else {
-                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, colsInStrip, 1, 0, 0, null));
+                    else if (col >= raster.getMinX() && col < raster.getWidth()) {
+                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, Math.min(colsInStrip, raster.getWidth() - col), 1, 0, 0, null));
                     }
+                    // Else skip data
                 }
 
                 break;
@@ -725,7 +808,7 @@ public class TIFFImageReader extends ImageReaderBase {
     private void unPredict(final int predictor, int scanLine, int rows, int bands, int[] data) throws IIOException {
         // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
         switch (predictor) {
-            case TIFFExtension.PREDICTOR_NONE:
+            case TIFFBaseline.PREDICTOR_NONE:
                 break;
             case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
                 // TODO: Implement
@@ -740,7 +823,7 @@ public class TIFFImageReader extends ImageReaderBase {
     private void unPredict(final int predictor, int scanLine, int rows, int bands, short[] data) throws IIOException {
         // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
         switch (predictor) {
-            case TIFFExtension.PREDICTOR_NONE:
+            case TIFFBaseline.PREDICTOR_NONE:
                 break;
             case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
                 // TODO: Implement
@@ -754,7 +837,7 @@ public class TIFFImageReader extends ImageReaderBase {
     private void unPredict(final int predictor, int scanLine, int rows, final int bands, byte[] data) throws IIOException {
         // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
         switch (predictor) {
-            case TIFFExtension.PREDICTOR_NONE:
+            case TIFFBaseline.PREDICTOR_NONE:
                 break;
             case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
                 for (int y = 0; y < rows; y++) {
@@ -782,9 +865,9 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_LZW:
                 return new DecoderStream(stream, new LZWDecoder(LZWDecoder.isOldBitReversedStream(stream)), 1024);
             case TIFFExtension.COMPRESSION_ZLIB:
-                return new InflaterInputStream(stream, new Inflater(), 1024);
             case TIFFExtension.COMPRESSION_DEFLATE:
-                return new ZipInputStream(stream);
+                // TIFFphotoshop.pdf (aka TIFF specification, supplement 2) says ZLIB (8) and DEFLATE (32946) algorithms are identical
+                return new InflaterInputStream(stream, new Inflater(), 1024);
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
         }
@@ -913,6 +996,9 @@ public class TIFFImageReader extends ImageReaderBase {
                     //            }
 
                     long start = System.currentTimeMillis();
+//                    param.setSourceRegion(new Rectangle(100, 100, 100, 100));
+//                    param.setDestinationOffset(new Point(50, 150));
+//                    param.setSourceSubsampling(2, 2, 0, 0);
                     BufferedImage image = reader.read(imageNo, param);
                     System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 //                System.err.println("image: " + image);

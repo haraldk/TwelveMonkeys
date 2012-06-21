@@ -81,7 +81,6 @@ final class LZWDecoder implements Decoder {
         this(false);
     }
 
-
     private int maxCodeFor(final int bits) {
         return reverseBitOrder ? (1 << bits) - 2 : (1 << bits) - 1;
     }
@@ -142,7 +141,7 @@ final class LZWDecoder implements Decoder {
         return bufferPos;
     }
 
-    private byte[] concatenate(final byte[] string, final byte firstChar) {
+    private static byte[] concatenate(final byte[] string, final byte firstChar) {
         byte[] result = Arrays.copyOf(string, string.length + 1);
         result[string.length] = firstChar;
 
@@ -172,7 +171,7 @@ final class LZWDecoder implements Decoder {
         }
     }
 
-    private int writeString(final byte[] string, final byte[] buffer, final int bufferPos) {
+    private static int writeString(final byte[] string, final byte[] buffer, final int bufferPos) {
         if (string.length == 0) {
             return 0;
         }

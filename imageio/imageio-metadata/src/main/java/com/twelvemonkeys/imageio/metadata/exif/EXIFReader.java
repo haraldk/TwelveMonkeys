@@ -240,7 +240,7 @@ public final class EXIFReader extends MetadataReader {
             long offset = pInput.getStreamPosition() - 8l;
 
             System.err.printf("Bad EXIF");
-            System.err.println("tagId: " + tagId + (tagId <= 0 ? "(INVALID)" : ""));
+            System.err.println("tagId: " + tagId + (tagId <= 0 ? " (INVALID)" : ""));
             System.err.println("type: " + type + " (INVALID)");
             System.err.println("count: " + count);
 
