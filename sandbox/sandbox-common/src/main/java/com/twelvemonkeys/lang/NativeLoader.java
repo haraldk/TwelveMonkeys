@@ -33,8 +33,8 @@ import com.twelvemonkeys.util.FilterIterator;
 import com.twelvemonkeys.util.service.ServiceRegistry;
 
 import java.io.*;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.Arrays;
 
 /**
  * NativeLoader
@@ -182,6 +182,7 @@ final class NativeLoader {
         Iterator<NativeResourceSPI> providers = sRegistry.providers(pLibrary);
         while (providers.hasNext()) {
             NativeResourceSPI resourceSPI = providers.next();
+
             try {
                 return resourceSPI.getClassPathResource(Platform.get());
             }
@@ -372,27 +373,29 @@ final class NativeLoader {
 
     private static class NativeResourceRegistry extends ServiceRegistry {
         public NativeResourceRegistry() {
-            super(Arrays.asList(NativeResourceSPI.class).iterator());
+            super(Collections.singletonList(NativeResourceSPI.class).iterator());
             registerApplicationClasspathSPIs();
         }
 
-        Iterator<NativeResourceSPI> providers(String pNativeResource) {
-            return new FilterIterator<NativeResourceSPI>(providers(NativeResourceSPI.class),
-                                      new NameFilter(pNativeResource));
+        Iterator<NativeResourceSPI> providers(final String nativeResource) {
+            return new FilterIterator<NativeResourceSPI>(
+                    providers(NativeResourceSPI.class),
+                    new NameFilter(nativeResource)
+            );
         }
     }
 
     private static class NameFilter implements FilterIterator.Filter<NativeResourceSPI> {
-        private final String mName;
+        private final String name;
 
         NameFilter(String pName) {
             if (pName == null) {
                 throw new IllegalArgumentException("name == null");
             }
-            mName = pName;
+            name = pName;
         }
         public boolean accept(NativeResourceSPI pElement) {
-            return mName.equals(pElement.getResourceName());
+            return name.equals(pElement.getResourceName());
         }
     }
 }
