@@ -677,8 +677,8 @@ public final class SystemUtil {
     }
 
     private static Class getClass(String pClassName, boolean pInitialize, ClassLoader pLoader) throws ClassNotFoundException {
-        // NOTE: We need the context classloader, as SystemUtil's
-        // classloader may have a totally different classloader than
+        // NOTE: We need the context class loader, as SystemUtil's
+        // class loader may have a totally different class loader than
         // the original caller class (as in Class.forName(cn, false, null)).
         ClassLoader loader = pLoader != null ? pLoader :
                 Thread.currentThread().getContextClassLoader();
