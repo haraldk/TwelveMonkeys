@@ -34,6 +34,7 @@ import org.junit.Test;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -46,6 +47,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * JPEGImageReaderTest
@@ -269,6 +274,32 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(283, image.getHeight());
 
         // TODO: Need to test colors!
+    }
+
+    @Test
+    public void testInvalidICCSingleChunkBadSequence() throws IOException {
+        // Regression
+        // Single segment ICC profile, with chunk index/count == 0
+
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-single-chunk-bad-sequence-number.jpg")));
+
+        assertEquals(1772, reader.getWidth(0));
+        assertEquals(2126, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(reader.getWidth(0), 8));
+
+        IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+        reader.addIIOReadWarningListener(warningListener);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(1772, image.getWidth());
+        assertEquals(8, image.getHeight());
+
+        verify(warningListener).warningOccurred(eq(reader), anyString());
     }
 
     @Test
