@@ -567,7 +567,6 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         // Create or convert output to a suitable image
         // TODO: OPTIMIZE: Don't really need to convert all types to same as input
         result = output != null && temp.getType() != BufferedImage.TYPE_CUSTOM ? /*output*/ ImageUtil.toBuffered(output, temp.getType()) : createCompatibleDestImage(temp, null);
-//        result = output != null ? output : createCompatibleDestImage(temp, null);
 
         resample(temp, result, filter);
 
@@ -815,7 +814,6 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
         return new BufferedImage(cm, ImageUtil.createCompatibleWritableRaster(pInput, cm, width, height),
                                  cm.isAlphaPremultiplied(), null);
-
     }
 
     public RenderingHints getRenderingHints() {

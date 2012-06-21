@@ -37,13 +37,12 @@ import java.util.Hashtable;
 /**
  * This class contains methods for basic image manipulation and conversion.
  *
- * @todo Split palette generation out, into ColorModel classes.
- *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/ImageUtil.java#3 $
  */
 public final class ImageUtil {
+    // TODO: Split palette generation out, into ColorModel classes (?)
 
     public final static int ROTATE_90_CCW = -90;
     public final static int ROTATE_90_CW = 90;
@@ -58,12 +57,14 @@ public final class ImageUtil {
      * @see #EDGE_REFLECT
      */
     public static final int EDGE_ZERO_FILL = ConvolveOp.EDGE_ZERO_FILL;
+
     /**
      * Alias for {@link ConvolveOp#EDGE_NO_OP}.
      * @see #convolve(java.awt.image.BufferedImage, java.awt.image.Kernel, int)
      * @see #EDGE_REFLECT
      */
     public static final int EDGE_NO_OP = ConvolveOp.EDGE_NO_OP;
+
     /**
      * Adds a border to the image while convolving. The border will reflect the
      * edges of the original image. This is usually a good default.
@@ -73,6 +74,7 @@ public final class ImageUtil {
      * @see #convolve(java.awt.image.BufferedImage, java.awt.image.Kernel, int)
      */
     public static final int EDGE_REFLECT = 2; // as JAI BORDER_REFLECT
+
     /**
      * Adds a border to the image while convolving. The border will wrap the
      * edges of the original image. This is usually the best choice for tiles.
@@ -228,7 +230,7 @@ public final class ImageUtil {
      * The new image will have the <em>same</em> {@code ColorModel},
      * {@code Raster} and properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage}, it is simply returned
+     * If the image is already a {@code BufferedImage}, it is simply returned
      * and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -236,7 +238,7 @@ public final class ImageUtil {
      * @return a {@code BufferedImage}
      */
     public static BufferedImage toBuffered(RenderedImage pOriginal) {
-        // Don't convert if it allready is a BufferedImage
+        // Don't convert if it already is a BufferedImage
         if (pOriginal instanceof BufferedImage) {
             return (BufferedImage) pOriginal;
         }
@@ -282,7 +284,7 @@ public final class ImageUtil {
      * Converts the {@code RenderedImage} to a {@code BufferedImage} of the
      * given type.
      * <p/>
-     * If the image is allready a {@code BufferedImage} of the given type, it
+     * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -296,7 +298,7 @@ public final class ImageUtil {
      * @see java.awt.image.BufferedImage#getType()
      */
     public static BufferedImage toBuffered(RenderedImage pOriginal, int pType) {
-        // Don't convert if it allready is BufferedImage and correct type
+        // Don't convert if it already is BufferedImage and correct type
         if ((pOriginal instanceof BufferedImage) && ((BufferedImage) pOriginal).getType() == pType) {
             return (BufferedImage) pOriginal;
         }
@@ -328,7 +330,7 @@ public final class ImageUtil {
      * given type. The new image will have the same {@code ColorModel},
      * {@code Raster} and properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage} of the given type, it
+     * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
      * <p/>
      * This method simply invokes
