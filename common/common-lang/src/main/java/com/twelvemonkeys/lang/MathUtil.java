@@ -43,36 +43,6 @@ public final class MathUtil {
     /** */
     private MathUtil() {
     }
-    
-    /**
-     * Converts an angle measured in degrees to the equivalent angle measured
-     * in radians.
-     * This method is a replacement for the Math.toRadians() method in 
-     * Java versions < 1.2 (typically for Applets).
-     *
-     * @param pAngDeg an angle, in degrees
-     * @return the measurement of the angle {@code angdeg} in radians.
-     *
-     * @see java.lang.Math#toRadians(double)
-     */
-    public static double toRadians(final double pAngDeg) {
-        return pAngDeg * Math.PI / 180.0;
-    }
-
-    /**
-     * Converts an angle measured in radians to the equivalent angle measured 
-     * in degrees.
-     * This method is a replacement for the Math.toDegrees() method in 
-     * Java versions < 1.2 (typically for Applets).
-     *
-     * @param pAngRad an angle, in radians
-     * @return the measurement of the angle {@code angrad} in degrees.
-     *
-     * @see java.lang.Math#toDegrees(double)
-     */
-    public static double toDegrees(final double pAngRad) {
-        return pAngRad * 180.0 / Math.PI;
-    }
 
     /**
      * Returns the natural logarithm (base <I>e</I>) of a double value.
@@ -135,7 +105,7 @@ public final class MathUtil {
      * @see Math#abs(long)
      * @see Long#MIN_VALUE
      *
-     * @param pNumber
+     * @param pNumber a number
      * @return the absolute value of {@code pNumber}
      *
      * @throws ArithmeticException if {@code pNumber == Long.MIN_VALUE}
@@ -144,6 +114,7 @@ public final class MathUtil {
         if (pNumber == Long.MIN_VALUE) {
             throw new ArithmeticException("long overflow: 9223372036854775808");
         }
+
         return (pNumber < 0) ? -pNumber : pNumber;
     }
 
@@ -154,7 +125,7 @@ public final class MathUtil {
      * @see Math#abs(int)
      * @see Integer#MIN_VALUE
      *
-     * @param pNumber
+     * @param pNumber a number
      * @return the absolute value of {@code pNumber}
      *
      * @throws ArithmeticException if {@code pNumber == Integer.MIN_VALUE}
@@ -163,6 +134,7 @@ public final class MathUtil {
         if (pNumber == Integer.MIN_VALUE) {
             throw new ArithmeticException("int overflow: 2147483648");
         }
+
         return (pNumber < 0) ? -pNumber : pNumber;
     }
 }
