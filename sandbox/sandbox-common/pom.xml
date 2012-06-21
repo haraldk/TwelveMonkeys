@@ -18,6 +18,12 @@
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
+            <artifactId>common-lang</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-io</artifactId>
             <scope>compile</scope>
         </dependency>

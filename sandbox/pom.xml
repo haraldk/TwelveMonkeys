@@ -21,6 +21,7 @@
 
     <modules>
         <module>sandbox-common</module>
+        <module>sandbox-imageio</module>
         <module>sandbox-servlet</module>
         <module>sandbox-swing</module>
     </modules>
