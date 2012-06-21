@@ -277,6 +277,22 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testEOFSOSSegment() throws IOException {
+        // Regression...
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/eof-sos-segment-bug.jpg")));
+
+        assertEquals(266, reader.getWidth(0));
+        assertEquals(400, reader.getHeight(0));
+
+        BufferedImage image = reader.read(0);
+
+        assertNotNull(image);
+        assertEquals(266, image.getWidth());
+        assertEquals(400, image.getHeight());
+    }
+
+    @Test
     public void testInvalidICCSingleChunkBadSequence() throws IOException {
         // Regression
         // Single segment ICC profile, with chunk index/count == 0

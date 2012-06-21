@@ -123,4 +123,16 @@ public class JPEGSegmentImageInputStreamTest {
 
         // And thus, no XMP, no ICC_PROFILE or other segments
     }
+
+    @Test
+    public void testEOFSOSSegmentBug() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/eof-sos-segment-bug.jpg")));
+
+        long length = 0;
+        while (stream.read() != -1) {
+            length++;
+        }
+
+        assertEquals(9299l, length); // Sanity check: same as file size
+    }
 }

@@ -101,8 +101,18 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         segments.add(segment);
                     }
                     else {
-                        int length = stream.readUnsignedShort(); // Length including length field itself
-                        segment = new Segment(marker, realPosition, segment.end(), 2 + length);
+                        long length;
+
+                        if (marker == JPEG.SOS) {
+                            // Treat rest of stream as a single segment (scanning for EOI is too much work)
+                            length = Long.MAX_VALUE - realPosition;
+                        }
+                        else {
+                            // Length including length field itself
+                            length = stream.readUnsignedShort() + 2;
+                        }
+
+                        segment = new Segment(marker, realPosition, segment.end(), length);
                         segments.add(segment);
                     }
 
