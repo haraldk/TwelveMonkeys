@@ -62,6 +62,8 @@ public class PICTImageReaderTest extends ImageReaderAbstractTestCase<PICTImageRe
         return Arrays.asList("image/pict", "image/x-pict");
     }
 
+    // Regression tests
+
     @Test
     public void testProviderNotMatchJPEG() throws IOException {
         // This JPEG contains PICT magic bytes at locations a PICT would normally have them.
