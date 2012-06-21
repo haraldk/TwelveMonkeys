@@ -28,24 +28,53 @@
 
 package com.twelvemonkeys.util;
 
-import java.util.EventListener;
+import java.io.InputStream;
+import java.io.IOException;
+import java.net.URL;
 
 /**
- * An {@code EventListener} that listens for updates in file or system
- * resources.
+ * Resource class description.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/ResourceChangeListener.java#1 $
+ * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/Resource.java#1 $
  */
-public interface ResourceChangeListener extends EventListener {
+public interface Resource {
     /**
-     * Invoked when a resource is changed.
-     * Implementations that listens for multiple eventes, should check that
-     * {@code Resource.getId()} is equal to the {@code reourceId} parameter
-     * sent to the {@link ResourceMonitor#addResourceChangeListener} method.
+     * Returns the id of this resource.
      *
-     * @param pResource changed file/url/etc.
+     * The id might be a {@code URL}, a {@code File} or a string
+     * representation of some system resource.
+     * It will always be equal to the {@code resourceId} parameter
+     * sent to the {@link ResourceMonitor#addResourceChangeListener} method
+     * for a given resource.
+     *
+     * @return the id of this resource
      */
-    void resourceChanged(Resource pResource);
+    public Object getId();
+
+    /**
+     * Returns the {@code URL} for the resource.
+     *
+     * @return the URL for the resource
+     */
+    public URL asURL();
+
+    /**
+     * Opens an input stream, that reads from this resource.
+     *
+     * @return an input stream, that reads from this resource.
+     *
+     * @throws IOException if an I/O exception occurs
+     */
+    public InputStream asStream() throws IOException;
+
+    /**
+     * Returns the last modified time.
+     * Should only be used for comparison.
+     *
+     * @return the time of the last modification of this resource, or
+     * {@code -1} if the last modification time cannot be determined.
+     */
+    public long lastModified();
 }

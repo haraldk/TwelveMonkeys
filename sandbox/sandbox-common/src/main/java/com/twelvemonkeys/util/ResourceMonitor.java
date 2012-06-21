@@ -135,13 +135,13 @@ public abstract class ResourceMonitor {
      *
      */
     private class ResourceMonitorTask extends TimerTask {
-        ResourceChangeListener mListener;
-        Resource mMonitoredResource;
-        long mLastModified;
+        ResourceChangeListener listener;
+        Resource monitoredResource;
+        long lastModified;
 
         public ResourceMonitorTask(ResourceChangeListener pListener, Object pResourceId) throws IOException {
-            mListener = pListener;
-            mLastModified = 0;
+            listener = pListener;
+            lastModified = 0;
 
             String resourceId = null;
             File file = null;
@@ -159,13 +159,13 @@ public abstract class ResourceMonitor {
             }
             else if (pResourceId instanceof String) {
                 resourceId = (String) pResourceId; // This one might be looked up
-                file = new File((String) resourceId);
+                file = new File(resourceId);
             }
 
             if (file != null && file.exists()) {
                 // Easy, this is a file
-                mMonitoredResource = new FileResource(pResourceId, file);
-                //System.out.println("File: " + mMonitoredResource);
+                monitoredResource = new FileResource(pResourceId, file);
+                //System.out.println("File: " + monitoredResource);
             }
             else {
                 // No file there, but is it on CLASSPATH?
@@ -179,28 +179,28 @@ public abstract class ResourceMonitor {
                 if (url != null && "file".equals(url.getProtocol())
                         && (file = new File(url.getFile())).exists()) {
                     // It's a file in classpath, so try this as an optimization
-                    mMonitoredResource = new FileResource(pResourceId, file);
-                    //System.out.println("File: " + mMonitoredResource);
+                    monitoredResource = new FileResource(pResourceId, file);
+                    //System.out.println("File: " + monitoredResource);
                 }
                 else if (url != null) {
                     // No, not a file, might even be an external resource
-                    mMonitoredResource = new URLResource(pResourceId, url);
-                    //System.out.println("URL: " + mMonitoredResource);
+                    monitoredResource = new URLResource(pResourceId, url);
+                    //System.out.println("URL: " + monitoredResource);
                 }
                 else {
                     throw new FileNotFoundException(resourceId);
                 }
             }
 
-            mLastModified = mMonitoredResource.lastModified();
+            lastModified = monitoredResource.lastModified();
         }
 
         public void run() {
-            long lastModified = mMonitoredResource.lastModified();
+            long lastModified = monitoredResource.lastModified();
 
-            if (lastModified != mLastModified) {
-                mLastModified = lastModified;
-                fireResourceChangeEvent(mListener, mMonitoredResource);
+            if (lastModified != this.lastModified) {
+                this.lastModified = lastModified;
+                fireResourceChangeEvent(listener, monitoredResource);
             }
         }
     }
