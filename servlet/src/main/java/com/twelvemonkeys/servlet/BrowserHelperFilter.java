@@ -63,6 +63,7 @@ public class BrowserHelperFilter extends GenericFilter {
      * @throws ServletConfigException if the accept-mappings properties
      *                                file cannot be read.
      */
+    @InitParam(name = "accept-mappings-file")
     public void setAcceptMappingsFile(String pPropertiesFile) throws ServletConfigException {
         // NOTE: Format is:
         // <agent-name>=<reg-exp>
@@ -157,6 +158,7 @@ public class BrowserHelperFilter extends GenericFilter {
                 }
             }
         }
+
         pChain.doFilter(pRequest, pResponse);
     }
 }
