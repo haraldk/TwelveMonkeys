@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.lang;
 
+import java.util.Properties;
+
 /**
  * Platform
  *
@@ -42,7 +44,7 @@ public final class Platform {
     final OperatingSystem os;
 
     /**
-     * Unormalized operating system version constant (for completeness)
+     * Unnormalized operating system version constant (for completeness)
      */
     final String version;
 
@@ -54,18 +56,24 @@ public final class Platform {
     static final private Platform INSTANCE = new Platform();
 
     private Platform() {
-        os = normalizeOperatingSystem();
-        version = System.getProperty("os.version");
-        architecture = normalizeArchitecture(os);
+        this(System.getProperties());
     }
 
-    private static OperatingSystem normalizeOperatingSystem() {
-        String os = System.getProperty("os.name");
+    Platform(final Properties properties) {
+        os = normalizeOperatingSystem(properties.getProperty("os.name"));
+        version = properties.getProperty("os.version");
+        architecture = normalizeArchitecture(os, properties.getProperty("os.arch"));
+    }
+
+    static OperatingSystem normalizeOperatingSystem(final String osName) {
+        String os = osName;
+
         if (os == null) {
             throw new IllegalStateException("System property \"os.name\" == null");
         }
 
         os = os.toLowerCase();
+
         if (os.startsWith("windows")) {
             return OperatingSystem.Windows;
         }
@@ -82,13 +90,15 @@ public final class Platform {
         return OperatingSystem.Unknown;
     }
 
-    private static Architecture normalizeArchitecture(final OperatingSystem pOsName) {
-        String arch = System.getProperty("os.arch");
+    static Architecture normalizeArchitecture(final OperatingSystem pOsName, final String osArch) {
+        String arch = osArch;
+
         if (arch == null) {
             throw new IllegalStateException("System property \"os.arch\" == null");
         }
 
         arch = arch.toLowerCase();
+
         if (pOsName == OperatingSystem.Windows && (arch.startsWith("x86") || arch.startsWith("i386"))) {
             return Architecture.X86;
             // TODO: 64 bit
@@ -100,6 +110,9 @@ public final class Platform {
             else if (arch.startsWith("i686")) {
                 return Architecture.I686;
             }
+            else if (arch.startsWith("power") || arch.startsWith("ppc")) {
+                return Architecture.PPC;
+            }
             // TODO: More Linux options?
             // TODO: 64 bit
         }
@@ -107,9 +120,13 @@ public final class Platform {
             if (arch.startsWith("power") || arch.startsWith("ppc")) {
                 return Architecture.PPC;
             }
-            else if (arch.startsWith("i386")) {
-                return Architecture.I386;
+            else if (arch.startsWith("x86")) {
+                return Architecture.X86;
             }
+            else if (arch.startsWith("i386")) {
+                return Architecture.X86;
+            }
+            // TODO: 64 bit
         }
         else if (pOsName == OperatingSystem.Solaris) {
             if (arch.startsWith("sparc")) {
