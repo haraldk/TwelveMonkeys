@@ -80,15 +80,15 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
             entries = new AbstractSet<Entry<String, List<String>>>() {
                 public Iterator<Entry<String, List<String>>> iterator() {
                     return new Iterator<Entry<String, List<String>>>() {
-                        Iterator<String> mHeaderNames = keysImpl();
+                        Iterator<String> headerNames = keysImpl();
 
                         public boolean hasNext() {
-                            return mHeaderNames.hasNext();
+                            return headerNames.hasNext();
                         }
 
                         public Entry<String, List<String>> next() {
                             // TODO: Replace with cached lookup
-                            return new HeaderEntry(mHeaderNames.next());
+                            return new HeaderEntry(headerNames.next());
                         }
 
                         public void remove() {
@@ -107,18 +107,18 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
     }
 
     private class HeaderEntry implements Entry<String, List<String>> {
-        String mHeaderName;
+        String headerName;
 
         public HeaderEntry(String pHeaderName) {
-            mHeaderName = pHeaderName;
+            headerName = pHeaderName;
         }
 
         public String getKey() {
-            return mHeaderName;
+            return headerName;
         }
 
         public List<String> getValue() {
-            return get(mHeaderName);
+            return get(headerName);
         }
 
         public List<String> setValue(List<String> pValue) {
@@ -128,7 +128,7 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
         @Override
         public int hashCode() {
             List<String> value;
-            return (mHeaderName   == null ? 0 :   mHeaderName.hashCode()) ^
+            return (headerName == null ? 0 :   headerName.hashCode()) ^
                    ((value = getValue()) == null ? 0 : value.hashCode());
         }
 
