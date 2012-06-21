@@ -9,7 +9,7 @@ import java.util.Map;
  * <p/>
  * Uses type parameterized return values, thus making it possible to check
  * constructor arguments before
- * they are passed on to {@code super} or {@code this} type constructors. 
+ * they are passed on to {@code super} or {@code this} type constructors.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -32,21 +32,32 @@ public final class Validate {
         if (pParameter == null) {
             throw new IllegalArgumentException(String.format("%s may not be null", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
         }
+
         return pParameter;
     }
 
-    // Not empty...
+    // Not empty
 
     public static <T extends CharSequence> T notEmpty(final T pParameter) {
         return notEmpty(pParameter, null);
     }
 
     public static <T extends CharSequence> T notEmpty(final T pParameter, final String pParamName) {
-        if (pParameter == null || pParameter.length() == 0) {
-            throw new IllegalArgumentException(String.format("%s may not be empty", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
+        if (pParameter == null || pParameter.length() == 0 || isOnlyWhiteSpace(pParameter)) {
+            throw new IllegalArgumentException(String.format("%s may not be blank", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
         }
 
         return pParameter;
+    }
+
+    private static <T extends CharSequence> boolean isOnlyWhiteSpace(T pParameter) {
+        for (int i = 0; i < pParameter.length(); i++) {
+            if (!Character.isWhitespace(pParameter.charAt(i))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static <T> T[] notEmpty(final T[] pParameter) {
@@ -92,7 +103,7 @@ public final class Validate {
     }
 
     public static <T> T[] noNullElements(final T[] pParameter, final String pParamName) {
-        noNullElements(Arrays.asList(pParameter), pParamName);
+        noNullElements(pParameter == null ? null : Arrays.asList(pParameter), pParamName);
         return pParameter;
     }
 
@@ -101,6 +112,8 @@ public final class Validate {
     }
 
     public static <T> Collection<T> noNullElements(final Collection<T> pParameter, final String pParamName) {
+        notNull(pParameter, pParamName);
+
         for (T element : pParameter) {
             if (element == null) {
                 throw new IllegalArgumentException(String.format("%s may not contain null elements", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
@@ -110,19 +123,39 @@ public final class Validate {
         return pParameter;
     }
 
-    public static <K, V> Map<K, V>  noNullElements(final Map<K, V>  pParameter) {
-        return noNullElements(pParameter, null);
+    public static <K, V> Map<K, V> noNullValues(final Map<K, V> pParameter) {
+        return noNullValues(pParameter, null);
     }
 
-    public static <K, V> Map<K, V>  noNullElements(final Map<K, V>  pParameter, final String pParamName) {
-        for (V element : pParameter.values()) {
-            if (element == null) {
-                throw new IllegalArgumentException(String.format("%s may not contain null elements", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
+    public static <K, V> Map<K, V> noNullValues(final Map<K, V> pParameter, final String pParamName) {
+        notNull(pParameter, pParamName);
+
+        for (V value : pParameter.values()) {
+            if (value == null) {
+                throw new IllegalArgumentException(String.format("%s may not contain null values", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
             }
         }
 
         return pParameter;
     }
+
+    public static <K, V> Map<K, V> noNullKeys(final Map<K, V> pParameter) {
+        return noNullKeys(pParameter, null);
+    }
+
+    public static <K, V> Map<K, V> noNullKeys(final Map<K, V> pParameter, final String pParamName) {
+        notNull(pParameter, pParamName);
+
+        for (K key : pParameter.keySet()) {
+            if (key == null) {
+                throw new IllegalArgumentException(String.format("%s may not contain null keys", pParamName == null ? UNSPECIFIED_PARAM_NAME : pParamName));
+            }
+        }
+
+        return pParameter;
+    }
+
+    // Is true
 
     public static boolean isTrue(final boolean pExpression, final String pMessage) {
         return isTrue(pExpression, pExpression, pMessage);
@@ -130,7 +163,7 @@ public final class Validate {
 
     public static <T> T isTrue(final boolean condition, final T value, final String message) {
         if (!condition) {
-            throw new IllegalArgumentException(String.format(message, value));
+            throw new IllegalArgumentException(String.format(message == null ? "expression may not be %s" : message, value));
         }
 
         return value;
