@@ -731,7 +731,7 @@ public class JPEGImageReader extends ImageReaderBase {
             int chunkCount = stream.readUnsignedByte();
 
             if (chunkNumber != 1 && chunkCount != 1) {
-                processWarningOccurred(String.format("Bad number of 'ICC_PROFILE' chunks: %d of %d.", chunkNumber, chunkCount));
+                processWarningOccurred(String.format("Bad number of 'ICC_PROFILE' chunks: %d of %d. Assuming single chunk.", chunkNumber, chunkCount));
             }
 
             return readICCProfileSafe(stream);
@@ -742,18 +742,19 @@ public class JPEGImageReader extends ImageReaderBase {
             int chunkNumber = stream.readUnsignedByte();
             int chunkCount = stream.readUnsignedByte();
 
-            if (chunkNumber < 1) {
-                // Some weird JPEGs use 0-based indexes... count == 0 and all numbers == 0. Ignore these profiles
-                processWarningOccurred(String.format("Invalid 'ICC_PROFILE' chunk index: %d. Ignoring ICC profile.", chunkNumber));
-                return null;
-            }
-
             boolean badICC = false;
             if (chunkCount != segments.size()) {
+                // Some weird JPEGs use 0-based indexes... count == 0 and all numbers == 0.
                 // Others use count == 1, and all numbers == 1.
                 // Handle these by issuing warning
                 badICC = true;
                 processWarningOccurred(String.format("Unexpected 'ICC_PROFILE' chunk count: %d. Ignoring count, assuming %d chunks in sequence.", chunkCount, segments.size()));
+            }
+
+            if (!badICC && chunkNumber < 1) {
+                // Anything else is just ignored
+                processWarningOccurred(String.format("Invalid 'ICC_PROFILE' chunk index: %d. Ignoring ICC profile.", chunkNumber));
+                return null;
             }
 
             int count = badICC ? segments.size() : chunkCount;
