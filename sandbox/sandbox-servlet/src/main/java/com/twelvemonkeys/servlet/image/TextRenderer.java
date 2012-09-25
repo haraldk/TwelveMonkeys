@@ -28,7 +28,6 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.lang.MathUtil;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.servlet.ServletUtil;
 
@@ -148,7 +147,7 @@ import java.awt.geom.Rectangle2D;
  */
 
 class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
-    // TODO: Create something useable out of this piece of old junk.. ;-)
+    // TODO: Create something usable out of this piece of old junk.. ;-)
     // It just needs a graphics object to write onto
     // Alternatively, defer, and compute the size needed
     // Or, make it a filter...
@@ -195,8 +194,7 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
     /**
      * Renders the text string for this servlet request.
      */
-    private void paint(ServletRequest pReq, Graphics2D pRes,
-                      int pWidth, int pHeight)
+    private void paint(ServletRequest pReq, Graphics2D pRes, int pWidth, int pHeight)
             throws ImageServletException {
 
         // Get parameters
@@ -227,10 +225,11 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
         }
 
         // Create and set font
-        Font font = new Font((fontFamily != null ? fontFamily : "Helvetica"),
-                             getFontStyle(fontStyle),
-                             (fontSize != null ? Integer.parseInt(fontSize)
-                              : 12));
+        Font font = new Font(
+                fontFamily != null ? fontFamily : "Helvetica",
+                getFontStyle(fontStyle),
+                fontSize != null ? Integer.parseInt(fontSize) : 12
+        );
         pRes.setFont(font);
 
         // Set rotation
@@ -238,18 +237,15 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
         pRes.rotate(angle, pWidth / 2.0, pHeight / 2.0);
 
         // Draw string in fgcolor
-        pRes.setColor(fgcolor != null ? StringUtil.toColor(fgcolor)
-                      : Color.black);
+        pRes.setColor(fgcolor != null ? StringUtil.toColor(fgcolor) : Color.black);
 
-        float x = ServletUtil.getFloatParameter(pReq, PARAM_MARGIN_LEFT,
-                                                Float.MIN_VALUE);
+        float x = ServletUtil.getFloatParameter(pReq, PARAM_MARGIN_LEFT, Float.MIN_VALUE);
         Rectangle2D[] bounds = new Rectangle2D[lines.length];
         if (x <= Float.MIN_VALUE) {
             // Center
             float longest = 0f;
             for (int i = 0; i < lines.length; i++) {
-                bounds[i] = font.getStringBounds(lines[i],
-                                                 pRes.getFontRenderContext());
+                bounds[i] = font.getStringBounds(lines[i], pRes.getFontRenderContext());
                 if (bounds[i].getWidth() > longest) {
                     longest = (float) bounds[i].getWidth();
                 }
@@ -264,11 +260,9 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
         //System.out.println("marginLeft (from param): " + x);
         //}
 
-        float y = ServletUtil.getFloatParameter(pReq, PARAM_MARGIN_TOP,
-                                                Float.MIN_VALUE);
-        float lineHeight = (float) (bounds[0] != null ? bounds[0].getHeight() :
-                font.getStringBounds(lines[0],
-                                     pRes.getFontRenderContext()).getHeight());
+        float y = ServletUtil.getFloatParameter(pReq, PARAM_MARGIN_TOP, Float.MIN_VALUE);
+        float lineHeight = (float) (bounds[0] != null ?
+                bounds[0].getHeight() : font.getStringBounds(lines[0], pRes.getFontRenderContext()).getHeight());
 
         if (y <= Float.MIN_VALUE) {
             // Center
@@ -305,8 +299,7 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
      * @see Font#ITALIC
      */
     private int getFontStyle(String pStyle) {
-        if (pStyle == null
-                || StringUtil.containsIgnoreCase(pStyle, FONT_STYLE_PLAIN)) {
+        if (pStyle == null || StringUtil.containsIgnoreCase(pStyle, FONT_STYLE_PLAIN)) {
             return Font.PLAIN;
         }
 
@@ -330,14 +323,12 @@ class TextRenderer /*extends ImageServlet implements ImagePainterServlet*/ {
      */
     private double getAngle(ServletRequest pRequest) {
         // Get angle
-        double angle =
-                ServletUtil.getDoubleParameter(pRequest, PARAM_TEXT_ROTATION, 0.0);
+        double angle = ServletUtil.getDoubleParameter(pRequest, PARAM_TEXT_ROTATION, 0.0);
 
         // Convert to radians, if needed
         String units = pRequest.getParameter(PARAM_TEXT_ROTATION_UNITS);
-        if (!StringUtil.isEmpty(units)
-                && ROTATION_DEGREES.equalsIgnoreCase(units)) {
-            angle = MathUtil.toRadians(angle);
+        if (!StringUtil.isEmpty(units) && ROTATION_DEGREES.equalsIgnoreCase(units)) {
+            angle = Math.toRadians(angle);
         }
 
         return angle;
