@@ -1,6 +1,5 @@
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.BufferedImageIcon;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.servlet.OutputStreamAdapter;
@@ -12,14 +11,12 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -272,28 +269,6 @@ public class ImageServletResponseImplTestCase {
 
         verify(response).setContentType(CONTENT_TYPE_GIF);
         verify(response).getOutputStream();
-    }
-
-    private static void showIt(final BufferedImage expected, final BufferedImage actual, final BufferedImage diff) {
-        try {
-            SwingUtilities.invokeAndWait(new Runnable() {
-                public void run() {
-                    JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-                    panel.add(new BlackLabel("expected", expected));
-                    panel.add(new BlackLabel("actual", actual));
-                    if (diff != null) {
-                        panel.add(new BlackLabel("diff", diff));
-                    }
-                    JScrollPane scroll = new JScrollPane(panel);
-                    scroll.setBorder(BorderFactory.createEmptyBorder());
-                    JOptionPane.showMessageDialog(null, scroll);
-                }
-            });
-        }
-        catch (InterruptedException ignore) {
-        }
-        catch (InvocationTargetException ignore) {
-        }
     }
 
     @Test
