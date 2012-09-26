@@ -190,8 +190,8 @@
 
     <distributionManagement>
         <repository>
-            <id>java.net-m2-repository</id>
-            <url>java-net:/maven2-repository/trunk/repository/</url>
+            <id>central</id>
+            <url>http://repo.dev.escenic.com/content/repositories/thirdparty</url>
         </repository>
     </distributionManagement>
 
