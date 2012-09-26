@@ -1,6 +1,10 @@
 package com.twelvemonkeys.io.enc;
 
+import org.junit.Test;
+
 import java.io.*;
+
+import static org.junit.Assert.*;
 
 /**
  * Base64EncoderTest
@@ -19,6 +23,7 @@ public class Base64EncoderTestCase extends EncoderAbstractTestCase {
         return new Base64Decoder();
     }
 
+    @Test
     public void testNegativeEncode() throws IOException {
         Encoder encoder = createEncoder();
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -31,6 +36,7 @@ public class Base64EncoderTestCase extends EncoderAbstractTestCase {
         }
     }
 
+    @Test
     public void testEmptyEncode() throws IOException {
         String data = "";
 
@@ -41,6 +47,7 @@ public class Base64EncoderTestCase extends EncoderAbstractTestCase {
         assertEquals("Strings does not match", "", new String(bytes.toByteArray()));
     }
 
+    @Test
     public void testShortEncode() throws IOException {
         String data = "test";
 
@@ -51,6 +58,7 @@ public class Base64EncoderTestCase extends EncoderAbstractTestCase {
         assertEquals("Strings does not match", "dGVzdA==", new String(bytes.toByteArray()));
     }
 
+    @Test
     public void testLongEncode() throws IOException {
         String data = "Lorem ipsum dolor sit amet, consectetuer adipiscing " +
                 "elit. Fusce est. Morbi luctus consectetuer justo. Vivamus " +

@@ -45,8 +45,8 @@ import java.util.regex.PatternSyntaxException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/regex/RegExTokenIterator.java#1 $
  */
 public class RegExTokenIterator extends AbstractTokenIterator {
-    private final Matcher mMatcher;
-    private boolean mNext = false;
+    private final Matcher matcher;
+    private boolean next = false;
 
     /**
      * Creates a {@code RegExTokenIterator}.
@@ -80,7 +80,7 @@ public class RegExTokenIterator extends AbstractTokenIterator {
             throw new IllegalArgumentException("pattern == null");
         }
 
-        mMatcher = Pattern.compile(pPattern).matcher(pString);
+        matcher = Pattern.compile(pPattern).matcher(pString);
     }
 
     /**
@@ -88,18 +88,18 @@ public class RegExTokenIterator extends AbstractTokenIterator {
      *
      */
     public void reset() {
-        mMatcher.reset();
+        matcher.reset();
     }
 
     public boolean hasNext() {
-        return mNext || (mNext = mMatcher.find());
+        return next || (next = matcher.find());
     }
 
     public String next() {
         if (!hasNext()) {
             throw new NoSuchElementException();
         }
-        mNext = false;
-        return mMatcher.group();
+        next = false;
+        return matcher.group();
     }
 }

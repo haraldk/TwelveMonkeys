@@ -48,16 +48,7 @@ import java.io.*;
  */
 public final class FileCacheSeekableStream extends AbstractCachedSeekableStream {
 
-//    private final InputStream mStream;
-//    private final RandomAccessFile mCache;
-    private  byte[] mBuffer;
-
-    /** The stream positon in the backing stream (mStream) */
-//    private long mStreamPosition;
-
-    // TODO: getStreamPosition() should always be the same as
-    // mCache.getFilePointer()
-    // otherwise there's some inconsistency here... Enforce this?
+    private  byte[] buffer;
 
     /**
      * Creates a {@code FileCacheSeekableStream} reading from the given
@@ -118,7 +109,7 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
         super(pStream, new FileCache(pFile));
 
         // TODO: Allow for custom buffer sizes?
-        mBuffer = new byte[1024];
+        buffer = new byte[1024];
     }
 
     public final boolean isCachedMemory() {
@@ -132,39 +123,19 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
     @Override
     protected void closeImpl() throws IOException {
         super.closeImpl();
-        mBuffer = null;
+        buffer = null;
     }
-/*
-    public final boolean isCached() {
-        return true;
-    }
-
-    // InputStream overrides
-    @Override
-    public int available() throws IOException {
-        long avail = mStreamPosition - mPosition + mStream.available();
-        return avail > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) avail;
-    }
-
-    public void closeImpl() throws IOException {
-        mStream.close();
-        mCache.close();
-
-        // TODO: Delete cache file here?
-        // ThreadPool.invokeLater(new DeleteFileAction(mCacheFile));
-    }
-    */
 
     @Override
     public int read() throws IOException {
         checkOpen();
 
         int read;
-        if (mPosition == mStreamPosition) {
+        if (position == streamPosition) {
             // Read ahead into buffer, for performance
-            read = readAhead(mBuffer, 0, mBuffer.length);
+            read = readAhead(buffer, 0, buffer.length);
             if (read >= 0) {
-                read = mBuffer[0] & 0xff;
+                read = buffer[0] & 0xff;
             }
 
             //System.out.println("Read 1 byte from stream: " + Integer.toHexString(read & 0xff));
@@ -179,7 +150,7 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
 
         // TODO: This field is not REALLY considered accessible.. :-P
         if (read != -1) {
-            mPosition++;
+            position++;
         }
         return read;
     }
@@ -189,7 +160,7 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
         checkOpen();
 
         int length;
-        if (mPosition == mStreamPosition) {
+        if (position == streamPosition) {
             // Read bytes from the stream
             length = readAhead(pBytes, pOffset, pLength);
 
@@ -198,82 +169,28 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
         else {
             // ...or read bytes from the cache
             syncPosition();
-            length = getCache().read(pBytes, pOffset, (int) Math.min(pLength, mStreamPosition - mPosition));
+            length = getCache().read(pBytes, pOffset, (int) Math.min(pLength, streamPosition - position));
 
             //System.out.println("Read " + length + " byte from cache");
         }
 
         // TODO: This field is not REALLY considered accessible.. :-P
         if (length > 0) {
-            mPosition += length;
+            position += length;
         }
         return length;
     }
 
     private int readAhead(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
         int length;
-        length = mStream.read(pBytes, pOffset, pLength);
+        length = stream.read(pBytes, pOffset, pLength);
 
         if (length > 0) {
-            mStreamPosition += length;
+            streamPosition += length;
             getCache().write(pBytes, pOffset, length);
         }
         return length;
     }
-
-    /*
-    private void syncPosition() throws IOException {
-        if (mCache.getFilePointer() != mPosition) {
-            mCache.seek(mPosition); // Assure EOF is correctly thrown
-        }
-    }
-
-    // Seekable overrides
-
-    protected void flushBeforeImpl(long pPosition) {
-        // TODO: Implement
-        // For now, it's probably okay to do nothing, this is just for
-        // performance (as long as people follow spec, not behaviour)
-    }
-
-    protected void seekImpl(long pPosition) throws IOException {
-        if (mStreamPosition < pPosition) {
-            // Make sure we append at end of cache
-            if (mCache.getFilePointer() != mStreamPosition) {
-                mCache.seek(mStreamPosition);
-            }
-
-            // Read diff from stream into cache
-            long left = pPosition - mStreamPosition;
-            int bufferLen = left > 1024 ? 1024 : (int) left;
-            byte[] buffer = new byte[bufferLen];
-
-            while (left > 0) {
-                int length = buffer.length < left ? buffer.length : (int) left;
-                int read = mStream.read(buffer, 0, length);
-
-                if (read > 0) {
-                    mCache.write(buffer, 0, read);
-                    mStreamPosition += read;
-                    left -= read;
-                }
-                else if (read < 0) {
-                    break;
-                }
-            }
-        }
-        else if (mStreamPosition >= pPosition) {
-            // Seek backwards into the cache
-            mCache.seek(pPosition);
-        }
-
-//        System.out.println("pPosition: " + pPosition);
-//        System.out.println("mStreamPosition: " + mStreamPosition);
-//        System.out.println("mCache.getFilePointer(): " + mCache.getFilePointer());
-
-        // NOTE: If mPosition == pPosition then we're good to go
-    }
-    */
 
     final static class FileCache extends StreamCache {
         private RandomAccessFile mCacheFile;

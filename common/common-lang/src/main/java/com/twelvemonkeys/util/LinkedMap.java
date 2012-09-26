@@ -72,8 +72,8 @@ import java.io.Serializable;
  */
 public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Serializable {
 
-    transient LinkedEntry<K, V> mHead;
-    protected final boolean mAccessOrder;
+    transient LinkedEntry<K, V> head;
+    protected final boolean accessOrder;
 
     /**
      * Creates a {@code LinkedMap} backed by a {@code HashMap}, with default
@@ -118,7 +118,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
      */
     public LinkedMap(Map<? extends K, ? extends V> pContents, boolean pAccessOrder) {
         super(pContents);
-        mAccessOrder = pAccessOrder;
+        accessOrder = pAccessOrder;
     }
 
     /**
@@ -148,11 +148,11 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
      */
     public LinkedMap(Map<K, Entry<K, V>> pBacking, Map<? extends K, ? extends V> pContents, boolean pAccessOrder) {
         super(pBacking, pContents);
-        mAccessOrder = pAccessOrder;
+        accessOrder = pAccessOrder;
     }
 
     protected void init() {
-        mHead = new LinkedEntry<K, V>(null, null, null) {
+        head = new LinkedEntry<K, V>(null, null, null) {
             void addBefore(LinkedEntry pExisting) {
                 throw new Error();
             }
@@ -181,19 +181,19 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
                 return "head";
             }
         };
-        mHead.mPrevious = mHead.mNext = mHead;
+        head.mPrevious = head.mNext = head;
     }
 
     public boolean containsValue(Object pValue) {
         // Overridden to take advantage of faster iterator
         if (pValue == null) {
-            for (LinkedEntry e = mHead.mNext; e != mHead; e = e.mNext) {
+            for (LinkedEntry e = head.mNext; e != head; e = e.mNext) {
                 if (e.mValue == null) {
                     return true;
                 }
             }
         } else {
-            for (LinkedEntry e = mHead.mNext; e != mHead; e = e.mNext) {
+            for (LinkedEntry e = head.mNext; e != head; e = e.mNext) {
                 if (pValue.equals(e.mValue)) {
                     return true;
                 }
@@ -215,7 +215,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
     }
 
     private abstract class LinkedMapIterator<E> implements Iterator<E> {
-        LinkedEntry<K, V> mNextEntry = mHead.mNext;
+        LinkedEntry<K, V> mNextEntry = head.mNext;
         LinkedEntry<K, V> mLastReturned = null;
 
         /**
@@ -223,10 +223,10 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
          * List should have.  If this expectation is violated, the iterator
          * has detected concurrent modification.
          */
-        int mExpectedModCount = mModCount;
+        int mExpectedModCount = modCount;
 
         public boolean hasNext() {
-            return mNextEntry != mHead;
+            return mNextEntry != head;
         }
 
         public void remove() {
@@ -234,22 +234,22 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
                 throw new IllegalStateException();
             }
 
-            if (mModCount != mExpectedModCount) {
+            if (modCount != mExpectedModCount) {
                 throw new ConcurrentModificationException();
             }
 
             LinkedMap.this.remove(mLastReturned.mKey);
             mLastReturned = null;
 
-            mExpectedModCount = mModCount;
+            mExpectedModCount = modCount;
         }
 
         LinkedEntry<K, V> nextEntry() {
-            if (mModCount != mExpectedModCount) {
+            if (modCount != mExpectedModCount) {
                 throw new ConcurrentModificationException();
             }
 
-            if (mNextEntry == mHead) {
+            if (mNextEntry == head) {
                 throw new NoSuchElementException();
             }
 
@@ -279,7 +279,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
     }
 
     public V get(Object pKey) {
-        LinkedEntry<K, V> entry = (LinkedEntry<K, V>) mEntries.get(pKey);
+        LinkedEntry<K, V> entry = (LinkedEntry<K, V>) entries.get(pKey);
 
         if (entry != null) {
             entry.recordAccess(this);
@@ -290,11 +290,11 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
     }
 
     public V remove(Object pKey) {
-        LinkedEntry<K, V> entry = (LinkedEntry<K, V>) mEntries.remove(pKey);
+        LinkedEntry<K, V> entry = (LinkedEntry<K, V>) entries.remove(pKey);
 
         if (entry != null) {
             entry.remove();
-            mModCount++;
+            modCount++;
 
             return entry.mValue;
         }
@@ -302,22 +302,22 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
     }
 
     public V put(K pKey, V pValue) {
-        LinkedEntry<K, V> entry = (LinkedEntry<K, V>) mEntries.get(pKey);
+        LinkedEntry<K, V> entry = (LinkedEntry<K, V>) entries.get(pKey);
         V oldValue;
 
         if (entry == null) {
             oldValue = null;
 
             // Remove eldest entry if instructed, else grow capacity if appropriate
-            LinkedEntry<K, V> eldest = mHead.mNext;
+            LinkedEntry<K, V> eldest = head.mNext;
             if (removeEldestEntry(eldest)) {
                 removeEntry(eldest);
             }
 
             entry = createEntry(pKey, pValue);
-            entry.addBefore(mHead);
+            entry.addBefore(head);
 
-            mEntries.put(pKey, entry);
+            entries.put(pKey, entry);
         }
         else {
             oldValue = entry.mValue;
@@ -326,7 +326,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
             entry.recordAccess(this);
         }
 
-        mModCount++;
+        modCount++;
 
         return oldValue;
     }
@@ -446,10 +446,10 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
          */
         protected void recordAccess(Map<K, V> pMap) {
             LinkedMap<K, V> linkedMap = (LinkedMap<K, V>) pMap;
-            if (linkedMap.mAccessOrder) {
-                linkedMap.mModCount++;
+            if (linkedMap.accessOrder) {
+                linkedMap.modCount++;
                 remove();
-                addBefore(linkedMap.mHead);
+                addBefore(linkedMap.head);
             }
         }
 

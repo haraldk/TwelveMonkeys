@@ -1,13 +1,15 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.io.OutputStreamAbstractTestCase;
+import org.junit.Test;
 
+import javax.servlet.Filter;
+import javax.servlet.ServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import javax.servlet.Filter;
-import javax.servlet.ServletResponse;
+import static org.junit.Assert.*;
 
 /**
  * TrimWhiteSpaceFilterTestCase
@@ -23,7 +25,6 @@ public class TrimWhiteSpaceFilterTestCase extends FilterAbstractTestCase {
     }
 
     public static final class TrimWSFilterOutputStreamTestCase extends OutputStreamAbstractTestCase {
-
         protected OutputStream makeObject() {
             // NOTE: ByteArrayOutputStream does not implement flush or close...
             return makeOutputStream(new ByteArrayOutputStream(16));
@@ -33,6 +34,7 @@ public class TrimWhiteSpaceFilterTestCase extends FilterAbstractTestCase {
             return new TrimWhiteSpaceFilter.TrimWSFilterOutputStream(pWrapped);
         }
 
+        @Test
         public void testTrimWSOnlyWS() throws IOException {
             ByteArrayOutputStream out = new ByteArrayOutputStream(64);
             OutputStream trim = makeOutputStream(out);
@@ -46,6 +48,7 @@ public class TrimWhiteSpaceFilterTestCase extends FilterAbstractTestCase {
             assertEquals("Should be trimmed", "\"\"", '"' + new String(out.toByteArray()) + '"');
         }
 
+        @Test
         public void testTrimWSLeading() throws IOException {
             ByteArrayOutputStream out = new ByteArrayOutputStream(64);
             OutputStream trim = makeOutputStream(out);
@@ -60,6 +63,7 @@ public class TrimWhiteSpaceFilterTestCase extends FilterAbstractTestCase {
             assertEquals("Should be trimmed", '"' + trimmed + '"', '"' + new String(out.toByteArray()) + '"');
         }
 
+        @Test
         public void testTrimWSOffsetLength() throws IOException {
             ByteArrayOutputStream out = new ByteArrayOutputStream(64);
             OutputStream trim = makeOutputStream(out);

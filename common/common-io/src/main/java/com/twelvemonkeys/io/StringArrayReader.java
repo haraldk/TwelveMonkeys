@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.io;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.io.StringReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -42,13 +44,13 @@ import java.io.Reader;
  */
 public class StringArrayReader extends StringReader {
 
-    private StringReader mCurrent;
-    private String[] mStrings;
-    protected final Object mLock;
-    private int mCurrentSting;
-    private int mMarkedString;
-    private int mMark;
-    private int mNext;
+    private StringReader current;
+    private String[] strings;
+    protected final Object finalLock;
+    private int currentSting;
+    private int markedString;
+    private int mark;
+    private int next;
 
     /**
      * Create a new string array reader.
@@ -57,28 +59,28 @@ public class StringArrayReader extends StringReader {
      */
     public StringArrayReader(final String[] pStrings) {
         super("");
-        if (pStrings == null) {
-            throw new NullPointerException("strings == null");
-        }
 
-        mLock = lock = pStrings; // NOTE: It's ok to sync on pStrings, as the
+        Validate.notNull(pStrings, "strings");
+
+        finalLock = lock = pStrings; // NOTE: It's ok to sync on pStrings, as the
                                  // reference can't change, only it's elements
 
-        mStrings = pStrings.clone(); // Defensive copy for content
+        strings = pStrings.clone(); // Defensive copy for content
         nextReader();
     }
 
     protected final Reader nextReader() {
-        if (mCurrentSting >= mStrings.length) {
-            mCurrent = new EmptyReader();
+        if (currentSting >= strings.length) {
+            current = new EmptyReader();
         }
         else {
-            mCurrent = new StringReader(mStrings[mCurrentSting++]);
+            current = new StringReader(strings[currentSting++]);
         }
-        // NOTE: Reset mNext for every reader, and record marked reader in mark/reset methods!
-        mNext = 0;
+
+        // NOTE: Reset next for every reader, and record marked reader in mark/reset methods!
+        next = 0;
         
-        return mCurrent;
+        return current;
     }
 
     /**
@@ -87,15 +89,15 @@ public class StringArrayReader extends StringReader {
      * @throws IOException if the stream is closed
      */
     protected final void ensureOpen() throws IOException {
-        if (mStrings == null) {
+        if (strings == null) {
             throw new IOException("Stream closed");
         }
     }
 
     public void close() {
         super.close();
-        mStrings = null;
-        mCurrent.close();
+        strings = null;
+        current.close();
     }
 
     public void mark(int pReadLimit) throws IOException {
@@ -103,29 +105,29 @@ public class StringArrayReader extends StringReader {
             throw new IllegalArgumentException("Read limit < 0");
         }
 
-        synchronized (mLock) {
+        synchronized (finalLock) {
             ensureOpen();
-            mMark = mNext;
-            mMarkedString = mCurrentSting;
+            mark = next;
+            markedString = currentSting;
 
-            mCurrent.mark(pReadLimit);
+            current.mark(pReadLimit);
         }
     }
 
     public void reset() throws IOException {
-        synchronized (mLock) {
+        synchronized (finalLock) {
             ensureOpen();
 
-            if (mCurrentSting != mMarkedString) {
-                mCurrentSting = mMarkedString - 1;
+            if (currentSting != markedString) {
+                currentSting = markedString - 1;
                 nextReader();
-                mCurrent.skip(mMark);
+                current.skip(mark);
             }
             else {
-                mCurrent.reset();
+                current.reset();
             }
 
-            mNext = mMark;
+            next = mark;
         }
     }
 
@@ -134,49 +136,49 @@ public class StringArrayReader extends StringReader {
     }
 
     public int read() throws IOException {
-        synchronized (mLock) {
-            int read = mCurrent.read();
+        synchronized (finalLock) {
+            int read = current.read();
 
-            if (read < 0 && mCurrentSting < mStrings.length) {
+            if (read < 0 && currentSting < strings.length) {
                 nextReader();
                 return read(); // In case of empty strings
             }
 
-            mNext++;
+            next++;
 
             return read;
         }
     }
 
     public int read(char pBuffer[], int pOffset, int pLength) throws IOException {
-        synchronized (mLock) {
-            int read = mCurrent.read(pBuffer, pOffset, pLength);
+        synchronized (finalLock) {
+            int read = current.read(pBuffer, pOffset, pLength);
 
-            if (read < 0 && mCurrentSting < mStrings.length) {
+            if (read < 0 && currentSting < strings.length) {
                 nextReader();
                 return read(pBuffer, pOffset, pLength); // In case of empty strings
             }
 
-            mNext += read;
+            next += read;
 
             return read;
         }
     }
 
     public boolean ready() throws IOException {
-        return mCurrent.ready();
+        return current.ready();
     }
 
     public long skip(long pChars) throws IOException {
-        synchronized (mLock) {
-            long skipped = mCurrent.skip(pChars);
+        synchronized (finalLock) {
+            long skipped = current.skip(pChars);
 
-            if (skipped == 0 && mCurrentSting < mStrings.length) {
+            if (skipped == 0 && currentSting < strings.length) {
                 nextReader();
                 return skip(pChars);
             }
 
-            mNext += skipped;
+            next += skipped;
 
             return skipped;
         }

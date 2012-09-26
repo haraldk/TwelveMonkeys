@@ -43,6 +43,6 @@ class BitmapRGB extends BitmapDescriptor {
     }
 
     public BufferedImage getImage() {
-        return mImage;
+        return image;
     }
 }

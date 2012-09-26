@@ -51,8 +51,8 @@ import java.util.Iterator;
  */
 public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap<K, V> {
 
-    private int mMaxSize = 1000;
-    private float mTrimFactor = 0.01f;
+    private int maxSize = 1000;
+    private float trimFactor = 0.01f;
 
     /**
      * Creates an LRUHashMap with default max size (1000 entries).
@@ -113,7 +113,7 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
      * @return the size limit
      */
     public int getMaxSize() {
-        return mMaxSize;
+        return maxSize;
     }
 
     /**
@@ -131,9 +131,9 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
             throw new IllegalArgumentException("max size must be positive");
         }
 
-        mMaxSize = pMaxSize;
+        maxSize = pMaxSize;
 
-        while(size() > mMaxSize) {
+        while(size() > maxSize) {
             removeLRU();
         }
     }
@@ -148,7 +148,7 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
      * @return the current trim factor
      */
     public float getTrimFactor() {
-        return mTrimFactor;
+        return trimFactor;
     }
 
     /**
@@ -168,7 +168,7 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
             throw new IllegalArgumentException("trim factor must be between 0 and 1");
         }
 
-        mTrimFactor = pTrimFactor;
+        trimFactor = pTrimFactor;
     }
 
     /**
@@ -178,7 +178,7 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
     protected boolean removeEldestEntry(Map.Entry<K, V> pEldest) {
         // NOTE: As removeLRU() may remove more than one entry, this is better
         // than simply removing the eldest entry.
-        if (size() >= mMaxSize) {
+        if (size() >= maxSize) {
             removeLRU();
         }
         return false;
@@ -204,7 +204,7 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
      * @see #getTrimFactor()
      */
     public void removeLRU() {
-        int removeCount = (int) Math.max((size() * mTrimFactor), 1);
+        int removeCount = (int) Math.max((size() * trimFactor), 1);
         Iterator<Map.Entry<K, V>> entries = entrySet().iterator();
         while ((removeCount--) > 0 && entries.hasNext()) {
             entries.next();

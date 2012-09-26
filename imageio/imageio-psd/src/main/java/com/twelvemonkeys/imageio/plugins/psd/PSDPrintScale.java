@@ -16,10 +16,10 @@ final class PSDPrintScale extends PSDImageResource {
     // 4 bytes y location (floating point).
     // 4 bytes scale (floating point)
 
-    short mStyle;
-    float mXLocation;
-    float mYlocation;
-    float mScale;
+    short style;
+    float xLocation;
+    float ylocation;
+    float scale;
 
     PSDPrintScale(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -27,9 +27,9 @@ final class PSDPrintScale extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mStyle = pInput.readShort();
-        mXLocation = pInput.readFloat();
-        mYlocation = pInput.readFloat();
-        mScale = pInput.readFloat();
+        style = pInput.readShort();
+        xLocation = pInput.readFloat();
+        ylocation = pInput.readFloat();
+        scale = pInput.readFloat();
     }
 }

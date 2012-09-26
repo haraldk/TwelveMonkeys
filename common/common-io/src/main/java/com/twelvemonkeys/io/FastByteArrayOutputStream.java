@@ -39,11 +39,12 @@ import java.io.ByteArrayInputStream;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/FastByteArrayOutputStream.java#2 $
+ * @version $Id: FastByteArrayOutputStream.java#2 $
  */
+// TODO: Performance test of a stream impl that uses list of fixed size blocks, rather than contiguous block 
 public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
-    /** Max grow size (unless if writing more than this ammount of bytes) */
-    protected int mMaxGrowSize = 1024 * 1024; // 1 MB
+    /** Max grow size (unless if writing more than this amount of bytes) */
+    protected int maxGrowSize = 1024 * 1024; // 1 MB
 
     /**
      * Creates a {@code ByteArrayOutputStream} with the given initial buffer
@@ -69,7 +70,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     }
 
     @Override
-    public synchronized void write(byte pBytes[], int pOffset, int pLength) {
+    public void write(byte pBytes[], int pOffset, int pLength) {
         if ((pOffset < 0) || (pOffset > pBytes.length) || (pLength < 0) ||
                 ((pOffset + pLength) > pBytes.length) || ((pOffset + pLength) < 0)) {
             throw new IndexOutOfBoundsException();
@@ -77,23 +78,24 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
         else if (pLength == 0) {
             return;
         }
-        int newcount = count + pLength;
-        growIfNeeded(newcount);
+
+        int newCount = count + pLength;
+        growIfNeeded(newCount);
         System.arraycopy(pBytes, pOffset, buf, count, pLength);
-        count = newcount;
+        count = newCount;
     }
 
     @Override
-    public synchronized void write(int pByte) {
-        int newcount = count + 1;
-        growIfNeeded(newcount);
+    public void write(int pByte) {
+        int newCount = count + 1;
+        growIfNeeded(newCount);
         buf[count] = (byte) pByte;
-        count = newcount;
+        count = newCount;
     }
 
-    private void growIfNeeded(int pNewcount) {
-        if (pNewcount > buf.length) {
-            int newSize = Math.max(Math.min(buf.length << 1, buf.length + mMaxGrowSize), pNewcount);
+    private void growIfNeeded(int pNewCount) {
+        if (pNewCount > buf.length) {
+            int newSize = Math.max(Math.min(buf.length << 1, buf.length + maxGrowSize), pNewCount);
             byte newBuf[] = new byte[newSize];
             System.arraycopy(buf, 0, newBuf, 0, count);
             buf = newBuf;
@@ -109,9 +111,10 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     // Non-synchronized version of toByteArray
     @Override
     public byte[] toByteArray() {
-        byte newbuf[] = new byte[count];
-        System.arraycopy(buf, 0, newbuf, 0, count);
-        return newbuf;
+        byte newBuf[] = new byte[count];
+        System.arraycopy(buf, 0, newBuf, 0, count);
+
+        return newBuf;
     }
 
     /**
@@ -121,7 +124,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
      * <p/>
      * Note that care needs to be taken to avoid writes to
      * this output stream after the input stream is created.
-     * Failing to do so, may result in unpredictable behviour.
+     * Failing to do so, may result in unpredictable behaviour.
      *
      * @return a new {@code ByteArrayInputStream}, reading from this stream's buffer.
      */

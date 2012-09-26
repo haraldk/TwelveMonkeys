@@ -56,58 +56,58 @@ import java.nio.channels.FileChannel;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/LittleEndianRandomAccessFile.java#1 $
  */
 public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
-    private RandomAccessFile mFile;
+    private RandomAccessFile file;
 
     public LittleEndianRandomAccessFile(final String pName, final String pMode) throws FileNotFoundException {
         this(FileUtil.resolve(pName), pMode);
     }
 
     public LittleEndianRandomAccessFile(final File pFile, final String pMode) throws FileNotFoundException {
-        mFile = new RandomAccessFile(pFile, pMode);
+        file = new RandomAccessFile(pFile, pMode);
     }
 
     public void close() throws IOException {
-        mFile.close();
+        file.close();
     }
 
     public FileChannel getChannel() {
-        return mFile.getChannel();
+        return file.getChannel();
     }
 
     public FileDescriptor getFD() throws IOException {
-        return mFile.getFD();
+        return file.getFD();
     }
 
     public long getFilePointer() throws IOException {
-        return mFile.getFilePointer();
+        return file.getFilePointer();
     }
 
     public long length() throws IOException {
-        return mFile.length();
+        return file.length();
     }
 
     public int read() throws IOException {
-        return mFile.read();
+        return file.read();
     }
 
     public int read(final byte[] b) throws IOException {
-        return mFile.read(b);
+        return file.read(b);
     }
 
     public int read(final byte[] b, final int off, final int len) throws IOException {
-        return mFile.read(b, off, len);
+        return file.read(b, off, len);
     }
 
     public void readFully(final byte[] b) throws IOException {
-        mFile.readFully(b);
+        file.readFully(b);
     }
 
     public void readFully(final byte[] b, final int off, final int len) throws IOException {
-        mFile.readFully(b, off, len);
+        file.readFully(b, off, len);
     }
 
     public String readLine() throws IOException {
-        return mFile.readLine();
+        return file.readLine();
     }
 
     /**
@@ -121,10 +121,12 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public boolean readBoolean() throws IOException {
-        int b = mFile.read();
+        int b = file.read();
+
         if (b < 0) {
             throw new EOFException();
         }
+
         return b != 0;
     }
 
@@ -138,10 +140,12 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public byte readByte() throws IOException {
-        int b = mFile.read();
+        int b = file.read();
+
         if (b < 0) {
             throw new EOFException();
         }
+
         return (byte) b;
 
     }
@@ -156,10 +160,12 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public int readUnsignedByte() throws IOException {
-        int b = mFile.read();
+        int b = file.read();
+
         if (b < 0) {
             throw new EOFException();
         }
+
         return b;
     }
 
@@ -173,13 +179,15 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public short readShort() throws IOException {
-        int byte1 = mFile.read();
-        int byte2 = mFile.read();
+        int byte1 = file.read();
+        int byte2 = file.read();
+
         // only need to test last byte read
         // if byte1 is -1 so is byte2
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         return (short) (((byte2 << 24) >>> 16) + (byte1 << 24) >>> 24);
     }
 
@@ -193,11 +201,13 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public int readUnsignedShort() throws IOException {
-        int byte1 = mFile.read();
-        int byte2 = mFile.read();
+        int byte1 = file.read();
+        int byte2 = file.read();
+
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         //return ((byte2 << 24) >> 16) + ((byte1 << 24) >> 24);
         return (byte2 << 8) + byte1;
     }
@@ -212,11 +222,13 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public char readChar() throws IOException {
-        int byte1 = mFile.read();
-        int byte2 = mFile.read();
+        int byte1 = file.read();
+        int byte2 = file.read();
+
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         return (char) (((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24));
     }
 
@@ -231,16 +243,16 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public int readInt() throws IOException {
-        int byte1 = mFile.read();
-        int byte2 = mFile.read();
-        int byte3 = mFile.read();
-        int byte4 = mFile.read();
+        int byte1 = file.read();
+        int byte2 = file.read();
+        int byte3 = file.read();
+        int byte4 = file.read();
 
         if (byte4 < 0) {
             throw new EOFException();
         }
-        return (byte4 << 24) + ((byte3 << 24) >>> 8)
-                + ((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24);
+
+        return (byte4 << 24) + ((byte3 << 24) >>> 8) + ((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24);
     }
 
     /**
@@ -253,18 +265,19 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException  if the underlying stream throws an IOException.
      */
     public long readLong() throws IOException {
-        long byte1 = mFile.read();
-        long byte2 = mFile.read();
-        long byte3 = mFile.read();
-        long byte4 = mFile.read();
-        long byte5 = mFile.read();
-        long byte6 = mFile.read();
-        long byte7 = mFile.read();
-        long byte8 = mFile.read();
+        long byte1 = file.read();
+        long byte2 = file.read();
+        long byte3 = file.read();
+        long byte4 = file.read();
+        long byte5 = file.read();
+        long byte6 = file.read();
+        long byte7 = file.read();
+        long byte8 = file.read();
 
         if (byte8 < 0) {
             throw new EOFException();
         }
+
         return (byte8 << 56) + ((byte7 << 56) >>> 8)
                 + ((byte6 << 56) >>> 16) + ((byte5 << 56) >>> 24)
                 + ((byte4 << 56) >>> 32) + ((byte3 << 56) >>> 40)
@@ -287,11 +300,13 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException            if the underlying stream throws an IOException.
      */
     public String readUTF() throws IOException {
-        int byte1 = mFile.read();
-        int byte2 = mFile.read();
+        int byte1 = file.read();
+        int byte2 = file.read();
+
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         int numbytes = (byte1 << 8) + byte2;
         char result[] = new char[numbytes];
         int numread = 0;
@@ -310,27 +325,34 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
             }
             else if (test == 12 || test == 13) { // two bytes
                 numread += 2;
+
                 if (numread > numbytes) {
                     throw new UTFDataFormatException();
                 }
+
                 c2 = readUnsignedByte();
+
                 if ((c2 & 0xC0) != 0x80) {
                     throw new UTFDataFormatException();
                 }
+
                 result[numchars++] = (char) (((c1 & 0x1F) << 6) | (c2 & 0x3F));
             }
             else if (test == 14) { // three bytes
                 numread += 3;
+
                 if (numread > numbytes) {
                     throw new UTFDataFormatException();
                 }
+
                 c2 = readUnsignedByte();
                 c3 = readUnsignedByte();
+
                 if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80)) {
                     throw new UTFDataFormatException();
                 }
-                result[numchars++] = (char)
-                        (((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F));
+
+                result[numchars++] = (char) (((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F));
             }
             else { // malformed
                 throw new UTFDataFormatException();
@@ -378,27 +400,27 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      *                          {@code 0} or if an I/O error occurs.
      */
     public void seek(final long pos) throws IOException {
-        mFile.seek(pos);
+        file.seek(pos);
     }
 
     public void setLength(final long newLength) throws IOException {
-        mFile.setLength(newLength);
+        file.setLength(newLength);
     }
 
     public int skipBytes(final int n) throws IOException {
-        return mFile.skipBytes(n);
+        return file.skipBytes(n);
     }
 
     public void write(final byte[] b) throws IOException {
-        mFile.write(b);
+        file.write(b);
     }
 
     public void write(final byte[] b, final int off, final int len) throws IOException {
-        mFile.write(b, off, len);
+        file.write(b, off, len);
     }
 
     public void write(final int b) throws IOException {
-        mFile.write(b);
+        file.write(b);
     }
 
     /**
@@ -425,7 +447,7 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException if the underlying stream throws an IOException.
      */
     public void writeByte(int pByte) throws IOException {
-        mFile.write(pByte);
+        file.write(pByte);
     }
 
     /**
@@ -436,8 +458,8 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException if the underlying stream throws an IOException.
      */
     public void writeShort(int pShort) throws IOException {
-        mFile.write(pShort & 0xFF);
-        mFile.write((pShort >>> 8) & 0xFF);
+        file.write(pShort & 0xFF);
+        file.write((pShort >>> 8) & 0xFF);
     }
 
     /**
@@ -448,8 +470,8 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException if the underlying stream throws an IOException.
      */
     public void writeChar(int pChar) throws IOException {
-        mFile.write(pChar & 0xFF);
-        mFile.write((pChar >>> 8) & 0xFF);
+        file.write(pChar & 0xFF);
+        file.write((pChar >>> 8) & 0xFF);
     }
 
     /**
@@ -460,11 +482,10 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException if the underlying stream throws an IOException.
      */
     public void writeInt(int pInt) throws IOException {
-        mFile.write(pInt & 0xFF);
-        mFile.write((pInt >>> 8) & 0xFF);
-        mFile.write((pInt >>> 16) & 0xFF);
-        mFile.write((pInt >>> 24) & 0xFF);
-
+        file.write(pInt & 0xFF);
+        file.write((pInt >>> 8) & 0xFF);
+        file.write((pInt >>> 16) & 0xFF);
+        file.write((pInt >>> 24) & 0xFF);
     }
 
     /**
@@ -475,14 +496,14 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @throws IOException if the underlying stream throws an IOException.
      */
     public void writeLong(long pLong) throws IOException {
-        mFile.write((int) pLong & 0xFF);
-        mFile.write((int) (pLong >>> 8) & 0xFF);
-        mFile.write((int) (pLong >>> 16) & 0xFF);
-        mFile.write((int) (pLong >>> 24) & 0xFF);
-        mFile.write((int) (pLong >>> 32) & 0xFF);
-        mFile.write((int) (pLong >>> 40) & 0xFF);
-        mFile.write((int) (pLong >>> 48) & 0xFF);
-        mFile.write((int) (pLong >>> 56) & 0xFF);
+        file.write((int) pLong & 0xFF);
+        file.write((int) (pLong >>> 8) & 0xFF);
+        file.write((int) (pLong >>> 16) & 0xFF);
+        file.write((int) (pLong >>> 24) & 0xFF);
+        file.write((int) (pLong >>> 32) & 0xFF);
+        file.write((int) (pLong >>> 40) & 0xFF);
+        file.write((int) (pLong >>> 48) & 0xFF);
+        file.write((int) (pLong >>> 56) & 0xFF);
     }
 
     /**
@@ -515,12 +536,13 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @param pString the {@code String} value to be written.
      * @throws IOException if the underlying stream throws an IOException.
      * @see #writeByte(int)
-     * @see #mFile
+     * @see #file
      */
     public void writeBytes(String pString) throws IOException {
         int length = pString.length();
+
         for (int i = 0; i < length; i++) {
-            mFile.write((byte) pString.charAt(i));
+            file.write((byte) pString.charAt(i));
         }
     }
 
@@ -532,14 +554,15 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
      * @param pString a {@code String} value to be written.
      * @throws IOException if the underlying stream throws an IOException.
      * @see #writeChar(int)
-     * @see #mFile
+     * @see #file
      */
     public void writeChars(String pString) throws IOException {
         int length = pString.length();
+
         for (int i = 0; i < length; i++) {
             int c = pString.charAt(i);
-            mFile.write(c & 0xFF);
-            mFile.write((c >>> 8) & 0xFF);
+            file.write(c & 0xFF);
+            file.write((c >>> 8) & 0xFF);
         }
     }
 
@@ -564,6 +587,7 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
 
         for (int i = 0; i < numchars; i++) {
             int c = pString.charAt(i);
+
             if ((c >= 0x0001) && (c <= 0x007F)) {
                 numbytes++;
             }
@@ -579,21 +603,23 @@ public class LittleEndianRandomAccessFile implements DataInput, DataOutput {
             throw new UTFDataFormatException();
         }
 
-        mFile.write((numbytes >>> 8) & 0xFF);
-        mFile.write(numbytes & 0xFF);
+        file.write((numbytes >>> 8) & 0xFF);
+        file.write(numbytes & 0xFF);
+
         for (int i = 0; i < numchars; i++) {
             int c = pString.charAt(i);
+
             if ((c >= 0x0001) && (c <= 0x007F)) {
-                mFile.write(c);
+                file.write(c);
             }
             else if (c > 0x07FF) {
-                mFile.write(0xE0 | ((c >> 12) & 0x0F));
-                mFile.write(0x80 | ((c >> 6) & 0x3F));
-                mFile.write(0x80 | (c & 0x3F));
+                file.write(0xE0 | ((c >> 12) & 0x0F));
+                file.write(0x80 | ((c >> 6) & 0x3F));
+                file.write(0x80 | (c & 0x3F));
             }
             else {
-                mFile.write(0xC0 | ((c >> 6) & 0x1F));
-                mFile.write(0x80 | (c & 0x3F));
+                file.write(0xC0 | ((c >> 6) & 0x1F));
+                file.write(0x80 | (c & 0x3F));
             }
         }
     }

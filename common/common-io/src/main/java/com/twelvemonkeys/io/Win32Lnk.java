@@ -50,7 +50,8 @@ final class Win32Lnk extends File {
             (byte) 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'F'
     };
 
-    private final File mTarget;
+    private final File target;
+
     private static final int FLAG_ITEM_ID_LIST = 0x01;
     private static final int FLAG_FILE_LOC_INFO = 0x02;
     private static final int FLAG_DESC_STRING = 0x04;
@@ -65,10 +66,10 @@ final class Win32Lnk extends File {
         File target = parse(this);
         if (target == this) {
             // NOTE: This is a workaround
-            // mTarget = this causes infinite loops in some methods
+            // target = this causes infinite loops in some methods
             target = new File(pPath);
         }
-        mTarget = target;
+        this.target = target;
     }
 
     Win32Lnk(final File pPath) throws IOException {
@@ -336,24 +337,24 @@ final class Win32Lnk extends File {
     */
 
     public File getTarget() {
-        return mTarget;
+        return target;
     }
 
     // java.io.File overrides below
 
     @Override
     public boolean isDirectory() {
-        return mTarget.isDirectory();
+        return target.isDirectory();
     }
 
     @Override
     public boolean canRead() {
-        return mTarget.canRead();
+        return target.canRead();
     }
 
     @Override
     public boolean canWrite() {
-        return mTarget.canWrite();
+        return target.canWrite();
     }
 
     // NOTE: equals is implemented using compareto == 0
@@ -362,7 +363,7 @@ final class Win32Lnk extends File {
         // TODO: Verify this
         // Probably not a good idea, as it IS NOT THE SAME file
         // It's probably better to not override
-        return mTarget.compareTo(pathname);
+        return target.compareTo(pathname);
     }
     */
 
@@ -375,7 +376,7 @@ final class Win32Lnk extends File {
 
     @Override
     public boolean exists() {
-        return mTarget.exists();
+        return target.exists();
     }
 
     // A .lnk may be absolute
@@ -385,12 +386,12 @@ final class Win32Lnk extends File {
     // Theses should be resolved according to the API (for Unix).
     @Override
     public File getCanonicalFile() throws IOException {
-        return mTarget.getCanonicalFile();
+        return target.getCanonicalFile();
     }
 
     @Override
     public String getCanonicalPath() throws IOException {
-        return mTarget.getCanonicalPath();
+        return target.getCanonicalPath();
     }
 
     //public String getName() {
@@ -402,47 +403,47 @@ final class Win32Lnk extends File {
     // public boolean isAbsolute() {
     @Override
     public boolean isFile() {
-        return mTarget.isFile();
+        return target.isFile();
     }
 
     @Override
     public boolean isHidden() {
-        return mTarget.isHidden();
+        return target.isHidden();
     }
 
     @Override
     public long lastModified() {
-        return mTarget.lastModified();
+        return target.lastModified();
     }
 
     @Override
     public long length() {
-        return mTarget.length();
+        return target.length();
     }
 
     @Override
     public String[] list() {
-        return mTarget.list();
+        return target.list();
     }
 
     @Override
     public String[] list(final FilenameFilter filter) {
-        return mTarget.list(filter);
+        return target.list(filter);
     }
 
     @Override
     public File[] listFiles() {
-        return Win32File.wrap(mTarget.listFiles());
+        return Win32File.wrap(target.listFiles());
     }
 
     @Override
     public File[] listFiles(final FileFilter filter) {
-        return Win32File.wrap(mTarget.listFiles(filter));
+        return Win32File.wrap(target.listFiles(filter));
     }
 
     @Override
     public File[] listFiles(final FilenameFilter filter) {
-        return Win32File.wrap(mTarget.listFiles(filter));
+        return Win32File.wrap(target.listFiles(filter));
     }
 
     // Makes no sense, does it?
@@ -454,19 +455,19 @@ final class Win32Lnk extends File {
 
     @Override
     public boolean setLastModified(long time) {
-        return mTarget.setLastModified(time);
+        return target.setLastModified(time);
     }
 
     @Override
     public boolean setReadOnly() {
-        return mTarget.setReadOnly();
+        return target.setReadOnly();
     }
 
     @Override
     public String toString() {
-        if (mTarget.equals(this)) {
+        if (target.equals(this)) {
             return super.toString();
         }
-        return super.toString() + " -> " + mTarget.toString();
+        return super.toString() + " -> " + target.toString();
     }
 }

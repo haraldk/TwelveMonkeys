@@ -60,7 +60,6 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 
-
 /**
  * Resamples (scales) a {@code BufferedImage} to a new width and height, using
  * high performance and high quality algorithms.
@@ -138,7 +137,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     // MagickAccelerator to work consistently (see magick.FilterType).
 
     /**
-     * Undefined interpolation, filter method will use default filter
+     * Undefined interpolation, filter method will use default filter.
      */
     public final static int FILTER_UNDEFINED = 0;
     /**
@@ -194,11 +193,11 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     /**
      * Mitchell interpolation. High quality.
      */
-    public final static int FILTER_MITCHELL = 12;// IM default scale with palette or alpha, or scale up
+    public final static int FILTER_MITCHELL = 12; // IM default scale with palette or alpha, or scale up
     /**
      * Lanczos interpolation. High quality.
      */
-    public final static int FILTER_LANCZOS = 13;// IM default
+    public final static int FILTER_LANCZOS = 13; // IM default
     /**
      * Blackman-Bessel interpolation. High quality.
      */
@@ -291,10 +290,10 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
     // Member variables
     // Package access, to allow access from MagickAccelerator
-    int mWidth;
-    int mHeight;
+    int width;
+    int height;
 
-    int mFilterType;
+    int filterType;
     private static final boolean TRANSFORM_OP_BICUBIC_SUPPORT = SystemUtil.isFieldAvailable(AffineTransformOp.class.getName(), "TYPE_BICUBIC");
 
     /**
@@ -302,14 +301,13 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
      */
     // TODO: Move to abstract class AbstractBufferedImageOp?
     static class Key extends RenderingHints.Key {
-
         static int sIndex = 10000;
 
-        private final String mName;
+        private final String name;
 
         public Key(final String pName) {
             super(sIndex++);
-            mName = pName;
+            name = pName;
         }
 
         public boolean isCompatibleValue(Object pValue) {
@@ -317,7 +315,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         }
 
         public String toString() {
-            return mName;
+            return name;
         }
     }
 
@@ -326,27 +324,27 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
      */
     // TODO: Extract abstract Value class, and move to AbstractBufferedImageOp
     static final class Value {
-        final private RenderingHints.Key mKey;
-        final private String mName;
-        final private int mType;
+        final private RenderingHints.Key key;
+        final private String name;
+        final private int type;
 
         public Value(final RenderingHints.Key pKey, final String pName, final int pType) {
-            mKey = pKey;
-            mName = pName;
+            key = pKey;
+            name = pName;
             validateFilterType(pType);
-            mType = pType;// TODO: test for duplicates
+            type = pType;// TODO: test for duplicates
         }
 
         public boolean isCompatibleKey(Key pKey) {
-            return pKey == mKey;
+            return pKey == key;
         }
 
         public int getFilterType() {
-            return mType;
+            return type;
         }
 
         public String toString() {
-            return mName;
+            return name;
         }
     }
 
@@ -354,11 +352,11 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
      * Creates a {@code ResampleOp} that will resample input images to the
      * given width and height, using the default interpolation filter.
      *
-     * @param pWidth  width of the resampled image
-     * @param pHeight height of the resampled image
+     * @param width  width of the re-sampled image
+     * @param height height of the re-sampled image
      */
-    public ResampleOp(int pWidth, int pHeight) {
-        this(pWidth, pHeight, FILTER_UNDEFINED);
+    public ResampleOp(int width, int height) {
+        this(width, height, FILTER_UNDEFINED);
     }
 
     /**
@@ -394,38 +392,38 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
      * </ul>
      * Other hints have no effect on this filter.
      *
-     * @param pWidth  width of the resampled image
-     * @param pHeight height of the resampled image
-     * @param pHints  rendering hints, affecting interpolation algorithm
+     * @param width  width of the re-sampled image
+     * @param height height of the re-sampled image
+     * @param hints  rendering hints, affecting interpolation algorithm
      * @see #KEY_RESAMPLE_INTERPOLATION
      * @see RenderingHints#KEY_INTERPOLATION
      * @see RenderingHints#KEY_RENDERING
      * @see RenderingHints#KEY_COLOR_RENDERING
      */
-    public ResampleOp(int pWidth, int pHeight, RenderingHints pHints) {
-        this(pWidth, pHeight, getFilterType(pHints));
+    public ResampleOp(int width, int height, RenderingHints hints) {
+        this(width, height, getFilterType(hints));
     }
 
     /**
      * Creates a {@code ResampleOp} that will resample input images to the
      * given width and height, using the given interpolation filter.
      *
-     * @param pWidth      width of the resampled image
-     * @param pHeight     height of the resampled image
-     * @param pFilterType interpolation filter algorithm
+     * @param width      width of the re-sampled image
+     * @param height     height of the re-sampled image
+     * @param filterType interpolation filter algorithm
      * @see <a href="#field_summary">filter type constants</a>
      */
-    public ResampleOp(int pWidth, int pHeight, int pFilterType) {
-        if (pWidth <= 0 || pHeight <= 0) {
+    public ResampleOp(int width, int height, int filterType) {
+        if (width <= 0 || height <= 0) {
             // NOTE: w/h == 0 makes the Magick DLL crash and the JVM dies.. :-P
             throw new IllegalArgumentException("width and height must be positive");
         }
 
-        mWidth = pWidth;
-        mHeight = pHeight;
+        this.width = width;
+        this.height = height;
 
-        validateFilterType(pFilterType);
-        mFilterType = pFilterType;
+        validateFilterType(filterType);
+        this.filterType = filterType;
     }
 
     private static void validateFilterType(int pFilterType) {
@@ -471,25 +469,21 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
             }
             return value != null ? ((Value) value).getFilterType() : FILTER_UNDEFINED;
         }
-        else
-        if (RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR.equals(pHints.get(RenderingHints.KEY_INTERPOLATION))
+        else if (RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR.equals(pHints.get(RenderingHints.KEY_INTERPOLATION))
                 || (!pHints.containsKey(RenderingHints.KEY_INTERPOLATION)
                 && (RenderingHints.VALUE_RENDER_SPEED.equals(pHints.get(RenderingHints.KEY_RENDERING))
                 || RenderingHints.VALUE_COLOR_RENDER_SPEED.equals(pHints.get(RenderingHints.KEY_COLOR_RENDERING))))) {
-            // Nearest neighbour, or prioritze speed
+            // Nearest neighbour, or prioritize speed
             return FILTER_POINT;
         }
-        else
-        if (RenderingHints.VALUE_INTERPOLATION_BILINEAR.equals(pHints.get(RenderingHints.KEY_INTERPOLATION))) {
+        else if (RenderingHints.VALUE_INTERPOLATION_BILINEAR.equals(pHints.get(RenderingHints.KEY_INTERPOLATION))) {
             // Triangle equals bi-linear interpolation
             return FILTER_TRIANGLE;
         }
-        else
-        if (RenderingHints.VALUE_INTERPOLATION_BICUBIC.equals(pHints.get(RenderingHints.KEY_INTERPOLATION))) {
+        else if (RenderingHints.VALUE_INTERPOLATION_BICUBIC.equals(pHints.get(RenderingHints.KEY_INTERPOLATION))) {
             return FILTER_QUADRATIC;// No idea if this is correct..?
         }
-        else
-        if (RenderingHints.VALUE_RENDER_QUALITY.equals(pHints.get(RenderingHints.KEY_RENDERING))
+        else if (RenderingHints.VALUE_RENDER_QUALITY.equals(pHints.get(RenderingHints.KEY_RENDERING))
                 || RenderingHints.VALUE_COLOR_RENDER_QUALITY.equals(pHints.get(RenderingHints.KEY_COLOR_RENDERING))) {
             // Prioritize quality
             return FILTER_MITCHELL;
@@ -500,83 +494,87 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     }
 
     /**
-     * Resamples (scales) the image to the size, and using the algorithm
+     * Re-samples (scales) the image to the size, and using the algorithm
      * specified in the constructor.
      *
-     * @param pInput  The {@code BufferedImage} to be filtered
-     * @param pOutput The {@code BufferedImage} in which to store the resampled
+     * @param input  The {@code BufferedImage} to be filtered
+     * @param output The {@code BufferedImage} in which to store the resampled
      *                image
-     * @return The resampled {@code BufferedImage}.
-     * @throws NullPointerException     if {@code pInput} is {@code null}
-     * @throws IllegalArgumentException if {@code pInput == pOutput}.
+     * @return The re-sampled {@code BufferedImage}.
+     * @throws NullPointerException     if {@code input} is {@code null}
+     * @throws IllegalArgumentException if {@code input == output}.
      * @see #ResampleOp(int,int,int)
      */
-    public final BufferedImage filter(final BufferedImage pInput, final BufferedImage pOutput) {
-        if (pInput == null) {
+    public final BufferedImage filter(final BufferedImage input, final BufferedImage output) {
+        if (input == null) {
             throw new NullPointerException("Input == null");
         }
-        if (pInput == pOutput) {
+        if (input == output) {
             throw new IllegalArgumentException("Output image cannot be the same as the input image");
         }
 
         InterpolationFilter filter;
 
-
         // Special case for POINT, TRIANGLE and QUADRATIC filter, as standard
-        // Java implementation is very fast (possibly H/W accellerated)
-        switch (mFilterType) {
+        // Java implementation is very fast (possibly H/W accelerated)
+        switch (filterType) {
             case FILTER_POINT:
-                return fastResample(pInput, pOutput, mWidth, mHeight, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-            case FILTER_TRIANGLE:
-                return fastResample(pInput, pOutput, mWidth, mHeight, AffineTransformOp.TYPE_BILINEAR);
-            case FILTER_QUADRATIC:
-                if (TRANSFORM_OP_BICUBIC_SUPPORT) {
-                    return fastResample(pInput, pOutput, mWidth, mHeight, 3); // AffineTransformOp.TYPE_BICUBIC
+                if (input.getType() != BufferedImage.TYPE_CUSTOM) {
+                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
                 }
-                // Fall through
+                // Else fall through
+            case FILTER_TRIANGLE:
+                if (input.getType() != BufferedImage.TYPE_CUSTOM) {
+                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_BILINEAR);
+                }
+                // Else fall through
+            case FILTER_QUADRATIC:
+                if (input.getType() != BufferedImage.TYPE_CUSTOM && TRANSFORM_OP_BICUBIC_SUPPORT) {
+                    return fastResample(input, output, width, height, 3); // AffineTransformOp.TYPE_BICUBIC
+                }
+                // Else fall through
             default:
-                filter = createFilter(mFilterType);
+                filter = createFilter(filterType);
                 // NOTE: Workaround for filter throwing exceptions when input or output is less than support...
-                if (Math.min(pInput.getWidth(), pInput.getHeight()) <= filter.support() || Math.min(mWidth, mHeight) <= filter.support()) {
-                    return fastResample(pInput, pOutput, mWidth, mHeight, AffineTransformOp.TYPE_BILINEAR);
+                if (Math.min(input.getWidth(), input.getHeight()) <= filter.support() || Math.min(width, height) <= filter.support()) {
+                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_BILINEAR);
                 }
                 // Fall through
         }
 
-
         // Try to use native ImageMagick code
-        BufferedImage result = MagickAccelerator.filter(this, pInput, pOutput);
+        BufferedImage result = MagickAccelerator.filter(this, input, output);
         if (result != null) {
             return result;
         }
 
         // Otherwise, continue in pure Java mode
 
-        // TODO: What if pOutput != null and wrong size? Create new? Render on only a part? Document?
+        // TODO: What if output != null and wrong size? Create new? Render on only a part? Document?
 
         // If filter type != POINT or BOX an input has IndexColorModel, convert
-        // to true color, with alpha reflecting that of the original colormodel.
-        BufferedImage input;
+        // to true color, with alpha reflecting that of the original color model.
+        BufferedImage temp;
         ColorModel cm;
-        if (mFilterType != FILTER_BOX && (cm = pInput.getColorModel()) instanceof IndexColorModel) {
-            // TODO: OPTIMIZE: If colormodel has only b/w or gray, we could skip color info
-            input = ImageUtil.toBuffered(pInput, cm.hasAlpha() ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR);
+        if (filterType != FILTER_POINT && filterType != FILTER_BOX && (cm = input.getColorModel()) instanceof IndexColorModel) {
+            // TODO: OPTIMIZE: If color model has only b/w or gray, we could skip color info
+            temp = ImageUtil.toBuffered(input, cm.hasAlpha() ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR);
         }
         else {
-            input = pInput;
+            temp = input;
         }
 
         // Create or convert output to a suitable image
         // TODO: OPTIMIZE: Don't really need to convert all types to same as input
-        result = pOutput != null ? /*pOutput*/ ImageUtil.toBuffered(pOutput, input.getType()) : createCompatibleDestImage(input, null);
+        result = output != null && temp.getType() != BufferedImage.TYPE_CUSTOM ? /*output*/ ImageUtil.toBuffered(output, temp.getType()) : createCompatibleDestImage(temp, null);
 
-        resample(input, result, filter);
+        resample(temp, result, filter);
 
-        // If pOutput != null and needed to be converted, draw it back
-        if (pOutput != null && pOutput != result) {
-            //pOutput.setData(output.getRaster());
-            ImageUtil.drawOnto(pOutput, result);
-            result = pOutput;
+        // If output != null and needed to be converted, draw it back
+        if (output != null && output != result) {
+            //output.setData(output.getRaster());
+            ImageUtil.drawOnto(output, result);
+            result = output;
         }
 
         return result;
@@ -672,8 +670,8 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     }
     */
 
-    private static BufferedImage fastResample(final BufferedImage pInput, final BufferedImage pOutput, final int pWidth, final int pHeight, final int pType) {
-        BufferedImage temp = pInput;
+    private static BufferedImage fastResample(final BufferedImage input, final BufferedImage output, final int width, final int height, final int type) {
+        BufferedImage temp = input;
 
         double xScale;
         double yScale;
@@ -681,20 +679,20 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         AffineTransform transform;
         AffineTransformOp scale;
 
-        if (pType > AffineTransformOp.TYPE_NEAREST_NEIGHBOR) {
+        if (type > AffineTransformOp.TYPE_NEAREST_NEIGHBOR) {
             // Initially scale so all remaining operations will halve the image
-            if (pWidth < pInput.getWidth() || pHeight < pInput.getHeight()) {
-                int w = pWidth;
-                int h = pHeight;
-                while (w < pInput.getWidth() / 2) {
+            if (width < input.getWidth() || height < input.getHeight()) {
+                int w = width;
+                int h = height;
+                while (w < input.getWidth() / 2) {
                     w *= 2;
                 }
-                while (h < pInput.getHeight() / 2) {
+                while (h < input.getHeight() / 2) {
                     h *= 2;
                 }
 
-                xScale = w / (double) pInput.getWidth();
-                yScale = h / (double) pInput.getHeight();
+                xScale = w / (double) input.getWidth();
+                yScale = h / (double) input.getHeight();
 
                 //System.out.println("First scale by x=" + xScale + ", y=" + yScale);
 
@@ -704,12 +702,12 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
             }
         }
 
-        scale = null;// NOTE: This resets!
+        scale = null; // NOTE: This resets!
 
-        xScale = pWidth / (double) temp.getWidth();
-        yScale = pHeight / (double) temp.getHeight();
+        xScale = width / (double) temp.getWidth();
+        yScale = height / (double) temp.getHeight();
 
-        if (pType > AffineTransformOp.TYPE_NEAREST_NEIGHBOR) {
+        if (type > AffineTransformOp.TYPE_NEAREST_NEIGHBOR) {
             // TODO: Test skipping first scale (above), and instead scale once
             // more here, and a little less than .5 each time...
             // That would probably make the scaling smoother...
@@ -740,17 +738,15 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
                 }
 
                 temp = scale.filter(temp, null);
-
             }
         }
 
         //System.out.println("Rest to scale by x=" + xScale + ", y=" + yScale);
 
         transform = AffineTransform.getScaleInstance(xScale, yScale);
-        scale = new AffineTransformOp(transform, pType);
+        scale = new AffineTransformOp(transform, type);
 
-        return scale.filter(temp, pOutput);
-
+        return scale.filter(temp, output);
     }
 
     /**
@@ -760,7 +756,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
      * @see <a href="#field_summary">filter type constants</a>
      */
     public int getFilterType() {
-        return mFilterType;
+        return filterType;
     }
 
     private static InterpolationFilter createFilter(int pFilterType) {
@@ -770,7 +766,8 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         }
 
         switch (pFilterType) {
-            //case FILTER_POINT: // Should never happen
+            case FILTER_POINT:
+                return new PointFilter();
             case FILTER_BOX:
                 return new BoxFilter();
             case FILTER_TRIANGLE:
@@ -815,14 +812,13 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         // If indexcolormodel, we probably don't want to use that...
         // NOTE: Either BOTH or NONE of the images must have ALPHA
 
-        return new BufferedImage(cm, ImageUtil.createCompatibleWritableRaster(pInput, cm, mWidth, mHeight),
+        return new BufferedImage(cm, ImageUtil.createCompatibleWritableRaster(pInput, cm, width, height),
                                  cm.isAlphaPremultiplied(), null);
-
     }
 
     public RenderingHints getRenderingHints() {
         Object value;
-        switch (mFilterType) {
+        switch (filterType) {
             case FILTER_UNDEFINED:
                 return null;
             case FILTER_POINT:
@@ -871,14 +867,14 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
                 value = VALUE_INTERPOLATION_BLACKMAN_SINC;
                 break;
             default:
-                throw new IllegalStateException("Unknown filter type: " + mFilterType);
+                throw new IllegalStateException("Unknown filter type: " + filterType);
         }
 
         return new RenderingHints(KEY_RESAMPLE_INTERPOLATION, value);
     }
 
     public Rectangle2D getBounds2D(BufferedImage src) {
-        return new Rectangle(mWidth, mHeight);
+        return new Rectangle(width, height);
     }
 
     public Point2D getPoint2D(Point2D srcPt, Point2D dstPt) {
@@ -1439,10 +1435,8 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         resample()
 
         Resizes bitmaps while resampling them.
-        Returns -1 if error, 0 if success.
     */
     private BufferedImage resample(BufferedImage pSource, BufferedImage pDest, InterpolationFilter pFilter) {
-        // TODO: Don't work... Could fix by creating a temporary image in filter method
         final int dstWidth = pDest.getWidth();
         final int dstHeight = pDest.getHeight();
 
@@ -1451,7 +1445,8 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
         /* create intermediate column to hold horizontal dst column zoom */
         final ColorModel cm = pSource.getColorModel();
-        final WritableRaster work = cm.createCompatibleWritableRaster(1, srcHeight);
+//        final WritableRaster work = cm.createCompatibleWritableRaster(1, srcHeight);
+        final WritableRaster work = ImageUtil.createCompatibleWritableRaster(pSource, cm, 1, srcHeight);
 
         double xscale = (double) dstWidth / (double) srcWidth;
         double yscale = (double) dstHeight / (double) srcHeight;
@@ -1566,7 +1561,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         final WritableRaster out = pDest.getRaster();
 
         // TODO: This is not optimal for non-byte-packed rasters...
-        // (What? Maybe I implemented the fix, but forgot to remove the qTODO?) 
+        // (What? Maybe I implemented the fix, but forgot to remove the TODO?)
         final int numChannels = raster.getNumBands();
         final int[] channelMax = new int[numChannels];
         for (int k = 0; k < numChannels; k++) {
@@ -1575,7 +1570,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
         for (int xx = 0; xx < dstWidth; xx++) {
             ContributorList contribX = calcXContrib(xscale, fwidth, srcWidth, pFilter, xx);
-            /* Apply horz filter to make dst column in tmp. */
+            /* Apply horiz filter to make dst column in tmp. */
             for (int k = 0; k < srcHeight; k++) {
                 for (int channel = 0; channel < numChannels; channel++) {
 

@@ -34,17 +34,16 @@ public class LRUMapTestCase extends LinkedMapTestCase {
 
     //-----------------------------------------------------------------------
     public Map makeEmptyMap() {
-        LRUMap map = new LRUMap();
-        return map;
+        return new LRUMap();
     }
 
     //-----------------------------------------------------------------------
     public void testRemoveLRU() {
-        LRUMap map2 = new LRUMap(3);
-        map2.put(new Integer(1),"foo");
-        map2.put(new Integer(2),"foo");
-        map2.put(new Integer(3),"foo");
-        map2.put(new Integer(4),"foo"); // removes 1 since max size exceeded
+        LRUMap<Integer, String> map2 = new LRUMap<Integer, String>(3);
+        map2.put(1,"foo");
+        map2.put(2,"foo");
+        map2.put(3,"foo");
+        map2.put(4,"foo"); // removes 1 since max size exceeded
         map2.removeLRU();  // should be Integer(2)
 
         assertTrue("Second to last value should exist",map2.get(new Integer(3)).equals("foo"));
@@ -52,11 +51,11 @@ public class LRUMapTestCase extends LinkedMapTestCase {
     }
 
     public void testMultiplePuts() {
-        LRUMap map2 = new LRUMap(2);
-        map2.put(new Integer(1),"foo");
-        map2.put(new Integer(2),"bar");
-        map2.put(new Integer(3),"foo");
-        map2.put(new Integer(4),"bar");
+        LRUMap<Integer, String> map2 = new LRUMap<Integer, String>(2);
+        map2.put(1,"foo");
+        map2.put(2,"bar");
+        map2.put(3,"foo");
+        map2.put(4,"bar");
 
         assertTrue("last value should exist",map2.get(new Integer(4)).equals("bar"));
         assertTrue("LRU should not exist", map2.get(new Integer(1)) == null);
@@ -67,13 +66,13 @@ public class LRUMapTestCase extends LinkedMapTestCase {
      * to exceed its maxiumum size.
      */
     public void testPutAll() {
-        LRUMap map2 = new LRUMap(3);
-        map2.put(new Integer(1),"foo");
-        map2.put(new Integer(2),"foo");
-        map2.put(new Integer(3),"foo");
+        LRUMap<Integer, String> map2 = new LRUMap<Integer, String>(3);
+        map2.put(1,"foo");
+        map2.put(2,"foo");
+        map2.put(3,"foo");
 
-        HashMap hashMap = new HashMap();
-        hashMap.put(new Integer(4),"foo");
+        HashMap<Integer, String> hashMap = new HashMap<Integer, String>();
+        hashMap.put(4,"foo");
 
         map2.putAll(hashMap);
 
@@ -88,7 +87,7 @@ public class LRUMapTestCase extends LinkedMapTestCase {
      * when setMaximumSize(int) is called
      */
     public void testSetMaximumSize() {
-        LRUMap map = new LRUMap(6);
+        LRUMap<String, String> map = new LRUMap<String, String>(6);
         map.put("1","1");
         map.put("2","2");
         map.put("3","3");
@@ -102,7 +101,7 @@ public class LRUMapTestCase extends LinkedMapTestCase {
     }
 
     public void testGetPromotion() {
-        LRUMap map = new LRUMap(3);
+        LRUMap<String, String> map = new LRUMap<String, String>(3);
         map.put("1","1");
         map.put("2","2");
         map.put("3","3");
@@ -116,7 +115,7 @@ public class LRUMapTestCase extends LinkedMapTestCase {
         // 2 should be evicted (then 3,1,4)
         map.put("4","4");
 
-        Iterator keyIterator = map.keySet().iterator();
+        Iterator<String> keyIterator = map.keySet().iterator();
         Object[] keys = new Object[3];
         for (int i = 0; keyIterator.hasNext() ; ++i) {
             keys[i] = keyIterator.next();
@@ -134,7 +133,7 @@ public class LRUMapTestCase extends LinkedMapTestCase {
      * by the LRU algorithm (the removeLRU() method).
      */
     public void testLRUSubclass() {
-        LRUCounter counter = new LRUCounter(3);
+        LRUCounter<String, String> counter = new LRUCounter<String, String>(3);
         // oldest <--> newest
         // 1
         counter.put("1","foo");
@@ -165,9 +164,9 @@ public class LRUMapTestCase extends LinkedMapTestCase {
         //assertTrue("newest key is '2'",counter.get(1).equals("2"));
     }
 
-    private class LRUCounter extends LRUMap {
+    private class LRUCounter<K, V> extends LRUMap<K, V> {
         int removedCount = 0;
-        List list = new ArrayList(3);
+        List<Object> list = new ArrayList<Object>(3);
 
         LRUCounter(int i) {
             super(i);

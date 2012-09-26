@@ -31,13 +31,13 @@ package com.twelvemonkeys.servlet.image;
 import javax.servlet.*;
 
 /**
- * This excpetion is a subclass of ServletException, and acts just as a marker
- * for excpetions thrown by the ImageServlet API.
+ * This exception is a subclass of ServletException, and acts just as a marker
+ * for exceptions thrown by the ImageServlet API.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ImageServletException.java#2 $
+ * @version $Id: ImageServletException.java#2 $
  */
 public class ImageServletException extends ServletException {
 

@@ -51,7 +51,7 @@ import java.awt.image.WritableRaster;
  */
 public class CopyDither implements BufferedImageOp, RasterOp {
 
-    protected IndexColorModel mIndexColorModel = null;
+    protected IndexColorModel indexColorModel = null;
 
     /**
      * Creates a {@code CopyDither}, using the given
@@ -61,7 +61,7 @@ public class CopyDither implements BufferedImageOp, RasterOp {
      */
     public CopyDither(IndexColorModel pICM) {
         // Store colormodel
-        mIndexColorModel = pICM;
+        indexColorModel = pICM;
     }
 
     /**
@@ -83,17 +83,12 @@ public class CopyDither implements BufferedImageOp, RasterOp {
      * @throws ImageFilterException if {@code pDestCM} is not {@code null} or
      * an instance of {@code IndexColorModel}.
      */
-    public final BufferedImage createCompatibleDestImage(BufferedImage pSource,
-                                                         ColorModel pDestCM) {
+    public final BufferedImage createCompatibleDestImage(BufferedImage pSource, ColorModel pDestCM) {
         if (pDestCM == null) {
-            return new BufferedImage(pSource.getWidth(), pSource.getHeight(),
-                                     BufferedImage.TYPE_BYTE_INDEXED,
-                                     mIndexColorModel);
+            return new BufferedImage(pSource.getWidth(), pSource.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, indexColorModel);
         }
         else if (pDestCM instanceof IndexColorModel) {
-            return new BufferedImage(pSource.getWidth(), pSource.getHeight(),
-                                     BufferedImage.TYPE_BYTE_INDEXED,
-                                     (IndexColorModel) pDestCM);
+            return new BufferedImage(pSource.getWidth(), pSource.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, (IndexColorModel) pDestCM);
         }
         else {
             throw new ImageFilterException("Only IndexColorModel allowed.");
@@ -112,13 +107,7 @@ public class CopyDither implements BufferedImageOp, RasterOp {
         return createCompatibleDestRaster(pSrc, getICM(pSrc));
     }
 
-    public final WritableRaster createCompatibleDestRaster(Raster pSrc,
-                                                           IndexColorModel pIndexColorModel) {
-        /*
-        return new BufferedImage(pSrc.getWidth(), pSrc.getHeight(),
-                                 BufferedImage.TYPE_BYTE_INDEXED,
-                                 pIndexColorModel).getRaster();
-                                 */
+    public final WritableRaster createCompatibleDestRaster(Raster pSrc, IndexColorModel pIndexColorModel) {
         return pIndexColorModel.createCompatibleWritableRaster(pSrc.getWidth(), pSrc.getHeight());
     }
 
@@ -207,8 +196,7 @@ public class CopyDither implements BufferedImageOp, RasterOp {
      * @return the destination image, or a new image, if {@code pDest} was
      * {@code null}.
      */
-    public final BufferedImage filter(BufferedImage pSource,
-                                      BufferedImage pDest) {
+    public final BufferedImage filter(BufferedImage pSource, BufferedImage pDest) {
         // Create destination image, if none provided
         if (pDest == null) {
             pDest = createCompatibleDestImage(pSource, getICM(pSource));
@@ -238,16 +226,17 @@ public class CopyDither implements BufferedImageOp, RasterOp {
     }
 
     private IndexColorModel getICM(BufferedImage pSource) {
-        return (mIndexColorModel != null ? mIndexColorModel : IndexImage.getIndexColorModel(pSource, 256, IndexImage.TRANSPARENCY_BITMASK | IndexImage.COLOR_SELECTION_QUALITY));
+        return (indexColorModel != null ? indexColorModel : IndexImage.getIndexColorModel(pSource, 256, IndexImage.TRANSPARENCY_BITMASK | IndexImage.COLOR_SELECTION_QUALITY));
     }
+
     private IndexColorModel getICM(Raster pSource) {
-        return (mIndexColorModel != null ? mIndexColorModel : createIndexColorModel(pSource));
+        return (indexColorModel != null ? indexColorModel : createIndexColorModel(pSource));
     }
 
     private IndexColorModel createIndexColorModel(Raster pSource) {
-        BufferedImage image = new BufferedImage(pSource.getWidth(), pSource.getHeight(),
-                                                BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(pSource.getWidth(), pSource.getHeight(), BufferedImage.TYPE_INT_ARGB);
         image.setData(pSource);
+
         return IndexImage.getIndexColorModel(image, 256, IndexImage.TRANSPARENCY_BITMASK | IndexImage.COLOR_SELECTION_QUALITY);
     }
 
@@ -261,8 +250,7 @@ public class CopyDither implements BufferedImageOp, RasterOp {
      * @return the destination raster, or a new raster, if {@code pDest} was
      * {@code null}.
      */
-    public final WritableRaster filter(final Raster pSource, WritableRaster pDest,
-                                       IndexColorModel pColorModel) {
+    public final WritableRaster filter(final Raster pSource, WritableRaster pDest, IndexColorModel pColorModel) {
         int width = pSource.getWidth();
         int height = pSource.getHeight();
 
@@ -292,6 +280,7 @@ public class CopyDither implements BufferedImageOp, RasterOp {
                 pDest.setDataElements(x, y, pixel);
             }
         }
+
         return pDest;
     }
 }

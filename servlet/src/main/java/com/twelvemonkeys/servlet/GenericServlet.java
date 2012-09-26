@@ -41,13 +41,13 @@ import java.lang.reflect.InvocationTargetException;
  * the method matching the signature {@code void setX(&lt;Type&gt;)},
  * for every init-parameter {@code x}. Both camelCase and lisp-style paramter
  * naming is supported, lisp-style names will be converted to camelCase.
- * Parameter values are automatically converted from string represenation to
- * most basic types, if neccessary.
+ * Parameter values are automatically converted from string representation to
+ * most basic types, if necessary.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * 
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/GenericServlet.java#1 $
+ * @version $Id: GenericServlet.java#1 $
  */
 public abstract class GenericServlet extends javax.servlet.GenericServlet {
 
@@ -70,9 +70,9 @@ public abstract class GenericServlet extends javax.servlet.GenericServlet {
      * @see BeanUtil#configure(Object, java.util.Map, boolean)
      */
     @Override
-    public void init(ServletConfig pConfig) throws ServletException {
+    public void init(final ServletConfig pConfig) throws ServletException {
         if (pConfig == null) {
-            throw new ServletConfigException("servletconfig == null");
+            throw new ServletConfigException("servlet config == null");
         }
 
         try {

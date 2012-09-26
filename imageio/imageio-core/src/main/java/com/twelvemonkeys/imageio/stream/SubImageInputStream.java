@@ -16,9 +16,9 @@ import java.io.IOException;
 public final class SubImageInputStream extends ImageInputStreamImpl {
     // NOTE: This class is based on com.sun.imageio.plugins.common.SubImageInputStream, but fixes some of its bugs.
 
-    private final ImageInputStream mStream;
-    private final long mStartPos;
-    private final long mLength;
+    private final ImageInputStream stream;
+    private final long startPos;
+    private final long length;
 
     /**
      * Creates a {@link ImageInputStream}, reading up to a maximum number of bytes from the underlying stream.
@@ -32,21 +32,19 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
      */
     public SubImageInputStream(final ImageInputStream pStream, final long pLength) throws IOException {
         Validate.notNull(pStream, "stream");
-        if (pLength < 0) {
-            throw new IllegalArgumentException("length < 0");
-        }
+        Validate.isTrue(pLength >= 0, pLength, "length < 0: %d");
 
-        mStream = pStream;
-        mStartPos = pStream.getStreamPosition();
-        mLength = pLength;
+        stream = pStream;
+        startPos = pStream.getStreamPosition();
+        length = pLength;
     }
 
     public int read() throws IOException {
-        if (streamPos >= mLength) { // Local EOF
+        if (streamPos >= length) { // Local EOF
             return -1;
         }
         else {
-            int read = mStream.read();
+            int read = stream.read();
 
             if (read >= 0) {
                 streamPos++;
@@ -57,13 +55,13 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
     }
 
     public int read(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        if (streamPos >= mLength) { // Local EOF
+        if (streamPos >= length) { // Local EOF
             return -1;
         }
 
         // Safe cast, as pLength can never cause int overflow
-        int length = (int) Math.min(pLength, mLength - streamPos);
-        int count = mStream.read(pBytes, pOffset, length);
+        int length = (int) Math.min(pLength, this.length - streamPos);
+        int count = stream.read(pBytes, pOffset, length);
 
         if (count >= 0) {
             streamPos += count;
@@ -75,8 +73,8 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
     @Override
     public long length() {
         try {
-            long length = mStream.length();
-            return length < 0 ? -1 : Math.min(length - mStartPos, mLength);
+            long length = stream.length();
+            return length < 0 ? -1 : Math.min(length - startPos, this.length);
         }
         catch (IOException ignore) {
         }
@@ -90,7 +88,7 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
             throw new IndexOutOfBoundsException("pos < flushedPosition");
         }
 
-        mStream.seek(mStartPos + pPosition);
+        stream.seek(startPos + pPosition);
         streamPos = pPosition;
     }
 

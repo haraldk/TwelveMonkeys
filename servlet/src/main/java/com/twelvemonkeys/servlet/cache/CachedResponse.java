@@ -35,7 +35,7 @@ import java.io.OutputStream;
  * CachedResponse
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/CachedResponse.java#3 $
+ * @version $Id: CachedResponse.java#3 $
  */
 interface CachedResponse {
     /**

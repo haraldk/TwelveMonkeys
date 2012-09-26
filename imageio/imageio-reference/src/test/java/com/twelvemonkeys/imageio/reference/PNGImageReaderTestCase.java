@@ -3,6 +3,7 @@ package com.twelvemonkeys.imageio.reference;
 import com.sun.imageio.plugins.png.PNGImageReader;
 import com.sun.imageio.plugins.png.PNGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.spi.ImageReaderSpi;
@@ -19,7 +20,7 @@ import java.util.List;
  * @version $Id: PNGImageReaderTestCase.java,v 1.0 Oct 9, 2009 3:37:25 PM haraldk Exp$
  */
 public class PNGImageReaderTestCase extends ImageReaderAbstractTestCase<PNGImageReader> {
-    protected PNGImageReaderSpi mProvider = new PNGImageReaderSpi();
+    protected PNGImageReaderSpi provider = new PNGImageReaderSpi();
 
     @Override
     protected List<TestData> getTestData() {
@@ -30,7 +31,7 @@ public class PNGImageReaderTestCase extends ImageReaderAbstractTestCase<PNGImage
 
     @Override
     protected ImageReaderSpi createProvider() {
-        return mProvider;
+        return provider;
     }
 
     @Override
@@ -41,7 +42,7 @@ public class PNGImageReaderTestCase extends ImageReaderAbstractTestCase<PNGImage
     @Override
     protected PNGImageReader createReader() {
         try {
-            return (PNGImageReader) mProvider.createReaderInstance();
+            return (PNGImageReader) provider.createReaderInstance();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -51,19 +52,20 @@ public class PNGImageReaderTestCase extends ImageReaderAbstractTestCase<PNGImage
     // These are NOT correct implementations, but I don't really care here
     @Override
     protected List<String> getFormatNames() {
-        return Arrays.asList(mProvider.getFormatNames());
+        return Arrays.asList(provider.getFormatNames());
     }
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList(mProvider.getFileSuffixes());
+        return Arrays.asList(provider.getFileSuffixes());
     }
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList(mProvider.getMIMETypes());
+        return Arrays.asList(provider.getMIMETypes());
     }
 
+    @Test
     @Override
     public void testSetDestinationTypeIllegal() throws IOException {
         try {

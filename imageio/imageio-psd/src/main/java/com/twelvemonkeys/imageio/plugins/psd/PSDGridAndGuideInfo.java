@@ -25,12 +25,12 @@ final class PSDGridAndGuideInfo extends PSDImageResource {
 //  gchar         fDirection;             /* Guide orientation */
 //} GuideResource;
 
-    int mVersion;
-    int mGridCycleVertical;
-    int mGridCycleHorizontal;
-    int mGuideCount;
+    int version;
+    int gridCycleVertical;
+    int gridCycleHorizontal;
+    int guideCount;
 
-    GuideResource[] mGuides;
+    GuideResource[] guides;
 
     PSDGridAndGuideInfo(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -38,21 +38,22 @@ final class PSDGridAndGuideInfo extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mVersion = pInput.readInt();
-        mGridCycleVertical = pInput.readInt();
-        mGridCycleHorizontal = pInput.readInt();
-        mGuideCount = pInput.readInt();
+        version = pInput.readInt();
+        gridCycleVertical = pInput.readInt();
+        gridCycleHorizontal = pInput.readInt();
+        guideCount = pInput.readInt();
 
-        mGuides = new GuideResource[mGuideCount];
+        guides = new GuideResource[guideCount];
 
-        for (GuideResource guide : mGuides) {
-            guide.mLocation = pInput.readInt();
-            guide.mDirection = pInput.readByte();
+        for (int i = 0; i < guides.length; i++) {
+            guides[i] = new GuideResource();
+            guides[i].location = pInput.readInt();
+            guides[i].direction = pInput.readByte();
         }
     }
 
     static class GuideResource {
-        int mLocation;
-        byte mDirection; // 0: vertical, 1: horizontal
+        int location;
+        byte direction; // 0: vertical, 1: horizontal
     }
 }

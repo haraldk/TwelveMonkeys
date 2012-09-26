@@ -38,6 +38,8 @@
 
 package com.twelvemonkeys.io;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.io.*;
 
 /**
@@ -69,7 +71,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
     /**
      * The number of bytes written so far to the little endian output stream.
      */
-    protected int mWritten;
+    protected int bytesWritten;
 
     /**
      * Creates a new little endian output stream and chains it to the
@@ -79,10 +81,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      * @see java.io.FilterOutputStream#out
      */
     public LittleEndianDataOutputStream(OutputStream pStream) {
-        super(pStream);
-        if (pStream == null) {
-            throw new IllegalArgumentException("stream == null");
-        }
+        super(Validate.notNull(pStream, "stream"));
     }
 
     /**
@@ -93,7 +92,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      */
     public synchronized void write(int pByte) throws IOException {
         out.write(pByte);
-        mWritten++;
+        bytesWritten++;
     }
 
     /**
@@ -105,10 +104,9 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      * @param pLength the number of bytes to write.
      * @throws IOException if the underlying stream throws an IOException.
      */
-    public synchronized void write(byte[] pBytes, int pOffset, int pLength)
-            throws IOException {
+    public synchronized void write(byte[] pBytes, int pOffset, int pLength) throws IOException {
         out.write(pBytes, pOffset, pLength);
-        mWritten += pLength;
+        bytesWritten += pLength;
     }
 
 
@@ -137,7 +135,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      */
     public void writeByte(int pByte) throws IOException {
         out.write(pByte);
-        mWritten++;
+        bytesWritten++;
     }
 
     /**
@@ -150,7 +148,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
     public void writeShort(int pShort) throws IOException {
         out.write(pShort & 0xFF);
         out.write((pShort >>> 8) & 0xFF);
-        mWritten += 2;
+        bytesWritten += 2;
     }
 
     /**
@@ -163,7 +161,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
     public void writeChar(int pChar) throws IOException {
         out.write(pChar & 0xFF);
         out.write((pChar >>> 8) & 0xFF);
-        mWritten += 2;
+        bytesWritten += 2;
     }
 
     /**
@@ -178,7 +176,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
         out.write((pInt >>> 8) & 0xFF);
         out.write((pInt >>> 16) & 0xFF);
         out.write((pInt >>> 24) & 0xFF);
-        mWritten += 4;
+        bytesWritten += 4;
 
     }
 
@@ -198,7 +196,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
         out.write((int) (pLong >>> 40) & 0xFF);
         out.write((int) (pLong >>> 48) & 0xFF);
         out.write((int) (pLong >>> 56) & 0xFF);
-        mWritten += 8;
+        bytesWritten += 8;
     }
 
     /**
@@ -235,10 +233,12 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      */
     public void writeBytes(String pString) throws IOException {
         int length = pString.length();
+
         for (int i = 0; i < length; i++) {
             out.write((byte) pString.charAt(i));
         }
-        mWritten += length;
+
+        bytesWritten += length;
     }
 
     /**
@@ -253,12 +253,14 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      */
     public void writeChars(String pString) throws IOException {
         int length = pString.length();
+
         for (int i = 0; i < length; i++) {
             int c = pString.charAt(i);
             out.write(c & 0xFF);
             out.write((c >>> 8) & 0xFF);
         }
-        mWritten += length * 2;
+
+        bytesWritten += length * 2;
     }
 
     /**
@@ -282,6 +284,7 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
 
         for (int i = 0; i < numchars; i++) {
             int c = pString.charAt(i);
+
             if ((c >= 0x0001) && (c <= 0x007F)) {
                 numbytes++;
             }
@@ -299,8 +302,10 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
 
         out.write((numbytes >>> 8) & 0xFF);
         out.write(numbytes & 0xFF);
+
         for (int i = 0; i < numchars; i++) {
             int c = pString.charAt(i);
+
             if ((c >= 0x0001) && (c <= 0x007F)) {
                 out.write(c);
             }
@@ -308,16 +313,16 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
                 out.write(0xE0 | ((c >> 12) & 0x0F));
                 out.write(0x80 | ((c >> 6) & 0x3F));
                 out.write(0x80 | (c & 0x3F));
-                mWritten += 2;
+                bytesWritten += 2;
             }
             else {
                 out.write(0xC0 | ((c >> 6) & 0x1F));
                 out.write(0x80 | (c & 0x3F));
-                mWritten += 1;
+                bytesWritten += 1;
             }
         }
 
-        mWritten += numchars + 2;
+        bytesWritten += numchars + 2;
     }
 
     /**
@@ -326,9 +331,9 @@ public class LittleEndianDataOutputStream extends FilterOutputStream implements 
      * possible that this number is temporarily less than the actual
      * number of bytes written.)
      * @return the value of the {@code written} field.
-     * @see     #mWritten
+     * @see     #bytesWritten
      */
     public int size() {
-        return mWritten;
+        return bytesWritten;
   }
 }

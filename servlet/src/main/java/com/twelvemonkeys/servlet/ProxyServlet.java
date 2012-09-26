@@ -66,16 +66,16 @@ import java.util.Enumeration;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  *
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ProxyServlet.java#1 $
+ * @version $Id: ProxyServlet.java#1 $
  */
 public class ProxyServlet extends GenericServlet {
 
     /** Remote server host name or IP address */
-    protected String mRemoteServer = null;
+    protected String remoteServer = null;
     /** Remote server port */
-    protected int mRemotePort = 80;
+    protected int remotePort = 80;
     /** Remote server "mount" path */
-    protected String mRemotePath = "";
+    protected String remotePath = "";
 
     private static final String HTTP_REQUEST_HEADER_HOST = "host";
     private static final String HTTP_RESPONSE_HEADER_SERVER = "server";
@@ -88,7 +88,7 @@ public class ProxyServlet extends GenericServlet {
      * @param pRemoteServer
      */
     public void setRemoteServer(String pRemoteServer) {
-        mRemoteServer = pRemoteServer;
+        remoteServer = pRemoteServer;
     }
 
     /**
@@ -99,7 +99,7 @@ public class ProxyServlet extends GenericServlet {
      */
     public void setRemotePort(String pRemotePort) {
         try {
-            mRemotePort = Integer.parseInt(pRemotePort);
+            remotePort = Integer.parseInt(pRemotePort);
         }
         catch (NumberFormatException e) {
             log("RemotePort must be a number!", e);
@@ -121,7 +121,7 @@ public class ProxyServlet extends GenericServlet {
             pRemotePath = "/" + pRemotePath;
         }
 
-        mRemotePath = pRemotePath;
+        remotePath = pRemotePath;
     }
 
     /**
@@ -153,7 +153,7 @@ public class ProxyServlet extends GenericServlet {
      */
     protected void service(HttpServletRequest pRequest, HttpServletResponse pResponse) throws ServletException, IOException {
         // Sanity check configuration
-        if (mRemoteServer == null) {
+        if (remoteServer == null) {
             log(MESSAGE_REMOTE_SERVER_NOT_CONFIGURED);
             pResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     MESSAGE_REMOTE_SERVER_NOT_CONFIGURED);
@@ -164,7 +164,7 @@ public class ProxyServlet extends GenericServlet {
         try {
             // Recreate request URI for remote request
             String requestURI = createRemoteRequestURI(pRequest);
-            URL remoteURL = new URL(pRequest.getScheme(), mRemoteServer, mRemotePort, requestURI);
+            URL remoteURL = new URL(pRequest.getScheme(), remoteServer, remotePort, requestURI);
 
             // Get connection, with method from original request
             // NOTE: The actual connection is not done before we ask for streams...
@@ -319,7 +319,7 @@ public class ProxyServlet extends GenericServlet {
      * @return a {@code String} representing the remote request URI
      */
     private String createRemoteRequestURI(HttpServletRequest pRequest) {
-        StringBuilder requestURI = new StringBuilder(mRemotePath);
+        StringBuilder requestURI = new StringBuilder(remotePath);
         requestURI.append(pRequest.getPathInfo());
 
         if (!StringUtil.isEmpty(pRequest.getQueryString())) {

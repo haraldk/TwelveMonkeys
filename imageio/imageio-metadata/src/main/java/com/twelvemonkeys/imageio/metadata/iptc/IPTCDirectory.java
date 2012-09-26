@@ -41,7 +41,7 @@ import java.util.Collection;
  * @version $Id: IPTCDirectory.java,v 1.0 Nov 11, 2009 5:02:59 PM haraldk Exp$
  */
 final class IPTCDirectory extends AbstractDirectory {
-    IPTCDirectory(final Collection<? extends Entry> pEntries) {
-        super(pEntries);
+    IPTCDirectory(final Collection<? extends Entry> entries) {
+        super(entries);
     }
 }

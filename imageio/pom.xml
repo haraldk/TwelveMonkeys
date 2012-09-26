@@ -10,10 +10,8 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
     <artifactId>imageio</artifactId>
-    <version>3.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>TwelveMonkeys :: ImageIO</name>
-
 
     <contributors>
         <contributor>
@@ -33,16 +31,20 @@
 
         <!-- Stand-alone readers/writers -->
         <module>imageio-ico</module>
+        <module>imageio-icns</module>
         <module>imageio-iff</module>
-        <module>imageio-pdf</module> 
+        <module>imageio-jpeg</module>
+        <module>imageio-pdf</module>
         <module>imageio-pict</module>
         <module>imageio-psd</module>
         <module>imageio-thumbsdb</module>
+        <module>imageio-tiff</module>
 
         <!-- Wrappers for 3rd party libs  -->
         <module>imageio-batik</module>
         <module>imageio-jmagick</module>
 
+        <!-- Test cases for the JRE provided ImageIO plugins -->
         <module>imageio-reference</module>        
     </modules>
 
@@ -77,7 +79,6 @@
             <scope>test</scope>
         </dependency>
 
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -86,10 +87,9 @@
         </dependency>
 
         <dependency>
-            <groupId>jmock</groupId>
-            <artifactId>jmock-cglib</artifactId>
-            <version>1.0.1</version>
-            <scope>test</scope>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.8.5</version>
         </dependency>
     </dependencies>
 
@@ -100,7 +100,8 @@
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-	    <dependency>
+
+	        <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-metadata</artifactId>
                 <version>${project.version}</version>

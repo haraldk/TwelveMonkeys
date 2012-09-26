@@ -1,9 +1,13 @@
 package com.twelvemonkeys.io;
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+
+import static org.junit.Assert.*;
 
 /**
  * SeekableInputStreamAbstractTestCase
@@ -13,13 +17,8 @@ import java.io.InputStream;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/io/SeekableInputStreamAbstractTestCase.java#4 $
  */
 public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbstractTestCase implements SeekableInterfaceTest {
-
-    public SeekableInputStreamAbstractTestCase(String name) {
-        super(name);
-    }
-
     //// TODO: Figure out a better way of creating interface tests without duplicating code
-    final SeekableAbstractTestCase mSeekableTestCase = new SeekableAbstractTestCase() {
+    final SeekableAbstractTestCase seekableTestCase = new SeekableAbstractTestCase() {
         protected Seekable createSeekable() {
             return makeInputStream();
         }
@@ -41,6 +40,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
 
     protected abstract SeekableInputStream makeInputStream(InputStream pStream);
 
+    @Test
     @Override
     public void testResetAfterReset() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(25));
@@ -59,9 +59,9 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         assertTrue("Expected to read positive value", read >= 0);
 
         input.reset();
-        assertEquals("Expected value read differes from actual", read, input.read());
+        assertEquals("Expected value read differs from actual", read, input.read());
 
-        // Reset after read limit passed, may either throw exception, or reset to last mark
+        // Reset after read limit passed, may either throw exception, or reset to last good mark
         try {
             input.reset();
             assertEquals("Re-read of reset data should be first", 0, input.read());
@@ -71,10 +71,12 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         }
     }
 
+    @Test
     public void testSeekable() {
-        mSeekableTestCase.testSeekable();
+        seekableTestCase.testSeekable();
     }
 
+    @Test
     public void testFlushBeyondCurrentPos() throws Exception {
         SeekableInputStream seekable = makeInputStream(20);
 
@@ -88,6 +90,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         }
     }
 
+    @Test
     public void testSeek() throws Exception {
         SeekableInputStream seekable = makeInputStream(55);
         int pos = 37;
@@ -97,6 +100,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         assertEquals("Stream positon should match seeked position", pos, streamPos);
     }
 
+    @Test
     public void testSeekFlush() throws Exception {
         SeekableInputStream seekable = makeInputStream(133);
         int pos = 45;
@@ -114,6 +118,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         }
     }
 
+    @Test
     public void testMarkFlushReset() throws Exception {
         SeekableInputStream seekable = makeInputStream(77);
 
@@ -134,6 +139,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         assertEquals(position, seekable.getStreamPosition());
     }
 
+    @Test
     public void testSeekSkipRead() throws Exception {
         SeekableInputStream seekable = makeInputStream(133);
         int pos = 45;
@@ -147,7 +153,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         }
     }
 
-    public void testSeekSkip(SeekableInputStream pSeekable, String pStr) throws IOException {
+    protected void testSeekSkip(SeekableInputStream pSeekable, String pStr) throws IOException {
         System.out.println();
         pSeekable.seek(pStr.length());
         FileUtil.read(pSeekable);
@@ -330,6 +336,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
     }
      */
 
+    @Test
     public void testReadResetReadDirectBufferBug() throws IOException {
         // Make sure we use the exact size of the buffer
         final int size = 1024;
@@ -365,6 +372,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
         assertTrue(rangeEquals(bytes, size, result, 0, size));
     }
 
+    @Test
     public void testReadAllByteValuesRegression() throws IOException {
         final int size = 128;
 
@@ -401,6 +409,7 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
 
     }
 
+    @Test
     public void testCloseUnderlyingStream() throws IOException {
         final boolean[] closed = new boolean[1];
 
@@ -476,5 +485,4 @@ public abstract class SeekableInputStreamAbstractTestCase extends InputStreamAbs
 
         return true;
     }
-
 }

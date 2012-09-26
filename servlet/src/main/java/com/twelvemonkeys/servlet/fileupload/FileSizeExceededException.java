@@ -33,7 +33,7 @@ package com.twelvemonkeys.servlet.fileupload;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/FileSizeExceededException.java#1 $
+ * @version $Id: FileSizeExceededException.java#1 $
  */
 public class FileSizeExceededException extends FileUploadException {
     public FileSizeExceededException(Throwable pCause) {

@@ -29,6 +29,7 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletConfig;
@@ -44,7 +45,7 @@ import java.util.*;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/ServletConfigMapAdapter.java#2 $
+ * @version $Id: ServletConfigMapAdapter.java#2 $
  */
 class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map<String, String>, Serializable, Cloneable {
 
@@ -52,51 +53,48 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
         ServletConfig, FilterConfig, ServletContext
     }
 
-//    private final boolean mIsServlet;
-    private final ConfigType mType;
+    private final ConfigType type;
 
-    private final ServletConfig mServletConfig;
-    private final FilterConfig mFilterConfig;
-    private final ServletContext mServletContext;
+    private final ServletConfig servletConfig;
+    private final FilterConfig filterConfig;
+    private final ServletContext servletContext;
 
     // Cache the entry set
-    private transient Set<Entry<String, String>> mEntrySet;
+    private transient Set<Entry<String, String>> entrySet;
 
-    public ServletConfigMapAdapter(ServletConfig pConfig) {
+    public ServletConfigMapAdapter(final ServletConfig pConfig) {
         this(pConfig, ConfigType.ServletConfig);
     }
 
-    public ServletConfigMapAdapter(FilterConfig pConfig) {
+    public ServletConfigMapAdapter(final FilterConfig pConfig) {
         this(pConfig, ConfigType.FilterConfig);
     }
 
-    public ServletConfigMapAdapter(ServletContext pContext) {
+    public ServletConfigMapAdapter(final ServletContext pContext) {
         this(pContext, ConfigType.ServletContext);
     }
 
-    private ServletConfigMapAdapter(Object pConfig, ConfigType pType) {
-        if (pConfig == null) {
-            // Could happen of client code invokes with null reference
-            throw new IllegalArgumentException("Config == null");
-        }
+    private ServletConfigMapAdapter(final Object pConfig, final ConfigType pType) {
+        // Could happen if client code invokes with null reference
+        Validate.notNull(pConfig, "config");
 
-        mType = pType;
+        type = pType;
 
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                mServletConfig = (ServletConfig) pConfig;
-                mFilterConfig = null;
-                mServletContext = null;
+                servletConfig = (ServletConfig) pConfig;
+                filterConfig = null;
+                servletContext = null;
                 break;
             case FilterConfig:
-                mServletConfig = null;
-                mFilterConfig = (FilterConfig) pConfig;
-                mServletContext = null;
+                servletConfig = null;
+                filterConfig = (FilterConfig) pConfig;
+                servletContext = null;
                 break;
             case ServletContext:
-                mServletConfig = null;
-                mFilterConfig = null;
-                mServletContext = (ServletContext) pConfig;
+                servletConfig = null;
+                filterConfig = null;
+                servletContext = (ServletContext) pConfig;
                 break;
             default:
                 throw new IllegalArgumentException("Wrong type: " + pType);
@@ -109,13 +107,13 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
      * @return the servlet or filter name
      */
     public final String getName() {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getServletName();
+                return servletConfig.getServletName();
             case FilterConfig:
-                return mFilterConfig.getFilterName();
+                return filterConfig.getFilterName();
             case ServletContext:
-                return mServletContext.getServletContextName();
+                return servletContext.getServletContextName();
             default:
                 throw new IllegalStateException();
         }
@@ -127,67 +125,67 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
      * @return the servlet context
      */
     public final ServletContext getServletContext() {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getServletContext();
+                return servletConfig.getServletContext();
             case FilterConfig:
-                return mFilterConfig.getServletContext();
+                return filterConfig.getServletContext();
             case ServletContext:
-                return mServletContext;
+                return servletContext;
             default:
                 throw new IllegalStateException();
         }
     }
 
     public final Enumeration getInitParameterNames() {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getInitParameterNames();
+                return servletConfig.getInitParameterNames();
             case FilterConfig:
-                return mFilterConfig.getInitParameterNames();
+                return filterConfig.getInitParameterNames();
             case ServletContext:
-                return mServletContext.getInitParameterNames();
+                return servletContext.getInitParameterNames();
             default:
                 throw new IllegalStateException();
         }
     }
 
     public final String getInitParameter(final String pName) {
-        switch (mType) {
+        switch (type) {
             case ServletConfig:
-                return mServletConfig.getInitParameter(pName);
+                return servletConfig.getInitParameter(pName);
             case FilterConfig:
-                return mFilterConfig.getInitParameter(pName);
+                return filterConfig.getInitParameter(pName);
             case ServletContext:
-                return mServletContext.getInitParameter(pName);
+                return servletContext.getInitParameter(pName);
             default:
                 throw new IllegalStateException();
         }
     }
 
     public Set<Entry<String, String>> entrySet() {
-        if (mEntrySet == null) {
-            mEntrySet = createEntrySet();
+        if (entrySet == null) {
+            entrySet = createEntrySet();
         }
-        return mEntrySet;
+        return entrySet;
     }
 
     private Set<Entry<String, String>> createEntrySet() {
         return new AbstractSet<Entry<String, String>>() {
             // Cache size, if requested, -1 means not calculated
-            private int mSize = -1;
+            private int size = -1;
 
             public Iterator<Entry<String, String>> iterator() {
                 return new Iterator<Entry<String, String>>() {
                     // Iterator is backed by initParameterNames enumeration
-                    final Enumeration mNames = getInitParameterNames();
+                    final Enumeration names = getInitParameterNames();
 
                     public boolean hasNext() {
-                        return mNames.hasMoreElements();
+                        return names.hasMoreElements();
                     }
 
                     public Entry<String, String> next() {
-                        final String key = (String) mNames.nextElement();
+                        final String key = (String) names.nextElement();
                         return new Entry<String, String>() {
                             public String getKey() {
                                 return key;
@@ -236,11 +234,11 @@ class ServletConfigMapAdapter extends AbstractMap<String, String> implements Map
             }
 
             public int size() {
-                if (mSize < 0) {
-                    mSize = calculateSize();
+                if (size < 0) {
+                    size = calculateSize();
                 }
 
-                return mSize;
+                return size;
             }
 
             private int calculateSize() {

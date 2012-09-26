@@ -11,7 +11,7 @@
     <artifactId>imageio-reference</artifactId>
     <name>TwelveMonkeys :: ImageIO :: reference test cases</name>
     <description>
-        Test cases for the JDK provided ImageReader implementations for reference.
+        Test cases for the JRE provided ImageReader implementations for reference.
     </description>
 
     <dependencies>

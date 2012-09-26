@@ -38,15 +38,15 @@ import java.awt.image.BufferedImage;
  * @version $Id: BitmapUnsupported.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
 class BitmapUnsupported extends BitmapDescriptor {
-    private String mMessage;
+    private String message;
 
     public BitmapUnsupported(final DirectoryEntry pEntry, final String pMessage) {
         super(pEntry, null);
 
-        mMessage = pMessage;
+        message = pMessage;
     }
 
     public BufferedImage getImage() {
-        throw new IllegalStateException(mMessage);
+        throw new IllegalStateException(message);
     }
 }

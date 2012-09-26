@@ -50,12 +50,12 @@ class PSDResolutionInfo extends PSDImageResource {
     //       WORD HeightUnit;        /* 1=in, 2=cm, 3=pt, 4=picas, 5=columns */
     //    } RESOLUTIONINFO;
 
-    float mHRes;
-    short mHResUnit;
-    short mWidthUnit;
-    float mVRes;
-    short mVResUnit;
-    short mHeightUnit;
+    float hRes;
+    short hResUnit;
+    short widthUnit;
+    float vRes;
+    short vResUnit;
+    short heightUnit;
 
     PSDResolutionInfo(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -63,32 +63,32 @@ class PSDResolutionInfo extends PSDImageResource {
 
     @Override
     protected void readData(ImageInputStream pInput) throws IOException {
-        if (mSize != 16) {
-            throw new IIOException("Resolution info length expected to be 16: " + mSize);
+        if (size != 16) {
+            throw new IIOException("Resolution info length expected to be 16: " + size);
         }
 
-        mHRes = PSDUtil.fixedPointToFloat(pInput.readInt());
-        mHResUnit = pInput.readShort();
-        mWidthUnit = pInput.readShort();
-        mVRes = PSDUtil.fixedPointToFloat(pInput.readInt());
-        mVResUnit = pInput.readShort();
-        mHeightUnit = pInput.readShort();
+        hRes = PSDUtil.fixedPointToFloat(pInput.readInt());
+        hResUnit = pInput.readShort();
+        widthUnit = pInput.readShort();
+        vRes = PSDUtil.fixedPointToFloat(pInput.readInt());
+        vResUnit = pInput.readShort();
+        heightUnit = pInput.readShort();
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", hRes: ").append(mHRes);
+        builder.append(", hRes: ").append(hRes);
         builder.append(" ");
-        builder.append(resUnit(mHResUnit));
+        builder.append(resUnit(hResUnit));
         builder.append(", width unit: ");
-        builder.append(dimUnit(mWidthUnit));
-        builder.append(", vRes: ").append(mVRes);
+        builder.append(dimUnit(widthUnit));
+        builder.append(", vRes: ").append(vRes);
         builder.append(" ");
-        builder.append(resUnit(mVResUnit));
+        builder.append(resUnit(vResUnit));
         builder.append(", height unit: ");
-        builder.append(dimUnit(mHeightUnit));
+        builder.append(dimUnit(heightUnit));
 
         builder.append("]");
 

@@ -40,48 +40,48 @@ import java.io.IOException;
  * @version $Id: PSDLayerMaskData.java,v 1.0 May 6, 2008 5:15:05 PM haraldk Exp$
  */
 class PSDLayerMaskData {
-    private int mTop;
-    private int mLeft;
-    private int mBottom;
-    private int mRight;
-    private int mDefaultColor;
-    private int mFlags;
+    private int top;
+    private int left;
+    private int bottom;
+    private int right;
+    private int defaultColor;
+    private int flags;
 
-    private boolean mLarge;
-    private int mRealFlags;
-    private int mRealUserBackground;
-    private int mRealTop;
-    private int mRealLeft;
-    private int mRealBottom;
-    private int mRealRight;
+    private boolean large;
+    private int realFlags;
+    private int realUserBackground;
+    private int realTop;
+    private int realLeft;
+    private int realBottom;
+    private int realRight;
 
     PSDLayerMaskData(ImageInputStream pInput, int pSize) throws IOException {
         if (pSize != 20 && pSize != 36) {
             throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expeced 20 or 36)");
         }
-        mTop = pInput.readInt();
-        mLeft = pInput.readInt();
-        mBottom = pInput.readInt();
-        mRight = pInput.readInt();
+        top = pInput.readInt();
+        left = pInput.readInt();
+        bottom = pInput.readInt();
+        right = pInput.readInt();
 
-        mDefaultColor = pInput.readUnsignedByte();
+        defaultColor = pInput.readUnsignedByte();
 
-        mFlags = pInput.readUnsignedByte();
+        flags = pInput.readUnsignedByte();
 
         if (pSize == 20) {
             pInput.readShort(); // Pad
         }
         else {
             // TODO: What to make out of this?
-            mLarge = true;
+            large = true;
 
-            mRealFlags = pInput.readUnsignedByte();
-            mRealUserBackground = pInput.readUnsignedByte();
+            realFlags = pInput.readUnsignedByte();
+            realUserBackground = pInput.readUnsignedByte();
 
-            mRealTop = pInput.readInt();
-            mRealLeft = pInput.readInt();
-            mRealBottom = pInput.readInt();
-            mRealRight = pInput.readInt();
+            realTop = pInput.readInt();
+            realLeft = pInput.readInt();
+            realBottom = pInput.readInt();
+            realRight = pInput.readInt();
         }
     }
 
@@ -89,43 +89,43 @@ class PSDLayerMaskData {
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append("[");
-        builder.append("top: ").append(mTop);
-        builder.append(", left: ").append(mLeft);
-        builder.append(", bottom: ").append(mBottom);
-        builder.append(", right: ").append(mRight);
-        builder.append(", default color: ").append(mDefaultColor);
-        builder.append(", flags: ").append(Integer.toBinaryString(mFlags));
+        builder.append("top: ").append(top);
+        builder.append(", left: ").append(left);
+        builder.append(", bottom: ").append(bottom);
+        builder.append(", right: ").append(right);
+        builder.append(", default color: ").append(defaultColor);
+        builder.append(", flags: ").append(Integer.toBinaryString(flags));
 
         // TODO: Maybe the flag bits have oposite order?
         builder.append(" (");
-        if ((mFlags & 0x01) != 0) {
+        if ((flags & 0x01) != 0) {
             builder.append("Pos. rel. to layer");
         }
         else {
             builder.append("Pos. abs.");
         }
-        if ((mFlags & 0x02) != 0) {
+        if ((flags & 0x02) != 0) {
             builder.append(", Mask disabled");
         }
         else {
             builder.append(", Mask enabled");
         }
-        if ((mFlags & 0x04) != 0) {
+        if ((flags & 0x04) != 0) {
             builder.append(", Invert mask");
         }
-        if ((mFlags & 0x08) != 0) {
+        if ((flags & 0x08) != 0) {
             builder.append(", Unknown bit 3");
         }
-        if ((mFlags & 0x10) != 0) {
+        if ((flags & 0x10) != 0) {
             builder.append(", Unknown bit 4");
         }
-        if ((mFlags & 0x20) != 0) {
+        if ((flags & 0x20) != 0) {
             builder.append(", Unknown bit 5");
         }
-        if ((mFlags & 0x40) != 0) {
+        if ((flags & 0x40) != 0) {
             builder.append(", Unknown bit 6");
         }
-        if ((mFlags & 0x80) != 0) {
+        if ((flags & 0x80) != 0) {
             builder.append(", Unknown bit 7");
         }
         builder.append(")");

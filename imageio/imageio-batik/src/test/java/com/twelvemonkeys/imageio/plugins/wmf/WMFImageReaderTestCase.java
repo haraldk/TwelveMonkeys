@@ -43,7 +43,7 @@ import java.util.List;
  * @version $Id: SVGImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class WMFImageReaderTestCase extends ImageReaderAbstractTestCase<WMFImageReader> {
-    private WMFImageReaderSpi mSVGImageReaderSpi = new WMFImageReaderSpi();
+    private WMFImageReaderSpi provider = new WMFImageReaderSpi();
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -53,7 +53,7 @@ public class WMFImageReaderTestCase extends ImageReaderAbstractTestCase<WMFImage
     }
 
     protected ImageReaderSpi createProvider() {
-        return mSVGImageReaderSpi;
+        return provider;
     }
 
     @Override

@@ -38,9 +38,9 @@ package com.twelvemonkeys.imageio.metadata;
 public interface Directory extends Iterable<Entry> {
     // TODO: Spec when more entries exist? Or make Entry support multi-values!?
     // For multiple entries with same id in directory, the first entry (using the order from the stream) will be returned
-    Entry getEntryById(Object pIdentifier);
+    Entry getEntryById(Object identifier);
 
-    Entry getEntryByFieldName(String pName);
+    Entry getEntryByFieldName(String fieldName);
 
     // Iterator containing the entries in
     //Iterator<Entry> getBestEntries(Object pIdentifier, Object pQualifier, String pLanguage);
@@ -51,9 +51,9 @@ public interface Directory extends Iterable<Entry> {
     // boolean replace(Entry pEntry)??
     // boolean contains(Object pIdentifier)?
 
-    boolean add(Entry pEntry);
+    boolean add(Entry entry);
 
-    boolean remove(Object pEntry); // Object in case we retro-fit Collection/Map..
+    boolean remove(Object entry); // Object in case we retro-fit Collection/Map..
 
     int size();
         

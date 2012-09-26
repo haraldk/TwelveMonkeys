@@ -10,10 +10,6 @@ import java.io.InputStream;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/io/MemoryCacheSeekableStreamTestCase.java#2 $
  */
 public class MemoryCacheSeekableStreamTestCase extends SeekableInputStreamAbstractTestCase {
-    public MemoryCacheSeekableStreamTestCase(String name) {
-        super(name);
-    }
-
     protected SeekableInputStream makeInputStream(final InputStream pStream) {
         return new MemoryCacheSeekableStream(pStream);
     }

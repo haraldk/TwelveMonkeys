@@ -53,10 +53,10 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
         this(IIOUtil.getProviderInfo(PSDImageReaderSpi.class));
     }
 
-    private PSDImageReaderSpi(final ProviderInfo pProviderInfo) {
+    private PSDImageReaderSpi(final ProviderInfo providerInfo) {
         super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
+                providerInfo.getVendorName(),
+                providerInfo.getVersion(),
                 new String[]{"psd", "PSD"},
                 new String[]{"psd"},
                 new String[]{

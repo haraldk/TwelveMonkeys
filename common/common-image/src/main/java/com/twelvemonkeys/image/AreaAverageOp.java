@@ -47,33 +47,34 @@ import java.io.IOException;
  */
 public class AreaAverageOp implements BufferedImageOp, RasterOp {
 
-    final private int mWidth;
-    final private int mHeight;
+    final private int width;
+    final private int height;
 
-    private Rectangle mSourceRegion;
+    private Rectangle sourceRegion;
 
     public AreaAverageOp(final int pWidth, final int pHeight) {
-        mWidth = pWidth;
-        mHeight = pHeight;
+        width = pWidth;
+        height = pHeight;
     }
 
     public Rectangle getSourceRegion() {
-        if (mSourceRegion == null) {
+        if (sourceRegion == null) {
             return null;
         }
-        return new Rectangle(mSourceRegion);
+
+        return new Rectangle(sourceRegion);
     }
 
     public void setSourceRegion(final Rectangle pSourceRegion) {
         if (pSourceRegion == null) {
-            mSourceRegion = null;
+            sourceRegion = null;
         }
         else {
-            if (mSourceRegion == null) {
-                mSourceRegion = new Rectangle(pSourceRegion);
+            if (sourceRegion == null) {
+                sourceRegion = new Rectangle(pSourceRegion);
             }
             else {
-                mSourceRegion.setBounds(pSourceRegion);
+                sourceRegion.setBounds(pSourceRegion);
             }
         }
     }
@@ -93,7 +94,7 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
 
         long start = System.currentTimeMillis();
         // Straight-forward version
-        //Image scaled = src.getScaledInstance(mWidth, mHeight, Image.SCALE_AREA_AVERAGING);
+        //Image scaled = src.getScaledInstance(width, height, Image.SCALE_AREA_AVERAGING);
         //ImageUtil.drawOnto(result, scaled);
         //result = new BufferedImageFactory(scaled).getBufferedImage();
 
@@ -104,7 +105,7 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
         AffineTransform xform = null;
         int w = src.getWidth();
         int h = src.getHeight();
-        while (w / 2 > mWidth && h / 2 > mHeight) {
+        while (w / 2 > width && h / 2 > height) {
             w /= 2;
             h /= 2;
 
@@ -129,7 +130,7 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
             src = temp.getSubimage(0, 0, w, h);
         }
 
-        resample(src, result, AffineTransform.getScaleInstance(mWidth / (double) w, mHeight / (double) h));
+        resample(src, result, AffineTransform.getScaleInstance(width / (double) w, height / (double) h));
         */
 
         // The real version
@@ -160,11 +161,11 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
     private WritableRaster filterImpl(Raster src, WritableRaster dest) {
         //System.out.println("src: " + src);
         //System.out.println("dest: " + dest);
-        if (mSourceRegion != null) {
-            int cx = mSourceRegion.x;
-            int cy = mSourceRegion.y;
-            int cw = mSourceRegion.width;
-            int ch = mSourceRegion.height;
+        if (sourceRegion != null) {
+            int cx = sourceRegion.x;
+            int cy = sourceRegion.y;
+            int cw = sourceRegion.width;
+            int ch = sourceRegion.height;
 
             boolean same = src == dest;
             dest = dest.createWritableChild(cx, cy, cw, ch, 0, 0, null);
@@ -179,11 +180,11 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
         // TODO: This don't work too well..
         // The thing is that the step length and the scan length will vary, for
         // non-even (1/2, 1/4, 1/8 etc) resampling
-        int widthSteps = (width + mWidth - 1) / mWidth;
-        int heightSteps = (height + mHeight - 1) / mHeight;
+        int widthSteps = (width + this.width - 1) / this.width;
+        int heightSteps = (height + this.height - 1) / this.height;
 
-        final boolean oddX = width % mWidth != 0;
-        final boolean oddY = height % mHeight != 0;
+        final boolean oddX = width % this.width != 0;
+        final boolean oddY = height % this.height != 0;
 
         final int dataElements = src.getNumDataElements();
         final int bands = src.getNumBands();
@@ -210,16 +211,16 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
             }
         }
 
-        for (int y = 0; y < mHeight; y++) {
-            if (!oddY || y < mHeight) {
+        for (int y = 0; y < this.height; y++) {
+            if (!oddY || y < this.height) {
                 scanH = heightSteps;
             }
             else {
                 scanH = height - (y * heightSteps);
             }
 
-            for (int x = 0; x < mWidth; x++) {
-                if (!oddX || x < mWidth) {
+            for (int x = 0; x < this.width; x++) {
+                if (!oddX || x < this.width) {
                     scanW = widthSteps;
                 }
                 else {
@@ -243,8 +244,8 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
                     //
                     //System.err.println("width: " + width);
                     //System.err.println("height: " + height);
-                    //System.err.println("mWidth: " + mWidth);
-                    //System.err.println("mHeight: " + mHeight);
+                    //System.err.println("width: " + width);
+                    //System.err.println("height: " + height);
                     //
                     //e.printStackTrace();
                     continue;
@@ -382,20 +383,20 @@ public class AreaAverageOp implements BufferedImageOp, RasterOp {
     public BufferedImage createCompatibleDestImage(BufferedImage src, ColorModel destCM) {
         ColorModel cm = destCM != null ? destCM : src.getColorModel();
         return new BufferedImage(cm,
-                                 ImageUtil.createCompatibleWritableRaster(src, cm, mWidth, mHeight),
+                                 ImageUtil.createCompatibleWritableRaster(src, cm, width, height),
                                  cm.isAlphaPremultiplied(), null);
     }
 
     public WritableRaster createCompatibleDestRaster(Raster src) {
-        return src.createCompatibleWritableRaster(mWidth, mHeight);
+        return src.createCompatibleWritableRaster(width, height);
     }
 
     public Rectangle2D getBounds2D(Raster src) {
-        return new Rectangle(mWidth, mHeight);
+        return new Rectangle(width, height);
     }
 
     public Rectangle2D getBounds2D(BufferedImage src) {
-        return new Rectangle(mWidth, mHeight);
+        return new Rectangle(width, height);
     }
 
     public Point2D getPoint2D(Point2D srcPt, Point2D dstPt) {

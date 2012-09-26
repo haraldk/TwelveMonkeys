@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <rdf:Description rdf:about="">
+        <dc:subject>
+            <rdf:Alt>
+                <rdf:li xml:lang="x-default">One</rdf:li>
+                <rdf:li xml:lang="en-us">One</rdf:li>
+                <rdf:li xml:lang="de">Ein</rdf:li>
+                <rdf:li xml:lang="no-nb">En</rdf:li>
+            </rdf:Alt>
+        </dc:subject>
+    </rdf:Description>
+</rdf:RDF>

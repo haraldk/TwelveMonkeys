@@ -63,7 +63,7 @@ import java.io.IOException;
  */
 public final class PackBitsEncoder implements Encoder {
 
-    final private byte[] mBuffer = new byte[128];
+    final private byte[] buffer = new byte[128];
 
     /**
      * Creates a {@code PackBitsEncoder}.
@@ -101,17 +101,17 @@ public final class PackBitsEncoder implements Encoder {
             run = 0;
             while ((run < 128 && ((offset < max && pBuffer[offset] != pBuffer[offset + 1])
                     || (offset < maxMinus1 && pBuffer[offset] != pBuffer[offset + 2])))) {
-                mBuffer[run++] = pBuffer[offset++];
+                buffer[run++] = pBuffer[offset++];
             }
 
             // If last byte, include it in literal run, if space
             if (offset == max && run > 0 && run < 128) {
-                mBuffer[run++] = pBuffer[offset++];
+                buffer[run++] = pBuffer[offset++];
             }
 
             if (run > 0) {
                 pStream.write(run - 1);
-                pStream.write(mBuffer, 0, run);
+                pStream.write(buffer, 0, run);
             }
 
             // If last byte, and not space, start new literal run

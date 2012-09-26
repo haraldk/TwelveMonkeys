@@ -1,13 +1,14 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.util.MapAbstractTestCase;
-import org.jmock.Mock;
-import org.jmock.core.Invocation;
-import org.jmock.core.Stub;
-import org.jmock.core.stub.CustomStub;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
+
+import static org.mockito.Mockito.when;
 
 /**
  * ServletConfigMapAdapterTestCase
@@ -43,24 +44,22 @@ public class ServletParametersMapAdapterTestCase extends MapAbstractTestCase {
     }
 
     public Map makeEmptyMap() {
-        Mock mockRequest = mock(HttpServletRequest.class);
-        mockRequest.stubs().method("getParameterNames").will(returnValue(Collections.enumeration(Collections.emptyList())));
-        mockRequest.stubs().method("getParameterValues").will(returnValue(null));
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        when(request.getParameterNames()).thenAnswer(returnEnumeration(Collections.emptyList()));
 
-        return new SerlvetParametersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletParametersMapAdapter(request);
     }
 
     @Override
     public Map makeFullMap() {
-        Mock mockRequest = mock(HttpServletRequest.class);
+        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
 
-        mockRequest.stubs().method("getParameterNames").will(returnEnumeration("tag", "date", "foo"));
-        mockRequest.stubs().method("getParameterValues").with(eq("date")).will(returnValue(PARAM_VALUE_DATE.toArray(new String[PARAM_VALUE_DATE.size()])));
-        mockRequest.stubs().method("getParameterValues").with(eq("tag")).will(returnValue(PARAM_VALUE_ETAG.toArray(new String[PARAM_VALUE_ETAG.size()])));
-        mockRequest.stubs().method("getParameterValues").with(eq("foo")).will(returnValue(PARAM_VALUE_FOO.toArray(new String[PARAM_VALUE_FOO.size()])));
-        mockRequest.stubs().method("getParameterValues").with(not(or(eq("date"), or(eq("tag"), eq("foo"))))).will(returnValue(null));
+        when(request.getParameterNames()).thenAnswer(returnEnumeration(Arrays.asList("tag", "date", "foo")));
+        when(request.getParameterValues("date")).thenReturn(PARAM_VALUE_DATE.toArray(new String[PARAM_VALUE_DATE.size()]));
+        when(request.getParameterValues("tag")).thenReturn(PARAM_VALUE_ETAG.toArray(new String[PARAM_VALUE_ETAG.size()]));
+        when(request.getParameterValues("foo")).thenReturn(PARAM_VALUE_FOO.toArray(new String[PARAM_VALUE_FOO.size()]));
 
-        return new SerlvetParametersMapAdapter((HttpServletRequest) mockRequest.proxy());
+        return new ServletParametersMapAdapter(request);
     }
 
     @Override
@@ -79,24 +78,19 @@ public class ServletParametersMapAdapterTestCase extends MapAbstractTestCase {
         return new Object[3];
     }
 
-    protected Stub returnEnumeration(final Object... pValues) {
-        return new EnumerationStub(Arrays.asList(pValues));
+    protected static <T> ReturnNewEnumeration<T> returnEnumeration(final Collection<T> collection) {
+        return new ReturnNewEnumeration<T>(collection);
     }
 
-    protected Stub returnEnumeration(final List<?> pValues) {
-        return new EnumerationStub(pValues);
-    }
+    private static class ReturnNewEnumeration<T> implements Answer<Enumeration<T>> {
+        private final Collection<T> collection;
 
-    private static class EnumerationStub extends CustomStub {
-        private List<?> mValues;
-
-        public EnumerationStub(final List<?> pValues) {
-            super("Returns a new enumeration");
-            mValues = pValues;
+        private ReturnNewEnumeration(final Collection<T> collection) {
+            this.collection = collection;
         }
 
-        public Object invoke(Invocation invocation) throws Throwable {
-            return Collections.enumeration(mValues);
+        public Enumeration<T> answer(InvocationOnMock invocation) throws Throwable {
+            return Collections.enumeration(collection);
         }
     }
 }

@@ -1,9 +1,12 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.StringUtil;
+import org.junit.Test;
 
 import java.io.Reader;
 import java.io.IOException;
+
+import static org.junit.Assert.*;
 
 /**
  * StringArrayReaderTestCase
@@ -28,6 +31,7 @@ public class StringArrayReaderTestCase extends ReaderAbstractTestCase {
         return new StringArrayReader(input);
     }
 
+    @Test
     public void testNullConstructor() {
         try {
             new StringArrayReader(null);
@@ -38,15 +42,15 @@ public class StringArrayReaderTestCase extends ReaderAbstractTestCase {
         }
     }
 
+    @Test
     public void testEmptyArrayConstructor() throws IOException {
         Reader reader = new StringArrayReader(new String[0]);
         assertEquals(-1, reader.read());
     }
 
+    @Test
     public void testEmptyStringConstructor() throws IOException {
         Reader reader = new StringArrayReader(new String[] {""});
         assertEquals(-1, reader.read());
     }
-
-    
 }

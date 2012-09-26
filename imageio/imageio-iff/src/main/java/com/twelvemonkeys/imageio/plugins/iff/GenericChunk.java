@@ -39,47 +39,39 @@ import java.io.DataOutput;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: UnknownChunk.java,v 1.0 28.feb.2006 00:53:47 haku Exp$
  */
-class GenericChunk extends IFFChunk {
+final class GenericChunk extends IFFChunk {
 
-    byte[] mData;
+    byte[] data;
 
     protected GenericChunk(int pChunkId, int pChunkLength) {
         super(pChunkId, pChunkLength);
-        mData = new byte[pChunkLength <= 50 ? pChunkLength : 47];
+        data = new byte[pChunkLength <= 50 ? pChunkLength : 47];
     }
 
     protected GenericChunk(int pChunkId, byte[] pChunkData) {
         super(pChunkId, pChunkData.length);
-        mData = pChunkData;
+        data = pChunkData;
     }
 
     void readChunk(DataInput pInput) throws IOException {
-        pInput.readFully(mData, 0, mData.length);
+        pInput.readFully(data, 0, data.length);
 
-        int toSkip = mChunkLength - mData.length;
-        while (toSkip > 0) {
-            toSkip -= pInput.skipBytes(toSkip);
-        }
-
-        // Read pad
-        if (mChunkLength % 2 != 0) {
-            pInput.readByte();
-        }
+        skipData(pInput, chunkLength, data.length);
     }
 
     void writeChunk(DataOutput pOutput) throws IOException {
-        pOutput.writeInt(mChunkId);
-        pOutput.writeInt(mChunkLength);
-        pOutput.write(mData, 0, mData.length);
+        pOutput.writeInt(chunkId);
+        pOutput.writeInt(chunkLength);
+        pOutput.write(data, 0, data.length);
 
-        if (mData.length % 2 != 0) {
+        if (data.length % 2 != 0) {
             pOutput.writeByte(0); // PAD
         }
     }
 
     public String toString() {
         return super.toString() + " {value=\""
-                + new String(mData, 0, mData.length <= 50 ? mData.length : 47)
-                + (mChunkLength <= 50 ? "" : "...") + "\"}";
+                + new String(data, 0, data.length <= 50 ? data.length : 47)
+                + (chunkLength <= 50 ? "" : "...") + "\"}";
     }
 }

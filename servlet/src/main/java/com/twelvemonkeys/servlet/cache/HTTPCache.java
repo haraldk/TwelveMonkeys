@@ -30,13 +30,14 @@ package com.twelvemonkeys.servlet.cache;
 
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.net.MIMEUtil;
 import com.twelvemonkeys.net.NetUtil;
 import com.twelvemonkeys.util.LRUHashMap;
-import com.twelvemonkeys.util.LinkedMap;
 import com.twelvemonkeys.util.NullMap;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.*;
 import java.util.logging.Level;
@@ -47,7 +48,7 @@ import java.util.logging.Logger;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/HTTPCache.java#4 $
+ * @version $Id: HTTPCache.java#4 $
  * @todo OMPTIMIZE: Cache parsed vary-info objects, not the properties-files
  * @todo BUG: Better filename handling, as some filenames become too long..
  * - Use a mix of parameters and hashcode + lenght with fixed (max) lenght?
@@ -148,35 +149,33 @@ public class HTTPCache {
      */
     protected static final String FILE_EXT_VARY = ".vary";
 
-    protected static final int STATUS_OK = 200;
-
     /**
      * The directory used for the disk-based cache
      */
-    private File mTempDir;
+    private File tempDir;
 
     /**
      * Indicates wether the disk-based cache should be deleted when the
      * container shuts down/VM exits
      */
-    private boolean mDeleteCacheOnExit;
+    private boolean deleteCacheOnExit;
 
     /**
      * In-memory content cache
      */
-    private final Map<String, CachedResponse> mContentCache;
+    private final Map<String, CachedResponse> contentCache;
     /**
      * In-memory enity cache
      */
-    private final Map<String, CachedEntity> mEntityCache;
+    private final Map<String, CachedEntity> entityCache;
     /**
      * In-memory varyiation-info cache
      */
-    private final Map<String, Properties> mVaryCache;
+    private final Map<String, Properties> varyCache;
 
-    private long mDefaultExpiryTime = -1;
+    private long defaultExpiryTime = -1;
 
-    private final Logger mLogger;
+    private final Logger logger;
 
     // Internal constructor for sublcasses only
     protected HTTPCache(
@@ -187,44 +186,33 @@ public class HTTPCache {
             final boolean pDeleteCacheOnExit,
             final Logger pLogger
     ) {
-        if (pTempFolder == null) {
-            throw new IllegalArgumentException("temp folder == null");
-        }
-        if (!pTempFolder.exists() && !pTempFolder.mkdirs()) {
-            throw new IllegalArgumentException("Could not create required temp directory: " + mTempDir.getAbsolutePath());
-        }
-        if (!(pTempFolder.canRead() && pTempFolder.canWrite())) {
-            throw new IllegalArgumentException("Must have read/write access to temp folder: " + mTempDir.getAbsolutePath());
-        }
-        if (pDefaultCacheExpiryTime < 0) {
-            throw new IllegalArgumentException("Negative expiry time");
-        }
-        if (pMaxMemCacheSize < 0) {
-            throw new IllegalArgumentException("Negative maximum memory cache size");
-        }
-        if (pMaxCachedEntites < 0) {
-            throw new IllegalArgumentException("Negative maximum number of cached entries");
-        }
+        Validate.notNull(pTempFolder, "temp folder");
+        Validate.isTrue(pTempFolder.exists() || pTempFolder.mkdirs(), pTempFolder.getAbsolutePath(), "Could not create required temp directory: %s");
+        Validate.isTrue(pTempFolder.canRead() && pTempFolder.canWrite(), pTempFolder.getAbsolutePath(), "Must have read/write access to temp folder: %s");
 
-        mDefaultExpiryTime = pDefaultCacheExpiryTime;
+        Validate.isTrue(pDefaultCacheExpiryTime >= 0, pDefaultCacheExpiryTime, "Negative expiry time: %d");
+        Validate.isTrue(pMaxMemCacheSize >= 0, pDefaultCacheExpiryTime, "Negative maximum memory cache size: %d");
+        Validate.isTrue(pMaxCachedEntites >= 0, pDefaultCacheExpiryTime, "Negative maximum number of cached entries: %d");
+
+        defaultExpiryTime = pDefaultCacheExpiryTime;
 
         if (pMaxMemCacheSize > 0) {
 //            Map backing = new SizedLRUMap(pMaxMemCacheSize); // size in bytes
-//            mContentCache = new TimeoutMap(backing, null, pDefaultCacheExpiryTime);
-            mContentCache = new SizedLRUMap<String, CachedResponse>(pMaxMemCacheSize); // size in bytes
+//            contentCache = new TimeoutMap(backing, null, pDefaultCacheExpiryTime);
+            contentCache = new SizedLRUMap<String, CachedResponse>(pMaxMemCacheSize); // size in bytes
         }
         else {
-            mContentCache = new NullMap<String, CachedResponse>();
+            contentCache = new NullMap<String, CachedResponse>();
         }
 
-        mEntityCache = new LRUHashMap<String, CachedEntity>(pMaxCachedEntites);
-        mVaryCache = new LRUHashMap<String, Properties>(pMaxCachedEntites);
+        entityCache = new LRUHashMap<String, CachedEntity>(pMaxCachedEntites);
+        varyCache = new LRUHashMap<String, Properties>(pMaxCachedEntites);
 
-        mDeleteCacheOnExit = pDeleteCacheOnExit;
+        deleteCacheOnExit = pDeleteCacheOnExit;
 
-        mTempDir = pTempFolder;
+        tempDir = pTempFolder;
 
-        mLogger = pLogger != null ? pLogger : Logger.getLogger(getClass().getName());
+        logger = pLogger != null ? pLogger : Logger.getLogger(getClass().getName());
     }
 
     /**
@@ -289,19 +277,15 @@ public class HTTPCache {
     }
 
     private static File getTempFolder(String pName, ServletContext pContext) {
-        if (pName == null) {
-            throw new IllegalArgumentException("name == null");
-        }
-        if (pName.trim().length() == 0) {
-            throw new IllegalArgumentException("Empty name");
-        }
-        if (pContext == null) {
-            throw new IllegalArgumentException("servlet context == null");
-        }
+        Validate.notNull(pName, "name");
+        Validate.isTrue(!StringUtil.isEmpty(pName), pName, "empty name: '%s'");
+        Validate.notNull(pContext, "context");
+
         File tempRoot = (File) pContext.getAttribute("javax.servlet.context.tempdir");
         if (tempRoot == null) {
             throw new IllegalStateException("Missing context attribute \"javax.servlet.context.tempdir\"");
         }
+
         return new File(tempRoot, pName);
     }
 
@@ -309,36 +293,36 @@ public class HTTPCache {
         StringBuilder buf = new StringBuilder(getClass().getSimpleName());
         buf.append("[");
         buf.append("Temp dir: ");
-        buf.append(mTempDir.getAbsolutePath());
-        if (mDeleteCacheOnExit) {
+        buf.append(tempDir.getAbsolutePath());
+        if (deleteCacheOnExit) {
             buf.append(" (non-persistent)");
         }
         else {
             buf.append(" (persistent)");            
         }
         buf.append(", EntityCache: {");
-        buf.append(mEntityCache.size());
+        buf.append(entityCache.size());
         buf.append(" entries in a ");
-        buf.append(mEntityCache.getClass().getName());
+        buf.append(entityCache.getClass().getName());
         buf.append("}, VaryCache: {");
-        buf.append(mVaryCache.size());
+        buf.append(varyCache.size());
         buf.append(" entries in a ");
-        buf.append(mVaryCache.getClass().getName());
+        buf.append(varyCache.getClass().getName());
         buf.append("}, ContentCache: {");
-        buf.append(mContentCache.size());
+        buf.append(contentCache.size());
         buf.append(" entries in a ");
-        buf.append(mContentCache.getClass().getName());
+        buf.append(contentCache.getClass().getName());
         buf.append("}]");
 
         return buf.toString();
     }
 
     void log(final String pMessage) {
-        mLogger.log(Level.INFO, pMessage);
+        logger.log(Level.INFO, pMessage);
     }
 
     void log(final String pMessage, Throwable pException) {
-        mLogger.log(Level.WARNING, pMessage, pException);
+        logger.log(Level.WARNING, pMessage, pException);
     }
 
     /**
@@ -363,16 +347,15 @@ public class HTTPCache {
 
             // Get/create cached entity
             CachedEntity cached;
-            synchronized (mEntityCache) {
-                cached = mEntityCache.get(cacheURI);
+            synchronized (entityCache) {
+                cached = entityCache.get(cacheURI);
                 if (cached == null) {
                     cached = new CachedEntityImpl(cacheURI, this);
-                    mEntityCache.put(cacheURI, cached);
+                    entityCache.put(cacheURI, cached);
                 }
             }
 
-
-            // else if (not cached || stale), resolve through wrapped (caching) response
+            // else if (not cached || stale), resolve through wrapped (caching) response
             // else render to response
 
             // TODO: This is a bottleneck for uncachable resources. Should not
@@ -412,11 +395,11 @@ public class HTTPCache {
 
         // Get/create cached entity
         CachedEntity cached;
-        synchronized (mEntityCache) {
-            cached = mEntityCache.get(cacheURI);
+        synchronized (entityCache) {
+            cached = entityCache.get(cacheURI);
             if (cached != null) {
                 // TODO; Remove all variants
-                mEntityCache.remove(cacheURI);
+                entityCache.remove(cacheURI);
             }
         }
 
@@ -461,7 +444,7 @@ public class HTTPCache {
     }
 
     private boolean isCachable(final CacheResponse pResponse) {
-        if (pResponse.getStatus() != STATUS_OK) {
+        if (pResponse.getStatus() != HttpServletResponse.SC_OK) {
             return false;
         }
 
@@ -531,7 +514,7 @@ public class HTTPCache {
         File file = null;
 
         // Get base dir
-        File base = new File(mTempDir, "./" + pCacheURI);
+        File base = new File(tempDir, "./" + pCacheURI);
         final String basePath = base.getAbsolutePath();
         File directory = base.getParentFile();
 
@@ -603,7 +586,7 @@ public class HTTPCache {
         synchronized (pVariations) {
             try {
                 File file = getVaryPropertiesFile(pCacheURI);
-                if (!file.exists() && mDeleteCacheOnExit) {
+                if (!file.exists() && deleteCacheOnExit) {
                     file.deleteOnExit();
                 }
 
@@ -624,11 +607,11 @@ public class HTTPCache {
     private Properties getVaryProperties(final String pCacheURI) {
         Properties variations;
 
-        synchronized (mVaryCache) {
-            variations = mVaryCache.get(pCacheURI);
+        synchronized (varyCache) {
+            variations = varyCache.get(pCacheURI);
             if (variations == null) {
                 variations = loadVaryProperties(pCacheURI);
-                mVaryCache.put(pCacheURI, variations);
+                varyCache.put(pCacheURI, variations);
             }
         }
 
@@ -657,7 +640,7 @@ public class HTTPCache {
     }
 
     private File getVaryPropertiesFile(final String pCacheURI) {
-        return new File(mTempDir, "./" + pCacheURI + FILE_EXT_VARY);
+        return new File(tempDir, "./" + pCacheURI + FILE_EXT_VARY);
     }
 
     private static String generateCacheURI(final CacheRequest pRequest) {
@@ -769,18 +752,18 @@ public class HTTPCache {
             extension = "[NULL]";
         }
 
-        synchronized (mContentCache) {
-            mContentCache.put(pCacheURI + '.' + extension, pCachedResponse);
+        synchronized (contentCache) {
+            contentCache.put(pCacheURI + '.' + extension, pCachedResponse);
 
             // This will be the default version
-            if (!mContentCache.containsKey(pCacheURI)) {
-                mContentCache.put(pCacheURI, pCachedResponse);
+            if (!contentCache.containsKey(pCacheURI)) {
+                contentCache.put(pCacheURI, pCachedResponse);
             }
         }
 
         // Write the cached content to disk
-        File content = new File(mTempDir, "./" + pCacheURI + '.' + extension);
-        if (mDeleteCacheOnExit && !content.exists()) {
+        File content = new File(tempDir, "./" + pCacheURI + '.' + extension);
+        if (deleteCacheOnExit && !content.exists()) {
             content.deleteOnExit();
         }
 
@@ -809,7 +792,7 @@ public class HTTPCache {
 
         // Write the cached headers to disk (in pseudo-properties-format)
         File headers = new File(content.getAbsolutePath() + FILE_EXT_HEADERS);
-        if (mDeleteCacheOnExit && !headers.exists()) {
+        if (deleteCacheOnExit && !headers.exists()) {
             headers.deleteOnExit();
         }
 
@@ -872,13 +855,13 @@ public class HTTPCache {
         String extension = getVaryExtension(pCacheURI, pRequest);
 
         CachedResponse response;
-        synchronized (mContentCache) {
-//             System.out.println(" ## HTTPCache ## Looking up content with ext: \"" + extension + "\" from memory cache (" + mContentCache /*.size()*/ + " entries)...");
+        synchronized (contentCache) {
+//             System.out.println(" ## HTTPCache ## Looking up content with ext: \"" + extension + "\" from memory cache (" + contentCache /*.size()*/ + " entries)...");
             if ("ANY".equals(extension)) {
-                response = mContentCache.get(pCacheURI);
+                response = contentCache.get(pCacheURI);
             }
             else {
-                response = mContentCache.get(pCacheURI + '.' + extension);
+                response = contentCache.get(pCacheURI + '.' + extension);
             }
 
             if (response == null) {
@@ -913,7 +896,7 @@ public class HTTPCache {
                 int headerSize = (int) headers.length();
 
                 BufferedReader reader = new BufferedReader(new FileReader(headers));
-                LinkedMap<String, List<String>> headerMap = new LinkedMap<String, List<String>>();
+                LinkedHashMap<String, List<String>> headerMap = new LinkedHashMap<String, List<String>>();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     int colIdx = line.indexOf(':');
@@ -931,8 +914,8 @@ public class HTTPCache {
                     headerMap.put(name, Arrays.asList(StringUtil.toStringArray(value, "\\")));
                 }
 
-                response = new CachedResponseImpl(STATUS_OK, headerMap, headerSize, contents);
-                mContentCache.put(pCacheURI + '.' + FileUtil.getExtension(content), response);
+                response = new CachedResponseImpl(HttpServletResponse.SC_OK, headerMap, headerSize, contents);
+                contentCache.put(pCacheURI + '.' + FileUtil.getExtension(content), response);
             }
         }
         catch (IOException e) {
@@ -997,7 +980,7 @@ public class HTTPCache {
             // If Cache-Control: max-age is present, use it, otherwise default
             int maxAge = getIntHeader(response, HEADER_CACHE_CONTROL, "max-age");
             if (maxAge == -1) {
-                expires = lastModified + mDefaultExpiryTime;
+                expires = lastModified + defaultExpiryTime;
                 //// System.out.println(" ## HTTPCache ## Expires is " + NetUtil.formatHTTPDate(expires) + ", using lastModified + defaultExpiry");
             }
             else {

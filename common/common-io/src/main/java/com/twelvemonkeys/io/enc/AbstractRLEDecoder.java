@@ -41,12 +41,12 @@ import java.io.InputStream;
  */
 // TODO: Move to other package or make public
 abstract class AbstractRLEDecoder implements Decoder {
-    protected final byte[] mRow;
-    protected final int mWidth;
-    protected int mSrcX;
-    protected int mSrcY;
-    protected int mDstX;
-    protected int mDstY;
+    protected final byte[] row;
+    protected final int width;
+    protected int srcX;
+    protected int srcY;
+    protected int dstX;
+    protected int dstY;
 
     /**
      * Creates an RLEDecoder. As RLE encoded BMP's may contain x and y deltas,
@@ -56,21 +56,21 @@ abstract class AbstractRLEDecoder implements Decoder {
      * @param pHeight heigth of the image
      */
     AbstractRLEDecoder(int pWidth, int pHeight) {
-        mWidth = pWidth;
-        int bytesPerRow = mWidth;
+        width = pWidth;
+        int bytesPerRow = width;
         int mod = bytesPerRow % 4;
         
         if (mod != 0) {
             bytesPerRow += 4 - mod;
         }
 
-        mRow = new byte[bytesPerRow];
+        row = new byte[bytesPerRow];
 
-        mSrcX = 0;
-        mSrcY = pHeight - 1;
+        srcX = 0;
+        srcY = pHeight - 1;
 
-        mDstX = mSrcX;
-        mDstY = mSrcY;
+        dstX = srcX;
+        dstY = srcY;
     }
 
     /**
@@ -95,26 +95,26 @@ abstract class AbstractRLEDecoder implements Decoder {
     public final int decode(InputStream pStream, byte[] pBuffer) throws IOException {
         int decoded = 0;
 
-        while (decoded < pBuffer.length && mDstY >= 0) {
+        while (decoded < pBuffer.length && dstY >= 0) {
             // NOTE: Decode only full rows, don't decode if y delta
-            if (mDstX == 0 && mSrcY == mDstY) {
+            if (dstX == 0 && srcY == dstY) {
                 decodeRow(pStream);
             }
 
-            int length = Math.min(mRow.length - mDstX, pBuffer.length - decoded);
-            System.arraycopy(mRow, mDstX, pBuffer, decoded, length);
-            mDstX += length;
+            int length = Math.min(row.length - dstX, pBuffer.length - decoded);
+            System.arraycopy(row, dstX, pBuffer, decoded, length);
+            dstX += length;
             decoded += length;
 
-            if (mDstX == mRow.length) {
-                mDstX = 0;
-                mDstY--;
+            if (dstX == row.length) {
+                dstX = 0;
+                dstY--;
 
                 // NOTE: If src Y is < dst Y, we have a delta, and have to fill the
                 // gap with zero-bytes
-                if (mDstY > mSrcY) {
-                    for (int i = 0; i < mRow.length; i++) {
-                        mRow[i] = 0x00;
+                if (dstY > srcY) {
+                    for (int i = 0; i < row.length; i++) {
+                        row[i] = 0x00;
                     }
                 }
             }

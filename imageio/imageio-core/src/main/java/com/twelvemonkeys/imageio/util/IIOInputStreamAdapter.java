@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,10 +45,10 @@ import java.io.InputStream;
 * @version $Id: IIOInputStreamAdapter.java,v 1.0 Sep 26, 2007 11:35:59 AM haraldk Exp$
 */
 class IIOInputStreamAdapter extends InputStream {
-    private ImageInputStream mInput;
-    private final boolean mHasLength;
-    private long mLeft;
-    private long mMarkPosition;
+    private ImageInputStream input;
+    private final boolean hasLength;
+    private long left;
+    private long markPosition;
 
     // TODO: Enforce stream boundaries!
     // TODO: Stream start position....
@@ -75,16 +77,12 @@ class IIOInputStreamAdapter extends InputStream {
     }
 
     private IIOInputStreamAdapter(ImageInputStream pInput, long pLength, boolean pHasLength) {
-        if (pInput == null) {
-            throw new IllegalArgumentException("stream == null");
-        }
-        if (pHasLength && pLength < 0) {
-            throw new IllegalArgumentException("length < 0");
-        }
+        Validate.notNull(pInput, "stream");
+        Validate.isTrue(!pHasLength || pLength >= 0, pLength, "length < 0: %f");
 
-        mInput = pInput;
-        mHasLength = pHasLength;
-        mLeft = pLength;
+        input = pInput;
+        left = pLength;
+        hasLength = pHasLength;
     }
 
 
@@ -93,18 +91,19 @@ class IIOInputStreamAdapter extends InputStream {
      * This implementation does <em>not</em> close the underlying stream.
      */
     public void close() throws IOException {
-        if (mHasLength) {
-            mInput.seek(mInput.getStreamPosition() + mLeft);
+        if (hasLength) {
+            input.seek(input.getStreamPosition() + left);
         }
 
-        mLeft = 0;
-        mInput = null;
+        left = 0;
+        input = null;
     }
 
     public int available() throws IOException {
-        if (mHasLength) {
-            return mLeft > 0 ? (int) Math.min(Integer.MAX_VALUE, mLeft) : 0;
+        if (hasLength) {
+            return left > 0 ? (int) Math.min(Integer.MAX_VALUE, left) : 0;
         }
+
         return 0; // We don't really know, so we say 0 to be safe.
     }
 
@@ -115,7 +114,7 @@ class IIOInputStreamAdapter extends InputStream {
 
     public void mark(int pReadLimit) {
         try {
-            mMarkPosition = mInput.getStreamPosition();
+            markPosition = input.getStreamPosition();
         }
         catch (IOException e) {
             // Let's hope this never happens, because it's not possible to reset then...
@@ -124,17 +123,17 @@ class IIOInputStreamAdapter extends InputStream {
     }
 
     public void reset() throws IOException {
-        long diff = mInput.getStreamPosition() - mMarkPosition;
-        mInput.seek(mMarkPosition);
-        mLeft += diff;
+        long diff = input.getStreamPosition() - markPosition;
+        input.seek(markPosition);
+        left += diff;
     }
 
     public int read() throws IOException {
-        if (mHasLength && mLeft-- <= 0) {
-            mLeft = 0;
+        if (hasLength && left-- <= 0) {
+            left = 0;
             return -1;
         }
-        return mInput.read();
+        return input.read();
     }
 
     public final int read(byte[] pBytes) throws IOException {
@@ -142,13 +141,13 @@ class IIOInputStreamAdapter extends InputStream {
     }
 
     public int read(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        if (mHasLength && mLeft <= 0) {
+        if (hasLength && left <= 0) {
             return -1;
         }
 
-        int read = mInput.read(pBytes, pOffset, (int) findMaxLen(pLength));
-        if (mHasLength) {
-            mLeft = read < 0 ? 0 : mLeft - read;
+        int read = input.read(pBytes, pOffset, (int) findMaxLen(pLength));
+        if (hasLength) {
+            left = read < 0 ? 0 : left - read;
         }
         return read;
     }
@@ -161,8 +160,8 @@ class IIOInputStreamAdapter extends InputStream {
      * @return the maximum number of bytes to read
      */
     private long findMaxLen(long pLength) {
-        if (mHasLength && mLeft < pLength) {
-            return Math.max(mLeft, 0);
+        if (hasLength && left < pLength) {
+            return Math.max(left, 0);
         }
         else {
             return Math.max(pLength, 0);
@@ -170,8 +169,8 @@ class IIOInputStreamAdapter extends InputStream {
     }
 
     public long skip(long pLength) throws IOException {
-        long skipped = mInput.skipBytes(findMaxLen(pLength)); // Skips 0 or more, never -1
-        mLeft -= skipped;
+        long skipped = input.skipBytes(findMaxLen(pLength)); // Skips 0 or more, never -1
+        left -= skipped;
         return skipped;
     }
 }

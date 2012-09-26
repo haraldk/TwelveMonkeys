@@ -1,6 +1,10 @@
 package com.twelvemonkeys.io;
 
+import org.junit.Test;
+
 import java.io.*;
+
+import static org.junit.Assert.*;
 
 /**
  * MemoryCacheSeekableStreamTestCase
@@ -10,10 +14,6 @@ import java.io.*;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/io/FileSeekableStreamTestCase.java#3 $
  */
 public class FileSeekableStreamTestCase extends SeekableInputStreamAbstractTestCase {
-    public FileSeekableStreamTestCase(String name) {
-        super(name);
-    }
-
     protected SeekableInputStream makeInputStream(final InputStream pStream) {
         try {
             return new FileSeekableStream(createFileWithContent(pStream));
@@ -37,11 +37,13 @@ public class FileSeekableStreamTestCase extends SeekableInputStreamAbstractTestC
         return temp;
     }
 
+    @Test
     @Override
     public void testCloseUnderlyingStream() throws IOException {
         // There is no underlying stream here...
     }
 
+    @Test
     public void testCloseUnderlyingFile() throws IOException {
         final boolean[] closed = new boolean[1];
 

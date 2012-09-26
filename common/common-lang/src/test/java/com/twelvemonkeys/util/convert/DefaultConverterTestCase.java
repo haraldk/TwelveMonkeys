@@ -1,5 +1,8 @@
 package com.twelvemonkeys.util.convert;
 
+import java.io.File;
+import java.net.URI;
+
 /**
  * DefaultConverterTestCase
  * <p/>
@@ -20,7 +23,9 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
                 new Conversion("true", Boolean.TRUE),
                 new Conversion("TRUE", Boolean.TRUE, null, "true"),
                 new Conversion("false", Boolean.FALSE),
-                new Conversion("FALSE", new Boolean(false), null, "false"),
+                new Conversion("FALSE", false, null, "false"),
+
+                new Conversion("2", 2),
 
                 // Stupid but valid
                 new Conversion("fooBar", "fooBar"),
@@ -28,6 +33,22 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
 
                 // Stupid test class that reveres chars
                 new Conversion("fooBar", new FooBar("fooBar")),
+
+                // String array tests
+                new Conversion("foo, bar, baz", new String[] {"foo", "bar", "baz"}),
+                new Conversion("foo", new String[] {"foo"}),
+                new Conversion("foo;bar; baz", new String[] {"foo", "bar", "baz"}, "; ", "foo; bar; baz"),
+
+                // Native array tests
+                new Conversion("1, 2, 3", new int[] {1, 2, 3}),
+                new Conversion("-1, 42, 0", new long[] {-1, 42, 0}),
+                new Conversion("true, true, false", new boolean[] {true, true, false}),
+                new Conversion(".3, 4E7, .97", new float[] {.3f, 4e7f, .97f}, ", ", "0.3, 4.0E7, 0.97"),
+
+                // Object array test
+                new Conversion("foo, bar", new FooBar[] {new FooBar("foo"), new FooBar("bar")}),
+                new Conversion("/temp, /usr/local/bin", new File[] {new File("/temp"), new File("/usr/local/bin")}),
+                new Conversion("file:/temp, http://java.net/", new URI[] {URI.create("file:/temp"), URI.create("http://java.net/")}),
 
                 // TODO: More tests
         };

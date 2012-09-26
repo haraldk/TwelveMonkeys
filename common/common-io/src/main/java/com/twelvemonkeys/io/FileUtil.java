@@ -186,6 +186,7 @@ public final class FileUtil {
         if (!pOverWrite && pToFile.exists()) {
             return false;
         }
+
         InputStream in = null;
         OutputStream out = null;
 
@@ -202,6 +203,7 @@ public final class FileUtil {
             close(in);
             close(out);
         }
+
         return true;  // If we got here, everything's probably okay.. ;-)
     }
 
@@ -307,6 +309,8 @@ public final class FileUtil {
         Validate.notNull(pFrom, "from");
         Validate.notNull(pTo, "to");
 
+        // TODO: Consider using file channels for faster copy where possible
+
         // Use buffer size two times byte array, to avoid i/o bottleneck
         // TODO: Consider letting the client decide as this is sometimes not a good thing!
         InputStream in = new BufferedInputStream(pFrom, BUF_SIZE * 2);
@@ -322,30 +326,8 @@ public final class FileUtil {
         // Flush out stream, to write any remaining buffered data
         out.flush();
 
-        return true;  // If we got here, everything's probably okay.. ;-)
+        return true;  // If we got here, everything is probably okay.. ;-)
     }
-
-    /*
-    // Consider using the example from
-    // http://developer.java.sun.com/developer/Books/performance/ch04.pdf
-    // Test if this is really faster. And what about a lot of concurrence?
-    // Have a pool of buffers? :-)
-
-    static final int BUFF_SIZE = 100000;
-    static final byte[] buffer = new byte[BUFF_SIZE];
-
-    public static void copy(InputStream in, OutputStream out) throws IOException {
-        while (true) {
-            synchronized (buffer) {
-                int amountRead = in.read(buffer);
-                if (amountRead == -1) {
-                    break;
-                }
-                out.write(buffer, 0, amountRead);
-            }
-        }
-    }
-    */
 
     /**
      * Gets the file (type) extension of the given file.
@@ -568,6 +550,7 @@ public final class FileUtil {
         if (!pFile.exists()) {
             throw new FileNotFoundException(pFile.toString());
         }
+
         byte[] bytes = new byte[(int) pFile.length()];
         InputStream in = null;
 
@@ -586,6 +569,7 @@ public final class FileUtil {
         finally {
             close(in);
         }
+
         return bytes;
     }
 
@@ -685,28 +669,28 @@ public final class FileUtil {
         // a file array, which may throw OutOfMemoryExceptions for
         // large directories/in low memory situations
         class DeleteFilesVisitor implements Visitor<File> {
-            private int mFailedCount = 0;
-            private IOException mException = null;
+            private int failedCount = 0;
+            private IOException exception = null;
 
             public void visit(final File pFile) {
                 try {
                     if (!delete(pFile, true)) {
-                        mFailedCount++;
+                        failedCount++;
                     }
                 }
                 catch (IOException e) {
-                    mFailedCount++;
-                    if (mException == null) {
-                        mException = e;
+                    failedCount++;
+                    if (exception == null) {
+                        exception = e;
                     }
                 }
             }
 
             boolean succeeded() throws IOException {
-                if (mException != null) {
-                    throw mException;
+                if (exception != null) {
+                    throw exception;
                 }
-                return mFailedCount == 0;
+                return failedCount == 0;
             }
         }
         DeleteFilesVisitor fileDeleter = new DeleteFilesVisitor();
@@ -886,6 +870,8 @@ public final class FileUtil {
             return folder.listFiles();
         }
 
+        // TODO: Rewrite to use regexp
+
         FilenameFilter filter = new FilenameMaskFilter(pFilenameMask);
         return folder.listFiles(filter);
     }
@@ -1029,6 +1015,7 @@ public final class FileUtil {
      * @return a human readable string representation
      */
     public static String toHumanReadableSize(final long pSizeInBytes) {
+        // TODO: Rewrite to use String.format?
         if (pSizeInBytes < 1024L) {
             return pSizeInBytes + " Bytes";
         }
@@ -1053,7 +1040,7 @@ public final class FileUtil {
     private static ThreadLocal<NumberFormat> sNumberFormat = new ThreadLocal<NumberFormat>() {
         protected NumberFormat initialValue() {
             NumberFormat format = NumberFormat.getNumberInstance();
-            // TODO: Consider making this locale/platfor specific, OR a method parameter...
+            // TODO: Consider making this locale/platform specific, OR a method parameter...
 //            format.setMaximumFractionDigits(2);
             format.setMaximumFractionDigits(0);
             return format;
@@ -1075,6 +1062,7 @@ public final class FileUtil {
      *
      * @see com.twelvemonkeys.util.Visitor
      */
+    @SuppressWarnings({"ResultOfMethodCallIgnored"})
     public static void visitFiles(final File pDirectory, final FileFilter pFilter, final Visitor<File> pVisitor) {
         Validate.notNull(pDirectory, "directory");
         Validate.notNull(pVisitor, "visitor");

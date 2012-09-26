@@ -11,7 +11,6 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.servlet</groupId>
     <artifactId>servlet</artifactId>
-    <version>3.0-SNAPSHOT</version>
     <name>TwelveMonkeys :: Servlet</name>
 
     <dependencies>
@@ -77,15 +76,14 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.3.1</version>
+            <version>4.7</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>jmock</groupId>
-            <artifactId>jmock-cglib</artifactId>
-            <version>1.0.1</version>
-            <scope>test</scope>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.8.5</version>
         </dependency>
     </dependencies>
 

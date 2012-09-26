@@ -11,11 +11,11 @@ import java.io.IOException;
  * @version $Id: PSDPrintFlagsInfo.java,v 1.0 Jul 28, 2009 5:16:27 PM haraldk Exp$
  */
 final class PSDPrintFlagsInformation extends PSDImageResource {
-    int mVersion;
-    boolean mCropMasks;
-    int mField;
-    long mBleedWidth;
-    int mBleedScale;
+    int version;
+    boolean cropMasks;
+    int field;
+    long bleedWidth;
+    int bleedScale;
 
     PSDPrintFlagsInformation(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -23,24 +23,24 @@ final class PSDPrintFlagsInformation extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mVersion = pInput.readUnsignedShort();
-        mCropMasks = pInput.readBoolean();
-        mField = pInput.readUnsignedByte(); // TODO: Is this really pad?
-        mBleedWidth = pInput.readUnsignedInt();
-        mBleedScale = pInput.readUnsignedShort();
+        version = pInput.readUnsignedShort();
+        cropMasks = pInput.readBoolean();
+        field = pInput.readUnsignedByte(); // TODO: Is this really pad?
+        bleedWidth = pInput.readUnsignedInt();
+        bleedScale = pInput.readUnsignedShort();
 
-        pInput.skipBytes(mSize - 10);
+        pInput.skipBytes(size - 10);
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", version: ").append(mVersion);
-        builder.append(", crop masks: ").append(mCropMasks);
-        builder.append(", field: ").append(mField);
-        builder.append(", bleed width: ").append(mBleedWidth);
-        builder.append(", bleed scale: ").append(mBleedScale);
+        builder.append(", version: ").append(version);
+        builder.append(", crop masks: ").append(cropMasks);
+        builder.append(", field: ").append(field);
+        builder.append(", bleed width: ").append(bleedWidth);
+        builder.append(", bleed scale: ").append(bleedScale);
 
         builder.append("]");
 

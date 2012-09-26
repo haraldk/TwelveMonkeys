@@ -36,8 +36,8 @@ package com.twelvemonkeys.imageio.plugins.psd;
  * @version $Id: PSDChannelInfo.java,v 1.0 May 6, 2008 2:46:23 PM haraldk Exp$
  */
 class PSDChannelInfo {
-    final short mChannelId;
-    final long mLength;
+    final short channelId;
+    final long length;
 
     // typedef struct _CLI
     // {
@@ -45,16 +45,16 @@ class PSDChannelInfo {
     //   LONG  LengthOfChannelData;  /* Channel Length Info field two */
     // } CLI;
     public PSDChannelInfo(short pChannelId, long pLength) {
-        mChannelId = pChannelId;
-        mLength = pLength;
+        channelId = pChannelId;
+        length = pLength;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append("[");
-        builder.append("channelId: ").append(mChannelId);
-        builder.append(", length: ").append(mLength);
+        builder.append("channelId: ").append(channelId);
+        builder.append(", length: ").append(length);
         builder.append("]");
         return builder.toString();
     }

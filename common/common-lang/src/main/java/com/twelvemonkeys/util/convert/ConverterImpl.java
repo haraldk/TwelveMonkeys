@@ -59,7 +59,7 @@ class ConverterImpl extends Converter {
         // Loop until we find a suitable converter
         do {
             // Have a match, return converter
-            if ((converter = getInstance().mConverters.get(cl)) != null) {
+            if ((converter = getInstance().converters.get(cl)) != null) {
                 return (PropertyConverter) converter;
             }
 

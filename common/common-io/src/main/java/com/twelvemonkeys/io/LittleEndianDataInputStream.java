@@ -38,6 +38,8 @@
 
 package com.twelvemonkeys.io;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.io.*;
 
 /**
@@ -75,10 +77,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
      * @see java.io.FilterInputStream#in
      */
     public LittleEndianDataInputStream(final InputStream pStream) {
-        super(pStream);
-        if (pStream == null) {
-            throw new IllegalArgumentException("stream == null");
-        }
+        super(Validate.notNull(pStream, "stream"));
     }
 
     /**
@@ -93,9 +92,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
      */
     public boolean readBoolean() throws IOException {
         int b = in.read();
+
         if (b < 0) {
             throw new EOFException();
         }
+
         return b != 0;
     }
 
@@ -110,9 +111,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
      */
     public byte readByte() throws IOException {
         int b = in.read();
+
         if (b < 0) {
             throw new EOFException();
         }
+
         return (byte) b;
 
     }
@@ -128,9 +131,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
      */
     public int readUnsignedByte() throws IOException {
         int b = in.read();
+
         if (b < 0) {
             throw new EOFException();
         }
+
         return b;
     }
 
@@ -146,11 +151,13 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     public short readShort() throws IOException {
         int byte1 = in.read();
         int byte2 = in.read();
+
         // only need to test last byte read
         // if byte1 is -1 so is byte2
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         return (short) (((byte2 << 24) >>> 16) + (byte1 << 24) >>> 24);
     }
 
@@ -166,10 +173,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     public int readUnsignedShort() throws IOException {
         int byte1 = in.read();
         int byte2 = in.read();
+
         if (byte2 < 0) {
             throw new EOFException();
         }
-        //return ((byte2 << 24) >> 16) + ((byte1 << 24) >> 24);
+
         return (byte2 << 8) + byte1;
     }
 
@@ -185,9 +193,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     public char readChar() throws IOException {
         int byte1 = in.read();
         int byte2 = in.read();
+
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         return (char) (((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24));
     }
 
@@ -210,6 +220,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
         if (byte4 < 0) {
             throw new EOFException();
         }
+
         return (byte4 << 24) + ((byte3 << 24) >>> 8)
                 + ((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24);
     }
@@ -236,11 +247,11 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
         if (byte8 < 0) {
             throw new EOFException();
         }
+
         return (byte8 << 56) + ((byte7 << 56) >>> 8)
                 + ((byte6 << 56) >>> 16) + ((byte5 << 56) >>> 24)
                 + ((byte4 << 56) >>> 32) + ((byte3 << 56) >>> 40)
                 + ((byte2 << 56) >>> 48) + ((byte1 << 56) >>> 56);
-
     }
 
     /**
@@ -260,16 +271,17 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     public String readUTF() throws IOException {
         int byte1 = in.read();
         int byte2 = in.read();
+
         if (byte2 < 0) {
             throw new EOFException();
         }
+
         int numbytes = (byte1 << 8) + byte2;
         char result[] = new char[numbytes];
         int numread = 0;
         int numchars = 0;
 
         while (numread < numbytes) {
-
             int c1 = readUnsignedByte();
             int c2, c3;
 
@@ -281,27 +293,34 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
             }
             else if (test == 12 || test == 13) { // two bytes
                 numread += 2;
+
                 if (numread > numbytes) {
                     throw new UTFDataFormatException();
                 }
+
                 c2 = readUnsignedByte();
+
                 if ((c2 & 0xC0) != 0x80) {
                     throw new UTFDataFormatException();
                 }
+
                 result[numchars++] = (char) (((c1 & 0x1F) << 6) | (c2 & 0x3F));
             }
             else if (test == 14) { // three bytes
                 numread += 3;
+
                 if (numread > numbytes) {
                     throw new UTFDataFormatException();
                 }
+
                 c2 = readUnsignedByte();
                 c3 = readUnsignedByte();
+
                 if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80)) {
                     throw new UTFDataFormatException();
                 }
-                result[numchars++] = (char)
-                        (((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F));
+
+                result[numchars++] = (char) (((c1 & 0x0F) << 12) | ((c2 & 0x3F) << 6) | (c3 & 0x3F));
             }
             else { // malformed
                 throw new UTFDataFormatException();
@@ -396,12 +415,16 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
         if (pLength < 0) {
             throw new IndexOutOfBoundsException();
         }
+
         int count = 0;
+
         while (count < pLength) {
             int read = in.read(pBytes, pOffset + count, pLength - count);
+
             if (read < 0) {
                 throw new EOFException();
             }
+
             count += read;
         }
     }

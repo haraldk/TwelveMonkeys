@@ -38,8 +38,12 @@ import java.util.HashMap;
  * @version $Id: XMPNamespaceMapping.java,v 1.0 Nov 17, 2009 6:35:21 PM haraldk Exp$
  */
 final class XMPNamespaceMapping extends HashMap<String, String> {
-    public XMPNamespaceMapping() {
-        put(XMP.NS_RDF, "rdf");
+    public XMPNamespaceMapping(boolean includeNonElements) {
+        if (includeNonElements) {
+            put(XMP.NS_RDF, "rdf");
+            put(XMP.NS_X, "x");
+        }
+
         put(XMP.NS_DC, "dc");
         put(XMP.NS_EXIF, "exif");
         put(XMP.NS_PHOTOSHOP, "photoshop");

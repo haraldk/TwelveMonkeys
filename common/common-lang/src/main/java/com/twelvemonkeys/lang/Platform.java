@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.lang;
 
+import java.util.Properties;
+
 /**
  * Platform
  *
@@ -39,40 +41,46 @@ public final class Platform {
     /**
      * Normalized operating system constant
      */
-    final OperatingSystem mOS;
+    final OperatingSystem os;
 
     /**
-     * Unormalized operating system version constant (for completeness)
+     * Unnormalized operating system version constant (for completeness)
      */
-    final String mVersion;
+    final String version;
 
     /**
      * Normalized system architecture constant
      */
-    final Architecture mArchitecture;
+    final Architecture architecture;
 
     static final private Platform INSTANCE = new Platform();
 
     private Platform() {
-        mOS = normalizeOperatingSystem();
-        mVersion = System.getProperty("os.version");
-        mArchitecture = normalizeArchitecture(mOS);
+        this(System.getProperties());
     }
 
-    private static OperatingSystem normalizeOperatingSystem() {
-        String os = System.getProperty("os.name");
+    Platform(final Properties properties) {
+        os = normalizeOperatingSystem(properties.getProperty("os.name"));
+        version = properties.getProperty("os.version");
+        architecture = normalizeArchitecture(os, properties.getProperty("os.arch"));
+    }
+
+    static OperatingSystem normalizeOperatingSystem(final String osName) {
+        String os = osName;
+
         if (os == null) {
             throw new IllegalStateException("System property \"os.name\" == null");
         }
 
         os = os.toLowerCase();
+
         if (os.startsWith("windows")) {
             return OperatingSystem.Windows;
         }
         else if (os.startsWith("linux")) {
             return OperatingSystem.Linux;
         }
-        else if (os.startsWith("mac os")) {
+        else if (os.startsWith("mac os") || os.startsWith("darwin")) {
             return OperatingSystem.MacOS;
         }
         else if (os.startsWith("solaris") || os.startsWith("sunos")) {
@@ -82,15 +90,16 @@ public final class Platform {
         return OperatingSystem.Unknown;
     }
 
-    private static Architecture normalizeArchitecture(final OperatingSystem pOsName) {
-        String arch = System.getProperty("os.arch");
+    static Architecture normalizeArchitecture(final OperatingSystem pOsName, final String osArch) {
+        String arch = osArch;
+
         if (arch == null) {
             throw new IllegalStateException("System property \"os.arch\" == null");
         }
 
         arch = arch.toLowerCase();
-        if (pOsName == OperatingSystem.Windows
-                && (arch.startsWith("x86") || arch.startsWith("i386"))) {
+
+        if (pOsName == OperatingSystem.Windows && (arch.startsWith("x86") || arch.startsWith("i386"))) {
             return Architecture.X86;
             // TODO: 64 bit
         }
@@ -101,6 +110,9 @@ public final class Platform {
             else if (arch.startsWith("i686")) {
                 return Architecture.I686;
             }
+            else if (arch.startsWith("power") || arch.startsWith("ppc")) {
+                return Architecture.PPC;
+            }
             // TODO: More Linux options?
             // TODO: 64 bit
         }
@@ -108,9 +120,13 @@ public final class Platform {
             if (arch.startsWith("power") || arch.startsWith("ppc")) {
                 return Architecture.PPC;
             }
-            else if (arch.startsWith("i386")) {
-                return Architecture.I386;
+            else if (arch.startsWith("x86")) {
+                return Architecture.X86;
             }
+            else if (arch.startsWith("i386")) {
+                return Architecture.X86;
+            }
+            // TODO: 64 bit
         }
         else if (pOsName == OperatingSystem.Solaris) {
             if (arch.startsWith("sparc")) {
@@ -138,21 +154,21 @@ public final class Platform {
      * @return this platform's OS.
      */
     public OperatingSystem getOS() {
-        return mOS;
+        return os;
     }
 
     /**
      * @return this platform's OS version.
      */
     public String getVersion() {
-        return mVersion;
+        return version;
     }
 
     /**
      * @return this platform's architecture.
      */
     public Architecture getArchitecture() {
-        return mArchitecture;
+        return architecture;
     }
 
     /**
@@ -160,7 +176,7 @@ public final class Platform {
      * @return the current {@code OperatingSystem}.
      */
     public static OperatingSystem os() {
-        return INSTANCE.mOS;
+        return INSTANCE.os;
     }
 
     /**
@@ -168,7 +184,7 @@ public final class Platform {
      * @return the current OS version.
      */
     public static String version() {
-        return INSTANCE.mVersion;
+        return INSTANCE.version;
     }
 
     /**
@@ -176,7 +192,7 @@ public final class Platform {
      * @return the current {@code Architecture}.
      */
     public static Architecture arch() {
-        return INSTANCE.mArchitecture;
+        return INSTANCE.architecture;
     }
 
     /**
@@ -197,14 +213,14 @@ public final class Platform {
 
         Unknown(System.getProperty("os.arch"));
 
-        final String mName;// for debug only
+        final String name;// for debug only
 
         private Architecture(String pName) {
-            mName = pName;
+            name = pName;
         }
 
         public String toString() {
-            return mName;
+            return name;
         }
     }
 
@@ -223,22 +239,26 @@ public final class Platform {
         Solaris("Solaris", "sun"),
         MacOS("Mac OS", "osx"),
 
-        Unknown(System.getProperty("os.name"), "");
+        Unknown(System.getProperty("os.name"), null);
 
-        final String mId;
-        final String mName;// for debug only
+        final String id;
+        final String name;// for debug only
 
         private OperatingSystem(String pName, String pId) {
-            mName = pName;
-            mId = pId;
+            name = pName;
+            id = pId != null ? pId : pName.toLowerCase();
         }
 
         public String getName() {
-            return mName;
+            return name;
+        }
+
+        public String id() {
+            return id;
         }
 
         public String toString() {
-            return mId;
+            return String.format("%s (%s)", id, name);
         }
     }
 }

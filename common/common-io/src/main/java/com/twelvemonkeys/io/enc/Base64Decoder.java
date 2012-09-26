@@ -61,9 +61,9 @@ public final class Base64Decoder implements Decoder {
 
     final static byte[] PEM_CONVERT_ARRAY;
 
-    private byte[] mDecodeBuffer = new byte[4];
-    private ByteArrayOutputStream mWrapped;
-    private Object mWrappedObject;
+    private byte[] decodeBuffer = new byte[4];
+    private ByteArrayOutputStream wrapped;
+    private Object wrappedObject;
 
     static {
         PEM_CONVERT_ARRAY = new byte[256];
@@ -116,8 +116,8 @@ public final class Base64Decoder implements Decoder {
             }
         } while (read == 10 || read == 13);
 
-        mDecodeBuffer[0] = (byte) read;
-        read = readFully(pInput, mDecodeBuffer, 1, pLength - 1);
+        decodeBuffer[0] = (byte) read;
+        read = readFully(pInput, decodeBuffer, 1, pLength - 1);
 
         if (read == -1) {
             return false;
@@ -125,24 +125,24 @@ public final class Base64Decoder implements Decoder {
 
         int length = pLength;
 
-        if (length > 3 && mDecodeBuffer[3] == 61) {
+        if (length > 3 && decodeBuffer[3] == 61) {
             length = 3;
         }
 
-        if (length > 2 && mDecodeBuffer[2] == 61) {
+        if (length > 2 && decodeBuffer[2] == 61) {
             length = 2;
         }
 
         switch (length) {
             case 4:
-                byte3 = PEM_CONVERT_ARRAY[mDecodeBuffer[3] & 255];
+                byte3 = PEM_CONVERT_ARRAY[decodeBuffer[3] & 255];
                 // fall through
             case 3:
-                byte2 = PEM_CONVERT_ARRAY[mDecodeBuffer[2] & 255];
+                byte2 = PEM_CONVERT_ARRAY[decodeBuffer[2] & 255];
                 // fall through
             case 2:
-                byte1 = PEM_CONVERT_ARRAY[mDecodeBuffer[1] & 255];
-                byte0 = PEM_CONVERT_ARRAY[mDecodeBuffer[0] & 255];
+                byte1 = PEM_CONVERT_ARRAY[decodeBuffer[1] & 255];
+                byte0 = PEM_CONVERT_ARRAY[decodeBuffer[0] & 255];
                 // fall through
             default:
                 switch (length) {
@@ -185,15 +185,15 @@ public final class Base64Decoder implements Decoder {
     }
 
     public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
-        if (mWrappedObject != pBuffer) {
+        if (wrappedObject != pBuffer) {
             // NOTE: Array not cloned in FastByteArrayOutputStream
-            mWrapped = new FastByteArrayOutputStream(pBuffer);
-            mWrappedObject = pBuffer;
+            wrapped = new FastByteArrayOutputStream(pBuffer);
+            wrappedObject = pBuffer;
         }
 
-        mWrapped.reset(); // NOTE: This only resets count to 0
-        decodeBuffer(pStream, mWrapped, pBuffer.length);
+        wrapped.reset(); // NOTE: This only resets count to 0
+        decodeBuffer(pStream, wrapped, pBuffer.length);
 
-        return mWrapped.size();
+        return wrapped.size();
     }
 }

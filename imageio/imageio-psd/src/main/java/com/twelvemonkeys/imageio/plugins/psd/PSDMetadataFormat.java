@@ -195,7 +195,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
 
     @Override
-    public boolean canNodeAppear(final String pElementName, final ImageTypeSpecifier pImageType) {
+    public boolean canNodeAppear(final String elementName, final ImageTypeSpecifier imageType) {
         // TODO: PSDColorData and PaletteEntry only for indexed color model
         throw new UnsupportedOperationException("Method canNodeAppear not implemented"); // TODO: Implement
     }

@@ -64,14 +64,14 @@ import java.util.SortedSet;
  */
 public class ThumbsDBImageReader extends ImageReaderBase {
     private static final int THUMBNAIL_OFFSET = 12;
-    private Entry mRoot;
-    private Catalog mCatalog;
+    private Entry root;
+    private Catalog catalog;
 
-    private BufferedImage[] mThumbnails;
-    private final ImageReader mReader;
-    private int mCurrentImage = -1;
+    private BufferedImage[] thumbnails;
+    private final ImageReader reader;
+    private int currentImage = -1;
 
-    private boolean mLoadEagerly;
+    private boolean loadEagerly;
 
     public ThumbsDBImageReader() {
         this(new ThumbsDBImageReaderSpi());
@@ -79,14 +79,14 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
     protected ThumbsDBImageReader(final ThumbsDBImageReaderSpi pProvider) {
         super(pProvider);
-        mReader = createJPEGReader(pProvider);
+        reader = createJPEGReader(pProvider);
         initReaderListeners();
     }
 
     protected void resetMembers() {
-        mRoot = null;
-        mCatalog = null;
-        mThumbnails = null;
+        root = null;
+        catalog = null;
+        thumbnails = null;
     }
 
     private static ImageReader createJPEGReader(final ThumbsDBImageReaderSpi pProvider) {
@@ -94,12 +94,12 @@ public class ThumbsDBImageReader extends ImageReaderBase {
     }
 
     public void dispose() {
-        mReader.dispose();
+        reader.dispose();
         super.dispose();
     }
 
     public boolean isLoadEagerly() {
-        return mLoadEagerly;
+        return loadEagerly;
     }
 
     /**
@@ -113,7 +113,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
      * @param pLoadEagerly {@code true} if the reader should read all thumbs on first read
      */
     public void setLoadEagerly(final boolean pLoadEagerly) {
-        mLoadEagerly = pLoadEagerly;
+        loadEagerly = pLoadEagerly;
     }
 
     /**
@@ -135,19 +135,19 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
         // Quick look-up
         BufferedImage image = null;
-        if (pIndex < mThumbnails.length) {
-            image = mThumbnails[pIndex];
+        if (pIndex < thumbnails.length) {
+            image = thumbnails[pIndex];
         }
 
         if (image == null) {
             // Read the image, it's a JFIF stream, inside the OLE 2 CompoundDocument
             init(pIndex);
 
-            image = mReader.read(0, pParam);
-            mReader.reset();
+            image = reader.read(0, pParam);
+            reader.reset();
 
             if (pParam == null) {
-                mThumbnails[pIndex] = image; // TODO: Caching is not kosher, as images are mutable!!
+                thumbnails[pIndex] = image; // TODO: Caching is not kosher, as images are mutable!!
             }
         }
         else {
@@ -193,7 +193,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
     public BufferedImage read(final String pName, final ImageReadParam pParam) throws IOException {
         initCatalog();
 
-        int index = mCatalog.getIndex(pName);
+        int index = catalog.getIndex(pName);
         if (index < 0) {
             throw new FileNotFoundException("Name not found in \"Catalog\" entry: " + pName);
         }
@@ -203,39 +203,40 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
     public void abort() {
         super.abort();
-        mReader.abort();
+        reader.abort();
     }
 
     @Override
-    public void setInput(Object pInput, boolean pSeekForwardOnly, boolean pIgnoreMetadata) {
-        super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
-        if (mImageInput != null) {
-            mImageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+    public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
+        super.setInput(input, seekForwardOnly, ignoreMetadata);
+        if (imageInput != null) {
+            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         }
     }
 
     private void init(final int pIndex) throws IOException {
-        if (mCurrentImage == -1 || pIndex != mCurrentImage || mReader.getInput() == null) {
+        if (currentImage == -1 || pIndex != currentImage || reader.getInput() == null) {
             init();
             checkBounds(pIndex);
-            mCurrentImage = pIndex;
+            currentImage = pIndex;
 
             initReader(pIndex);
         }
     }
 
     private void initReader(final int pIndex) throws IOException {
-        String name = mCatalog.getStreamName(pIndex);
-        Entry entry = mRoot.getChildEntry(name);
+        init();
+        String name = catalog.getStreamName(pIndex);
+        Entry entry = root.getChildEntry(name);
         // TODO: It might be possible to speed this up, with less wrapping...
         // Use in-memory input stream for max speed, images are small
         ImageInputStream input = new MemoryCacheImageInputStream(entry.getInputStream());
         input.skipBytes(THUMBNAIL_OFFSET);
-        mReader.setInput(input);
+        reader.setInput(input);
     }
 
     private void initReaderListeners() {
-        mReader.addIIOReadProgressListener(new ProgressListenerBase() {
+        reader.addIIOReadProgressListener(new ProgressListenerBase() {
             @Override
             public void imageComplete(ImageReader pSource) {
                 processImageComplete();
@@ -243,7 +244,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
             @Override
             public void imageStarted(ImageReader pSource, int pImageIndex) {
-                processImageStarted(mCurrentImage);
+                processImageStarted(currentImage);
             }
 
             @Override
@@ -262,66 +263,66 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
     private void init() throws IOException {
         assertInput();
-        if (mRoot == null) {
-            mRoot = new CompoundDocument(mImageInput).getRootEntry();
-            SortedSet children = mRoot.getChildEntries();
+        if (root == null) {
+            root = new CompoundDocument(imageInput).getRootEntry();
+            SortedSet children = root.getChildEntries();
 
-            mThumbnails = new BufferedImage[children.size() - 1];
+            thumbnails = new BufferedImage[children.size() - 1];
 
             initCatalog();
 
             // NOTE: This is usually slower, unless you need all images
             // TODO: Use as many threads as there are CPU cores? :-)
-            if (mLoadEagerly) {
-                for (int i = 0; i < mThumbnails.length; i++) {
+            if (loadEagerly) {
+                for (int i = 0; i < thumbnails.length; i++) {
                     initReader(i);
-                    ImageReader reader = mReader;
+                    ImageReader reader = this.reader;
                     // TODO: If stream was detached, we could probably create a
                     // new reader, then fire this off in a separate thread...
-                    mThumbnails[i] = reader.read(0, null);
+                    thumbnails[i] = reader.read(0, null);
                 }
             }
         }
     }
 
     private void initCatalog() throws IOException {
-        if (mCatalog == null) {
-            Entry catalog = mRoot.getChildEntry("Catalog");
+        if (catalog == null) {
+            Entry catalog = root.getChildEntry("Catalog");
 
             if (catalog.length() <= 16L) {
                 // TODO: Throw exception? Return empty catalog?
             }
 
-            mCatalog = Catalog.read(catalog.getInputStream());
+            this.catalog = Catalog.read(catalog.getInputStream());
         }
     }
 
-    public int getNumImages(boolean pAllowSearch) throws IOException {
-        if (pAllowSearch) {
+    public int getNumImages(boolean allowSearch) throws IOException {
+        if (allowSearch) {
             init();
       }
 
-        return mCatalog != null ? mCatalog.getThumbnailCount() : super.getNumImages(false);
+        return catalog != null ? catalog.getThumbnailCount() : super.getNumImages(false);
     }
 
     public int getWidth(int pIndex) throws IOException {
         init(pIndex);
 
-        BufferedImage image = mThumbnails[pIndex];
-        return image != null ? image.getWidth() : mReader.getWidth(0);
+        BufferedImage image = thumbnails[pIndex];
+        return image != null ? image.getWidth() : reader.getWidth(0);
     }
 
     public int getHeight(int pIndex) throws IOException {
         init(pIndex);
 
-        BufferedImage image = mThumbnails[pIndex];
-        return image != null ? image.getHeight() : mReader.getHeight(0);
+        BufferedImage image = thumbnails[pIndex];
+        return image != null ? image.getHeight() : reader.getHeight(0);
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         init(pIndex);
         initReader(pIndex);
-        return mReader.getImageTypes(0);
+        return reader.getImageTypes(0);
     }
 
     public boolean isPresent(final String pFileName) {
@@ -344,7 +345,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
         }
         extension = extension.toLowerCase();
 
-        return !"psd".equals(extension) && !"svg".equals(extension) && mCatalog != null && mCatalog.getIndex(pFileName) != -1;
+        return !"psd".equals(extension) && !"svg".equals(extension) && catalog != null && catalog.getIndex(pFileName) != -1;
     }
 
     /// Test code below 
@@ -357,7 +358,7 @@ public class ThumbsDBImageReader extends ImageReaderBase {
         if (pArgs.length > 1) {
             long start = System.currentTimeMillis();
             reader.init();
-            for (Catalog.CatalogItem item : reader.mCatalog) {
+            for (Catalog.CatalogItem item : reader.catalog) {
                 reader.read(item.getName(), null);
             }
             long end = System.currentTimeMillis();
@@ -371,8 +372,8 @@ public class ThumbsDBImageReader extends ImageReaderBase {
 
             long start = System.currentTimeMillis();
             reader.init();
-            for (Catalog.CatalogItem item : reader.mCatalog) {
-                addImage(panel, reader, reader.mCatalog.getIndex(item.getName()), item.getName());
+            for (Catalog.CatalogItem item : reader.catalog) {
+                addImage(panel, reader, reader.catalog.getIndex(item.getName()), item.getName());
             }
             long end = System.currentTimeMillis();
             System.out.println("Time: " + (end - start) + " ms");

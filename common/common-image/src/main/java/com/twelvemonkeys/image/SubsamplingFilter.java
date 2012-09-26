@@ -42,8 +42,8 @@ import java.awt.image.ReplicateScaleFilter;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/SubsamplingFilter.java#1 $
  */
 public class SubsamplingFilter extends ReplicateScaleFilter {
-    private int mXSub;
-    private int mYSub;
+    private int xSub;
+    private int ySub;
 
     /**
      * Creates a {@code SubsamplingFilter}.
@@ -62,16 +62,16 @@ public class SubsamplingFilter extends ReplicateScaleFilter {
             throw new IllegalArgumentException("Subsampling factors must be positive.");
         }
 
-        mXSub = pXSub;
-        mYSub = pYSub;
+        xSub = pXSub;
+        ySub = pYSub;
     }
 
     /** {@code ImageFilter} implementation, do not invoke. */
     public void setDimensions(int pWidth, int pHeight) {
-        destWidth = (pWidth + mXSub - 1) / mXSub;
-        destHeight = (pHeight + mYSub - 1) / mYSub;
+        destWidth = (pWidth + xSub - 1) / xSub;
+        destHeight = (pHeight + ySub - 1) / ySub;
 
-        //System.out.println("Subsampling: " + mXSub + "," + mYSub + "-> " + destWidth + ", " + destHeight);
+        //System.out.println("Subsampling: " + xSub + "," + ySub + "-> " + destWidth + ", " + destHeight);
         super.setDimensions(pWidth, pHeight);
     }
 }

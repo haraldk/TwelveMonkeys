@@ -135,46 +135,46 @@ public class WeakWeakMap<K, V> extends WeakHashMap<K, V> {
             public Iterator<Map.Entry<K, V>> iterator() {
                 return new Iterator<Map.Entry<K, V>>() {
                     @SuppressWarnings({"unchecked"})
-                    final Iterator<Map.Entry<K, WeakReference<V>>> mIterator = (Iterator) WeakWeakMap.super.entrySet().iterator();
+                    final Iterator<Map.Entry<K, WeakReference<V>>> iterator = (Iterator) WeakWeakMap.super.entrySet().iterator();
 
                     public boolean hasNext() {
-                        return mIterator.hasNext();
+                        return iterator.hasNext();
                     }
 
                     public Map.Entry<K, V> next() {
                         return new Map.Entry<K, V>() {
-                            final Map.Entry<K, WeakReference<V>> mEntry = mIterator.next();
+                            final Map.Entry<K, WeakReference<V>> entry = iterator.next();
 
                             public K getKey() {
-                                return mEntry.getKey();
+                                return entry.getKey();
                             }
 
                             public V getValue() {
-                                WeakReference<V> ref = mEntry.getValue();
+                                WeakReference<V> ref = entry.getValue();
                                 return ref.get();
                             }
 
                             public V setValue(V pValue) {
-                                WeakReference<V> ref = mEntry.setValue(new WeakReference<V>(pValue));
+                                WeakReference<V> ref = entry.setValue(new WeakReference<V>(pValue));
                                 return ref != null ? ref.get() : null;
                             }
 
                             public boolean equals(Object obj) {
-                                return mEntry.equals(obj);
+                                return entry.equals(obj);
                             }
 
                             public int hashCode() {
-                                return mEntry.hashCode();
+                                return entry.hashCode();
                             }
 
                             public String toString() {
-                                return mEntry.toString();
+                                return entry.toString();
                             }
                         };
                     }
 
                     public void remove() {
-                        mIterator.remove();
+                        iterator.remove();
                     }
                 };
             }
@@ -191,19 +191,19 @@ public class WeakWeakMap<K, V> extends WeakHashMap<K, V> {
             public Iterator<V> iterator() {
                 return new Iterator<V>() {
                     @SuppressWarnings({"unchecked"})
-                    Iterator<WeakReference<V>> mIterator = (Iterator<WeakReference<V>>) WeakWeakMap.super.values().iterator();
+                    Iterator<WeakReference<V>> iterator = (Iterator<WeakReference<V>>) WeakWeakMap.super.values().iterator();
 
                     public boolean hasNext() {
-                        return mIterator.hasNext();
+                        return iterator.hasNext();
                     }
 
                     public V next() {
-                        WeakReference<V> ref = mIterator.next();
+                        WeakReference<V> ref = iterator.next();
                         return ref.get();
                     }
 
                     public void remove() {
-                        mIterator.remove();
+                        iterator.remove();
                     }
                 };
             }

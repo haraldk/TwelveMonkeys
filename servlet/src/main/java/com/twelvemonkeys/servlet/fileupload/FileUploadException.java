@@ -35,7 +35,7 @@ import javax.servlet.ServletException;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/FileUploadException.java#1 $
+ * @version $Id: FileUploadException.java#1 $
  */
 public class FileUploadException extends ServletException {
     public FileUploadException(String pMessage) {

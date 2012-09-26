@@ -37,23 +37,23 @@ import java.awt.*;
  *
  */
 public class SVGReadParam extends ImageReadParam {
-    private Paint mBackground;
-    private String mBaseURI;
+    private Paint background;
+    private String baseURI;
 
     public Paint getBackgroundColor() {
-        return mBackground;
+        return background;
     }
 
     public void setBackgroundColor(Paint pColor) {
-        mBackground = pColor;
+        background = pColor;
     }
 
     public String getBaseURI() {
-        return mBaseURI;
+        return baseURI;
     }
 
     public void setBaseURI(String pBaseURI) {
-        mBaseURI = pBaseURI;
+        baseURI = pBaseURI;
     }
 
     @Override

@@ -73,14 +73,15 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
      */
     public static final int EDGE_WRAP = 3; // as JAI BORDER_WRAP
 
-    private final Kernel mKernel;
-    private final int mEdgeCondition;
+    private final Kernel kernel;
+    private final int edgeCondition;
 
-    private final ConvolveOp mConvolve;
+    private final ConvolveOp convolve;
 
     public ConvolveWithEdgeOp(final Kernel pKernel, final int pEdgeCondition, final RenderingHints pHints) {
         // Create convolution operation
         int edge;
+
         switch (pEdgeCondition) {
             case EDGE_REFLECT:
             case EDGE_WRAP:
@@ -90,9 +91,10 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
                 edge = pEdgeCondition;
                 break;
         }
-        mKernel = pKernel;
-        mEdgeCondition = pEdgeCondition;
-        mConvolve = new ConvolveOp(pKernel, edge, pHints);
+
+        kernel = pKernel;
+        edgeCondition = pEdgeCondition;
+        convolve = new ConvolveOp(pKernel, edge, pHints);
     }
 
     public ConvolveWithEdgeOp(final Kernel pKernel) {
@@ -107,8 +109,8 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
             throw new IllegalArgumentException("source image cannot be the same as the destination image");
         }
 
-        int borderX = mKernel.getWidth() / 2;
-        int borderY = mKernel.getHeight() / 2;
+        int borderX = kernel.getWidth() / 2;
+        int borderY = kernel.getHeight() / 2;
 
         BufferedImage original = addBorder(pSource, borderX, borderY);
 
@@ -126,7 +128,7 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
         }
 
         // Do the filtering (if destination is null, a new image will be created)
-        destination = mConvolve.filter(original, destination);
+        destination = convolve.filter(original, destination);
 
         if (pSource != original) {
             // Remove the border
@@ -137,7 +139,7 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
     }
 
     private BufferedImage addBorder(final BufferedImage pOriginal, final int pBorderX, final int pBorderY) {
-        if ((mEdgeCondition & 2) == 0) {
+        if ((edgeCondition & 2) == 0) {
             return pOriginal;
         }
 
@@ -158,7 +160,7 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
             g.drawImage(pOriginal, pBorderX, pBorderY, null);
 
             // TODO: I guess we need the top/left etc, if the corner pixels are covered by the kernel
-            switch (mEdgeCondition) {
+            switch (edgeCondition) {
                 case EDGE_REFLECT:
                     // Top/left (empty)
                     g.drawImage(pOriginal, pBorderX, 0, pBorderX + w, pBorderY, 0, 0, w, 1, null); // Top/center
@@ -186,7 +188,7 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
                     g.drawImage(pOriginal, w + pBorderX, h + pBorderY, null); // Bottom/right
                     break;
                 default:
-                    throw new IllegalArgumentException("Illegal edge operation " + mEdgeCondition);
+                    throw new IllegalArgumentException("Illegal edge operation " + edgeCondition);
             }
 
         }
@@ -206,39 +208,39 @@ public class ConvolveWithEdgeOp implements BufferedImageOp, RasterOp {
      * @see #EDGE_WRAP
      */
     public int getEdgeCondition() {
-        return mEdgeCondition;
+        return edgeCondition;
     }
 
     public WritableRaster filter(final Raster pSource, final WritableRaster pDestination) {
-        return mConvolve.filter(pSource, pDestination);
+        return convolve.filter(pSource, pDestination);
     }
 
     public BufferedImage createCompatibleDestImage(final BufferedImage pSource, final ColorModel pDesinationColorModel) {
-        return mConvolve.createCompatibleDestImage(pSource, pDesinationColorModel);
+        return convolve.createCompatibleDestImage(pSource, pDesinationColorModel);
     }
 
     public WritableRaster createCompatibleDestRaster(final Raster pSource) {
-        return mConvolve.createCompatibleDestRaster(pSource);
+        return convolve.createCompatibleDestRaster(pSource);
     }
 
     public Rectangle2D getBounds2D(final BufferedImage pSource) {
-        return mConvolve.getBounds2D(pSource);
+        return convolve.getBounds2D(pSource);
     }
 
     public Rectangle2D getBounds2D(final Raster pSource) {
-        return mConvolve.getBounds2D(pSource);
+        return convolve.getBounds2D(pSource);
     }
 
     public Point2D getPoint2D(final Point2D pSourcePoint, final Point2D pDestinationPoint) {
-        return mConvolve.getPoint2D(pSourcePoint, pDestinationPoint);
+        return convolve.getPoint2D(pSourcePoint, pDestinationPoint);
     }
 
     public RenderingHints getRenderingHints() {
-        return mConvolve.getRenderingHints();
+        return convolve.getRenderingHints();
     }
 
     public Kernel getKernel() {
-        return mConvolve.getKernel();
+        return convolve.getKernel();
     }
 
 }

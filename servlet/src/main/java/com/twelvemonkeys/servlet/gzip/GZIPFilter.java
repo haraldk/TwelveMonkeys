@@ -104,12 +104,12 @@ import java.io.IOException;
  * @author Jayson Falkner
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/gzip/GZIPFilter.java#1 $
+ * @version $Id: GZIPFilter.java#1 $
  */
 public class GZIPFilter extends GenericFilter {
 
     {
-        mOncePerRequest = true;
+        oncePerRequest = true;
     }
 
     protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain) throws IOException, ServletException {
@@ -120,22 +120,22 @@ public class GZIPFilter extends GenericFilter {
 
             // If GZIP is supported, use compression
             String accept = request.getHeader("Accept-Encoding");
-            if (accept != null && accept.indexOf("gzip") != -1) {
+            if (accept != null && accept.contains("gzip")) {
                 //System.out.println("GZIP supported, compressing.");
-                // TODO: Set Vary: Accept-Encoding ?!
-
                 GZIPResponseWrapper wrapped = new GZIPResponseWrapper(response);
+
                 try {
                     pChain.doFilter(pRequest, wrapped);
                 }
                 finally {
                     wrapped.flushResponse();
                 }
+
                 return;
             }
         }
 
-        // Else, contiue chain
+        // Else, continue chain
         pChain.doFilter(pRequest, pResponse);
     }
 }

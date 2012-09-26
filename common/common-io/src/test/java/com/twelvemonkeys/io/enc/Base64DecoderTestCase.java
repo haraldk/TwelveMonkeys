@@ -2,8 +2,11 @@ package com.twelvemonkeys.io.enc;
 
 
 import com.twelvemonkeys.io.FileUtil;
+import org.junit.Test;
 
 import java.io.*;
+
+import static org.junit.Assert.*;
 
 /**
  * Base64DecoderTest
@@ -22,6 +25,7 @@ public class Base64DecoderTestCase extends DecoderAbstractTestCase {
         return new Base64Encoder();
     }
 
+    @Test
     public void testEmptyDecode2() throws IOException {
         String data = "";
 
@@ -33,6 +37,7 @@ public class Base64DecoderTestCase extends DecoderAbstractTestCase {
         assertEquals("Strings does not match", "", new String(bytes.toByteArray()));
     }
 
+    @Test
     public void testShortDecode() throws IOException {
         String data = "dGVzdA==";
 
@@ -44,6 +49,7 @@ public class Base64DecoderTestCase extends DecoderAbstractTestCase {
         assertEquals("Strings does not match", "test", new String(bytes.toByteArray()));
     }
 
+    @Test
     public void testLongDecode() throws IOException {
         String data = "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVlciBhZGlwaXNjaW5nIGVsaXQuIEZ1" +
                 "c2NlIGVzdC4gTW9yYmkgbHVjdHVzIGNvbnNlY3RldHVlciBqdXN0by4gVml2YW11cyBkYXBpYnVzIGxh" +

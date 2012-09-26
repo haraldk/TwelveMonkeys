@@ -2,13 +2,11 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.nio.charset.Charset;
 
 /**
@@ -22,8 +20,8 @@ import java.nio.charset.Charset;
  * @see <a href="http://www.adobe.com/devnet/xmp/">Adobe XMP Developer Center</a>
  */
 final class PSDXMPData extends PSDImageResource {
-    protected byte[] mData;
-    Directory mDirectory;
+    protected byte[] data;
+    Directory directory;
 
     PSDXMPData(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -31,21 +29,29 @@ final class PSDXMPData extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mData = new byte[(int) mSize]; // TODO: Fix potential overflow, or document why that can't happen (read spec)
-        //pInput.readFully(mData);
+        data = new byte[(int) size]; // TODO: Fix potential overflow, or document why that can't happen (read spec)
+        pInput.readFully(data);
 
-        mDirectory = new XMPReader().read(pInput);
+        // Chop off potential trailing null-termination/padding that SAX parsers don't like...
+        int len = data.length;
+        for (; len > 0; len--) {
+            if (data[len - 1] != 0) {
+                break;
+            }
+        }
+
+        directory = new XMPReader().read(new ByteArrayImageInputStream(data, 0, len));
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        int length = Math.min(256, mData.length);
-        String data = StringUtil.decode(mData, 0, length, "UTF-8").replace('\n', ' ').replaceAll("\\s+", " ");
+        int length = Math.min(256, data.length);
+        String data = StringUtil.decode(this.data, 0, length, "UTF-8").replace('\n', ' ').replaceAll("\\s+", " ");
         builder.append(", data: \"").append(data);
 
-        if (length < mData.length) {
+        if (length < this.data.length) {
             builder.append("...");
         }
 
@@ -60,6 +66,6 @@ final class PSDXMPData extends PSDImageResource {
      * @return the XMP metadata.
      */
     public Reader getData() {
-        return new InputStreamReader(new ByteArrayInputStream(mData), Charset.forName("UTF-8"));
+        return new InputStreamReader(new ByteArrayInputStream(data), Charset.forName("UTF-8"));
     }
 }

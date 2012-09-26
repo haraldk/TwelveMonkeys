@@ -29,11 +29,14 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.io.InputStreamAbstractTestCase;
+import org.junit.Test;
 
 import javax.imageio.stream.MemoryCacheImageInputStream;
-import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+
+import static org.junit.Assert.*;
 
 /**
  * IIOInputStreamAdapter
@@ -43,14 +46,17 @@ import java.io.IOException;
  * @version $Id: IIOInputStreamAdapter.java,v 1.0 Apr 11, 2008 1:04:42 PM haraldk Exp$
  */
 public class IIOInputStreamAdapterTestCase extends InputStreamAbstractTestCase {
-    public IIOInputStreamAdapterTestCase(String name) {
-        super(name);
-    }
 
     protected InputStream makeInputStream(byte[] pBytes) {
         return new IIOInputStreamAdapter(new MemoryCacheImageInputStream(new ByteArrayInputStream(pBytes)), pBytes.length);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateNull() {
+        new IIOInputStreamAdapter(null);
+    }
+
+    @Test
     public void testReadSubstreamOpenEnd() throws IOException {
         byte[] bytes = new byte[20];
 
@@ -74,6 +80,7 @@ public class IIOInputStreamAdapterTestCase extends InputStreamAbstractTestCase {
         input.close();
     }
 
+    @Test
     public void testReadSubstream() throws IOException {
         byte[] bytes = new byte[20];
 
@@ -92,6 +99,7 @@ public class IIOInputStreamAdapterTestCase extends InputStreamAbstractTestCase {
         input.close();
     }
     
+    @Test
     public void testReadSubstreamRepositionOnClose() throws IOException {
         byte[] bytes = new byte[20];
 
@@ -111,6 +119,7 @@ public class IIOInputStreamAdapterTestCase extends InputStreamAbstractTestCase {
         input.close();
     }
 
+    @Test
     public void testSeekBeforeStreamNoEnd() throws IOException {
         byte[] bytes = new byte[20];
 
@@ -124,6 +133,7 @@ public class IIOInputStreamAdapterTestCase extends InputStreamAbstractTestCase {
         assertEquals(10, input.getStreamPosition());
     }
 
+    @Test
     public void testSeekBeforeStream() throws IOException {
         byte[] bytes = new byte[20];
 

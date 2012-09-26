@@ -72,12 +72,12 @@ class InverseColorMap {
      */
     final static int MAXQUANTVAL = 1 << 5;
 
-    byte[] mRGBMapByte;
-    int[] mRGBMapInt;
-    int mNumColors;
-    int mMaxColor;
-    byte[] mInverseRGB;   		// inverse rgb color map
-    int mTransparentIndex = -1;
+    byte[] rgbMapByte;
+    int[] rgbMapInt;
+    int numColors;
+    int maxColor;
+    byte[] inverseRGB;   		// inverse rgb color map
+    int transparentIndex = -1;
 
     /**
      * @param pRGBColorMap the rgb color map to create inverse color map for.
@@ -99,11 +99,11 @@ class InverseColorMap {
      * @param pTransparent the index of the transparent pixel in the map
      */
     InverseColorMap(byte[] pRGBColorMap, int pTransparent) {
-        mRGBMapByte = pRGBColorMap;
-        mNumColors = mRGBMapByte.length / 4;
-        mTransparentIndex = pTransparent;
+        rgbMapByte = pRGBColorMap;
+        numColors = rgbMapByte.length / 4;
+        transparentIndex = pTransparent;
 
-        mInverseRGB = new byte[MAXQUANTVAL * MAXQUANTVAL * MAXQUANTVAL];
+        inverseRGB = new byte[MAXQUANTVAL * MAXQUANTVAL * MAXQUANTVAL];
         initIRGB(new int[MAXQUANTVAL * MAXQUANTVAL * MAXQUANTVAL]);
     }
 
@@ -112,11 +112,11 @@ class InverseColorMap {
      * @param pTransparent the index of the transparent pixel in the map
      */
     InverseColorMap(int[] pRGBColorMap, int pTransparent) {
-        mRGBMapInt = pRGBColorMap;
-        mNumColors = mRGBMapInt.length;
-        mTransparentIndex = pTransparent;
+        rgbMapInt = pRGBColorMap;
+        numColors = rgbMapInt.length;
+        transparentIndex = pTransparent;
 
-        mInverseRGB = new byte[MAXQUANTVAL * MAXQUANTVAL * MAXQUANTVAL];
+        inverseRGB = new byte[MAXQUANTVAL * MAXQUANTVAL * MAXQUANTVAL];
         initIRGB(new int[MAXQUANTVAL * MAXQUANTVAL * MAXQUANTVAL]);
     }
 
@@ -130,8 +130,8 @@ class InverseColorMap {
         final int xsqr = 1 << (TRUNCBITS * 2); // 64 - twice the smallest step size vale of quantized colors
         final int xsqr2 = xsqr + xsqr;
 
-        for (int i = 0; i < mNumColors; ++i) {
-            if (i == mTransparentIndex) {
+        for (int i = 0; i < numColors; ++i) {
+            if (i == transparentIndex) {
                 // Skip the transparent pixel
                 continue;
             }
@@ -141,15 +141,15 @@ class InverseColorMap {
             int blue, b, bdist, binc, bxx;
 
             // HaraldK 20040801: Added support for int[]
-            if (mRGBMapByte != null) {
-                red = mRGBMapByte[i * 4] & 0xFF;
-                green = mRGBMapByte[i * 4 + 1] & 0xFF;
-                blue = mRGBMapByte[i * 4 + 2] & 0xFF;
+            if (rgbMapByte != null) {
+                red = rgbMapByte[i * 4] & 0xFF;
+                green = rgbMapByte[i * 4 + 1] & 0xFF;
+                blue = rgbMapByte[i * 4 + 2] & 0xFF;
             }
-            else if (mRGBMapInt != null) {
-                red = (mRGBMapInt[i] >> 16) & 0xFF;
-                green = (mRGBMapInt[i] >> 8) & 0xFF;
-                blue = mRGBMapInt[i] & 0xFF;
+            else if (rgbMapInt != null) {
+                red = (rgbMapInt[i] >> 16) & 0xFF;
+                green = (rgbMapInt[i] >> 8) & 0xFF;
+                blue = rgbMapInt[i] & 0xFF;
             }
             else {
                 throw new IllegalStateException("colormap == null");
@@ -170,7 +170,7 @@ class InverseColorMap {
                     for (b = 0, bdist = gdist, bxx = binc; b < MAXQUANTVAL; bdist += bxx, ++b, ++rgbI, bxx += xsqr2) {
                         if (i == 0 || pTemp[rgbI] > bdist) {
                             pTemp[rgbI] = bdist;
-                            mInverseRGB[rgbI] = (byte) i;
+                            inverseRGB[rgbI] = (byte) i;
                         }
                     }
                 }
@@ -187,7 +187,7 @@ class InverseColorMap {
      *         created inverse color map.
      */
     public final int getIndexNearest(int pColor) {
-        return mInverseRGB[((pColor >> (3 * TRUNCBITS)) & QUANTMASK_RED) +
+        return inverseRGB[((pColor >> (3 * TRUNCBITS)) & QUANTMASK_RED) +
                 ((pColor >> (2 * TRUNCBITS)) & QUANTMASK_GREEN) +
                 ((pColor >> (/* 1 * */ TRUNCBITS)) & QUANTMASK_BLUE)] & 0xFF;
     }
@@ -203,7 +203,7 @@ class InverseColorMap {
      */
     public final int getIndexNearest(int pRed, int pGreen, int pBlue) {
         // NOTE: the third line in expression for blue is shifting DOWN not UP.
-        return mInverseRGB[((pRed << (2 * QUANTBITS - TRUNCBITS)) & QUANTMASK_RED) +
+        return inverseRGB[((pRed << (2 * QUANTBITS - TRUNCBITS)) & QUANTMASK_RED) +
                 ((pGreen << (/* 1 * */ QUANTBITS - TRUNCBITS)) & QUANTMASK_GREEN) +
                 ((pBlue >> (TRUNCBITS)) & QUANTMASK_BLUE)] & 0xFF;
     }

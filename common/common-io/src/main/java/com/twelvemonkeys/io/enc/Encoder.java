@@ -57,8 +57,7 @@ public interface Encoder {
      *
      * @throws java.io.IOException if an I/O error occurs
      */
-    void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength)
-            throws IOException;
+    void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException;
 
     //TODO: int requiredBufferSize(): -1 == any, otherwise, use this buffer size
     // void flush()?

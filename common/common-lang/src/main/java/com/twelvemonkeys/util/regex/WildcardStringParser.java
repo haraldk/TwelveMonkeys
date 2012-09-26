@@ -66,7 +66,7 @@ import java.io.PrintStream;
  * For each character in the mask a state representing that character is created.
  * The number of states therefore coincides with the length of the mask.
  * <li>An <b>alphabet</b> consisting of all legal filename characters - included the two wildcard characters '*' and '?'.
- * This alphabet is hard-coded in this class. It contains {a .. å}, {A .. Å}, {0 .. 9}, {.}, {_}, {-}, {*} and {?}.
+ * This alphabet is hard-coded in this class. It contains {a .. ï¿½}, {A .. ï¿½}, {0 .. 9}, {.}, {_}, {-}, {*} and {?}.
  * <li>A finite set of <b>initial states</b>, here only consisting of the state corresponding to the first character in the mask.
  * <li>A finite set of <b>final states</b>, here only consisting of the state corresponding to the last character in the mask.
  * <li>A <b>transition relation</b> that is a finite set of transitions satisfying some formal rules.<br>
@@ -114,14 +114,15 @@ import java.io.PrintStream;
  * @deprecated Will probably be removed in the near future
  */
 public class WildcardStringParser {
+    // TODO: Get rid of this class
 
     // Constants
 
     /** Field ALPHABET */
     public static final char[] ALPHABET = {
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'æ',
-            'ø', 'å', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
-            'Z', 'Æ', 'Ø', 'Å', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '_', '-'
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '\u00e6',
+            '\u00f8', '\u00e5', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'N', 'M', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
+            'Z', '\u00c6', '\u00d8', '\u00c5', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '_', '-'
     };
 
     /** Field FREE_RANGE_CHARACTER */
@@ -131,11 +132,11 @@ public class WildcardStringParser {
     public static final char FREE_PASS_CHARACTER = '?';
 
     // Members
-    boolean mInitialized;
-    String mStringMask;
-    WildcardStringParserState mInitialState;
-    int mTotalNumberOfStringsParsed;
-    boolean mDebugging;
+    boolean initialized;
+    String stringMask;
+    WildcardStringParserState initialState;
+    int totalNumberOfStringsParsed;
+    boolean debugging;
     PrintStream out;
 
     // Properties
@@ -171,11 +172,10 @@ public class WildcardStringParser {
      * @param pDebuggingPrintStream the {@code java.io.PrintStream} to which the debug messages will be emitted.
      */
     public WildcardStringParser(final String pStringMask, final boolean pDebugging, final PrintStream pDebuggingPrintStream) {
-
-        this.mStringMask = pStringMask;
-        this.mDebugging = pDebugging;
+        this.stringMask = pStringMask;
+        this.debugging = pDebugging;
         this.out = pDebuggingPrintStream;
-        mInitialized = buildAutomaton();
+        initialized = buildAutomaton();
     }
 
     // Methods
@@ -183,12 +183,12 @@ public class WildcardStringParser {
 
         WildcardStringParserState runnerState = pState;
 
-        while (runnerState.mPreviousState != null) {
-            runnerState = runnerState.mPreviousState;
-            if (isFreeRangeCharacter(runnerState.mChar)) {
+        while (runnerState.previousState != null) {
+            runnerState = runnerState.previousState;
+            if (isFreeRangeCharacter(runnerState.character)) {
                 return true;
             }
-            if (!isFreePassCharacter(runnerState.mChar)) {
+            if (!isFreePassCharacter(runnerState.character)) {
                 return false;
             }  // If free-pass char '?' - move on
         }
@@ -197,10 +197,10 @@ public class WildcardStringParser {
 
     private boolean checkIfLastFreeRangeState(WildcardStringParserState pState) {
 
-        if (isFreeRangeCharacter(pState.mChar)) {
+        if (isFreeRangeCharacter(pState.character)) {
             return true;
         }
-        if (isFreePassCharacter(pState.mChar)) {
+        if (isFreePassCharacter(pState.character)) {
             if (checkIfStateInWildcardRange(pState)) {
                 return true;
             }
@@ -211,8 +211,8 @@ public class WildcardStringParser {
     /** @return {@code true} if and only if the string mask only consists of free-range wildcard character(s). */
     private boolean isTrivialAutomaton() {
 
-        for (int i = 0; i < mStringMask.length(); i++) {
-            if (!isFreeRangeCharacter(mStringMask.charAt(i))) {
+        for (int i = 0; i < stringMask.length(); i++) {
+            if (!isFreeRangeCharacter(stringMask.charAt(i))) {
                 return false;
             }
         }
@@ -227,16 +227,16 @@ public class WildcardStringParser {
         WildcardStringParserState lastFreeRangeState = null;
 
         // Create the initial state of the automaton
-        if ((mStringMask != null) && (mStringMask.length() > 0)) {
-            newState = new WildcardStringParserState(mStringMask.charAt(0));
-            newState.mAutomatonStateNumber = 0;
-            newState.mPreviousState = null;
+        if ((stringMask != null) && (stringMask.length() > 0)) {
+            newState = new WildcardStringParserState(stringMask.charAt(0));
+            newState.automatonStateNumber = 0;
+            newState.previousState = null;
             if (checkIfLastFreeRangeState(newState)) {
                 lastFreeRangeState = newState;
             }
             runnerState = newState;
-            mInitialState = runnerState;
-            mInitialState.mAutomatonStateNumber = 0;
+            initialState = runnerState;
+            initialState.automatonStateNumber = 0;
         }
         else {
             System.err.println("string mask provided are null or empty - aborting!");
@@ -244,8 +244,8 @@ public class WildcardStringParser {
         }
 
         // Create the rest of the automaton
-        for (int i = 1; i < mStringMask.length(); i++) {
-            activeChar = mStringMask.charAt(i);
+        for (int i = 1; i < stringMask.length(); i++) {
+            activeChar = stringMask.charAt(i);
 
             // Check if the char is an element in the alphabet or is a wildcard character
             if (!((isInAlphabet(activeChar)) || (isWildcardCharacter(activeChar)))) {
@@ -254,12 +254,12 @@ public class WildcardStringParser {
             }
 
             // Set last free-range state before creating/checking the next state
-            runnerState.mLastFreeRangeState = lastFreeRangeState;
+            runnerState.lastFreeRangeState = lastFreeRangeState;
 
             // Create next state, check if free-range state, set the state number and preceeding state
             newState = new WildcardStringParserState(activeChar);
-            newState.mAutomatonStateNumber = i;
-            newState.mPreviousState = runnerState;
+            newState.automatonStateNumber = i;
+            newState.previousState = runnerState;
 
             // Special check if the state represents an '*' or '?' with only preceeding states representing '?' and '*'
             if (checkIfLastFreeRangeState(newState)) {
@@ -267,19 +267,19 @@ public class WildcardStringParser {
             }
 
             // Set the succeding state before moving to the next state
-            runnerState.mNextState = newState;
+            runnerState.nextState = newState;
 
             // Move to the next state
             runnerState = newState;
 
             // Special setting of the last free-range state for the last element
-            if (runnerState.mAutomatonStateNumber == mStringMask.length() - 1) {
-                runnerState.mLastFreeRangeState = lastFreeRangeState;
+            if (runnerState.automatonStateNumber == stringMask.length() - 1) {
+                runnerState.lastFreeRangeState = lastFreeRangeState;
             }
         }
 
         // Initiate some statistics
-        mTotalNumberOfStringsParsed = 0;
+        totalNumberOfStringsParsed = 0;
         return true;
     }
 
@@ -316,7 +316,7 @@ public class WildcardStringParser {
      * @return the string mask used for building the parser automaton.
      */
     public String getStringMask() {
-        return mStringMask;
+        return stringMask;
     }
 
     /**
@@ -328,16 +328,16 @@ public class WildcardStringParser {
      */
     public boolean parseString(final String pStringToParse) {
 
-        if (mDebugging) {
+        if (debugging) {
             out.println("parsing \"" + pStringToParse + "\"...");
         }
 
         // Update statistics
-        mTotalNumberOfStringsParsed++;
+        totalNumberOfStringsParsed++;
 
         // Check string to be parsed for nullness
         if (pStringToParse == null) {
-            if (mDebugging) {
+            if (debugging) {
                 out.println("string to be parsed is null - rejection!");
             }
             return false;
@@ -348,21 +348,21 @@ public class WildcardStringParser {
 
         // Check string to be parsed
         if (!parsableString.checkString()) {
-            if (mDebugging) {
+            if (debugging) {
                 out.println("one or more characters in string to be parsed are not legal characters - rejection!");
             }
             return false;
         }
 
         // Check if automaton is correctly initialized
-        if (!mInitialized) {
+        if (!initialized) {
             System.err.println("automaton is not initialized - rejection!");
             return false;
         }
 
         // Check if automaton is trivial (accepts all strings)
         if (isTrivialAutomaton()) {
-            if (mDebugging) {
+            if (debugging) {
                 out.println("automaton represents a trivial string mask (accepts all strings) - acceptance!");
             }
             return true;
@@ -370,7 +370,7 @@ public class WildcardStringParser {
 
         // Check if string to be parsed is empty
         if (parsableString.isEmpty()) {
-            if (mDebugging) {
+            if (debugging) {
                 out.println("string to be parsed is empty and not trivial automaton - rejection!");
             }
             return false;
@@ -383,59 +383,59 @@ public class WildcardStringParser {
         WildcardStringParserState runnerState = null;
 
         // Accepted by the first state?
-        if ((parsableString.mCharArray[0] == mInitialState.mChar) || isWildcardCharacter(mInitialState.mChar)) {
-            runnerState = mInitialState;
-            parsableString.mIndex = 0;
+        if ((parsableString.charArray[0] == initialState.character) || isWildcardCharacter(initialState.character)) {
+            runnerState = initialState;
+            parsableString.index = 0;
         }
         else {
-            if (mDebugging) {
+            if (debugging) {
                 out.println("cannot enter first automaton state - rejection!");
             }
             return false;
         }
 
         // Initialize the free-pass character state visited count
-        if (isFreePassCharacter(runnerState.mChar)) {
+        if (isFreePassCharacter(runnerState.character)) {
             numberOfFreePassCharactersRead_SinceLastFreePassState++;
         }
 
         // Perform parsing according to the rules above
         for (int i = 0; i < parsableString.length(); i++) {
-            if (mDebugging) {
+            if (debugging) {
                 out.println();
             }
-            if (mDebugging) {
+            if (debugging) {
                 out.println("parsing - index number " + i + ", active char: '"
-                        + parsableString.getActiveChar() + "' char string index: " + parsableString.mIndex
+                        + parsableString.getActiveChar() + "' char string index: " + parsableString.index
                         + " number of chars since last free-range state: " + numberOfParsedCharactersRead_SinceLastFreePassState);
             }
-            if (mDebugging) {
-                out.println("parsing - state: " + runnerState.mAutomatonStateNumber + " '"
-                        + runnerState.mChar + "' - no of free-pass chars read: " + numberOfFreePassCharactersRead_SinceLastFreePassState);
+            if (debugging) {
+                out.println("parsing - state: " + runnerState.automatonStateNumber + " '"
+                        + runnerState.character + "' - no of free-pass chars read: " + numberOfFreePassCharactersRead_SinceLastFreePassState);
             }
-            if (mDebugging) {
+            if (debugging) {
                 out.println("parsing - hasPerformedFreeRangeMovement: " + hasPerformedFreeRangeMovement);
             }
-            if (runnerState.mNextState == null) {
-                if (mDebugging) {
-                    out.println("parsing - runnerState.mNextState == null");
+            if (runnerState.nextState == null) {
+                if (debugging) {
+                    out.println("parsing - runnerState.nextState == null");
                 }
 
                 // If there are no subsequent state (final state) and the state represents '*' - acceptance!
-                if (isFreeRangeCharacter(runnerState.mChar)) {
+                if (isFreeRangeCharacter(runnerState.character)) {
 
                     // Special free-range skipping check
                     if (hasPerformedFreeRangeMovement) {
                         if (parsableString.reachedEndOfString()) {
                             if (numberOfFreePassCharactersRead_SinceLastFreePassState > numberOfParsedCharactersRead_SinceLastFreePassState) {
-                                if (mDebugging) {
+                                if (debugging) {
                                     out.println(
                                             "no subsequent state (final state) and the state represents '*' - end of parsing string, but not enough characters read - rejection!");
                                 }
                                 return false;
                             }
                             else {
-                                if (mDebugging) {
+                                if (debugging) {
                                     out.println(
                                             "no subsequent state (final state) and the state represents '*' - end of parsing string and enough characters read - acceptance!");
                                 }
@@ -444,15 +444,15 @@ public class WildcardStringParser {
                         }
                         else {
                             if (numberOfFreePassCharactersRead_SinceLastFreePassState > numberOfParsedCharactersRead_SinceLastFreePassState) {
-                                if (mDebugging) {
+                                if (debugging) {
                                     out.println(
                                             "no subsequent state (final state) and the state represents '*' - not the end of parsing string and not enough characters read - read next character");
                                 }
-                                parsableString.mIndex++;
+                                parsableString.index++;
                                 numberOfParsedCharactersRead_SinceLastFreePassState++;
                             }
                             else {
-                                if (mDebugging) {
+                                if (debugging) {
                                     out.println(
                                             "no subsequent state (final state) and the state represents '*' - not the end of parsing string, but enough characters read - acceptance!");
                                 }
@@ -461,7 +461,7 @@ public class WildcardStringParser {
                         }
                     }
                     else {
-                        if (mDebugging) {
+                        if (debugging) {
                             out.println("no subsequent state (final state) and the state represents '*' - no skipping performed - acceptance!");
                         }
                         return true;
@@ -474,58 +474,58 @@ public class WildcardStringParser {
                     // Special free-range skipping check
                     if ((hasPerformedFreeRangeMovement)
                             && (numberOfFreePassCharactersRead_SinceLastFreePassState > numberOfParsedCharactersRead_SinceLastFreePassState)) {
-                        if (mDebugging) {
+                        if (debugging) {
                             out.println(
                                     "no subsequent state (final state) and skipping has been performed and end of parsing string, but not enough characters read - rejection!");
                         }
                         return false;
                     }
-                    if (mDebugging) {
+                    if (debugging) {
                         out.println("no subsequent state (final state) and the end of the string to test is reached - acceptance!");
                     }
                     return true;
                 }
                 else {
-                    if (mDebugging) {
+                    if (debugging) {
                         out.println("parsing - escaping process...");
                     }
                 }
             }
             else {
-                if (mDebugging) {
-                    out.println("parsing - runnerState.mNextState != null");
+                if (debugging) {
+                    out.println("parsing - runnerState.nextState != null");
                 }
 
                 // Special Case:
                 // If this state represents '*' - go to the rightmost state representing '?'.
                 //    This state will act as an '*' - except that you only can go to the next state or accept the string, if and only if the number of '?' read are equal or less than the number of character read from the parsing string.
-                if (isFreeRangeCharacter(runnerState.mChar)) {
+                if (isFreeRangeCharacter(runnerState.character)) {
                     numberOfFreePassCharactersRead_SinceLastFreePassState = 0;
                     numberOfParsedCharactersRead_SinceLastFreePassState = 0;
-                    WildcardStringParserState freeRangeRunnerState = runnerState.mNextState;
+                    WildcardStringParserState freeRangeRunnerState = runnerState.nextState;
 
-                    while ((freeRangeRunnerState != null) && (isFreePassCharacter(freeRangeRunnerState.mChar))) {
+                    while ((freeRangeRunnerState != null) && (isFreePassCharacter(freeRangeRunnerState.character))) {
                         runnerState = freeRangeRunnerState;
                         hasPerformedFreeRangeMovement = true;
                         numberOfFreePassCharactersRead_SinceLastFreePassState++;
-                        freeRangeRunnerState = freeRangeRunnerState.mNextState;
+                        freeRangeRunnerState = freeRangeRunnerState.nextState;
                     }
 
                     // Special Case: if the mask is at the end
-                    if (runnerState.mNextState == null) {
-                        if (mDebugging) {
+                    if (runnerState.nextState == null) {
+                        if (debugging) {
                             out.println();
                         }
-                        if (mDebugging) {
+                        if (debugging) {
                             out.println("parsing - index number " + i + ", active char: '"
-                                    + parsableString.getActiveChar() + "' char string index: " + parsableString.mIndex
+                                    + parsableString.getActiveChar() + "' char string index: " + parsableString.index
                                     + " number of chars since last free-range state: " + numberOfParsedCharactersRead_SinceLastFreePassState);
                         }
-                        if (mDebugging) {
-                            out.println("parsing - state: " + runnerState.mAutomatonStateNumber + " '"
-                                    + runnerState.mChar + "' - no of free-pass chars read: " + numberOfFreePassCharactersRead_SinceLastFreePassState);
+                        if (debugging) {
+                            out.println("parsing - state: " + runnerState.automatonStateNumber + " '"
+                                    + runnerState.character + "' - no of free-pass chars read: " + numberOfFreePassCharactersRead_SinceLastFreePassState);
                         }
-                        if (mDebugging) {
+                        if (debugging) {
                             out.println("parsing - hasPerformedFreeRangeMovement: "
                                     + hasPerformedFreeRangeMovement);
                         }
@@ -540,42 +540,42 @@ public class WildcardStringParser {
                 }
 
                 // If the next state represents '*' - go to this next state
-                if (isFreeRangeCharacter(runnerState.mNextState.mChar)) {
-                    runnerState = runnerState.mNextState;
-                    parsableString.mIndex++;
+                if (isFreeRangeCharacter(runnerState.nextState.character)) {
+                    runnerState = runnerState.nextState;
+                    parsableString.index++;
                     numberOfParsedCharactersRead_SinceLastFreePassState++;
                 }
 
                 // If the next state represents '?' - go to this next state
-                else if (isFreePassCharacter(runnerState.mNextState.mChar)) {
-                    runnerState = runnerState.mNextState;
-                    parsableString.mIndex++;
+                else if (isFreePassCharacter(runnerState.nextState.character)) {
+                    runnerState = runnerState.nextState;
+                    parsableString.index++;
                     numberOfFreePassCharactersRead_SinceLastFreePassState++;
                     numberOfParsedCharactersRead_SinceLastFreePassState++;
                 }
 
                 // If the next state represents the same character as the next character in the string to test - go to this next state
-                else if ((!parsableString.reachedEndOfString()) && (runnerState.mNextState.mChar == parsableString.getSubsequentChar())) {
-                    runnerState = runnerState.mNextState;
-                    parsableString.mIndex++;
+                else if ((!parsableString.reachedEndOfString()) && (runnerState.nextState.character == parsableString.getSubsequentChar())) {
+                    runnerState = runnerState.nextState;
+                    parsableString.index++;
                     numberOfParsedCharactersRead_SinceLastFreePassState++;
                 }
 
                 // If the next character in the string to test does not coincide with the next state - go to the last state representing '*'. If there are none - rejection!
-                else if (runnerState.mLastFreeRangeState != null) {
-                    runnerState = runnerState.mLastFreeRangeState;
-                    parsableString.mIndex++;
+                else if (runnerState.lastFreeRangeState != null) {
+                    runnerState = runnerState.lastFreeRangeState;
+                    parsableString.index++;
                     numberOfParsedCharactersRead_SinceLastFreePassState++;
                 }
                 else {
-                    if (mDebugging) {
+                    if (debugging) {
                         out.println("the next state does not represent the same character as the next character in the string to test, and there are no last-free-range-state - rejection!");
                     }
                     return false;
                 }
             }
         }
-        if (mDebugging) {
+        if (debugging) {
             out.println("finished reading parsing string and not at any final state - rejection!");
         }
         return false;
@@ -594,42 +594,42 @@ public class WildcardStringParser {
 
         StringBuilder buffer = new StringBuilder();
 
-        if (!mInitialized) {
+        if (!initialized) {
             buffer.append(getClass().getName());
             buffer.append(":  Not initialized properly!");
             buffer.append("\n");
             buffer.append("\n");
         }
         else {
-            WildcardStringParserState runnerState = mInitialState;
+            WildcardStringParserState runnerState = initialState;
 
             buffer.append(getClass().getName());
             buffer.append(":  String mask ");
-            buffer.append(mStringMask);
+            buffer.append(stringMask);
             buffer.append("\n");
             buffer.append("\n");
             buffer.append("      Automaton: ");
             while (runnerState != null) {
-                buffer.append(runnerState.mAutomatonStateNumber);
+                buffer.append(runnerState.automatonStateNumber);
                 buffer.append(": ");
-                buffer.append(runnerState.mChar);
+                buffer.append(runnerState.character);
                 buffer.append(" (");
-                if (runnerState.mLastFreeRangeState != null) {
-                    buffer.append(runnerState.mLastFreeRangeState.mAutomatonStateNumber);
+                if (runnerState.lastFreeRangeState != null) {
+                    buffer.append(runnerState.lastFreeRangeState.automatonStateNumber);
                 }
                 else {
                     buffer.append("-");
                 }
                 buffer.append(")");
-                if (runnerState.mNextState != null) {
+                if (runnerState.nextState != null) {
                     buffer.append("   -->   ");
                 }
-                runnerState = runnerState.mNextState;
+                runnerState = runnerState.nextState;
             }
             buffer.append("\n");
             buffer.append("      Format: <state index>: <character> (<last free state>)");
             buffer.append("\n");
-            buffer.append("      Number of strings parsed: " + mTotalNumberOfStringsParsed);
+            buffer.append("      Number of strings parsed: " + totalNumberOfStringsParsed);
             buffer.append("\n");
         }
         return buffer.toString();
@@ -646,7 +646,7 @@ public class WildcardStringParser {
         if (pObject instanceof WildcardStringParser) {
             WildcardStringParser externalParser = (WildcardStringParser) pObject;
 
-            return ((externalParser.mInitialized == this.mInitialized) && (externalParser.mStringMask == this.mStringMask));
+            return ((externalParser.initialized == this.initialized) && (externalParser.stringMask == this.stringMask));
         }
         return super.equals(pObject);
     }
@@ -664,8 +664,8 @@ public class WildcardStringParser {
 
     protected Object clone() throws CloneNotSupportedException {
 
-        if (mInitialized) {
-            return new WildcardStringParser(mStringMask);
+        if (initialized) {
+            return new WildcardStringParser(stringMask);
         }
         return null;
     }
@@ -679,11 +679,11 @@ public class WildcardStringParser {
 
         // Constants
         // Members
-        int mAutomatonStateNumber;
-        char mChar;
-        WildcardStringParserState mPreviousState;
-        WildcardStringParserState mNextState;
-        WildcardStringParserState mLastFreeRangeState;
+        int automatonStateNumber;
+        char character;
+        WildcardStringParserState previousState;
+        WildcardStringParserState nextState;
+        WildcardStringParserState lastFreeRangeState;
 
         // Constructors
 
@@ -693,7 +693,7 @@ public class WildcardStringParser {
          * @param pChar
          */
         public WildcardStringParserState(final char pChar) {
-            this.mChar = pChar;
+            this.character = pChar;
         }
 
         // Methods
@@ -705,34 +705,34 @@ public class WildcardStringParser {
 
         // Constants
         // Members
-        char[] mCharArray;
-        int mIndex;
+        char[] charArray;
+        int index;
 
         // Constructors
         ParsableString(final String pStringToParse) {
 
             if (pStringToParse != null) {
-                mCharArray = pStringToParse.toCharArray();
+                charArray = pStringToParse.toCharArray();
             }
-            mIndex = -1;
+            index = -1;
         }
 
         // Methods
         boolean reachedEndOfString() {
 
-            //System.out.println(DebugUtil.DEBUG + DebugUtil.getClassName(this) + ": mIndex            :" + mIndex);
-            //System.out.println(DebugUtil.DEBUG + DebugUtil.getClassName(this) + ": mCharArray.length :" + mCharArray.length);
-            return mIndex == mCharArray.length - 1;
+            //System.out.println(DebugUtil.DEBUG + DebugUtil.getClassName(this) + ": index            :" + index);
+            //System.out.println(DebugUtil.DEBUG + DebugUtil.getClassName(this) + ": charArray.length :" + charArray.length);
+            return index == charArray.length - 1;
         }
 
         int length() {
-            return mCharArray.length;
+            return charArray.length;
         }
 
         char getActiveChar() {
 
-            if ((mIndex > -1) && (mIndex < mCharArray.length)) {
-                return mCharArray[mIndex];
+            if ((index > -1) && (index < charArray.length)) {
+                return charArray[index];
             }
             System.err.println(getClass().getName() + ": trying to access character outside character array!");
             return ' ';
@@ -740,8 +740,8 @@ public class WildcardStringParser {
 
         char getSubsequentChar() {
 
-            if ((mIndex > -1) && (mIndex + 1 < mCharArray.length)) {
-                return mCharArray[mIndex + 1];
+            if ((index > -1) && (index + 1 < charArray.length)) {
+                return charArray[index + 1];
             }
             System.err.println(getClass().getName() + ": trying to access character outside character array!");
             return ' ';
@@ -752,8 +752,8 @@ public class WildcardStringParser {
             if (!isEmpty()) {
 
                 // Check if the string only contains chars that are elements in the alphabet
-                for (int i = 0; i < mCharArray.length; i++) {
-                    if (!WildcardStringParser.isInAlphabet(mCharArray[i])) {
+                for (int i = 0; i < charArray.length; i++) {
+                    if (!WildcardStringParser.isInAlphabet(charArray[i])) {
                         return false;
                     }
                 }
@@ -762,7 +762,7 @@ public class WildcardStringParser {
         }
 
         boolean isEmpty() {
-            return ((mCharArray == null) || (mCharArray.length == 0));
+            return ((charArray == null) || (charArray.length == 0));
         }
 
         /**
@@ -771,7 +771,7 @@ public class WildcardStringParser {
          * @return
          */
         public String toString() {
-            return new String(mCharArray);
+            return new String(charArray);
         }
     }
 }

@@ -39,29 +39,29 @@ import java.io.IOException;
  * @version $Id: PSDChannelSourceDestinationRange.java,v 1.0 May 6, 2008 5:14:13 PM haraldk Exp$
  */
 class PSDChannelSourceDestinationRange {
-    private String mChannel;
-    private short mSourceBlack;
-    private short mSourceWhite;
-    private short mDestBlack;
-    private short mDestWhite;
+    private String channel;
+    private short sourceBlack;
+    private short sourceWhite;
+    private short destBlack;
+    private short destWhite;
 
     public PSDChannelSourceDestinationRange(ImageInputStream pInput, String pChannel) throws IOException {
-        mChannel = pChannel;
-        mSourceBlack = pInput.readShort();
-        mSourceWhite = pInput.readShort();
-        mDestBlack = pInput.readShort();
-        mDestWhite = pInput.readShort();
+        channel = pChannel;
+        sourceBlack = pInput.readShort();
+        sourceWhite = pInput.readShort();
+        destBlack = pInput.readShort();
+        destWhite = pInput.readShort();
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         
-        builder.append("[(").append(mChannel);
-        builder.append("): sourceBlack: ").append(Integer.toHexString(mSourceBlack & 0xffff));
-        builder.append(", sourceWhite: ").append(Integer.toHexString(mSourceWhite & 0xffff));
-        builder.append(", destBlack: ").append(Integer.toHexString(mDestBlack & 0xffff));
-        builder.append(", destWhite: ").append(Integer.toHexString(mDestWhite & 0xffff));
+        builder.append("[(").append(channel);
+        builder.append("): sourceBlack: ").append(Integer.toHexString(sourceBlack & 0xffff));
+        builder.append(", sourceWhite: ").append(Integer.toHexString(sourceWhite & 0xffff));
+        builder.append(", destBlack: ").append(Integer.toHexString(destBlack & 0xffff));
+        builder.append(", destWhite: ").append(Integer.toHexString(destWhite & 0xffff));
         builder.append("]");
 
         return builder.toString();

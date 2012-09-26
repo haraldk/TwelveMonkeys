@@ -59,13 +59,13 @@ import java.util.*;
  * </small>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/service/ServiceRegistry.java#2 $
+ * @version $Id: com/twelvemonkeys/util/service/ServiceRegistry.java#2 $
  * @see RegisterableService
  * @see <a href="http://java.sun.com/j2se/1.3/docs/guide/jar/jar.html#Service%20Provider">JAR File Specification</a>
  */
 public class ServiceRegistry {
     // TODO: Security issues?
-    // TODO: Application contexts?
+    // TODO: Application contexts? Probably use instance per thread group..
 
     /**
      * "META-INF/services/"
@@ -73,7 +73,7 @@ public class ServiceRegistry {
     public static final String SERVICES = "META-INF/services/";
 
     // Class to CategoryRegistry mapping
-    private final Map<Class<?>, CategoryRegistry> mCategoryMap;
+    private final Map<Class<?>, CategoryRegistry> categoryMap;
 
     /**
      * Creates a {@code ServiceRegistry} instance with a set of categories
@@ -98,7 +98,7 @@ public class ServiceRegistry {
         }
 
         // NOTE: Categories are constant for the lifetime of a registry
-        mCategoryMap = Collections.unmodifiableMap(map);
+        categoryMap = Collections.unmodifiableMap(map);
     }
 
     private <T> void putCategory(Map<Class<?>, CategoryRegistry> pMap, Class<T> pCategory) {
@@ -110,7 +110,7 @@ public class ServiceRegistry {
      * Registers all provider implementations for this {@code ServiceRegistry}
      * found in the application classpath.
      *
-     * @throws ServiceConfigurationError if an error occured during registration
+     * @throws ServiceConfigurationError if an error occurred during registration
      */
     public void registerApplicationClasspathSPIs() {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -140,7 +140,7 @@ public class ServiceRegistry {
      *
      * @param pResource the resource to load SPIs from
      * @param pCategory the category class
-     * @param pLoader   the classloader to use
+     * @param pLoader   the class loader to use
      */
     <T> void registerSPIs(final URL pResource, final Class<T> pCategory, final ClassLoader pLoader) {
         Properties classNames = new Properties();
@@ -154,7 +154,7 @@ public class ServiceRegistry {
 
         if (!classNames.isEmpty()) {
             @SuppressWarnings({"unchecked"})
-            CategoryRegistry<T> registry = mCategoryMap.get(pCategory);
+            CategoryRegistry<T> registry = categoryMap.get(pCategory);
 
             Set providerClassNames = classNames.keySet();
 
@@ -213,7 +213,7 @@ public class ServiceRegistry {
      * @return an {@code Iterator} containing all categories in this registry.
      */
     protected Iterator<Class<?>> categories() {
-        return mCategoryMap.keySet().iterator();
+        return categoryMap.keySet().iterator();
     }
 
     /**
@@ -242,7 +242,7 @@ public class ServiceRegistry {
      * The iterator supports removal.
      * <p/>
      * <small>
-     * NOTE: Removing a category from the iterator, deregisters
+     * NOTE: Removing a category from the iterator, de-registers
      * {@code pProvider} from the current category (as returned by the last
      * invocation of {@code next()}), it does <em>not</em> remove the category
      * itself from the registry.
@@ -257,21 +257,22 @@ public class ServiceRegistry {
         return new FilterIterator<Class<?>>(categories(),
                                   new FilterIterator.Filter<Class<?>>() {
                                       public boolean accept(Class<?> pElement) {
-                                          return getRegistry(pElement).contatins(pProvider);
+                                          return getRegistry(pElement).contains(pProvider);
                                       }
                                   }) {
-            Class<?> mCurrent;
+            Class<?> current;
 
             public Class next() {
-                return (mCurrent = super.next());
+                return (current = super.next());
             }
 
             public void remove() {
-                if (mCurrent == null) {
+                if (current == null) {
                     throw new IllegalStateException("No current element");
                 }
-                getRegistry(mCurrent).deregister(pProvider);
-                mCurrent = null;
+                
+                getRegistry(current).deregister(pProvider);
+                current = null;
             }
         };
     }
@@ -284,7 +285,7 @@ public class ServiceRegistry {
      */
     private <T> CategoryRegistry<T> getRegistry(final Class<T> pCategory) {
         @SuppressWarnings({"unchecked"})
-        CategoryRegistry<T> registry = mCategoryMap.get(pCategory);
+        CategoryRegistry<T> registry = categoryMap.get(pCategory);
         if (registry == null) {
             throw new IllegalArgumentException("No such category: " + pCategory.getName());
         }
@@ -296,7 +297,7 @@ public class ServiceRegistry {
      *
      * @param pProvider the provider instance
      * @return {@code true} if {@code pProvider} is now registered in
-     *         one or more categories
+     *         one or more categories it was not registered in before.
      * @see #compatibleCategories(Object)
      */
     public boolean register(final Object pProvider) {
@@ -328,12 +329,12 @@ public class ServiceRegistry {
     }
 
     /**
-     * Deregisters the given provider from all categories it's currently
+     * De-registers the given provider from all categories it's currently
      * registered in.
      *
      * @param pProvider the provider instance
      * @return {@code true} if {@code pProvider} was previously registered in
-     *         any category
+     *         any category and is now de-registered.
      * @see #containingCategories(Object)
      */
     public boolean deregister(final Object pProvider) {
@@ -366,27 +367,26 @@ public class ServiceRegistry {
      * Keeps track of each individual category.
      */
     class CategoryRegistry<T> {
-        private final Class<T> mCategory;
-        private final Map<Class, T> mProviders = new LinkedHashMap<Class, T>();
+        private final Class<T> category;
+        private final Map<Class, T> providers = new LinkedHashMap<Class, T>();
 
         CategoryRegistry(Class<T> pCategory) {
             Validate.notNull(pCategory, "category");
-            mCategory = pCategory;
+            category = pCategory;
         }
 
         private void checkCategory(final Object pProvider) {
-            if (!mCategory.isInstance(pProvider)) {
-                throw new IllegalArgumentException(pProvider + " not instance of category " + mCategory.getName());
+            if (!category.isInstance(pProvider)) {
+                throw new IllegalArgumentException(pProvider + " not instance of category " + category.getName());
             }
         }
 
         public boolean register(final T pProvider) {
             checkCategory(pProvider);
 
-            // NOTE: We only register the new instance, if we don't allready
-            // have an instance of pProvider's class.
-            if (!contatins(pProvider)) {
-                mProviders.put(pProvider.getClass(), pProvider);
+            // NOTE: We only register the new instance, if we don't already have an instance of pProvider's class.
+            if (!contains(pProvider)) {
+                providers.put(pProvider.getClass(), pProvider);
                 processRegistration(pProvider);
                 return true;
             }
@@ -397,7 +397,7 @@ public class ServiceRegistry {
         void processRegistration(final T pProvider) {
             if (pProvider instanceof RegisterableService) {
                 RegisterableService service = (RegisterableService) pProvider;
-                service.onRegistration(ServiceRegistry.this, mCategory);
+                service.onRegistration(ServiceRegistry.this, category);
             }
         }
 
@@ -406,7 +406,7 @@ public class ServiceRegistry {
 
             // NOTE: We remove any provider of the same class, this may or may
             // not be the same instance as pProvider.
-            T oldProvider = mProviders.remove(pProvider.getClass());
+            T oldProvider = providers.remove(pProvider.getClass());
 
             if (oldProvider != null) {
                 processDeregistration(oldProvider);
@@ -419,12 +419,12 @@ public class ServiceRegistry {
         void processDeregistration(final T pOldProvider) {
             if (pOldProvider instanceof RegisterableService) {
                 RegisterableService service = (RegisterableService) pOldProvider;
-                service.onDeregistration(ServiceRegistry.this, mCategory);
+                service.onDeregistration(ServiceRegistry.this, category);
             }
         }
 
-        public boolean contatins(final Object pProvider) {
-            return mProviders.containsKey(pProvider.getClass());
+        public boolean contains(final Object pProvider) {
+            return providers.containsKey(pProvider != null ? pProvider.getClass() : null);
         }
 
         public Iterator<T> providers() {
@@ -432,9 +432,9 @@ public class ServiceRegistry {
             // using the deregister method will result in
             // ConcurrentModificationException in the iterator..
             // We wrap the iterator to track deregistration right.
-            final Iterator<T> iterator = mProviders.values().iterator();
+            final Iterator<T> iterator = providers.values().iterator();
             return new Iterator<T>() {
-                T mCurrent;
+                T current;
 
                 public boolean hasNext() {
                     return iterator.hasNext();
@@ -442,12 +442,12 @@ public class ServiceRegistry {
                 }
 
                 public T next() {
-                    return (mCurrent = iterator.next());
+                    return (current = iterator.next());
                 }
 
                 public void remove() {
                     iterator.remove();
-                    processDeregistration(mCurrent);
+                    processDeregistration(current);
                 }
             };
         }

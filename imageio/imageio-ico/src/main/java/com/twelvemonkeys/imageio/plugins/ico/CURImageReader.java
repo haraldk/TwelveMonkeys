@@ -39,13 +39,11 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: CURImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
  *
- * @see com.twelvemonkeys.imageio.plugins.ico.ICOImageReader
+ * @see ICOImageReader
  */
-public class CURImageReader extends ICOImageReader {
-    // NOTE: All implementation is part of the ICOImageReader
-
+public final class CURImageReader extends DIBImageReader {
     public CURImageReader() {
-        super(DIB.TYPE_CUR);
+        super(new CURImageReaderSpi());
     }
 
     protected CURImageReader(final ImageReaderSpi pProvider) {

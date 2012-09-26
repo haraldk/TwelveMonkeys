@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.servlet.cache;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -36,24 +38,20 @@ import java.util.List;
  * CachedEntity
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/CachedEntityImpl.java#3 $
+ * @version $Id: CachedEntityImpl.java#3 $
  */
 class CachedEntityImpl implements CachedEntity {
-    private String mCacheURI;
-    private HTTPCache mCache;
+    private String cacheURI;
+    private HTTPCache cache;
 
     CachedEntityImpl(String pCacheURI, HTTPCache pCache) {
-        if (pCacheURI == null) {
-            throw new IllegalArgumentException("cacheURI == null");
-        }
-
-        mCacheURI = pCacheURI;
-        mCache = pCache;
+        cacheURI = Validate.notNull(pCacheURI, "cacheURI");
+        cache = pCache;
     }
 
     public void render(CacheRequest pRequest, CacheResponse pResponse) throws IOException {
         // Get cached content
-        CachedResponse cached = mCache.getContent(mCacheURI, pRequest);
+        CachedResponse cached = cache.getContent(cacheURI, pRequest);
 
         // Sanity check
         if (cached == null) {
@@ -93,7 +91,7 @@ class CachedEntityImpl implements CachedEntity {
         }
         catch (IllegalArgumentException e) {
             // Seems to be a bug in FireFox 1.0.2..?!
-            mCache.log("Error in date header from user-agent. User-Agent: " + pRequest.getHeaders().get("User-Agent"), e);
+            cache.log("Error in date header from user-agent. User-Agent: " + pRequest.getHeaders().get("User-Agent"), e);
         }
 
         if (lastModified == -1L || (ifModifiedSince < (lastModified / 1000L) * 1000L)) {
@@ -133,9 +131,9 @@ class CachedEntityImpl implements CachedEntity {
 //
 //        CacheResponseWrapper response = (CacheResponseWrapper) pResponse;
 
-//        if (response.isCachable()) {
-            mCache.registerContent(
-                    mCacheURI,
+//        if (response.isCacheable()) {
+            cache.registerContent(
+                    cacheURI,
                     pRequest,
                     pResponse instanceof WritableCachedResponse ? ((WritableCachedResponse) pResponse).getCachedResponse() : pResponse
             );
@@ -149,7 +147,7 @@ class CachedEntityImpl implements CachedEntity {
     }
 
     public boolean isStale(CacheRequest pRequest) {
-        return mCache.isContentStale(mCacheURI, pRequest);
+        return cache.isContentStale(cacheURI, pRequest);
     }
 
     public WritableCachedResponse createCachedResponse() {
@@ -157,16 +155,16 @@ class CachedEntityImpl implements CachedEntity {
     }
 
     public int hashCode() {
-        return (mCacheURI != null ? mCacheURI.hashCode() : 0) + 1397;
+        return (cacheURI != null ? cacheURI.hashCode() : 0) + 1397;
     }
 
     public boolean equals(Object pOther) {
         return pOther instanceof CachedEntityImpl &&
-                ((mCacheURI == null && ((CachedEntityImpl) pOther).mCacheURI == null) ||
-                  mCacheURI != null && mCacheURI.equals(((CachedEntityImpl) pOther).mCacheURI));
+                ((cacheURI == null && ((CachedEntityImpl) pOther).cacheURI == null) ||
+                  cacheURI != null && cacheURI.equals(((CachedEntityImpl) pOther).cacheURI));
     }
 
     public String toString() {
-        return "CachedEntity[URI=" + mCacheURI + "]";
+        return "CachedEntity[URI=" + cacheURI + "]";
     }
 }

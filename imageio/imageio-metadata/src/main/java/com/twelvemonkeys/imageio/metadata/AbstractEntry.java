@@ -29,8 +29,10 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.util.CollectionUtil;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
 /**
  * AbstractEntry
@@ -41,18 +43,29 @@ import java.lang.reflect.Array;
  */
 public abstract class AbstractEntry implements Entry {
 
-    private final Object mIdentifier;
-    private final Object mValue; // TODO: Might need to be mutable..
+    private final Object identifier;
+    private final Object value; // TODO: Might need to be mutable..
 
-    protected AbstractEntry(final Object pIdentifier, final Object pValue) {
-        Validate.notNull(pIdentifier, "identifier");
+    protected AbstractEntry(final Object identifier, final Object value) {
+        Validate.notNull(identifier, "identifier");
 
-        mIdentifier = pIdentifier;
-        mValue = pValue;
+        this.identifier = identifier;
+        this.value = value;
     }
 
     public final Object getIdentifier() {
-        return mIdentifier;
+        return identifier;
+    }
+
+    /**
+     * Returns a format-native identifier. 
+     * For example {@code "2:00"} for IPTC "Record Version" field, or {@code "0x040c"} for PSD "Thumbnail" resource. 
+     * This default implementation simply returns {@code String.valueOf(getIdentifier())}.
+     * 
+     * @return a format-native identifier.
+     */
+    protected String getNativeIdentifier() {
+        return String.valueOf(getIdentifier());
     }
 
     /**
@@ -65,37 +78,88 @@ public abstract class AbstractEntry implements Entry {
     }
 
     public Object getValue() {
-        return mValue;
+        return value;
     }
 
     public String getValueAsString() {
-        return String.valueOf(mValue);
+        if (valueCount() > 1) {
+            if (valueCount() < 16) {
+                return arrayToString(value);
+            }
+            else {
+                String first = arrayToString(CollectionUtil.subArray(value, 0, 4));
+                String last = arrayToString(CollectionUtil.subArray(value, valueCount() - 4, 4));
+                return String.format("%s ... %s (%d)", first.substring(0, first.length() - 1), last.substring(1), valueCount());
+            }
+        }
+
+        if (value != null && value.getClass().isArray() && Array.getLength(value) == 1) {
+            return String.valueOf(Array.get(value, 0));
+        }
+
+        return String.valueOf(value);
+    }
+
+    private static String arrayToString(final Object value) {
+        Class<?> type = value.getClass().getComponentType();
+
+        if (type.isPrimitive()) {
+            if (type.equals(boolean.class)) {
+                return Arrays.toString((boolean[]) value);
+            }
+            else if (type.equals(byte.class)) {
+                return Arrays.toString((byte[]) value);
+            }
+            else if (type.equals(char.class)) {
+                return new String((char[]) value);
+            }
+            else if (type.equals(double.class)) {
+                return Arrays.toString((double[]) value);
+            }
+            else if (type.equals(float.class)) {
+                return Arrays.toString((float[]) value);
+            }
+            else if (type.equals(int.class)) {
+                return Arrays.toString((int[]) value);
+            }
+            else if (type.equals(long.class)) {
+                return Arrays.toString((long[]) value);
+            }
+            else if (type.equals(short.class)) {
+                return Arrays.toString((short[]) value);
+            }
+            else {
+                // Fall through should never happen
+                throw new AssertionError("Unknown type: " + type);
+            }
+        }
+        else {
+            return Arrays.toString((Object[]) value);
+        }
     }
 
     public String getTypeName() {
-        if (mValue == null) {
+        if (value == null) {
             return null;
         }
 
-        return mValue.getClass().getSimpleName();
+        return value.getClass().getSimpleName();
     }
 
     public int valueCount() {
         // TODO: Collection support?
-        if (mValue != null && mValue.getClass().isArray()) {
-            return Array.getLength(mValue);
+        if (value != null && value.getClass().isArray()) {
+            return Array.getLength(value);
         }
 
         return 1;
     }
 
-
     /// Object
-
 
     @Override
     public int hashCode() {
-        return mIdentifier.hashCode() + 31 * mValue.hashCode();
+        return identifier.hashCode() + (value != null ? 31 * value.hashCode() : 0);
     }
 
     @Override
@@ -109,8 +173,8 @@ public abstract class AbstractEntry implements Entry {
 
         AbstractEntry other = (AbstractEntry) pOther;
         
-        return mIdentifier.equals(other.mIdentifier) && (
-                mValue == null && other.mValue == null || mValue != null && mValue.equals(other.mValue)
+        return identifier.equals(other.identifier) && (
+                value == null && other.value == null || value != null && value.equals(other.value)
         );
     }
 
@@ -122,6 +186,6 @@ public abstract class AbstractEntry implements Entry {
         String type = getTypeName();
         String typeStr = type != null ? " (" + type + ")" : "";
 
-        return String.format("%s%s: %s%s", getIdentifier(), nameStr, getValueAsString(), typeStr);
+        return String.format("%s%s: %s%s", getNativeIdentifier(), nameStr, getValueAsString(), typeStr);
     }
 }

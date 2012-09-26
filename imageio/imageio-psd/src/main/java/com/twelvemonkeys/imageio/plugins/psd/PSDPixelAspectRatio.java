@@ -12,8 +12,8 @@ import java.io.IOException;
  */
 final class PSDPixelAspectRatio extends PSDImageResource {
     // 4 bytes (version = 1), 8 bytes double, x / y of a pixel
-    int mVersion;
-    double mAspect;
+    int version;
+    double aspect;
 
     PSDPixelAspectRatio(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -21,7 +21,7 @@ final class PSDPixelAspectRatio extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mVersion = pInput.readInt();
-        mAspect = pInput.readDouble();
+        version = pInput.readInt();
+        aspect = pInput.readDouble();
     }
 }

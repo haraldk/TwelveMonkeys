@@ -18,7 +18,7 @@ import java.io.IOException;
  * @see <a href="http://partners.adobe.com/public/developer/tiff/index.html">Adobe TIFF developer resources</a>
  */
 final class PSDEXIF1Data extends PSDImageResource {
-    protected Directory mDirectory;
+    protected Directory directory;
 
     PSDEXIF1Data(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -28,13 +28,13 @@ final class PSDEXIF1Data extends PSDImageResource {
     protected void readData(final ImageInputStream pInput) throws IOException {
         // This is in essence an embedded TIFF file.
         // TODO: Instead, read the byte data, store for later parsing (or better yet, store offset, and read on request)
-        mDirectory = new EXIFReader().read(pInput);
+        directory = new EXIFReader().read(pInput);
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
-        builder.append(", ").append(mDirectory);
+        builder.append(", ").append(directory);
         builder.append("]");
 
         return builder.toString();

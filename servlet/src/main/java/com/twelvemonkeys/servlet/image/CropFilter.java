@@ -91,7 +91,7 @@ import java.awt.image.RenderedImage;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/CropFilter.java#1 $
+ * @version $Id: CropFilter.java#1 $
  */
 public class CropFilter extends ScaleFilter {
     /** {@code cropX}*/

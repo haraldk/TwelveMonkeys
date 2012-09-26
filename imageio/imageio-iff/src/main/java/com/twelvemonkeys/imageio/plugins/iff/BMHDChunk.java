@@ -40,7 +40,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BMHDChunk.java,v 1.0 28.feb.2006 00:04:32 haku Exp$
  */
-class BMHDChunk extends IFFChunk {
+final class BMHDChunk extends IFFChunk {
 //
 //    typedef UBYTE Masking;  /* Choice of masking technique. */
 //
@@ -81,100 +81,98 @@ class BMHDChunk extends IFFChunk {
     // words. The number of words per row is words=((w+15)/16)
 
     // Dimensions of raster
-    int mWidth;
-    int mHeight;
+    int width;
+    int height;
 
     // Source offsets
     // Hmm.. Consider making these Image.properties?
-    int mXPos;
-    int mYPos;
+    int xPos;
+    int yPos;
 
     // The number of source bitplanes in the BODY chunk (see below) is stored in
     // nPlanes. An ILBM with a CMAP but no BODY and nPlanes = 0 is the
     // recommended way to store a color map.
-    int mBitplanes;
+    int bitplanes;
 
-    int mMaskType;
-    int mCompressionType;
+    int maskType;
+    int compressionType;
 
-    int mTransparentIndex;
+    int transparentIndex;
 
     // NOTE: Typical values are 10:11 (320 x 200)
-    int mXAspect;
-    int mYAspect;
+    int xAspect;
+    int yAspect;
 
     // Source page dimension
     // NOTE: The image may be larger than the page, probably ignore these
-    int mPageWidth;
-    int mPageHeight;
+    int pageWidth;
+    int pageHeight;
 
     protected BMHDChunk(int pChunkLength) {
         super(IFF.CHUNK_BMHD, pChunkLength);
     }
 
-    protected BMHDChunk(int pWidth, int pHeight, int pBitplanes,
-                        int pMaskType, int pCompressionType,
-                        int pTransparentIndex) {
+    protected BMHDChunk(int pWidth, int pHeight, int pBitplanes, int pMaskType, int pCompressionType, int pTransparentIndex) {
         super(IFF.CHUNK_BMHD, 20);
-        mWidth = pWidth;
-        mHeight = pHeight;
-        mXPos = 0;
-        mYPos = 0;
-        mBitplanes = pBitplanes;
-        mMaskType = pMaskType;
-        mCompressionType = pCompressionType;
-        mTransparentIndex = pTransparentIndex;
-        mXAspect = 1;
-        mYAspect = 1;
-        mPageWidth = Math.min(pWidth, Short.MAX_VALUE); // For some reason, these are signed?
-        mPageHeight = Math.min(pHeight, Short.MAX_VALUE);
+        width = pWidth;
+        height = pHeight;
+        xPos = 0;
+        yPos = 0;
+        bitplanes = pBitplanes;
+        maskType = pMaskType;
+        compressionType = pCompressionType;
+        transparentIndex = pTransparentIndex;
+        xAspect = 1;
+        yAspect = 1;
+        pageWidth = Math.min(pWidth, Short.MAX_VALUE); // For some reason, these are signed?
+        pageHeight = Math.min(pHeight, Short.MAX_VALUE);
     }
 
     void readChunk(DataInput pInput) throws IOException {
-        if (mChunkLength != 20) {
-            throw new IIOException("Unknown BMHD chunk length: " + mChunkLength);
+        if (chunkLength != 20) {
+            throw new IIOException("Unknown BMHD chunk length: " + chunkLength);
         }
-        mWidth = pInput.readUnsignedShort();
-        mHeight = pInput.readUnsignedShort();
-        mXPos = pInput.readShort();
-        mYPos = pInput.readShort();
-        mBitplanes = pInput.readUnsignedByte();
-        mMaskType = pInput.readUnsignedByte();
-        mCompressionType = pInput.readUnsignedByte();
+        width = pInput.readUnsignedShort();
+        height = pInput.readUnsignedShort();
+        xPos = pInput.readShort();
+        yPos = pInput.readShort();
+        bitplanes = pInput.readUnsignedByte();
+        maskType = pInput.readUnsignedByte();
+        compressionType = pInput.readUnsignedByte();
         pInput.readByte(); // PAD
-        mTransparentIndex = pInput.readUnsignedShort();
-        mXAspect = pInput.readUnsignedByte();
-        mYAspect = pInput.readUnsignedByte();
-        mPageWidth = pInput.readShort();
-        mPageHeight = pInput.readShort();
+        transparentIndex = pInput.readUnsignedShort();
+        xAspect = pInput.readUnsignedByte();
+        yAspect = pInput.readUnsignedByte();
+        pageWidth = pInput.readShort();
+        pageHeight = pInput.readShort();
     }
 
     void writeChunk(DataOutput pOutput) throws IOException {
-        pOutput.writeInt(mChunkId);
-        pOutput.writeInt(mChunkLength);
+        pOutput.writeInt(chunkId);
+        pOutput.writeInt(chunkLength);
 
-        pOutput.writeShort(mWidth);
-        pOutput.writeShort(mHeight);
-        pOutput.writeShort(mXPos);
-        pOutput.writeShort(mYPos);
-        pOutput.writeByte(mBitplanes);
-        pOutput.writeByte(mMaskType);
-        pOutput.writeByte(mCompressionType);
+        pOutput.writeShort(width);
+        pOutput.writeShort(height);
+        pOutput.writeShort(xPos);
+        pOutput.writeShort(yPos);
+        pOutput.writeByte(bitplanes);
+        pOutput.writeByte(maskType);
+        pOutput.writeByte(compressionType);
         pOutput.writeByte(0); // PAD
-        pOutput.writeShort(mTransparentIndex);
-        pOutput.writeByte(mXAspect);
-        pOutput.writeByte(mYAspect);
-        pOutput.writeShort(mPageWidth);
-        pOutput.writeShort(mPageHeight);
+        pOutput.writeShort(transparentIndex);
+        pOutput.writeByte(xAspect);
+        pOutput.writeByte(yAspect);
+        pOutput.writeShort(pageWidth);
+        pOutput.writeShort(pageHeight);
     }
 
     public String toString() {
         return super.toString()
-                + " {w=" + mWidth + ", h=" + mHeight
-                + ", x=" + mXPos + ", y=" + mYPos
-                + ", planes=" + mBitplanes + ", mask=" + mMaskType
-                + ", compression=" + mCompressionType + ", trans=" + mTransparentIndex
-                + ", xAspect=" + mXAspect + ", yAspect=" + mYAspect
-                + ", pageWidth=" + mPageWidth + ", pageHeight=" + mPageHeight + "}";
+                + " {w=" + width + ", h=" + height
+                + ", x=" + xPos + ", y=" + yPos
+                + ", planes=" + bitplanes + ", mask=" + maskType
+                + ", compression=" + compressionType + ", trans=" + transparentIndex
+                + ", xAspect=" + xAspect + ", yAspect=" + yAspect
+                + ", pageWidth=" + pageWidth + ", pageHeight=" + pageHeight + "}";
     }
 }

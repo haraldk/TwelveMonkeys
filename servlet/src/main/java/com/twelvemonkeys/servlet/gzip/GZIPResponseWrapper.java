@@ -48,99 +48,100 @@ import java.util.zip.GZIPOutputStream;
  * @author Jayson Falkner
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/gzip/GZIPResponseWrapper.java#1 $
+ * @version $Id: GZIPResponseWrapper.java#1 $
  */
 public class GZIPResponseWrapper extends HttpServletResponseWrapper {
-    protected ServletOutputStream mOut = null;
-    protected PrintWriter mWriter = null;
-    protected GZIPOutputStream mGZIPOut = null;
-    protected int mContentLength = -1;
+    // TODO: Remove/update ETags if needed? Read the spec (RFC 2616) on Vary/ETag for caching
 
-    public GZIPResponseWrapper(HttpServletResponse response) {
+    protected ServletOutputStream out;
+    protected PrintWriter writer;
+    protected GZIPOutputStream gzipOut;
+    protected int contentLength = -1;
+
+    public GZIPResponseWrapper(final HttpServletResponse response) {
         super(response);
+
         response.addHeader("Content-Encoding", "gzip");
+        response.addHeader("Vary", "Accept");
     }
 
     public ServletOutputStream createOutputStream() throws IOException {
         // FIX: Write directly to servlet output stream, for faster responses.
         // Relies on chunked streams, or buffering in the servlet engine.
-        if (mContentLength >= 0) {
-            mGZIPOut = new GZIPOutputStream(getResponse().getOutputStream(), mContentLength);
+        if (contentLength >= 0) {
+            gzipOut = new GZIPOutputStream(getResponse().getOutputStream(), contentLength);
         }
         else {
-            mGZIPOut = new GZIPOutputStream(getResponse().getOutputStream());
+            gzipOut = new GZIPOutputStream(getResponse().getOutputStream());
         }
 
         // Wrap in ServletOutputStream and return
-        return new OutputStreamAdapter(mGZIPOut);
+        return new OutputStreamAdapter(gzipOut);
     }
 
     // TODO: Move this to flushbuffer or something? Hmmm..
-    public void flushResponse() {
+    public void flushResponse() throws IOException {
         try {
-            try {
-                // Finish GZIP encodig
-                if (mGZIPOut != null) {
-                    mGZIPOut.finish();
-                }
+            // Finish GZIP encodig
+            if (gzipOut != null) {
+                gzipOut.finish();
+            }
 
-                flushBuffer();
-            }
-            finally {
-                // Close stream
-                if (mWriter != null) {
-                    mWriter.close();
-                }
-                else {
-                    if (mOut != null) {
-                        mOut.close();
-                    }
-                }
-            }
+            flushBuffer();
         }
-        catch (IOException e) {
-            // TODO: Fix this one...
-            e.printStackTrace();
+        finally {
+            // Close stream
+            if (writer != null) {
+                writer.close();
+            }
+            else {
+                if (out != null) {
+                    out.close();
+                }
+            }
         }
     }
 
     public void flushBuffer() throws IOException {
-        if (mWriter != null) {
-            mWriter.flush();
+        if (writer != null) {
+            writer.flush();
         }
-        else if (mOut != null) {
-            mOut.flush();            
+        else if (out != null) {
+            out.flush();
         }
     }
 
     public ServletOutputStream getOutputStream() throws IOException {
-        if (mWriter != null) {
+        if (writer != null) {
             throw new IllegalStateException("getWriter() has already been called!");
         }
 
-        if (mOut == null) {
-            mOut = createOutputStream();
+        if (out == null) {
+            out = createOutputStream();
         }
-        return (mOut);
+
+        return out;
     }
 
     public PrintWriter getWriter() throws IOException {
-        if (mWriter != null) {
-            return (mWriter);
+        if (writer != null) {
+            return (writer);
         }
 
-        if (mOut != null) {
+        if (out != null) {
             throw new IllegalStateException("getOutputStream() has already been called!");
         }
 
-        mOut = createOutputStream();
-        // TODO: This is wrong. Should use getCharacterEncoding() or "ISO-8859-1" if gCE returns null.
-        mWriter = new PrintWriter(new OutputStreamWriter(mOut, "UTF-8"));
-        return (mWriter);
+        out = createOutputStream();
+
+        // TODO: This is wrong. Should use getCharacterEncoding() or "ISO-8859-1" if getCE returns null.
+        writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"));
+
+        return writer;
     }
 
     public void setContentLength(int pLength) {
         // NOTE: Do not call super, as we will shrink the size.
-        mContentLength = pLength;
+        contentLength = pLength;
     }
 }

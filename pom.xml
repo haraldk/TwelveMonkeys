@@ -13,6 +13,7 @@
         <module>common</module>
         <module>servlet</module>
         <module>imageio</module>
+        <!--<module>swing</module>-->
         <!--<module>sandbox</module>-->
     </modules>
 
@@ -40,17 +41,15 @@
     </contributors>
 
     <build>
-	<finalName>twelvemonkeys-${project.artifactId}-${project.version}</finalName>
-        <pluginManagement>
-            <plugins>
-              <plugin>
+        <finalName>twelvemonkeys-${project.artifactId}-${project.version}</finalName>
+        <plugins>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.2</version>
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Implementation-Title>${project.name}</Implementation-Title>
+                            <Implementation-Title>twelvemonkeys-${project.artifactId}</Implementation-Title>
                             <Implementation-Vendor>TwelveMonkeys</Implementation-Vendor>
                             <Implementation-Version>${project.version}</Implementation-Version>
                             <Implementation-URL>http://github.com/haraldk/TwelveMonkeys</Implementation-URL>
@@ -58,14 +57,21 @@
                     </archive>
                 </configuration>
             </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <configuration>
-                  <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
+        </plugins>
+
+        <pluginManagement>
+            <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <configuration>
+                        <encoding>UTF-8</encoding>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.2</version>
                     <inherited>true</inherited>
                     <executions>
                         <execution>
@@ -78,8 +84,10 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <inherited>true</inherited><!-- THIS DOES NOT WORK..?! -->
+                    <inherited>true</inherited>
+                    <!-- THIS DOES NOT WORK..?! -->
                     <executions>
                         <execution>
                             <phase>package</phase>
@@ -92,6 +100,7 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <inherited>true</inherited>
                     <configuration>
@@ -103,7 +112,22 @@
                         </compilerArguments>
                     </configuration>
                 </plugin>
+
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <systemProperties>
+                            <property>
+                                <name>java.awt.headless</name>
+                                <value>true</value>
+                            </property>
+                        </systemProperties>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-idea-plugin</artifactId>
                     <inherited>true</inherited>
                     <version>2.2</version>
@@ -114,6 +138,7 @@
                     </configuration>
                 </plugin>
             </plugins>
+
         </pluginManagement>
 
         <extensions>
@@ -123,7 +148,7 @@
                 <version>1.9</version>
             </extension>
         </extensions>
-        
+
     </build>
 
     <reporting>
@@ -169,5 +194,5 @@
             <url>java-net:/maven2-repository/trunk/repository/</url>
         </repository>
     </distributionManagement>
-   
+
 </project>

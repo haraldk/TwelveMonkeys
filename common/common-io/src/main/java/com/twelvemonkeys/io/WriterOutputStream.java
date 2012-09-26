@@ -51,10 +51,11 @@ import java.nio.CharBuffer;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/WriterOutputStream.java#2 $
  */
 public class WriterOutputStream extends OutputStream {
-    protected Writer mWriter;
-    final protected Decoder mDecoder;
-    final ByteArrayOutputStream mBufferStream = new FastByteArrayOutputStream(1024);
-    private volatile boolean mIsFlushing = false; // Ugly but critical...
+    protected Writer writer;
+    final protected Decoder decoder;
+    final ByteArrayOutputStream bufferStream = new FastByteArrayOutputStream(1024);
+
+    private volatile boolean isFlushing = false; // Ugly but critical...
 
     private static final boolean NIO_AVAILABLE = isNIOAvailable();
 
@@ -71,8 +72,8 @@ public class WriterOutputStream extends OutputStream {
     }
 
     public WriterOutputStream(final Writer pWriter, final String pCharset) {
-        mWriter = pWriter;
-        mDecoder = getDecoder(pCharset);
+        writer = pWriter;
+        decoder = getDecoder(pCharset);
     }
 
     public WriterOutputStream(final Writer pWriter) {
@@ -94,14 +95,14 @@ public class WriterOutputStream extends OutputStream {
     @Override
     public void close() throws IOException {
         flush();
-        mWriter.close();
-        mWriter = null;
+        writer.close();
+        writer = null;
     }
 
     @Override
     public void flush() throws IOException {
         flushBuffer();
-        mWriter.flush();
+        writer.flush();
     }
 
     @Override
@@ -115,22 +116,22 @@ public class WriterOutputStream extends OutputStream {
     @Override
     public final void write(byte[] pBytes, int pOffset, int pLength) throws IOException {
         flushBuffer();
-        mDecoder.decodeTo(mWriter, pBytes, pOffset, pLength);
+        decoder.decodeTo(writer, pBytes, pOffset, pLength);
     }
 
     @Override
     public final void write(int pByte)  {
         // TODO: Is it possible to know if this is a good place in the stream to
         // flush? It might be in the middle of a multi-byte encoded character..
-        mBufferStream.write(pByte);
+        bufferStream.write(pByte);
     }
 
     private void flushBuffer() throws IOException {
-        if (!mIsFlushing && mBufferStream.size() > 0) {
-            mIsFlushing = true;
-            mBufferStream.writeTo(this); // NOTE: Avoids cloning buffer array
-            mBufferStream.reset();
-            mIsFlushing = false;
+        if (!isFlushing && bufferStream.size() > 0) {
+            isFlushing = true;
+            bufferStream.writeTo(this); // NOTE: Avoids cloning buffer array
+            bufferStream.reset();
+            isFlushing = false;
         }
     }
 
@@ -138,7 +139,7 @@ public class WriterOutputStream extends OutputStream {
     public static void main(String[] pArgs) throws IOException {
         int iterations = 1000000;
 
-        byte[] bytes = "åøæÅØÆ klashf lkash ljah lhaaklhghdfgu ksd".getBytes("UTF-8");
+        byte[] bytes = "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ klashf lkash ljah lhaaklhghdfgu ksd".getBytes("UTF-8");
 
         Decoder d;
         long start;

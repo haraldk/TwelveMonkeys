@@ -38,20 +38,36 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 * @version $Id: XMPEntry.java,v 1.0 Nov 17, 2009 9:38:39 PM haraldk Exp$
 */
 final class XMPEntry extends AbstractEntry {
-    private final String mFieldName;
+    private final String fieldName;
 
-    public XMPEntry(final String pIdentifier, final Object pValue) {
-        this(pIdentifier, null, pValue);
+    // TODO: Rewrite to use namespace + field instead of identifier (for the nativeIdentifier) method
+    public XMPEntry(final String identifier, final Object pValue) {
+        this(identifier, null, pValue);
     }
 
-    public XMPEntry(final String pIdentifier, final String pFieldName, final Object pValue) {
-        super(pIdentifier, pValue);
-        mFieldName = pFieldName;
+    public XMPEntry(final String identifier, final String fieldName, final Object value) {
+        super(identifier, value);
+        this.fieldName = fieldName;
+    }
+
+    @Override
+    protected String getNativeIdentifier() {
+        String identifier = (String) getIdentifier();
+        String namespace = fieldName != null && identifier.endsWith(fieldName) ? XMP.DEFAULT_NS_MAPPING.get(identifier.substring(0, identifier.length() - fieldName.length())) : null;
+        return namespace != null ?  namespace + ":" + fieldName : identifier;
     }
 
     @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override
     public String getFieldName() {
-        return mFieldName != null ? mFieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
+        return fieldName != null ? fieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
+    }
+
+    @Override
+    public String toString() {
+        String type = getTypeName();
+        String typeStr = type != null ? " (" + type + ")" : "";
+
+        return String.format("%s: %s%s", getNativeIdentifier(), getValueAsString(), typeStr);
     }
 }

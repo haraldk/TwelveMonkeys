@@ -65,13 +65,13 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
     final static class MemoryCache extends StreamCache {
         final static int BLOCK_SIZE = 1 << 13;
 
-        private final List<byte[]> mCache = new ArrayList<byte[]>();
-        private long mLength;
-        private long mPosition;
-        private long mStart;
+        private final List<byte[]> cache = new ArrayList<byte[]>();
+        private long length;
+        private long position;
+        private long start;
 
         private byte[] getBlock() throws IOException {
-            final long currPos = mPosition - mStart;
+            final long currPos = position - start;
             if (currPos < 0) {
                 throw new IOException("StreamCache flushed before read position");
             }
@@ -82,31 +82,31 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
                 throw new IOException("Memory cache max size exceeded");
             }
 
-            if (index >= mCache.size()) {
+            if (index >= cache.size()) {
                 try {
-                    mCache.add(new byte[BLOCK_SIZE]);
+                    cache.add(new byte[BLOCK_SIZE]);
 //                    System.out.println("Allocating new block, size: " + BLOCK_SIZE);
-//                    System.out.println("New total size: " + mCache.size() * BLOCK_SIZE + " (" + mCache.size() + " blocks)");
+//                    System.out.println("New total size: " + cache.size() * BLOCK_SIZE + " (" + cache.size() + " blocks)");
                 }
                 catch (OutOfMemoryError e) {
-                    throw new IOException("No more memory for cache: " + mCache.size() * BLOCK_SIZE);
+                    throw new IOException("No more memory for cache: " + cache.size() * BLOCK_SIZE);
                 }
             }
 
             //System.out.println("index: " + index);
 
-            return mCache.get((int) index);
+            return cache.get((int) index);
         }
 
         public void write(final int pByte) throws IOException {
             byte[] buffer = getBlock();
 
-            int idx = (int) (mPosition % BLOCK_SIZE);
+            int idx = (int) (position % BLOCK_SIZE);
             buffer[idx] = (byte) pByte;
-            mPosition++;
+            position++;
 
-            if (mPosition > mLength) {
-                mLength = mPosition;
+            if (position > length) {
+                length = position;
             }
         }
 
@@ -115,28 +115,28 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
         public void write(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
             byte[] buffer = getBlock();
             for (int i = 0; i < pLength; i++) {
-                int index = (int) mPosition % BLOCK_SIZE;
+                int index = (int) position % BLOCK_SIZE;
                 if (index == 0) {
                     buffer = getBlock();
                 }
                 buffer[index] = pBuffer[pOffset + i];
 
-                mPosition++;
+                position++;
             }
-            if (mPosition > mLength) {
-                mLength = mPosition;
+            if (position > length) {
+                length = position;
             }
         }
 
         public int read() throws IOException {
-            if (mPosition >= mLength) {
+            if (position >= length) {
                 return -1;
             }
 
             byte[] buffer = getBlock();
 
-            int idx = (int) (mPosition % BLOCK_SIZE);
-            mPosition++;
+            int idx = (int) (position % BLOCK_SIZE);
+            position++;
 
             return buffer[idx] & 0xff;
         }
@@ -144,33 +144,33 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
         // TODO: OptimizeMe!!!
         @Override
         public int read(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-            if (mPosition >= mLength) {
+            if (position >= length) {
                 return -1;
             }
 
             byte[] buffer = getBlock();
 
-            int bufferPos = (int) (mPosition % BLOCK_SIZE);
+            int bufferPos = (int) (position % BLOCK_SIZE);
 
             // Find maxIdx and simplify test in for-loop
-            int maxLen = (int) Math.min(Math.min(pLength, buffer.length - bufferPos), mLength - mPosition);
+            int maxLen = (int) Math.min(Math.min(pLength, buffer.length - bufferPos), length - position);
 
             int i;
-            //for (i = 0; i < pLength && i < buffer.length - idx && i < mLength - mPosition; i++) {
+            //for (i = 0; i < pLength && i < buffer.length - idx && i < length - position; i++) {
             for (i = 0; i < maxLen; i++) {
                 pBytes[pOffset + i] = buffer[bufferPos + i];
             }
 
-            mPosition += i;
+            position += i;
 
             return i;
         }
 
         public void seek(final long pPosition) throws IOException {
-            if (pPosition < mStart) {
+            if (pPosition < start) {
                 throw new IOException("Seek before flush position");
             }
-            mPosition = pPosition;
+            position = pPosition;
         }
 
         @Override
@@ -178,14 +178,14 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
             int firstPos = (int) (pPosition / BLOCK_SIZE) - 1;
 
             for (int i = 0; i < firstPos; i++) {
-                mCache.remove(0);
+                cache.remove(0);
             }
 
-            mStart = pPosition;
+            start = pPosition;
         }
 
         public long getPosition() {
-            return mPosition;
+            return position;
         }
     }
 }

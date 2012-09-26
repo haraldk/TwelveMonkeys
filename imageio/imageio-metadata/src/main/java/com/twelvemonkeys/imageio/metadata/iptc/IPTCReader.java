@@ -32,6 +32,7 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReader;
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
@@ -57,18 +58,20 @@ public final class IPTCReader extends MetadataReader {
     private static final int ENCODING_UNSPECIFIED = 0;
     private static final int ENCODING_UTF_8 = 0x1b2547;
 
-    private int mEncoding = ENCODING_UNSPECIFIED;
+    private int encoding = ENCODING_UNSPECIFIED;
 
 
     @Override
-    public Directory read(final ImageInputStream pInput) throws IOException {
-        final List<Entry> entries = new ArrayList<Entry>();
+    public Directory read(final ImageInputStream input) throws IOException {
+        Validate.notNull(input, "input");
+
+        List<Entry> entries = new ArrayList<Entry>();
 
         // 0x1c identifies start of a tag
-        while (pInput.read() == 0x1c) {
-            short tagId = pInput.readShort();
-            int tagByteCount = pInput.readUnsignedShort();
-            Entry entry = readEntry(pInput, tagId, tagByteCount);
+        while (input.read() == 0x1c) {
+            short tagId = input.readShort();
+            int tagByteCount = input.readUnsignedShort();
+            Entry entry = readEntry(input, tagId, tagByteCount);
 
             if (entry != null) {
                 entries.add(entry);
@@ -85,7 +88,7 @@ public final class IPTCReader extends MetadataReader {
             case IPTC.TAG_CODED_CHARACTER_SET:
                 // TODO: Mapping from ISO 646 to Java supported character sets?
                 // TODO: Move somewhere else?
-                mEncoding = parseEncoding(pInput, pLength);
+                encoding = parseEncoding(pInput, pLength);
                 return null;
             case IPTC.TAG_RECORD_VERSION:
                 // A single unsigned short value
@@ -140,7 +143,7 @@ public final class IPTCReader extends MetadataReader {
             return chars.toString();
         }
         catch (CharacterCodingException notUTF8) {
-            if (mEncoding == ENCODING_UTF_8) {
+            if (encoding == ENCODING_UTF_8) {
                 throw new IIOException("Wrong encoding of IPTC data, explicitly set to UTF-8 in DataSet 1:90", notUTF8);
             }
 

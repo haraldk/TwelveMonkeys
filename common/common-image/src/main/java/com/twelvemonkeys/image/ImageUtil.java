@@ -32,19 +32,17 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
-
 import java.util.Hashtable;
 
 /**
  * This class contains methods for basic image manipulation and conversion.
- *
- * @todo Split palette generation out, into ColorModel classes.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/ImageUtil.java#3 $
  */
 public final class ImageUtil {
+    // TODO: Split palette generation out, into ColorModel classes (?)
 
     public final static int ROTATE_90_CCW = -90;
     public final static int ROTATE_90_CW = 90;
@@ -59,12 +57,14 @@ public final class ImageUtil {
      * @see #EDGE_REFLECT
      */
     public static final int EDGE_ZERO_FILL = ConvolveOp.EDGE_ZERO_FILL;
+
     /**
      * Alias for {@link ConvolveOp#EDGE_NO_OP}.
      * @see #convolve(java.awt.image.BufferedImage, java.awt.image.Kernel, int)
      * @see #EDGE_REFLECT
      */
     public static final int EDGE_NO_OP = ConvolveOp.EDGE_NO_OP;
+
     /**
      * Adds a border to the image while convolving. The border will reflect the
      * edges of the original image. This is usually a good default.
@@ -74,6 +74,7 @@ public final class ImageUtil {
      * @see #convolve(java.awt.image.BufferedImage, java.awt.image.Kernel, int)
      */
     public static final int EDGE_REFLECT = 2; // as JAI BORDER_REFLECT
+
     /**
      * Adds a border to the image while convolving. The border will wrap the
      * edges of the original image. This is usually the best choice for tiles.
@@ -229,7 +230,7 @@ public final class ImageUtil {
      * The new image will have the <em>same</em> {@code ColorModel},
      * {@code Raster} and properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage}, it is simply returned
+     * If the image is already a {@code BufferedImage}, it is simply returned
      * and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -237,7 +238,7 @@ public final class ImageUtil {
      * @return a {@code BufferedImage}
      */
     public static BufferedImage toBuffered(RenderedImage pOriginal) {
-        // Don't convert if it allready is a BufferedImage
+        // Don't convert if it already is a BufferedImage
         if (pOriginal instanceof BufferedImage) {
             return (BufferedImage) pOriginal;
         }
@@ -283,7 +284,7 @@ public final class ImageUtil {
      * Converts the {@code RenderedImage} to a {@code BufferedImage} of the
      * given type.
      * <p/>
-     * If the image is allready a {@code BufferedImage} of the given type, it
+     * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -297,7 +298,7 @@ public final class ImageUtil {
      * @see java.awt.image.BufferedImage#getType()
      */
     public static BufferedImage toBuffered(RenderedImage pOriginal, int pType) {
-        // Don't convert if it allready is BufferedImage and correct type
+        // Don't convert if it already is BufferedImage and correct type
         if ((pOriginal instanceof BufferedImage) && ((BufferedImage) pOriginal).getType() == pType) {
             return (BufferedImage) pOriginal;
         }
@@ -329,7 +330,7 @@ public final class ImageUtil {
      * given type. The new image will have the same {@code ColorModel},
      * {@code Raster} and properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage} of the given type, it
+     * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
      * <p/>
      * This method simply invokes
@@ -354,7 +355,7 @@ public final class ImageUtil {
      * The new image will have the same {@code ColorModel}, {@code Raster} and
      * properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage}, it is simply returned
+     * If the image is already a {@code BufferedImage}, it is simply returned
      * and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -365,7 +366,7 @@ public final class ImageUtil {
      * @throws ImageConversionException if the image cannot be converted
      */
     public static BufferedImage toBuffered(Image pOriginal) {
-        // Don't convert if it allready is BufferedImage
+        // Don't convert if it already is BufferedImage
         if (pOriginal instanceof BufferedImage) {
             return (BufferedImage) pOriginal;
         }
@@ -536,32 +537,45 @@ public final class ImageUtil {
      *
      * @param pOriginal the orignal image
      * @param pModel the original color model
-     * @param mWidth the requested width of the raster
-     * @param mHeight the requested height of the raster
+     * @param width the requested width of the raster
+     * @param height the requested height of the raster
      *
      * @return a new WritableRaster
      */
-    static WritableRaster createCompatibleWritableRaster(BufferedImage pOriginal, ColorModel pModel, int mWidth, int mHeight) {
+    static WritableRaster createCompatibleWritableRaster(BufferedImage pOriginal, ColorModel pModel, int width, int height) {
         if (pModel == null || equals(pOriginal.getColorModel(), pModel)) {
+            int[] bOffs;
             switch (pOriginal.getType()) {
                 case BufferedImage.TYPE_3BYTE_BGR:
-                    int[] bOffs = {2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
+                    bOffs = new int[]{2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
                     return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                                                          mWidth, mHeight,
-                                                          mWidth * 3, 3,
+                                                          width, height,
+                                                          width * 3, 3,
                                                           bOffs, null);
                 case BufferedImage.TYPE_4BYTE_ABGR:
                 case BufferedImage.TYPE_4BYTE_ABGR_PRE:
                     bOffs = new int[] {3, 2, 1, 0}; // NOTE: These are reversed from what the cm.createCompatibleWritableRaster would return
                     return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                                                          mWidth, mHeight,
-                                                          mWidth * 4, 4,
+                                                          width, height,
+                                                          width * 4, 4,
                                                           bOffs, null);
+                case BufferedImage.TYPE_CUSTOM:
+                    // Peek into the sample model to see if we have a sample model that will be incompatible with the default case
+                    SampleModel sm = pOriginal.getRaster().getSampleModel();
+                    if (sm instanceof ComponentSampleModel) {
+                        bOffs = ((ComponentSampleModel) sm).getBandOffsets();
+                        return Raster.createInterleavedRaster(sm.getDataType(),
+                                                              width, height,
+                                                              width * bOffs.length, bOffs.length,
+                                                              bOffs, null);
+                    }
+                    // Else fall through
                 default:
-                    return pOriginal.getColorModel().createCompatibleWritableRaster(mWidth, mHeight);
+                    return pOriginal.getColorModel().createCompatibleWritableRaster(width, height);
             }
         }
-        return pModel.createCompatibleWritableRaster(mWidth, mHeight);
+
+        return pModel.createCompatibleWritableRaster(width, height);
     }
 
     /**
@@ -569,7 +583,7 @@ public final class ImageUtil {
      * The new image will have the same {@code ColorModel}, {@code Raster} and
      * properties as the original image, if possible.
      * <p/>
-     * If the image is allready a {@code BufferedImage} of the given type, it
+     * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
      *
      * @param pOriginal the image to convert.
@@ -597,7 +611,7 @@ public final class ImageUtil {
      * the color model
      */
     private static BufferedImage toBuffered(Image pOriginal, int pType, IndexColorModel pICM) {
-        // Don't convert if it allready is BufferedImage and correct type
+        // Don't convert if it already is BufferedImage and correct type
         if ((pOriginal instanceof BufferedImage)
                 && ((BufferedImage) pOriginal).getType() == pType
                 && (pICM == null || equals(((BufferedImage) pOriginal).getColorModel(), pICM))) {
@@ -784,7 +798,7 @@ public final class ImageUtil {
      * Creates a scaled instance of the given {@code Image}, and converts it to
      * a {@code BufferedImage} if needed.
      * If the original image is a {@code BufferedImage} the result will have
-     * same type and colormodel. Note that this implies overhead, and is
+     * same type and color model. Note that this implies overhead, and is
      * probably not useful for anything but {@code IndexColorModel} images.
      *
      * @param pImage the {@code Image} to scale
@@ -820,7 +834,7 @@ public final class ImageUtil {
 
         BufferedImage scaled = createResampled(pImage, pWidth, pHeight, pHints);
 
-        // Convert if colormodels or type differ, to behave as documented
+        // Convert if color models or type differ, to behave as documented
         if (type != scaled.getType() && type != BI_TYPE_ANY || !equals(scaled.getColorModel(), cm)) {
             //System.out.print("Converting TYPE " + scaled.getType() + " -> " + type + "... ");
             //long start = System.currentTimeMillis();
@@ -965,9 +979,6 @@ public final class ImageUtil {
     }
 
     private static int convertAWTHints(int pHints) {
-        // TODO: These conversions are broken!
-        // box == area average
-        // point == replicate (or..?)
         switch (pHints) {
             case Image.SCALE_FAST:
             case Image.SCALE_REPLICATE:

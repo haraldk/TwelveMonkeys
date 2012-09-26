@@ -40,11 +40,11 @@ import java.io.IOException;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/TimingFilter.java#1 $
+ * @version $Id: TimingFilter.java#1 $
  */
 public class TimingFilter extends GenericFilter {
 
-    private String mAttribUsage = null;
+    private String attribUsage = null;
 
     /**
      * Method init
@@ -52,7 +52,7 @@ public class TimingFilter extends GenericFilter {
      * @throws ServletException
      */
     public void init() throws ServletException {
-        mAttribUsage = getFilterName() + ".timerDelta";
+        attribUsage = getFilterName() + ".timerDelta";
     }
 
     /**
@@ -66,13 +66,13 @@ public class TimingFilter extends GenericFilter {
     protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain)
             throws IOException, ServletException {
         // Get total usage of earlier filters on same level
-        Object usageAttrib = pRequest.getAttribute(mAttribUsage);
+        Object usageAttrib = pRequest.getAttribute(attribUsage);
         long total = 0;
 
         if (usageAttrib instanceof Long) {
             // If set, get value, and remove attribute for nested resources
-            total = ((Long) usageAttrib).longValue();
-            pRequest.removeAttribute(mAttribUsage);
+            total = (Long) usageAttrib;
+            pRequest.removeAttribute(attribUsage);
         }
 
         // Start timing
@@ -87,10 +87,10 @@ public class TimingFilter extends GenericFilter {
             long end = System.currentTimeMillis();
 
             // Get time usage of included resources, add to total usage
-            usageAttrib = pRequest.getAttribute(mAttribUsage);
+            usageAttrib = pRequest.getAttribute(attribUsage);
             long usage = 0;
             if (usageAttrib instanceof Long) {
-                usage = ((Long) usageAttrib).longValue();
+                usage = (Long) usageAttrib;
             }
 
             // Get the name of the included resource
@@ -102,12 +102,11 @@ public class TimingFilter extends GenericFilter {
             }
             long delta = end - start;
 
-            log("Request processing time for resource \"" + resourceURI + "\": " +
-                    (delta - usage) + " ms (accumulated: " + delta + " ms).");
+            log(String.format("Request processing time for resource \"%s\": %d ms (accumulated: %d ms).", resourceURI, (delta - usage), delta));
 
             // Store total usage
             total += delta;
-            pRequest.setAttribute(mAttribUsage, new Long(total));
+            pRequest.setAttribute(attribUsage, total);
         }
     }
 }

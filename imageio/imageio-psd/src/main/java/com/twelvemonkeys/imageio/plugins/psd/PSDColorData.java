@@ -44,8 +44,8 @@ import java.io.IOException;
  * @version $Id: PSDColorData.java,v 1.0 Apr 29, 2008 5:33:01 PM haraldk Exp$
  */
 class PSDColorData {
-    final byte[] mColors;
-    private IndexColorModel mColorModel;
+    final byte[] colors;
+    private IndexColorModel colorModel;
 
     PSDColorData(final ImageInputStream pInput) throws IOException {
         int length = pInput.readInt();
@@ -57,19 +57,19 @@ class PSDColorData {
         }
 
         // NOTE: Spec says length may only be 768 bytes (256 RGB triplets)
-        mColors = new byte[length];
-        pInput.readFully(mColors);
+        colors = new byte[length];
+        pInput.readFully(colors);
 
         // NOTE: Could be a padding byte here, if not even..
     }
 
     IndexColorModel getIndexColorModel() {
-        if (mColorModel == null) {
-            int[] rgb = toInterleavedRGB(mColors);
-            mColorModel = new InverseColorMapIndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
+        if (colorModel == null) {
+            int[] rgb = toInterleavedRGB(colors);
+            colorModel = new InverseColorMapIndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
         }
 
-        return mColorModel;
+        return colorModel;
     }
 
     private static int[] toInterleavedRGB(final byte[] pColors) {

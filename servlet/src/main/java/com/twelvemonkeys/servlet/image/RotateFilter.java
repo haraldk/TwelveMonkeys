@@ -29,7 +29,6 @@
 package com.twelvemonkeys.servlet.image;
 
 import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.lang.MathUtil;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.servlet.ServletUtil;
 
@@ -78,7 +77,7 @@ import java.awt.image.RenderedImage;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/RotateFilter.java#1 $
+ * @version $Id: RotateFilter.java#1 $
  */
 
 public class RotateFilter extends ImageFilter {
@@ -159,7 +158,7 @@ public class RotateFilter extends ImageFilter {
             str = pReq.getParameter(PARAM_ANGLE_UNITS);
             if (!StringUtil.isEmpty(str)
                     && ANGLE_DEGREES.equalsIgnoreCase(str)) {
-                angle = MathUtil.toRadians(angle);
+                angle = Math.toRadians(angle);
             }
         }
 

@@ -38,18 +38,26 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 * @version $Id: IPTCEntry.java,v 1.0 Nov 13, 2009 8:57:04 PM haraldk Exp$
 */
 class IPTCEntry extends AbstractEntry {
-    public IPTCEntry(final int pTagId, final Object pValue) {
-        super(pTagId, pValue);
+    public IPTCEntry(final int tagId, final Object value) {
+        super(tagId, value);
     }
 
     @Override
     public String getFieldName() {
         switch ((Integer) getIdentifier()) {
+            case IPTC.TAG_RECORD_VERSION:
+                return "RecordVersion";
             case IPTC.TAG_SOURCE:
                 return "Source";
             // TODO: More tags...
         }
 
         return null;
+    }
+
+    @Override
+    protected String getNativeIdentifier() {
+        int identifier = (Integer) getIdentifier();
+        return String.format("%d:%02d", identifier >> 8, identifier & 0xff);
     }
 }

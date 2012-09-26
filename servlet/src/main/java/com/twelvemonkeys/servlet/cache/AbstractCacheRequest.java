@@ -1,6 +1,7 @@
 package com.twelvemonkeys.servlet.cache;
 
-import java.io.File;
+import com.twelvemonkeys.lang.Validate;
+
 import java.net.URI;
 
 /**
@@ -8,30 +9,23 @@ import java.net.URI;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/AbstractCacheRequest.java#1 $
+ * @version $Id: AbstractCacheRequest.java#1 $
  */
 public abstract class AbstractCacheRequest implements CacheRequest {
-    private final URI mRequestURI;
-    private final String mMethod;
+    private final URI requestURI;
+    private final String method;
 
     protected AbstractCacheRequest(final URI pRequestURI, final String pMethod) {
-        if (pRequestURI == null) {
-            throw new IllegalArgumentException("request URI == null");
-        }
-        if (pMethod == null) {
-            throw new IllegalArgumentException("method == null");
-        }
-
-        mRequestURI = pRequestURI;
-        mMethod = pMethod;
+        requestURI = Validate.notNull(pRequestURI, "requestURI");
+        method = Validate.notNull(pMethod, "method");
     }
 
     public URI getRequestURI() {
-        return mRequestURI;
+        return requestURI;
     }
 
     public String getMethod() {
-        return mMethod;
+        return method;
     }
 
     // TODO: Consider overriding equals/hashcode
@@ -39,7 +33,7 @@ public abstract class AbstractCacheRequest implements CacheRequest {
     @Override
     public String toString() {
         return new StringBuilder(getClass().getSimpleName())
-                .append("[URI=").append(mRequestURI)
+                .append("[URI=").append(requestURI)
                 .append(", parameters=").append(getParameters())
                 .append(", headers=").append(getHeaders())
                 .append("]").toString();

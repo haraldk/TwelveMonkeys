@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.image;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.swing.Icon;
 import java.awt.image.BufferedImage;
 import java.awt.*;
@@ -41,51 +43,44 @@ import java.awt.geom.AffineTransform;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/BufferedImageIcon.java#2 $
  */
 public class BufferedImageIcon implements Icon {
-    private final BufferedImage mImage;
-    private int mWidth;
-    private int mHeight;
-    private final boolean mFast;
+    private final BufferedImage image;
+    private int width;
+    private int height;
+    private final boolean fast;
 
     public BufferedImageIcon(BufferedImage pImage) {
-        this(pImage, pImage.getWidth(), pImage.getHeight());
+        this(pImage, pImage != null ? pImage.getWidth() : 0, pImage != null ? pImage.getHeight() : 0);
     }
 
     public BufferedImageIcon(BufferedImage pImage, int pWidth, int pHeight) {
-        if (pImage == null) {
-            throw new IllegalArgumentException("image == null");
-        }
-        if (pWidth <= 0 || pHeight <= 0) {
-            throw new IllegalArgumentException("Icon size must be positive");
-        }
+        image = Validate.notNull(pImage, "image");
+        width = Validate.isTrue(pWidth > 0, pWidth, "width must be positive: %d");
+        height = Validate.isTrue(pHeight > 0, pHeight, "height must be positive: %d");
 
-        mImage = pImage;
-        mWidth = pWidth;
-        mHeight = pHeight;
-
-        mFast = pImage.getWidth() == mWidth && pImage.getHeight() == mHeight;
+        fast = image.getWidth() == width && image.getHeight() == height;
     }
 
     public int getIconHeight() {
-        return mHeight;
+        return height;
     }
 
     public int getIconWidth() {
-        return mWidth;
+        return width;
     }
 
     public void paintIcon(Component c, Graphics g, int x, int y) {
-        if (mFast || !(g instanceof Graphics2D)) {
+        if (fast || !(g instanceof Graphics2D)) {
             //System.out.println("Scaling fast");
-            g.drawImage(mImage, x, y, mWidth, mHeight, null);
+            g.drawImage(image, x, y, width, height, null);
         }
         else {
             //System.out.println("Scaling using interpolation");
             Graphics2D g2 = (Graphics2D) g;
             AffineTransform xform = AffineTransform.getTranslateInstance(x, y);
-            xform.scale(mWidth / (double) mImage.getWidth(), mHeight / (double) mImage.getHeight());
+            xform.scale(width / (double) image.getWidth(), height / (double) image.getHeight());
             g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                                 RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g2.drawImage(mImage, xform, null);
+            g2.drawImage(image, xform, null);
         }
     }
 }

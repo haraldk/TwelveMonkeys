@@ -107,7 +107,7 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
      */
     public V put(String pKey, V pValue) {
         String key = (String) toUpper(pKey);
-        return unwrap(mEntries.put(key, new BasicEntry<String, V>(key, pValue)));
+        return unwrap(entries.put(key, new BasicEntry<String, V>(key, pValue)));
     }
 
     private V unwrap(Entry<String, V> pEntry) {
@@ -124,7 +124,7 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
      *         the key is not mapped to any value in this map.
      */
     public V get(Object pKey) {
-        return unwrap(mEntries.get(toUpper(pKey)));
+        return unwrap(entries.get(toUpper(pKey)));
     }
 
     /**
@@ -137,7 +137,7 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
      *         or null if the key did not have a mapping.
      */
     public V remove(Object pKey) {
-        return unwrap(mEntries.remove(toUpper(pKey)));
+        return unwrap(entries.remove(toUpper(pKey)));
     }
 
     /**
@@ -149,7 +149,7 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
      *         map, as determined by the equals method; false otherwise.
      */
     public boolean containsKey(Object pKey) {
-        return mEntries.containsKey(toUpper(pKey));
+        return entries.containsKey(toUpper(pKey));
     }
 
     /**
@@ -163,14 +163,14 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
     }
 
     protected Iterator<Entry<String, V>> newEntryIterator() {
-        return (Iterator) mEntries.entrySet().iterator();
+        return (Iterator) entries.entrySet().iterator();
     }
 
     protected Iterator<String> newKeyIterator() {
-        return mEntries.keySet().iterator();
+        return entries.keySet().iterator();
     }
 
     protected Iterator<V> newValueIterator() {
-        return (Iterator<V>) mEntries.values().iterator();
+        return (Iterator<V>) entries.values().iterator();
     }
 }

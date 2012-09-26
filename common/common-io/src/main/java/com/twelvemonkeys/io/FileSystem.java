@@ -38,7 +38,7 @@ import java.io.InputStreamReader;
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/FileSystem.java#1 $
+ * @version $Id: FileSystem.java#1 $
  */
 abstract class FileSystem {
     abstract long getFreeSpace(File pPath);
@@ -57,21 +57,21 @@ abstract class FileSystem {
         //System.out.println("os = " + os);
 
         os = os.toLowerCase();
-        if (os.indexOf("windows") != -1) {
+        if (os.contains("windows")) {
             return new Win32FileSystem();
         }
-        else if (os.indexOf("linux") != -1 ||
-                os.indexOf("sun os") != -1 ||
-                os.indexOf("sunos") != -1 ||
-                os.indexOf("solaris") != -1 ||
-                os.indexOf("mpe/ix") != -1 ||
-                os.indexOf("hp-ux") != -1 ||
-                os.indexOf("aix") != -1 ||
-                os.indexOf("freebsd") != -1 ||
-                os.indexOf("irix") != -1 ||
-                os.indexOf("digital unix") != -1 ||
-                os.indexOf("unix") != -1 ||
-                os.indexOf("mac os x") != -1) {
+        else if (os.contains("linux") ||
+                os.contains("sun os") ||
+                os.contains("sunos") ||
+                os.contains("solaris") ||
+                os.contains("mpe/ix") ||
+                os.contains("hp-ux") ||
+                os.contains("aix") ||
+                os.contains("freebsd") ||
+                os.contains("irix") ||
+                os.contains("digital unix") ||
+                os.contains("unix") ||
+                os.contains("mac os x")) {
             return new UnixFileSystem();
         }
         else {
@@ -80,10 +80,10 @@ abstract class FileSystem {
     }
 
     private static class UnknownFileSystem extends FileSystem {
-        private final String mOSName;
+        private final String osName;
 
         UnknownFileSystem(String pOSName) {
-            mOSName = pOSName;
+            osName = pOSName;
         }
 
         long getFreeSpace(File pPath) {
@@ -95,7 +95,7 @@ abstract class FileSystem {
         }
 
         String getName() {
-            return "Unknown (" + mOSName + ")";
+            return "Unknown (" + osName + ")";
         }
     }
 }

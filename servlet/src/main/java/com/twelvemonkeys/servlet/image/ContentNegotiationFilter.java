@@ -54,6 +54,9 @@ import java.util.*;
  * unneccessary conversion (as IE supports PNG, the latests FireFox supports
  * JPEG and GIF, etc. even though they both don't explicitly list these formats
  * in their Accept headers).
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: ContentNegotiationFilter.java#1 $
  */
 public class ContentNegotiationFilter extends ImageFilter {
 
@@ -72,12 +75,12 @@ public class ContentNegotiationFilter extends ImageFilter {
     private final static String[] sKnownFormats = new String[] {
         FORMAT_JPEG, FORMAT_PNG, FORMAT_GIF, FORMAT_WBMP
     };
-    private float[] mKnownFormatQuality = new float[] {
+    private float[] knownFormatQuality = new float[] {
         1f, 1f, 0.99f, 0.5f
     };
 
-    private HashMap<String, Float> mFormatQuality; // HashMap, as I need to clone this for each request
-    private final Object mLock = new Object();
+    private HashMap<String, Float> formatQuality; // HashMap, as I need to clone this for each request
+    private final Object lock = new Object();
 
     /*
     private Pattern[] mKnownAgentPatterns;
@@ -86,7 +89,7 @@ public class ContentNegotiationFilter extends ImageFilter {
     {
         // Hack: Make sure the filter don't trigger all the time
         // See: super.trigger(ServletRequest)
-        mTriggerParams = new String[] {};
+        triggerParams = new String[] {};
     }
 
     /*
@@ -242,9 +245,9 @@ public class ContentNegotiationFilter extends ImageFilter {
     }
 
     private Map<String, Float> getFormatQualityMapping() {
-        synchronized(mLock) {
-            if (mFormatQuality == null) {
-                mFormatQuality = new HashMap<String, Float>();
+        synchronized(lock) {
+            if (formatQuality == null) {
+                formatQuality = new HashMap<String, Float>();
 
                 // Use ImageIO to find formats we can actually write
                 String[] formats = ImageIO.getWriterMIMETypes();
@@ -252,12 +255,12 @@ public class ContentNegotiationFilter extends ImageFilter {
                 // All known formats qs are initially 1.0
                 // Others should be 0.1 or something like that...
                 for (String format : formats) {
-                    mFormatQuality.put(format, getKnownFormatQuality(format));
+                    formatQuality.put(format, getKnownFormatQuality(format));
                 }
             }
         }
         //noinspection unchecked
-        return (Map<String, Float>) mFormatQuality.clone();
+        return (Map<String, Float>) formatQuality.clone();
     }
 
     /**
@@ -428,7 +431,7 @@ public class ContentNegotiationFilter extends ImageFilter {
     private float getKnownFormatQuality(String pFormat) {
         for (int i = 0; i < sKnownFormats.length; i++) {
             if (pFormat.equals(sKnownFormats[i])) {
-                return mKnownFormatQuality[i];
+                return knownFormatQuality[i];
             }
         }
         return 0.1f;

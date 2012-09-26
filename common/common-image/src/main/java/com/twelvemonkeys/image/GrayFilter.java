@@ -48,8 +48,8 @@ public class GrayFilter extends RGBImageFilter {
         canFilterIndexColorModel = true;
     }
 
-    private int mLow = 0;
-    private float mRange = 1.0f;
+    private int low = 0;
+    private float range = 1.0f;
 
     /**
      * Constructs a GrayFilter using ITU color-conversion.
@@ -82,8 +82,8 @@ public class GrayFilter extends RGBImageFilter {
             pHigh = 1f;
         }
 
-        mLow = (int) (pLow * 255f);
-        mRange = pHigh - pLow;
+        low = (int) (pLow * 255f);
+        range = pHigh - pLow;
 
     }
 
@@ -118,9 +118,9 @@ public class GrayFilter extends RGBImageFilter {
 
         //int gray = (int) ((float) (r + g + b) / 3.0f);
 
-        if (mRange != 1.0f) {
+        if (range != 1.0f) {
             // Apply range
-            gray =  mLow + (int) (gray * mRange);
+            gray =  low + (int) (gray * range);
         }
 
         // Return ARGB pixel

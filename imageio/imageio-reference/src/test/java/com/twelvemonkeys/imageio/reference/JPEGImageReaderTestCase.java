@@ -4,13 +4,15 @@ import com.sun.imageio.plugins.jpeg.JPEGImageReader;
 import com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import com.twelvemonkeys.lang.SystemUtil;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.spi.ImageReaderSpi;
-import java.util.Arrays;
-import java.util.List;
 import java.awt.*;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * JPEGImageReaderTestCase
@@ -22,7 +24,7 @@ import java.io.IOException;
 public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGImageReader> {
     private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
     
-    protected JPEGImageReaderSpi mProvider = new JPEGImageReaderSpi();
+    protected JPEGImageReaderSpi provider = new JPEGImageReaderSpi();
 
     @Override
     protected List<TestData> getTestData() {
@@ -33,7 +35,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
 
     @Override
     protected ImageReaderSpi createProvider() {
-        return mProvider;
+        return provider;
     }
 
     @Override
@@ -44,7 +46,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
     @Override
     protected JPEGImageReader createReader() {
         try {
-            return (JPEGImageReader) mProvider.createReaderInstance();
+            return (JPEGImageReader) provider.createReaderInstance();
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -54,19 +56,20 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
     // These are NOT correct implementations, but I don't really care here
     @Override
     protected List<String> getFormatNames() {
-        return Arrays.asList(mProvider.getFormatNames());
+        return Arrays.asList(provider.getFormatNames());
     }
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList(mProvider.getFileSuffixes());
+        return Arrays.asList(provider.getFileSuffixes());
     }
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList(mProvider.getMIMETypes());
+        return Arrays.asList(provider.getMIMETypes());
     }
 
+    @Test
     @Override
     public void testSetDestination() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
@@ -78,6 +81,7 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
         }
     }
 
+    @Test
     @Override
     public void testSetDestinationType() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
@@ -89,13 +93,17 @@ public class JPEGImageReaderTestCase extends ImageReaderAbstractTestCase<JPEGIma
         }
     }
 
+    @Test
+    @Ignore("Known issue")
     @Override
     public void testReadAsRenderedImageIndexOutOfBounds() throws IIOException {
-        try {
-            super.testReadAsRenderedImageIndexOutOfBounds();
-        }
-        catch (IIOException expected) {
-            // Known bug
-        }
+        super.testReadAsRenderedImageIndexOutOfBounds();
+    }
+
+    @Test
+    @Ignore("No test data with JFIF thumbnail")
+    @Override
+    public void testNotBadCachingThumbnails() throws IOException {
+        super.testNotBadCachingThumbnails();
     }
 }

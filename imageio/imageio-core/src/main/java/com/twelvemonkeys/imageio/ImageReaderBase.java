@@ -37,9 +37,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.File;
@@ -57,11 +55,13 @@ import java.util.Iterator;
  */
 public abstract class ImageReaderBase extends ImageReader {
 
+    private static final Point ORIGIN = new Point(0, 0);
+
     /**
      * For convenience. Only set if the input is an {@code ImageInputStream}.
      * @see #setInput(Object, boolean, boolean)
      */
-    protected ImageInputStream mImageInput;
+    protected ImageInputStream imageInput;
 
     /**
      * Constructs an {@code ImageReader} and sets its
@@ -73,21 +73,21 @@ public abstract class ImageReaderBase extends ImageReader {
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
      *
-     * @param pProvider the {@code ImageReaderSpi} that is invoking this constructor, or {@code null}.
+     * @param provider the {@code ImageReaderSpi} that is invoking this constructor, or {@code null}.
      */
-    protected ImageReaderBase(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    protected ImageReaderBase(final ImageReaderSpi provider) {
+        super(provider);
     }
 
     /**
      * Overrides {@code setInput}, to allow easy access to the input, in case
      * it is an {@code ImageInputStream}.
      *
-     * @param pInput the {@code ImageInputStream} or other
+     * @param input the {@code ImageInputStream} or other
      * {@code Object} to use for future decoding.
-     * @param pSeekForwardOnly if {@code true}, images and metadata
+     * @param seekForwardOnly if {@code true}, images and metadata
      * may only be read in ascending order from this input source.
-     * @param pIgnoreMetadata if {@code true}, metadata
+     * @param ignoreMetadata if {@code true}, metadata
      * may be ignored during reads.
      *
      * @exception IllegalArgumentException if {@code input} is
@@ -98,11 +98,15 @@ public abstract class ImageReaderBase extends ImageReader {
      * @see ImageInputStream
      */
     @Override
-    public void setInput(final Object pInput, final boolean pSeekForwardOnly, final boolean pIgnoreMetadata) {
+    public void setInput(final Object input, final boolean seekForwardOnly, final boolean ignoreMetadata) {
         resetMembers();
-        super.setInput(pInput, pSeekForwardOnly, pIgnoreMetadata);
-        if (pInput instanceof ImageInputStream) {
-            mImageInput = (ImageInputStream) pInput;
+        super.setInput(input, seekForwardOnly, ignoreMetadata);
+
+        if (input instanceof ImageInputStream) {
+            imageInput = (ImageInputStream) input;
+        }
+        else {
+            imageInput = null;
         }
     }
 
@@ -132,11 +136,11 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Default implementation that always returns {@code null}.
      *
-     * @param pImageIndex ignored, unless overridden
+     * @param imageIndex ignored, unless overridden
      * @return {@code null}, unless overridden
      * @throws IOException never, unless overridden.
      */
-    public IIOMetadata getImageMetadata(int pImageIndex) throws IOException {
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         return null;
     }
 
@@ -153,11 +157,11 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Default implementation that always returns {@code 1}.
      *
-     * @param pAllowSearch ignored, unless overridden
+     * @param allowSearch ignored, unless overridden
      * @return {@code 1}, unless overridden
      * @throws IOException never, unless overridden
      */
-    public int getNumImages(boolean pAllowSearch) throws IOException {
+    public int getNumImages(boolean allowSearch) throws IOException {
         assertInput();
         return 1;
     }
@@ -165,18 +169,18 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Convenience method to make sure image index is within bounds.
      *
-     * @param pIndex the image index
+     * @param index the image index
      *
      * @throws java.io.IOException if an error occurs during reading
-     * @throws IndexOutOfBoundsException if not {@code minIndex <= pIndex < numImages}
+     * @throws IndexOutOfBoundsException if not {@code minIndex <= index < numImages}
      */
-    protected void checkBounds(int pIndex) throws IOException {
+    protected void checkBounds(int index) throws IOException {
         assertInput();
-        if (pIndex < getMinIndex()) {
+        if (index < getMinIndex()) {
             throw new IndexOutOfBoundsException("index < minIndex");
         }
-        else if (getNumImages(false) != -1 && pIndex >= getNumImages(false)) {
-            throw new IndexOutOfBoundsException("index >= numImages (" + pIndex + " >= " + getNumImages(false) + ")");
+        else if (getNumImages(false) != -1 && index >= getNumImages(false)) {
+            throw new IndexOutOfBoundsException("index >= numImages (" + index + " >= " + getNumImages(false) + ")");
         }
     }
 
@@ -192,50 +196,56 @@ public abstract class ImageReaderBase extends ImageReader {
     }
 
     /**
-     * Returns the {@code BufferedImage} to which decoded pixel
-     * data should be written.
+     * Returns the {@code BufferedImage} to which decoded pixel data should be written.
      * <p/>
      * As {@link javax.imageio.ImageReader#getDestination} but tests if the explicit destination
-     * image (if set) is valid according to the {@code ImageTypeSpecifier}s given in {@code pTypes}
+     * image (if set) is valid according to the {@code ImageTypeSpecifier}s given in {@code types}.
      *
-     *
-     * @param pParam an {@code ImageReadParam} to be used to get
+     * @param param an {@code ImageReadParam} to be used to get
      * the destination image or image type, or {@code null}.
-     * @param pTypes an {@code Iterator} of
+     * @param types an {@code Iterator} of
      * {@code ImageTypeSpecifier}s indicating the legal image
      * types, with the default first.
-     * @param pWidth the true width of the image or tile begin decoded.
-     * @param pHeight the true width of the image or tile being decoded.
+     * @param width the true width of the image or tile begin decoded.
+     * @param height the true width of the image or tile being decoded.
      *
      * @return the {@code BufferedImage} to which decoded pixel
      * data should be written.
      *
-     * @exception IIOException if the {@code ImageTypeSpecifier} or {@code BufferedImage}
-     * specified by {@code pParam} does not match any of the legal
-     * ones from {@code pTypes}.
-     * @throws IllegalArgumentException if {@code pTypes}
+     * @exception javax.imageio.IIOException if the {@code ImageTypeSpecifier} or {@code BufferedImage}
+     * specified by {@code param} does not match any of the legal
+     * ones from {@code types}.
+     * @throws IllegalArgumentException if {@code types}
      * is {@code null} or empty, or if an object not of type
      * {@code ImageTypeSpecifier} is retrieved from it.
      * Or, if the resulting image would have a width or height less than 1,
-     * or if the product of {@code pWidth} and {@code pHeight} is greater than
+     * or if the product of {@code width} and {@code height} of the resulting image is greater than
      * {@code Integer.MAX_VALUE}.
      */
-    public static BufferedImage getDestination(final ImageReadParam pParam, final Iterator<ImageTypeSpecifier> pTypes,
-                                               final int pWidth, final int pHeight) throws IIOException {
-        BufferedImage image = ImageReader.getDestination(pParam, pTypes, pWidth, pHeight);
+    public static BufferedImage getDestination(final ImageReadParam param, final Iterator<ImageTypeSpecifier> types,
+                                               final int width, final int height) throws IIOException {
+        // Adapted from http://java.net/jira/secure/attachment/29712/TIFFImageReader.java.patch,
+        // to allow reading parts/tiles of huge images.
 
-        if (pParam != null) {
-            BufferedImage dest = pParam.getDestination();
+        if (types == null || !types.hasNext()) {
+            throw new IllegalArgumentException("imageTypes null or empty!");
+        }
+
+        ImageTypeSpecifier imageType = null;
+
+        // If param is non-null, use it
+        if (param != null) {
+            // Try to get the explicit destinaton image
+            BufferedImage dest = param.getDestination();
+
             if (dest != null) {
                 boolean found = false;
 
-                // NOTE: This is bad, as it relies on implementation details of super method...
-                // We know that the iterator has not been touched if explicit destination..
-                while (pTypes.hasNext()) {
-                    ImageTypeSpecifier specifier = pTypes.next();
-                    int imageType = specifier.getBufferedImageType();
+                while (types.hasNext()) {
+                    ImageTypeSpecifier specifier = types.next();
+                    int bufferedImageType = specifier.getBufferedImageType();
 
-                    if (imageType != 0 && imageType == dest.getType()) {
+                    if (bufferedImageType != 0 && bufferedImageType == dest.getType()) {
                         // Known types equal, perfect match
                         found = true;
                         break;
@@ -254,12 +264,50 @@ public abstract class ImageReaderBase extends ImageReader {
                 }
 
                 if (!found) {
-                    throw new IIOException(String.format("Illegal explicit destination image %s", dest));
+                    throw new IIOException(String.format("Destination image from ImageReadParam does not match legal imageTypes from reader: %s", dest));
                 }
+
+                return dest;
+            }
+
+            // No image, get the image type
+            imageType = param.getDestinationType();
+        }
+
+        // No info from param, use fallback image type
+        if (imageType == null) {
+            imageType = types.next();
+        }
+        else {
+            boolean foundIt = false;
+
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+
+                if (type.equals(imageType)) {
+                    foundIt = true;
+                    break;
+                }
+            }
+
+            if (!foundIt) {
+                throw new IIOException(String.format("Destination type from ImageReadParam does not match legal imageTypes from reader: %s", imageType));
             }
         }
 
-        return image;
+        Rectangle srcRegion = new Rectangle(0, 0, 0, 0);
+        Rectangle destRegion = new Rectangle(0, 0, 0, 0);
+        computeRegions(param, width, height, null, srcRegion, destRegion);
+
+        int destWidth = destRegion.x + destRegion.width;
+        int destHeight = destRegion.y + destRegion.height;
+
+        if ((long) destWidth * destHeight > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(String.format("destination width * height > Integer.MAX_VALUE: %d", (long) destWidth * destHeight));
+        }
+
+        // Create a new image based on the type specifier
+        return imageType.createBufferedImage(destWidth, destHeight);
     }
 
     /**
@@ -304,10 +352,26 @@ public abstract class ImageReaderBase extends ImageReader {
         return IIOUtil.fakeSubsampling(pImage, pParam);
     }
 
+    /**
+     * Tests if param has explicit destination.
+     *
+     * @param pParam the image read parameter, or {@code null}
+     * @return true if {@code pParam} is non-{@code null} and either its {@code getDestination},
+     * {@code getDestinationType} returns a non-{@code null} value,
+     * or {@code getDestinationOffset} returns a {@link Point} that is not the upper left corner {@code (0, 0)}.
+     */
+    protected static boolean hasExplicitDestination(final ImageReadParam pParam) {
+        return pParam != null &&
+                (
+                        pParam.getDestination() != null || pParam.getDestinationType() != null ||
+                                !ORIGIN.equals(pParam.getDestinationOffset())
+                );
+    }
+
     public static void main(String[] pArgs) throws IOException {
         BufferedImage image = ImageIO.read(new File(pArgs[0]));
         if (image == null) {
-            System.err.println("Supported formats: " + Arrays.toString(ImageIO.getReaderFormatNames()));
+            System.err.println("Supported formats: " + Arrays.toString(IIOUtil.getNormalizedReaderFormatNames()));
             System.exit(1);
         }
         showIt(image, pArgs[0]);
@@ -318,10 +382,21 @@ public abstract class ImageReaderBase extends ImageReader {
             SwingUtilities.invokeAndWait(new Runnable() {
                 public void run() {
                     JFrame frame = new JFrame(pTitle);
-                    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+                    frame.getRootPane().getActionMap().put("window-close", new AbstractAction() {
+                        public void actionPerformed(ActionEvent e) {
+                            Window window = SwingUtilities.getWindowAncestor((Component) e.getSource());
+                            window.setVisible(false);
+                            window.dispose();
+                        }
+                    });
+                    frame.getRootPane().getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_W, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()), "window-close");
+                    frame.addWindowListener(new ExitIfNoWindowPresentHandler());
+                    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
                     frame.setLocationByPlatform(true);
                     JPanel pane = new JPanel(new BorderLayout());
-                    JScrollPane scroll = new JScrollPane(new ImageLabel(pImage));
+                    JScrollPane scroll = new JScrollPane(pImage != null ? new ImageLabel(pImage) : new JLabel("(no image data)", JLabel.CENTER));
                     scroll.setBorder(null);
                     pane.add(scroll);
                     frame.setContentPane(pane);
@@ -334,27 +409,31 @@ public abstract class ImageReaderBase extends ImageReader {
             Thread.currentThread().interrupt();
         }
         catch (InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            }
+
             throw new RuntimeException(e);
         }
     }
 
     private static class ImageLabel extends JLabel {
-        Paint mBackground;
+        Paint backgroundPaint;
 
-        final Paint mCheckeredBG;
-        final Color mDefaultBG;
+        final Paint checkeredBG;
+        final Color defaultBG;
 
         public ImageLabel(final BufferedImage pImage) {
             super(new BufferedImageIcon(pImage));
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 
-            mCheckeredBG = createTexture();
+            checkeredBG = createTexture();
 
             // For indexed color, default to the color of the transparent pixel, if any 
-            mDefaultBG = getDefaultBackground(pImage);
+            defaultBG = getDefaultBackground(pImage);
 
-            mBackground = mDefaultBG != null ? mDefaultBG : mCheckeredBG;
+            backgroundPaint = defaultBG != null ? defaultBG : checkeredBG;
 
             JPopupMenu popup = createBackgroundPopup();
 
@@ -373,7 +452,7 @@ public abstract class ImageReaderBase extends ImageReader {
             JPopupMenu popup = new JPopupMenu();
             ButtonGroup group = new ButtonGroup();
 
-            addCheckBoxItem(new ChangeBackgroundAction("Checkered", mCheckeredBG), popup, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Checkered", checkeredBG), popup, group);
             popup.addSeparator();
             addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), popup, group);
             addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), popup, group);
@@ -381,7 +460,7 @@ public abstract class ImageReaderBase extends ImageReader {
             addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), popup, group);
             addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), popup, group);
             popup.addSeparator();
-            addCheckBoxItem(new ChooseBackgroundAction("Choose...", mDefaultBG != null ? mDefaultBG : Color.BLUE), popup, group);
+            addCheckBoxItem(new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE), popup, group);
 
             return popup;
         }
@@ -425,21 +504,21 @@ public abstract class ImageReaderBase extends ImageReader {
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D gr = (Graphics2D) g;
-            gr.setPaint(mBackground);
+            gr.setPaint(backgroundPaint);
             gr.fillRect(0, 0, getWidth(), getHeight());
             super.paintComponent(g);
         }
 
         private class ChangeBackgroundAction extends AbstractAction {
-            protected Paint mPaint;
+            protected Paint paint;
 
             public ChangeBackgroundAction(final String pName, final Paint pPaint) {
                 super(pName);
-                mPaint = pPaint;
+                paint = pPaint;
             }
 
             public void actionPerformed(ActionEvent e) {
-                mBackground = mPaint;
+                backgroundPaint = paint;
                 repaint();
             }
         }
@@ -450,7 +529,7 @@ public abstract class ImageReaderBase extends ImageReader {
                 putValue(Action.SMALL_ICON, new Icon() {
                     public void paintIcon(Component c, Graphics pGraphics, int x, int y) {
                         Graphics g = pGraphics.create();
-                        g.setColor((Color) mPaint);
+                        g.setColor((Color) paint);
                         g.fillRect(x, y, 16, 16);
                         g.dispose();
                     }
@@ -467,11 +546,22 @@ public abstract class ImageReaderBase extends ImageReader {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                Color selected = JColorChooser.showDialog(ImageLabel.this, "Choose background", (Color) mPaint);
+                Color selected = JColorChooser.showDialog(ImageLabel.this, "Choose background", (Color) paint);
                 if (selected != null) {
-                    mPaint = selected;
+                    paint = selected;
                     super.actionPerformed(e);
                 }
+            }
+        }
+    }
+
+    private static class ExitIfNoWindowPresentHandler extends WindowAdapter {
+        @Override
+        public void windowClosed(final WindowEvent e) {
+            Window[] windows = Window.getWindows();
+
+            if (windows == null || windows.length == 0) {
+                System.exit(0);
             }
         }
     }

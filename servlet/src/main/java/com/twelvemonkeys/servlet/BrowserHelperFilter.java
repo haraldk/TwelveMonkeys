@@ -30,16 +30,16 @@ package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.lang.StringUtil;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
-import java.util.Properties;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -47,14 +47,15 @@ import java.util.regex.PatternSyntaxException;
  * BrowserHelperFilter
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/BrowserHelperFilter.java#1 $
+ * @version $Id: BrowserHelperFilter.java#1 $
  */
 public class BrowserHelperFilter extends GenericFilter {
     private static final String HTTP_HEADER_ACCEPT = "Accept";
     protected static final String HTTP_HEADER_USER_AGENT = "User-Agent";
 
-    private Pattern[] mKnownAgentPatterns;
-    private String[] mKnownAgentAccpets;
+    // TODO: Consider using unmodifiable LinkedHashMap<Pattern, String> instead
+    private Pattern[] knownAgentPatterns;
+    private String[] knownAgentAccepts;
 
     /**
      * Sets the accept-mappings for this filter
@@ -62,55 +63,63 @@ public class BrowserHelperFilter extends GenericFilter {
      * @throws ServletConfigException if the accept-mappings properties
      *                                file cannot be read.
      */
+    @InitParam(name = "accept-mappings-file")
     public void setAcceptMappingsFile(String pPropertiesFile) throws ServletConfigException {
         // NOTE: Format is:
         // <agent-name>=<reg-exp>
         // <agent-name>.accept=<http-accept-header>
 
         Properties mappings = new Properties();
+
         try {
             log("Reading Accept-mappings properties file: " + pPropertiesFile);
             mappings.load(getServletContext().getResourceAsStream(pPropertiesFile));
 
-            List<Pattern> patterns = new ArrayList<Pattern>();
-            List<String> accepts = new ArrayList<String>();
-
             //System.out.println("--> Loaded file: " + pPropertiesFile);
-
-            for (Object key : mappings.keySet()) {
-                String agent = (String) key;
-                if (agent.endsWith(".accept")) {
-                    continue;
-                }
-
-                //System.out.println("--> Adding accept-mapping for User-Agent: " + agent);
-
-                try {
-                    String accept = (String) mappings.get(agent + ".accept");
-                    if (!StringUtil.isEmpty(accept)) {
-                        patterns.add(Pattern.compile((String) mappings.get(agent)));
-                        accepts.add(accept);
-                        //System.out.println("--> " + agent + " accepts: " + accept);
-                    }
-                    else {
-                        log("Missing Accept mapping for User-Agent: " + agent);
-                    }
-                }
-                catch (PatternSyntaxException e) {
-                    log("Could not parse User-Agent identification for " + agent, e);
-                }
-
-                mKnownAgentPatterns = patterns.toArray(new Pattern[patterns.size()]);
-                mKnownAgentAccpets = accepts.toArray(new String[accepts.size()]);
-            }
         }
         catch (IOException e) {
             throw new ServletConfigException("Could not read Accept-mappings properties file: " + pPropertiesFile, e);
         }
+
+        parseMappings(mappings);
+    }
+
+    private void parseMappings(Properties mappings) {
+        List<Pattern> patterns = new ArrayList<Pattern>();
+        List<String> accepts = new ArrayList<String>();
+
+        for (Object key : mappings.keySet()) {
+            String agent = (String) key;
+
+            if (agent.endsWith(".accept")) {
+                continue;
+            }
+
+            //System.out.println("--> Adding accept-mapping for User-Agent: " + agent);
+
+            try {
+                String accept = (String) mappings.get(agent + ".accept");
+
+                if (!StringUtil.isEmpty(accept)) {
+                    patterns.add(Pattern.compile((String) mappings.get(agent)));
+                    accepts.add(accept);
+                    //System.out.println("--> " + agent + " accepts: " + accept);
+                }
+                else {
+                    log("Missing Accept mapping for User-Agent: " + agent);
+                }
+            }
+            catch (PatternSyntaxException e) {
+                log("Could not parse User-Agent identification for " + agent, e);
+            }
+
+            knownAgentPatterns = patterns.toArray(new Pattern[patterns.size()]);
+            knownAgentAccepts = accepts.toArray(new String[accepts.size()]);
+        }
     }
 
     public void init() throws ServletException {
-        if (mKnownAgentAccpets == null || mKnownAgentAccpets.length == 0) {
+        if (knownAgentAccepts == null || knownAgentAccepts.length == 0) {
             throw new ServletConfigException("No User-Agent/Accept mappings for filter: " + getFilterName());
         }
     }
@@ -119,18 +128,19 @@ public class BrowserHelperFilter extends GenericFilter {
         if (pRequest instanceof HttpServletRequest) {
             //System.out.println("--> Trying to find User-Agent/Accept headers...");
             HttpServletRequest request = (HttpServletRequest) pRequest;
+
             // Check if User-Agent is in list of known agents
-            if (mKnownAgentPatterns != null && mKnownAgentPatterns.length > 0) {
+            if (knownAgentPatterns != null && knownAgentPatterns.length > 0) {
                 String agent = request.getHeader(HTTP_HEADER_USER_AGENT);
                 //System.out.println("--> User-Agent: " + agent);
 
-                for (int i = 0; i < mKnownAgentPatterns.length; i++) {
-                    Pattern pattern = mKnownAgentPatterns[i];
+                for (int i = 0; i < knownAgentPatterns.length; i++) {
+                    Pattern pattern = knownAgentPatterns[i];
                     //System.out.println("--> Pattern: " + pattern);
-                    if (pattern.matcher(agent).matches()) {
-                        // TODO: Consider merge known with real accpet, in case plugins add extra capabilities?
-                        final String fakeAccept = mKnownAgentAccpets[i];
 
+                    if (pattern.matcher(agent).matches()) {
+                        // TODO: Consider merge known with real accept, in case plugins add extra capabilities?
+                        final String fakeAccept = knownAgentAccepts[i];
                         //System.out.println("--> User-Agent: " + agent + " accepts: " + fakeAccept);
 
                         pRequest = new HttpServletRequestWrapper(request) {
@@ -138,14 +148,17 @@ public class BrowserHelperFilter extends GenericFilter {
                                 if (HTTP_HEADER_ACCEPT.equals(pName)) {
                                     return fakeAccept;
                                 }
+
                                 return super.getHeader(pName);
                             }
                         };
+
                         break;
                     }
                 }
             }
         }
+
         pChain.doFilter(pRequest, pResponse);
     }
 }

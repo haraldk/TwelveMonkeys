@@ -54,11 +54,11 @@ final class MagickAccelerator {
 
     private static final int RESAMPLE_OP = 0;
 
-    private static Class[] sNativeOp = new Class[1];
+    private static Class[] nativeOp = new Class[1];
 
     static {
         try {
-            sNativeOp[RESAMPLE_OP] = Class.forName("com.twelvemonkeys.image.ResampleOp");
+            nativeOp[RESAMPLE_OP] = Class.forName("com.twelvemonkeys.image.ResampleOp");
         }
         catch (ClassNotFoundException e) {
             System.err.println("Could not find class: " + e);
@@ -94,8 +94,8 @@ final class MagickAccelerator {
     }
 
     private static int getNativeOpIndex(Class pOpClass) {
-        for (int i = 0; i < sNativeOp.length; i++) {
-            if (pOpClass == sNativeOp[i]) {
+        for (int i = 0; i < nativeOp.length; i++) {
+            if (pOpClass == nativeOp[i]) {
                 return i;
             }
         }
@@ -112,7 +112,7 @@ final class MagickAccelerator {
         switch (getNativeOpIndex(pOperation.getClass())) {
             case RESAMPLE_OP:
                 ResampleOp resample = (ResampleOp) pOperation;
-                result = resampleMagick(pInput, resample.mWidth, resample.mHeight, resample.mFilterType);
+                result = resampleMagick(pInput, resample.width, resample.height, resample.filterType);
 
                 // NOTE: If output parameter is non-null, we have to return that
                 // image, instead of result

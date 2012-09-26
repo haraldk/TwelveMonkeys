@@ -1,13 +1,15 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
-
-import java.util.*;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.io.*;
+import org.junit.Test;
 
 import javax.servlet.*;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 /**
  * FilterAbstractTestCase
@@ -45,6 +47,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         return new MockFilterChain();
     }
 
+    @Test
     public void testInitNull() {
         Filter filter = makeFilter();
 
@@ -65,6 +68,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testInit() {
         Filter filter = makeFilter();
 
@@ -79,6 +83,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testLifeCycle() throws ServletException {
         Filter filter = makeFilter();
 
@@ -90,6 +95,7 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testFilterBasic() throws ServletException, IOException {
         Filter filter = makeFilter();
 
@@ -103,22 +109,19 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
     }
 
+    @Test
     public void testDestroy() {
         // TODO: Implement
     }
 
     static class MockFilterConfig implements FilterConfig {
-        private final Map mParams;
+        private final Map<String, String> params;
 
-        MockFilterConfig() {
-            this(new HashMap());
-        }
-
-        MockFilterConfig(Map pParams) {
+        MockFilterConfig(Map<String, String> pParams) {
             if (pParams == null) {
                 throw new IllegalArgumentException("params == null");
             }
-            mParams = pParams;
+            params = pParams;
         }
 
         public String getFilterName() {
@@ -126,11 +129,11 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
 
         public String getInitParameter(String pName) {
-            return (String) mParams.get(pName);
+            return params.get(pName);
         }
 
         public Enumeration getInitParameterNames() {
-            return Collections.enumeration(mParams.keySet());
+            return Collections.enumeration(params.keySet());
         }
 
         public ServletContext getServletContext() {
@@ -138,20 +141,20 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
 
         private static class MockServletContext implements ServletContext {
-            private final Map mAttributes;
-            private final Map mParams;
+            private final Map<String, Object> attributes;
+            private final Map<String, String> params;
 
             MockServletContext() {
-                mAttributes = new HashMap();
-                mParams = new HashMap();
+                attributes = new HashMap<String, Object>();
+                params = new HashMap<String, String>();
             }
 
             public Object getAttribute(String s) {
-                return mAttributes.get(s);
+                return attributes.get(s);
             }
 
             public Enumeration getAttributeNames() {
-                return Collections.enumeration(mAttributes.keySet());
+                return Collections.enumeration(attributes.keySet());
             }
 
             public ServletContext getContext(String s) {
@@ -159,11 +162,11 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
             }
 
             public String getInitParameter(String s) {
-                return (String) mParams.get(s);
+                return (String) params.get(s);
             }
 
             public Enumeration getInitParameterNames() {
-                return Collections.enumeration(mParams.keySet());
+                return Collections.enumeration(params.keySet());
             }
 
             public int getMajorVersion() {
@@ -223,40 +226,37 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
             }
 
             public void log(Exception exception, String s) {
-                // TODO: Implement
             }
 
             public void log(String s) {
-                // TODO: Implement
             }
 
             public void log(String s, Throwable throwable) {
-                // TODO: Implement
             }
 
             public void removeAttribute(String s) {
-                mAttributes.remove(s);
+                attributes.remove(s);
             }
 
             public void setAttribute(String s, Object obj) {
-                mAttributes.put(s, obj);
+                attributes.put(s, obj);
             }
         }
     }
 
     static class MockServletRequest implements ServletRequest {
-        final private Map mAttributes;
+        final private Map<String, Object> attributes;
 
         public MockServletRequest() {
-            mAttributes = new HashMap();
+            attributes = new HashMap<String, Object>();
         }
 
         public Object getAttribute(String pKey) {
-            return mAttributes.get(pKey);
+            return attributes.get(pKey);
         }
 
         public Enumeration getAttributeNames() {
-            return Collections.enumeration(mAttributes.keySet());
+            return Collections.enumeration(attributes.keySet());
         }
 
         public String getCharacterEncoding() {
@@ -324,11 +324,11 @@ public abstract class FilterAbstractTestCase extends ObjectAbstractTestCase {
         }
 
         public void setAttribute(String pKey, Object pValue) {
-            mAttributes.put(pKey, pValue);
+            attributes.put(pKey, pValue);
         }
 
         public void removeAttribute(String pKey) {
-            mAttributes.remove(pKey);
+            attributes.remove(pKey);
         }
 
         public Locale getLocale() {

@@ -1,7 +1,11 @@
 package com.twelvemonkeys.io;
 
+import org.junit.Test;
+
 import java.io.IOException;
 import java.io.InputStream;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * FastByteArrayOutputStreamTestCase
@@ -16,6 +20,7 @@ public class FastByteArrayOutputStreamTestCase extends OutputStreamAbstractTestC
         return new FastByteArrayOutputStream(256);
     }
 
+    @Test
     public void testCreateInputStream() throws IOException {
         FastByteArrayOutputStream out = makeObject();
 

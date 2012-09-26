@@ -69,7 +69,7 @@ import java.lang.reflect.Field;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ScaleFilter.java#1 $
+ * @version $Id: ScaleFilter.java#1 $
  *
  * @example &lt;IMG src="/scale/test.jpg?scaleX=500&scaleUniform=false"&gt;
  * @example &lt;IMG src="/scale/test.png?scaleY=50&scaleUnits=PERCENT"&gt;
@@ -123,7 +123,7 @@ public class ScaleFilter extends ImageFilter {
     protected final static String PARAM_IMAGE = "image";
 
     /** */
-    protected int mDefaultScaleQuality = Image.SCALE_DEFAULT;
+    protected int defaultScaleQuality = Image.SCALE_DEFAULT;
 
     /**
      * Reads the image from the requested URL, scales it, and returns it in the
@@ -188,11 +188,11 @@ public class ScaleFilter extends ImageFilter {
             }
         }
 
-        return mDefaultScaleQuality;
+        return defaultScaleQuality;
     }
 
     public void setDefaultScaleQuality(String pDefaultScaleQuality) {
-        mDefaultScaleQuality = getQuality(pDefaultScaleQuality);
+        defaultScaleQuality = getQuality(pDefaultScaleQuality);
     }
 
     /**

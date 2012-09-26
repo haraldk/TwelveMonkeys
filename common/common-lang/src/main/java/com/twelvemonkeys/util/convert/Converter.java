@@ -56,13 +56,14 @@ import java.util.Map;
 // Maybe have BeanUtil act as a "proxy", and hide this class alltogheter?
 // TODO: ServiceRegistry for registering 3rd party converters
 // TODO: URI scheme, for implicit typing? Is that a good idea?
+// TODO: Array converters?
 public abstract class Converter implements PropertyConverter {
 
     /** Our singleton instance */
     protected static Converter sInstance = new ConverterImpl(); // Thread safe & EASY
 
     /** The conveters Map */
-    protected Map mConverters = new Hashtable();
+    protected Map converters = new Hashtable();
 
     // Register our predefined converters
     static {
@@ -115,7 +116,7 @@ public abstract class Converter implements PropertyConverter {
      * @see #unregisterConverter(Class)
      */
     public static void registerConverter(Class pType, PropertyConverter pConverter) {
-        getInstance().mConverters.put(pType, pConverter);
+        getInstance().converters.put(pType, pConverter);
     }
 
     /**
@@ -128,7 +129,7 @@ public abstract class Converter implements PropertyConverter {
      * @see #registerConverter(Class,PropertyConverter)
      */
     public static void unregisterConverter(Class pType) {
-        getInstance().mConverters.remove(pType);
+        getInstance().converters.remove(pType);
     }
     
     /**

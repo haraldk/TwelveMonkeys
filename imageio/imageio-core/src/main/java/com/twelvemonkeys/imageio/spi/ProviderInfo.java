@@ -16,9 +16,9 @@ public class ProviderInfo {
     // TODO: Consider reading the META-INF/MANIFEST.MF from the class path using java.util.jar.Manifest.
     // Use the manifest that is located in the same class path folder as the package.
 
-    private final String mTitle;
-    private final String mVendorName;
-    private final String mVersion;
+    private final String title;
+    private final String vendorName;
+    private final String version;
 
     /**
      * Creates a provider information instance based on the given package.
@@ -32,13 +32,13 @@ public class ProviderInfo {
         Validate.notNull(pPackage, "package");
 
         String title = pPackage.getImplementationTitle();
-        mTitle = title != null ? title : pPackage.getName();
+        this.title = title != null ? title : pPackage.getName();
 
         String vendor = pPackage.getImplementationVendor();
-        mVendorName = vendor != null ? vendor : fakeVendor(pPackage);
+        vendorName = vendor != null ? vendor : fakeVendor(pPackage);
 
         String version = pPackage.getImplementationVersion();
-        mVersion = version != null ? version : fakeVersion(pPackage);
+        this.version = version != null ? version : fakeVersion(pPackage);
     }
 
     private static String fakeVendor(final Package pPackage) {
@@ -60,7 +60,7 @@ public class ProviderInfo {
      * @return the implementation title
      */
     final String getImplementationTitle() {
-        return mTitle;
+        return title;
     }
 
     /**
@@ -72,7 +72,7 @@ public class ProviderInfo {
      * @return the vendor name.
      */
     public final String getVendorName() {
-        return mVendorName;
+        return vendorName;
     }
 
     /**
@@ -83,11 +83,11 @@ public class ProviderInfo {
      * @return the vendor name.
      */
     public final String getVersion() {
-        return mVersion;
+        return version;
     }
 
     @Override
     public String toString() {
-        return mTitle + ", " + mVersion + " by " + mVendorName;
+        return title + ", " + version + " by " + vendorName;
     }
 }

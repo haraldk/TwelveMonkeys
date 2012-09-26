@@ -39,14 +39,14 @@ import java.text.*;
  * Converts strings to numbers and back.
  * <p/>
  * <small>This class has a static cache of {@code NumberFormats}, to avoid
- * creation and  parsing of numberformats every time one is used.</small>
+ * creation and  parsing of number formats every time one is used.</small>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/convert/NumberConverter.java#2 $
  */
 public class NumberConverter implements PropertyConverter {
-    // TODO: Need to either make this non-local aware, or document that it is...
+    // TODO: Need to either make this non-locale aware, or document that it is...
 
     private static final DecimalFormatSymbols SYMBOLS = new DecimalFormatSymbols(Locale.US);
     private static final NumberFormat sDefaultFormat = new DecimalFormat("#0.#", SYMBOLS);
@@ -91,7 +91,6 @@ public class NumberConverter implements PropertyConverter {
 	    
             if (pFormat == null) {
                 // Use system default format, using default locale
-//                format = NumberFormat.getNumberInstance();
                 format = sDefaultFormat;
             }
             else {
@@ -160,7 +159,6 @@ public class NumberConverter implements PropertyConverter {
         try {
             // Convert to string, default way
             if (StringUtil.isEmpty(pFormat)) {
-//                return NumberFormat.getNumberInstance().format(pObject);
                 return sDefaultFormat.format(pObject);
             }
 	    
@@ -196,13 +194,11 @@ public class NumberConverter implements PropertyConverter {
                     return null;
                 }
 
-
                 // ...and store in cache
                 sFormats.put(key, format);
             }
 
             return format;
         }
-	
     }
 }

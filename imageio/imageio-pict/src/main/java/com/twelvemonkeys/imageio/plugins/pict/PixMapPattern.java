@@ -38,17 +38,17 @@ import java.awt.*;
  * @version $Id: PixMapPattern.java,v 1.0 Mar 1, 2009 11:36:10 PM haraldk Exp$
  */
 final class PixMapPattern extends Pattern {
-    private final Pattern mFallback;
+    private final Pattern fallback;
 
     PixMapPattern(final Paint pPaint, final Pattern pBitMapFallback) {
         super(pPaint);
-        mFallback = pBitMapFallback;
+        fallback = pBitMapFallback;
     }
 
     /**
      * @return the fallback B/W pattern
      */
     public Pattern getPattern() {
-        return mFallback;
+        return fallback;
     }
 }

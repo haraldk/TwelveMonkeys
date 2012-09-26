@@ -24,35 +24,35 @@ import java.lang.reflect.InvocationTargetException;
 public class ImageUtilTestCase extends TestCase {
 
     private final static String IMAGE_NAME = "/sunflower.jpg";
-    private BufferedImage mOriginal;
-    private BufferedImage mImage;
-    private Image mScaled;
+    private BufferedImage original;
+    private BufferedImage image;
+    private Image scaled;
 
     public ImageUtilTestCase() throws Exception {
-        mImage = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
-        mScaled = mImage.getScaledInstance(5, 5, Image.SCALE_FAST);
+        image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
+        scaled = image.getScaledInstance(5, 5, Image.SCALE_FAST);
 
         // Read image from class path
         InputStream is = getClass().getResourceAsStream(IMAGE_NAME);
-        mOriginal = ImageIO.read(is);
+        original = ImageIO.read(is);
 
-        assertNotNull(mOriginal);
+        assertNotNull(original);
     }
 
     /*
     public void setUp() throws Exception {
-        mImage = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
-        mScaled = mImage.getScaledInstance(5, 5, Image.SCALE_FAST);
+        image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
+        scaled = image.getScaledInstance(5, 5, Image.SCALE_FAST);
 
         // Read image from class path
         InputStream is = ClassLoader.getSystemResourceAsStream(IMAGE_NAME);
-        mOriginal = ImageIO.read(is);
+        original = ImageIO.read(is);
 
-        assertNotNull(mOriginal);
+        assertNotNull(original);
     }
 
     protected void tearDown() throws Exception {
-        mOriginal = null;
+        original = null;
     }
     */
 
@@ -94,20 +94,20 @@ public class ImageUtilTestCase extends TestCase {
         // Should not be a buffered image
         assertFalse(
                 "FOR SOME IMPLEMENTATIONS THIS MIGHT FAIL!\nIn that case, testToBufferedImage() will fail too.",
-                mScaled instanceof BufferedImage
+                scaled instanceof BufferedImage
         );
     }
 
     public void testToBufferedImage() {
-        BufferedImage sameAsImage = ImageUtil.toBuffered((RenderedImage) mImage);
-        BufferedImage bufferedScaled = ImageUtil.toBuffered(mScaled);
+        BufferedImage sameAsImage = ImageUtil.toBuffered((RenderedImage) image);
+        BufferedImage bufferedScaled = ImageUtil.toBuffered(scaled);
 
         // Should be no need to convert
-        assertSame(mImage, sameAsImage);
+        assertSame(image, sameAsImage);
 
         // Should have same dimensions
-        assertEquals(mScaled.getWidth(null), bufferedScaled.getWidth());
-        assertEquals(mScaled.getHeight(null), bufferedScaled.getHeight());
+        assertEquals(scaled.getWidth(null), bufferedScaled.getWidth());
+        assertEquals(scaled.getHeight(null), bufferedScaled.getHeight());
 
         // Hmmm...
         assertTrue(new Integer(42).equals(bufferedScaled.getProperty("lucky-number"))
@@ -116,28 +116,28 @@ public class ImageUtilTestCase extends TestCase {
     }
 
     public void testToBufferedImageType() {
-        // Assumes mImage is TYPE_INT_ARGB
-        BufferedImage converted = ImageUtil.toBuffered(mImage, BufferedImage.TYPE_BYTE_INDEXED);
-        BufferedImage convertedToo = ImageUtil.toBuffered(mImage, BufferedImage.TYPE_BYTE_BINARY);
+        // Assumes image is TYPE_INT_ARGB
+        BufferedImage converted = ImageUtil.toBuffered(image, BufferedImage.TYPE_BYTE_INDEXED);
+        BufferedImage convertedToo = ImageUtil.toBuffered(image, BufferedImage.TYPE_BYTE_BINARY);
 
         // Should not be the same
-        assertNotSame(mImage, converted);
-        assertNotSame(mImage, convertedToo);
+        assertNotSame(image, converted);
+        assertNotSame(image, convertedToo);
 
         // Correct type
         assertTrue(converted.getType() == BufferedImage.TYPE_BYTE_INDEXED);
         assertTrue(convertedToo.getType() == BufferedImage.TYPE_BYTE_BINARY);
 
         // Should have same dimensions
-        assertEquals(mImage.getWidth(), converted.getWidth());
-        assertEquals(mImage.getHeight(), converted.getHeight());
+        assertEquals(image.getWidth(), converted.getWidth());
+        assertEquals(image.getHeight(), converted.getHeight());
 
-        assertEquals(mImage.getWidth(), convertedToo.getWidth());
-        assertEquals(mImage.getHeight(), convertedToo.getHeight());
+        assertEquals(image.getWidth(), convertedToo.getWidth());
+        assertEquals(image.getHeight(), convertedToo.getHeight());
     }
 
     public void testBrightness() {
-        final BufferedImage original = mOriginal;
+        final BufferedImage original = this.original;
         assertNotNull(original);
 
         final BufferedImage notBrightened = ImageUtil.toBuffered(ImageUtil.brightness(original, 0f));
@@ -217,7 +217,7 @@ public class ImageUtilTestCase extends TestCase {
 
 
     public void testContrast() {
-        final BufferedImage original = mOriginal;
+        final BufferedImage original = this.original;
 
         assertNotNull(original);
 
@@ -370,7 +370,7 @@ public class ImageUtilTestCase extends TestCase {
     }
 
     public void testSharpen() {
-        final BufferedImage original = mOriginal;
+        final BufferedImage original = this.original;
 
         assertNotNull(original);
 
@@ -495,7 +495,7 @@ public class ImageUtilTestCase extends TestCase {
     }
 
     public void testBlur() {
-        final BufferedImage original = mOriginal;
+        final BufferedImage original = this.original;
 
         assertNotNull(original);
 
@@ -563,7 +563,7 @@ public class ImageUtilTestCase extends TestCase {
     }
 
     public void testIndexImage() {
-        BufferedImage sunflower = mOriginal;
+        BufferedImage sunflower = original;
 
         assertNotNull(sunflower);
 

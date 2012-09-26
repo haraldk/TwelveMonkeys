@@ -50,12 +50,12 @@ import java.util.Date;
 // TODO: Consider moving this one to io.ole2
 public final class Catalog implements Iterable<Catalog.CatalogItem> {
 
-    private final CatalogHeader mHeader;
-    private final CatalogItem[] mItems;
+    private final CatalogHeader header;
+    private final CatalogItem[] items;
 
     Catalog(final CatalogHeader pHeader, final CatalogItem[] pItems) {
-        mHeader = pHeader;
-        mItems = pItems;
+        header = pHeader;
+        items = pItems;
     }
 
     /**
@@ -95,32 +95,32 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     }
 
     public final int getThumbnailCount() {
-        return mHeader.mThumbCount;
+        return header.mThumbCount;
     }
 
     public final int getMaxThumbnailWidth() {
-        return mHeader.mThumbWidth;
+        return header.mThumbWidth;
     }
 
     public final int getMaxThumbnailHeight() {
-        return mHeader.mThumbHeight;
+        return header.mThumbHeight;
     }
 
     final CatalogItem getItem(final int pIndex) {
-        return mItems[pIndex];
+        return items[pIndex];
     }
 
     final CatalogItem getItem(final String pName) {
-        return mItems[getIndex(pName)];
+        return items[getIndex(pName)];
     }
 
     final int getItemId(final int pIndex) {
-        return mItems[pIndex].getItemId();
+        return items[pIndex].getItemId();
     }
 
     public final int getIndex(final String pName) {
-        for (int i = 0; i < mItems.length; i++) {
-            CatalogItem item = mItems[i];
+        for (int i = 0; i < items.length; i++) {
+            CatalogItem item = items[i];
 
             if (item.getName().equals(pName)) {
                 return i;
@@ -139,12 +139,12 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     }
 
     final String getName(int pItemId) {
-        return mItems[pItemId - 1].getName();
+        return items[pItemId - 1].getName();
     }
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", getClass().getSimpleName(), mHeader);
+        return String.format("%s[%s]", getClass().getSimpleName(), header);
     }
 
     public Iterator<CatalogItem> iterator() {
@@ -152,11 +152,11 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
             int mCurrentIdx;
 
             public boolean hasNext() {
-                return mCurrentIdx < mItems.length;
+                return mCurrentIdx < items.length;
             }
 
             public CatalogItem next() {
-                return mItems[mCurrentIdx++];
+                return items[mCurrentIdx++];
             }
 
             public void remove() {

@@ -33,7 +33,7 @@ import java.awt.image.*;
 /**
  * Monochrome B/W color model.
  *
- * @author Harald Kuhr
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 public class MonochromeColorModel extends IndexColorModel {
     

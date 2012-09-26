@@ -65,10 +65,10 @@ class PSDDisplayInfo extends PSDImageResource {
     //   BYTE  Padding;          /* Always zero */
     //} DISPLAYINFO;
 
-    int mColorSpace;
-    short[] mColors;
-    short mOpacity;
-    byte mKind;
+    int colorSpace;
+    short[] colors;
+    short opacity;
+    byte kind;
 
     PSDDisplayInfo(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -76,46 +76,46 @@ class PSDDisplayInfo extends PSDImageResource {
 
     @Override
     protected void readData(ImageInputStream pInput) throws IOException {
-        if (mSize % 14 != 0) {
-            throw new IIOException("Display info length expected to be mod 14: " + mSize);
+        if (size % 14 != 0) {
+            throw new IIOException("Display info length expected to be mod 14: " + size);
         }
 
-//        long left = mSize;
+//        long left = size;
 //        while (left > 0) {
-        mColorSpace = pInput.readShort();
+        colorSpace = pInput.readShort();
 
         // Color[4]...?
-        mColors = new short[4];
-        mColors[0] = pInput.readShort();
-        mColors[1] = pInput.readShort();
-        mColors[2] = pInput.readShort();
-        mColors[3] = pInput.readShort();
+        colors = new short[4];
+        colors[0] = pInput.readShort();
+        colors[1] = pInput.readShort();
+        colors[2] = pInput.readShort();
+        colors[3] = pInput.readShort();
 
-        mOpacity = pInput.readShort();
+        opacity = pInput.readShort();
 
-        mKind = pInput.readByte();
+        kind = pInput.readByte();
 
         pInput.readByte(); // Pad
 //            left -= 14;
 //        }
-        pInput.skipBytes(mSize - 14);
+        pInput.skipBytes(size - 14);
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", ColorSpace: ").append(mColorSpace);
+        builder.append(", ColorSpace: ").append(colorSpace);
         builder.append(", Colors: {");
-        builder.append(mColors[0]);
+        builder.append(colors[0]);
         builder.append(", ");
-        builder.append(mColors[1]);
+        builder.append(colors[1]);
         builder.append(", ");
-        builder.append(mColors[2]);
+        builder.append(colors[2]);
         builder.append(", ");
-        builder.append(mColors[3]);
-        builder.append("}, Opacity: ").append(mOpacity);
-        builder.append(", Kind: ").append(kind(mKind));
+        builder.append(colors[3]);
+        builder.append("}, Opacity: ").append(opacity);
+        builder.append(", Kind: ").append(kind(kind));
 
         builder.append("]");
 

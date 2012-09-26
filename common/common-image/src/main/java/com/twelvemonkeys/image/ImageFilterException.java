@@ -32,42 +32,20 @@ package com.twelvemonkeys.image;
  * This class wraps IllegalArgumentException as thrown by the 
  * BufferedImageOp interface for more fine-grained control.
  *
- * @author Harald Kuhr
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  *
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/ImageFilterException.java#1 $
  */
 public class ImageFilterException extends IllegalArgumentException {
-    private Throwable mCause = null;
-
-    public ImageFilterException(String pStr) {
-        super(pStr);
+    public ImageFilterException(String message) {
+        super(message);
     }
 
-    public ImageFilterException(Throwable pT) {
-        initCause(pT);
+    public ImageFilterException(Throwable cause) {
+        super(cause);
     }
 
-    public ImageFilterException(String pStr, Throwable pT) {
-        super(pStr);
-        initCause(pT);
-    }
-
-    public Throwable initCause(Throwable pThrowable) {
-        if (mCause != null) {
-            // May only be called once
-            throw new IllegalStateException();
-        }
-        else if (pThrowable == this) {
-            throw new IllegalArgumentException();
-        }
-
-        mCause = pThrowable;
-
-        // Hmmm...
-        return this;
-    }
-
-    public Throwable getCause() {
-        return mCause;
+    public ImageFilterException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

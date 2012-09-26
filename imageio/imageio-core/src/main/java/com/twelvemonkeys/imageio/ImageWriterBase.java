@@ -52,7 +52,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * For convenience. Only set if the output is an {@code ImageInputStream}.
      * @see #setOutput(Object)
      */
-    protected ImageOutputStream mImageOutput;
+    protected ImageOutputStream imageOutput;
 
     /**
      * Constructs an {@code ImageWriter} and sets its
@@ -65,10 +65,10 @@ public abstract class ImageWriterBase extends ImageWriter {
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
      *
-     * @param pProvider the {@code ImageWriterSpi} that is constructing this object, or {@code null}.
+     * @param provider the {@code ImageWriterSpi} that is constructing this object, or {@code null}.
      */
-    protected ImageWriterBase(final ImageWriterSpi pProvider) {
-        super(pProvider);
+    protected ImageWriterBase(final ImageWriterSpi provider) {
+        super(provider);
     }
 
     public String getFormatName() throws IOException {
@@ -76,11 +76,15 @@ public abstract class ImageWriterBase extends ImageWriter {
     }
 
     @Override
-    public void setOutput(final Object pOutput) {
-        super.setOutput(pOutput);
+    public void setOutput(final Object output) {
+        resetMembers();
+        super.setOutput(output);
 
-        if (pOutput instanceof ImageOutputStream) {
-            mImageOutput = (ImageOutputStream) pOutput;
+        if (output instanceof ImageOutputStream) {
+            imageOutput = (ImageOutputStream) output;
+        }
+        else {
+            imageOutput = null;
         }
     }
 
@@ -95,24 +99,33 @@ public abstract class ImageWriterBase extends ImageWriter {
         }
     }
 
+    @Override
+    public void reset() {
+        super.reset();
+        resetMembers();
+    }
+
+    protected void resetMembers() {
+    }
+
     /**
      * Returns {@code null}
      *
-     * @param pParam ignored.
+     * @param param ignored.
      * @return {@code null}.
      */
-    public IIOMetadata getDefaultStreamMetadata(final ImageWriteParam pParam) {
+    public IIOMetadata getDefaultStreamMetadata(final ImageWriteParam param) {
         return null;
     }
 
     /**
      * Returns {@code null}
      *
-     * @param pInData ignored.
-     * @param pParam ignored.
+     * @param inData ignored.
+     * @param param ignored.
      * @return {@code null}.
      */
-    public IIOMetadata convertStreamMetadata(final IIOMetadata pInData, final ImageWriteParam pParam) {
+    public IIOMetadata convertStreamMetadata(final IIOMetadata inData, final ImageWriteParam param) {
         return null;
     }
 

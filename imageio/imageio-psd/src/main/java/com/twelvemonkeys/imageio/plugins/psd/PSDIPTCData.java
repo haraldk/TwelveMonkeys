@@ -14,7 +14,7 @@ import java.io.IOException;
  * @version $Id: PSDIPTCData.java,v 1.0 Nov 7, 2009 9:52:14 PM haraldk Exp$
  */
 final class PSDIPTCData extends PSDImageResource {
-    Directory mDirectory;
+    Directory directory;
 
     PSDIPTCData(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -23,13 +23,13 @@ final class PSDIPTCData extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         // Read IPTC directory
-        mDirectory = new IPTCReader().read(pInput);
+        directory = new IPTCReader().read(pInput);
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
-        builder.append(", ").append(mDirectory);
+        builder.append(", ").append(directory);
         builder.append("]");
 
         return builder.toString();

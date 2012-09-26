@@ -49,7 +49,7 @@ final class RLE4Decoder extends AbstractRLEDecoder {
         int deltaX = 0;
         int deltaY = 0;
 
-        while (mSrcY >= 0) {
+        while (srcY >= 0) {
             int byte1 = pInput.read();
             int byte2 = checkEOF(pInput.read());
 
@@ -58,20 +58,20 @@ final class RLE4Decoder extends AbstractRLEDecoder {
                     case 0x00:
                         // End of line
                         // NOTE: Some BMPs have double EOLs..
-                        if (mSrcX != 0) {
-                            mSrcX = mRow.length;
+                        if (srcX != 0) {
+                            srcX = row.length;
                         }
                         break;
                     case 0x01:
                         // End of bitmap
-                        mSrcX = mRow.length;
-                        mSrcY = 0;
+                        srcX = row.length;
+                        srcY = 0;
                         break;
                     case 0x02:
                         // Delta
-                        deltaX = mSrcX + pInput.read();
-                        deltaY = mSrcY - checkEOF(pInput.read());
-                        mSrcX = mRow.length;
+                        deltaX = srcX + pInput.read();
+                        deltaY = srcY - checkEOF(pInput.read());
+                        srcX = row.length;
                         break;
                     default:
                         // Absolute mode
@@ -82,13 +82,13 @@ final class RLE4Decoder extends AbstractRLEDecoder {
                         boolean paddingByte = (((byte2 + 1) / 2) % 2) != 0;
                         while (byte2 > 1) {
                             int packed = checkEOF(pInput.read());
-                            mRow[mSrcX++] = (byte) packed;
+                            row[srcX++] = (byte) packed;
                             byte2 -= 2;
                         }
                         if (byte2 == 1) {
                             // TODO: Half byte alignment? Seems to be ok...
                             int packed = checkEOF(pInput.read());
-                            mRow[mSrcX++] = (byte) (packed & 0xf0);
+                            row[srcX++] = (byte) (packed & 0xf0);
                         }
                         if (paddingByte) {
                             checkEOF(pInput.read());
@@ -100,24 +100,24 @@ final class RLE4Decoder extends AbstractRLEDecoder {
                 // Encoded mode
                 // Replicate the two samples in byte2 as many times as byte1 says
                 while (byte1 > 1) {
-                    mRow[mSrcX++] = (byte) byte2;
+                    row[srcX++] = (byte) byte2;
                     byte1 -= 2;
                 }
 
                 if (byte1 == 1) {
                     // TODO: Half byte alignment? Seems to be ok...
-                    mRow[mSrcX++] = (byte) (byte2 & 0xf0);
+                    row[srcX++] = (byte) (byte2 & 0xf0);
                 }
             }
 
             // If we're done with a complete row, copy the data
-            if (mSrcX == mRow.length) {
+            if (srcX == row.length) {
                 // Move to new position, either absolute (delta) or next line
                 if (deltaX != 0 || deltaY != 0) {
-                    mSrcX = (deltaX + 1) / 2;
+                    srcX = (deltaX + 1) / 2;
 
-                    if (deltaY > mSrcY) {
-                        mSrcY = deltaY;
+                    if (deltaY > srcY) {
+                        srcY = deltaY;
                         break;
                     }
 
@@ -125,8 +125,8 @@ final class RLE4Decoder extends AbstractRLEDecoder {
                     deltaY = 0;
                 }
                 else {
-                    mSrcX = 0;
-                    mSrcY--;
+                    srcX = 0;
+                    srcY--;
                     break;
                 }
             }

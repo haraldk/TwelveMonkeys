@@ -40,38 +40,38 @@ import java.io.File;
  * <a href="http://jakarta.apache.org/commons/fileupload/">Jakarta Commons FileUpload</a>.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/UploadedFileImpl.java#1 $
+ * @version $Id: UploadedFileImpl.java#1 $
  */
 class UploadedFileImpl implements UploadedFile {
-    private final FileItem mItem;
+    private final FileItem item;
 
     public UploadedFileImpl(FileItem pItem) {
         if (pItem == null) {
             throw new IllegalArgumentException("fileitem == null");
         }
 
-        mItem = pItem;
+        item = pItem;
     }
 
     public String getContentType() {
-        return mItem.getContentType();
+        return item.getContentType();
     }
 
     public InputStream getInputStream() throws IOException {
-        return mItem.getInputStream();
+        return item.getInputStream();
     }
 
     public String getName() {
-        return mItem.getName();
+        return item.getName();
     }
 
     public long length() {
-        return mItem.getSize();
+        return item.getSize();
     }
 
     public void writeTo(File pFile) throws IOException {
         try {
-            mItem.write(pFile);
+            item.write(pFile);
         }
         catch(RuntimeException e) {
             throw e;

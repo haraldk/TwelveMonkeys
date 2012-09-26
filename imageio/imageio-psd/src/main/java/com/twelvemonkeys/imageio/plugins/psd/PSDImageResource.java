@@ -43,38 +43,38 @@ import java.lang.reflect.Field;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageResource.java,v 1.0 Apr 29, 2008 5:49:06 PM haraldk Exp$
  */
-class PSDImageResource {
+public class PSDImageResource {
     // TODO: Refactor image resources to separate package
     // TODO: Change constructor to store stream offset and length only (+ possibly the name), defer reading
 
-    final short mId;
-    final String mName;
-    final long mSize;
+    final short id;
+    final String name;
+    final long size;
 
-    PSDImageResource(final short pId, final ImageInputStream pInput) throws IOException {
-        mId = pId;
+    PSDImageResource(final short resourceId, final ImageInputStream input) throws IOException {
+        id = resourceId;
 
-        mName = PSDUtil.readPascalString(pInput);
+        name = PSDUtil.readPascalString(input);
 
         // Skip pad
-        int nameSize = mName.length() + 1;
+        int nameSize = name.length() + 1;
         if (nameSize % 2 != 0) {
-            pInput.readByte();
+            input.readByte();
         }
 
-        mSize = pInput.readUnsignedInt();
-        long startPos = pInput.getStreamPosition();
+        size = input.readUnsignedInt();
+        long startPos = input.getStreamPosition();
 
-        readData(new SubImageInputStream(pInput, mSize));
+        readData(new SubImageInputStream(input, size));
 
         // NOTE: This should never happen, however it's safer to keep it here to 
-        if (pInput.getStreamPosition() != startPos + mSize) {
-            pInput.seek(startPos + mSize);
+        if (input.getStreamPosition() != startPos + size) {
+            input.seek(startPos + size);
         }
 
         // Data is even-padded (word aligned)
-        if (mSize % 2 != 0) {
-            pInput.read();
+        if (size % 2 != 0) {
+            input.read();
         }
     }
 
@@ -86,7 +86,7 @@ class PSDImageResource {
      */
     protected void readData(final ImageInputStream pInput) throws IOException {
         // TODO: This design is ugly, as subclasses readData is invoked BEFORE their respective constructor...
-        pInput.skipBytes(mSize);
+        pInput.skipBytes(size);
     }
 
     @Override
@@ -94,7 +94,7 @@ class PSDImageResource {
         StringBuilder builder = toStringBuilder();
 
         builder.append(", data length: ");
-        builder.append(mSize);
+        builder.append(size);
         builder.append("]");
 
         return builder.toString();
@@ -103,16 +103,16 @@ class PSDImageResource {
     protected StringBuilder toStringBuilder() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
 
-        String fakeType = resourceTypeForId(mId);
+        String fakeType = resourceTypeForId(id);
         if (fakeType != null) {
             builder.append("(").append(fakeType).append(")");
         }
 
         builder.append("[ID: 0x");
-        builder.append(Integer.toHexString(mId));
-        if (mName != null && mName.trim().length() != 0) {
+        builder.append(Integer.toHexString(id));
+        if (name != null && name.trim().length() != 0) {
             builder.append(", name: \"");
-            builder.append(mName);
+            builder.append(name);
             builder.append("\"");
         }
 

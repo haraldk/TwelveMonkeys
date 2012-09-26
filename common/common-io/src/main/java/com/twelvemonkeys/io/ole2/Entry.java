@@ -32,6 +32,7 @@ import com.twelvemonkeys.io.SeekableInputStream;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -61,9 +62,9 @@ public final class Entry implements Comparable<Entry> {
     int startSId;
     int streamSize;
 
-    CompoundDocument mDocument;
-    Entry mParent;
-    SortedSet<Entry> mChildren;
+    CompoundDocument document;
+    Entry parent;
+    SortedSet<Entry> children;
 
     public final static int LENGTH = 128;
 
@@ -99,28 +100,26 @@ public final class Entry implements Comparable<Entry> {
      * @throws IOException if an i/o exception occurs during reading
      */
     private void read(final DataInput pInput) throws IOException {
-        char[] chars = new char[32];
-        for (int i = 0; i < chars.length; i++) {
-            chars[i] = pInput.readChar();
-        }
+        byte[] bytes = new byte[64];
+        pInput.readFully(bytes);
 
         // NOTE: Length is in bytes, including the null-terminator...
         int nameLength = pInput.readShort();
-        name = new String(chars, 0, (nameLength - 1) / 2);
-        //System.out.println("name: " + name);
+        name = new String(bytes, 0, nameLength - 2, Charset.forName("UTF-16LE"));
+//        System.out.println("name: " + name);
 
         type = pInput.readByte();
-        //System.out.println("type: " + type);
+//        System.out.println("type: " + type);
 
         nodeColor = pInput.readByte();
-        //System.out.println("nodeColor: " + nodeColor);
+//        System.out.println("nodeColor: " + nodeColor);
 
         prevDId = pInput.readInt();
-        //System.out.println("prevDID: " + prevDID);
+//        System.out.println("prevDId: " + prevDId);
         nextDId = pInput.readInt();
-        //System.out.println("nextDID: " + nextDID);
+//        System.out.println("nextDId: " + nextDId);
         rootNodeDId = pInput.readInt();
-        //System.out.println("rootNodeDID: " + rootNodeDID);
+//        System.out.println("rootNodeDId: " + rootNodeDId);
 
         // UID (16) + user flags (4), ignored
         if (pInput.skipBytes(20) != 20) {
@@ -131,9 +130,9 @@ public final class Entry implements Comparable<Entry> {
         modifiedTimestamp = CompoundDocument.toJavaTimeInMillis(pInput.readLong());
 
         startSId = pInput.readInt();
-        //System.out.println("startSID: " + startSID);
+//        System.out.println("startSId: " + startSId);
         streamSize = pInput.readInt();
-        //System.out.println("streamSize: " + streamSize);
+//        System.out.println("streamSize: " + streamSize);
 
         // Reserved
         pInput.readInt();
@@ -186,11 +185,11 @@ public final class Entry implements Comparable<Entry> {
      * @see #length()
      */
     public SeekableInputStream getInputStream() throws IOException {
-        if (isDirectory()) {
+        if (!isFile()) {
             return null;
         }
 
-        return mDocument.getInputStreamForSId(startSId, streamSize);
+        return document.getInputStreamForSId(startSId, streamSize);
     }
 
     /**
@@ -201,9 +200,10 @@ public final class Entry implements Comparable<Entry> {
      * @see #getInputStream()
      */
     public long length() {
-        if (isDirectory()) {
+        if (!isFile()) {
             return 0L;
         }
+
         return streamSize;
     }
 
@@ -248,7 +248,7 @@ public final class Entry implements Comparable<Entry> {
      *         the root {@code Entry}
      */
     public Entry getParentEntry() {
-        return mParent;
+        return parent;
     }
 
     /**
@@ -266,7 +266,7 @@ public final class Entry implements Comparable<Entry> {
 
         Entry dummy = new Entry();
         dummy.name = pName;
-        dummy.mParent = this;
+        dummy.parent = this;
 
         SortedSet child = getChildEntries().tailSet(dummy);
         return (Entry) child.first();
@@ -279,26 +279,26 @@ public final class Entry implements Comparable<Entry> {
      * @throws java.io.IOException if an I/O exception occurs
      */
     public SortedSet<Entry> getChildEntries() throws IOException {
-        if (mChildren == null) {
+        if (children == null) {
             if (isFile() || rootNodeDId == -1) {
-                mChildren = NO_CHILDREN;
+                children = NO_CHILDREN;
             }
             else {
-                // Start at root node in R/B tree, and raed to the left and right,
+                // Start at root node in R/B tree, and read to the left and right,
                 // re-build tree, according to the docs
-                mChildren = mDocument.getEntries(rootNodeDId, this);
+                children = Collections.unmodifiableSortedSet(document.getEntries(rootNodeDId, this));
             }
         }
 
-        return mChildren;
+        return children;
     }
 
     @Override
     public String toString() {
         return "\"" + name + "\""
                 + " (" + (isFile() ? "Document" : (isDirectory() ? "Directory" : "Root"))
-                + (mParent != null ? ", parent: \"" + mParent.getName() + "\"" : "")
-                + (isFile() ? "" : ", children: " + (mChildren != null ? String.valueOf(mChildren.size()) : "(unknown)"))
+                + (parent != null ? ", parent: \"" + parent.getName() + "\"" : "")
+                + (isFile() ? "" : ", children: " + (children != null ? String.valueOf(children.size()) : "(unknown)"))
                 + ", SId=" + startSId + ", length=" + streamSize + ")";
     }
 
@@ -312,8 +312,8 @@ public final class Entry implements Comparable<Entry> {
         }
 
         Entry other = (Entry) pOther;
-        return name.equals(other.name) && (mParent == other.mParent
-                || (mParent != null && mParent.equals(other.mParent)));
+        return name.equals(other.name) && (parent == other.parent
+                || (parent != null && parent.equals(other.parent)));
     }
 
     @Override

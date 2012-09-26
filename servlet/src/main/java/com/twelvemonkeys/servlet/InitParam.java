@@ -31,20 +31,25 @@ package com.twelvemonkeys.servlet;
 import java.lang.annotation.*;
 
 /**
- * Annotation to be used by serlvets/filters, to have their init-method
+ * Annotation to be used by servlets/filters, to have their {@code init}-method
  * automatically convert and set values from their respective configuration.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/InitParam.java#1 $
+ * @version $Id: InitParam.java#1 $
+ * @see com.twelvemonkeys.servlet.ServletConfigurator
  * @see com.twelvemonkeys.servlet.GenericFilter#init(javax.servlet.FilterConfig)
  * @see com.twelvemonkeys.servlet.GenericServlet#init(javax.servlet.ServletConfig)
  * @see com.twelvemonkeys.servlet.HttpServlet#init(javax.servlet.ServletConfig)
  */
+// TODO: Actually implement for version 3.0!
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD/*, TODO: ElementType.FIELD*/})
 public @interface InitParam {
-    String name() default "";
+    static final String UNDEFINED = "";
+    String name() default UNDEFINED;
+    String defaultValue() default UNDEFINED; // TODO: Consider separate annotation?
+    boolean required() default false; // TODO: Consider separate annotation?
 }

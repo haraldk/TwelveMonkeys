@@ -28,9 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import org.w3c.dom.Node;
-
-import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
 import java.io.IOException;
@@ -58,11 +55,11 @@ class PSDHeader {
 //       WORD Mode;           /* Color mode */
 //    } PSD_HEADER;
 
-    final short mChannels;
-    final int mWidth;
-    final int mHeight;
-    final short mBits;
-    final short mMode;
+    final short channels;
+    final int width;
+    final int height;
+    final short bits;
+    final short mode;
 
     PSDHeader(final ImageInputStream pInput) throws IOException {
         int signature = pInput.readInt();
@@ -84,27 +81,27 @@ class PSDHeader {
         byte[] reserved = new byte[6];
         pInput.readFully(reserved);
 
-        mChannels = pInput.readShort();
-        mHeight = pInput.readInt(); // Rows
-        mWidth = pInput.readInt(); // Columns
-        mBits = pInput.readShort();
-        mMode = pInput.readShort();
+        channels = pInput.readShort();
+        height = pInput.readInt(); // Rows
+        width = pInput.readInt(); // Columns
+        bits = pInput.readShort();
+        mode = pInput.readShort();
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append("[Channels: ");
-        builder.append(mChannels);
+        builder.append(channels);
         builder.append(", width: ");
-        builder.append(mWidth);
+        builder.append(width);
         builder.append(", height: ");
-        builder.append(mHeight);
+        builder.append(height);
         builder.append(", depth: ");
-        builder.append(mBits);
+        builder.append(bits);
         builder.append(", mode: ");
-        builder.append(mMode);
-        switch (mMode) {
+        builder.append(mode);
+        switch (mode) {
             case PSD.COLOR_MODE_MONOCHROME:
                 builder.append(" (Monochrome)");
                 break;

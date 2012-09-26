@@ -28,8 +28,13 @@
 
 package com.twelvemonkeys.util;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.lang.reflect.Array;
 import java.util.*;
+
+import static com.twelvemonkeys.lang.Validate.isTrue;
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * A utility class with some useful collection-related functions.
@@ -37,8 +42,7 @@ import java.util.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author <A href="mailto:eirik.torske@twelvemonkeys.no">Eirik Torske</A>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/CollectionUtil.java#3 $
- * @todo move makeList and makeSet to StringUtil?
+ * @version $Id: com/twelvemonkeys/util/CollectionUtil.java#3 $
  * @see Collections
  * @see Arrays
  */
@@ -51,8 +55,6 @@ public final class CollectionUtil {
      */
     @SuppressWarnings({"UnusedDeclaration", "UnusedAssignment", "unchecked"})
     public static void main(String[] pArgs) {
-        test();
-
         int howMany = 1000;
 
         if (pArgs.length > 0) {
@@ -257,7 +259,7 @@ public final class CollectionUtil {
      * If the sub array is same length as the original
      * ({@code pStart == 0}), the original array will be returned.
      *
-     * @param pArray the origianl array
+     * @param pArray the original array
      * @param pStart the start index of the original array
      * @return a subset of the original array, or the original array itself,
      *         if {@code pStart} is 0.
@@ -272,14 +274,31 @@ public final class CollectionUtil {
 
     /**
      * Creates an array containing a subset of the original array.
+     * If the sub array is same length as the original
+     * ({@code pStart == 0}), the original array will be returned.
+     *
+     * @param pArray the original array
+     * @param pStart the start index of the original array
+     * @return a subset of the original array, or the original array itself,
+     *         if {@code pStart} is 0.
+     *
+     * @throws IllegalArgumentException if {@code pArray} is {@code null}
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     */
+    public static <T> T[] subArray(T[] pArray, int pStart) {
+        return subArray(pArray, pStart, -1);
+    }
+
+    /**
+     * Creates an array containing a subset of the original array.
      * If the {@code pLength} parameter is negative, it will be ignored.
      * If there are not {@code pLength} elements in the original array
-     * after {@code pStart}, the {@code pLength} paramter will be
+     * after {@code pStart}, the {@code pLength} parameter will be
      * ignored.
      * If the sub array is same length as the original, the original array will
      * be returned.
      *
-     * @param pArray  the origianl array
+     * @param pArray  the original array
      * @param pStart  the start index of the original array
      * @param pLength the length of the new array
      * @return a subset of the original array, or the original array itself,
@@ -292,9 +311,7 @@ public final class CollectionUtil {
      */
     @SuppressWarnings({"SuspiciousSystemArraycopy"})
     public static Object subArray(Object pArray, int pStart, int pLength) {
-        if (pArray == null) {
-            throw new IllegalArgumentException("array == null");
-        }
+        Validate.notNull(pArray, "array");
 
         // Get component type
         Class type;
@@ -321,7 +338,7 @@ public final class CollectionUtil {
         Object result;
 
         if (newLength < originalLength) {
-            // Create subarray & copy into
+            // Create sub array & copy into
             result = Array.newInstance(type, newLength);
             System.arraycopy(pArray, pStart, result, 0, newLength);
         }
@@ -335,7 +352,33 @@ public final class CollectionUtil {
         return result;
     }
 
+    /**
+     * Creates an array containing a subset of the original array.
+     * If the {@code pLength} parameter is negative, it will be ignored.
+     * If there are not {@code pLength} elements in the original array
+     * after {@code pStart}, the {@code pLength} parameter will be
+     * ignored.
+     * If the sub array is same length as the original, the original array will
+     * be returned.
+     *
+     * @param pArray  the original array
+     * @param pStart  the start index of the original array
+     * @param pLength the length of the new array
+     * @return a subset of the original array, or the original array itself,
+     *         if {@code pStart} is 0 and {@code pLength} is either
+     *         negative, or greater or equal to {@code pArray.length}.
+     *
+     * @throws IllegalArgumentException if {@code pArray} is {@code null}
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T[] subArray(T[] pArray, int pStart, int pLength) {
+        return (T[]) subArray((Object) pArray, pStart, pLength);
+    }
+
     public static <T> Iterator<T> iterator(final Enumeration<T> pEnum) {
+        notNull(pEnum, "enumeration");
+        
         return new Iterator<T>() {
             public boolean hasNext() {
                 return pEnum.hasMoreElements();
@@ -361,8 +404,8 @@ public final class CollectionUtil {
      *         the given collection.
      * @throws ClassCastException class of the specified element prevents it
      *         from being added to this collection.
-     * @throws NullPointerException if the specified element is null and this
-     *         collection does not support null elements.
+     * @throws NullPointerException if the specified element is {@code null} and this
+     *         collection does not support {@code null} elements.
      * @throws IllegalArgumentException some aspect of this element prevents
      *         it from being added to this collection.
      */
@@ -372,7 +415,7 @@ public final class CollectionUtil {
         }
     }
 
-    // Is there a usecase where Arrays.asList(pArray).iterator() can't ne used?
+    // Is there a use case where Arrays.asList(pArray).iterator() can't ne used?
     /**
      * Creates a thin {@link Iterator} wrapper around an array.
      *
@@ -383,7 +426,7 @@ public final class CollectionUtil {
      *         {@code pLength > pArray.length - pStart}
      */
     public static <E> ListIterator<E> iterator(final E[] pArray) {
-        return iterator(pArray, 0, pArray.length);
+        return iterator(pArray, 0, notNull(pArray).length);
     }
 
     /**
@@ -408,7 +451,7 @@ public final class CollectionUtil {
      * @return a new {@code Map} of same type as {@code pSource}
      * @throws IllegalArgumentException if {@code pSource == null},
      *         or if a new map can't be instantiated,
-     *         or if source map contains duplaicates.
+     *         or if source map contains duplicates.
      *
      * @see #invert(java.util.Map, java.util.Map, DuplicateHandler)
      */
@@ -424,7 +467,7 @@ public final class CollectionUtil {
      * @param pResult the map used to contain the result, may be {@code null},
      *        in that case a new {@code Map} of same type as {@code pSource} is created.
      *        The result map <em>should</em> be empty, otherwise duplicate values will need to be resolved.
-     * @param pHandler duplicate handler, may be {@code null} if source map don't contain dupliate values
+     * @param pHandler duplicate handler, may be {@code null} if source map don't contain duplicate values
      * @return {@code pResult}, or a new {@code Map} if {@code pResult == null}
      * @throws IllegalArgumentException if {@code pSource == null},
      *         or if result map is {@code null} and a new map can't be instantiated,
@@ -476,20 +519,20 @@ public final class CollectionUtil {
         return result;
     }
 
-    public static <T> Comparator<T> reverseOrder(Comparator<T> pOriginal) {
+    public static <T> Comparator<T> reverseOrder(final Comparator<T> pOriginal) {
         return new ReverseComparator<T>(pOriginal);
     }
 
     private static class ReverseComparator<T> implements Comparator<T> {
-        private Comparator<T> mComparator;
+        private final Comparator<T> comparator;
 
-        public ReverseComparator(Comparator<T> pComparator) {
-            mComparator = pComparator;
+        public ReverseComparator(final Comparator<T> pComparator) {
+            comparator = notNull(pComparator);
         }
 
 
         public int compare(T pLeft, T pRight) {
-            int result = mComparator.compare(pLeft, pRight);
+            int result = comparator.compare(pLeft, pRight);
 
             // We can't simply return -result, as -Integer.MIN_VALUE == Integer.MIN_VALUE.
             return -(result | (result >>> 1));
@@ -516,73 +559,21 @@ public final class CollectionUtil {
         return (T) pCollection;
     }
 
-    @SuppressWarnings({"UnusedDeclaration"})
-    static void test() {
-        List list = Collections.singletonList("foo");
-        @SuppressWarnings({"unchecked"})
-        Set set = new HashSet(list);
-
-        List<String> strs0 = CollectionUtil.generify(list, String.class);
-        List<Object> objs0 = CollectionUtil.generify(list, String.class);
-//        List<String> strs01 = CollectionUtil.generify(list, Object.class); // Not okay
-        try {
-            List<String> strs1 = CollectionUtil.generify(set, String.class); // Not ok, runtime CCE unless set is null
-        }
-        catch (RuntimeException e) {
-            e.printStackTrace();
-        }
-
-        try {
-            ArrayList<String> strs01 = CollectionUtil.generify(list, String.class); // Not ok, runtime CCE unless list is null
-        }
-        catch (RuntimeException e) {
-            e.printStackTrace();
-        }
-
-        Set<String> setstr1 = CollectionUtil.generify(set, String.class);
-        Set<Object> setobj1 = CollectionUtil.generify(set, String.class);
-        try {
-            Set<Object> setobj44 = CollectionUtil.generify(list, String.class);  // Not ok, runtime CCE unless list is null
-        }
-        catch (RuntimeException e) {
-            e.printStackTrace();
-        }
-
-        List<String> strs2 = CollectionUtil.<List<String>, String>generify2(list);
-        List<Object> objs2 = CollectionUtil.<List<Object>, String>generify2(list);
-//        List<String> morestrs = CollectionUtil.<List<Object>, String>generify2(list); // Not ok
-        try {
-            List<String> strs3 = CollectionUtil.<List<String>, String>generify2(set); // Not ok, runtime CCE unless set is null
-        }
-        catch (RuntimeException e) {
-            e.printStackTrace();
-        }
-    }
-
     private static class ArrayIterator<E> implements ListIterator<E> {
-        private int mIndex;
-        private final int mStart;
-        private final int mLength;
-        private final E[] mArray;
+        private int next;
+        private final int start;
+        private final int length;
+        private final E[] array;
 
-        public ArrayIterator(E[] pArray, int pStart, int pLength) {
-            if (pArray == null) {
-                throw new IllegalArgumentException("array == null");
-            }
-            if (pStart < 0) {
-                throw new IllegalArgumentException("start < 0");
-            }
-            if (pLength > pArray.length - pStart) {
-                throw new IllegalArgumentException("length > array.length - start");
-            }
-            mArray = pArray;
-            mStart = pStart;
-            mLength = pLength;
-            mIndex = mStart;
+        public ArrayIterator(final E[] pArray, final int pStart, final int pLength) {
+            array = notNull(pArray, "array");
+            start = isTrue(pStart >= 0, pStart, "start < 0: %d");
+            length = isTrue(pLength <= pArray.length - pStart, pLength, "length > array.length - start: %d");
+            next = start;
         }
 
         public boolean hasNext() {
-            return mIndex < mLength + mStart;
+            return next < length + start;
         }
 
         public E next() {
@@ -591,7 +582,7 @@ public final class CollectionUtil {
             }
 
             try {
-                return mArray[mIndex++];
+                return array[next++];
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 NoSuchElementException nse = new NoSuchElementException(e.getMessage());
@@ -609,11 +600,11 @@ public final class CollectionUtil {
         }
 
         public boolean hasPrevious() {
-            return mIndex > mStart;
+            return next > start;
         }
 
         public int nextIndex() {
-            return mIndex + 1;
+            return next - start;
         }
 
         public E previous() {
@@ -622,7 +613,7 @@ public final class CollectionUtil {
             }
 
             try {
-                return mArray[mIndex--];
+                return array[--next];
             }
             catch (ArrayIndexOutOfBoundsException e) {
                 NoSuchElementException nse = new NoSuchElementException(e.getMessage());
@@ -632,11 +623,11 @@ public final class CollectionUtil {
         }
 
         public int previousIndex() {
-            return mIndex - 1;
+            return nextIndex() - 1;
         }
 
         public void set(E pElement) {
-            mArray[mIndex] = pElement;
+            array[next - 1] = pElement;
         }
     }
 }

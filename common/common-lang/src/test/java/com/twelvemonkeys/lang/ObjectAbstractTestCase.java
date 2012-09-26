@@ -1,9 +1,11 @@
 package com.twelvemonkeys.lang;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
-import java.lang.reflect.Method;
 import java.io.*;
+import java.lang.reflect.Method;
+
+import static org.junit.Assert.*;
 
 /**
  * AbstractObjectTestCase
@@ -12,26 +14,13 @@ import java.io.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/lang/ObjectAbstractTestCase.java#1 $
  */
-public abstract class ObjectAbstractTestCase extends TestCase {
+public abstract class ObjectAbstractTestCase {
     // TODO: See com.tm.util.ObjectAbstractTestCase
     // TODO: The idea is that this should be some generic base-class that
     // implements the basic object tests
 
     // TODO: Create Serializable test similar way
     // TODO: Create Comparable test similar way
-
-    /**
-     * Creates a {@code TestCase}.
-     *
-     * @param testName  the test class name
-     */
-    protected ObjectAbstractTestCase(String testName) {
-        super(testName);
-    }
-
-    protected ObjectAbstractTestCase() {
-        super();
-    }
 
     /**
      * Returns an instance of the class we are testing.
@@ -47,23 +36,23 @@ public abstract class ObjectAbstractTestCase extends TestCase {
     //protected abstract Object makeEqualObject(Object pObject);
 
 
+    @Test
     public void testToString() {
         assertNotNull(makeObject().toString());
         // TODO: What more can we test?
     }
 
     // TODO: assert that either BOTH or NONE of equals/hashcode is overridden
+    @Test
     public void testEqualsHashCode(){
         Object obj = makeObject();
 
         Class cl = obj.getClass();
         if (isEqualsOverriden(cl)) {
-            assertTrue("Class " + cl.getName()
-                    + " implements equals but not hashCode", isHashCodeOverriden(cl));
+            assertTrue("Class " + cl.getName() + " implements equals but not hashCode", isHashCodeOverriden(cl));
         }
         else if (isHashCodeOverriden(cl)) {
-            assertTrue("Class " + cl.getName()
-                    + " implements hashCode but not equals", isEqualsOverriden(cl));
+            assertTrue("Class " + cl.getName() + " implements hashCode but not equals", isEqualsOverriden(cl));
         }
 
     }
@@ -85,11 +74,13 @@ public abstract class ObjectAbstractTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testObjectEqualsSelf() {
         Object obj = makeObject();
         assertEquals("An Object should equal itself", obj, obj);
     }
 
+    @Test
     public void testEqualsNull() {
         Object obj = makeObject();
         // NOTE: Makes sure this doesn't throw NPE either
@@ -97,11 +88,13 @@ public abstract class ObjectAbstractTestCase extends TestCase {
         assertFalse("An object should never equal null", obj.equals(null));
     }
 
+    @Test
     public void testObjectHashCodeEqualsSelfHashCode() {
         Object obj = makeObject();
         assertEquals("hashCode should be repeatable", obj.hashCode(), obj.hashCode());
     }
 
+    @Test
     public void testObjectHashCodeEqualsContract() {
         Object obj1 = makeObject();
         if (obj1.equals(obj1)) {
@@ -129,6 +122,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
 
     ////////////////////////////////////////////////////////////////////////////
     // Cloneable interface
+    @Test
     public void testClone() throws Exception {
         Object obj = makeObject();
         if (obj instanceof Cloneable) {
@@ -143,7 +137,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
                 clone.setAccessible(true);
             }
 
-            Object cloned = clone.invoke(obj, null);
+            Object cloned = clone.invoke(obj);
 
             assertNotNull("Cloned object should never be null", cloned);
 
@@ -184,6 +178,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
 
     ///////////////////////////////////////////////////////////////////////////
     // Serializable interface
+    @Test
     public void testSerializeDeserializeThenCompare() throws Exception {
         Object obj = makeObject();
         if (obj instanceof Serializable) {
@@ -223,6 +218,7 @@ public abstract class ObjectAbstractTestCase extends TestCase {
      * @throws java.io.IOException
      * @throws ClassNotFoundException
      */
+    @Test
     public void testSimpleSerialization() throws Exception {
         Object o = makeObject();
         if (o instanceof Serializable) {
@@ -305,14 +301,6 @@ public abstract class ObjectAbstractTestCase extends TestCase {
     }
 
     public static final class SanityTestTestCase extends ObjectAbstractTestCase {
-        /**
-         * Creates a {@code TestCase}.
-         *
-         */
-        public SanityTestTestCase() {
-            super(SanityTestTestCase.class.getName());
-        }
-
         protected Object makeObject() {
             return new Cloneable() {};
         }

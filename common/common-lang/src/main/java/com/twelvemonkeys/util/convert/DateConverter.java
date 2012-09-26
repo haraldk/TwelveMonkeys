@@ -38,7 +38,7 @@ import java.lang.reflect.InvocationTargetException;
  * Converts strings to dates and back.
  * <p/>
  * <small>This class has a static cache of {@code DateFormats}, to avoid
- * creation and  parsing of dateformats every time one is used.</small>
+ * creation and  parsing of date formats every time one is used.</small>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -68,8 +68,7 @@ public class DateConverter extends NumberConverter  {
      *
      * @throws ConversionException
      */
-    public Object toObject(String pString, Class pType, String pFormat)
-        throws ConversionException {
+    public Object toObject(String pString, Class pType, String pFormat) throws ConversionException {
         if (StringUtil.isEmpty(pString))
             return null;
 
@@ -123,13 +122,13 @@ public class DateConverter extends NumberConverter  {
      * @see Date
      * @see java.text.DateFormat
      */
-    public String toString(Object pObject, String pFormat)
-        throws ConversionException {
+    public String toString(Object pObject, String pFormat) throws ConversionException {
         if (pObject == null)
             return null;
 
-        if (!(pObject instanceof Date))
+        if (!(pObject instanceof Date)) {
             throw new TypeMismathException(pObject.getClass());
+        }
 
         try {
             // Convert to string, default way
@@ -139,6 +138,7 @@ public class DateConverter extends NumberConverter  {
 	    
             // Convert to string, using format
             DateFormat format = getDateFormat(pFormat);
+
             return format.format(pObject);
         }
         catch (RuntimeException rte) {
@@ -147,6 +147,6 @@ public class DateConverter extends NumberConverter  {
     }
 
     private DateFormat getDateFormat(String pFormat) {
-        return (DateFormat) getFormat(SimpleDateFormat.class, pFormat);
+        return (DateFormat) getFormat(SimpleDateFormat.class, pFormat, Locale.US);
     }
 }

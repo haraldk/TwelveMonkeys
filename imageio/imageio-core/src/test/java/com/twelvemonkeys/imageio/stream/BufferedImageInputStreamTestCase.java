@@ -18,7 +18,7 @@ import java.util.Random;
  * @version $Id: BufferedImageInputStreamTestCase.java,v 1.0 Jun 30, 2008 3:07:42 PM haraldk Exp$
  */
 public class BufferedImageInputStreamTestCase extends TestCase {
-    protected final Random mRandom = new Random();
+    protected final Random random = new Random();
 
     public void testCreate() throws IOException {
         new BufferedImageInputStream(new ByteArrayImageInputStream(new byte[0]));
@@ -58,7 +58,7 @@ public class BufferedImageInputStreamTestCase extends TestCase {
 
         // Fill bytes
         byte[] bytes = new byte[size * 2];
-        mRandom.nextBytes(bytes);
+        random.nextBytes(bytes);
 
         // Create wrapper stream
         BufferedImageInputStream stream = new BufferedImageInputStream(new ByteArrayImageInputStream(bytes));
@@ -79,7 +79,7 @@ public class BufferedImageInputStreamTestCase extends TestCase {
     public void testBufferPositionCorrect() throws IOException {
         // Fill bytes
         byte[] bytes = new byte[1024];
-        mRandom.nextBytes(bytes);
+        random.nextBytes(bytes);
 
         ByteArrayImageInputStream input = new ByteArrayImageInputStream(bytes);
 

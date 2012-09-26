@@ -109,32 +109,32 @@ import java.io.FilterOutputStream;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/TrimWhiteSpaceFilter.java#2 $
+ * @version $Id: TrimWhiteSpaceFilter.java#2 $
  */
 public class TrimWhiteSpaceFilter extends GenericFilter {
 
-    private boolean mAutoFlush = true;
+    private boolean autoFlush = true;
 
     @InitParam
     public void setAutoFlush(final boolean pAutoFlush) {
-        mAutoFlush = pAutoFlush;
+        autoFlush = pAutoFlush;
     }
 
     public void init() throws ServletException {
         super.init();
-        log("Automatic flushing is " + (mAutoFlush ? "enabled" : "disabled"));
+        log("Automatic flushing is " + (autoFlush ? "enabled" : "disabled"));
     }
 
     protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain) throws IOException, ServletException {
         ServletResponseWrapper wrapped = new TrimWSServletResponseWrapper(pResponse);
         pChain.doFilter(pRequest, ServletUtil.createWrapper(wrapped));
-        if (mAutoFlush) {
+        if (autoFlush) {
             wrapped.flushBuffer();
         }
     }
 
     static final class TrimWSFilterOutputStream extends FilterOutputStream {
-        boolean mLastWasWS = true; // Avoids leading WS by init to true
+        boolean lastWasWS = true; // Avoids leading WS by init to true
 
         public TrimWSFilterOutputStream(OutputStream pOut) {
             super(pOut);
@@ -175,12 +175,12 @@ public class TrimWhiteSpaceFilter extends GenericFilter {
             if (!Character.isWhitespace((char) pByte)) {
                 // If char is not WS, just store
                 super.write(pByte);
-                mLastWasWS = false;
+                lastWasWS = false;
             }
             else {
                 // TODO: Consider writing only 0x0a (LF) and 0x20 (space)
                 // Else, if char is WS, store first, skip the rest
-                if (!mLastWasWS) {
+                if (!lastWasWS) {
                     if (pByte == 0x0d) { // Convert all CR/LF's to 0x0a
                         super.write(0x0a);
                     }
@@ -188,7 +188,7 @@ public class TrimWhiteSpaceFilter extends GenericFilter {
                         super.write(pByte);
                     }
                 }
-                mLastWasWS = true;
+                lastWasWS = true;
             }
         }
     }
@@ -199,23 +199,23 @@ public class TrimWhiteSpaceFilter extends GenericFilter {
         }
 
         protected OutputStream createOutputStream() throws IOException {
-            return new TrimWSFilterOutputStream(mResponse.getOutputStream());
+            return new TrimWSFilterOutputStream(response.getOutputStream());
         }
     }
 
     static class TrimWSServletResponseWrapper extends ServletResponseWrapper {
-        private final ServletResponseStreamDelegate mStreamDelegate = new TrimWSStreamDelegate(getResponse());
+        private final ServletResponseStreamDelegate streamDelegate = new TrimWSStreamDelegate(getResponse());
 
         public TrimWSServletResponseWrapper(ServletResponse pResponse) {
             super(pResponse);
         }
 
         public ServletOutputStream getOutputStream() throws IOException {
-            return mStreamDelegate.getOutputStream();
+            return streamDelegate.getOutputStream();
         }
 
         public PrintWriter getWriter() throws IOException {
-            return mStreamDelegate.getWriter();
+            return streamDelegate.getWriter();
         }
 
         public void setContentLength(int pLength) {
@@ -224,12 +224,12 @@ public class TrimWhiteSpaceFilter extends GenericFilter {
 
         @Override
         public void flushBuffer() throws IOException {
-            mStreamDelegate.flushBuffer();
+            streamDelegate.flushBuffer();
         }
 
         @Override
         public void resetBuffer() {
-            mStreamDelegate.resetBuffer();
+            streamDelegate.resetBuffer();
         }
 
         // TODO: Consider picking up content-type/encoding, as we can only

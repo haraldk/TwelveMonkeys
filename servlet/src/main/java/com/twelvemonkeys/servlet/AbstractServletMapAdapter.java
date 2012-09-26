@@ -9,41 +9,43 @@ import java.util.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/AbstractServletMapAdapter.java#1 $
+ * @version $Id: AbstractServletMapAdapter.java#1 $
  */
 abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String>> {
     // TODO: This map is now a little too lazy.. Should cache entries too (instead?) !
 
     private final static List<String> NULL_LIST = new ArrayList<String>();
 
-    private transient Map<String, List<String>> mCache = new HashMap<String, List<String>>();
-    private transient int mSize = -1;
-    private transient AbstractSet<Entry<String, List<String>>> mEntries;
+    private transient Map<String, List<String>> cache = new HashMap<String, List<String>>();
+    private transient int size = -1;
+    private transient AbstractSet<Entry<String, List<String>>> entries;
 
     protected abstract Iterator<String> keysImpl();
 
     protected abstract Iterator<String> valuesImpl(String pName);
 
     @Override
-    public List<String> get(Object pKey) {
+    public List<String> get(final Object pKey) {
         if (pKey instanceof String) {
             return getValues((String) pKey);
         }
+
         return null;
     }
 
-    private List<String> getValues(String pName) {
-        List<String> values = mCache.get(pName);
+    private List<String> getValues(final String pName) {
+        List<String> values = cache.get(pName);
 
         if (values == null) {
             //noinspection unchecked
             Iterator<String> headers = valuesImpl(pName);
+
             if (headers == null) {
-                mCache.put(pName, NULL_LIST);
+                cache.put(pName, NULL_LIST);
             }
             else {
                 values = toList(headers);
-                mCache.put(pName, values);
+                cache.put(pName, values);
             }
         }
 
@@ -58,34 +60,35 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
 
     @Override
     public int size() {
-        if (mSize == -1) {
+        if (size == -1) {
             computeSize();
         }
-        return mSize;
+
+        return size;
     }
 
     private void computeSize() {
-        Iterator<String> names = keysImpl();
-        mSize = 0;
-        for (;names.hasNext(); names.next()) {
-            mSize++;
+        size = 0;
+
+        for (Iterator<String> names = keysImpl(); names.hasNext(); names.next()) {
+            size++;
         }
     }
 
     public Set<Entry<String, List<String>>> entrySet() {
-        if (mEntries == null) {
-            mEntries = new AbstractSet<Entry<String, List<String>>>() {
+        if (entries == null) {
+            entries = new AbstractSet<Entry<String, List<String>>>() {
                 public Iterator<Entry<String, List<String>>> iterator() {
                     return new Iterator<Entry<String, List<String>>>() {
-                        Iterator<String> mHeaderNames = keysImpl();
+                        Iterator<String> headerNames = keysImpl();
 
                         public boolean hasNext() {
-                            return mHeaderNames.hasNext();
+                            return headerNames.hasNext();
                         }
 
                         public Entry<String, List<String>> next() {
                             // TODO: Replace with cached lookup
-                            return new HeaderEntry(mHeaderNames.next());
+                            return new HeaderEntry(headerNames.next());
                         }
 
                         public void remove() {
@@ -100,22 +103,22 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
             };
         }
 
-        return mEntries;
+        return entries;
     }
 
     private class HeaderEntry implements Entry<String, List<String>> {
-        String mHeaderName;
+        String headerName;
 
         public HeaderEntry(String pHeaderName) {
-            mHeaderName = pHeaderName;
+            headerName = pHeaderName;
         }
 
         public String getKey() {
-            return mHeaderName;
+            return headerName;
         }
 
         public List<String> getValue() {
-            return get(mHeaderName);
+            return get(headerName);
         }
 
         public List<String> setValue(List<String> pValue) {
@@ -125,7 +128,7 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
         @Override
         public int hashCode() {
             List<String> value;
-            return (mHeaderName   == null ? 0 :   mHeaderName.hashCode()) ^
+            return (headerName == null ? 0 :   headerName.hashCode()) ^
                    ((value = getValue()) == null ? 0 : value.hashCode());
         }
 

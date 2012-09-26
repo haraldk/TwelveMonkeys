@@ -30,9 +30,6 @@ package com.twelvemonkeys.lang;
 
 import java.util.Date;
 import java.util.TimeZone;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.text.ParseException;
 
 /**
  * A utility class with useful date manipulation methods and constants.
@@ -190,21 +187,5 @@ public final class DateUtil {
     public static long roundToDay(long pTime, TimeZone pTimeZone) {
         int offset = pTimeZone.getOffset(pTime);
         return (((pTime  + offset) / DAY) * DAY) - offset;
-    }
-
-    public static void main(String[] pArgs) throws ParseException {
-        DateFormat format = new SimpleDateFormat("yyyy.MM.dd HH.mm.ss S");
-
-        long time = pArgs.length > 0 ? format.parse(pArgs[0]).getTime() : System.currentTimeMillis();
-
-        System.out.println(time + ": " + format.format(new Date(time)));
-        time = roundToSecond(time);
-        System.out.println(time + ": " + format.format(new Date(time)));
-        time = roundToMinute(time);
-        System.out.println(time + ": " + format.format(new Date(time)));
-        time = roundToHour(time);
-        System.out.println(time + ": " + format.format(new Date(time)));
-        time = roundToDay(time);
-        System.out.println(time + ": " + format.format(new Date(time)));
     }
 }

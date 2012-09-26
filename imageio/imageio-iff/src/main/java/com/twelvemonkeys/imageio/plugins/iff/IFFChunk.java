@@ -40,19 +40,32 @@ import java.io.DataOutput;
  * @version $Id: IFFChunk.java,v 1.0 28.feb.2006 00:00:45 haku Exp$
  */
 abstract class IFFChunk {
-    int mChunkId;
-    int mChunkLength;
+    int chunkId;
+    int chunkLength;
 
     protected IFFChunk(int pChunkId, int pChunkLength) {
-        mChunkId = pChunkId;
-        mChunkLength = pChunkLength;
+        chunkId = pChunkId;
+        chunkLength = pChunkLength;
     }
 
     abstract void readChunk(DataInput pInput) throws IOException;
 
     abstract void writeChunk(DataOutput pOutput) throws IOException;
 
+    protected static void skipData(final DataInput pInput, final int chunkLength, final int dataReadSoFar) throws IOException {
+        int toSkip = chunkLength - dataReadSoFar;
+
+        while (toSkip > 0) {
+            toSkip -= pInput.skipBytes(toSkip);
+        }
+
+        // Read pad
+        if (chunkLength % 2 != 0) {
+            pInput.readByte();
+        }
+    }
+
     public String toString() {
-        return IFFUtil.toChunkStr(mChunkId) + " chunk (" + mChunkLength + " bytes)";
+        return IFFUtil.toChunkStr(chunkId) + " chunk (" + chunkLength + " bytes)";
     }
 }

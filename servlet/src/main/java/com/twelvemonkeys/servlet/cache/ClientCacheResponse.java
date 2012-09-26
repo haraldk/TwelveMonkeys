@@ -9,10 +9,10 @@ import java.io.OutputStream;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/cache/ClientCacheResponse.java#2 $
+ * @version $Id: ClientCacheResponse.java#2 $
  */
 public final class ClientCacheResponse extends AbstractCacheResponse {
-    // It's quite useless to cahce the data either on disk or in memory, as it already is cached in the client's cache...
+    // It's quite useless to cache the data either on disk or in memory, as it already is cached in the client's cache...
     // It would be nice if we could bypass that...
 
     public OutputStream getOutputStream() throws IOException {

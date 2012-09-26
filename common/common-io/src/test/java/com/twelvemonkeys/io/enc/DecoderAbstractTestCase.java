@@ -2,9 +2,11 @@ package com.twelvemonkeys.io.enc;
 
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.io.*;
-import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 /**
  * AbstractDecoderTest
@@ -22,24 +24,22 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
         return createDecoder();
     }
 
+    @Test(expected = NullPointerException.class)
     public final void testNullDecode() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[20]);
 
-        try {
-            decoder.decode(bytes, null);
-            fail("null should throw NullPointerException");
-        }
-        catch (NullPointerException e) {
-        }
+        decoder.decode(bytes, null);
+        fail("null should throw NullPointerException");
     }
 
+    @Test
     public final void testEmptyDecode() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[0]);
 
         try {
-            int count = decoder.decode(bytes, new byte[2]);
+            int count = decoder.decode(bytes, new byte[128]);
             assertEquals("Should not be able to read any bytes", 0, count);
         }
         catch (EOFException allowed) {
@@ -63,26 +63,25 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
         byte[] encoded = outBytes.toByteArray();
 
         byte[] decoded = FileUtil.read(new DecoderStream(new ByteArrayInputStream(encoded), createDecoder()));
-        assertTrue(Arrays.equals(data, decoded));
+        assertArrayEquals(String.format("Data %d", pLength), data, decoded);
 
         InputStream in = new DecoderStream(new ByteArrayInputStream(encoded), createDecoder());
         outBytes = new ByteArrayOutputStream();
-        /*
-        byte[] buffer = new byte[3];
-        for (int n = in.read(buffer); n > 0; n = in.read(buffer)) {
-            outBytes.write(buffer, 0, n);
-        }
-        */
         FileUtil.copy(in, outBytes);
-
         outBytes.close();
         in.close();
+
         decoded = outBytes.toByteArray();
-        assertTrue(Arrays.equals(data, decoded));
+        assertArrayEquals(String.format("Data %d", pLength), data, decoded);
     }
 
+    @Test
     public final void testStreams() throws Exception {
-        for (int i = 0; i < 100; i++) {
+        if (createCompatibleEncoder() == null) {
+            return;
+        }
+
+        for (int i = 1; i < 100; i++) {
             try {
                 runStreamTest(i);
             }

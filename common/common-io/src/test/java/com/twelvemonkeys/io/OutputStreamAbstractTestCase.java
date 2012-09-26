@@ -1,9 +1,12 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import org.junit.Test;
 
 import java.io.OutputStream;
 import java.io.IOException;
+
+import static org.junit.Assert.*;
 
 /**
  * InputStreamAbstractTestCase
@@ -15,6 +18,7 @@ import java.io.IOException;
 public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCase {
     protected abstract OutputStream makeObject();
 
+    @Test
     public void testWrite() throws IOException {
         OutputStream os = makeObject();
 
@@ -23,12 +27,14 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testWriteByteArray() throws IOException {
         OutputStream os = makeObject();
 
         os.write(new byte[256]);
     }
 
+    @Test
     public void testWriteByteArrayNull() {
         OutputStream os = makeObject();
         try {
@@ -46,7 +52,8 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
-    public void testWriteByteArrayOffsetLenght() throws IOException {
+    @Test
+    public void testWriteByteArrayOffsetLength() throws IOException {
         byte[] input = new byte[256];
 
         OutputStream os = makeObject();
@@ -65,7 +72,8 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
-    public void testWriteByteArrayZeroLenght() {
+    @Test
+    public void testWriteByteArrayZeroLength() {
         OutputStream os = makeObject();
         try {
             os.write(new byte[1], 0, 0);
@@ -75,7 +83,8 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
-    public void testWriteByteArrayOffsetLenghtNull() {
+    @Test
+    public void testWriteByteArrayOffsetLengthNull() {
         OutputStream os = makeObject();
         try {
             os.write(null, 5, 10);
@@ -92,6 +101,7 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testWriteByteArrayNegativeOffset() {
         OutputStream os = makeObject();
         try {
@@ -109,6 +119,7 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testWriteByteArrayNegativeLength() {
         OutputStream os = makeObject();
         try {
@@ -126,6 +137,7 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testWriteByteArrayOffsetOutOfBounds() {
         OutputStream os = makeObject();
         try {
@@ -143,6 +155,7 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testWriteByteArrayLengthOutOfBounds() {
         OutputStream os = makeObject();
         try {
@@ -160,14 +173,17 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testFlush() {
         // TODO: Implement
     }
 
+    @Test
     public void testClose() {
         // TODO: Implement
     }
 
+    @Test
     public void testWriteAfterClose() throws IOException {
         OutputStream os = makeObject();
 
@@ -200,6 +216,7 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testFlushAfterClose() throws IOException {
         OutputStream os = makeObject();
 
@@ -221,6 +238,7 @@ public abstract class OutputStreamAbstractTestCase extends ObjectAbstractTestCas
         }
     }
 
+    @Test
     public void testCloseAfterClose() throws IOException {
         OutputStream os = makeObject();
 

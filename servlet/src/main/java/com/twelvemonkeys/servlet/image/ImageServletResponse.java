@@ -41,7 +41,7 @@ import java.awt.image.BufferedImage;
  * {@link #getImage()} to have any effect.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ImageServletResponse.java#4 $
+ * @version $Id: ImageServletResponse.java#4 $
  */
 public interface ImageServletResponse extends ServletResponse {
     /**

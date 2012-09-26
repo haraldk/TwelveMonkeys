@@ -48,37 +48,37 @@ public class PixelizeOp implements BufferedImageOp, RasterOp {
     // TODO: support more raster types/color models
     // TODO: This is actually an implementation of Area Averaging, without the scale... Let's extract it... 
 
-    final private int mPixelSizeX;
-    final private int mPixelSizeY;
+    final private int pixelSizeX;
+    final private int pixelSizeY;
 
-    private Rectangle mSourceRegion;
+    private Rectangle sourceRegion;
 
     public PixelizeOp(final int pPixelSize) {
         this(pPixelSize, pPixelSize);
     }
 
     public PixelizeOp(final int pPixelSizeX, final int pPixelSizeY) {
-        mPixelSizeX = pPixelSizeX;
-        mPixelSizeY = pPixelSizeY;
+        pixelSizeX = pPixelSizeX;
+        pixelSizeY = pPixelSizeY;
     }
 
     public Rectangle getSourceRegion() {
-        if (mSourceRegion == null) {
+        if (sourceRegion == null) {
             return null;
         }
-        return new Rectangle(mSourceRegion);
+        return new Rectangle(sourceRegion);
     }
 
     public void setSourceRegion(final Rectangle pSourceRegion) {
         if (pSourceRegion == null) {
-            mSourceRegion = null;
+            sourceRegion = null;
         }
         else {
-            if (mSourceRegion == null) {
-                mSourceRegion = new Rectangle(pSourceRegion);
+            if (sourceRegion == null) {
+                sourceRegion = new Rectangle(pSourceRegion);
             }
             else {
-                mSourceRegion.setBounds(pSourceRegion);
+                sourceRegion.setBounds(pSourceRegion);
             }
         }
     }
@@ -107,11 +107,11 @@ public class PixelizeOp implements BufferedImageOp, RasterOp {
     private WritableRaster filterImpl(Raster src, WritableRaster dest) {
         //System.out.println("src: " + src);
         //System.out.println("dest: " + dest);
-        if (mSourceRegion != null) {
-            int cx = mSourceRegion.x;
-            int cy = mSourceRegion.y;
-            int cw = mSourceRegion.width;
-            int ch = mSourceRegion.height;
+        if (sourceRegion != null) {
+            int cx = sourceRegion.x;
+            int cy = sourceRegion.y;
+            int cw = sourceRegion.width;
+            int ch = sourceRegion.height;
 
             boolean same = src == dest;
             dest = dest.createWritableChild(cx, cy, cw, ch, 0, 0, null);
@@ -122,8 +122,8 @@ public class PixelizeOp implements BufferedImageOp, RasterOp {
 
         final int width = src.getWidth();
         final int height = src.getHeight();
-        int w = (width + mPixelSizeX - 1) / mPixelSizeX;
-        int h = (height + mPixelSizeY - 1) / mPixelSizeY;
+        int w = (width + pixelSizeX - 1) / pixelSizeX;
+        int h = (height + pixelSizeY - 1) / pixelSizeY;
 
         final boolean oddX = width % w != 0;
         final boolean oddY = height % h != 0;
@@ -156,23 +156,23 @@ public class PixelizeOp implements BufferedImageOp, RasterOp {
 
         for (int y = 0; y < h; y++) {
             if (!oddY || y + 1 < h) {
-                scanH = mPixelSizeY;
+                scanH = pixelSizeY;
             }
             else {
-                scanH = height - (y * mPixelSizeY);
+                scanH = height - (y * pixelSizeY);
             }
 
             for (int x = 0; x < w; x++) {
                 if (!oddX || x + 1 < w) {
-                    scanW = mPixelSizeX;
+                    scanW = pixelSizeX;
                 }
                 else {
-                    scanW = width - (x * mPixelSizeX);
+                    scanW = width - (x * pixelSizeX);
                 }
                 final int pixelCount = scanW * scanH;
                 final int pixelLength = pixelCount * dataElements;
 
-                data = src.getDataElements(x * mPixelSizeX, y * mPixelSizeY, scanW, scanH, data);
+                data = src.getDataElements(x * pixelSizeX, y * pixelSizeY, scanW, scanH, data);
 
                 // NOTE: These are not neccessarily ARGB..
                 double valueA = 0.0;
@@ -277,7 +277,7 @@ public class PixelizeOp implements BufferedImageOp, RasterOp {
 
                 }
 
-                dest.setDataElements(x * mPixelSizeX, y * mPixelSizeY, scanW, scanH, data);
+                dest.setDataElements(x * pixelSizeX, y * pixelSizeY, scanW, scanH, data);
             }
         }
         /*/

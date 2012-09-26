@@ -13,7 +13,7 @@ import java.util.List;
  * @version $Id: PSDUnicodeAlphaNames.java,v 1.0 Nov 7, 2009 9:16:56 PM haraldk Exp$
  */
 final class PSDUnicodeAlphaNames extends PSDImageResource {
-    List<String> mNames;
+    List<String> names;
 
     PSDUnicodeAlphaNames(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -21,12 +21,12 @@ final class PSDUnicodeAlphaNames extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
+        names = new ArrayList<String>();
 
-        long left = mSize;
+        long left = size;
         while (left > 0) {
             String name = PSDUtil.readUnicodeString(pInput);
-            mNames.add(name);
+            names.add(name);
             left -= name.length() * 2 + 4;
         }
     }

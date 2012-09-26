@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
  * @version $Id: TestPICTClippingApp.java,v 1.0 Feb 16, 2009 3:05:16 PM haraldk Exp$
  */
 public class TestPICTClippingApp {
-
     public static void main(final String[] pArgs) {
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
@@ -62,12 +61,12 @@ public class TestPICTClippingApp {
     }
 
     private static class ImageDropHandler extends TransferHandler {
-        private final JLabel mLabel;
-        private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+        private final JLabel label;
+        private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
         public ImageDropHandler(JLabel pLabel) {
             super(null);
-            mLabel = pLabel;
+            label = pLabel;
         }
 
         private DataFlavor getSupportedFlavor(final DataFlavor[] transferFlavors) {
@@ -126,7 +125,7 @@ public class TestPICTClippingApp {
                     if (readers.hasNext()) {
                         final ImageReader imageReader = readers.next();
 
-                        mExecutor.execute(new Runnable() {
+                        executor.execute(new Runnable() {
                             public void run() {
                                 try {
                                     readAndInstallImage(stream, imageReader);
@@ -186,7 +185,7 @@ public class TestPICTClippingApp {
                     System.out.print("Scaling image... ");
                     BufferedImage scaled = box(image, maxDimension);
                     System.out.printf("Done (%dx%d).%n", scaled.getWidth(), scaled.getHeight());
-                    mLabel.setIcon(new BufferedImageIcon(scaled));
+                    label.setIcon(new BufferedImageIcon(scaled));
                 }
             });
         }

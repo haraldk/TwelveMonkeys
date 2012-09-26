@@ -37,11 +37,10 @@ import java.net.*;
  * @see SimpleAuthenticator
  * @see java.net.Authenticator
  *
- * @author Harald Kuhr (haraldk@iconmedialab.no), 
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version 1.0
  */
 public interface AuthenticatorFilter {
-    public boolean accept(InetAddress pAddress, int pPort, String pProtocol,
-                          String pPrompt, String pScheme);
+    public boolean accept(InetAddress pAddress, int pPort, String pProtocol, String pPrompt, String pScheme);
 
 }

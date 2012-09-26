@@ -19,12 +19,12 @@ import java.util.Random;
  */
 public class SubImageInputStreamTestCase extends TestCase {
     // TODO: Extract super test case for all stream tests
-    private final Random mRandom = new Random(837468l);
+    private final Random random = new Random(837468l);
 
     private ImageInputStream createStream(final int pSize) {
         byte[] bytes = new byte[pSize];
 
-        mRandom.nextBytes(bytes);
+        random.nextBytes(bytes);
 
         return new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes)) {
             @Override

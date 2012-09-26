@@ -15,7 +15,7 @@
  */
 package com.twelvemonkeys.util;
 
-import org.jmock.cglib.MockObjectTestCase;
+import junit.framework.TestCase;
 
 import java.io.*;
 
@@ -35,9 +35,9 @@ import java.io.*;
  * @author Stephen Colebourne
  * @author Anonymous
  */
-public abstract class ObjectAbstractTestCase extends MockObjectTestCase {
-
+public abstract class ObjectAbstractTestCase extends TestCase {
     //-----------------------------------------------------------------------
+
     /**
      * Implement this method to return the object to test.
      * 

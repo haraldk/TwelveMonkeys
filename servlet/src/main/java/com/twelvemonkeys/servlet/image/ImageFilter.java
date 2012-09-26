@@ -33,6 +33,7 @@ import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.servlet.GenericFilter;
 
 import javax.servlet.*;
+import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
@@ -44,21 +45,25 @@ import java.io.IOException;
  * @see #doFilter(java.awt.image.BufferedImage,javax.servlet.ServletRequest,ImageServletResponse)
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/ImageFilter.java#2 $
+ * @version $Id: ImageFilter.java#2 $
  *
  */
 public abstract class ImageFilter extends GenericFilter {
+    // TODO: Take the design back to the drawing board (see ImageServletResponseImpl)
+    //      - Allow multiple filters to set size attribute
+    //      - Allow a later filter to reset, to get pass-through given certain criteria...
+    //      - Or better yet, allow a filter to decide if it wants to decode, based on image metadata on the original image (ie: width/height)
 
-    protected String[] mTriggerParams = null;
+    protected String[] triggerParams = null;
 
     /**
      * The {@code doFilterImpl} method is called once, or each time a
      * request/response pair is passed through the chain, depending on the
-     * {@link #mOncePerRequest} member variable.
+     * {@link #oncePerRequest} member variable.
      *
-     * @see #mOncePerRequest
-     * @see com.twelvemonkeys.servlet.GenericFilter#doFilterImpl doFilter
-     * @see Filter#doFilter Filter.doFilter
+     * @see #oncePerRequest
+     * @see com.twelvemonkeys.servlet.GenericFilter#doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  doFilter
+     * @see Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)  Filter.doFilter
      *
      * @param pRequest the servlet request
      * @param pResponse the servlet response
@@ -67,7 +72,7 @@ public abstract class ImageFilter extends GenericFilter {
      * @throws IOException
      * @throws ServletException
      */
-    protected void doFilterImpl(ServletRequest pRequest, ServletResponse pResponse, FilterChain pChain)
+    protected void doFilterImpl(final ServletRequest pRequest, final ServletResponse pResponse, final FilterChain pChain)
             throws IOException, ServletException {
 
         //System.out.println("Starting filtering...");
@@ -78,19 +83,12 @@ public abstract class ImageFilter extends GenericFilter {
             pChain.doFilter(pRequest, pResponse);
         }
         else {
+            // If already wrapped, the image will be encoded later in the chain
+            // Or, if this is first filter in chain, we must encode when done
+            boolean encode = !(pResponse instanceof ImageServletResponse);
+
             // For images, we do post filtering only and need to wrap the response
-            ImageServletResponse imageResponse;
-            boolean encode;
-            if (pResponse instanceof ImageServletResponse) {
-                //System.out.println("Allready ImageServletResponse");
-                imageResponse = (ImageServletResponse) pResponse;
-                encode = false; // Allready wrapped, will be encoded later in the chain
-            }
-            else {
-                //System.out.println("Wrapping in ImageServletResponse");
-                imageResponse = new ImageServletResponseImpl(pRequest, pResponse, getServletContext());
-                encode = true; // This is first filter in chain, must encode when done
-            }
+            ImageServletResponse imageResponse = createImageServletResponse(pRequest, pResponse);
 
             //System.out.println("Passing request on to next in chain...");
             // Pass the request on
@@ -113,36 +111,55 @@ public abstract class ImageFilter extends GenericFilter {
                 //System.out.println("Done filtering.");
 
                 //System.out.println("Making image available...");
-                // Make image available to other filters (avoid unnecessary
-                // serializing/deserializing)
+                // Make image available to other filters (avoid unnecessary serializing/deserializing)
                 imageResponse.setImage(image);
                 //System.out.println("Done.");
-
-                if (encode) {
-                    //System.out.println("Encoding image...");
-                    // Encode image to original repsonse
-                    if (image != null) {
-                        // TODO: Be smarter than this...
-                        // TODO: Make sure ETag is same, if image content is the same...
-                        // Use ETag of original response (or derived from)
-                        // Use last modified of original response? Or keep original resource's, don't set at all? 
-                        // TODO: Why weak ETag?
-                        String etag = "W/\"" + Integer.toHexString(hashCode()) + "-" + Integer.toHexString(image.hashCode()) + "\"";
-                        ((ImageServletResponseImpl) imageResponse).setHeader("ETag", etag);
-                        ((ImageServletResponseImpl) imageResponse).setDateHeader("Last-Modified", (System.currentTimeMillis() / 1000) * 1000);
-                        imageResponse.flush();
-                    }
-                    //System.out.println("Done encoding.");
+            }
+            if (encode) {
+                //System.out.println("Encoding image...");
+                // Encode image to original response
+                if (image != null) {
+                    // TODO: Be smarter than this...
+                    // TODO: Make sure ETag is same, if image content is the same...
+                    // Use ETag of original response (or derived from)
+                    // Use last modified of original response? Or keep original resource's, don't set at all?
+                    // TODO: Why weak ETag?
+                    String etag = "W/\"" + Integer.toHexString(hashCode()) + "-" + Integer.toHexString(image.hashCode()) + "\"";
+                    // TODO: This breaks for wrapped instances, need to either unwrap or test for HttpSR...
+                    ((HttpServletResponse) pResponse).setHeader("ETag", etag);
+                    ((HttpServletResponse) pResponse).setDateHeader("Last-Modified", (System.currentTimeMillis() / 1000) * 1000);
                 }
+
+                imageResponse.flush();
+                //System.out.println("Done encoding.");
             }
         }
         //System.out.println("Filtering done.");
     }
 
     /**
+     * Creates the image servlet response for this response.
+     *
+     * @param pResponse the original response
+     * @param pRequest the original request
+     * @return the new response, or {@code pResponse} if the response is already wrapped
+     *
+     * @see com.twelvemonkeys.servlet.image.ImageServletResponseWrapper
+     */
+    private ImageServletResponse createImageServletResponse(final ServletRequest pRequest, final ServletResponse pResponse) {
+        if (pResponse instanceof ImageServletResponseImpl) {
+            ImageServletResponseImpl response = (ImageServletResponseImpl) pResponse;
+//            response.setRequest(pRequest);
+            return response;
+        }
+
+        return new ImageServletResponseImpl(pRequest, pResponse, getServletContext());
+    }
+
+    /**
      * Tests if the filter should do image filtering/processing.
      * <P/>
-     * This default implementation uses {@link #mTriggerParams} to test if:
+     * This default implementation uses {@link #triggerParams} to test if:
      * <dl>
      *  <dt>{@code mTriggerParams == null}</dt>
      *  <dd>{@code return true}</dd>
@@ -157,14 +174,14 @@ public abstract class ImageFilter extends GenericFilter {
      * @param pRequest the servlet request
      * @return {@code true} if the filter should do image filtering
      */
-    protected boolean trigger(ServletRequest pRequest) {
+    protected boolean trigger(final ServletRequest pRequest) {
         // If triggerParams not set, assume always trigger
-        if (mTriggerParams == null) {
+        if (triggerParams == null) {
             return true;
         }
 
         // Trigger only for certain request parameters
-        for (String triggerParam : mTriggerParams) {
+        for (String triggerParam : triggerParams) {
             if (pRequest.getParameter(triggerParam) != null) {
                 return true;
             }
@@ -181,8 +198,9 @@ public abstract class ImageFilter extends GenericFilter {
      *
      * @param pTriggerParams a comma-separated string of parameter names.
      */
-    public void setTriggerParams(String pTriggerParams) {
-        mTriggerParams = StringUtil.toStringArray(pTriggerParams);
+    // TODO: Make it an @InitParam, and make sure we may set String[]/Collection<String> as parameter?
+    public void setTriggerParams(final String pTriggerParams) {
+        triggerParams = StringUtil.toStringArray(pTriggerParams);
     }
 
     /**

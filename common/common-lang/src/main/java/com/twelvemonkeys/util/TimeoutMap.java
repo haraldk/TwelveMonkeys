@@ -62,10 +62,10 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     /**
      * Expiry time
      */
-    protected long mExpiryTime = 60000L;  // 1 minute
+    protected long expiryTime = 60000L;  // 1 minute
 
     //////////////////////
-    private volatile long mNextExpiryTime;
+    private volatile long nextExpiryTime;
     //////////////////////
 
     /**
@@ -107,7 +107,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      */
     public TimeoutMap(long pExpiryTime) {
         this();
-        mExpiryTime = pExpiryTime;
+        expiryTime = pExpiryTime;
     }
 
     /**
@@ -125,7 +125,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      */
     public TimeoutMap(Map<K, Map.Entry<K, V>> pBacking, Map<? extends K, ? extends V> pContents, long pExpiryTime) {
         super(pBacking, pContents);
-        mExpiryTime = pExpiryTime;
+        expiryTime = pExpiryTime;
     }
 
     /**
@@ -134,7 +134,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * @return the expiry time
      */
     public long getExpiryTime() {
-        return mExpiryTime;
+        return expiryTime;
     }
 
     /**
@@ -144,13 +144,13 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * @param pExpiryTime the expiry time (time to live) for elements in this map
      */
     public void setExpiryTime(long pExpiryTime) {
-        long oldEexpiryTime = mExpiryTime;
+        long oldEexpiryTime = expiryTime;
 
-        mExpiryTime = pExpiryTime;
+        expiryTime = pExpiryTime;
 
-        if (mExpiryTime < oldEexpiryTime) {
+        if (expiryTime < oldEexpiryTime) {
             // Expire now
-            mNextExpiryTime = 0;
+            nextExpiryTime = 0;
             removeExpiredEntries();
         }
     }
@@ -164,7 +164,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      */
     public int size() {
         removeExpiredEntries();
-        return mEntries.size();
+        return entries.size();
     }
 
     /**
@@ -186,7 +186,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      */
     public boolean containsKey(Object pKey) {
         removeExpiredEntries();
-        return mEntries.containsKey(pKey);
+        return entries.containsKey(pKey);
     }
 
     /**
@@ -203,14 +203,14 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * @see #containsKey(java.lang.Object)
      */
     public V get(Object pKey) {
-        TimedEntry<K, V> entry = (TimedEntry<K, V>) mEntries.get(pKey);
+        TimedEntry<K, V> entry = (TimedEntry<K, V>) entries.get(pKey);
 
         if (entry == null) {
             return null;
         }
         else if (entry.isExpired()) {
             //noinspection SuspiciousMethodCalls
-            mEntries.remove(pKey);
+            entries.remove(pKey);
             processRemoved(entry);
             return null;
         }
@@ -231,7 +231,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      *         {@code null} values.
      */
     public V put(K pKey, V pValue) {
-        TimedEntry<K, V> entry = (TimedEntry<K, V>) mEntries.get(pKey);
+        TimedEntry<K, V> entry = (TimedEntry<K, V>) entries.get(pKey);
         V oldValue;
 
         if (entry == null) {
@@ -239,7 +239,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
 
             entry = createEntry(pKey, pValue);
 
-            mEntries.put(pKey, entry);
+            entries.put(pKey, entry);
         }
         else {
             oldValue = entry.mValue;
@@ -250,7 +250,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
         // Need to remove expired objects every now and then
         // We do it in the put method, to avoid resource leaks over time.
         removeExpiredEntries();
-        mModCount++;
+        modCount++;
 
         return oldValue;
     }
@@ -267,7 +267,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      *         {@code null} values.
      */
     public V remove(Object pKey) {
-        TimedEntry<K, V> entry = (TimedEntry<K, V>) mEntries.remove(pKey);
+        TimedEntry<K, V> entry = (TimedEntry<K, V>) entries.remove(pKey);
         return (entry != null) ? entry.getValue() : null;
     }
 
@@ -275,7 +275,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * Removes all mappings from this map.
      */
     public void clear() {
-        mEntries.clear();  // Finally something straightforward.. :-)
+        entries.clear();  // Finally something straightforward.. :-)
         init();
     }
 
@@ -290,7 +290,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     protected void removeExpiredEntries() {
         // Remove any expired elements
         long now = System.currentTimeMillis();
-        if (now > mNextExpiryTime) {
+        if (now > nextExpiryTime) {
             removeExpiredEntriesSynced(now);
         }
     }
@@ -303,10 +303,10 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * @param pTime now
      */
     private synchronized void removeExpiredEntriesSynced(long pTime) {
-        if (pTime > mNextExpiryTime) {
+        if (pTime > nextExpiryTime) {
             ////
             long next = Long.MAX_VALUE;
-            mNextExpiryTime = next; // Avoid multiple runs...
+            nextExpiryTime = next; // Avoid multiple runs...
             for (Iterator<Entry<K, V>> iterator = new EntryIterator(); iterator.hasNext();) {
                 TimedEntry<K, V> entry = (TimedEntry<K, V>) iterator.next();
                 ////
@@ -317,7 +317,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
                 ////
             }
             ////
-            mNextExpiryTime = next;
+            nextExpiryTime = next;
         }
     }
 
@@ -356,7 +356,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * Note: Iterating through this iterator will remove any expired values.
      */
     private abstract class TimeoutMapIterator<E> implements Iterator<E> {
-        Iterator<Entry<K, Entry<K, V>>> mIterator = mEntries.entrySet().iterator();
+        Iterator<Entry<K, Entry<K, V>>> mIterator = entries.entrySet().iterator();
         BasicEntry<K, V> mNext;
         long mNow = System.currentTimeMillis();
 
@@ -443,7 +443,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
         }
 
         final long expires() {
-            return mTimestamp + mExpiryTime;
+            return mTimestamp + expiryTime;
         }
     }
 }

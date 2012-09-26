@@ -41,7 +41,7 @@ import java.util.List;
  * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
  */
 class PSDAlphaChannelInfo extends PSDImageResource {
-    List<String> mNames;
+    List<String> names;
 
     public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -49,12 +49,12 @@ class PSDAlphaChannelInfo extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        mNames = new ArrayList<String>();
+        names = new ArrayList<String>();
 
-        long left = mSize;
+        long left = size;
         while (left > 0) {
             String name = PSDUtil.readPascalString(pInput);
-            mNames.add(name);
+            names.add(name);
             left -= name.length() + 1;
         }
     }
@@ -62,7 +62,7 @@ class PSDAlphaChannelInfo extends PSDImageResource {
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
-        builder.append(", alpha channels: ").append(mNames).append("]");
+        builder.append(", alpha channels: ").append(names).append("]");
         return builder.toString();
     }
 }

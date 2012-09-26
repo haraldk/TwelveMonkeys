@@ -87,7 +87,7 @@ public final class FileSeekableStream extends SeekableInputStream {
 
     @Override
     public int available() throws IOException {
-        long length = mRandomAccess.length() - mPosition;
+        long length = mRandomAccess.length() - position;
         return length > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) length;
     }
 
@@ -100,7 +100,7 @@ public final class FileSeekableStream extends SeekableInputStream {
 
         int read = mRandomAccess.read();
         if (read >= 0) {
-            mPosition++;
+            position++;
         }
         return read;
     }
@@ -111,7 +111,7 @@ public final class FileSeekableStream extends SeekableInputStream {
 
         int read = mRandomAccess.read(pBytes, pOffset, pLength);
         if (read > 0) {
-            mPosition += read;
+            position += read;
         }
         return read;
     }

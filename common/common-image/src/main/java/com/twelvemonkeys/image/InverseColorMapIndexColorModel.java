@@ -46,13 +46,13 @@ import java.awt.image.IndexColorModel;
  */
 public class InverseColorMapIndexColorModel extends IndexColorModel {
 
-    protected int mRGBs[];
-    protected int mMapSize;
+    protected int rgbs[];
+    protected int mapSize;
 
-    protected InverseColorMap mInverseMap = null;
+    protected InverseColorMap inverseMap = null;
     private final static int ALPHA_THRESHOLD = 0x80;
 
-    private int mWhiteIndex = -1;
+    private int whiteIndex = -1;
     private final static int WHITE = 0x00FFFFFF;
     private final static int RGB_MASK = 0x00FFFFFF;
 
@@ -74,11 +74,11 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
               ImageUtil.getTransferType(pColorModel),
               pColorModel.getValidPixels());
 
-        mRGBs = pRGBs;
-        mMapSize = mRGBs.length;
+        rgbs = pRGBs;
+        mapSize = rgbs.length;
 
-        mInverseMap = new InverseColorMap(mRGBs);
-        mWhiteIndex = getWhiteIndex();
+        inverseMap = new InverseColorMap(rgbs);
+        whiteIndex = getWhiteIndex();
     }
 
     /**
@@ -91,6 +91,7 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
     private static int[] getRGBs(IndexColorModel pColorModel) {
         int[] rgb = new int[pColorModel.getMapSize()];
         pColorModel.getRGBs(rgb);
+
         return rgb;
     }
 
@@ -111,15 +112,13 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
      *
      * @see IndexColorModel#IndexColorModel(int, int, int[], int, boolean, int, int)
      */
-    public InverseColorMapIndexColorModel(int pNumBits, int pSize, int[] pRGBs,
-                                          int pStart, boolean pAlpha, int pTransparentIndex,
-                                          int pTransferType) {
+    public InverseColorMapIndexColorModel(int pNumBits, int pSize, int[] pRGBs, int pStart, boolean pAlpha, int pTransparentIndex, int pTransferType) {
         super(pNumBits, pSize, pRGBs, pStart, pAlpha, pTransparentIndex, pTransferType);
-        mRGBs = getRGBs(this);
-        mMapSize = mRGBs.length;
+        rgbs = getRGBs(this);
+        mapSize = rgbs.length;
 
-        mInverseMap = new InverseColorMap(mRGBs, pTransparentIndex);
-        mWhiteIndex = getWhiteIndex();
+        inverseMap = new InverseColorMap(rgbs, pTransparentIndex);
+        whiteIndex = getWhiteIndex();
     }
 
     /**
@@ -138,15 +137,13 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
      *
      * @see IndexColorModel#IndexColorModel(int, int, byte[], byte[], byte[], int)
      */
-    public InverseColorMapIndexColorModel(int pNumBits, int pSize,
-                                          byte[] pReds, byte[] pGreens, byte[] pBlues,
-                                          int pTransparentIndex) {
+    public InverseColorMapIndexColorModel(int pNumBits, int pSize, byte[] pReds, byte[] pGreens, byte[] pBlues, int pTransparentIndex) {
         super(pNumBits, pSize, pReds, pGreens, pBlues, pTransparentIndex);
-        mRGBs = getRGBs(this);
-        mMapSize = mRGBs.length;
+        rgbs = getRGBs(this);
+        mapSize = rgbs.length;
 
-        mInverseMap = new InverseColorMap(mRGBs, pTransparentIndex);
-        mWhiteIndex = getWhiteIndex();
+        inverseMap = new InverseColorMap(rgbs, pTransparentIndex);
+        whiteIndex = getWhiteIndex();
     }
 
     /**
@@ -164,19 +161,18 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
      *
      * @see IndexColorModel#IndexColorModel(int, int, byte[], byte[], byte[])
      */
-    public InverseColorMapIndexColorModel(int pNumBits, int pSize,
-                                          byte[] pReds, byte[] pGreens, byte[] pBlues) {
+    public InverseColorMapIndexColorModel(int pNumBits, int pSize, byte[] pReds, byte[] pGreens, byte[] pBlues) {
         super(pNumBits, pSize, pReds, pGreens, pBlues);
-        mRGBs = getRGBs(this);
-        mMapSize = mRGBs.length;
+        rgbs = getRGBs(this);
+        mapSize = rgbs.length;
 
-        mInverseMap = new InverseColorMap(mRGBs);
-        mWhiteIndex = getWhiteIndex();
+        inverseMap = new InverseColorMap(rgbs);
+        whiteIndex = getWhiteIndex();
     }
 
     private int getWhiteIndex() {
-        for (int i = 0; i < mRGBs.length; i++) {
-            int color = mRGBs[i];
+        for (int i = 0; i < rgbs.length; i++) {
+            int color = rgbs[i];
             if ((color & RGB_MASK) == WHITE) {
                 return i;
             }
@@ -244,7 +240,6 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
      *
      */
     public Object getDataElements(int rgb, Object pixel) {
-
         int alpha = (rgb>>>24);
 
         int pix;
@@ -253,11 +248,11 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
         }
         else {
             int color = rgb & RGB_MASK;
-            if (color == WHITE && mWhiteIndex != -1) {
-                pix = mWhiteIndex;
+            if (color == WHITE && whiteIndex != -1) {
+                pix = whiteIndex;
             }
             else {
-                pix = mInverseMap.getIndexNearest(color);
+                pix = inverseMap.getIndexNearest(color);
             }
         }
 
@@ -297,8 +292,7 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
                 shortObj[0] = (short) pix;
                 break;
             default:
-                throw new UnsupportedOperationException("This method has not been " +
-                                                        "implemented for transferType " + transferType);
+                throw new UnsupportedOperationException("This method has not been implemented for transferType " + transferType);
         }
         return pixel;
     }

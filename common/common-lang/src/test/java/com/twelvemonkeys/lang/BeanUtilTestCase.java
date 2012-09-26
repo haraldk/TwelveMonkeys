@@ -2,10 +2,10 @@ package com.twelvemonkeys.lang;
 
 import junit.framework.TestCase;
 
-import java.util.Map;
-import java.util.HashMap;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
-import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * BeanUtilTestCase
@@ -19,7 +19,7 @@ public class BeanUtilTestCase extends TestCase {
     public void testConfigureNoMehtod() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, String> map = new HashMap<String, String>();
 
         map.put("noSuchMethod", "jaffa");
 
@@ -34,7 +34,7 @@ public class BeanUtilTestCase extends TestCase {
     public void testConfigureNoMethodArgs() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, Object> map = new HashMap<String, Object>();
 
         map.put("doubleValue", new Object()); // Should not be able to convert this
 
@@ -52,7 +52,7 @@ public class BeanUtilTestCase extends TestCase {
     public void testConfigureNullValue() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, Object> map = new HashMap<String, Object>();
 
         map.put("stringValue", null);
 
@@ -69,11 +69,11 @@ public class BeanUtilTestCase extends TestCase {
     public void testConfigureSimple() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, Serializable> map = new HashMap<String, Serializable>();
 
         map.put("stringValue", "one");
-        map.put("intValue", new Integer(2));
-        map.put("doubleValue", new Double(.3));
+        map.put("intValue", 2);
+        map.put("doubleValue", .3);
 
         try {
             BeanUtil.configure(bean, map);
@@ -84,17 +84,17 @@ public class BeanUtilTestCase extends TestCase {
 
         assertEquals("one", bean.getStringValue());
         assertEquals(2, bean.getIntValue());
-        assertEquals(new Double(.3), bean.getDoubleValue());
+        assertEquals(.3, bean.getDoubleValue());
     }
 
     public void testConfigureConvert() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String,Serializable> map = new HashMap<String, Serializable>();
 
-        map.put("stringValue", new Integer(1));
+        map.put("stringValue", 1);
         map.put("intValue", "2");
-        map.put("doubleValue", NumberFormat.getNumberInstance().format(0.3)); // Note, format is locale specific...
+        map.put("doubleValue", ".3");
 
         try {
             BeanUtil.configure(bean, map);
@@ -105,13 +105,13 @@ public class BeanUtilTestCase extends TestCase {
 
         assertEquals("1", bean.getStringValue());
         assertEquals(2, bean.getIntValue());
-        assertEquals(new Double(.3), bean.getDoubleValue());
+        assertEquals(0.3, bean.getDoubleValue());
     }
 
     public void testConfigureAmbigious1() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, String> map = new HashMap<String, String>();
 
         String value = "one";
         map.put("ambigious", value);
@@ -133,9 +133,9 @@ public class BeanUtilTestCase extends TestCase {
     public void testConfigureAmbigious2() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, Integer> map = new HashMap<String, Integer>();
 
-        Integer value = new Integer(2);
+        Integer value = 2;
         map.put("ambigious", value);
 
         try {
@@ -147,7 +147,7 @@ public class BeanUtilTestCase extends TestCase {
 
         assertNotNull(bean.getAmbigious());
         assertEquals("Integer converted rather than invoking setAmbigiouos(Integer), ordering not predictable",
-                     new Integer(2), bean.getAmbigious());
+                2, bean.getAmbigious());
         assertSame("Integer converted rather than invoking setAmbigiouos(Integer), ordering not predictable",
                    value, bean.getAmbigious());
     }
@@ -155,9 +155,9 @@ public class BeanUtilTestCase extends TestCase {
     public void testConfigureAmbigious3() {
         TestBean bean = new TestBean();
 
-        Map map = new HashMap();
+        Map<String, Double> map = new HashMap<String, Double>();
 
-        Double value = new Double(.3);
+        Double value = .3;
         map.put("ambigious", value);
 
         try {
@@ -175,54 +175,54 @@ public class BeanUtilTestCase extends TestCase {
     }
 
     static class TestBean {
-        private String mString;
-        private int mInt;
-        private Double mDouble;
+        private String stringVal;
+        private int intVal;
+        private Double doubleVal;
 
-        private Object mAmbigious;
+        private Object ambigious;
 
         public Double getDoubleValue() {
-            return mDouble;
+            return doubleVal;
         }
 
         public int getIntValue() {
-            return mInt;
+            return intVal;
         }
 
         public String getStringValue() {
-            return mString;
+            return stringVal;
         }
 
         public void setStringValue(String pString) {
-            mString = pString;
+            stringVal = pString;
         }
 
         public void setIntValue(int pInt) {
-            mInt = pInt;
+            intVal = pInt;
         }
 
         public void setDoubleValue(Double pDouble) {
-            mDouble = pDouble;
+            doubleVal = pDouble;
         }
 
         public void setAmbigious(String pString) {
-            mAmbigious = pString;
+            ambigious = pString;
         }
 
         public void setAmbigious(Object pObject) {
-            mAmbigious = pObject;
+            ambigious = pObject;
         }
 
         public void setAmbigious(Integer pInteger) {
-            mAmbigious = pInteger;
+            ambigious = pInteger;
         }
 
         public void setAmbigious(int pInt) {
-            mAmbigious = new Long(pInt); // Just to differentiate...
+            ambigious = (long) pInt; // Just to differentiate...
         }
 
         public Object getAmbigious() {
-            return mAmbigious;
+            return ambigious;
         }
     }
 }

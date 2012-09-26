@@ -43,12 +43,12 @@ import java.util.*;
  * <a href="http://jakarta.apache.org/commons/fileupload/">Jakarta Commons FileUpload</a>.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/fileupload/HttpFileUploadRequestWrapper.java#1 $
+ * @version $Id: HttpFileUploadRequestWrapper.java#1 $
  */
 class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements HttpFileUploadRequest {
 
-    private final Map<String, String[]> mParameters = new HashMap<String, String[]>();
-    private final Map<String, UploadedFile[]> mFiles = new HashMap<String, UploadedFile[]>();
+    private final Map<String, String[]> parameters = new HashMap<String, String[]>();
+    private final Map<String, UploadedFile[]> files = new HashMap<String, UploadedFile[]>();
 
     public HttpFileUploadRequestWrapper(HttpServletRequest pRequest, File pUploadDir, long pMaxSize) throws ServletException {
         super(pRequest);
@@ -86,7 +86,7 @@ class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements 
         String name = pItem.getFieldName();
 
         UploadedFile[] values;
-        UploadedFile[] oldValues = mFiles.get(name);
+        UploadedFile[] oldValues = files.get(name);
 
         if (oldValues != null) {
             values = new UploadedFile[oldValues.length + 1];
@@ -97,7 +97,7 @@ class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements 
             values = new UploadedFile[] {value};
         }
 
-        mFiles.put(name, values);
+        files.put(name, values);
 
         // Also add to normal fields
         processFormField(name, value.getName());
@@ -108,7 +108,7 @@ class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements 
         // probably faster to just use arrays...
         // TODO: Research and document...
         String[] values;
-        String[] oldValues = mParameters.get(pName);
+        String[] oldValues = parameters.get(pName);
 
         if (oldValues != null) {
             values = new String[oldValues.length + 1];
@@ -119,17 +119,17 @@ class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements 
             values = new String[] {pValue};
         }
 
-        mParameters.put(pName, values);
+        parameters.put(pName, values);
     }
 
     public Map getParameterMap() {
         // TODO: The spec dicates immutable map, but what about the value arrays?!
         // Probably just leave as-is, for performance
-        return Collections.unmodifiableMap(mParameters);
+        return Collections.unmodifiableMap(parameters);
     }
 
     public Enumeration getParameterNames() {
-        return Collections.enumeration(mParameters.keySet());
+        return Collections.enumeration(parameters.keySet());
     }
 
     public String getParameter(String pString) {
@@ -139,7 +139,7 @@ class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements 
 
     public String[] getParameterValues(String pString) {
         // TODO: Optimize?
-        return mParameters.get(pString).clone();
+        return parameters.get(pString).clone();
     }
 
     public UploadedFile getUploadedFile(String pName) {
@@ -149,6 +149,6 @@ class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements 
 
     public UploadedFile[] getUploadedFiles(String pName) {
         // TODO: Optimize?
-        return mFiles.get(pName).clone();
+        return files.get(pName).clone();
     }
 }

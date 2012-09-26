@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.imageio.stream.ImageOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,34 +42,47 @@ import java.io.OutputStream;
  * @version $Id: IIOOutputStreamAdapter.java,v 1.0 Sep 26, 2007 11:50:38 AM haraldk Exp$
  */
 class IIOOutputStreamAdapter extends OutputStream {
-    private ImageOutputStream mOutput;
+    private ImageOutputStream output;
 
     public IIOOutputStreamAdapter(final ImageOutputStream pOutput) {
-        mOutput = pOutput;
+        Validate.notNull(pOutput, "stream == null");
+
+        output = pOutput;
     }
 
     @Override
     public void write(final byte[] pBytes) throws IOException {
-        mOutput.write(pBytes);
+        assertOpen();
+        output.write(pBytes);
     }
 
     @Override
     public void write(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        mOutput.write(pBytes, pOffset, pLength);
+        assertOpen();
+        output.write(pBytes, pOffset, pLength);
     }
 
     @Override
     public void write(final int pByte) throws IOException {
-        mOutput.write(pByte);
+        assertOpen();
+        output.write(pByte);
     }
 
     @Override
     public void flush() throws IOException {
-        mOutput.flush();
+        // NOTE: The contract of OutputStream.flush is very different from ImageOutputStream.flush. We can't delegate.
+        // TODO: Fulfill the contract of OutputStream.flush? This seems to be good enough for now.
+        assertOpen();
+    }
+
+    private void assertOpen() throws IOException {
+        if (output == null) {
+            throw new IOException("stream already closed");
+        }
     }
 
     @Override
     public void close() throws IOException {
-        mOutput = null;
+        output = null;
     }
 }

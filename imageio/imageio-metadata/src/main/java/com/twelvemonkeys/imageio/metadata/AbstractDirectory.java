@@ -28,10 +28,9 @@
 
 package com.twelvemonkeys.imageio.metadata;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+
+import static com.twelvemonkeys.lang.Validate.noNullElements;
 
 /**
  * AbstractDirectory
@@ -41,17 +40,18 @@ import java.util.List;
  * @version $Id: AbstractDirectory.java,v 1.0 Nov 11, 2009 5:31:04 PM haraldk Exp$
  */
 public abstract class AbstractDirectory implements Directory {
-    private final List<Entry> mEntries = new ArrayList<Entry>();
+    private final List<Entry> entries = new ArrayList<Entry>();
+    private final List<Entry> unmodifiable = Collections.unmodifiableList(entries);
 
-    protected AbstractDirectory(final Collection<? extends Entry> pEntries) {
-        if (pEntries != null) {
-            mEntries.addAll(pEntries);
+    protected AbstractDirectory(final Collection<? extends Entry> entries) {
+        if (entries != null) {
+            this.entries.addAll(noNullElements(entries));
         }
     }
 
-    public Entry getEntryById(final Object pIdentifier) {
+    public Entry getEntryById(final Object identifier) {
         for (Entry entry : this) {
-            if (entry.getIdentifier().equals(pIdentifier)) {
+            if (entry.getIdentifier().equals(identifier)) {
                 return entry;
             }
         }
@@ -59,9 +59,9 @@ public abstract class AbstractDirectory implements Directory {
         return null;
     }
 
-    public Entry getEntryByFieldName(final String pFieldName) {
+    public Entry getEntryByFieldName(final String fieldName) {
         for (Entry entry : this) {
-            if (entry.getFieldName() != null && entry.getFieldName().equals(pFieldName)) {
+            if (entry.getFieldName() != null && entry.getFieldName().equals(fieldName)) {
                 return entry;
             }
         }
@@ -70,7 +70,7 @@ public abstract class AbstractDirectory implements Directory {
     }
 
     public Iterator<Entry> iterator() {
-        return mEntries.iterator();
+        return isReadOnly() ? unmodifiable.iterator() : entries.iterator();
     }
 
     /**
@@ -85,23 +85,23 @@ public abstract class AbstractDirectory implements Directory {
         }
     }
 
-    public boolean add(final Entry pEntry) {
+    public boolean add(final Entry entry) {
         assertMutable();
 
         // TODO: Replace if entry is already present?
         // Some directories may need special ordering, or may/may not support multiple entries for certain ids...
-        return mEntries.add(pEntry);
+        return entries.add(entry);
     }
 
     @SuppressWarnings({"SuspiciousMethodCalls"})
-    public boolean remove(final Object pEntry) {
+    public boolean remove(final Object entry) {
         assertMutable();
 
-        return mEntries.remove(pEntry);
+        return entries.remove(entry);
     }
 
     public int size() {
-        return mEntries.size();
+        return entries.size();
     }
 
     /**
@@ -118,7 +118,7 @@ public abstract class AbstractDirectory implements Directory {
 
     @Override
     public int hashCode() {
-        return mEntries.hashCode();
+        return entries.hashCode();
     }
 
     @Override
@@ -127,18 +127,18 @@ public abstract class AbstractDirectory implements Directory {
             return true;
         }
 
-        if (getClass() != pOther.getClass()) {
+        if (pOther == null || getClass() != pOther.getClass()) {
             return false;
         }
 
         // Safe cast, as it must be a subclass for the classes to be equal
         AbstractDirectory other = (AbstractDirectory) pOther;
 
-        return mEntries.equals(other.mEntries);
+        return entries.equals(other.entries);
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s", getClass().getSimpleName(), mEntries.toString());
+        return String.format("%s%s", getClass().getSimpleName(), entries.toString());
     }
 }

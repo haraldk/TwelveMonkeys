@@ -12,11 +12,11 @@ import java.io.IOException;
  */
 final class PSDVersionInfo extends PSDImageResource {
 
-    int mVersion;
-    boolean mHasRealMergedData;
-    String mWriter;
-    String mReader;
-    int mFileVersion;
+    int version;
+    boolean hasRealMergedData;
+    String writer;
+    String reader;
+    int fileVersion;
 
     PSDVersionInfo(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
@@ -32,24 +32,24 @@ final class PSDVersionInfo extends PSDImageResource {
         4 bytes file version.         
          */
 
-        mVersion = pInput.readInt();
-        mHasRealMergedData = pInput.readBoolean();
+        version = pInput.readInt();
+        hasRealMergedData = pInput.readBoolean();
 
-        mWriter = PSDUtil.readUnicodeString(pInput);
-        mReader = PSDUtil.readUnicodeString(pInput);
+        writer = PSDUtil.readUnicodeString(pInput);
+        reader = PSDUtil.readUnicodeString(pInput);
         
-        mFileVersion = pInput.readInt();
+        fileVersion = pInput.readInt();
     }
 
     @Override
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        builder.append(", version: ").append(mVersion);
-        builder.append(", hasRealMergedData: ").append(mHasRealMergedData);
-        builder.append(", writer: ").append(mWriter);
-        builder.append(", reader: ").append(mReader);
-        builder.append(", file version: ").append(mFileVersion);
+        builder.append(", version: ").append(version);
+        builder.append(", hasRealMergedData: ").append(hasRealMergedData);
+        builder.append(", writer: ").append(writer);
+        builder.append(", reader: ").append(reader);
+        builder.append(", file version: ").append(fileVersion);
         builder.append("]");
 
         return builder.toString();

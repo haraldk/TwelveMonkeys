@@ -43,7 +43,7 @@ import java.util.List;
  * @version $Id: SVGImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImageReader> {
-    private SVGImageReaderSpi mSVGImageReaderSpi = new SVGImageReaderSpi();
+    private SVGImageReaderSpi provider = new SVGImageReaderSpi();
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -52,7 +52,7 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
     }
 
     protected ImageReaderSpi createProvider() {
-        return mSVGImageReaderSpi;
+        return provider;
     }
 
     @Override

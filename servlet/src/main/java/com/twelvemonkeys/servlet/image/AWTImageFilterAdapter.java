@@ -38,18 +38,18 @@ import java.awt.image.RenderedImage;
 /**
  * AWTImageFilterAdapter
  *
- * @author $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/main/java/com/twelvemonkeys/servlet/image/AWTImageFilterAdapter.java#1 $
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: AWTImageFilterAdapter.java#1 $
  * 
  */
 public class AWTImageFilterAdapter extends ImageFilter {
 
-    private java.awt.image.ImageFilter mFilter = null;
+    private java.awt.image.ImageFilter imageFilter = null;
 
     public void setImageFilter(String pFilterClass) {
         try {
             Class filterClass = Class.forName(pFilterClass);
-            mFilter = (java.awt.image.ImageFilter) filterClass.newInstance();
+            imageFilter = (java.awt.image.ImageFilter) filterClass.newInstance();
         }
         catch (ClassNotFoundException e) {
             log("Could not load filter class.", e);
@@ -64,9 +64,9 @@ public class AWTImageFilterAdapter extends ImageFilter {
 
     protected RenderedImage doFilter(BufferedImage pImage, ServletRequest pRequest, ImageServletResponse pResponse) {
         // Filter
-        Image img = ImageUtil.filter(pImage, mFilter);
+        Image img = ImageUtil.filter(pImage, imageFilter);
 
         // Create BufferedImage & return
-       return ImageUtil.toBuffered(img, BufferedImage.TYPE_INT_RGB); // TODO: This is for JPEG only...
+       return ImageUtil.toBuffered(img, BufferedImage.TYPE_INT_RGB); // TODO: This is ok for JPEG only...
     }
 }
