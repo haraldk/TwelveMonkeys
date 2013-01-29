@@ -30,7 +30,6 @@ import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderAbstractTestCase;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.Encoder;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -62,15 +61,6 @@ public class LZWDecoderTest extends DecoderAbstractTestCase {
     public void testShortBitReversedStream() throws IOException {
         InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-short.bin"), new LZWDecoder(true), 128);
         InputStream unpacked = new ByteArrayInputStream(new byte[512 * 3 * 5]); // Should be all 0's
-
-        assertSameStreamContents(unpacked, stream);
-    }
-
-    @Ignore("Known issue")
-    @Test
-    public void testShortBitReversedStreamLine45To49() throws IOException {
-        InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-short-45-49.bin"), new LZWDecoder(true), 128);
-        InputStream unpacked = getClass().getResourceAsStream("/lzw/unpacked-short-45-49.bin");
 
         assertSameStreamContents(unpacked, stream);
     }

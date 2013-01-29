@@ -109,6 +109,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Implement readAsRenderedImage to allow tiled renderImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
     // TODO: Implement readAsRaster directly
+    // TODO: IIOMetadata
 
     // TODOs Full BaseLine support:
     // TODO: Support ExtraSamples (an array, if multiple extra samples!)
@@ -282,7 +283,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                         return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
                                     }
 
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, false, false);
+                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, false);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
                                     return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
@@ -704,7 +705,7 @@ public class TIFFImageReader extends ImageReaderBase {
 //                        }
 //                        catch (IOException e) {
 //                            Arrays.fill(rowData, k, rowData.length, (byte) -1);
-//                            System.err.printf("Unexpected EOF or bad data at [%d %d]\n", col + k, row);
+//                            System.err.printf("Unexpected EOF or bad data at [%d, %d]\n", col + k, row);
 //                            break;
 //                        }
 //                    }

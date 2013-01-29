@@ -43,6 +43,8 @@ import java.util.Arrays;
  * @version $Id: LZWDecoder.java,v 1.0 08.05.12 21:11 haraldk Exp$
  */
 final class LZWDecoder implements Decoder {
+    // TODO: Break out compatibility handling to subclass, to avoid code branching?
+
     /** Clear: Re-initialize tables. */
     static final int CLEAR_CODE = 256;
     /** End of Information. */
@@ -53,17 +55,16 @@ final class LZWDecoder implements Decoder {
 
     private final boolean reverseBitOrder;
 
-    private int currentByte = -1;
-    private int bitPos;
-
     // TODO: Consider speeding things up with a "string" type (instead of the inner byte[]),
     // that uses variable size/dynamic allocation, to avoid the excessive array copying?
 //    private final byte[][] table = new byte[4096][0]; // libTiff adds another 1024 "for compatibility"...
     private final byte[][] table = new byte[4096 + 1024][0]; // libTiff adds another 1024 "for compatibility"...
+//    private final Entry[] tableToo = new Entry[4096 + 1024];
     private int tableLength;
     private int bitsPerCode;
     private int oldCode = CLEAR_CODE;
     private int maxCode;
+    private int bitMask;
     private int maxString;
     private boolean eofReached;
 
@@ -74,6 +75,10 @@ final class LZWDecoder implements Decoder {
             table[i] = new byte[] {(byte) i};
         }
 
+//        for (int i = 0; i < 256; i++) {
+//            tableToo[i] = new Entry((byte) i);
+//        }
+//
         init();
     }
 
@@ -81,14 +86,15 @@ final class LZWDecoder implements Decoder {
         this(false);
     }
 
-    private int maxCodeFor(final int bits) {
-        return reverseBitOrder ? (1 << bits) - 2 : (1 << bits) - 1;
+    private static int maxCodeFor(final int bits) {
+        return (1 << bits) - 1;
     }
 
     private void init() {
         tableLength = 258;
         bitsPerCode = MIN_BITS;
-        maxCode = maxCodeFor(bitsPerCode);
+        bitMask = maxCodeFor(bitsPerCode);
+        maxCode = reverseBitOrder ? bitMask : bitMask - 1;
         maxString = 1;
     }
 
@@ -151,7 +157,7 @@ final class LZWDecoder implements Decoder {
     private void addStringToTable(final byte[] string) throws IOException {
         table[tableLength++] = string;
 
-        if (tableLength >= maxCode) {
+        if (tableLength > maxCode) {
             bitsPerCode++;
 
             if (bitsPerCode > MAX_BITS) {
@@ -163,7 +169,8 @@ final class LZWDecoder implements Decoder {
                 }
             }
 
-            maxCode = maxCodeFor(bitsPerCode);
+            bitMask = maxCodeFor(bitsPerCode);
+            maxCode = reverseBitOrder ? bitMask : bitMask - 1;
         }
 
         if (string.length > maxString) {
@@ -191,68 +198,65 @@ final class LZWDecoder implements Decoder {
         return code < tableLength;
     }
 
+
+    int nextData, nextBits;
+
     private int getNextCode(final InputStream stream) throws IOException {
         if (eofReached) {
             return EOI_CODE;
         }
 
-        int bitsToFill = bitsPerCode;
-        int value = 0;
+        int code;
+        int read = stream.read();
+        if (read < 0) {
+            eofReached = true;
+            return EOI_CODE;
+        }
 
-        while (bitsToFill > 0) {
-            int nextBits;
-            if (bitPos == 0) {
-                nextBits = stream.read();
+        if (reverseBitOrder) {
+            // NOTE: This is a spec violation. However, libTiff reads such files.
+            // TIFF 6.0 Specification, Section 13: "LZW Compression"/"The Algorithm", page 61, says:
+            // "LZW compression codes are stored into bytes in high-to-low-order fashion, i.e., FillOrder
+            // is assumed to be 1. The compressed codes are written as bytes (not words) so that the
+            // compressed data will be identical whether it is an ‘II’ or ‘MM’ file."
+            nextData |= read << nextBits;
+            nextBits += 8;
 
-                if (nextBits == -1) {
-                    // This is really a bad stream, but should be safe to handle this way, rather than throwing an EOFException.
-                    // An EOFException will be thrown by the decoder stream later, if further reading is attempted.
+            if (nextBits < bitsPerCode) {
+                read = stream.read();
+                if (read < 0) {
                     eofReached = true;
                     return EOI_CODE;
                 }
-            }
-            else {
-                nextBits = currentByte;
-            }
 
-            int bitsFromHere = 8 - bitPos;
-            if (bitsFromHere > bitsToFill) {
-                bitsFromHere = bitsToFill;
+                nextData |= read << nextBits;
+                nextBits += 8;
             }
 
-            if (reverseBitOrder) {
-                // NOTE: This is a spec violation. However, libTiff reads such files.
-                // TIFF 6.0 Specification, Section 13: "LZW Compression"/"The Algorithm", page 61, says:
-                // "LZW compression codes are stored into bytes in high-to-low-order fashion, i.e., FillOrder
-                // is assumed to be 1. The compressed codes are written as bytes (not words) so that the
-                // compressed data will be identical whether it is an ‘II’ or ‘MM’ file."
+            code = (nextData & bitMask);
+            nextData >>= bitsPerCode;
+            nextBits -= bitsPerCode;
+        }
+        else {
+            nextData = (nextData << 8) | read;
+            nextBits += 8;
 
-                // Fill bytes from right-to-left
-                for (int i = 0; i < bitsFromHere; i++) {
-                    int destBitPos = bitsPerCode - bitsToFill + i;
-                    int srcBitPos = bitPos + i;
-                    value |= ((nextBits & (1 << srcBitPos)) >> srcBitPos) << destBitPos;
+            if (nextBits < bitsPerCode) {
+                read = stream.read();
+                if (read < 0) {
+                    eofReached = true;
+                    return EOI_CODE;
                 }
-            }
-            else {
-                value |= (nextBits >> 8 - bitPos - bitsFromHere & 0xff >> 8 - bitsFromHere) << bitsToFill - bitsFromHere;
-            }
 
-            bitsToFill -= bitsFromHere;
-            bitPos += bitsFromHere;
-
-            if (bitPos >= 8) {
-                bitPos = 0;
+                nextData = (nextData << 8) | read;
+                nextBits += 8;
             }
 
-            currentByte = nextBits;
+            code = ((nextData >> (nextBits - bitsPerCode)) & bitMask);
+            nextBits -= bitsPerCode;
         }
 
-        if (value == EOI_CODE) {
-            eofReached = true;
-        }
-
-        return value;
+        return code;
     }
 
     static boolean isOldBitReversedStream(final InputStream stream) throws IOException {
@@ -265,6 +269,25 @@ final class LZWDecoder implements Decoder {
         }
         finally {
             stream.reset();
+        }
+    }
+
+    private class Entry {
+        final Entry next;
+
+        final int length;
+        final byte value;
+        final byte firstChar;
+
+        public Entry(byte code) {
+            this(code, code, 1, null);
+        }
+
+        public Entry(byte value, byte firstChar, int length, Entry next) {
+            this.length = length;
+            this.value = value;
+            this.firstChar = firstChar;
+            this.next = next;
         }
     }
 }
