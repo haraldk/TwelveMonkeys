@@ -33,7 +33,6 @@ import com.twelvemonkeys.io.enc.Decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 /**
  * LZWDecoder
@@ -53,8 +52,7 @@ abstract class LZWDecoder implements Decoder {
 
     private final boolean compatibilityMode;
 
-    private final byte[][] table;
-//    private final Entry[] tableToo = new Entry[4096 + 1024];
+    private final String[] table;
     private int tableLength;
     int bitsPerCode;
     private int oldCode = CLEAR_CODE;
@@ -69,16 +67,12 @@ abstract class LZWDecoder implements Decoder {
     protected LZWDecoder(final boolean compatibilityMode) {
         this.compatibilityMode = compatibilityMode;
 
-        table = new byte[compatibilityMode ? 4096 + 1024 : 4096][0]; // libTiff adds another 1024 "for compatibility"...
+        table = new String[compatibilityMode ? 4096 + 1024 : 4096]; // libTiff adds another 1024 "for compatibility"...
 
         for (int i = 0; i < 256; i++) {
-            table[i] = new byte[] {(byte) i};
+            table[i] = new String((byte) i);
         }
 
-//        for (int i = 0; i < 256; i++) {
-//            tableToo[i] = new Entry((byte) i);
-//        }
-//
         init();
     }
 
@@ -109,17 +103,17 @@ abstract class LZWDecoder implements Decoder {
                     break;
                 }
 
-                bufferPos += writeString(table[code], buffer, bufferPos);
+                bufferPos += table[code].writeTo(buffer, bufferPos);
             }
             else {
                 if (isInTable(code)) {
-                    bufferPos += writeString(table[code], buffer, bufferPos);
-                    addStringToTable(concatenate(table[oldCode], table[code][0]));
+                    bufferPos += table[code].writeTo(buffer, bufferPos);
+                    addStringToTable(table[oldCode].concatenate(table[code].firstChar));
                 }
                 else {
-                    byte[] outString = concatenate(table[oldCode], table[oldCode][0]);
+                    String outString = table[oldCode].concatenate(table[oldCode].firstChar);
 
-                    bufferPos += writeString(outString, buffer, bufferPos);
+                    bufferPos += outString.writeTo(buffer, bufferPos);
                     addStringToTable(outString);
                 }
             }
@@ -135,14 +129,7 @@ abstract class LZWDecoder implements Decoder {
         return bufferPos;
     }
 
-    private static byte[] concatenate(final byte[] string, final byte firstChar) {
-        byte[] result = Arrays.copyOf(string, string.length + 1);
-        result[string.length] = firstChar;
-
-        return result;
-    }
-
-    private void addStringToTable(final byte[] string) throws IOException {
+    private void addStringToTable(final String string) throws IOException {
         table[tableLength++] = string;
 
         if (tableLength > maxCode) {
@@ -153,7 +140,7 @@ abstract class LZWDecoder implements Decoder {
                     bitsPerCode--;
                 }
                 else {
-                    throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
+                    throw new DecodeException(java.lang.String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
                 }
             }
 
@@ -167,22 +154,6 @@ abstract class LZWDecoder implements Decoder {
     }
 
     protected abstract int maxCode();
-
-    private static int writeString(final byte[] string, final byte[] buffer, final int bufferPos) {
-        if (string.length == 0) {
-            return 0;
-        }
-        else if (string.length == 1) {
-            buffer[bufferPos] = string[0];
-
-            return 1;
-        }
-        else {
-            System.arraycopy(string, 0, buffer, bufferPos, string.length);
-
-            return string.length;
-        }
-    }
 
     private boolean isInTable(int code) {
         return code < tableLength;
@@ -302,22 +273,47 @@ abstract class LZWDecoder implements Decoder {
         }
     }
 
-    private class Entry {
-        final Entry next;
+    private static final class String {
+        final String previous;
 
         final int length;
         final byte value;
-        final byte firstChar;
+        final byte firstChar; // Copied forward for fast access
 
-        public Entry(byte code) {
+        public String(final byte code) {
             this(code, code, 1, null);
         }
 
-        public Entry(byte value, byte firstChar, int length, Entry next) {
-            this.length = length;
+        private String(final byte value, final byte firstChar, final int length, final String previous) {
             this.value = value;
             this.firstChar = firstChar;
-            this.next = next;
+            this.length = length;
+            this.previous = previous;
+        }
+
+        public final String concatenate(final byte firstChar) {
+            return new String(firstChar, this.firstChar, length + 1, this);
+        }
+
+        public final int writeTo(final byte[] buffer, final int offset) {
+            if (length == 0) {
+                return 0;
+            }
+            else if (length == 1) {
+                buffer[offset] = value;
+
+                return 1;
+            }
+            else {
+                String e = this;
+
+                for (int i = length - 1; i >= 0; i--) {
+                    buffer[offset + i] = e.value;
+                    e = e.previous;
+                }
+
+                return length;
+            }
         }
     }
 }
