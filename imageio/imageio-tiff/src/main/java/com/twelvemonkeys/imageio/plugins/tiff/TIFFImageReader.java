@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
+import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
@@ -129,6 +130,9 @@ public class TIFFImageReader extends ImageReaderBase {
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
+    // NOTE: DO NOT MODIFY OR EXPOSE!
+    static final double[] CCIR_601_1_COEFFICIENTS = new double[] {299.0 / 1000.0, 587.0 / 1000.0, 114.0 / 1000.0};
+
     private CompoundDirectory IFDs;
     private Directory currentIFD;
 
@@ -217,7 +221,7 @@ public class TIFFImageReader extends ImageReaderBase {
         getSampleFormat(); // We don't support anything but SAMPLEFORMAT_UINT at the moment, just sanity checking input
         int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFExtension.PLANARCONFIG_PLANAR);
         int interpretation = getValueAsInt(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation");
-        int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXELS, 1);
+        int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXEL, 1);
         int bitsPerSample = getBitsPerSample();
         int dataType = bitsPerSample <= 8 ? DataBuffer.TYPE_BYTE : bitsPerSample <= 16 ? DataBuffer.TYPE_USHORT : DataBuffer.TYPE_INT;
 
@@ -254,6 +258,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:
                 // JPEG reader will handle YCbCr to RGB for us, we'll have to do it ourselves if not JPEG...
+                // TODO: Sanity check that we have SamplesPerPixel == 3, BitsPerSample == [8,8,8] and Compression == 1 (none), 5 (LZW), or 6 (JPEG)
                 // TODO: Handle YCbCrSubsampling (up-scaler stream, or read data as-is + up-sample (sub-)raster after read? Apply smoothing?)
             case TIFFBaseline.PHOTOMETRIC_RGB:
                 // RGB
@@ -427,6 +432,10 @@ public class TIFFImageReader extends ImageReaderBase {
     public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
         readIFD(imageIndex);
 
+        System.err.println("currentIFD.getEntryById(TIFF.TAG_REFERENCE_BLACK_WHITE): " + currentIFD.getEntryById(TIFF.TAG_REFERENCE_BLACK_WHITE));
+        System.err.println("currentIFD.getEntryById(TIFF.TAG_TRANSFER_FUNCTION): " + currentIFD.getEntryById(TIFF.TAG_TRANSFER_FUNCTION));
+        System.err.println("currentIFD.getEntryById(TIFF.TAG_TRANSFER_RANGE): " + currentIFD.getEntryById(TIFF.TAG_TRANSFER_RANGE));
+
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
@@ -496,8 +505,53 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_ZLIB:
                 // 'Adobe-style' Deflate
 
-                // TODO: Read only tiles that lies within region
+                int[] yCbCrSubsampling = null;
+                int yCbCrPos = 1;
+                double[] yCbCrCoefficients = null;
+                if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+                    // getRawImageType does the lookup/conversion for these
+                    if (raster.getNumBands() != 3) {
+                        throw new IIOException("TIFF PhotometricInterpreatation YCbCr requires SamplesPerPixel == 3: " + raster.getNumBands());
+                    }
+                    if (raster.getTransferType() != DataBuffer.TYPE_BYTE) {
+                        throw new IIOException("TIFF PhotometricInterpreatation YCbCr requires BitsPerSample == [8,8,8]");
+                    }
 
+                    yCbCrPos = getValueAsIntWithDefault(TIFF.TAG_YCBCR_POSITIONING, 1);
+
+                    Entry subSampling = currentIFD.getEntryById(TIFF.TAG_YCBCR_SUB_SAMPLING);
+
+                    if (subSampling != null) {
+                        try {
+                            yCbCrSubsampling = (int[]) subSampling.getValue();
+                        }
+                        catch (ClassCastException e) {
+                            throw new IIOException("Unknown TIFF YCbCrSubSampling value type: " + subSampling.getTypeName(), e);
+                        }
+
+                        if (yCbCrSubsampling.length != 2 ||
+                                yCbCrSubsampling[0] != 1 && yCbCrSubsampling[0] != 2 && yCbCrSubsampling[0] != 4 ||
+                                yCbCrSubsampling[1] != 1 && yCbCrSubsampling[1] != 2 && yCbCrSubsampling[1] != 4 ||
+                                yCbCrSubsampling[0] < yCbCrSubsampling[1]) {
+                            throw new IIOException("Bad TIFF YCbCrSubSampling value: " + Arrays.toString(yCbCrSubsampling));
+                        }
+                    }
+                    else {
+                        yCbCrSubsampling = new int[] {2, 2};
+                    }
+
+                    Entry coefficients = currentIFD.getEntryById(TIFF.TAG_YCBCR_COEFFICIENTS);
+                    if (coefficients != null) {
+                        Rational[] value = (Rational[]) coefficients.getValue();
+                        yCbCrCoefficients = new double[] {value[0].doubleValue(), value[1].doubleValue(), value[2].doubleValue()};
+                    }
+                    else {
+                        // Default to y CCIR Recommendation 601-1 values
+                        yCbCrCoefficients = CCIR_601_1_COEFFICIENTS;
+                    }
+                }
+
+                // TODO: Read only tiles that lies within region
                 // General uncompressed/compressed reading
                 for (int y = 0; y < tilesDown; y++) {
                     int col = 0;
@@ -510,7 +564,8 @@ public class TIFFImageReader extends ImageReaderBase {
                         imageInput.seek(stripTileOffsets[i]);
 
                         DataInput input;
-                        if (compression == TIFFBaseline.COMPRESSION_NONE) {
+                        if (compression == TIFFBaseline.COMPRESSION_NONE && interpretation != TIFFExtension.PHOTOMETRIC_YCBCR) {
+                            // No need for transformation, fast forward
                             input = imageInput;
                         }
                         else {
@@ -518,11 +573,16 @@ public class TIFFImageReader extends ImageReaderBase {
                                     ? IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts[i])
                                     : IIOUtil.createStreamAdapter(imageInput);
 
+                            adapter = createDecoderInputStream(compression, adapter);
+
+                            if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+                                adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, colsInTile, yCbCrCoefficients);
+                            }
+
                             // According to the spec, short/long/etc should follow order of containing stream
                             input = imageInput.getByteOrder() == ByteOrder.BIG_ENDIAN
-                                    ? new DataInputStream(createDecoderInputStream(compression, adapter))
-                                    : new LittleEndianDataInputStream(createDecoderInputStream(compression, adapter));
-
+                                    ? new DataInputStream(adapter)
+                                    : new LittleEndianDataInputStream(adapter);
                         }
 
                         // Read a full strip/tile
@@ -565,6 +625,9 @@ public class TIFFImageReader extends ImageReaderBase {
                     // I just invoke jpegReader.getStreamMetadata...
                     // Might have something to do with subsampling?
                     // How do we pass the chroma-subsampling parameter from the TIFF structure to the JPEG reader?
+
+                    // TODO: Consider splicing the TAG_JPEG_TABLES into the streams for each tile, for a more
+                    // compatible approach..?
 
                     jpegReader.setInput(new ByteArrayImageInputStream(tablesValue));
 
@@ -690,6 +753,7 @@ public class TIFFImageReader extends ImageReaderBase {
         switch (rowRaster.getTransferType()) {
             case DataBuffer.TYPE_BYTE:
                 byte[] rowData = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+
                 for (int j = 0; j < rowsInStrip; j++) {
                     int row = startRow + j;
 
@@ -698,17 +762,6 @@ public class TIFFImageReader extends ImageReaderBase {
                     }
 
                     input.readFully(rowData);
-
-//                    for (int k = 0; k < rowData.length; k++) {
-//                        try {
-//                            rowData[k] = input.readByte();
-//                        }
-//                        catch (IOException e) {
-//                            Arrays.fill(rowData, k, rowData.length, (byte) -1);
-//                            System.err.printf("Unexpected EOF or bad data at [%d, %d]\n", col + k, row);
-//                            break;
-//                        }
-//                    }
 
                     unPredict(predictor, colsInStrip, 1, numBands, rowData);
                     normalizeBlack(interpretation, rowData);
@@ -725,6 +778,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 break;
             case DataBuffer.TYPE_USHORT:
                 short [] rowDataShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
+
                 for (int j = 0; j < rowsInStrip; j++) {
                     int row = startRow + j;
 
@@ -751,6 +805,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 break;
             case DataBuffer.TYPE_INT:
                 int [] rowDataInt = ((DataBufferInt) rowRaster.getDataBuffer()).getData();
+
                 for (int j = 0; j < rowsInStrip; j++) {
                     int row = startRow + j;
 
@@ -861,6 +916,8 @@ public class TIFFImageReader extends ImageReaderBase {
 
     private InputStream createDecoderInputStream(final int compression, final InputStream stream) throws IOException {
         switch (compression) {
+            case TIFFBaseline.COMPRESSION_NONE:
+                return stream;
             case TIFFBaseline.COMPRESSION_PACKBITS:
                 return new DecoderStream(stream, new PackBitsDecoder(), 1024);
             case TIFFExtension.COMPRESSION_LZW:
@@ -894,7 +951,7 @@ public class TIFFImageReader extends ImageReaderBase {
             short[] shorts = (short[]) entry.getValue();
             value = new long[shorts.length];
 
-            for (int i = 0, stripOffsetsValueLength = value.length; i < stripOffsetsValueLength; i++) {
+            for (int i = 0, length = value.length; i < length; i++) {
                 value[i] = shorts[i];
             }
         }
@@ -902,7 +959,7 @@ public class TIFFImageReader extends ImageReaderBase {
             int[] ints = (int[]) entry.getValue();
             value = new long[ints.length];
 
-            for (int i = 0, stripOffsetsValueLength = value.length; i < stripOffsetsValueLength; i++) {
+            for (int i = 0, length = value.length; i < length; i++) {
                 value[i] = ints[i];
             }
         }

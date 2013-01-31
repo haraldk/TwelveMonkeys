@@ -35,7 +35,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * LZWDecoder
+ * Implements Lempel-Ziv & Welch (LZW) decompression.
+ * Inspired by libTiff's LZW decompression.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -67,8 +68,9 @@ abstract class LZWDecoder implements Decoder {
     protected LZWDecoder(final boolean compatibilityMode) {
         this.compatibilityMode = compatibilityMode;
 
-        table = new String[compatibilityMode ? 4096 + 1024 : 4096]; // libTiff adds another 1024 "for compatibility"...
+        table = new String[compatibilityMode ? 4096 + 1024 : 4096]; // libTiff adds 1024 "for compatibility"...
 
+        // First 258 entries of table is always fixed
         for (int i = 0; i < 256; i++) {
             table[i] = new String((byte) i);
         }
