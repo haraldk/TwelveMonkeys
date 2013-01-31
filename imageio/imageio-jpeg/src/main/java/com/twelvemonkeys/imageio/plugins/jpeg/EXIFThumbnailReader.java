@@ -147,7 +147,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
         }
 
         Entry bitsPerSample = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
-        Entry samplesPerPixel = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXELS);
+        Entry samplesPerPixel = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
         Entry photometricInterpretation = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
 
         // Required
