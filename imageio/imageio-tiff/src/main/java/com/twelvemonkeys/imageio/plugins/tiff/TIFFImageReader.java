@@ -432,10 +432,6 @@ public class TIFFImageReader extends ImageReaderBase {
     public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
         readIFD(imageIndex);
 
-        System.err.println("currentIFD.getEntryById(TIFF.TAG_REFERENCE_BLACK_WHITE): " + currentIFD.getEntryById(TIFF.TAG_REFERENCE_BLACK_WHITE));
-        System.err.println("currentIFD.getEntryById(TIFF.TAG_TRANSFER_FUNCTION): " + currentIFD.getEntryById(TIFF.TAG_TRANSFER_FUNCTION));
-        System.err.println("currentIFD.getEntryById(TIFF.TAG_TRANSFER_RANGE): " + currentIFD.getEntryById(TIFF.TAG_TRANSFER_RANGE));
-
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
