@@ -167,7 +167,7 @@ public abstract class InputStreamAbstractTestCase extends ObjectAbstractTestCase
         input.mark(100); // Should be a no-op
 
         int read = input.read();
-        assertEquals(0, read);
+        assertTrue(read >= 0);
 
         // TODO: According to InputStream#reset, it is allowed to do some
         // implementation specific reset, and still be correct...
