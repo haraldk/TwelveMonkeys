@@ -226,7 +226,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
         double lumaBlue  = coefficients[2];
 
         rgb[offset    ] = clamp((int) Math.round(cr * (2 - 2 * lumaRed) + y));
-        rgb[offset + 2] = clamp((int) Math.round(cb * (2 - 2 * lumaBlue) + y) - 128);
+        rgb[offset + 2] = clamp((int) Math.round(cb * (2 - 2 * lumaBlue) + y));
         rgb[offset + 1] = clamp((int) Math.round((y - lumaRed * (rgb[offset] & 0xff) - lumaBlue * (rgb[offset + 2] & 0xff)) / lumaGreen));
     }
 
