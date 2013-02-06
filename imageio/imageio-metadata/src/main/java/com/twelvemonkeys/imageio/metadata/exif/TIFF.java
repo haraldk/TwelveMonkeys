@@ -113,6 +113,7 @@ public interface TIFF {
     int TAG_STRIP_OFFSETS = 273;
     int TAG_ROWS_PER_STRIP = 278;
     int TAG_STRIP_BYTE_COUNTS = 279;
+    // "Old-style" JPEG (still used as EXIF thumbnail)
     int TAG_JPEG_INTERCHANGE_FORMAT = 513;
     int TAG_JPEG_INTERCHANGE_FORMAT_LENGTH = 514;
 
@@ -162,11 +163,12 @@ public interface TIFF {
     int TAG_TILE_OFFSETS = 324;
     int TAG_TILE_BYTE_COUNTS = 325;
 
+    // JPEG
     int TAG_JPEG_TABLES = 347;
 
-    // "Old-style" JPEG (Obsolete)
-    int TAG_JPEG_PROC = 512;
-    int TAG_JPEG_QTABLES = 519;
-    int TAG_JPEG_DCTABLES = 520;
-    int TAG_JPEG_ACTABLES = 521;
+    // "Old-style" JPEG (Obsolete) DO NOT WRITE!
+    int TAG_OLD_JPEG_PROC = 512;
+    int TAG_OLD_JPEG_QTABLES = 519;
+    int TAG_OLD_JPEG_DCTABLES = 520;
+    int TAG_OLD_JPEG_ACTABLES = 521;
 }

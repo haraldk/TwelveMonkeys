@@ -37,11 +37,13 @@ import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
@@ -289,7 +291,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, false);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, false);
                             }
                         }
                         // TODO: More samples might be ok, if multiple alpha or unknown samples
@@ -730,7 +732,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 // http://www.remotesensing.org/libtiff/TIFFTechNote2.html
                 // TODO: Issue warning?
 
-                int mode = getValueAsIntWithDefault(TIFF.TAG_JPEG_PROC, 1);
+                int mode = getValueAsIntWithDefault(TIFF.TAG_OLD_JPEG_PROC, 1);
                 if (mode == TIFFExtension.JPEG_PROC_LOSSLESS) {
                     throw new IIOException("Unsupported TIFF JPEGProcessingMode: Lossless (14)");
                 }
@@ -774,14 +776,18 @@ public class TIFFImageReader extends ImageReaderBase {
                 int jpegOffset = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, -1);
                 int jpegLenght = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
 
-                ImageInputStream subStream;
+                ImageInputStream stream;
 
                 if (jpegOffset != -1) {
                     // Straight forward case: We're good to go! We'll disregard tiling and any tables tags
 
+                    if (currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_QTABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_DCTABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_ACTABLES) != null) {
+                        processWarningOccurred("Old-style JPEG compressed TIFF with JFIF stream encountered. Reading as single tile, ignoring tables.");
+                    }
+
                     imageInput.seek(jpegOffset);
-                    subStream = new SubImageInputStream(imageInput, jpegLenght != -1 ? jpegLenght : Short.MAX_VALUE);
-                    jpegReader.setInput(subStream);
+                    stream = new SubImageInputStream(imageInput, jpegLenght != -1 ? jpegLenght : Short.MAX_VALUE);
+                    jpegReader.setInput(stream);
 
                     // Read data
                     processImageStarted(imageIndex);
@@ -794,7 +800,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         jpegReader.read(0, jpegParam);
                     }
                     finally {
-                        subStream.close();
+                        stream.close();
                     }
 
                     processImageProgress(100f * row / (float) height);
@@ -806,18 +812,21 @@ public class TIFFImageReader extends ImageReaderBase {
                 else {
                     // The hard way: Read tables and re-create a full JFIF stream
 
+                    processWarningOccurred("Old-style JPEG compressed TIFF without JFIF stream encountered. Attempting to re-create JFIF stream.");
+
                     // TODO: If any of the q/dc/ac tables are equal (or have same offset, even if "spec" violation),
                     // use only the first occurrence, and update selectors in SOF0 and SOS
 
-                    long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_JPEG_QTABLES, "JPEGQTables", true);
+                    long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_QTABLES, "JPEGQTables", true);
                     byte[][] qTables = new byte[3][(int) (qTablesOffsets[1] - qTablesOffsets[0])]; // TODO: Using the offsets seems fragile.. Use fixed length??
                     for (int j = 0; j < 3; j++) {
                         imageInput.seek(qTablesOffsets[j]);
                         imageInput.readFully(qTables[j]);
                     }
+
 //                            System.err.println("qTables: " + qTables[0].length);
 
-                    long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_JPEG_DCTABLES, "JPEGDCTables", true);
+                    long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DCTABLES, "JPEGDCTables", true);
                     byte[][] dcTables = new byte[3][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])];
                     for (int j = 0; j < 3; j++) {
                         imageInput.seek(dcTablesOffsets[j]);
@@ -825,7 +834,7 @@ public class TIFFImageReader extends ImageReaderBase {
                     }
 //                            System.err.println("dcTables: " + dcTables[0].length);
 
-                    long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_JPEG_ACTABLES, "JPEGACTables", true);
+                    long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_ACTABLES, "JPEGACTables", true);
                     byte[][] acTables = new byte[3][(int) (acTablesOffsets[1] - acTablesOffsets[0])];
                     for (int j = 0; j < 3; j++) {
                         imageInput.seek(acTablesOffsets[j]);
@@ -845,86 +854,79 @@ public class TIFFImageReader extends ImageReaderBase {
                             int i = y * tilesAcross + x;
 
                             imageInput.seek(stripTileOffsets[i]);
-                            subStream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
+                            FastByteArrayOutputStream jfifBytes = new FastByteArrayOutputStream(
+                                    2 + 2 + 2 + 6 + 3 * raster.getNumBands() +
+                                    5 * qTables.length + qTables.length * qTables[0].length +
+                                    5 * dcTables.length + dcTables.length * dcTables[0].length +
+                                    5 * acTables.length + acTables.length * acTables[0].length +
+                                    8 + 2 * raster.getNumBands()
+                            );
+                            DataOutputStream out = new DataOutputStream(jfifBytes);
+
+                            out.writeShort(JPEG.SOI);
+                            out.writeShort(JPEG.SOF0);
+                            out.writeShort(2 + 6 + 3 * raster.getNumBands()); // SOF0 len
+                            out.writeByte(8); // bits TODO: Consult raster/transfer type for 12/16 bits support
+                            out.writeShort(stripTileHeight); // height
+                            out.writeShort(stripTileWidth); // width
+                            out.writeByte(raster.getNumBands()); // Number of components
+
+                            for (int comp = 0; comp < raster.getNumBands(); comp++) {
+                                out.writeByte(comp); // Component id
+                                out.writeByte(comp == 0 ? 0x22 : 0x11); // h/v subsampling TODO: FixMe, consult YCbCrSubsampling
+                                out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
+                            }
+
+                            // TODO: Consider merging if tables are equal
+                            for (int tableIndex = 0; tableIndex < qTables.length; tableIndex++) {
+                                byte[] table = qTables[tableIndex];
+                                out.writeShort(JPEG.DQT);
+                                out.writeShort(3 + table.length); // DQT length
+                                out.writeByte(tableIndex); // Q table id
+                                out.write(table); // Table data
+                            }
+
+                            // TODO: Consider merging if tables are equal
+                            for (int tableIndex = 0; tableIndex < dcTables.length; tableIndex++) {
+                                byte[] table = dcTables[tableIndex];
+                                out.writeShort(JPEG.DHT);
+                                out.writeShort(3 + table.length); // DHT length
+                                out.writeByte(tableIndex); // Huffman table id
+                                out.write(table); // Table data
+                            }
+
+                            // TODO: Consider merging if tables are equal
+                            for (int tableIndex = 0; tableIndex < acTables.length; tableIndex++) {
+                                byte[] table = acTables[tableIndex];
+                                out.writeShort(JPEG.DHT);
+                                out.writeShort(3 + table.length); // DHT length
+                                out.writeByte(0x10 + (tableIndex & 0xf)); // Huffman table id
+                                out.write(table); // Table data
+                            }
+
+                            out.writeShort(JPEG.SOS);
+                            out.writeShort(6 + 2 * raster.getNumBands()); // SOS length
+                            out.writeByte(raster.getNumBands()); // Num comp
+
+                            for (int component = 0; component < raster.getNumBands(); component++) {
+                                out.writeByte(component); // Comp id
+                                out.writeByte(component == 0 ? component : 0x10 + (component & 0xf)); // dc/ac selector
+                            }
+
+                            // Unknown 3 bytes pad... TODO: Figure out what the last 3 bytes are...
+                            out.writeByte(0);
+                            out.writeByte(0);
+                            out.writeByte(0);
+
+                            stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
                                     Arrays.asList(
-                                            // TODO; Get rid of hardcoded data + extract method/class...
-                                            // TODO:
-                                            // - Create a BAIS with size large enough to keep JFIF structure incl tables and SOS,
-                                            // - Wrap in DataInput,
-                                            // - Insert width/height, component ids etc at correct place
-                                            // - Insert tables at correct place
-
-                                            new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd8, // SOI
-                                                    // SOF0 (short), length (short)
-                                                    (byte) 0xff, (byte) 0xc0, 0x00, 0x11, // SOF0, 17 bytes
-                                                    // bits (byte), width (short), height (short)
-                                                    0x08, 0x00, (byte) 0xe0, 0x00, (byte) 0xf0,
-                                                    // num comp (byte), (id (byte) h/vsub (byte), qtsel (byte) * num comp)
-                                                    0x03, 0x00, 0x22, 0x00, 0x01, 0x11, 0x01, 0x02, 0x11, 0x02,
-//                                                    0x03, 0x00, 0x22, 0x00, 0x01, 0x11, 0x01, 0x02, 0x11, 0x01,
-                                                    // DQT
-                                                    (byte) 0xff, (byte) 0xdb, 0x00, 0x43, 0x00,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(qTables[0]),
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xdb, 0x00, 0x43, 0x01,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(qTables[1]),
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xdb, 0x00, 0x43, 0x02,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(qTables[2]),
-
-                                            // DHT (DC)
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xc4, 0x00, 0x1f, 0x00,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(dcTables[0]),
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xc4, 0x00, 0x1f, 0x01,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(dcTables[1]),
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xc4, 0x00, 0x1f, 0x02,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(dcTables[2]),
-
-                                            // DHT (AC)
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xc4, 0x00, (byte) 0xb5, 0x10,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(acTables[0]),
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xc4, 0x00, (byte) 0xb5, 0x11,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(acTables[1]),
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xc4, 0x00, (byte) 0xb5, 0x12,
-                                            }),
-                                            // ... table data
-                                            new ByteArrayInputStream(acTables[2]),
-
-                                            new ByteArrayInputStream(new byte[] {
-                                                    (byte) 0xff, (byte) 0xda, // SOS
-                                                    // TODO: Figure out what the last 3 bytes are...
-                                                    // Length: 12 (short), num comp (byte), (id (byte), dc/ac sel (byte) * num comp), ?? byte, ?? byte ?? byte
-                                                    0x00, 0x0C, 0x03, 0x00, 0x00, 0x01, 0x11, 0x02, 0x11, 0x00, 0x00, 0x00
-//                                                    0x00, 0x0C, 0x03, 0x00, 0x00, 0x01, 0x11, 0x02, 0x12, 0x00, 0x63, 0x00
-                                            }),
+                                            jfifBytes.createInputStream(),
                                             IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE),
                                             new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
                                     )
                             )));
 
-                            jpegReader.setInput(subStream);
+                            jpegReader.setInput(stream);
 
                             try {
                                 jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
@@ -935,7 +937,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 jpegReader.read(0, jpegParam);
                             }
                             finally {
-                                subStream.close();
+                                stream.close();
                             }
 
                             if (abortRequested()) {
