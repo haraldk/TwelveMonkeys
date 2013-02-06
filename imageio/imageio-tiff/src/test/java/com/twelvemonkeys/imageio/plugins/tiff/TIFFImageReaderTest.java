@@ -58,6 +58,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
                 new TestData(getClassLoaderResource("/tiff/marbles.tif"), new Dimension(1419, 1001)), // RGB, LZW compressed w/predictor
                 new TestData(getClassLoaderResource("/tiff/chifley_logo.tif"), new Dimension(591, 177)), // CMYK, uncompressed
                 new TestData(getClassLoaderResource("/tiff/ycbcr-cat.tif"), new Dimension(250, 325)), // YCbCr, LZW compressed
+                new TestData(getClassLoaderResource("/tiff/penguin_jpeg.tif"), new Dimension(1024, 768)), // YCbCr, JPEG compressed, striped
                 new TestData(getClassLoaderResource("/tiff/smallliz.tif"), new Dimension(160, 160)), // YCbCr, Old-Style JPEG compressed (full JFIF stream)
                 new TestData(getClassLoaderResource("/tiff/zackthecat.tif"), new Dimension(234, 213)) // YCbCr, Old-Style JPEG compressed (tables, no JFIF stream)
         );
