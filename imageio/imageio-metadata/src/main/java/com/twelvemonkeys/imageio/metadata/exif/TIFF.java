@@ -163,4 +163,10 @@ public interface TIFF {
     int TAG_TILE_BYTE_COUNTS = 325;
 
     int TAG_JPEG_TABLES = 347;
+
+    // "Old-style" JPEG (Obsolete)
+    int TAG_JPEG_PROC = 512;
+    int TAG_JPEG_QTABLES = 519;
+    int TAG_JPEG_DCTABLES = 520;
+    int TAG_JPEG_ACTABLES = 521;
 }

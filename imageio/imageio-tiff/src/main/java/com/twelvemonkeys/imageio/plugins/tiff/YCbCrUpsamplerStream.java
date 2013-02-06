@@ -216,18 +216,21 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     }
 
     private void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, final int offset) {
-        // TODO: FixMe: This is bogus...
-        double y  = yCbCr[offset    ] & 0xff;
-        double cb = yCbCr[offset + 1] & 0xff;
-        double cr = yCbCr[offset + 2] & 0xff;
+        double y  = (yCbCr[offset    ] & 0xff);
+        double cb = (yCbCr[offset + 1] & 0xff) - 128; // TODO: The -128 part seems bogus... Consult ReferenceBlackWhite??? But default to these values?
+        double cr = (yCbCr[offset + 2] & 0xff) - 128;
 
         double lumaRed   = coefficients[0];
         double lumaGreen = coefficients[1];
         double lumaBlue  = coefficients[2];
 
-        rgb[offset    ] = clamp((int) Math.round(cr * (2 - 2 * lumaRed) + y));
-        rgb[offset + 2] = clamp((int) Math.round(cb * (2 - 2 * lumaBlue) + y));
-        rgb[offset + 1] = clamp((int) Math.round((y - lumaRed * (rgb[offset] & 0xff) - lumaBlue * (rgb[offset + 2] & 0xff)) / lumaGreen));
+        int red = (int) Math.round(cr * (2 - 2 * lumaRed) + y);
+        int blue = (int) Math.round(cb * (2 - 2 * lumaBlue) + y);
+        int green = (int) Math.round((y - lumaRed * (rgb[offset] & 0xff) - lumaBlue * (rgb[offset + 2] & 0xff)) / lumaGreen);
+
+        rgb[offset    ] = clamp(red);
+        rgb[offset + 2] = clamp(blue);
+        rgb[offset + 1] = clamp(green);
     }
 
     private static byte clamp(int val) {

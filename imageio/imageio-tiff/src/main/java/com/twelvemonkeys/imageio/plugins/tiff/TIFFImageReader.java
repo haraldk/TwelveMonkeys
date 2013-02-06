@@ -59,9 +59,7 @@ import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -485,9 +483,6 @@ public class TIFFImageReader extends ImageReaderBase {
         WritableRaster rowRaster = rawType.getColorModel().createCompatibleWritableRaster(stripTileWidth, 1);
         int row = 0;
 
-        // Read data
-        processImageStarted(imageIndex);
-
         switch (compression) {
             // TIFF Baseline
             case TIFFBaseline.COMPRESSION_NONE:
@@ -546,6 +541,9 @@ public class TIFFImageReader extends ImageReaderBase {
                         yCbCrCoefficients = CCIR_601_1_COEFFICIENTS;
                     }
                 }
+
+                // Read data
+                processImageStarted(imageIndex);
 
                 // TODO: Read only tiles that lies within region
                 // General uncompressed/compressed reading
@@ -606,6 +604,7 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_JPEG:
                 // JPEG ('new-style' JPEG)
                 // TODO: Refactor all JPEG reading out to separate JPEG support class?
+                // TODO: Cache the JPEG reader for later use? Remember to reset to avoid resource leaks
 
                 // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
                 ImageReader jpegReader = new JPEGImageReader(getOriginatingProvider());
@@ -680,6 +679,9 @@ public class TIFFImageReader extends ImageReaderBase {
                     // ...and the JPEG reader will probably choke on missing tables...
                 }
 
+                // Read data
+                processImageStarted(imageIndex);
+
                 for (int y = 0; y < tilesDown; y++) {
                     int col = 0;
                     int rowsInTile = Math.min(stripTileHeight, height - row);
@@ -689,14 +691,14 @@ public class TIFFImageReader extends ImageReaderBase {
                         int colsInTile = Math.min(stripTileWidth, width - col);
 
                         imageInput.seek(stripTileOffsets[i]);
-                        SubImageInputStream subStream = new SubImageInputStream(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE);
+                        ImageInputStream subStream = new SubImageInputStream(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE);
                         try {
                             jpegReader.setInput(subStream);
                             jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
                             jpegParam.setDestinationOffset(new Point(col, row));
                             jpegParam.setDestination(destination);
                             // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
-                            // In the latter case we will have to use readAsRaster
+                            // In the latter case we will have to use readAsRaster and do color conversion ourselves
                             jpegReader.read(0, jpegParam);
                         }
                         finally {
@@ -722,6 +724,240 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 break;
 
+            case TIFFExtension.COMPRESSION_OLD_JPEG:
+                // JPEG ('old-style' JPEG, later overridden in Technote2)
+
+                // http://www.remotesensing.org/libtiff/TIFFTechNote2.html
+                // TODO: Issue warning?
+
+                int mode = getValueAsIntWithDefault(TIFF.TAG_JPEG_PROC, 1);
+                if (mode == TIFFExtension.JPEG_PROC_LOSSLESS) {
+                    throw new IIOException("Unsupported TIFF JPEGProcessingMode: Lossless (14)");
+                }
+                else if (mode != TIFFExtension.JPEG_PROC_BASELINE) {
+                    throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + mode);
+                }
+
+                // May use normal tiling??
+
+                // 512/JPEGProc: 1=Baseline, 14=Lossless (with Huffman coding), no default, although 1 is assumed if absent
+                // 513/JPEGInterchangeFormat (may be absent...)
+                // 514/JPEGInterchangeFormatLength (may be absent...)
+                // 515/JPEGRestartInterval (may be absent)
+
+                // 517/JPEGLosslessPredictors
+                // 518/JPEGPointTransforms
+
+                // 519/JPEGQTables
+                // 520/JPEGDCTables
+                // 521/JPEGACTables
+
+                // This field was originally intended to point to a list of offsets to the quantization tables, one per
+                // component. Each table consists of 64 BYTES (one for each DCT coefficient in the 8x8 block). The
+                // quantization tables are stored in zigzag order, and are compatible with the quantization tables
+                // usually found in a JPEG stream DQT marker.
+
+                // The original specification strongly recommended that, within the TIFF file, each component be
+                // assigned separate tables, and labelled this field as mandatory whenever the JPEGProc field specifies
+                // a DCT-based process.
+
+                // We've seen old-style JPEG in TIFF files where some or all Table offsets, contained the JPEGQTables,
+                // JPEGDCTables, and JPEGACTables tags are incorrect values beyond EOF. However, these files do always
+                // seem to contain a useful JPEGInterchangeFormat tag. Therefore, we recommend a careful attempt to read
+                // the Tables tags only as a last resort, if no table data is found in a JPEGInterchangeFormat stream.
+
+
+                // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
+                jpegReader = new JPEGImageReader(getOriginatingProvider());
+                jpegParam = (JPEGImageReadParam) jpegReader.getDefaultReadParam();
+
+                int jpegOffset = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, -1);
+                int jpegLenght = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
+
+                ImageInputStream subStream;
+
+                if (jpegOffset != -1) {
+                    // Straight forward case: We're good to go! We'll disregard tiling and any tables tags
+
+                    imageInput.seek(jpegOffset);
+                    subStream = new SubImageInputStream(imageInput, jpegLenght != -1 ? jpegLenght : Short.MAX_VALUE);
+                    jpegReader.setInput(subStream);
+
+                    // Read data
+                    processImageStarted(imageIndex);
+
+                    try {
+                        jpegParam.setSourceRegion(new Rectangle(0, 0, width, height));
+                        jpegParam.setDestination(destination);
+                        // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
+                        // In the latter case we will have to use readAsRaster and do color conversion ourselves
+                        jpegReader.read(0, jpegParam);
+                    }
+                    finally {
+                        subStream.close();
+                    }
+
+                    processImageProgress(100f * row / (float) height);
+
+                    if (abortRequested()) {
+                        processReadAborted();
+                    }
+                }
+                else {
+                    // The hard way: Read tables and re-create a full JFIF stream
+
+                    // TODO: If any of the q/dc/ac tables are equal (or have same offset, even if "spec" violation),
+                    // use only the first occurrence, and update selectors in SOF0 and SOS
+
+                    long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_JPEG_QTABLES, "JPEGQTables", true);
+                    byte[][] qTables = new byte[3][(int) (qTablesOffsets[1] - qTablesOffsets[0])]; // TODO: Using the offsets seems fragile.. Use fixed length??
+                    for (int j = 0; j < 3; j++) {
+                        imageInput.seek(qTablesOffsets[j]);
+                        imageInput.readFully(qTables[j]);
+                    }
+//                            System.err.println("qTables: " + qTables[0].length);
+
+                    long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_JPEG_DCTABLES, "JPEGDCTables", true);
+                    byte[][] dcTables = new byte[3][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])];
+                    for (int j = 0; j < 3; j++) {
+                        imageInput.seek(dcTablesOffsets[j]);
+                        imageInput.readFully(dcTables[j]);
+                    }
+//                            System.err.println("dcTables: " + dcTables[0].length);
+
+                    long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_JPEG_ACTABLES, "JPEGACTables", true);
+                    byte[][] acTables = new byte[3][(int) (acTablesOffsets[1] - acTablesOffsets[0])];
+                    for (int j = 0; j < 3; j++) {
+                        imageInput.seek(acTablesOffsets[j]);
+                        imageInput.readFully(acTables[j]);
+                    }
+//                            System.err.println("acTables: " + acTables[0].length);
+
+                    // Read data
+                    processImageStarted(imageIndex);
+
+                    for (int y = 0; y < tilesDown; y++) {
+                        int col = 0;
+                        int rowsInTile = Math.min(stripTileHeight, height - row);
+
+                        for (int x = 0; x < tilesAcross; x++) {
+                            int colsInTile = Math.min(stripTileWidth, width - col);
+                            int i = y * tilesAcross + x;
+
+                            imageInput.seek(stripTileOffsets[i]);
+                            subStream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
+                                    Arrays.asList(
+                                            // TODO; Get rid of hardcoded data + extract method/class...
+                                            // TODO:
+                                            // - Create a BAIS with size large enough to keep JFIF structure incl tables and SOS,
+                                            // - Wrap in DataInput,
+                                            // - Insert width/height, component ids etc at correct place
+                                            // - Insert tables at correct place
+
+                                            new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd8, // SOI
+                                                    // SOF0 (short), length (short)
+                                                    (byte) 0xff, (byte) 0xc0, 0x00, 0x11, // SOF0, 17 bytes
+                                                    // bits (byte), width (short), height (short)
+                                                    0x08, 0x00, (byte) 0xe0, 0x00, (byte) 0xf0,
+                                                    // num comp (byte), (id (byte) h/vsub (byte), qtsel (byte) * num comp)
+                                                    0x03, 0x00, 0x22, 0x00, 0x01, 0x11, 0x01, 0x02, 0x11, 0x02,
+//                                                    0x03, 0x00, 0x22, 0x00, 0x01, 0x11, 0x01, 0x02, 0x11, 0x01,
+                                                    // DQT
+                                                    (byte) 0xff, (byte) 0xdb, 0x00, 0x43, 0x00,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(qTables[0]),
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xdb, 0x00, 0x43, 0x01,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(qTables[1]),
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xdb, 0x00, 0x43, 0x02,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(qTables[2]),
+
+                                            // DHT (DC)
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xc4, 0x00, 0x1f, 0x00,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(dcTables[0]),
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xc4, 0x00, 0x1f, 0x01,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(dcTables[1]),
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xc4, 0x00, 0x1f, 0x02,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(dcTables[2]),
+
+                                            // DHT (AC)
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xc4, 0x00, (byte) 0xb5, 0x10,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(acTables[0]),
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xc4, 0x00, (byte) 0xb5, 0x11,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(acTables[1]),
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xc4, 0x00, (byte) 0xb5, 0x12,
+                                            }),
+                                            // ... table data
+                                            new ByteArrayInputStream(acTables[2]),
+
+                                            new ByteArrayInputStream(new byte[] {
+                                                    (byte) 0xff, (byte) 0xda, // SOS
+                                                    // TODO: Figure out what the last 3 bytes are...
+                                                    // Length: 12 (short), num comp (byte), (id (byte), dc/ac sel (byte) * num comp), ?? byte, ?? byte ?? byte
+                                                    0x00, 0x0C, 0x03, 0x00, 0x00, 0x01, 0x11, 0x02, 0x11, 0x00, 0x00, 0x00
+//                                                    0x00, 0x0C, 0x03, 0x00, 0x00, 0x01, 0x11, 0x02, 0x12, 0x00, 0x63, 0x00
+                                            }),
+                                            IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE),
+                                            new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
+                                    )
+                            )));
+
+                            jpegReader.setInput(subStream);
+
+                            try {
+                                jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
+                                jpegParam.setDestinationOffset(new Point(col, row));
+                                jpegParam.setDestination(destination);
+                                // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
+                                // In the latter case we will have to use readAsRaster and do color conversion ourselves
+                                jpegReader.read(0, jpegParam);
+                            }
+                            finally {
+                                subStream.close();
+                            }
+
+                            if (abortRequested()) {
+                                break;
+                            }
+
+                            col += colsInTile;
+                        }
+
+                        processImageProgress(100f * row / (float) height);
+
+                        if (abortRequested()) {
+                            processReadAborted();
+                            break;
+                        }
+
+                        row += rowsInTile;
+                    }
+                }
+
+                break;
+
             case TIFFBaseline.COMPRESSION_CCITT_HUFFMAN:
                 // CCITT modified Huffman
                 // Additionally, the specification defines these values as part of the TIFF extensions:
@@ -729,8 +965,6 @@ public class TIFFImageReader extends ImageReaderBase {
                 // CCITT Group 3 fax encoding
             case TIFFExtension.COMPRESSION_CCITT_T6:
                 // CCITT Group 4 fax encoding
-            case TIFFExtension.COMPRESSION_OLD_JPEG:
-                // JPEG ('old-style' JPEG, later overridden in Technote2)
 
                 throw new IIOException("Unsupported TIFF Compression value: " + compression);
             default:
