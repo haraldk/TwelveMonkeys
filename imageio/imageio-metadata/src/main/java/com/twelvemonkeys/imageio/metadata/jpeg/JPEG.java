@@ -89,6 +89,6 @@ public interface JPEG {
     // "Adobe" APP14
 
     // Possibly
-    // "http://ns.adobe.com/xap/1.0/" (XMP)
-    // "Photoshop 3.0" (Contains IPTC)
+    // "http://ns.adobe.com/xap/1.0/" (XMP) APP1
+    // "Photoshop 3.0" (may contain IPTC) APP13
 }

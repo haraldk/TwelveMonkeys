@@ -95,7 +95,8 @@ public final class JPEGSegmentUtil {
 
         JPEGSegment segment;
         try {
-            while (!isImageDone(segment = readSegment(stream, segmentIdentifiers))) {
+            do {
+                segment = readSegment(stream, segmentIdentifiers);
 //                System.err.println("segment: " + segment);
 
                 if (isRequested(segment, segmentIdentifiers)) {
@@ -106,6 +107,7 @@ public final class JPEGSegmentUtil {
                     segments.add(segment);
                 }
             }
+            while (!isImageDone(segment));
         }
         catch (EOFException ignore) {
             // Just end here, in case of malformed stream
@@ -153,6 +155,9 @@ public final class JPEGSegmentUtil {
 
     static JPEGSegment readSegment(final ImageInputStream stream, Map<Integer, List<String>> segmentIdentifiers) throws IOException {
         int marker = stream.readUnsignedShort();
+        if ((marker >> 8 & 0xff) != 0xff) {
+            throw new IIOException(String.format("Bad marker: %04x", marker));
+        }
         int length = stream.readUnsignedShort(); // Length including length field itself
 
         byte[] data;
@@ -192,7 +197,7 @@ public final class JPEGSegmentUtil {
 
         @Override
         public boolean contains(Object o) {
-            return true;
+            return o instanceof String;
         }
     }
 
@@ -204,13 +209,13 @@ public final class JPEGSegmentUtil {
 
         @Override
         public List<String> get(Object key) {
-            return key instanceof Integer && JPEGSegment.isAppSegmentMarker((Integer) key) ? ALL_IDS : null;
+            return containsKey(key) && JPEGSegment.isAppSegmentMarker((Integer) key) ? ALL_IDS : null;
 
         }
 
         @Override
         public boolean containsKey(Object key) {
-            return true;
+            return key instanceof Integer;
         }
     }
 
