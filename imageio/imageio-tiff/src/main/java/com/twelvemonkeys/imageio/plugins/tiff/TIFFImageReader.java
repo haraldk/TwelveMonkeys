@@ -343,12 +343,21 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
                             }
                         }
+                    case 5:
+                        if (bitsPerSample == 8 || bitsPerSample == 16) {
+                            switch (planarConfiguration) {
+                                case TIFFBaseline.PLANARCONFIG_CHUNKY:
+                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, false);
+                                case TIFFExtension.PLANARCONFIG_PLANAR:
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, false);
+                            }
+                        }
 
                         // TODO: More samples might be ok, if multiple alpha or unknown samples, consult ExtraSamples
 
                     default:
                         throw new IIOException(
-                                String.format("Unsupported TIFF SamplesPerPixels/BitsPerSample combination for Separated TIFF (expected 4/8 or 4/16): %d/%s", samplesPerPixel, bitsPerSample)
+                                String.format("Unsupported TIFF SamplesPerPixels/BitsPerSample combination for Separated TIFF (expected 4/8, 4/16, 5/8 or 5/16): %d/%s", samplesPerPixel, bitsPerSample)
                         );
                 }
             case TIFFBaseline.PHOTOMETRIC_MASK:
