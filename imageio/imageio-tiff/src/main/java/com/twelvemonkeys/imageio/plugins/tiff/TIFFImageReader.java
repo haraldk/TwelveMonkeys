@@ -280,23 +280,25 @@ public class TIFFImageReader extends ImageReaderBase {
                             }
                         }
                     case 4:
-                        // TODO: Consult ExtraSamples!
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
+                            // ExtraSamples 0=unspecified, 1=associated (premultiplied), 2=unassociated (TODO: Support unspecified, not alpha)
+                            long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
+
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     if (bitsPerSample == 8 && cs.isCS_sRGB()) {
                                         return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
                                     }
 
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, false);
+                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, extraSamples[0] == 1);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
                         // TODO: More samples might be ok, if multiple alpha or unknown samples
                     default:
-                        throw new IIOException(String.format("Unsupported SamplesPerPixels/BitsPerSample combination for RGB TIF (expected 3/8, 4/8, 3/16 or 4/16): %d/%d", samplesPerPixel, bitsPerSample));
+                        throw new IIOException(String.format("Unsupported SamplesPerPixels/BitsPerSample combination for RGB TIFF (expected 3/8, 4/8, 3/16 or 4/16): %d/%d", samplesPerPixel, bitsPerSample));
                 }
             case TIFFBaseline.PHOTOMETRIC_PALETTE:
                 // Palette
@@ -345,11 +347,14 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
                     case 5:
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
+                            // ExtraSamples 0=unspecified, 1=associated (premultiplied), 2=unassociated (TODO: Support unspecified, not alpha)
+                            long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
+
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, false);
+                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, extraSamples[0] == 1);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
 
@@ -833,15 +838,12 @@ public class TIFFImageReader extends ImageReaderBase {
                         imageInput.readFully(qTables[j]);
                     }
 
-//                            System.err.println("qTables: " + qTables[0].length);
-
                     long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DCTABLES, "JPEGDCTables", true);
                     byte[][] dcTables = new byte[3][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])];
                     for (int j = 0; j < 3; j++) {
                         imageInput.seek(dcTablesOffsets[j]);
                         imageInput.readFully(dcTables[j]);
                     }
-//                            System.err.println("dcTables: " + dcTables[0].length);
 
                     long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_ACTABLES, "JPEGACTables", true);
                     byte[][] acTables = new byte[3][(int) (acTablesOffsets[1] - acTablesOffsets[0])];
@@ -849,7 +851,6 @@ public class TIFFImageReader extends ImageReaderBase {
                         imageInput.seek(acTablesOffsets[j]);
                         imageInput.readFully(acTables[j]);
                     }
-//                            System.err.println("acTables: " + acTables[0].length);
 
                     // Read data
                     processImageStarted(imageIndex);
@@ -863,73 +864,9 @@ public class TIFFImageReader extends ImageReaderBase {
                             int i = y * tilesAcross + x;
 
                             imageInput.seek(stripTileOffsets[i]);
-                            FastByteArrayOutputStream jfifBytes = new FastByteArrayOutputStream(
-                                    2 + 2 + 2 + 6 + 3 * raster.getNumBands() +
-                                    5 * qTables.length + qTables.length * qTables[0].length +
-                                    5 * dcTables.length + dcTables.length * dcTables[0].length +
-                                    5 * acTables.length + acTables.length * acTables[0].length +
-                                    8 + 2 * raster.getNumBands()
-                            );
-                            DataOutputStream out = new DataOutputStream(jfifBytes);
-
-                            out.writeShort(JPEG.SOI);
-                            out.writeShort(JPEG.SOF0);
-                            out.writeShort(2 + 6 + 3 * raster.getNumBands()); // SOF0 len
-                            out.writeByte(8); // bits TODO: Consult raster/transfer type for 12/16 bits support
-                            out.writeShort(stripTileHeight); // height
-                            out.writeShort(stripTileWidth); // width
-                            out.writeByte(raster.getNumBands()); // Number of components
-
-                            for (int comp = 0; comp < raster.getNumBands(); comp++) {
-                                out.writeByte(comp); // Component id
-                                out.writeByte(comp == 0 ? 0x22 : 0x11); // h/v subsampling TODO: FixMe, consult YCbCrSubsampling
-                                out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
-                            }
-
-                            // TODO: Consider merging if tables are equal
-                            for (int tableIndex = 0; tableIndex < qTables.length; tableIndex++) {
-                                byte[] table = qTables[tableIndex];
-                                out.writeShort(JPEG.DQT);
-                                out.writeShort(3 + table.length); // DQT length
-                                out.writeByte(tableIndex); // Q table id
-                                out.write(table); // Table data
-                            }
-
-                            // TODO: Consider merging if tables are equal
-                            for (int tableIndex = 0; tableIndex < dcTables.length; tableIndex++) {
-                                byte[] table = dcTables[tableIndex];
-                                out.writeShort(JPEG.DHT);
-                                out.writeShort(3 + table.length); // DHT length
-                                out.writeByte(tableIndex); // Huffman table id
-                                out.write(table); // Table data
-                            }
-
-                            // TODO: Consider merging if tables are equal
-                            for (int tableIndex = 0; tableIndex < acTables.length; tableIndex++) {
-                                byte[] table = acTables[tableIndex];
-                                out.writeShort(JPEG.DHT);
-                                out.writeShort(3 + table.length); // DHT length
-                                out.writeByte(0x10 + (tableIndex & 0xf)); // Huffman table id
-                                out.write(table); // Table data
-                            }
-
-                            out.writeShort(JPEG.SOS);
-                            out.writeShort(6 + 2 * raster.getNumBands()); // SOS length
-                            out.writeByte(raster.getNumBands()); // Num comp
-
-                            for (int component = 0; component < raster.getNumBands(); component++) {
-                                out.writeByte(component); // Comp id
-                                out.writeByte(component == 0 ? component : 0x10 + (component & 0xf)); // dc/ac selector
-                            }
-
-                            // Unknown 3 bytes pad... TODO: Figure out what the last 3 bytes are...
-                            out.writeByte(0);
-                            out.writeByte(0);
-                            out.writeByte(0);
-
                             stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
                                     Arrays.asList(
-                                            jfifBytes.createInputStream(),
+                                            createJFIFStream(raster, stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
                                             IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE),
                                             new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
                                     )
@@ -985,6 +922,75 @@ public class TIFFImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    private static InputStream createJFIFStream(WritableRaster raster, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
+        FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
+                2 + 2 + 2 + 6 + 3 * raster.getNumBands() +
+                5 * qTables.length + qTables.length * qTables[0].length +
+                5 * dcTables.length + dcTables.length * dcTables[0].length +
+                5 * acTables.length + acTables.length * acTables[0].length +
+                8 + 2 * raster.getNumBands()
+        );
+
+        DataOutputStream out = new DataOutputStream(stream);
+
+        out.writeShort(JPEG.SOI);
+        out.writeShort(JPEG.SOF0);
+        out.writeShort(2 + 6 + 3 * raster.getNumBands()); // SOF0 len
+        out.writeByte(8); // bits TODO: Consult raster/transfer type or BitsPerSample for 12/16 bits support
+        out.writeShort(stripTileHeight); // height
+        out.writeShort(stripTileWidth); // width
+        out.writeByte(raster.getNumBands()); // Number of components
+
+        for (int comp = 0; comp < raster.getNumBands(); comp++) {
+            out.writeByte(comp); // Component id
+            out.writeByte(comp == 0 ? 0x22 : 0x11); // h/v subsampling TODO: FixMe, consult YCbCrSubsampling
+            out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
+        }
+
+        // TODO: Consider merging if tables are equal
+        for (int tableIndex = 0; tableIndex < qTables.length; tableIndex++) {
+            byte[] table = qTables[tableIndex];
+            out.writeShort(JPEG.DQT);
+            out.writeShort(3 + table.length); // DQT length
+            out.writeByte(tableIndex); // Q table id
+            out.write(table); // Table data
+        }
+
+        // TODO: Consider merging if tables are equal
+        for (int tableIndex = 0; tableIndex < dcTables.length; tableIndex++) {
+            byte[] table = dcTables[tableIndex];
+            out.writeShort(JPEG.DHT);
+            out.writeShort(3 + table.length); // DHT length
+            out.writeByte(tableIndex); // Huffman table id
+            out.write(table); // Table data
+        }
+
+        // TODO: Consider merging if tables are equal
+        for (int tableIndex = 0; tableIndex < acTables.length; tableIndex++) {
+            byte[] table = acTables[tableIndex];
+            out.writeShort(JPEG.DHT);
+            out.writeShort(3 + table.length); // DHT length
+            out.writeByte(0x10 + (tableIndex & 0xf)); // Huffman table id
+            out.write(table); // Table data
+        }
+
+        out.writeShort(JPEG.SOS);
+        out.writeShort(6 + 2 * raster.getNumBands()); // SOS length
+        out.writeByte(raster.getNumBands()); // Num comp
+
+        for (int component = 0; component < raster.getNumBands(); component++) {
+            out.writeByte(component); // Comp id
+            out.writeByte(component == 0 ? component : 0x10 + (component & 0xf)); // dc/ac selector
+        }
+
+        // Unknown 3 bytes pad... TODO: Figure out what the last 3 bytes are...
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(0);
+
+        return stream.createInputStream();
     }
 
     private void readStripTileData(final WritableRaster rowRaster, final int interpretation, final int predictor,
