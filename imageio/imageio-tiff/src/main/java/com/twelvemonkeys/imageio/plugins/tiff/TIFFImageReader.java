@@ -832,22 +832,22 @@ public class TIFFImageReader extends ImageReaderBase {
                     // use only the first occurrence, and update selectors in SOF0 and SOS
 
                     long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_QTABLES, "JPEGQTables", true);
-                    byte[][] qTables = new byte[3][(int) (qTablesOffsets[1] - qTablesOffsets[0])]; // TODO: Using the offsets seems fragile.. Use fixed length??
-                    for (int j = 0; j < 3; j++) {
+                    byte[][] qTables = new byte[qTablesOffsets.length][(int) (qTablesOffsets[1] - qTablesOffsets[0])]; // TODO: Using the offsets seems fragile.. Use fixed length??
+                    for (int j = 0; j < qTables.length; j++) {
                         imageInput.seek(qTablesOffsets[j]);
                         imageInput.readFully(qTables[j]);
                     }
 
                     long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DCTABLES, "JPEGDCTables", true);
-                    byte[][] dcTables = new byte[3][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])];
-                    for (int j = 0; j < 3; j++) {
+                    byte[][] dcTables = new byte[dcTablesOffsets.length][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])];
+                    for (int j = 0; j < dcTables.length; j++) {
                         imageInput.seek(dcTablesOffsets[j]);
                         imageInput.readFully(dcTables[j]);
                     }
 
                     long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_ACTABLES, "JPEGACTables", true);
-                    byte[][] acTables = new byte[3][(int) (acTablesOffsets[1] - acTablesOffsets[0])];
-                    for (int j = 0; j < 3; j++) {
+                    byte[][] acTables = new byte[acTablesOffsets.length][(int) (acTablesOffsets[1] - acTablesOffsets[0])];
+                    for (int j = 0; j < acTables.length; j++) {
                         imageInput.seek(acTablesOffsets[j]);
                         imageInput.readFully(acTables[j]);
                     }
