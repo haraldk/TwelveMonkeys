@@ -820,7 +820,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         stream.close();
                     }
 
-                    processImageProgress(100f * row / (float) height);
+                    processImageProgress(100f);
 
                     if (abortRequested()) {
                         processReadAborted();
