@@ -524,7 +524,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         throw new IIOException("TIFF PhotometricInterpreatation YCbCr requires BitsPerSample == [8,8,8]");
                     }
 
-                    yCbCrPos = getValueAsIntWithDefault(TIFF.TAG_YCBCR_POSITIONING, 1);
+                    yCbCrPos = getValueAsIntWithDefault(TIFF.TAG_YCBCR_POSITIONING, TIFFExtension.YCBCR_POSITIONING_CENTERED);
 
                     Entry subSampling = currentIFD.getEntryById(TIFF.TAG_YCBCR_SUB_SAMPLING);
 
@@ -586,7 +586,7 @@ public class TIFFImageReader extends ImageReaderBase {
                             adapter = createDecoderInputStream(compression, adapter);
 
                             if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
-                                adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, colsInTile, yCbCrCoefficients);
+                                adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, yCbCrCoefficients);
                             }
 
                             // According to the spec, short/long/etc should follow order of containing stream

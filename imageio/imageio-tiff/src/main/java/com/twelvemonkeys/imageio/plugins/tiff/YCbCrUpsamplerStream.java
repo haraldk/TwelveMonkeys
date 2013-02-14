@@ -48,6 +48,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
 
     private final int horizChromaSub;
     private final int vertChromaSub;
+    private final int yCbCrPos;
     private final double[] coefficients;
 
     private final int units;
@@ -60,11 +61,12 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     int bufferLength;
     int bufferPos;
 
-    public YCbCrUpsamplerStream(InputStream stream, int[] chromaSub, int cols, double[] coefficients) {
+    public YCbCrUpsamplerStream(InputStream stream, int[] chromaSub, int yCbCrPos, int cols, double[] coefficients) {
         super(stream);
 
         this.horizChromaSub = chromaSub[0];
         this.vertChromaSub = chromaSub[1];
+        this.yCbCrPos = yCbCrPos;
         this.coefficients = Arrays.equals(TIFFImageReader.CCIR_601_1_COEFFICIENTS, coefficients) ? null : coefficients;
 
         // In TIFF, subsampled streams are stored in "units" of horiz * vert pixels.

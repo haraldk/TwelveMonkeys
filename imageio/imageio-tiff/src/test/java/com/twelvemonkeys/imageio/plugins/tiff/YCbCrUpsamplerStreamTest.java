@@ -46,6 +46,6 @@ public class YCbCrUpsamplerStreamTest extends InputStreamAbstractTestCase {
     // TODO: Implement + add @Ignore for all tests that makes no sense for this class.
     @Override
     protected InputStream makeInputStream(byte[] pBytes) {
-        return new YCbCrUpsamplerStream(new ByteArrayInputStream(pBytes), new int[] {2, 2}, pBytes.length / 4, null);
+        return new YCbCrUpsamplerStream(new ByteArrayInputStream(pBytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, pBytes.length / 4, null);
     }
 }
