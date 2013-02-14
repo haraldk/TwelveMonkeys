@@ -40,7 +40,8 @@ public interface JPEG {
     int SOI = 0xFFD8;
     /** End of Image segment marker (EOI). */
     int EOI = 0xFFD9;
-    /** Start of Stream segment marker (SOS). */
+
+    /** Start of Scan segment marker (SOS). */
     int SOS = 0xFFDA;
 
     /** Define Quantization Tables segment marker (DQT). */
