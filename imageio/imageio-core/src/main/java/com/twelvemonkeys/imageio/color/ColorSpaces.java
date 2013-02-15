@@ -73,8 +73,10 @@ public final class ColorSpaces {
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
 
-    // JDK 7 seems to handle non-perceptual rendering intents gracefully, so we don't need to fiddle with the profiles
-    private final static boolean JDK_HANDLES_RENDERING_INTENTS = SystemUtil.isClassAvailable("java.lang.invoke.CallSite");
+    // OpenJDK 7 seems to handle non-perceptual rendering intents gracefully, so we don't need to fiddle with the profiles.
+    // However, the later Oracle distribute JDK seems to include the color management code that has the known bugs...
+    private final static boolean JDK_HANDLES_RENDERING_INTENTS =
+            SystemUtil.isClassAvailable("java.lang.invoke.CallSite") && !SystemUtil.isClassAvailable("sun.java2d.cmm.kcms.CMM");
 
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
