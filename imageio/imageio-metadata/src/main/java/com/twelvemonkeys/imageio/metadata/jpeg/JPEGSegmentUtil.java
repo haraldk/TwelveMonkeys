@@ -197,7 +197,7 @@ public final class JPEGSegmentUtil {
 
         @Override
         public boolean contains(Object o) {
-            return o instanceof String;
+            return true;
         }
     }
 
@@ -209,13 +209,13 @@ public final class JPEGSegmentUtil {
 
         @Override
         public List<String> get(Object key) {
-            return containsKey(key) && JPEGSegment.isAppSegmentMarker((Integer) key) ? ALL_IDS : null;
+            return key instanceof Integer && JPEGSegment.isAppSegmentMarker((Integer) key) ? ALL_IDS : null;
 
         }
 
         @Override
         public boolean containsKey(Object key) {
-            return key instanceof Integer;
+            return true;
         }
     }
 
