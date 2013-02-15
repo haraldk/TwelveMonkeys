@@ -65,7 +65,8 @@ import java.io.*;
  * @see java.io.DataOutput
  *
  * @author Elliotte Rusty Harold
- * @version 1.0.3, 28 December 2002
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version 2
  */
 public class LittleEndianDataInputStream extends FilterInputStream implements DataInput {
     // TODO: Optimize by reading into a fixed size (8 bytes) buffer instead of individual read operations?
