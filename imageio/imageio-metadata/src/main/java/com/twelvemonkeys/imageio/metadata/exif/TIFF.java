@@ -35,6 +35,7 @@ package com.twelvemonkeys.imageio.metadata.exif;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFF.java,v 1.0 Nov 15, 2009 3:02:24 PM haraldk Exp$
  */
+@SuppressWarnings("UnusedDeclaration")
 public interface TIFF {
     int TIFF_MAGIC = 42;
 
@@ -98,6 +99,7 @@ public interface TIFF {
     int TAG_BITS_PER_SAMPLE = 258;
     int TAG_COMPRESSION = 259;
     int TAG_PHOTOMETRIC_INTERPRETATION = 262;
+    int TAG_FILL_ORDER = 266;
     int TAG_ORIENTATION = 274;
     int TAG_SAMPLES_PER_PIXEL = 277;
     int TAG_PLANAR_CONFIGURATION = 284;
@@ -135,6 +137,7 @@ public interface TIFF {
     int TAG_IMAGE_DESCRIPTION = 270;
     int TAG_MAKE = 271;
     int TAG_MODEL = 272;
+    int TAG_PAGE_NUMBER = 297;
     int TAG_SOFTWARE = 305;
     int TAG_ARTIST = 315;
     int TAG_HOST_COMPUTER = 316;
@@ -168,7 +171,7 @@ public interface TIFF {
 
     // "Old-style" JPEG (Obsolete) DO NOT WRITE!
     int TAG_OLD_JPEG_PROC = 512;
-    int TAG_OLD_JPEG_QTABLES = 519;
-    int TAG_OLD_JPEG_DCTABLES = 520;
-    int TAG_OLD_JPEG_ACTABLES = 521;
+    int TAG_OLD_JPEG_Q_TABLES = 519;
+    int TAG_OLD_JPEG_DC_TABLES = 520;
+    int TAG_OLD_JPEG_AC_TABLES = 521;
 }

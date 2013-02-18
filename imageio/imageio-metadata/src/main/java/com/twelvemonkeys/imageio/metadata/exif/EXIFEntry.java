@@ -209,6 +209,28 @@ final class EXIFEntry extends AbstractEntry {
                 return "PixelYDimension";
 
             // TODO: More field names
+            /*
+            default:
+                Class[] classes = new Class[] {TIFF.class, EXIF.class};
+
+                for (Class cl : classes) {
+                    Field[] fields = cl.getFields();
+
+                    for (Field field : fields) {
+                        try {
+                            if (field.getType() == Integer.TYPE && field.getName().startsWith("TAG_")) {
+                                if (field.get(null).equals(getIdentifier())) {
+                                    return StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(), true);
+                                }
+                            }
+                        }
+                        catch (IllegalAccessException e) {
+                            // Should never happen, but in case, abort
+                            break;
+                        }
+                    }
+                }
+            */
         }
 
         return null;
