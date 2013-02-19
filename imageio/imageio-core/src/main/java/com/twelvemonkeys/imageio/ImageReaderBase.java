@@ -418,6 +418,10 @@ public abstract class ImageReaderBase extends ImageReader {
     }
 
     private static class ImageLabel extends JLabel {
+        static final String ZOOM_IN = "zoom-in";
+        static final String ZOOM_OUT = "zoom-out";
+        static final String ZOOM_ACTUAL = "zoom-actual";
+
         Paint backgroundPaint;
 
         final Paint checkeredBG;
@@ -435,9 +439,8 @@ public abstract class ImageReaderBase extends ImageReader {
 
             backgroundPaint = defaultBG != null ? defaultBG : checkeredBG;
 
-            JPopupMenu popup = createBackgroundPopup();
-
-            setComponentPopupMenu(popup);
+            setupActions(pImage);
+            setComponentPopupMenu(createPopupMenu());
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -448,24 +451,50 @@ public abstract class ImageReaderBase extends ImageReader {
             });
         }
 
-        private JPopupMenu createBackgroundPopup() {
+        private void setupActions(final BufferedImage pImage) {
+            // Mac weirdness... VK_MINUS/VK_PLUS seems to map to english key map always...
+            bindAction(new ZoomAction("Zoom in", pImage, 2), ZOOM_IN, KeyStroke.getKeyStroke('+'), KeyStroke.getKeyStroke(KeyEvent.VK_ADD, 0));
+            bindAction(new ZoomAction("Zoom out", pImage, .5), ZOOM_OUT, KeyStroke.getKeyStroke('-'), KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, 0));
+            bindAction(new ZoomAction("Zoom actual", pImage), ZOOM_ACTUAL, KeyStroke.getKeyStroke('0'), KeyStroke.getKeyStroke(KeyEvent.VK_0, 0));
+        }
+
+        private void bindAction(final AbstractAction action, final String key, final KeyStroke... keyStrokes) {
+            for (KeyStroke keyStroke : keyStrokes) {
+                getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, key);
+            }
+
+            getActionMap().put(key, action);
+        }
+
+        private JPopupMenu createPopupMenu() {
             JPopupMenu popup = new JPopupMenu();
+
+            popup.add(getActionMap().get(ZOOM_ACTUAL));
+            popup.add(getActionMap().get(ZOOM_IN));
+            popup.add(getActionMap().get(ZOOM_OUT));
+            popup.addSeparator();
+
             ButtonGroup group = new ButtonGroup();
 
-            addCheckBoxItem(new ChangeBackgroundAction("Checkered", checkeredBG), popup, group);
-            popup.addSeparator();
-            addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Gray", Color.GRAY), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), popup, group);
-            popup.addSeparator();
-            addCheckBoxItem(new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE), popup, group);
+            JMenu background = new JMenu("Background");
+            popup.add(background);
+
+            ChangeBackgroundAction checkered = new ChangeBackgroundAction("Checkered", checkeredBG);
+            checkered.putValue(Action.SELECTED_KEY, true);
+            addCheckBoxItem(checkered, background, group);
+            background.addSeparator();
+            addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Gray", Color.GRAY), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), background, group);
+            background.addSeparator();
+            addCheckBoxItem(new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE), background, group);
 
             return popup;
         }
 
-        private void addCheckBoxItem(final Action pAction, final JPopupMenu pPopup, final ButtonGroup pGroup) {
+        private void addCheckBoxItem(final Action pAction, final JMenu pPopup, final ButtonGroup pGroup) {
             JCheckBoxMenuItem item = new JCheckBoxMenuItem(pAction);
             pGroup.add(item);
             pPopup.add(item);
@@ -550,6 +579,34 @@ public abstract class ImageReaderBase extends ImageReader {
                 if (selected != null) {
                     paint = selected;
                     super.actionPerformed(e);
+                }
+            }
+        }
+
+        private class ZoomAction extends AbstractAction {
+            private final BufferedImage image;
+            private final double zoomFactor;
+
+            public ZoomAction(final String name, final BufferedImage image, final double zoomFactor) {
+                super(name);
+                this.image = image;
+                this.zoomFactor = zoomFactor;
+            }
+
+            public ZoomAction(final String name, final BufferedImage image) {
+                this(name, image, 0);
+            }
+
+            public void actionPerformed(ActionEvent e) {
+                if (zoomFactor <= 0) {
+                    setIcon(new BufferedImageIcon(image));
+                }
+                else {
+                    Icon current = getIcon();
+                    int w = (int) Math.max(Math.min(current.getIconWidth() * zoomFactor, image.getWidth() * 16), image.getWidth() / 16);
+                    int h = (int) Math.max(Math.min(current.getIconHeight() * zoomFactor, image.getHeight() * 16), image.getHeight() / 16);
+
+                    setIcon(new BufferedImageIcon(image, Math.max(w, 2), Math.max(h, 2), true));
                 }
             }
         }
