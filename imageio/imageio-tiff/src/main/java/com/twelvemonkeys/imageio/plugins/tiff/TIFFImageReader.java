@@ -110,7 +110,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Implement readAsRenderedImage to allow tiled renderImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
     // TODO: Implement readAsRaster directly
-    // TODO: IIOMetadata
+    // TODO: IIOMetadata (stay close to Sun's TIFF metadata)
 
     // TODOs Full BaseLine support:
     // TODO: Support ExtraSamples (an array, if multiple extra samples!)
@@ -121,17 +121,14 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Support PlanarConfiguration 2
     // TODO: Support ICCProfile (fully)
     // TODO: Support Compression 3 & 4 (CCITT T.4 & T.6)
-    // TODO: Support Compression 6 ('Old-style' JPEG)
     // TODO: Support Compression 34712 (JPEG2000)? Depends on JPEG2000 ImageReader
     // TODO: Support Compression 34661 (JBIG)? Depends on JBIG ImageReader
 
     // DONE:
     // Handle SampleFormat (and give up if not == 1)
+    // Support Compression 6 ('Old-style' JPEG)
 
-    private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
-
-    // NOTE: DO NOT MODIFY OR EXPOSE!
-    static final double[] CCIR_601_1_COEFFICIENTS = new double[] {299.0 / 1000.0, 587.0 / 1000.0, 114.0 / 1000.0};
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
     private CompoundDirectory IFDs;
     private Directory currentIFD;
@@ -155,12 +152,12 @@ public class TIFFImageReader extends ImageReaderBase {
             IFDs = (CompoundDirectory) new EXIFReader().read(imageInput); // NOTE: Sets byte order as a side effect
 
             if (DEBUG) {
-                for (int i = 0; i < IFDs.directoryCount(); i++) {
-                    System.err.printf("ifd[%d]: %s\n", i, IFDs.getDirectory(i));
-                }
-
                 System.err.println("Byte order: " + imageInput.getByteOrder());
-                System.err.println("numImages: " + IFDs.directoryCount());
+                System.err.println("Number of images: " + IFDs.directoryCount());
+
+                for (int i = 0; i < IFDs.directoryCount(); i++) {
+                    System.err.printf("IFD %d: %s\n", i, IFDs.getDirectory(i));
+                }
             }
         }
     }
@@ -257,9 +254,8 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:
-                // JPEG reader will handle YCbCr to RGB for us, we'll have to do it ourselves if not JPEG...
+                // JPEG reader will handle YCbCr to RGB for us, otherwise we'll convert while reading
                 // TODO: Sanity check that we have SamplesPerPixel == 3, BitsPerSample == [8,8,8] and Compression == 1 (none), 5 (LZW), or 6 (JPEG)
-                // TODO: Handle YCbCrSubsampling (up-scaler stream, or read data as-is + up-sample (sub-)raster after read? Apply smoothing?)
             case TIFFBaseline.PHOTOMETRIC_RGB:
                 // RGB
                 cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_sRGB) : ColorSpaces.createColorSpace(profile);
@@ -518,10 +514,10 @@ public class TIFFImageReader extends ImageReaderBase {
                 if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
                     // getRawImageType does the lookup/conversion for these
                     if (raster.getNumBands() != 3) {
-                        throw new IIOException("TIFF PhotometricInterpreatation YCbCr requires SamplesPerPixel == 3: " + raster.getNumBands());
+                        throw new IIOException("TIFF PhotometricInterpretation YCbCr requires SamplesPerPixel == 3: " + raster.getNumBands());
                     }
                     if (raster.getTransferType() != DataBuffer.TYPE_BYTE) {
-                        throw new IIOException("TIFF PhotometricInterpreatation YCbCr requires BitsPerSample == [8,8,8]");
+                        throw new IIOException("TIFF PhotometricInterpretation YCbCr requires BitsPerSample == [8,8,8]");
                     }
 
                     yCbCrPos = getValueAsIntWithDefault(TIFF.TAG_YCBCR_POSITIONING, TIFFExtension.YCBCR_POSITIONING_CENTERED);
@@ -541,9 +537,12 @@ public class TIFFImageReader extends ImageReaderBase {
 
                         if (yCbCrSubsampling.length != 2 ||
                                 yCbCrSubsampling[0] != 1 && yCbCrSubsampling[0] != 2 && yCbCrSubsampling[0] != 4 ||
-                                yCbCrSubsampling[1] != 1 && yCbCrSubsampling[1] != 2 && yCbCrSubsampling[1] != 4 ||
-                                yCbCrSubsampling[0] < yCbCrSubsampling[1]) {
+                                yCbCrSubsampling[1] != 1 && yCbCrSubsampling[1] != 2 && yCbCrSubsampling[1] != 4) {
                             throw new IIOException("Bad TIFF YCbCrSubSampling value: " + Arrays.toString(yCbCrSubsampling));
+                        }
+
+                        if (yCbCrSubsampling[0] < yCbCrSubsampling[1]) {
+                            processWarningOccurred("TIFF PhotometricInterpretation YCbCr with bad subsampling, expected subHoriz >= subVert: " + Arrays.toString(yCbCrSubsampling));
                         }
                     }
                     else {
@@ -557,7 +556,7 @@ public class TIFFImageReader extends ImageReaderBase {
                     }
                     else {
                         // Default to y CCIR Recommendation 601-1 values
-                        yCbCrCoefficients = CCIR_601_1_COEFFICIENTS;
+                        yCbCrCoefficients = YCbCrUpsamplerStream.CCIR_601_1_COEFFICIENTS;
                     }
                 }
 
@@ -640,8 +639,8 @@ public class TIFFImageReader extends ImageReaderBase {
                     // Might have something to do with subsampling?
                     // How do we pass the chroma-subsampling parameter from the TIFF structure to the JPEG reader?
 
-                    // TODO: Consider splicing the TAG_JPEG_TABLES into the streams for each tile, for a more
-                    // compatible approach..?
+                    // TODO: Consider splicing the TAG_JPEG_TABLES into the streams for each tile, for a
+                    // (slightly slower for multiple images, but) more compatible approach..?
 
                     jpegReader.setInput(new ByteArrayImageInputStream(tablesValue));
 
@@ -745,61 +744,45 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFExtension.COMPRESSION_OLD_JPEG:
                 // JPEG ('old-style' JPEG, later overridden in Technote2)
-
                 // http://www.remotesensing.org/libtiff/TIFFTechNote2.html
-                // TODO: Issue warning?
 
-                int mode = getValueAsIntWithDefault(TIFF.TAG_OLD_JPEG_PROC, 1);
-                if (mode == TIFFExtension.JPEG_PROC_LOSSLESS) {
-                    throw new IIOException("Unsupported TIFF JPEGProcessingMode: Lossless (14)");
-                }
-                else if (mode != TIFFExtension.JPEG_PROC_BASELINE) {
-                    throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + mode);
+                // 512/JPEGProc: 1=Baseline, 14=Lossless (with Huffman coding), no default, although 1 is assumed if absent
+                int mode = getValueAsIntWithDefault(TIFF.TAG_OLD_JPEG_PROC, TIFFExtension.JPEG_PROC_BASELINE);
+                switch (mode) {
+                    case TIFFExtension.JPEG_PROC_BASELINE:
+                        break; // Supported
+                    case TIFFExtension.JPEG_PROC_LOSSLESS:
+                        throw new IIOException("Unsupported TIFF JPEGProcessingMode: Lossless (14)");
+                    default:
+                        throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + mode);
                 }
 
                 // May use normal tiling??
-
-                // 512/JPEGProc: 1=Baseline, 14=Lossless (with Huffman coding), no default, although 1 is assumed if absent
-                // 513/JPEGInterchangeFormat (may be absent...)
-                // 514/JPEGInterchangeFormatLength (may be absent...)
-                // 515/JPEGRestartInterval (may be absent)
-
-                // 517/JPEGLosslessPredictors
-                // 518/JPEGPointTransforms
-
-                // 519/JPEGQTables
-                // 520/JPEGDCTables
-                // 521/JPEGACTables
-
-                // This field was originally intended to point to a list of offsets to the quantization tables, one per
-                // component. Each table consists of 64 BYTES (one for each DCT coefficient in the 8x8 block). The
-                // quantization tables are stored in zigzag order, and are compatible with the quantization tables
-                // usually found in a JPEG stream DQT marker.
-
-                // The original specification strongly recommended that, within the TIFF file, each component be
-                // assigned separate tables, and labelled this field as mandatory whenever the JPEGProc field specifies
-                // a DCT-based process.
-
-                // We've seen old-style JPEG in TIFF files where some or all Table offsets, contained the JPEGQTables,
-                // JPEGDCTables, and JPEGACTables tags are incorrect values beyond EOF. However, these files do always
-                // seem to contain a useful JPEGInterchangeFormat tag. Therefore, we recommend a careful attempt to read
-                // the Tables tags only as a last resort, if no table data is found in a JPEGInterchangeFormat stream.
-
 
                 // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
                 jpegReader = new JPEGImageReader(getOriginatingProvider());
                 jpegParam = (JPEGImageReadParam) jpegReader.getDefaultReadParam();
 
+                // 513/JPEGInterchangeFormat (may be absent...)
                 int jpegOffset = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, -1);
+                // 514/JPEGInterchangeFormatLength (may be absent...)
                 int jpegLenght = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
+                // TODO: 515/JPEGRestartInterval (may be absent)
+
+                // Currently ignored
+                // 517/JPEGLosslessPredictors
+                // 518/JPEGPointTransforms
 
                 ImageInputStream stream;
 
                 if (jpegOffset != -1) {
                     // Straight forward case: We're good to go! We'll disregard tiling and any tables tags
 
-                    if (currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_QTABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_DCTABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_ACTABLES) != null) {
-                        processWarningOccurred("Old-style JPEG compressed TIFF with JFIF stream encountered. Reading as single tile, ignoring tables.");
+                    if (currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES) != null) {
+                        processWarningOccurred("Old-style JPEG compressed TIFF with JFIF stream encountered. Ignoring JPEG tables. Reading as single tile.");
+                    }
+                    else {
+                        processWarningOccurred("Old-style JPEG compressed TIFF with JFIF stream encountered. Reading as single tile.");
                     }
 
                     imageInput.seek(jpegOffset);
@@ -831,25 +814,50 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     processWarningOccurred("Old-style JPEG compressed TIFF without JFIF stream encountered. Attempting to re-create JFIF stream.");
 
+                    // 519/JPEGQTables
+                    // 520/JPEGDCTables
+                    // 521/JPEGACTables
+
+                    // These fields were originally intended to point to a list of offsets to the quantization tables, one per
+                    // component. Each table consists of 64 BYTES (one for each DCT coefficient in the 8x8 block). The
+                    // quantization tables are stored in zigzag order, and are compatible with the quantization tables
+                    // usually found in a JPEG stream DQT marker.
+
+                    // The original specification strongly recommended that, within the TIFF file, each component be
+                    // assigned separate tables, and labelled this field as mandatory whenever the JPEGProc field specifies
+                    // a DCT-based process.
+
+                    // We've seen old-style JPEG in TIFF files where some or all Table offsets, contained the JPEGQTables,
+                    // JPEGDCTables, and JPEGACTables tags are incorrect values beyond EOF. However, these files do always
+                    // seem to contain a useful JPEGInterchangeFormat tag. Therefore, we recommend a careful attempt to read
+                    // the Tables tags only as a last resort, if no table data is found in a JPEGInterchangeFormat stream.
+
+
                     // TODO: If any of the q/dc/ac tables are equal (or have same offset, even if "spec" violation),
                     // use only the first occurrence, and update selectors in SOF0 and SOS
 
-                    long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_QTABLES, "JPEGQTables", true);
-                    byte[][] qTables = new byte[qTablesOffsets.length][(int) (qTablesOffsets[1] - qTablesOffsets[0])]; // TODO: Using the offsets seems fragile.. Use fixed length??
+                    long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_Q_TABLES, "JPEGQTables", true);
+                    byte[][] qTables = new byte[qTablesOffsets.length][(int) (qTablesOffsets[1] - qTablesOffsets[0])]; // TODO: Using the offsets is fragile.. Use fixed length??
+//                    byte[][] qTables = new byte[qTablesOffsets.length][64];
+//                    System.err.println("qTables: " + qTables[0].length);
                     for (int j = 0; j < qTables.length; j++) {
                         imageInput.seek(qTablesOffsets[j]);
                         imageInput.readFully(qTables[j]);
                     }
 
-                    long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DCTABLES, "JPEGDCTables", true);
-                    byte[][] dcTables = new byte[dcTablesOffsets.length][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])];
+                    long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DC_TABLES, "JPEGDCTables", true);
+                    byte[][] dcTables = new byte[dcTablesOffsets.length][(int) (dcTablesOffsets[1] - dcTablesOffsets[0])]; // TODO: Using the offsets is fragile.. Use fixed length??
+//                    byte[][] dcTables = new byte[dcTablesOffsets.length][28];
+//                    System.err.println("dcTables: " + dcTables[0].length);
                     for (int j = 0; j < dcTables.length; j++) {
                         imageInput.seek(dcTablesOffsets[j]);
                         imageInput.readFully(dcTables[j]);
                     }
 
-                    long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_ACTABLES, "JPEGACTables", true);
-                    byte[][] acTables = new byte[acTablesOffsets.length][(int) (acTablesOffsets[1] - acTablesOffsets[0])];
+                    long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_AC_TABLES, "JPEGACTables", true);
+                    byte[][] acTables = new byte[acTablesOffsets.length][(int) (acTablesOffsets[1] - acTablesOffsets[0])]; // TODO: Using the offsets is fragile.. Use fixed length??
+//                    byte[][] acTables = new byte[acTablesOffsets.length][178];
+//                    System.err.println("acTables: " + acTables[0].length);
                     for (int j = 0; j < acTables.length; j++) {
                         imageInput.seek(acTablesOffsets[j]);
                         imageInput.readFully(acTables[j]);
