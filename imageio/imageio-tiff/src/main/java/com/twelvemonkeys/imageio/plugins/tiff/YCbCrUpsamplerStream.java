@@ -37,14 +37,14 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 /**
- * YCbCrUpsamplerStream
+ * Input stream that provides on-the-fly conversion and upsampling of TIFF susampled YCbCr samples to (raw) RGB samples.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: YCbCrUpsamplerStream.java,v 1.0 31.01.13 09:25 haraldk Exp$
  */
 final class YCbCrUpsamplerStream extends FilterInputStream {
-    // NOTE: DO NOT MODIFY OR EXPOSE!
+    // NOTE: DO NOT MODIFY OR EXPOSE THIS ARRAY OUTSIDE PACKAGE!
     static final double[] CCIR_601_1_COEFFICIENTS = new double[] {299.0 / 1000.0, 587.0 / 1000.0, 114.0 / 1000.0};
 
     private final int horizChromaSub;
@@ -147,7 +147,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
                 }
             }
 
-            bufferPos += 2; // CbCr bytes at end of unit
+            bufferPos += 2; // Skip CbCr bytes at end of unit
         }
 
         bufferPos = bufferLength;
@@ -185,7 +185,6 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
             }
         }
 
-        // TODO: Read no longer than until row boundary....
         int read = Math.min(decodedLength - decodedPos, len);
         System.arraycopy(decodedRows, decodedPos, b, off, read);
         decodedPos += read;
