@@ -606,7 +606,7 @@ public abstract class ImageReaderBase extends ImageReader {
                     int w = (int) Math.max(Math.min(current.getIconWidth() * zoomFactor, image.getWidth() * 16), image.getWidth() / 16);
                     int h = (int) Math.max(Math.min(current.getIconHeight() * zoomFactor, image.getHeight() * 16), image.getHeight() / 16);
 
-                    setIcon(new BufferedImageIcon(image, Math.max(w, 2), Math.max(h, 2), true));
+                    setIcon(new BufferedImageIcon(image, Math.max(w, 2), Math.max(h, 2), w > image.getWidth() || h > image.getHeight()));
                 }
             }
         }
