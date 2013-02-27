@@ -480,7 +480,7 @@ public abstract class ImageReaderBase extends ImageReader {
             popup.add(background);
 
             ChangeBackgroundAction checkered = new ChangeBackgroundAction("Checkered", checkeredBG);
-            checkered.putValue(Action.SELECTED_KEY, true);
+            checkered.putValue(Action.SELECTED_KEY, backgroundPaint == checkeredBG);
             addCheckBoxItem(checkered, background, group);
             background.addSeparator();
             addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), background, group);
@@ -489,7 +489,9 @@ public abstract class ImageReaderBase extends ImageReader {
             addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), background, group);
             addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), background, group);
             background.addSeparator();
-            addCheckBoxItem(new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE), background, group);
+            ChooseBackgroundAction chooseBackgroundAction = new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE);
+            chooseBackgroundAction.putValue(Action.SELECTED_KEY, backgroundPaint == defaultBG);
+            addCheckBoxItem(chooseBackgroundAction, background, group);
 
             return popup;
         }
