@@ -292,20 +292,20 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
         // When reference for column, add 1 to reference as this buffer is
         // offset from actual column position by one to allow FS to not check
         // left/right edge conditions
-        int[][] mCurrErr = new int[width + 2][3];
-        int[][] mNextErr = new int[width + 2][3];
+        int[][] currErr = new int[width + 2][3];
+        int[][] nextErr = new int[width + 2][3];
 
         // Random errors in [-1 .. 1] - for first row
         for (int i = 0; i < width + 2; i++) {
             // Note: This is broken for the strange cases where nextInt returns Integer.MIN_VALUE
             /*
-            mCurrErr[i][0] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
-            mCurrErr[i][1] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
-            mCurrErr[i][2] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
+            currErr[i][0] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
+            currErr[i][1] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
+            currErr[i][2] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
             */
-            mCurrErr[i][0] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
-            mCurrErr[i][1] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
-            mCurrErr[i][2] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
+            currErr[i][0] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
+            currErr[i][1] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
+            currErr[i][2] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
         }
 
         // Temp buffers
@@ -318,10 +318,10 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
         // Loop through image data
         for (int y = 0; y < height; y++) {
             // Clear out next error rows for colour errors
-            for (int i = mNextErr.length; --i >= 0;) {
-                mNextErr[i][0] = 0;
-                mNextErr[i][1] = 0;
-                mNextErr[i][2] = 0;
+            for (int i = nextErr.length; --i >= 0;) {
+                nextErr[i][0] = 0;
+                nextErr[i][1] = 0;
+                nextErr[i][2] = 0;
             }
 
             // Set up start column and limit
@@ -348,7 +348,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
                 for (int i = 0; i < 3; i++) {
                     // Make a 28.4 FP number, add Error (with fraction),
                     // rounding and truncate to int
-                    inRGB[i] = ((inRGB[i] << 4) + mCurrErr[x + 1][i] + 0x08) >> 4;
+                    inRGB[i] = ((inRGB[i] << 4) + currErr[x + 1][i] + 0x08) >> 4;
 
                     // Clamp
                     if (inRGB[i] > 255) {
@@ -384,26 +384,26 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
                 if (forward) {
                     // Row 1 (y)
                     // Update error in this pixel (x + 1)
-                    mCurrErr[x + 2][0] += diff[0] * 7;
-                    mCurrErr[x + 2][1] += diff[1] * 7;
-                    mCurrErr[x + 2][2] += diff[2] * 7;
+                    currErr[x + 2][0] += diff[0] * 7;
+                    currErr[x + 2][1] += diff[1] * 7;
+                    currErr[x + 2][2] += diff[2] * 7;
 
                     // Row 2 (y + 1)
                     // Update error in this pixel (x - 1)
-                    mNextErr[x][0] += diff[0] * 3;
-                    mNextErr[x][1] += diff[1] * 3;
-                    mNextErr[x][2] += diff[2] * 3;
+                    nextErr[x][0] += diff[0] * 3;
+                    nextErr[x][1] += diff[1] * 3;
+                    nextErr[x][2] += diff[2] * 3;
                     // Update error in this pixel (x)
-                    mNextErr[x + 1][0] += diff[0] * 5;
-                    mNextErr[x + 1][1] += diff[1] * 5;
-                    mNextErr[x + 1][2] += diff[2] * 5;
+                    nextErr[x + 1][0] += diff[0] * 5;
+                    nextErr[x + 1][1] += diff[1] * 5;
+                    nextErr[x + 1][2] += diff[2] * 5;
                     // Update error in this pixel (x + 1)
                     // TODO: Consider calculating this using
                     // error term = error - sum(error terms 1, 2 and 3)
                     // See Computer Graphics (Foley et al.), p. 573
-                    mNextErr[x + 2][0] += diff[0]; // * 1;
-                    mNextErr[x + 2][1] += diff[1]; // * 1;
-                    mNextErr[x + 2][2] += diff[2]; // * 1;
+                    nextErr[x + 2][0] += diff[0]; // * 1;
+                    nextErr[x + 2][1] += diff[1]; // * 1;
+                    nextErr[x + 2][2] += diff[2]; // * 1;
 
                     // Next
                     x++;
@@ -417,26 +417,26 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
                 else {
                     // Row 1 (y)
                     // Update error in this pixel (x - 1)
-                    mCurrErr[x][0] += diff[0] * 7;
-                    mCurrErr[x][1] += diff[1] * 7;
-                    mCurrErr[x][2] += diff[2] * 7;
+                    currErr[x][0] += diff[0] * 7;
+                    currErr[x][1] += diff[1] * 7;
+                    currErr[x][2] += diff[2] * 7;
 
                     // Row 2 (y + 1)
                     // Update error in this pixel (x + 1)
-                    mNextErr[x + 2][0] += diff[0] * 3;
-                    mNextErr[x + 2][1] += diff[1] * 3;
-                    mNextErr[x + 2][2] += diff[2] * 3;
+                    nextErr[x + 2][0] += diff[0] * 3;
+                    nextErr[x + 2][1] += diff[1] * 3;
+                    nextErr[x + 2][2] += diff[2] * 3;
                     // Update error in this pixel (x)
-                    mNextErr[x + 1][0] += diff[0] * 5;
-                    mNextErr[x + 1][1] += diff[1] * 5;
-                    mNextErr[x + 1][2] += diff[2] * 5;
+                    nextErr[x + 1][0] += diff[0] * 5;
+                    nextErr[x + 1][1] += diff[1] * 5;
+                    nextErr[x + 1][2] += diff[2] * 5;
                     // Update error in this pixel (x - 1)
                     // TODO: Consider calculating this using
                     // error term = error - sum(error terms 1, 2 and 3)
                     // See Computer Graphics (Foley et al.), p. 573
-                    mNextErr[x][0] += diff[0]; // * 1;
-                    mNextErr[x][1] += diff[1]; // * 1;
-                    mNextErr[x][2] += diff[2]; // * 1;
+                    nextErr[x][0] += diff[0]; // * 1;
+                    nextErr[x][1] += diff[1]; // * 1;
+                    nextErr[x][2] += diff[2]; // * 1;
 
                     // Previous
                     x--;
@@ -450,9 +450,9 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
 
             // Make next error info current for next iteration
             int[][] temperr;
-            temperr = mCurrErr;
-            mCurrErr = mNextErr;
-            mNextErr = temperr;
+            temperr = currErr;
+            currErr = nextErr;
+            nextErr = temperr;
 
             // Toggle direction
             if (alternateScans) {

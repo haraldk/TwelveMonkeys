@@ -39,7 +39,7 @@ import java.util.Hashtable;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/ImageUtil.java#3 $
+ * @version $Id: common/common-image/src/main/java/com/twelvemonkeys/image/ImageUtil.java#3 $
  */
 public final class ImageUtil {
     // TODO: Split palette generation out, into ColorModel classes (?)
@@ -845,11 +845,13 @@ public final class ImageUtil {
             BufferedImage temp = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
             if (cm instanceof IndexColorModel && pHints == Image.SCALE_SMOOTH) {
+                // TODO: DiffusionDither does not support transparency at the moment, this will create bad results
                 new DiffusionDither((IndexColorModel) cm).filter(scaled, temp);
             }
             else {
                 drawOnto(temp, scaled);
             }
+
             scaled = temp;
             //long end = System.currentTimeMillis();
             //System.out.println("Time: " + (end - start) + " ms");

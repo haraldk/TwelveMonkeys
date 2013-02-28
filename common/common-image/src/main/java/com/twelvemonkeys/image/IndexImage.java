@@ -96,7 +96,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * This class implements an adaptive pallete generator to reduce images
+ * This class implements an adaptive palette generator to reduce images
  * to a variable number of colors.
  * It can also render images into fixed color pallettes.
  * <p/>
@@ -589,7 +589,7 @@ class IndexImage {
     /**
      * Gets an {@code IndexColorModel} from the given image. If the image has an
      * {@code IndexColorModel}, this will be returned. Otherwise, an {@code IndexColorModel}
-     * is created, using an adaptive pallete.
+     * is created, using an adaptive palette.
      *
      * @param pImage          the image to get {@code IndexColorModel} from
      * @param pNumberOfColors the number of colors for the {@code IndexColorModel}
@@ -637,7 +637,7 @@ class IndexImage {
         // We now have at least a buffered image, create model from it
         if (icm == null) {
             icm = createIndexColorModel(ImageUtil.toBuffered(image), pNumberOfColors, pHints);
-       }
+        }
         else if (!(icm instanceof InverseColorMapIndexColorModel)) {
             // If possible, use faster code
             icm = new InverseColorMapIndexColorModel(icm);
@@ -648,7 +648,7 @@ class IndexImage {
 
     /**
      * Creates an {@code IndexColorModel} from the given image, using an adaptive
-     * pallete.
+     * palette.
      *
      * @param pImage          the image to get {@code IndexColorModel} from
      * @param pNumberOfColors the number of colors for the {@code IndexColorModel}
@@ -821,7 +821,7 @@ class IndexImage {
     /**
      * Converts the input image (must be {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. Generating an adaptive
-     * pallete (8 bit) from the color data in the image, and uses default
+     * palette (8 bit) from the color data in the image, and uses default
      * dither.
      * <p/>
      * The image returned is a new image, the input image is not modified.
@@ -865,7 +865,7 @@ class IndexImage {
      * Converts the input image (must be {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. If the palette image
      * uses an {@code IndexColorModel}, this will be used. Otherwise, generating an
-     * adaptive pallete (8 bit) from the given palette image.
+     * adaptive palette (8 bit) from the given palette image.
      * Dithering, transparency and color selection is controlled with the
      * {@code pHints}parameter.
      * <p/>
@@ -875,7 +875,7 @@ class IndexImage {
      * @param pPalette the Image to read color information from
      * @param pMatte   the background color, used where the original image was
      *                 transparent
-     * @param pHints   mHints that control output quality and speed.
+     * @param pHints   hints that control output quality and speed.
      * @return the indexed BufferedImage. The image will be of type
      *         {@code BufferedImage.TYPE_BYTE_INDEXED} or
      *         {@code BufferedImage.TYPE_BYTE_BINARY}, and use an
@@ -900,7 +900,7 @@ class IndexImage {
     /**
      * Converts the input image (must be  {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. Generating an adaptive
-     * pallete with the given number of colors.
+     * palette with the given number of colors.
      * Dithering, transparency and color selection is controlled with the
      * {@code pHints}parameter.
      * <p/>
@@ -910,7 +910,7 @@ class IndexImage {
      * @param pNumberOfColors the number of colors for the image
      * @param pMatte          the background color, used where the original image was
      *                        transparent
-     * @param pHints          mHints that control output quality and speed.
+     * @param pHints          hints that control output quality and speed.
      * @return the indexed BufferedImage. The image will be of type
      *         {@code BufferedImage.TYPE_BYTE_INDEXED} or
      *         {@code BufferedImage.TYPE_BYTE_BINARY}, and use an
@@ -947,7 +947,7 @@ class IndexImage {
     /**
      * Converts the input image (must be {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. Using the supplied
-     * {@code IndexColorModel}'s pallete.
+     * {@code IndexColorModel}'s palette.
      * Dithering, transparency and color selection is controlled with the
      * {@code pHints} parameter.
      * <p/>
@@ -1064,7 +1064,7 @@ class IndexImage {
     /**
      * Converts the input image (must be  {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. Generating an adaptive
-     * pallete with the given number of colors.
+     * palette with the given number of colors.
      * Dithering, transparency and color selection is controlled with the
      * {@code pHints}parameter.
      * <p/>
@@ -1072,7 +1072,7 @@ class IndexImage {
      *
      * @param pImage          the BufferedImage to index
      * @param pNumberOfColors the number of colors for the image
-     * @param pHints          mHints that control output quality and speed.
+     * @param pHints          hints that control output quality and speed.
      * @return the indexed BufferedImage. The image will be of type
      *         {@code BufferedImage.TYPE_BYTE_INDEXED} or
      *         {@code BufferedImage.TYPE_BYTE_BINARY}, and use an
@@ -1094,7 +1094,7 @@ class IndexImage {
     /**
      * Converts the input image (must be {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. Using the supplied
-     * {@code IndexColorModel}'s pallete.
+     * {@code IndexColorModel}'s palette.
      * Dithering, transparency and color selection is controlled with the
      * {@code pHints}parameter.
      * <p/>
@@ -1125,7 +1125,7 @@ class IndexImage {
      * Converts the input image (must be {@code TYPE_INT_RGB} or
      * {@code TYPE_INT_ARGB}) to an indexed image. If the palette image
      * uses an {@code IndexColorModel}, this will be used. Otherwise, generating an
-     * adaptive pallete (8 bit) from the given palette image.
+     * adaptive palette (8 bit) from the given palette image.
      * Dithering, transparency and color selection is controlled with the
      * {@code pHints}parameter.
      * <p/>
@@ -1133,7 +1133,7 @@ class IndexImage {
      *
      * @param pImage   the BufferedImage to index
      * @param pPalette the Image to read color information from
-     * @param pHints   mHints that control output quality and speed.
+     * @param pHints   hints that control output quality and speed.
      * @return the indexed BufferedImage. The image will be of type
      *         {@code BufferedImage.TYPE_BYTE_INDEXED} or
      *         {@code BufferedImage.TYPE_BYTE_BINARY}, and use an
@@ -1393,7 +1393,7 @@ class IndexImage {
             System.exit(5);
         }
 
-        // Create mHints
+        // Create hints
         int hints = DITHER_DEFAULT;
 
         if ("DIFFUSION".equalsIgnoreCase(dither)) {
