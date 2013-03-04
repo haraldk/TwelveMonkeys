@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ServletHeadersMapAdapterTestCase.java#1 $
  */
-public class ServletHeadersMapAdapterTestCase extends MapAbstractTestCase {
+public class ServletHeadersMapAdapterTest extends MapAbstractTestCase {
     private static final List<String> HEADER_VALUE_ETAG = Arrays.asList("\"1234567890abcdef\"");
     private static final List<String> HEADER_VALUE_DATE = Arrays.asList(new Date().toString());
     private static final List<String> HEADER_VALUE_FOO = Arrays.asList("one", "two");

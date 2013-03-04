@@ -1,7 +1,5 @@
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.util.CollectionUtil;
-
 import java.util.*;
 
 /**
@@ -11,88 +9,53 @@ import java.util.*;
  * @author last modified by $Author: haku $
  * @version $Id: AbstractServletMapAdapter.java#1 $
  */
-abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String>> {
-    // TODO: This map is now a little too lazy.. Should cache entries too (instead?) !
-
-    private final static List<String> NULL_LIST = new ArrayList<String>();
-
-    private transient Map<String, List<String>> cache = new HashMap<String, List<String>>();
-    private transient int size = -1;
-    private transient AbstractSet<Entry<String, List<String>>> entries;
+abstract class AbstractServletMapAdapter<T> extends AbstractMap<String, T> {
+    // TODO: This map is now a little too lazy.. Should cache entries!
+    private transient Set<Entry<String, T>> entries;
 
     protected abstract Iterator<String> keysImpl();
 
-    protected abstract Iterator<String> valuesImpl(String pName);
+    protected abstract T valueImpl(String pName);
 
     @Override
-    public List<String> get(final Object pKey) {
+    public T get(final Object pKey) {
         if (pKey instanceof String) {
-            return getValues((String) pKey);
+            return valueImpl((String) pKey);
         }
 
         return null;
     }
 
-    private List<String> getValues(final String pName) {
-        List<String> values = cache.get(pName);
-
-        if (values == null) {
-            //noinspection unchecked
-            Iterator<String> headers = valuesImpl(pName);
-
-            if (headers == null) {
-                cache.put(pName, NULL_LIST);
-            }
-            else {
-                values = toList(headers);
-                cache.put(pName, values);
-            }
-        }
-
-        return values == NULL_LIST ? null : values;
-    }
-
-    private static List<String> toList(final Iterator<String> pValues) {
-        List<String> list = new ArrayList<String>();
-        CollectionUtil.addAll(list, pValues);
-        return Collections.unmodifiableList(list);
-    }
-
     @Override
     public int size() {
-        if (size == -1) {
-            computeSize();
+        // Avoid creating expensive entry set for computing size
+        int size = 0;
+
+        for (Iterator<String> names = keysImpl(); names.hasNext(); names.next()) {
+            size++;
         }
 
         return size;
     }
 
-    private void computeSize() {
-        size = 0;
-
-        for (Iterator<String> names = keysImpl(); names.hasNext(); names.next()) {
-            size++;
-        }
-    }
-
-    public Set<Entry<String, List<String>>> entrySet() {
+    public Set<Entry<String, T>> entrySet() {
         if (entries == null) {
-            entries = new AbstractSet<Entry<String, List<String>>>() {
-                public Iterator<Entry<String, List<String>>> iterator() {
-                    return new Iterator<Entry<String, List<String>>>() {
-                        Iterator<String> headerNames = keysImpl();
+            entries = new AbstractSet<Entry<String, T>>() {
+                public Iterator<Entry<String, T>> iterator() {
+                    return new Iterator<Entry<String, T>>() {
+                        Iterator<String> keys = keysImpl();
 
                         public boolean hasNext() {
-                            return headerNames.hasNext();
+                            return keys.hasNext();
                         }
 
-                        public Entry<String, List<String>> next() {
+                        public Entry<String, T> next() {
                             // TODO: Replace with cached lookup
-                            return new HeaderEntry(headerNames.next());
+                            return new HeaderEntry(keys.next());
                         }
 
                         public void remove() {
-                            throw new UnsupportedOperationException();
+                            keys.remove();
                         }
                     };
                 }
@@ -106,34 +69,35 @@ abstract class AbstractServletMapAdapter extends AbstractMap<String, List<String
         return entries;
     }
 
-    private class HeaderEntry implements Entry<String, List<String>> {
-        String headerName;
+    private class HeaderEntry implements Entry<String, T> {
+        final String key;
 
-        public HeaderEntry(String pHeaderName) {
-            headerName = pHeaderName;
+        public HeaderEntry(final String pKey) {
+            key = pKey;
         }
 
         public String getKey() {
-            return headerName;
+            return key;
         }
 
-        public List<String> getValue() {
-            return get(headerName);
+        public T getValue() {
+            return get(key);
         }
 
-        public List<String> setValue(List<String> pValue) {
-            throw new UnsupportedOperationException();
+        public T setValue(final T pValue) {
+            // Write-through if supported
+            return put(key, pValue);
         }
 
         @Override
         public int hashCode() {
-            List<String> value;
-            return (headerName == null ? 0 :   headerName.hashCode()) ^
-                   ((value = getValue()) == null ? 0 : value.hashCode());
+            T value = getValue();
+            return (key == null ? 0 : key.hashCode()) ^
+                    (value == null ? 0 : value.hashCode());
         }
 
         @Override
-        public boolean equals(Object pOther) {
+        public boolean equals(final Object pOther) {
             if (pOther == this) {
                 return true;
             }

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/ServletParametersMapAdapterTestCase.java#1 $
  */
-public class ServletParametersMapAdapterTestCase extends MapAbstractTestCase {
+public class ServletParametersMapAdapterTest extends MapAbstractTestCase {
     private static final List<String> PARAM_VALUE_ETAG = Arrays.asList("\"1234567890abcdef\"");
     private static final List<String> PARAM_VALUE_DATE = Arrays.asList(new Date().toString());
     private static final List<String> PARAM_VALUE_FOO = Arrays.asList("one", "two");

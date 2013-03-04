@@ -16,7 +16,7 @@ import java.net.MalformedURLException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/ServletConfigMapAdapterTestCase.java#3 $
  */
-public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCase {
+public abstract class ServletConfigMapAdapterTest extends MapAbstractTestCase {
 
     public boolean isPutAddSupported() {
         return false;
@@ -148,7 +148,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
     }
 
-    public static final class ServletConfigMapTestCase extends ServletConfigMapAdapterTestCase {
+    public static final class ServletConfigMapTestCase extends ServletConfigMapAdapterTest {
 
         public Map makeEmptyMap() {
             ServletConfig config = new TestConfig();
@@ -162,7 +162,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
     }
 
-    public static final class FilterConfigMapTestCase extends ServletConfigMapAdapterTestCase {
+    public static final class FilterConfigMapTestCase extends ServletConfigMapAdapterTest {
 
         public Map makeEmptyMap() {
             FilterConfig config = new TestConfig();
@@ -176,7 +176,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
     }
 
-    public static final class ServletContextMapTestCase extends ServletConfigMapAdapterTestCase {
+    public static final class ServletContextMapTestCase extends ServletConfigMapAdapterTest {
 
         public Map makeEmptyMap() {
             ServletContext config = new TestConfig();
