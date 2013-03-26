@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.io.EOFException;
@@ -64,8 +66,8 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     int bufferLength;
     int bufferPos;
 
-    public YCbCrUpsamplerStream(InputStream stream, int[] chromaSub, int yCbCrPos, int columns, double[] coefficients) {
-        super(stream);
+    public YCbCrUpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns, final double[] coefficients) {
+        super(Validate.notNull(stream, "stream"));
 
         this.horizChromaSub = chromaSub[0];
         this.vertChromaSub = chromaSub[1];
@@ -94,7 +96,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
             int read;
 
             // This *SHOULD* read an entire row of units into the buffer, otherwise decodeRows will throw EOFException
-            while (pos < buffer.length && (read = super.read(buffer, pos, buffer.length - pos)) > 0) {
+            while (pos < buffer.length && (read = in.read(buffer, pos, buffer.length - pos)) > 0) {
                 pos += read;
             }
 
@@ -168,7 +170,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
             }
         }
 
-        return decodedRows[decodedPos++];
+        return decodedRows[decodedPos++] & 0xff;
     }
 
     @Override

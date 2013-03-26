@@ -35,12 +35,14 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Implements Lempel-Ziv & Welch (LZW) decompression.
+ * Lempel–Ziv–Welch (LZW) decompression. LZW is a universal loss-less data compression algorithm
+ * created by Abraham Lempel, Jacob Ziv, and Terry Welch.
  * Inspired by libTiff's LZW decompression.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: LZWDecoder.java,v 1.0 08.05.12 21:11 haraldk Exp$
+ * @see <a href="http://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">LZW (Wikipedia)</a>
  */
 abstract class LZWDecoder implements Decoder {
     /** Clear: Re-initialize tables. */
@@ -50,6 +52,8 @@ abstract class LZWDecoder implements Decoder {
 
     private static final int MIN_BITS = 9;
     private static final int MAX_BITS = 12;
+
+    private static final int TABLE_SIZE = 1 << MAX_BITS;
 
     private final boolean compatibilityMode;
 
@@ -68,7 +72,7 @@ abstract class LZWDecoder implements Decoder {
     protected LZWDecoder(final boolean compatibilityMode) {
         this.compatibilityMode = compatibilityMode;
 
-        table = new String[compatibilityMode ? 4096 + 1024 : 4096]; // libTiff adds 1024 "for compatibility"...
+        table = new String[compatibilityMode ? TABLE_SIZE + 1024 : TABLE_SIZE]; // libTiff adds 1024 "for compatibility"...
 
         // First 258 entries of table is always fixed
         for (int i = 0; i < 256; i++) {
