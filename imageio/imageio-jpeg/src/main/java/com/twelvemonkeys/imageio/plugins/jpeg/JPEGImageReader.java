@@ -601,13 +601,23 @@ public class JPEGImageReader extends ImageReaderBase {
 
             segments = JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
         }
-        catch (IOException ignore) {
+        catch (IIOException ignore) {
+            if (DEBUG) {
+                ignore.printStackTrace();
+            }
         }
         catch (IllegalArgumentException foo) {
-            foo.printStackTrace();
+            if (DEBUG) {
+                foo.printStackTrace();
+            }
         }
         finally {
             imageInput.reset();
+        }
+
+        // In case of an exception, avoid NPE when referencing segments later
+        if (segments == null) {
+            segments = Collections.emptyList();
         }
     }
 

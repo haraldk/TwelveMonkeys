@@ -196,4 +196,17 @@ public class JPEGSegmentUtilTest {
         assertEquals(JPEG.APP14, segments.get(21).marker());
         assertEquals("Adobe", segments.get(21).identifier());
     }
+
+    @Test
+    public void testReadPaddedSegments() throws IOException {
+        List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/jfif-padded-segments.jpg"), JPEGSegmentUtil.APP_SEGMENTS);
+        assertEquals(3, segments.size());
+
+        assertEquals(JPEG.APP0, segments.get(0).marker());
+        assertEquals("JFIF", segments.get(0).identifier());
+        assertEquals(JPEG.APP2, segments.get(1).marker());
+        assertEquals("ICC_PROFILE", segments.get(1).identifier());
+        assertEquals(JPEG.APP1, segments.get(2).marker());
+        assertEquals("Exif", segments.get(2).identifier());
+    }
 }
