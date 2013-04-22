@@ -93,7 +93,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 // Skip over 0xff padding between markers
                 while (marker == 0xffff) {
                     realPosition++;
-                    marker = (marker & 0xff) << 8 | stream.readUnsignedByte();
+                    marker = 0xff00 | stream.readUnsignedByte();
                 }
 
                 // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment, 'Exif' APP1 and very few others

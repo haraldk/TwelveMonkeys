@@ -158,7 +158,7 @@ public final class JPEGSegmentUtil {
 
         // Skip over 0xff padding between markers
         while (marker == 0xffff) {
-            marker = (marker & 0xff) << 8 | stream.readUnsignedByte();
+            marker = 0xff00 | stream.readUnsignedByte();
         }
 
         if ((marker >> 8 & 0xff) != 0xff) {
