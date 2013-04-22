@@ -58,7 +58,7 @@ import java.util.List;
 
 /**
  * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
- * with support for CMYK/YCCK JPEGs, non-standard color spaces,broken ICC profiles
+ * with support for CMYK/YCCK JPEGs, non-standard color spaces, broken ICC profiles
  * and more.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -268,14 +268,14 @@ public class JPEGImageReader extends ImageReaderBase {
         boolean unsupported = !delegate.getImageTypes(imageIndex).hasNext();
 
         ICC_Profile profile = getEmbeddedICCProfile();
-        AdobeDCT adobeDCT = getAdobeDCT();
+        AdobeDCTSegment adobeDCT = getAdobeDCT();
 
         // TODO: Probably something bogus here, as ICC profile isn't applied if reading through the delegate any more...
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
                 unsupported ||
-                adobeDCT != null && adobeDCT.getTransform() == AdobeDCT.YCCK ||
+                adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
                 profile != null && (ColorSpaces.isOffendingColorProfile(profile) || profile.getColorSpaceType() == ColorSpace.TYPE_CMYK))) {
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
@@ -296,8 +296,8 @@ public class JPEGImageReader extends ImageReaderBase {
         int origWidth = getWidth(imageIndex);
         int origHeight = getHeight(imageIndex);
 
-        AdobeDCT adobeDCT = getAdobeDCT();
-        SOF startOfFrame = getSOF();
+        AdobeDCTSegment adobeDCT = getAdobeDCT();
+        SOFSegment startOfFrame = getSOF();
         JPEGColorSpace csType = getSourceCSType(adobeDCT, startOfFrame);
 
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
@@ -436,7 +436,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return image;
     }
 
-    static JPEGColorSpace getSourceCSType(AdobeDCT adobeDCT, final SOF startOfFrame) throws IIOException {
+    static JPEGColorSpace getSourceCSType(AdobeDCTSegment adobeDCT, final SOFSegment startOfFrame) throws IIOException {
         /*
         ADAPTED from http://download.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html:
 
@@ -478,11 +478,11 @@ public class JPEGImageReader extends ImageReaderBase {
 
         if (adobeDCT != null) {
             switch (adobeDCT.getTransform()) {
-                case AdobeDCT.YCC:
+                case AdobeDCTSegment.YCC:
                     return JPEGColorSpace.YCbCr;
-                case AdobeDCT.YCCK:
+                case AdobeDCTSegment.YCCK:
                     return JPEGColorSpace.YCCK;
-                case AdobeDCT.Unknown:
+                case AdobeDCTSegment.Unknown:
                     if (startOfFrame.components.length == 1) {
                         return JPEGColorSpace.Gray;
                     }
@@ -639,7 +639,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return appSegments;
     }
 
-    private SOF getSOF() throws IOException {
+    private SOFSegment getSOF() throws IOException {
         for (JPEGSegment segment : segments) {
             if (JPEG.SOF0 >= segment.marker() && segment.marker() <= JPEG.SOF3 ||
                     JPEG.SOF5 >= segment.marker() && segment.marker() <= JPEG.SOF7 ||
@@ -664,7 +664,7 @@ public class JPEGImageReader extends ImageReaderBase {
                         components[i] = new SOFComponent(id, ((sub & 0xF0) >> 4), (sub & 0xF), qtSel);
                     }
 
-                    return new SOF(segment.marker(), samplePrecision, lines, samplesPerLine, componentsInFrame, components);
+                    return new SOFSegment(segment.marker(), samplePrecision, lines, samplesPerLine, componentsInFrame, components);
                 }
                 finally {
                     data.close();
@@ -675,7 +675,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    private AdobeDCT getAdobeDCT() throws IOException {
+    private AdobeDCTSegment getAdobeDCT() throws IOException {
         // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe APP14 markers
         List<JPEGSegment> adobe = getAppSegments(JPEG.APP14, "Adobe");
 
@@ -683,7 +683,7 @@ public class JPEGImageReader extends ImageReaderBase {
             // version (byte), flags (4bytes), color transform (byte: 0=unknown, 1=YCC, 2=YCCK)
             DataInputStream stream = new DataInputStream(adobe.get(0).data());
 
-            return new AdobeDCT(
+            return new AdobeDCTSegment(
                     stream.readUnsignedByte(),
                     stream.readUnsignedShort(),
                     stream.readUnsignedShort(),
@@ -1145,73 +1145,6 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private static class SOF {
-        private final int marker;
-        private final int samplePrecision;
-        private final int lines;          // height
-        private final int samplesPerLine; // width
-        private final int componentsInFrame;
-        final SOFComponent[] components;
-
-        public SOF(int marker, int samplePrecision, int lines, int samplesPerLine, int componentsInFrame, SOFComponent[] components) {
-            this.marker = marker;
-            this.samplePrecision = samplePrecision;
-            this.lines = lines;
-            this.samplesPerLine = samplesPerLine;
-            this.componentsInFrame = componentsInFrame;
-            this.components = components;
-        }
-
-        public int getMarker() {
-            return marker;
-        }
-
-        public int getSamplePrecision() {
-            return samplePrecision;
-        }
-
-        public int getLines() {
-            return lines;
-        }
-
-        public int getSamplesPerLine() {
-            return samplesPerLine;
-        }
-
-        public int getComponentsInFrame() {
-            return componentsInFrame;
-        }
-
-        @Override
-        public String toString() {
-            return String.format(
-                    "SOF%d[%04x, precision: %d, lines: %d, samples/line: %d, components: %s]",
-                    marker & 0xf, marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
-            );
-        }
-    }
-
-    private static class SOFComponent {
-        final int id;
-        final int hSub;
-        final int vSub;
-        final int qtSel;
-
-        public SOFComponent(int id, int hSub, int vSub, int qtSel) {
-            this.id = id;
-            this.hSub = hSub;
-            this.vSub = vSub;
-            this.qtSel = qtSel;
-        }
-
-        @Override
-        public String toString() {
-            // Use id either as component number or component name, based on value
-            Serializable idStr = (id >= 'a' && id <= 'z' || id >= 'A' && id <= 'Z') ? "'" + (char) id + "'" : id;
-            return String.format("id: %s, sub: %d/%d, sel: %d", idStr, hSub, vSub, qtSel);
-        }
-    }
-
     protected static void showIt(final BufferedImage pImage, final String pTitle) {
         ImageReaderBase.showIt(pImage, pTitle);
     }
@@ -1282,7 +1215,7 @@ public class JPEGImageReader extends ImageReaderBase {
 //                param.setSourceSubsampling(sub, sub, 0, 0);
 //            }
 
-                long start = System.currentTimeMillis();
+//                long start = System.currentTimeMillis();
                 BufferedImage image = reader.read(0, param);
 //                System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 //                System.err.println("image: " + image);
@@ -1295,7 +1228,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 int maxW = 400;
                 int maxH = 400;
                 if (image.getWidth() > maxW || image.getHeight() > maxH) {
-                    start = System.currentTimeMillis();
+//                    start = System.currentTimeMillis();
                     float aspect = reader.getAspectRatio(0);
                     if (aspect >= 1f) {
                         image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_DEFAULT);

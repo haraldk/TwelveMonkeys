@@ -29,13 +29,13 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 /**
- * AdobeDCT
+ * AdobeDCTSegment
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: AdobeDCT.java,v 1.0 23.04.12 16:55 haraldk Exp$
+ * @version $Id: AdobeDCTSegment.java,v 1.0 23.04.12 16:55 haraldk Exp$
  */
-class AdobeDCT {
+class AdobeDCTSegment {
     public static final int Unknown = 0;
     public static final int YCC = 1;
     public static final int YCCK = 2;
@@ -45,7 +45,7 @@ class AdobeDCT {
     final int flags1;
     final int transform;
 
-    public AdobeDCT(int version, int flags0, int flags1, int transform) {
+    AdobeDCTSegment(int version, int flags0, int flags1, int transform) {
         this.version = version; // 100 or 101
         this.flags0 = flags0;
         this.flags1 = flags1;
