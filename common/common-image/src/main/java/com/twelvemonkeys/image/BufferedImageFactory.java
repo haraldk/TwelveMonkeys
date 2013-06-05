@@ -259,11 +259,9 @@ public final class BufferedImageFactory {
         sourceProperties = null;
     }
 
-    private void processProgress(int mScanline) {
+    private void processProgress(int scanline) {
         if (listeners != null) {
-            int percent = 100 * mScanline / height;
-
-            //System.out.println("Progress: " + percent + "%");
+            int percent = 100 * scanline / height;
 
             if (percent > percentageDone) {
                 percentageDone = percent;
@@ -323,7 +321,7 @@ public final class BufferedImageFactory {
      * pixels. The conversion is done, by masking out the
      * <em>higher 16 bits</em> of the {@code int}.
      *
-     * For eny given {@code int}, the {@code short} value is computed as
+     * For any given {@code int}, the {@code short} value is computed as
      * follows:
      * <blockquote>{@code
      * short value = (short) (intValue & 0x0000ffff);
@@ -334,9 +332,11 @@ public final class BufferedImageFactory {
      */
     private static short[] toShortPixels(int[] pPixels) {
         short[] pixels = new short[pPixels.length];
+
         for (int i = 0; i < pixels.length; i++) {
             pixels[i] = (short) (pPixels[i] & 0xffff);
         }
+
         return pixels;
     }
 
@@ -507,24 +507,11 @@ public final class BufferedImageFactory {
         }
 
         public void setPixels(int pX, int pY, int pWidth, int pHeight, ColorModel pModel, byte[] pPixels, int pOffset, int pScanSize) {
-            /*if (pModel.getPixelSize() < 8) {
-                // Byte packed
-                setPixelsImpl(pX, pY, pWidth, pHeight, pModel, toBytePackedPixels(pPixels, pModel.getPixelSize()), pOffset, pScanSize);
-            }
-            /*
-            else if (pModel.getPixelSize() > 8) {
-                // Byte interleaved
-                setPixelsImpl(pX, pY, pWidth, pHeight, pModel, toByteInterleavedPixels(pPixels), pOffset, pScanSize);
-            }
-            */
-            //else {
-                // Default, pixelSize == 8, one byte pr pixel
-                setPixelsImpl(pX, pY, pWidth, pHeight, pModel, pPixels, pOffset, pScanSize);
-            //}
+            setPixelsImpl(pX, pY, pWidth, pHeight, pModel, pPixels, pOffset, pScanSize);
         }
 
         public void setPixels(int pX, int pY, int pWeigth, int pHeight, ColorModel pModel, int[] pPixels, int pOffset, int pScanSize) {
-            if (ImageUtil.getTransferType(pModel) == DataBuffer.TYPE_USHORT) {
+            if (pModel.getTransferType() == DataBuffer.TYPE_USHORT) {
                 // NOTE: Workaround for limitation in ImageConsumer API
                 // Convert int[] to short[], to be compatible with the ColorModel
                 setPixelsImpl(pX, pY, pWeigth, pHeight, pModel, toShortPixels(pPixels), pOffset, pScanSize);
@@ -538,4 +525,86 @@ public final class BufferedImageFactory {
             sourceProperties = pProperties;
         }
     }
+
+    /*
+    public static void main(String[] args) throws InterruptedException {
+        Image image = Toolkit.getDefaultToolkit().createImage(args[0]);
+        System.err.printf("image: %s (which is %sa buffered image)\n", image, image instanceof BufferedImage ? "" : "not ");
+
+        int warmUpLoops = 500;
+        int testLoops = 100;
+
+        for (int i = 0; i < warmUpLoops; i++) {
+            // Warm up...
+            convertUsingFactory(image);
+            convertUsingPixelGrabber(image);
+            convertUsingPixelGrabberNaive(image);
+        }
+
+        BufferedImage bufferedImage = null;
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < testLoops; i++) {
+            bufferedImage = convertUsingFactory(image);
+        }
+        System.err.printf("Conversion time (factory): %f ms (image: %s)\n", (System.currentTimeMillis() - start) / (double) testLoops, bufferedImage);
+
+        start = System.currentTimeMillis();
+        for (int i = 0; i < testLoops; i++) {
+            bufferedImage = convertUsingPixelGrabber(image);
+        }
+        System.err.printf("Conversion time (grabber): %f ms (image: %s)\n", (System.currentTimeMillis() - start) / (double) testLoops, bufferedImage);
+
+        start = System.currentTimeMillis();
+        for (int i = 0; i < testLoops; i++) {
+            bufferedImage = convertUsingPixelGrabberNaive(image);
+        }
+        System.err.printf("Conversion time (naive g): %f ms (image: %s)\n", (System.currentTimeMillis() - start) / (double) testLoops, bufferedImage);
+    }
+
+    private static BufferedImage convertUsingPixelGrabberNaive(Image image) throws InterruptedException {
+        // NOTE: It does not matter if we wait for the image or not, the time is about the same as it will only happen once
+        if ((image.getWidth(null) < 0 || image.getHeight(null) < 0) && !ImageUtil.waitForImage(image)) {
+            System.err.printf("Could not get image dimensions for image %s\n", image.getSource());
+        }
+
+        int w = image.getWidth(null);
+        int h = image.getHeight(null);
+        PixelGrabber grabber = new PixelGrabber(image, 0, 0, w, h, true); // force RGB
+        grabber.grabPixels();
+
+        // Following casts are safe, as we force RGB in the pixel grabber
+        int[] pixels = (int[]) grabber.getPixels();
+
+        BufferedImage bufferedImage = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+//        bufferedImage.setRGB(0, 0, w, h, pixels, 0, w);
+        bufferedImage.getRaster().setDataElements(0, 0, w, h, pixels);
+
+        return bufferedImage;
+    }
+
+    private static BufferedImage convertUsingPixelGrabber(Image image) throws InterruptedException {
+        // NOTE: It does not matter if we wait for the image or not, the time is about the same as it will only happen once
+        if ((image.getWidth(null) < 0 || image.getHeight(null) < 0) && !ImageUtil.waitForImage(image)) {
+            System.err.printf("Could not get image dimensions for image %s\n", image.getSource());
+        }
+
+        int w = image.getWidth(null);
+        int h = image.getHeight(null);
+        PixelGrabber grabber = new PixelGrabber(image, 0, 0, w, h, true); // force RGB
+        grabber.grabPixels();
+
+        // Following casts are safe, as we force RGB in the pixel grabber
+//        DirectColorModel cm = (DirectColorModel) grabber.getColorModel();
+        DirectColorModel cm = (DirectColorModel) ColorModel.getRGBdefault();
+        int[] pixels = (int[]) grabber.getPixels();
+
+        WritableRaster raster = Raster.createPackedRaster(new DataBufferInt(pixels, pixels.length), w, h, w, cm.getMasks(), null);
+
+        return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+    }
+
+    private static BufferedImage convertUsingFactory(Image image) {
+        return new BufferedImageFactory(image).getBufferedImage();
+    }
+    */
 }

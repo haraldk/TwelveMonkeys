@@ -182,9 +182,6 @@ public final class ImageUtil {
     protected static final Point LOCATION_UPPER_LEFT = new Point(0, 0);
 
     /** */
-    private static final boolean COLORMODEL_TRANSFERTYPE_SUPPORTED = isColorModelTransferTypeSupported();
-
-    /** */
     private static final GraphicsConfiguration DEFAULT_CONFIGURATION = getDefaultGraphicsConfiguration();
 
     private static GraphicsConfiguration getDefaultGraphicsConfiguration() {
@@ -203,22 +200,6 @@ public final class ImageUtil {
 
     /** Creates an ImageUtil. Private constructor. */
     private ImageUtil() {
-    }
-
-    /**
-     * Tests if {@code ColorModel} has a {@code getTransferType} method.
-     *
-     * @return {@code true} if {@code ColorModel} has a
-     * {@code getTransferType} method
-     */
-    private static boolean isColorModelTransferTypeSupported() {
-        try {
-            ColorModel.getRGBdefault().getTransferType();
-            return true;
-        }
-        catch (Throwable t) {
-            return false;
-        }
     }
 
     /**
@@ -378,7 +359,7 @@ public final class ImageUtil {
 
     /**
      * Creates a copy of the given image. The image will have the same
-     * colormodel and raster type, but will not share image (pixel) data.
+     * color model and raster type, but will not share image (pixel) data.
      *
      * @param pImage the image to clone.
      *
@@ -408,11 +389,11 @@ public final class ImageUtil {
      * <p/>
      * This method is optimized for the most common cases of {@code ColorModel}
      * and pixel data combinations. The raster's backing {@code DataBuffer} is
-     * created directly from the pixel data, as this is faster and with more
+     * created directly from the pixel data, as this is faster and more
      * resource-friendly than using
      * {@code ColorModel.createCompatibleWritableRaster(w, h)}.
      * <p/>
-     * For unknown combinations, the method will fallback to using
+     * For uncommon combinations, the method will fallback to using
      * {@code ColorModel.createCompatibleWritableRaster(w, h)} and
      * {@code WritableRaster.setDataElements(w, h, pixels)}
      * <p/>
@@ -438,8 +419,8 @@ public final class ImageUtil {
      */
     static WritableRaster createRaster(int pWidth, int pHeight, Object pPixels, ColorModel pColorModel) {
         // NOTE: This is optimized code for most common cases.
-        // We create a DataBuffer with the array from grabber.getPixels()
-        // directly, and creating a raster based on the ColorModel.
+        // We create a DataBuffer from the pixel array directly,
+        // and creating a raster based on the DataBuffer and ColorModel.
         // Creating rasters this way is faster and more resource-friendly, as
         // cm.createCompatibleWritableRaster allocates an
         // "empty" DataBuffer with a storage array of w*h. This array is
@@ -453,14 +434,12 @@ public final class ImageUtil {
         if (pPixels instanceof int[]) {
             int[] data = (int[]) pPixels;
             buffer = new DataBufferInt(data, data.length);
-            //bands = data.length / (w * h);
             bands = pColorModel.getNumComponents();
         }
         else if (pPixels instanceof short[]) {
             short[] data = (short[]) pPixels;
             buffer = new DataBufferUShort(data, data.length);
             bands = data.length / (pWidth * pHeight);
-            //bands = cm.getNumComponents();
         }
         else if (pPixels instanceof byte[]) {
             byte[] data = (byte[]) pPixels;
@@ -473,47 +452,30 @@ public final class ImageUtil {
             else {
                 bands = data.length / (pWidth * pHeight);
             }
-
-            //bands = pColorModel.getNumComponents();
-            //System.out.println("Pixels: " + data.length + " (" + buffer.getSize() + ")");
-            //System.out.println("w*h*bands: " + (pWidth * pHeight * bands));
-            //System.out.println("Bands: " + bands);
-            //System.out.println("Numcomponents: " + pColorModel.getNumComponents());
         }
         else {
-            //System.out.println("Fallback!");
             // Fallback mode, slower & requires more memory, but compatible
             bands = -1;
 
-            // Create raster from colormodel, w and h
+            // Create raster from color model, w and h
             raster = pColorModel.createCompatibleWritableRaster(pWidth, pHeight);
             raster.setDataElements(0, 0, pWidth, pHeight, pPixels); // Note: This is known to throw ClassCastExceptions..
         }
 
-        //System.out.println("Bands: " + bands);
-        //System.out.println("Pixels: " + pixels.getClass() + " length: " + buffer.getSize());
-        //System.out.println("Needed Raster: " + cm.createCompatibleWritableRaster(1, 1));
-
         if (raster == null) {
-            //int bits = cm.getPixelSize();
-            //if (bits > 4) {
             if (pColorModel instanceof IndexColorModel && isIndexedPacked((IndexColorModel) pColorModel)) {
-                //System.out.println("Creating packed indexed model");
                 raster = Raster.createPackedRaster(buffer, pWidth, pHeight, pColorModel.getPixelSize(), LOCATION_UPPER_LEFT);
             }
             else if (pColorModel instanceof PackedColorModel) {
-                //System.out.println("Creating packed model");
                 PackedColorModel pcm = (PackedColorModel) pColorModel;
                 raster = Raster.createPackedRaster(buffer, pWidth, pHeight, pWidth, pcm.getMasks(), LOCATION_UPPER_LEFT);
             }
             else {
-                //System.out.println("Creating interleaved model");
                 // (A)BGR order... For TYPE_3BYTE_BGR/TYPE_4BYTE_ABGR/TYPE_4BYTE_ABGR_PRE.
                 int[] bandsOffsets = new int[bands];
                 for (int i = 0; i < bands;) {
                     bandsOffsets[i] = bands - (++i);
                 }
-                //System.out.println("zzz Data array: " + buffer.getSize());
 
                 raster = Raster.createInterleavedRaster(buffer, pWidth, pHeight, pWidth * bands, bands, bandsOffsets, LOCATION_UPPER_LEFT);
             }
@@ -1782,7 +1744,7 @@ public final class ImageUtil {
      * @param pTimeOut the time to wait, in milliseconds.
      *
      * @return true if the image was loaded successfully, false if an error
-     *         occured, or the wait was interrupted.
+     *         occurred, or the wait was interrupted.
      *
      * @see #waitForImages(Image[],long)
      */
@@ -1797,7 +1759,7 @@ public final class ImageUtil {
      * @param pImages an array of Image objects to wait for.
      *
      * @return true if the images was loaded successfully, false if an error
-     *         occured, or the wait was interrupted.
+     *         occurred, or the wait was interrupted.
      *
      * @see #waitForImages(Image[],long)
      */
@@ -1813,7 +1775,7 @@ public final class ImageUtil {
      * @param pTimeOut the time to wait, in milliseconds
      *
      * @return true if the images was loaded successfully, false if an error
-     *         occured, or the wait was interrupted.
+     *         occurred, or the wait was interrupted.
      */
     public static boolean waitForImages(Image[] pImages, long pTimeOut) {
         // TODO: Need to make sure that we don't wait for the same image many times
@@ -1868,7 +1830,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Tests wether the image has any transparent or semi-transparent pixels.
+     * Tests whether the image has any transparent or semi-transparent pixels.
      *
      * @param pImage the image
      * @param pFast if {@code true}, the method tests maximum 10 x 10 pixels,
@@ -1936,7 +1898,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Blends two ARGB values half and half, to create a tone inbetween.
+     * Blends two ARGB values half and half, to create a tone in between.
      *
      * @param pRGB1 color 1
      * @param pRGB2 color 2
@@ -1949,7 +1911,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Blends two colors half and half, to create a tone inbetween.
+     * Blends two colors half and half, to create a tone in between.
      *
      * @param pColor color 1
      * @param pOther color 2
@@ -1967,7 +1929,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Blends two colors, controlled by the blendfactor.
+     * Blends two colors, controlled by the blending factor.
      * A factor of {@code 0.0} will return the first color,
      * a factor of {@code 1.0} will return the second.
      *
@@ -1988,51 +1950,5 @@ public final class ImageUtil {
 
     private static int clamp(float f) {
         return (int) f;
-    }
-    /**
-     * PixelGrabber subclass that stores any potential properties from an image.
-     */
-    /*
-    private static class MyPixelGrabber extends PixelGrabber {
-        private Hashtable mProps = null;
-
-        public MyPixelGrabber(Image pImage) {
-            // Simply grab all pixels, do not convert to default RGB space
-            super(pImage, 0, 0, -1, -1, false);
-        }
-
-        // Default implementation does not store the properties...
-        public void setProperties(Hashtable pProps) {
-            super.setProperties(pProps);
-            mProps = pProps;
-        }
-
-        public Hashtable getProperties() {
-            return mProps;
-        }
-    }
-    */
-
-    /**
-     * Gets the transfer type from the given {@code ColorModel}.
-     * <p/>
-     * NOTE: This is a workaround for missing functionality in JDK 1.2.
-     *
-     * @param pModel the color model
-     * @return the transfer type
-     *
-     * @throws NullPointerException if {@code pModel} is {@code null}.
-     *
-     * @see java.awt.image.ColorModel#getTransferType()
-     */
-    public static int getTransferType(ColorModel pModel) {
-        if (COLORMODEL_TRANSFERTYPE_SUPPORTED) {
-            return pModel.getTransferType();
-        }
-        else {
-            // Stupid workaround
-            // TODO: Create something that performs better
-            return pModel.createCompatibleSampleModel(1, 1).getDataType();
-        }
     }
 }
