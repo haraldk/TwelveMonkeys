@@ -1089,13 +1089,13 @@ public class HTTPCache {
 
     // TODO: Extract and make public?
     final static class SizedLRUMap<K, V> extends LRUHashMap<K, V> {
-        int mSize;
-        int mMaxSize;
+        int currentSize;
+        int maxSize;
 
         public SizedLRUMap(int pMaxSize) {
             //super(true);
-            super(); // Note: super.mMaxSize doesn't count...
-            mMaxSize = pMaxSize;
+            super(); // Note: super.maxSize doesn't count...
+            maxSize = pMaxSize;
         }
 
 
@@ -1113,11 +1113,11 @@ public class HTTPCache {
 
         @Override
         public V put(K pKey, V pValue) {
-            mSize += sizeOf(pValue);
+            currentSize += sizeOf(pValue);
 
             V old = super.put(pKey, pValue);
             if (old != null) {
-                mSize -= sizeOf(old);
+                currentSize -= sizeOf(old);
             }
             return old;
         }
@@ -1126,14 +1126,14 @@ public class HTTPCache {
         public V remove(Object pKey) {
             V old = super.remove(pKey);
             if (old != null) {
-                mSize -= sizeOf(old);
+                currentSize -= sizeOf(old);
             }
             return old;
         }
 
         @Override
         protected boolean removeEldestEntry(Map.Entry<K, V> pEldest) {
-            if (mMaxSize <= mSize) { // NOTE: mMaxSize here is mem size
+            if (maxSize <= currentSize) { // NOTE: maxSize here is mem size
                 removeLRU();
             }
             return false;
@@ -1141,7 +1141,7 @@ public class HTTPCache {
 
         @Override
         public void removeLRU() {
-            while (mMaxSize <= mSize) { // NOTE: mMaxSize here is mem size
+            while (maxSize <= currentSize) { // NOTE: maxSize here is mem size
                 super.removeLRU();
             }
         }
