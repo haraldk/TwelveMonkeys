@@ -131,11 +131,12 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
         return dest;
     }
 
-    @SuppressWarnings({"PointlessArithmeticExpression"})
     private void convertCMYKToRGB(byte[] cmyk, byte[] rgb) {
-        rgb[0] = (byte) (((255 - cmyk[0] & 0xFF) * (255 - cmyk[3] & 0xFF)) / 255);
-        rgb[1] = (byte) (((255 - cmyk[1] & 0xFF) * (255 - cmyk[3] & 0xFF)) / 255);
-        rgb[2] = (byte) (((255 - cmyk[2] & 0xFF) * (255 - cmyk[3] & 0xFF)) / 255);
+        // Adapted from http://www.easyrgb.com/index.php?X=MATH
+        final int k = cmyk[3] & 0xFF;
+        rgb[0] = (byte) (255 - (((cmyk[0] & 0xFF) * (255 - k) / 255) + k));
+        rgb[1] = (byte) (255 - (((cmyk[1] & 0xFF) * (255 - k) / 255) + k));
+        rgb[2] = (byte) (255 - (((cmyk[2] & 0xFF) * (255 - k) / 255) + k));
     }
 
     public Rectangle2D getBounds2D(Raster src) {
