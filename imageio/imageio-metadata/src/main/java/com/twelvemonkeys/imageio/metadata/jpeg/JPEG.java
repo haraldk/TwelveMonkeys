@@ -82,6 +82,10 @@ public interface JPEG {
     int SOF14 = 0xFFCE;
     int SOF15 = 0xFFCF;
 
+    // JPEG-LS markers
+    int SOF55 = 0xFFF7; // NOTE: Equal to a normal SOF segment
+    int LSE = 0xFFF8;   // JPEG-LS Preset Parameter marker
+
     // TODO: Known/Important APPn marker identifiers
     // "JFIF" APP0
     // "JFXX" APP0

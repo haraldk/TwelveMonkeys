@@ -42,23 +42,25 @@ final class SOFSegment {
     final int samplePrecision;
     final int lines;          // height
     final int samplesPerLine; // width
-    final int componentsInFrame;
     final SOFComponent[] components;
 
-    SOFSegment(int marker, int samplePrecision, int lines, int samplesPerLine, int componentsInFrame, SOFComponent[] components) {
+    SOFSegment(int marker, int samplePrecision, int lines, int samplesPerLine, SOFComponent[] components) {
         this.marker = marker;
         this.samplePrecision = samplePrecision;
         this.lines = lines;
         this.samplesPerLine = samplesPerLine;
-        this.componentsInFrame = componentsInFrame;
         this.components = components;
+    }
+
+    final int componentsInFrame() {
+        return components.length;
     }
 
     @Override
     public String toString() {
         return String.format(
                 "SOF%d[%04x, precision: %d, lines: %d, samples/line: %d, components: %s]",
-                marker & 0xf, marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
+                marker & 0xff - 0xc0, marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
         );
     }
 }

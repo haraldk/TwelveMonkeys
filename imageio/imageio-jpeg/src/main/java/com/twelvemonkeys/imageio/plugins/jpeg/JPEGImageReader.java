@@ -41,10 +41,13 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
+import org.w3c.dom.Node;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -58,8 +61,26 @@ import java.util.List;
 
 /**
  * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
- * with support for CMYK/YCCK JPEGs, non-standard color spaces, broken ICC profiles
- * and more.
+ * that adds support and properly handles cases where the JRE version throws exceptions.
+ * <p/>
+ * Main features:
+ * <ul>
+ * <li>Support for CMYK JPEGs (converted to RGB by default, using the embedded ICC profile if applicable)</li>
+ * <li>Support for Adobe YCCK JPEGs (converted to RGB by default, using the embedded ICC profile if applicable)</li>
+ * <li>Support for JPEGs containing ICC profiles with interpretation other than 'Perceptual' (profile is assumed to be 'Perceptual' and used)</li>
+ * <li>Support for JPEGs containing ICC profiles with class other than 'Display' (profile is assumed to have class 'Display' and used)</li>
+ * <li>Support for JPEGs containing ICC profiles that are incompatible with stream data (image data is read, profile is ignored)</li>
+ * <li>Support for JPEGs with corrupted ICC profiles (image data is read, profile is ignored)</li>
+ * <li>Support for JPEGs with corrupted {@code ICC_PROFILE} segments (image data is read, profile is ignored)</li>
+ * <li>Support for JPEGs using non-standard color spaces, unsupported by Java 2D (image data is read, profile is ignored)</li>
+ * <li>Issues warnings instead of throwing exceptions in cases of corrupted data where ever the image data can still be read in a reasonable way</li>
+ * </ul>
+ * Thumbnail support:
+ * <ul>
+ * <li>Support for JFIF thumbnails (even if stream contains "inconsistent metadata")</li>
+ * <li>Support for JFXX thumbnails (JPEG, Indexed and RGB)</li>
+ * <li>Support for EXIF thumbnails (JPEG, RGB and YCbCr)</li>
+ * </ul>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author LUT-based YCbCR conversion by Werner Randelshofer
@@ -76,7 +97,7 @@ public class JPEGImageReader extends ImageReaderBase {
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
 
     private static Map<Integer, List<String>> createSegmentIds() {
-        Map<Integer, List<String>> map = new HashMap<Integer, List<String>>();
+        Map<Integer, List<String>> map = new LinkedHashMap<Integer, List<String>>();
 
         // JFIF/JFXX APP0 markers
         map.put(JPEG.APP0, JPEGSegmentUtil.ALL_IDS);
@@ -216,8 +237,7 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     @Override
-    public
-    ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
+    public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         // If delegate can determine the spec, we'll just go with that
         ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
 
@@ -276,7 +296,8 @@ public class JPEGImageReader extends ImageReaderBase {
         if (delegate.canReadRaster() && (
                 unsupported ||
                 adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
-                profile != null && (ColorSpaces.isOffendingColorProfile(profile) || profile.getColorSpaceType() == ColorSpace.TYPE_CMYK))) {
+                profile != null && !ColorSpaces.isCS_sRGB(profile))) {
+//                profile != null && (ColorSpaces.isOffendingColorProfile(profile) || profile.getColorSpaceType() == ColorSpace.TYPE_CMYK))) {
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
@@ -316,12 +337,12 @@ public class JPEGImageReader extends ImageReaderBase {
         }
         else if (intendedCS != null) {
             // Handle inconsistencies
-            if (startOfFrame.componentsInFrame != intendedCS.getNumComponents()) {
-                if (startOfFrame.componentsInFrame < 4 && (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK)) {
+            if (startOfFrame.componentsInFrame() != intendedCS.getNumComponents()) {
+                if (startOfFrame.componentsInFrame() < 4 && (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK)) {
                     processWarningOccurred(String.format(
                             "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOF%d has %d color components. " +
                                     "Ignoring Adobe App14 marker, assuming YCbCr/RGB data.",
-                            startOfFrame.marker & 0xf, startOfFrame.componentsInFrame
+                            startOfFrame.marker & 0xf, startOfFrame.componentsInFrame()
                     ));
 
                     csType = JPEGColorSpace.YCbCr;
@@ -332,12 +353,15 @@ public class JPEGImageReader extends ImageReaderBase {
                             "Embedded ICC color profile is incompatible with image data. " +
                                     "Profile indicates %d components, but SOF%d has %d color components. " +
                                     "Ignoring ICC profile, assuming source color space %s.",
-                            intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame, csType
+                            intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame(), csType
                     ));
                 }
             }
             // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
             else if (intendedCS != image.getColorModel().getColorSpace()) {
+                if (DEBUG) {
+                    System.err.println("Converting from " + intendedCS + " to " + (image.getColorModel().getColorSpace().isCS_sRGB() ? "sRGB" : image.getColorModel().getColorSpace()));
+                }
                 convert = new ColorConvertOp(intendedCS, image.getColorModel().getColorSpace(), null);
             }
             // Else, pass through with no conversion
@@ -346,10 +370,20 @@ public class JPEGImageReader extends ImageReaderBase {
             ColorSpace cmykCS = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
 
             if (cmykCS instanceof ICC_ColorSpace) {
+                processWarningOccurred(
+                        "No embedded ICC color profile, defaulting to \"generic\" CMYK ICC profile. " +
+                                "Colors may look incorrect."
+                );
+
                 convert = new ColorConvertOp(cmykCS, image.getColorModel().getColorSpace(), null);
             }
             else {
                 // ColorConvertOp using non-ICC CS is deadly slow, fall back to fast conversion instead
+                processWarningOccurred(
+                        "No embedded ICC color profile, will convert using inaccurate CMYK to RGB conversion. " +
+                                "Colors may look incorrect."
+                );
+
                 convert = new FastCMYKToRGB();
             }
         }
@@ -664,7 +698,7 @@ public class JPEGImageReader extends ImageReaderBase {
                         components[i] = new SOFComponent(id, ((sub & 0xF0) >> 4), (sub & 0xF), qtSel);
                     }
 
-                    return new SOFSegment(segment.marker(), samplePrecision, lines, samplesPerLine, componentsInFrame, components);
+                    return new SOFSegment(segment.marker(), samplePrecision, lines, samplesPerLine, components);
                 }
                 finally {
                     data.close();
@@ -731,6 +765,10 @@ public class JPEGImageReader extends ImageReaderBase {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
+
+        // TODO: Allow metadata to contain the wrongly indexed profiles, if readable
+        // NOTE: We ignore any profile with wrong index for reading and image types, just to be on the safe side
+
         List<JPEGSegment> segments = getAppSegments(JPEG.APP2, "ICC_PROFILE");
 
         if (segments.size() == 1) {
@@ -741,7 +779,8 @@ public class JPEGImageReader extends ImageReaderBase {
             int chunkCount = stream.readUnsignedByte();
 
             if (chunkNumber != 1 && chunkCount != 1) {
-                processWarningOccurred(String.format("Bad number of 'ICC_PROFILE' chunks: %d of %d. Assuming single chunk.", chunkNumber, chunkCount));
+                processWarningOccurred(String.format("Unexpected number of 'ICC_PROFILE' chunks: %d of %d. Ignoring ICC profile.", chunkNumber, chunkCount));
+                return null;
             }
 
             return readICCProfileSafe(stream);
@@ -752,13 +791,15 @@ public class JPEGImageReader extends ImageReaderBase {
             int chunkNumber = stream.readUnsignedByte();
             int chunkCount = stream.readUnsignedByte();
 
+            // TODO: Most of the time the ICC profiles are readable and should be obtainable from metadata...
             boolean badICC = false;
             if (chunkCount != segments.size()) {
                 // Some weird JPEGs use 0-based indexes... count == 0 and all numbers == 0.
                 // Others use count == 1, and all numbers == 1.
                 // Handle these by issuing warning
+                processWarningOccurred(String.format("Bad 'ICC_PROFILE' chunk count: %d. Ignoring ICC profile.", chunkCount));
                 badICC = true;
-                processWarningOccurred(String.format("Unexpected 'ICC_PROFILE' chunk count: %d. Ignoring count, assuming %d chunks in sequence.", chunkCount, segments.size()));
+                return null;
             }
 
             if (!badICC && chunkNumber < 1) {
@@ -918,6 +959,51 @@ public class JPEGImageReader extends ImageReaderBase {
         checkThumbnailBounds(imageIndex, thumbnailIndex);
 
         return thumbnails.get(thumbnailIndex).read();
+    }
+
+
+    // Metadata
+
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        // TODO: Nice try, but no cigar.. getAsTree does not return a "live" view, so any modifications are thrown away
+        IIOMetadata metadata = delegate.getImageMetadata(imageIndex);
+
+        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
+        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
+
+        // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
+        // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
+        // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
+        /*
+        from: http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
+
+        In future versions of the JPEG metadata format, other varieties of JPEG metadata may be supported (e.g. Exif)
+        by defining other types of nodes which may appear as a child of the JPEGvariety node.
+
+        (Note that an application wishing to interpret Exif metadata given a metadata tree structure in the
+        javax_imageio_jpeg_image_1.0 format must check for an unknown marker segment with a tag indicating an
+        APP1 marker and containing data identifying it as an Exif marker segment. Then it may use application-specific
+        code to interpret the data in the marker segment. If such an application were to encounter a metadata tree
+        formatted according to a future version of the JPEG metadata format, the Exif marker segment might not be
+        unknown in that format - it might be structured as a child node of the JPEGvariety node.
+
+        Thus, it is important for an application to specify which version to use by passing the string identifying
+        the version to the method/constructor used to obtain an IIOMetadata object.)
+         */
+
+        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
+        app2ICC.setUserObject(getEmbeddedICCProfile());
+        jpegVariety.getFirstChild().appendChild(app2ICC);
+
+//        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
+
+        return metadata;
+    }
+
+    @Override
+    public IIOMetadata getStreamMetadata() throws IOException {
+        return delegate.getStreamMetadata();
     }
 
     private static void invertCMYK(final Raster raster) {
@@ -1223,10 +1309,10 @@ public class JPEGImageReader extends ImageReaderBase {
 
 //            image = new ResampleOp(reader.getWidth(0) / 4, reader.getHeight(0) / 4, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
-//                int maxW = 1280;
-//                int maxH = 800;
-                int maxW = 400;
-                int maxH = 400;
+                int maxW = 1280;
+                int maxH = 800;
+//                int maxW = 400;
+//                int maxH = 400;
                 if (image.getWidth() > maxW || image.getHeight() > maxH) {
 //                    start = System.currentTimeMillis();
                     float aspect = reader.getAspectRatio(0);
