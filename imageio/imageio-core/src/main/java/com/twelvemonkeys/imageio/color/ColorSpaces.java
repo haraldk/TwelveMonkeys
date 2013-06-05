@@ -174,6 +174,21 @@ public final class ColorSpaces {
     }
 
     /**
+     * Tests whether an ICC color profile is equal to the default sRGB profile.
+     *
+     * @param profile the ICC profile to test. May not be {@code null}.
+     * @return {@code true} if {@code profile} is equal to the default sRGB profile.
+     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     *
+     * @see java.awt.color.ColorSpace#isCS_sRGB()
+     */
+    public static boolean isCS_sRGB(final ICC_Profile profile) {
+        Validate.notNull(profile, "profile");
+
+        return profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profile.getData(ICC_Profile.icSigHead), sRGB.header);
+    }
+
+    /**
      * Tests whether an ICC color profile is known to cause problems for {@link java.awt.image.ColorConvertOp}.
      * <p />
      * <em>
@@ -229,7 +244,7 @@ public final class ColorSpaces {
 
                         if (profile == null) {
                             // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
-                            // identical for all practical purposes
+                            // which is identical for all practical purposes
                             profile = readProfileFromClasspathResource("/profiles/ClayRGB1998.icc");
 
                             if (profile == null) {
@@ -339,15 +354,19 @@ public final class ColorSpaces {
     private static class sRGB {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData(ICC_Profile.icSigHead);
     }
+
     private static class CIEXYZ {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ).getData(ICC_Profile.icSigHead);
     }
+
     private static class PYCC {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_PYCC).getData(ICC_Profile.icSigHead);
     }
+
     private static class GRAY {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_GRAY).getData(ICC_Profile.icSigHead);
     }
+
     private static class LINEAR_RGB {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB).getData(ICC_Profile.icSigHead);
     }
@@ -361,7 +380,14 @@ public final class ColorSpaces {
                 systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os.id());
             }
             catch (IOException ignore) {
-                ignore.printStackTrace();
+                System.err.printf(
+                        "Warning: Could not load system default ICC profile locations from %s, will use bundled fallback profiles.\n",
+                        ignore.getMessage()
+                );
+                if (DEBUG) {
+                    ignore.printStackTrace();
+                }
+
                 systemDefaults = null;
             }
 
