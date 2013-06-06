@@ -1,5 +1,7 @@
 package com.twelvemonkeys.util.convert;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.io.File;
 import java.net.URI;
 
@@ -47,7 +49,7 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
 
                 // Object array test
                 new Conversion("foo, bar", new FooBar[] {new FooBar("foo"), new FooBar("bar")}),
-                new Conversion("/temp, /usr/local/bin", new File[] {new File("/temp"), new File("/usr/local/bin")}),
+                new Conversion("/temp, /usr/local/bin".replace('/', File.separatorChar), new File[] {new File("/temp"), new File("/usr/local/bin")}),
                 new Conversion("file:/temp, http://java.net/", new URI[] {URI.create("file:/temp"), URI.create("http://java.net/")}),
 
                 // TODO: More tests
@@ -57,13 +59,12 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
     // TODO: Test boolean -> Boolean conversion
 
     public static class FooBar {
-        private final String mBar;
+        private final String bar;
 
         public FooBar(String pFoo) {
-            if (pFoo == null) {
-                throw new IllegalArgumentException("pFoo == null");
-            }
-            mBar = reverse(pFoo);
+            Validate.notNull(pFoo, "foo");
+
+            bar = reverse(pFoo);
         }
 
         private String reverse(String pFoo) {
@@ -77,16 +78,15 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
         }
 
         public String toString() {
-            return reverse(mBar);
+            return reverse(bar);
         }
 
         public boolean equals(Object obj) {
-            return obj == this || (obj instanceof FooBar && ((FooBar) obj).mBar.equals(mBar));
+            return obj == this || (obj != null && obj.getClass() == getClass() && ((FooBar) obj).bar.equals(bar));
         }
 
         public int hashCode() {
-            return 7 * mBar.hashCode();
+            return 7 * bar.hashCode();
         }
     }
-
 }
