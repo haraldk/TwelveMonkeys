@@ -108,13 +108,13 @@ public class BeanUtilTestCase extends TestCase {
         assertEquals(0.3, bean.getDoubleValue());
     }
 
-    public void testConfigureAmbigious1() {
+    public void testConfigureAmbiguous1() {
         TestBean bean = new TestBean();
 
         Map<String, String> map = new HashMap<String, String>();
 
         String value = "one";
-        map.put("ambigious", value);
+        map.put("ambiguous", value);
 
         try {
             BeanUtil.configure(bean, map);
@@ -123,20 +123,20 @@ public class BeanUtilTestCase extends TestCase {
             fail(e.getMessage());
         }
 
-        assertNotNull(bean.getAmbigious());
-        assertEquals("String converted rather than invoking setAmbigiouos(String), ordering not predictable",
-                     "one", bean.getAmbigious());
-        assertSame("String converted rather than invoking setAmbigiouos(String), ordering not predictable",
-                   value, bean.getAmbigious());
+        assertNotNull(bean.getAmbiguous());
+        assertEquals("String converted rather than invoking setAmbiguous(String), ordering not predictable",
+                     "one", bean.getAmbiguous());
+        assertSame("String converted rather than invoking setAmbiguous(String), ordering not predictable",
+                   value, bean.getAmbiguous());
     }
 
-    public void testConfigureAmbigious2() {
+    public void testConfigureAmbiguous2() {
         TestBean bean = new TestBean();
 
         Map<String, Integer> map = new HashMap<String, Integer>();
 
         Integer value = 2;
-        map.put("ambigious", value);
+        map.put("ambiguous", value);
 
         try {
             BeanUtil.configure(bean, map);
@@ -145,20 +145,20 @@ public class BeanUtilTestCase extends TestCase {
             fail(e.getMessage());
         }
 
-        assertNotNull(bean.getAmbigious());
-        assertEquals("Integer converted rather than invoking setAmbigiouos(Integer), ordering not predictable",
-                2, bean.getAmbigious());
-        assertSame("Integer converted rather than invoking setAmbigiouos(Integer), ordering not predictable",
-                   value, bean.getAmbigious());
+        assertNotNull(bean.getAmbiguous());
+        assertEquals("Integer converted rather than invoking setAmbiguous(Integer), ordering not predictable",
+                2, bean.getAmbiguous());
+        assertSame("Integer converted rather than invoking setAmbiguous(Integer), ordering not predictable",
+                   value, bean.getAmbiguous());
     }
 
-    public void testConfigureAmbigious3() {
+    public void testConfigureAmbiguous3() {
         TestBean bean = new TestBean();
 
         Map<String, Double> map = new HashMap<String, Double>();
 
         Double value = .3;
-        map.put("ambigious", value);
+        map.put("ambiguous", value);
 
         try {
             BeanUtil.configure(bean, map);
@@ -167,11 +167,11 @@ public class BeanUtilTestCase extends TestCase {
             fail(e.getMessage());
         }
 
-        assertNotNull(bean.getAmbigious());
-        assertEquals("Object converted rather than invoking setAmbigious(Object), ordering not predictable",
-                     value.getClass(), bean.getAmbigious().getClass());
-        assertSame("Object converted rather than invoking setAmbigious(Object), ordering not predictable",
-                   value, bean.getAmbigious());
+        assertNotNull(bean.getAmbiguous());
+        assertEquals("Object converted rather than invoking setAmbiguous(Object), ordering not predictable",
+                     value.getClass(), bean.getAmbiguous().getClass());
+        assertSame("Object converted rather than invoking setAmbiguous(Object), ordering not predictable",
+                   value, bean.getAmbiguous());
     }
 
     static class TestBean {
@@ -179,7 +179,7 @@ public class BeanUtilTestCase extends TestCase {
         private int intVal;
         private Double doubleVal;
 
-        private Object ambigious;
+        private Object ambiguous;
 
         public Double getDoubleValue() {
             return doubleVal;
@@ -193,36 +193,43 @@ public class BeanUtilTestCase extends TestCase {
             return stringVal;
         }
 
+        @SuppressWarnings("UnusedDeclaration")
         public void setStringValue(String pString) {
             stringVal = pString;
         }
 
+        @SuppressWarnings("UnusedDeclaration")
         public void setIntValue(int pInt) {
             intVal = pInt;
         }
 
+        @SuppressWarnings("UnusedDeclaration")
         public void setDoubleValue(Double pDouble) {
             doubleVal = pDouble;
         }
 
-        public void setAmbigious(String pString) {
-            ambigious = pString;
+        @SuppressWarnings("UnusedDeclaration")
+        public void setAmbiguous(String pString) {
+            ambiguous = pString;
         }
 
-        public void setAmbigious(Object pObject) {
-            ambigious = pObject;
+        @SuppressWarnings("UnusedDeclaration")
+        public void setAmbiguous(Object pObject) {
+            ambiguous = pObject;
         }
 
-        public void setAmbigious(Integer pInteger) {
-            ambigious = pInteger;
+        @SuppressWarnings("UnusedDeclaration")
+        public void setAmbiguous(Integer pInteger) {
+            ambiguous = pInteger;
         }
 
-        public void setAmbigious(int pInt) {
-            ambigious = (long) pInt; // Just to differentiate...
+        @SuppressWarnings("UnusedDeclaration")
+        public void setAmbiguous(int pInt) {
+            ambiguous = (long) pInt; // Just to differentiate...
         }
 
-        public Object getAmbigious() {
-            return ambigious;
+        public Object getAmbiguous() {
+            return ambiguous;
         }
     }
 }
