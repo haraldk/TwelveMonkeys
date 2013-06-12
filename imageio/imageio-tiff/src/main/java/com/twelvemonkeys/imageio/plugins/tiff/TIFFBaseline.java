@@ -37,7 +37,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
  */
 interface TIFFBaseline {
     int COMPRESSION_NONE = 1;
-    int COMPRESSION_CCITT_HUFFMAN = 2;
+    int COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE = 2;
     int COMPRESSION_PACKBITS = 32773;
 
     int PHOTOMETRIC_WHITE_IS_ZERO = 0;

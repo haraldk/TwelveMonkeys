@@ -106,16 +106,16 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Source region (*tests should be failing*)
     // TODO: TIFFImageWriter + Spi
 
+    // TODOs Full BaseLine support:
+    // TODO: Support ExtraSamples (an array, if multiple extra samples!)
+    //       (0: Unspecified (not alpha), 1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
+
     // TODOs ImageIO advanced functionality:
     // TODO: Implement readAsRenderedImage to allow tiled renderImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
     // TODO: Implement readAsRaster directly
     // TODO: IIOMetadata (stay close to Sun's TIFF metadata)
-
-    // TODOs Full BaseLine support:
-    // TODO: Support ExtraSamples (an array, if multiple extra samples!)
-    //       (0: Unspecified (not alpha), 1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
-    // TODO: Support Compression 2 (CCITT Modified Huffman) for bi-level images
+    // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
 
     // TODOs Extension support
     // TODO: Support PlanarConfiguration 2
@@ -127,6 +127,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // DONE:
     // Handle SampleFormat (and give up if not == 1)
     // Support Compression 6 ('Old-style' JPEG)
+    // Support Compression 2 (CCITT Modified Huffman RLE) for bi-level images
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
@@ -175,7 +176,7 @@ public class TIFFImageReader extends ImageReaderBase {
         return IFDs.directoryCount();
     }
 
-    private int getValueAsIntWithDefault(final int tag, String tagName, Integer defaultValue) throws IIOException {
+    private Number getValueAsNumberWithDefault(final int tag, final String tagName, final Number defaultValue) throws IIOException {
         Entry entry = currentIFD.getEntryById(tag);
 
         if (entry == null) {
@@ -186,7 +187,19 @@ public class TIFFImageReader extends ImageReaderBase {
             throw new IIOException("Missing TIFF tag: " + (tagName != null ? tagName : tag));
         }
 
-        return ((Number) entry.getValue()).intValue();
+        return (Number) entry.getValue();
+    }
+
+    private long getValueAsLongWithDefault(final int tag, final String tagName, final Long defaultValue) throws IIOException {
+        return getValueAsNumberWithDefault(tag, tagName, defaultValue).longValue();
+    }
+
+    private long getValueAsLongWithDefault(final int tag, final Long defaultValue) throws IIOException {
+        return getValueAsLongWithDefault(tag, null, defaultValue);
+    }
+
+    private int getValueAsIntWithDefault(final int tag, final String tagName, final Integer defaultValue) throws IIOException {
+        return getValueAsNumberWithDefault(tag, tagName, defaultValue).intValue();
     }
 
     private int getValueAsIntWithDefault(final int tag, Integer defaultValue) throws IIOException {
@@ -364,7 +377,6 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.PHOTOMETRIC_MASK:
                 // Transparency mask
 
-                // TODO: Known extensions
                 throw new IIOException("Unsupported TIFF PhotometricInterpretation value: " + interpretation);
             default:
                 throw new IIOException("Unknown TIFF PhotometricInterpretation value: " + interpretation);
@@ -464,7 +476,9 @@ public class TIFFImageReader extends ImageReaderBase {
         // NOTE: We handle strips as tiles of tileWidth == width by tileHeight == rowsPerStrip
         //       Strips are top/down, tiles are left/right, top/down
         int stripTileWidth = width;
-        int stripTileHeight = getValueAsIntWithDefault(TIFF.TAG_ROWS_PER_STRIP, height);
+        long rowsPerStrip = getValueAsLongWithDefault(TIFF.TAG_ROWS_PER_STRIP, (1l << 32) - 1);
+        int stripTileHeight = rowsPerStrip < height ? (int) rowsPerStrip : height;
+
         long[] stripTileOffsets = getValueAsLongArray(TIFF.TAG_TILE_OFFSETS, "TileOffsets", false);
         long[] stripTileByteCounts;
 
@@ -507,6 +521,13 @@ public class TIFFImageReader extends ImageReaderBase {
                 // LZW
             case TIFFExtension.COMPRESSION_ZLIB:
                 // 'Adobe-style' Deflate
+            case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+                // CCITT modified Huffman
+                // Additionally, the specification defines these values as part of the TIFF extensions:
+//            case TIFFExtension.COMPRESSION_CCITT_T4:
+                // CCITT Group 3 fax encoding
+//            case TIFFExtension.COMPRESSION_CCITT_T6:
+                // CCITT Group 4 fax encoding
 
                 int[] yCbCrSubsampling = null;
                 int yCbCrPos = 1;
@@ -585,7 +606,8 @@ public class TIFFImageReader extends ImageReaderBase {
                                     ? IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts[i])
                                     : IIOUtil.createStreamAdapter(imageInput);
 
-                            adapter = createDecoderInputStream(compression, adapter);
+                            adapter = createDecompressorStream(compression, width, adapter);
+                            adapter = createUnpredictorStream(predictor, width, planarConfiguration == 2 ? 1 : raster.getNumBands(), getBitsPerSample(), adapter, imageInput.getByteOrder());
 
                             if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
                                 adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, yCbCrCoefficients);
@@ -598,7 +620,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
 
                         // Read a full strip/tile
-                        readStripTileData(rowRaster, interpretation, predictor, raster, numBands, col, row, colsInTile, rowsInTile, input);
+                        readStripTileData(rowRaster, interpretation, raster, col, row, colsInTile, rowsInTile, input);
 
                         if (abortRequested()) {
                             break;
@@ -917,13 +939,27 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 break;
 
-            case TIFFBaseline.COMPRESSION_CCITT_HUFFMAN:
-                // CCITT modified Huffman
                 // Additionally, the specification defines these values as part of the TIFF extensions:
             case TIFFExtension.COMPRESSION_CCITT_T4:
                 // CCITT Group 3 fax encoding
             case TIFFExtension.COMPRESSION_CCITT_T6:
                 // CCITT Group 4 fax encoding
+
+                // Known, but unsupported compression types
+            case TIFFCustom.COMPRESSION_NEXT:
+            case TIFFCustom.COMPRESSION_CCITTRLEW:
+            case TIFFCustom.COMPRESSION_THUNDERSCAN:
+            case TIFFCustom.COMPRESSION_IT8CTPAD:
+            case TIFFCustom.COMPRESSION_IT8LW:
+            case TIFFCustom.COMPRESSION_IT8MP:
+            case TIFFCustom.COMPRESSION_IT8BL:
+            case TIFFCustom.COMPRESSION_PIXARFILM:
+            case TIFFCustom.COMPRESSION_PIXARLOG:
+            case TIFFCustom.COMPRESSION_DCS:
+            case TIFFCustom.COMPRESSION_JBIG: // Doable with JBIG plugin?
+            case TIFFCustom.COMPRESSION_SGILOG:
+            case TIFFCustom.COMPRESSION_SGILOG24:
+            case TIFFCustom.COMPRESSION_JPEG2000: // Doable with JPEG2000 plugin?
 
                 throw new IIOException("Unsupported TIFF Compression value: " + compression);
             default:
@@ -1004,8 +1040,8 @@ public class TIFFImageReader extends ImageReaderBase {
         return stream.createInputStream();
     }
 
-    private void readStripTileData(final WritableRaster rowRaster, final int interpretation, final int predictor,
-                                   final WritableRaster raster, final int numBands, final int col, final int startRow,
+    private void readStripTileData(final WritableRaster rowRaster, final int interpretation,
+                                   final WritableRaster raster, final int col, final int startRow,
                                    final int colsInStrip, final int rowsInStrip, final DataInput input)
             throws IOException {
         switch (rowRaster.getTransferType()) {
@@ -1020,8 +1056,6 @@ public class TIFFImageReader extends ImageReaderBase {
                     }
 
                     input.readFully(rowData);
-
-                    unPredict(predictor, colsInStrip, 1, numBands, rowData);
                     normalizeBlack(interpretation, rowData);
 
                     if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
@@ -1048,7 +1082,6 @@ public class TIFFImageReader extends ImageReaderBase {
                         rowDataShort[k] = input.readShort();
                     }
 
-                    unPredict(predictor, colsInStrip, 1, numBands, rowDataShort);
                     normalizeBlack(interpretation, rowDataShort);
 
                     if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
@@ -1075,7 +1108,6 @@ public class TIFFImageReader extends ImageReaderBase {
                         rowDataInt[k] = input.readInt();
                     }
 
-                    unPredict(predictor, colsInStrip, 1, numBands, rowDataInt);
                     normalizeBlack(interpretation, rowDataInt);
 
                     if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
@@ -1118,61 +1150,7 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    @SuppressWarnings("UnusedParameters")
-    private void unPredict(final int predictor, int scanLine, int rows, int bands, int[] data) throws IIOException {
-        // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
-        switch (predictor) {
-            case TIFFBaseline.PREDICTOR_NONE:
-                break;
-            case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
-                // TODO: Implement
-            case TIFFExtension.PREDICTOR_HORIZONTAL_FLOATINGPOINT:
-                throw new IIOException("Unsupported TIFF Predictor value: " + predictor);
-            default:
-                throw new IIOException("Unknown TIFF Predictor value: " + predictor);
-        }
-    }
-
-    @SuppressWarnings("UnusedParameters")
-    private void unPredict(final int predictor, int scanLine, int rows, int bands, short[] data) throws IIOException {
-        // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
-        switch (predictor) {
-            case TIFFBaseline.PREDICTOR_NONE:
-                break;
-            case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
-                // TODO: Implement
-            case TIFFExtension.PREDICTOR_HORIZONTAL_FLOATINGPOINT:
-                throw new IIOException("Unsupported TIFF Predictor value: " + predictor);
-            default:
-                throw new IIOException("Unknown TIFF Predictor value: " + predictor);
-        }
-    }
-
-    private void unPredict(final int predictor, int scanLine, int rows, final int bands, byte[] data) throws IIOException {
-        // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
-        switch (predictor) {
-            case TIFFBaseline.PREDICTOR_NONE:
-                break;
-            case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
-                for (int y = 0; y < rows; y++) {
-                    for (int x = 1; x < scanLine; x++) {
-                        // TODO: For planar data (PlanarConfiguration == 2), treat as bands == 1
-                        for (int b = 0; b < bands; b++) {
-                            int off = y * scanLine + x;
-                            data[off * bands + b] = (byte) (data[(off - 1) * bands + b] + data[off * bands + b]);
-                        }
-                    }
-                }
-
-                break;
-            case TIFFExtension.PREDICTOR_HORIZONTAL_FLOATINGPOINT:
-                throw new IIOException("Unsupported TIFF Predictor value: " + predictor);
-            default:
-                throw new IIOException("Unknown TIFF Predictor value: " + predictor);
-        }
-    }
-
-    private InputStream createDecoderInputStream(final int compression, final InputStream stream) throws IOException {
+    private InputStream createDecompressorStream(final int compression, final int width, final InputStream stream) throws IOException {
         switch (compression) {
             case TIFFBaseline.COMPRESSION_NONE:
                 return stream;
@@ -1181,11 +1159,28 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_LZW:
                 return new DecoderStream(stream, LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), 1024);
             case TIFFExtension.COMPRESSION_ZLIB:
-            case TIFFExtension.COMPRESSION_DEFLATE:
                 // TIFFphotoshop.pdf (aka TIFF specification, supplement 2) says ZLIB (8) and DEFLATE (32946) algorithms are identical
+            case TIFFExtension.COMPRESSION_DEFLATE:
                 return new InflaterInputStream(stream, new Inflater(), 1024);
+            case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+            case TIFFExtension.COMPRESSION_CCITT_T4:
+            case TIFFExtension.COMPRESSION_CCITT_T6:
+                return new CCITTFaxDecoderStream(stream, width, compression, getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1));
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
+        }
+    }
+
+    private InputStream createUnpredictorStream(final int predictor, final int width, final int samplesPerPixel, final int bitsPerSample, final InputStream stream, final ByteOrder byteOrder) throws IOException {
+        switch (predictor) {
+            case TIFFBaseline.PREDICTOR_NONE:
+                return stream;
+            case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
+                return new HorizontalDeDifferencingStream(stream, width, samplesPerPixel, bitsPerSample, byteOrder);
+            case TIFFExtension.PREDICTOR_HORIZONTAL_FLOATINGPOINT:
+                throw new IIOException("Unsupported TIFF Predictor value: " + predictor);
+            default:
+                throw new IIOException("Unknown TIFF Predictor value: " + predictor);
         }
     }
 
