@@ -41,13 +41,11 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
-import org.w3c.dom.Node;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -65,8 +63,8 @@ import java.util.List;
  * <p/>
  * Main features:
  * <ul>
- * <li>Support for CMYK JPEGs (converted to RGB by default, using the embedded ICC profile if applicable)</li>
- * <li>Support for Adobe YCCK JPEGs (converted to RGB by default, using the embedded ICC profile if applicable)</li>
+ * <li>Support for CMYK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)</li>
+ * <li>Support for Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)</li>
  * <li>Support for JPEGs containing ICC profiles with interpretation other than 'Perceptual' (profile is assumed to be 'Perceptual' and used)</li>
  * <li>Support for JPEGs containing ICC profiles with class other than 'Display' (profile is assumed to have class 'Display' and used)</li>
  * <li>Support for JPEGs containing ICC profiles that are incompatible with stream data (image data is read, profile is ignored)</li>
@@ -202,7 +200,7 @@ public class JPEGImageReader extends ImageReaderBase {
             typeList.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
 
             // We also read and return CMYK if the source image is CMYK/YCCK + original color profile if present
-            ICC_Profile profile = getEmbeddedICCProfile();
+            ICC_Profile profile = getEmbeddedICCProfile(false);
 
             if (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
                 if (profile != null) {
@@ -251,7 +249,7 @@ public class JPEGImageReader extends ImageReaderBase {
         switch (csType) {
             case CMYK:
                 // Create based on embedded profile if exists, or create from "Generic CMYK"
-                ICC_Profile profile = getEmbeddedICCProfile();
+                ICC_Profile profile = getEmbeddedICCProfile(false);
 
                 if (profile != null) {
                     return ImageTypeSpecifier.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
@@ -287,7 +285,7 @@ public class JPEGImageReader extends ImageReaderBase {
         // Might want to look into the metadata, to see if there's a better way to identify these.
         boolean unsupported = !delegate.getImageTypes(imageIndex).hasNext();
 
-        ICC_Profile profile = getEmbeddedICCProfile();
+        ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
 
         // TODO: Probably something bogus here, as ICC profile isn't applied if reading through the delegate any more...
@@ -761,7 +759,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return data;
     }
 
-    private ICC_Profile getEmbeddedICCProfile() throws IOException {
+    private ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
@@ -799,13 +797,19 @@ public class JPEGImageReader extends ImageReaderBase {
                 // Handle these by issuing warning
                 processWarningOccurred(String.format("Bad 'ICC_PROFILE' chunk count: %d. Ignoring ICC profile.", chunkCount));
                 badICC = true;
-                return null;
+
+                if (!allowBadIndexes) {
+                    return null;
+                }
             }
 
             if (!badICC && chunkNumber < 1) {
                 // Anything else is just ignored
                 processWarningOccurred(String.format("Invalid 'ICC_PROFILE' chunk index: %d. Ignoring ICC profile.", chunkNumber));
-                return null;
+
+                if (!allowBadIndexes) {
+                    return null;
+                }
             }
 
             int count = badICC ? segments.size() : chunkCount;
@@ -969,8 +973,8 @@ public class JPEGImageReader extends ImageReaderBase {
         // TODO: Nice try, but no cigar.. getAsTree does not return a "live" view, so any modifications are thrown away
         IIOMetadata metadata = delegate.getImageMetadata(imageIndex);
 
-        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
-        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
+//        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
+//        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
 
         // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
         // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
@@ -992,11 +996,11 @@ public class JPEGImageReader extends ImageReaderBase {
         the version to the method/constructor used to obtain an IIOMetadata object.)
          */
 
-        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
-        app2ICC.setUserObject(getEmbeddedICCProfile());
-        jpegVariety.getFirstChild().appendChild(app2ICC);
+//        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
+//        app2ICC.setUserObject(getEmbeddedICCProfile());
+//        jpegVariety.getFirstChild().appendChild(app2ICC);
 
-//        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
+    //        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
 
         return metadata;
     }

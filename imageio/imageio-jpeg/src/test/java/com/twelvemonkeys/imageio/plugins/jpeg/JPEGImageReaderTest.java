@@ -31,10 +31,12 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Test;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -256,7 +258,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(16, image.getHeight());
 
         // TODO: Need to test colors!
-        
+
         assertTrue(reader.hasThumbnails(0)); // Should not blow up!
     }
 
@@ -372,7 +374,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // JFIF with JFXX JPEG encoded thumbnail
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg")));
-        
+
         assertTrue(reader.hasThumbnails(0));
         assertEquals(1, reader.getNumThumbnails(0));
         assertEquals(80, reader.getThumbnailWidth(0, 0));
@@ -458,8 +460,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         for (int i = 0; i < strip.getWidth() / 128; i++) {
             int actualRGB = strip.getRGB(i * 128, 4);
             assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
-            assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
-            assertEquals((actualRGB)       & 0xff, (expectedRGB[i])       & 0xff, 5);
+            assertEquals((actualRGB >> 8) & 0xff, (expectedRGB[i] >> 8) & 0xff, 5);
+            assertEquals((actualRGB) & 0xff, (expectedRGB[i]) & 0xff, 5);
         }
     }
 
@@ -488,8 +490,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         for (int i = 0; i < thumbnail.getWidth() / 8; i++) {
             int actualRGB = thumbnail.getRGB(i * 8, 4);
             assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
-            assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
-            assertEquals((actualRGB)       & 0xff, (expectedRGB[i])       & 0xff, 5);
+            assertEquals((actualRGB >> 8) & 0xff, (expectedRGB[i] >> 8) & 0xff, 5);
+            assertEquals((actualRGB) & 0xff, (expectedRGB[i]) & 0xff, 5);
         }
     }
 
@@ -550,7 +552,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample-no-icc.jpg"), new Dimension(100, 100))
         );
 
-
         for (TestData data : cmykData) {
             reader.setInput(data.getInputStream());
 
@@ -600,4 +601,24 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     // TODO: Test RGBA/YCbCrA handling
+
+    @Test
+    public void testReadMetadataMaybeNull() throws IOException {
+        // Just test that we can read the metadata without exceptions
+        JPEGImageReader reader = createReader();
+
+        for (TestData testData : getTestData()) {
+            reader.setInput(testData.getInputStream());
+
+            for (int i = 0; i < reader.getNumImages(true); i++) {
+                try {
+                    IIOMetadata metadata = reader.getImageMetadata(i);
+                    assertNotNull(String.format("Image metadata null for %s image %s", testData, i), metadata);
+                }
+                catch (IIOException e) {
+                    System.err.println(String.format("WARNING: Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
+                }
+            }
+        }
+    }
 }
