@@ -45,7 +45,7 @@
         <module>imageio-jmagick</module>
 
         <!-- Test cases for the JRE provided ImageIO plugins -->
-        <module>imageio-reference</module>        
+        <module>imageio-reference</module>
     </modules>
 
     <properties>
@@ -90,6 +90,7 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>1.8.5</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -115,5 +116,5 @@
                 <scope>test</scope>
             </dependency>
         </dependencies>
-    </dependencyManagement>    
+    </dependencyManagement>
 </project>
