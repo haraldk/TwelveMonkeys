@@ -29,7 +29,7 @@
             <artifactId>common-image</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-lang</artifactId>
@@ -65,7 +65,7 @@
             <version>1.2.14</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>commons-fileupload</groupId>
             <artifactId>commons-fileupload</artifactId>
@@ -84,6 +84,7 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>1.8.5</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -117,5 +118,5 @@
             </plugin>
         </plugins>
     </build>
-    
+
 </project>
