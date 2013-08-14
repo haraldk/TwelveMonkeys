@@ -1,13 +1,15 @@
 package com.twelvemonkeys.servlet;
 
 import com.twelvemonkeys.util.MapAbstractTestCase;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 import javax.servlet.*;
-import java.util.*;
-import java.io.Serializable;
 import java.io.InputStream;
-import java.net.URL;
+import java.io.Serializable;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.*;
 
 /**
  * ServletConfigMapAdapterTestCase
@@ -16,7 +18,12 @@ import java.net.MalformedURLException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/ServletConfigMapAdapterTestCase.java#3 $
  */
-public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCase {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({AbstractServletConfigMapAdapterTest.ServletConfigMapTest.class, AbstractServletConfigMapAdapterTest.FilterConfigMapTest.class, AbstractServletConfigMapAdapterTest.ServletContextMapTest.class})
+public final class ServletConfigMapAdapterTest {
+}
+
+abstract class AbstractServletConfigMapAdapterTest extends MapAbstractTestCase {
 
     public boolean isPutAddSupported() {
         return false;
@@ -148,7 +155,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
     }
 
-    public static final class ServletConfigMapTestCase extends ServletConfigMapAdapterTestCase {
+    public static final class ServletConfigMapTest extends AbstractServletConfigMapAdapterTest {
 
         public Map makeEmptyMap() {
             ServletConfig config = new TestConfig();
@@ -162,7 +169,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
     }
 
-    public static final class FilterConfigMapTestCase extends ServletConfigMapAdapterTestCase {
+    public static final class FilterConfigMapTest extends AbstractServletConfigMapAdapterTest {
 
         public Map makeEmptyMap() {
             FilterConfig config = new TestConfig();
@@ -176,7 +183,7 @@ public abstract class ServletConfigMapAdapterTestCase extends MapAbstractTestCas
         }
     }
 
-    public static final class ServletContextMapTestCase extends ServletConfigMapAdapterTestCase {
+    public static final class ServletContextMapTest extends AbstractServletConfigMapAdapterTest {
 
         public Map makeEmptyMap() {
             ServletContext config = new TestConfig();

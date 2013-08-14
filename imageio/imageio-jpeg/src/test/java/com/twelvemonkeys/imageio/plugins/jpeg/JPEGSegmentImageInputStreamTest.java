@@ -135,4 +135,27 @@ public class JPEGSegmentImageInputStreamTest {
 
         assertEquals(9299l, length); // Sanity check: same as file size
     }
+
+    @Test
+    public void testReadPaddedSegmentsBug() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-padded-segments.jpg")));
+
+        List<JPEGSegment> appSegments = JPEGSegmentUtil.readSegments(stream, JPEGSegmentUtil.APP_SEGMENTS);
+        assertEquals(2, appSegments.size());
+
+        assertEquals(JPEG.APP0, appSegments.get(0).marker());
+        assertEquals("JFIF", appSegments.get(0).identifier());
+
+        assertEquals(JPEG.APP1, appSegments.get(1).marker());
+        assertEquals("Exif", appSegments.get(1).identifier());
+
+        stream.seek(0l);
+
+        long length = 0;
+        while (stream.read() != -1) {
+            length++;
+        }
+
+        assertEquals(1079L, length); // Sanity check: same as file size, except padding and the filtered ICC_PROFILE segment
+    }
 }

@@ -39,7 +39,7 @@ import java.util.Hashtable;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/ImageUtil.java#3 $
+ * @version $Id: common/common-image/src/main/java/com/twelvemonkeys/image/ImageUtil.java#3 $
  */
 public final class ImageUtil {
     // TODO: Split palette generation out, into ColorModel classes (?)
@@ -175,18 +175,11 @@ public final class ImageUtil {
 
     /** Our static image tracker */
     private static MediaTracker sTracker = new MediaTracker(NULL_COMPONENT);
-    //private static Object sTrackerMutex = new Object();
-
-    /** Image id used by the image tracker */
-    //private static int sTrackerId = 0;
 
     /** */
     protected static final AffineTransform IDENTITY_TRANSFORM = new AffineTransform();
     /** */
     protected static final Point LOCATION_UPPER_LEFT = new Point(0, 0);
-
-    /** */
-    private static final boolean COLORMODEL_TRANSFERTYPE_SUPPORTED = isColorModelTransferTypeSupported();
 
     /** */
     private static final GraphicsConfiguration DEFAULT_CONFIGURATION = getDefaultGraphicsConfiguration();
@@ -207,22 +200,6 @@ public final class ImageUtil {
 
     /** Creates an ImageUtil. Private constructor. */
     private ImageUtil() {
-    }
-
-    /**
-     * Tests if {@code ColorModel} has a {@code getTransferType} method.
-     *
-     * @return {@code true} if {@code ColorModel} has a
-     * {@code getTransferType} method
-     */
-    private static boolean isColorModelTransferTypeSupported() {
-        try {
-            ColorModel.getRGBdefault().getTransferType();
-            return true;
-        }
-        catch (Throwable t) {
-            return false;
-        }
     }
 
     /**
@@ -382,7 +359,7 @@ public final class ImageUtil {
 
     /**
      * Creates a copy of the given image. The image will have the same
-     * colormodel and raster type, but will not share image (pixel) data.
+     * color model and raster type, but will not share image (pixel) data.
      *
      * @param pImage the image to clone.
      *
@@ -412,11 +389,11 @@ public final class ImageUtil {
      * <p/>
      * This method is optimized for the most common cases of {@code ColorModel}
      * and pixel data combinations. The raster's backing {@code DataBuffer} is
-     * created directly from the pixel data, as this is faster and with more
+     * created directly from the pixel data, as this is faster and more
      * resource-friendly than using
      * {@code ColorModel.createCompatibleWritableRaster(w, h)}.
      * <p/>
-     * For unknown combinations, the method will fallback to using
+     * For uncommon combinations, the method will fallback to using
      * {@code ColorModel.createCompatibleWritableRaster(w, h)} and
      * {@code WritableRaster.setDataElements(w, h, pixels)}
      * <p/>
@@ -442,8 +419,8 @@ public final class ImageUtil {
      */
     static WritableRaster createRaster(int pWidth, int pHeight, Object pPixels, ColorModel pColorModel) {
         // NOTE: This is optimized code for most common cases.
-        // We create a DataBuffer with the array from grabber.getPixels()
-        // directly, and creating a raster based on the ColorModel.
+        // We create a DataBuffer from the pixel array directly,
+        // and creating a raster based on the DataBuffer and ColorModel.
         // Creating rasters this way is faster and more resource-friendly, as
         // cm.createCompatibleWritableRaster allocates an
         // "empty" DataBuffer with a storage array of w*h. This array is
@@ -457,14 +434,12 @@ public final class ImageUtil {
         if (pPixels instanceof int[]) {
             int[] data = (int[]) pPixels;
             buffer = new DataBufferInt(data, data.length);
-            //bands = data.length / (w * h);
             bands = pColorModel.getNumComponents();
         }
         else if (pPixels instanceof short[]) {
             short[] data = (short[]) pPixels;
             buffer = new DataBufferUShort(data, data.length);
             bands = data.length / (pWidth * pHeight);
-            //bands = cm.getNumComponents();
         }
         else if (pPixels instanceof byte[]) {
             byte[] data = (byte[]) pPixels;
@@ -477,47 +452,30 @@ public final class ImageUtil {
             else {
                 bands = data.length / (pWidth * pHeight);
             }
-
-            //bands = pColorModel.getNumComponents();
-            //System.out.println("Pixels: " + data.length + " (" + buffer.getSize() + ")");
-            //System.out.println("w*h*bands: " + (pWidth * pHeight * bands));
-            //System.out.println("Bands: " + bands);
-            //System.out.println("Numcomponents: " + pColorModel.getNumComponents());
         }
         else {
-            //System.out.println("Fallback!");
             // Fallback mode, slower & requires more memory, but compatible
             bands = -1;
 
-            // Create raster from colormodel, w and h
+            // Create raster from color model, w and h
             raster = pColorModel.createCompatibleWritableRaster(pWidth, pHeight);
             raster.setDataElements(0, 0, pWidth, pHeight, pPixels); // Note: This is known to throw ClassCastExceptions..
         }
 
-        //System.out.println("Bands: " + bands);
-        //System.out.println("Pixels: " + pixels.getClass() + " length: " + buffer.getSize());
-        //System.out.println("Needed Raster: " + cm.createCompatibleWritableRaster(1, 1));
-
         if (raster == null) {
-            //int bits = cm.getPixelSize();
-            //if (bits > 4) {
             if (pColorModel instanceof IndexColorModel && isIndexedPacked((IndexColorModel) pColorModel)) {
-                //System.out.println("Creating packed indexed model");
                 raster = Raster.createPackedRaster(buffer, pWidth, pHeight, pColorModel.getPixelSize(), LOCATION_UPPER_LEFT);
             }
             else if (pColorModel instanceof PackedColorModel) {
-                //System.out.println("Creating packed model");
                 PackedColorModel pcm = (PackedColorModel) pColorModel;
                 raster = Raster.createPackedRaster(buffer, pWidth, pHeight, pWidth, pcm.getMasks(), LOCATION_UPPER_LEFT);
             }
             else {
-                //System.out.println("Creating interleaved model");
                 // (A)BGR order... For TYPE_3BYTE_BGR/TYPE_4BYTE_ABGR/TYPE_4BYTE_ABGR_PRE.
                 int[] bandsOffsets = new int[bands];
                 for (int i = 0; i < bands;) {
                     bandsOffsets[i] = bands - (++i);
                 }
-                //System.out.println("zzz Data array: " + buffer.getSize());
 
                 raster = Raster.createInterleavedRaster(buffer, pWidth, pHeight, pWidth * bands, bands, bandsOffsets, LOCATION_UPPER_LEFT);
             }
@@ -849,11 +807,13 @@ public final class ImageUtil {
             BufferedImage temp = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
             if (cm instanceof IndexColorModel && pHints == Image.SCALE_SMOOTH) {
+                // TODO: DiffusionDither does not support transparency at the moment, this will create bad results
                 new DiffusionDither((IndexColorModel) cm).filter(scaled, temp);
             }
             else {
                 drawOnto(temp, scaled);
             }
+
             scaled = temp;
             //long end = System.currentTimeMillis();
             //System.out.println("Time: " + (end - start) + " ms");
@@ -1140,26 +1100,26 @@ public final class ImageUtil {
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
      * <TABLE border="1" cellspacing="0">
-     * <TR><TD>0.0</TD><TD>-{@code pAmmount}</TD><TD>0.0</TD></TR>
-     * <TR><TD>-{@code pAmmount}</TD>
-     *     <TD>4.0 * {@code pAmmount} + 1.0</TD>
-     *     <TD>-{@code pAmmount}</TD></TR>
-     * <TR><TD>0.0</TD><TD>-{@code pAmmount}</TD><TD>0.0</TD></TR>
+     * <TR><TD>0.0</TD><TD>-{@code pAmount}</TD><TD>0.0</TD></TR>
+     * <TR><TD>-{@code pAmount}</TD>
+     *     <TD>4.0 * {@code pAmount} + 1.0</TD>
+     *     <TD>-{@code pAmount}</TD></TR>
+     * <TR><TD>0.0</TD><TD>-{@code pAmount}</TD><TD>0.0</TD></TR>
      * </TABLE>
      *
      * @param pOriginal the BufferedImage to sharpen
-     * @param pAmmount the ammount of sharpening
+     * @param pAmount the amount of sharpening
      *
      * @return a BufferedImage, containing the sharpened image.
      */
-    public static BufferedImage sharpen(BufferedImage pOriginal, float pAmmount) {
-        if (pAmmount == 0f) {
+    public static BufferedImage sharpen(BufferedImage pOriginal, float pAmount) {
+        if (pAmount == 0f) {
             return pOriginal;
         }
 
         // Create the convolution matrix
         float[] data = new float[] {
-            0.0f, -pAmmount, 0.0f, -pAmmount, 4f * pAmmount + 1f, -pAmmount, 0.0f, -pAmmount, 0.0f
+            0.0f, -pAmount, 0.0f, -pAmount, 4f * pAmount + 1f, -pAmount, 0.0f, -pAmount, 0.0f
         };
 
         // Do the filtering
@@ -1185,7 +1145,7 @@ public final class ImageUtil {
      * Creates a blurred version of the given image.
      *
      * @param pOriginal the original image
-     * @param pRadius the ammount to blur
+     * @param pRadius the amount to blur
      *
      * @return a new {@code BufferedImage} with a blurred version of the given image
      */
@@ -1198,18 +1158,18 @@ public final class ImageUtil {
         // See: http://en.wikipedia.org/wiki/Gaussian_blur#Implementation
         // Also see http://www.jhlabs.com/ip/blurring.html
 
-        // TODO: Rethink... Fixed ammount and scale matrix instead?
-//        pAmmount = 1f - pAmmount;
-//        float pAmmount = 1f - pRadius;
+        // TODO: Rethink... Fixed amount and scale matrix instead?
+//        pAmount = 1f - pAmount;
+//        float pAmount = 1f - pRadius;
 //
-//        // Normalize ammount
-//        float normAmt = (1f - pAmmount) / 24;
+//        // Normalize amount
+//        float normAmt = (1f - pAmount) / 24;
 //
 //        // Create the convolution matrix
 //        float[] data = new float[] {
 //            normAmt / 2, normAmt, normAmt, normAmt, normAmt / 2,
 //            normAmt, normAmt, normAmt * 2, normAmt, normAmt,
-//            normAmt, normAmt * 2, pAmmount, normAmt * 2, normAmt,
+//            normAmt, normAmt * 2, pAmount, normAmt * 2, normAmt,
 //            normAmt, normAmt, normAmt * 2, normAmt, normAmt,
 //            normAmt / 2, normAmt, normAmt, normAmt, normAmt / 2
 //        };
@@ -1391,18 +1351,18 @@ public final class ImageUtil {
      * Changes the contrast of the image
      *
      * @param pOriginal the {@code Image} to change
-     * @param pAmmount the ammount of contrast in the range [-1.0..1.0].
+     * @param pAmount the amount of contrast in the range [-1.0..1.0].
      *
      * @return an {@code Image}, containing the contrasted image.
      */
-    public static Image contrast(Image pOriginal, float pAmmount) {
+    public static Image contrast(Image pOriginal, float pAmount) {
         // No change, return original
-        if (pAmmount == 0f) {
+        if (pAmount == 0f) {
             return pOriginal;
         }
 
         // Create filter
-        RGBImageFilter filter = new BrightnessContrastFilter(0f, pAmmount);
+        RGBImageFilter filter = new BrightnessContrastFilter(0f, pAmount);
 
         // Return contrast adjusted image
         return filter(pOriginal, filter);
@@ -1413,18 +1373,18 @@ public final class ImageUtil {
      * Changes the brightness of the original image.
      *
      * @param pOriginal the {@code Image} to change
-     * @param pAmmount the ammount of brightness in the range [-2.0..2.0].
+     * @param pAmount the amount of brightness in the range [-2.0..2.0].
      *
      * @return an {@code Image}
      */
-    public static Image brightness(Image pOriginal, float pAmmount) {
+    public static Image brightness(Image pOriginal, float pAmount) {
         // No change, return original
-        if (pAmmount == 0f) {
+        if (pAmount == 0f) {
             return pOriginal;
         }
 
         // Create filter
-        RGBImageFilter filter = new BrightnessContrastFilter(pAmmount, 0f);
+        RGBImageFilter filter = new BrightnessContrastFilter(pAmount, 0f);
 
         // Return brightness adjusted image
         return filter(pOriginal, filter);
@@ -1465,7 +1425,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Tries to use H/W-accellerated code for an image for display purposes.
+     * Tries to use H/W-accelerated code for an image for display purposes.
      * Note that transparent parts of the image might be replaced by solid
      * color. Additional image information not used by the current diplay
      * hardware may be discarded, like extra bith depth etc.
@@ -1478,7 +1438,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Tries to use H/W-accellerated code for an image for display purposes.
+     * Tries to use H/W-accelerated code for an image for display purposes.
      * Note that transparent parts of the image might be replaced by solid
      * color. Additional image information not used by the current diplay
      * hardware may be discarded, like extra bith depth etc.
@@ -1494,7 +1454,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Tries to use H/W-accellerated code for an image for display purposes.
+     * Tries to use H/W-accelerated code for an image for display purposes.
      * Note that transparent parts of the image will be replaced by solid
      * color. Additional image information not used by the current diplay
      * hardware may be discarded, like extra bith depth etc.
@@ -1784,7 +1744,7 @@ public final class ImageUtil {
      * @param pTimeOut the time to wait, in milliseconds.
      *
      * @return true if the image was loaded successfully, false if an error
-     *         occured, or the wait was interrupted.
+     *         occurred, or the wait was interrupted.
      *
      * @see #waitForImages(Image[],long)
      */
@@ -1799,7 +1759,7 @@ public final class ImageUtil {
      * @param pImages an array of Image objects to wait for.
      *
      * @return true if the images was loaded successfully, false if an error
-     *         occured, or the wait was interrupted.
+     *         occurred, or the wait was interrupted.
      *
      * @see #waitForImages(Image[],long)
      */
@@ -1815,7 +1775,7 @@ public final class ImageUtil {
      * @param pTimeOut the time to wait, in milliseconds
      *
      * @return true if the images was loaded successfully, false if an error
-     *         occured, or the wait was interrupted.
+     *         occurred, or the wait was interrupted.
      */
     public static boolean waitForImages(Image[] pImages, long pTimeOut) {
         // TODO: Need to make sure that we don't wait for the same image many times
@@ -1824,13 +1784,6 @@ public final class ImageUtil {
 
         // Create a local id for use with the mediatracker
         int imageId;
-
-        // NOTE: The synchronization throws IllegalMonitorStateException if
-        // using JIT on J2SE 1.2 (tested version Sun JRE 1.2.2_017).
-        // Works perfectly interpreted... Hmmm...
-        //synchronized (sTrackerMutex) {
-        //imageId = ++sTrackerId;
-        //}
 
         // NOTE: This is very experimental...
         imageId = pImages.length == 1 ? System.identityHashCode(pImages[0]) : System.identityHashCode(pImages);
@@ -1877,7 +1830,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Tests wether the image has any transparent or semi-transparent pixels.
+     * Tests whether the image has any transparent or semi-transparent pixels.
      *
      * @param pImage the image
      * @param pFast if {@code true}, the method tests maximum 10 x 10 pixels,
@@ -1945,7 +1898,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Blends two ARGB values half and half, to create a tone inbetween.
+     * Blends two ARGB values half and half, to create a tone in between.
      *
      * @param pRGB1 color 1
      * @param pRGB2 color 2
@@ -1958,7 +1911,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Blends two colors half and half, to create a tone inbetween.
+     * Blends two colors half and half, to create a tone in between.
      *
      * @param pColor color 1
      * @param pOther color 2
@@ -1976,7 +1929,7 @@ public final class ImageUtil {
     }
 
     /**
-     * Blends two colors, controlled by the blendfactor.
+     * Blends two colors, controlled by the blending factor.
      * A factor of {@code 0.0} will return the first color,
      * a factor of {@code 1.0} will return the second.
      *
@@ -1997,51 +1950,5 @@ public final class ImageUtil {
 
     private static int clamp(float f) {
         return (int) f;
-    }
-    /**
-     * PixelGrabber subclass that stores any potential properties from an image.
-     */
-    /*
-    private static class MyPixelGrabber extends PixelGrabber {
-        private Hashtable mProps = null;
-
-        public MyPixelGrabber(Image pImage) {
-            // Simply grab all pixels, do not convert to default RGB space
-            super(pImage, 0, 0, -1, -1, false);
-        }
-
-        // Default implementation does not store the properties...
-        public void setProperties(Hashtable pProps) {
-            super.setProperties(pProps);
-            mProps = pProps;
-        }
-
-        public Hashtable getProperties() {
-            return mProps;
-        }
-    }
-    */
-
-    /**
-     * Gets the transfer type from the given {@code ColorModel}.
-     * <p/>
-     * NOTE: This is a workaround for missing functionality in JDK 1.2.
-     *
-     * @param pModel the color model
-     * @return the transfer type
-     *
-     * @throws NullPointerException if {@code pModel} is {@code null}.
-     *
-     * @see java.awt.image.ColorModel#getTransferType()
-     */
-    public static int getTransferType(ColorModel pModel) {
-        if (COLORMODEL_TRANSFERTYPE_SUPPORTED) {
-            return pModel.getTransferType();
-        }
-        else {
-            // Stupid workaround
-            // TODO: Create something that performs better
-            return pModel.createCompatibleSampleModel(1, 1).getDataType();
-        }
     }
 }

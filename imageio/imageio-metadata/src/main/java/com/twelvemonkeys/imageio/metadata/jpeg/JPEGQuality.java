@@ -90,10 +90,7 @@ public final class JPEGQuality {
     private static int getJPEGQuality(final int[][] quantizationTables) throws IOException {
 //        System.err.println("tables: " + Arrays.deepToString(tables));
 
-        // TODO: Determine lossless JPEG
-//        if (lossless) {
-//            return 100; // TODO: Sums can be 100... Is lossless not 100?
-//        }
+        // TODO: Determine lossless JPEG, it's an entirely different algorithm
 
         int qvalue;
         

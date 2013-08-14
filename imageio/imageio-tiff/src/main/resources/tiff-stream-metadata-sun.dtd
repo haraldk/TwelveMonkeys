@@ -1,0 +1,9 @@
+<!DOCTYPE com_sun_media_imageio_plugins_tiff_stream_1.0 [
+        <!ELEMENT com_sun_media_imageio_plugins_tiff_stream_1.0 (ByteOrder)>
+
+        <!ELEMENT ByteOrder EMPTY>
+        <!-- The stream byte order -->
+        <!ATTLIST ByteOrder "value" CDATA #REQUIRED>
+        <!-- One of "BIG_ENDIAN" or "LITTLE_ENDIAN" -->
+        <!-- Data type: String -->
+]>

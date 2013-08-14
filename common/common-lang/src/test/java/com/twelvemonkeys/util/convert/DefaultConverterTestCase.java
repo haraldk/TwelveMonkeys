@@ -1,7 +1,13 @@
 package com.twelvemonkeys.util.convert;
 
+import com.twelvemonkeys.lang.Validate;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.File;
 import java.net.URI;
+
+import static org.junit.Assert.*;
 
 /**
  * DefaultConverterTestCase
@@ -47,23 +53,76 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
 
                 // Object array test
                 new Conversion("foo, bar", new FooBar[] {new FooBar("foo"), new FooBar("bar")}),
-                new Conversion("/temp, /usr/local/bin", new File[] {new File("/temp"), new File("/usr/local/bin")}),
+                new Conversion("/temp, /usr/local/bin".replace('/', File.separatorChar), new File[] {new File("/temp"), new File("/usr/local/bin")}),
                 new Conversion("file:/temp, http://java.net/", new URI[] {URI.create("file:/temp"), URI.create("http://java.net/")}),
 
                 // TODO: More tests
         };
     }
 
-    // TODO: Test boolean -> Boolean conversion
+    @Test
+    public void testConvertBooleanPrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertTrue((Boolean) converter.toObject("true", boolean.class, null));
+        assertFalse((Boolean) converter.toObject("FalsE", Boolean.TYPE, null));
+    }
+
+    @Test
+    public void testConvertShortPrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals(1, (short) (Short) converter.toObject("1", short.class, null));
+        assertEquals(-2, (short) (Short) converter.toObject("-2", Short.TYPE, null));
+    }
+    @Test
+    public void testConvertIntPrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals(1, (int) (Integer) converter.toObject("1", int.class, null));
+        assertEquals(-2, (int) (Integer) converter.toObject("-2", Integer.TYPE, null));
+    }
+
+    @Test
+    public void testConvertLongPrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals(Long.MAX_VALUE, (long) (Long) converter.toObject("9223372036854775807", long.class, null));
+        assertEquals(-2, (long) (Long) converter.toObject("-2", Long.TYPE, null));
+    }
+
+    @Test
+    public void testConvertBytePrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals(1, (byte) (Byte) converter.toObject("1", byte.class, null));
+        assertEquals(-2, (byte) (Byte) converter.toObject("-2", Byte.TYPE, null));
+    }
+
+    @Test
+    public void testConvertFloatPrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals(1f, (Float) converter.toObject("1.0", float.class, null), 0);
+        assertEquals(-2.3456f, (Float) converter.toObject("-2.3456", Float.TYPE, null), 0);
+    }
+
+    @Test
+    public void testConvertDoublePrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals(1d, (Double) converter.toObject("1.0", double.class, null), 0);
+        assertEquals(-2.3456, (Double) converter.toObject("-2.3456", Double.TYPE, null), 0);
+    }
+
+    @Ignore("Known issue. Why would anyone do something like this?")
+    @Test
+    public void testConvertCharPrimitive() {
+        PropertyConverter converter = makePropertyConverter();
+        assertEquals('A', (char) (Character) converter.toObject("A", char.class, null));
+        assertEquals('Z', (char) (Character) converter.toObject("Z", Character.TYPE, null));
+    }
 
     public static class FooBar {
-        private final String mBar;
+        private final String bar;
 
         public FooBar(String pFoo) {
-            if (pFoo == null) {
-                throw new IllegalArgumentException("pFoo == null");
-            }
-            mBar = reverse(pFoo);
+            Validate.notNull(pFoo, "foo");
+
+            bar = reverse(pFoo);
         }
 
         private String reverse(String pFoo) {
@@ -77,16 +136,15 @@ public class DefaultConverterTestCase extends PropertyConverterAbstractTestCase 
         }
 
         public String toString() {
-            return reverse(mBar);
+            return reverse(bar);
         }
 
         public boolean equals(Object obj) {
-            return obj == this || (obj instanceof FooBar && ((FooBar) obj).mBar.equals(mBar));
+            return obj == this || (obj != null && obj.getClass() == getClass() && ((FooBar) obj).bar.equals(bar));
         }
 
         public int hashCode() {
-            return 7 * mBar.hashCode();
+            return 7 * bar.hashCode();
         }
     }
-
 }

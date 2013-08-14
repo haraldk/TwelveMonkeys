@@ -66,7 +66,7 @@ public class BrightnessContrastFilter extends RGBImageFilter {
         canFilterIndexColorModel = true;
     }
 
-    // Use a precalculated lookup table for performace
+    // Use a pre-calculated lookup table for performance
     private final int[] LUT;
 
     /**
@@ -149,7 +149,6 @@ public class BrightnessContrastFilter extends RGBImageFilter {
      *
      * @return the filtered pixel value in the default color space
      */
-
     public int filterRGB(int pX, int pY, int pARGB) {
         // Get color components
         int r = pARGB >> 16 & 0xFF;

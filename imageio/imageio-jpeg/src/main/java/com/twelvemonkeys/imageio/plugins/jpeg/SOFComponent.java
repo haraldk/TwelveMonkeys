@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Harald Kuhr
+ * Copyright (c) 2013, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,22 +26,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.tiff;
+package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.io.enc.Decoder;
-
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.Serializable;
 
 /**
- * CCITT Group 3 One-Dimensional (G31D) "No EOLs" Decoder.
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: G31DDecoder.java,v 1.0 23.05.12 15:55 haraldk Exp$
- */
-final class G31DDecoder implements Decoder {
-    public int decode(final InputStream stream, final byte[] buffer) throws IOException {
-        throw new UnsupportedOperationException("Method decode not implemented"); // TODO: Implement
+* SOFComponent
+*
+* @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+* @author last modified by $Author: haraldk$
+* @version $Id: SOFComponent.java,v 1.0 22.04.13 16:40 haraldk Exp$
+*/
+final class SOFComponent {
+    final int id;
+    final int hSub;
+    final int vSub;
+    final int qtSel;
+
+    SOFComponent(int id, int hSub, int vSub, int qtSel) {
+        this.id = id;
+        this.hSub = hSub;
+        this.vSub = vSub;
+        this.qtSel = qtSel;
+    }
+
+    @Override
+    public String toString() {
+        // Use id either as component number or component name, based on value
+        Serializable idStr = (id >= 'a' && id <= 'z' || id >= 'A' && id <= 'Z') ? "'" + (char) id + "'" : id;
+        return String.format("id: %s, sub: %d/%d, sel: %d", idStr, hSub, vSub, qtSel);
     }
 }

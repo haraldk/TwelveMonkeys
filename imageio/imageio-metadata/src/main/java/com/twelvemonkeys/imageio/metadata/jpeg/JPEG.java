@@ -40,7 +40,8 @@ public interface JPEG {
     int SOI = 0xFFD8;
     /** End of Image segment marker (EOI). */
     int EOI = 0xFFD9;
-    /** Start of Stream segment marker (SOS). */
+
+    /** Start of Scan segment marker (SOS). */
     int SOS = 0xFFDA;
 
     /** Define Quantization Tables segment marker (DQT). */
@@ -81,6 +82,10 @@ public interface JPEG {
     int SOF14 = 0xFFCE;
     int SOF15 = 0xFFCF;
 
+    // JPEG-LS markers
+    int SOF55 = 0xFFF7; // NOTE: Equal to a normal SOF segment
+    int LSE = 0xFFF8;   // JPEG-LS Preset Parameter marker
+
     // TODO: Known/Important APPn marker identifiers
     // "JFIF" APP0
     // "JFXX" APP0
@@ -89,6 +94,6 @@ public interface JPEG {
     // "Adobe" APP14
 
     // Possibly
-    // "http://ns.adobe.com/xap/1.0/" (XMP)
-    // "Photoshop 3.0" (Contains IPTC)
+    // "http://ns.adobe.com/xap/1.0/" (XMP) APP1
+    // "Photoshop 3.0" (may contain IPTC) APP13
 }

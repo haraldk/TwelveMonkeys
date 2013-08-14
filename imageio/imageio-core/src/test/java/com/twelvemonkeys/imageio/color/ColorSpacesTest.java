@@ -139,7 +139,7 @@ public class ColorSpacesTest {
             assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
         }
         else {
-            System.err.println("Not an ICC_ColorSpace: " + cs);
+            System.err.println("WARNING: Not an ICC_ColorSpace: " + cs);
         }
     }
 
@@ -163,7 +163,25 @@ public class ColorSpacesTest {
             assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
         }
         else {
-            System.err.println("Not an ICC_ColorSpace: " + cs);
+            System.err.println("Warning: Not an ICC_ColorSpace: " + cs);
         }
+    }
+
+    @Test
+    public void testIsCS_sRGBTrue() {
+        assertTrue(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_sRGB)));
+    }
+
+    @Test
+    public void testIsCS_sRGBFalse() {
+        assertFalse(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB)));
+        assertFalse(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ)));
+        assertFalse(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_GRAY)));
+        assertFalse(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_PYCC)));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIsCS_sRGBNull() {
+        ColorSpaces.isCS_sRGB(null);
     }
 }

@@ -112,7 +112,7 @@ class JPEGTables {
 
                     // Read lengths as short array
                     short[] lengths = new short[DHT_LENGTH];
-                    for (int i = 0, lengthsLength = lengths.length; i < lengthsLength; i++) {
+                    for (int i = 0; i < DHT_LENGTH; i++) {
                         lengths[i] = (short) data.readUnsignedByte();
                     }
                     read += lengths.length;

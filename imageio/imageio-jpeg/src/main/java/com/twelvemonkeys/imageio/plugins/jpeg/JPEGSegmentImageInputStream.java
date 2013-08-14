@@ -49,8 +49,9 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  */
 final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     // TODO: Rewrite JPEGSegment (from metadata) to store stream pos/length, and be able to replay data, and use instead of Segment?
-    // TODO: Change order of segments, to make sure APP0/JFIF is always before APP14/Adobe?
+    // TODO: Change order of segments, to make sure APP0/JFIF is always before APP14/Adobe? What about EXIF?
     // TODO: Insert fake APP0/JFIF if needed by the reader?
+    // TODO: Sort out ICC_PROFILE issues (duplicate sequence numbers etc)?
 
     final private ImageInputStream stream;
     
@@ -89,6 +90,12 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             while (true) {
                 long realPosition = stream.getStreamPosition();
                 int marker = stream.readUnsignedShort();
+
+                // Skip over 0xff padding between markers
+                while (marker == 0xffff) {
+                    realPosition++;
+                    marker = 0xff00 | stream.readUnsignedByte();
+                }
 
                 // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment, 'Exif' APP1 and very few others
                 if (isAppSegmentMarker(marker) && marker != JPEG.APP0 && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream)) && marker != JPEG.APP14) {
@@ -149,7 +156,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         return segment;
     }
 
-    private static boolean isAppSegmentWithId(String segmentId, ImageInputStream stream) throws IOException {
+    private static boolean isAppSegmentWithId(final String segmentId, final ImageInputStream stream) throws IOException {
         notNull(segmentId, "segmentId");
 
         stream.mark();
@@ -222,7 +229,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public int read(final byte[] b, final int off, final int len) throws IOException {
         bitOffset = 0;
 
         // NOTE: There is a bug in the JPEGMetadata constructor (JPEGBuffer.loadBuf() method) that expects read to
@@ -264,7 +271,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         final long start;
         final long length;
 
-        Segment(int marker, long realStart, long start, long length) {
+        Segment(final int marker, final long realStart, final long start, final long length) {
             this.marker = marker;
             this.realStart = realStart;
             this.start = start;

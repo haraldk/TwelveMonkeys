@@ -1,11 +1,14 @@
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.util.CollectionUtil;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletRequest;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
+
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * ServletParametersMapAdapter
@@ -14,23 +17,23 @@ import java.util.Iterator;
  * @author last modified by $Author: haku $
  * @version $Id: ServletParametersMapAdapter.java#1 $
  */
-class ServletParametersMapAdapter extends AbstractServletMapAdapter {
+class ServletParametersMapAdapter extends AbstractServletMapAdapter<List<String>> {
+    // TODO: Be able to piggyback on HttpServletRequest.getParameterMap when available?
 
-    protected final HttpServletRequest request;
+    protected final ServletRequest request;
 
-    public ServletParametersMapAdapter(HttpServletRequest pRequest) {
-        request = Validate.notNull(pRequest, "request");
+    public ServletParametersMapAdapter(final ServletRequest pRequest) {
+        request = notNull(pRequest, "request");
     }
 
-    protected Iterator<String> valuesImpl(String pName) {
+    protected List<String> valueImpl(String pName) {
         String[] values = request.getParameterValues(pName);
-        return values == null ? null : CollectionUtil.iterator(values);
+        return values == null ? null : Arrays.asList(values);
     }
 
     protected Iterator<String> keysImpl() {
-        //noinspection unchecked
+        @SuppressWarnings("unchecked")
         Enumeration<String> names = request.getParameterNames();
         return names == null ? null : CollectionUtil.iterator(names);
     }
-
 }

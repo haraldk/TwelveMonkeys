@@ -151,19 +151,21 @@ public class JPEGSegmentUtilTest {
     @Test
     public void testReadAll() throws IOException {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/9788245605525.jpg"), JPEGSegmentUtil.ALL_SEGMENTS);
-        assertEquals(6, segments.size());
+        assertEquals(7, segments.size());
 
         assertEquals(segments.toString(), JPEG.SOF0, segments.get(3).marker());
         assertEquals(segments.toString(), null, segments.get(3).identifier());
+        assertEquals(segments.toString(), JPEG.SOS, segments.get(segments.size() - 1).marker());
     }
 
     @Test
     public void testReadAllAlt() throws IOException {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/ts_open_300dpi.jpg"), JPEGSegmentUtil.ALL_SEGMENTS);
-        assertEquals(26, segments.size());
+        assertEquals(27, segments.size());
 
         assertEquals(segments.toString(), JPEG.SOF0, segments.get(23).marker());
         assertEquals(segments.toString(), null, segments.get(23).identifier());
+        assertEquals(segments.toString(), JPEG.SOS, segments.get(segments.size() - 1).marker());
     }
 
     @Test
@@ -193,5 +195,18 @@ public class JPEGSegmentUtilTest {
         // ...
         assertEquals(JPEG.APP14, segments.get(21).marker());
         assertEquals("Adobe", segments.get(21).identifier());
+    }
+
+    @Test
+    public void testReadPaddedSegments() throws IOException {
+        List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/jfif-padded-segments.jpg"), JPEGSegmentUtil.APP_SEGMENTS);
+        assertEquals(3, segments.size());
+
+        assertEquals(JPEG.APP0, segments.get(0).marker());
+        assertEquals("JFIF", segments.get(0).identifier());
+        assertEquals(JPEG.APP2, segments.get(1).marker());
+        assertEquals("ICC_PROFILE", segments.get(1).identifier());
+        assertEquals(JPEG.APP1, segments.get(2).marker());
+        assertEquals("Exif", segments.get(2).identifier());
     }
 }

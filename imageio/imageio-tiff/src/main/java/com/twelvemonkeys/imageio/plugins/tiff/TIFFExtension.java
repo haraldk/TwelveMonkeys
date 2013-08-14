@@ -65,4 +65,11 @@ interface TIFFExtension {
     int SAMPLEFORMAT_INT = 2;
     int SAMPLEFORMAT_FP = 3;
     int SAMPLEFORMAT_UNDEFINED = 4;
+
+    int YCBCR_POSITIONING_CENTERED = 1;
+    int YCBCR_POSITIONING_COSITED = 2;
+
+    // "Old-style" JPEG (obsolete)
+    int JPEG_PROC_BASELINE = 1;
+    int JPEG_PROC_LOSSLESS = 14;
 }

@@ -181,19 +181,19 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
                 return "head";
             }
         };
-        head.mPrevious = head.mNext = head;
+        head.previous = head.next = head;
     }
 
     public boolean containsValue(Object pValue) {
         // Overridden to take advantage of faster iterator
         if (pValue == null) {
-            for (LinkedEntry e = head.mNext; e != head; e = e.mNext) {
+            for (LinkedEntry e = head.next; e != head; e = e.next) {
                 if (e.mValue == null) {
                     return true;
                 }
             }
         } else {
-            for (LinkedEntry e = head.mNext; e != head; e = e.mNext) {
+            for (LinkedEntry e = head.next; e != head; e = e.next) {
                 if (pValue.equals(e.mValue)) {
                     return true;
                 }
@@ -215,7 +215,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
     }
 
     private abstract class LinkedMapIterator<E> implements Iterator<E> {
-        LinkedEntry<K, V> mNextEntry = head.mNext;
+        LinkedEntry<K, V> mNextEntry = head.next;
         LinkedEntry<K, V> mLastReturned = null;
 
         /**
@@ -254,7 +254,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
             }
 
             LinkedEntry<K, V> e = mLastReturned = mNextEntry;
-            mNextEntry = e.mNext;
+            mNextEntry = e.next;
 
             return e;
         }
@@ -309,7 +309,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
             oldValue = null;
 
             // Remove eldest entry if instructed, else grow capacity if appropriate
-            LinkedEntry<K, V> eldest = head.mNext;
+            LinkedEntry<K, V> eldest = head.next;
             if (removeEldestEntry(eldest)) {
                 removeEntry(eldest);
             }
@@ -407,13 +407,13 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
      * Linked list implementation of {@code Map.Entry}.
      */
     protected static class LinkedEntry<K, V> extends BasicEntry<K, V> implements Serializable {
-        LinkedEntry<K, V> mPrevious;
-        LinkedEntry<K, V> mNext;
+        LinkedEntry<K, V> previous;
+        LinkedEntry<K, V> next;
 
         LinkedEntry(K pKey, V pValue, LinkedEntry<K, V> pNext) {
             super(pKey, pValue);
 
-            mNext = pNext;
+            next = pNext;
         }
 
         /**
@@ -423,19 +423,19 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
          * @param pExisting the entry to add before
          */
         void addBefore(LinkedEntry<K, V> pExisting) {
-            mNext = pExisting;
-            mPrevious = pExisting.mPrevious;
+            next = pExisting;
+            previous = pExisting.previous;
 
-            mPrevious.mNext = this;
-            mNext.mPrevious = this;
+            previous.next = this;
+            next.previous = this;
         }
 
         /**
          * Removes this entry from the linked list.
          */
         void remove() {
-            mPrevious.mNext = mNext;
-            mNext.mPrevious = mPrevious;
+            previous.next = next;
+            next.previous = previous;
         }
 
         /**
@@ -456,7 +456,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
         /**
          * Removes this entry from the linked list.
          *
-         * @param pMap the map to record remoal from
+         * @param pMap the map to record removal from
          */
         protected void recordRemoval(Map<K, V> pMap) {
             // TODO: Is this REALLY correct?

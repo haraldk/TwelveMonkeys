@@ -52,10 +52,15 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
                 new TestData(getClassLoaderResource("/tiff/sm_colors_tile.tif"), new Dimension(64, 64)), // RGB, uncompressed, tiled
                 new TestData(getClassLoaderResource("/tiff/sm_colors_pb_tile.tif"), new Dimension(64, 64)), // RGB, PackBits compressed, tiled
                 new TestData(getClassLoaderResource("/tiff/galaxy.tif"), new Dimension(965, 965)), // RGB, LZW compressed
+                new TestData(getClassLoaderResource("/tiff/quad-lzw.tif"), new Dimension(512, 384)), // RGB, Old spec (reversed) LZW compressed, tiled
                 new TestData(getClassLoaderResource("/tiff/bali.tif"), new Dimension(725, 489)), // Palette-based, LZW compressed
                 new TestData(getClassLoaderResource("/tiff/f14.tif"), new Dimension(640, 480)), // Gray, uncompressed
                 new TestData(getClassLoaderResource("/tiff/marbles.tif"), new Dimension(1419, 1001)), // RGB, LZW compressed w/predictor
-                new TestData(getClassLoaderResource("/tiff/chifley_logo.tif"), new Dimension(591, 177)) // CMYK, uncompressed
+                new TestData(getClassLoaderResource("/tiff/chifley_logo.tif"), new Dimension(591, 177)), // CMYK, uncompressed
+                new TestData(getClassLoaderResource("/tiff/ycbcr-cat.tif"), new Dimension(250, 325)), // YCbCr, LZW compressed
+                new TestData(getClassLoaderResource("/tiff/quad-jpeg.tif"), new Dimension(512, 384)), // YCbCr, JPEG compressed, striped
+                new TestData(getClassLoaderResource("/tiff/smallliz.tif"), new Dimension(160, 160)), // YCbCr, Old-Style JPEG compressed (full JFIF stream)
+                new TestData(getClassLoaderResource("/tiff/zackthecat.tif"), new Dimension(234, 213)) // YCbCr, Old-Style JPEG compressed (tables, no JFIF stream)
         );
     }
 
@@ -88,4 +93,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/tiff");
     }
+
+    // TODO: Test YCbCr colors
 }
