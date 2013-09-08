@@ -202,7 +202,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             Entry width = ifd.getEntryById(TIFF.TAG_IMAGE_WIDTH);
 
             if (width == null) {
-                throw new IIOException("Missing dimensions for unknown EXIF thumbnail");
+                throw new IIOException("Missing dimensions for uncompressed EXIF thumbnail");
             }
 
             return ((Number) width.getValue()).intValue();
@@ -221,7 +221,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             Entry height = ifd.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
 
             if (height == null) {
-                throw new IIOException("Missing dimensions for unknown EXIF thumbnail");
+                throw new IIOException("Missing dimensions for uncompressed EXIF thumbnail");
             }
 
             return ((Number) height.getValue()).intValue();
