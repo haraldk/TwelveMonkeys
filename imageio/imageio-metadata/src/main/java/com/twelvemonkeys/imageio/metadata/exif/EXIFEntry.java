@@ -46,6 +46,8 @@ final class EXIFEntry extends AbstractEntry {
         if (type < 1 || type > TIFF.TYPE_NAMES.length) {
             throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
         }
+
+        // TODO: Validate that type is applicable to value?
         
         this.type = type;
     }

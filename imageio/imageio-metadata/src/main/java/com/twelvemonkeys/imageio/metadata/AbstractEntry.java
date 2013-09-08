@@ -44,7 +44,7 @@ import java.util.Arrays;
 public abstract class AbstractEntry implements Entry {
 
     private final Object identifier;
-    private final Object value; // TODO: Might need to be mutable..
+    private final Object value; // Entries are immutable, directories can be mutated
 
     protected AbstractEntry(final Object identifier, final Object value) {
         Validate.notNull(identifier, "identifier");
@@ -181,10 +181,10 @@ public abstract class AbstractEntry implements Entry {
     @Override
     public String toString() {
         String name = getFieldName();
-        String nameStr = name != null ? "/" + name + "" : "";
+        String nameStr = name != null ? String.format("/%s", name) : "";
 
         String type = getTypeName();
-        String typeStr = type != null ? " (" + type + ")" : "";
+        String typeStr = type != null ? String.format(" (%s)", type) : "";
 
         return String.format("%s%s: %s%s", getNativeIdentifier(), nameStr, getValueAsString(), typeStr);
     }

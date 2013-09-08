@@ -110,7 +110,6 @@ public final class EXIFReader extends MetadataReader {
 
         // Read linked IFDs
         if (nextOffset != 0) {
-            // TODO: This is probably not okay anymore.. Replace recursion with while loop
             AbstractCompoundDirectory next = (AbstractCompoundDirectory) readDirectory(pInput, nextOffset);
             for (int i = 0; i < next.directoryCount(); i++) {
                 ifds.add((IFD) next.getDirectory(i));
@@ -298,7 +297,7 @@ public final class EXIFReader extends MetadataReader {
         long pos = pInput.getStreamPosition();
 
         switch (pType) {
-            case 2: // ASCII
+            case TIFF.TYPE_ASCII:
                 // TODO: This might be UTF-8 or ISO-8859-x, even though spec says NULL-terminated 7 bit ASCII
                 // TODO: Fail if unknown chars, try parsing with ISO-8859-1 or file.encoding
                 if (pCount == 0) {
@@ -308,17 +307,17 @@ public final class EXIFReader extends MetadataReader {
                 pInput.readFully(ascii);
                 int len = ascii[ascii.length - 1] == 0 ? ascii.length - 1 : ascii.length;
                 return StringUtil.decode(ascii, 0, len, "UTF-8"); // UTF-8 is ASCII compatible
-            case 1: // BYTE
+            case TIFF.TYPE_BYTE:
                 if (pCount == 1) {
                     return pInput.readUnsignedByte();
                 }
                 // else fall through
-            case 6: // SBYTE
+            case TIFF.TYPE_SBYTE:
                 if (pCount == 1) {
                     return pInput.readByte();
                 }
                 // else fall through
-            case 7: // UNDEFINED
+            case TIFF.TYPE_UNDEFINED:
                 byte[] bytes = new byte[pCount];
                 pInput.readFully(bytes);
 
@@ -326,11 +325,11 @@ public final class EXIFReader extends MetadataReader {
                 // binary data and we want to keep that as a byte array for clients to parse futher
 
                 return bytes;
-            case 3: // SHORT
+            case TIFF.TYPE_SHORT:
                 if (pCount == 1) {
                     return pInput.readUnsignedShort();
                 }
-            case 8: // SSHORT
+            case TIFF.TYPE_SSHORT:
                 if (pCount == 1) {
                     return pInput.readShort();
                 }
@@ -338,21 +337,22 @@ public final class EXIFReader extends MetadataReader {
                 short[] shorts = new short[pCount];
                 pInput.readFully(shorts, 0, shorts.length);
 
-                if (pType == 3) {
+                if (pType == TIFF.TYPE_SHORT) {
                     int[] ints = new int[pCount];
                     for (int i = 0; i < pCount; i++) {
                         ints[i] = shorts[i] & 0xffff;
                     }
+
                     return ints;
                 }
 
                 return shorts;
-            case 13: // IFD
-            case 4: // LONG
+            case TIFF.TYPE_IFD:
+            case TIFF.TYPE_LONG:
                 if (pCount == 1) {
                     return pInput.readUnsignedInt();
                 }
-            case 9: // SLONG
+            case TIFF.TYPE_SLONG:
                 if (pCount == 1) {
                     return pInput.readInt();
                 }
@@ -360,16 +360,17 @@ public final class EXIFReader extends MetadataReader {
                 int[] ints = new int[pCount];
                 pInput.readFully(ints, 0, ints.length);
 
-                if (pType == 4 || pType == 13) {
+                if (pType == TIFF.TYPE_LONG || pType == TIFF.TYPE_IFD) {
                     long[] longs = new long[pCount];
                     for (int i = 0; i < pCount; i++) {
                         longs[i] = ints[i] & 0xffffffffL;
                     }
+
                     return longs;
                 }
 
                 return ints;
-            case 11: // FLOAT
+            case TIFF.TYPE_FLOAT:
                 if (pCount == 1) {
                     return pInput.readFloat();
                 }
@@ -377,7 +378,7 @@ public final class EXIFReader extends MetadataReader {
                 float[] floats = new float[pCount];
                 pInput.readFully(floats, 0, floats.length);
                 return floats;
-            case 12: // DOUBLE
+            case TIFF.TYPE_DOUBLE:
                 if (pCount == 1) {
                     return pInput.readDouble();
                 }
@@ -386,7 +387,7 @@ public final class EXIFReader extends MetadataReader {
                 pInput.readFully(doubles, 0, doubles.length);
                 return doubles;
 
-            case 5: // RATIONAL
+            case TIFF.TYPE_RATIONAL:
                 if (pCount == 1) {
                     return createSafeRational(pInput.readUnsignedInt(), pInput.readUnsignedInt());
                 }
@@ -397,7 +398,7 @@ public final class EXIFReader extends MetadataReader {
                 }
 
                 return rationals;
-            case 10: // SRATIONAL
+            case TIFF.TYPE_SRATIONAL:
                 if (pCount == 1) {
                     return createSafeRational(pInput.readInt(), pInput.readInt());
                 }
@@ -445,7 +446,7 @@ public final class EXIFReader extends MetadataReader {
         return new Rational(numerator, denominator);
     }
 
-    private int getValueLength(final int pType, final int pCount) {
+    static int getValueLength(final int pType, final int pCount) {
         if (pType > 0 && pType <= TIFF.TYPE_LENGTHS.length) {
             return TIFF.TYPE_LENGTHS[pType - 1] * pCount;
         }
