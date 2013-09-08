@@ -41,13 +41,16 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
+import org.w3c.dom.Node;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
@@ -88,6 +91,8 @@ import java.util.List;
 public class JPEGImageReader extends ImageReaderBase {
     // TODO: Fix the (stream) metadata inconsistency issues.
     // - Sun JPEGMetadata class does not (and can not be made to) support CMYK data.. We need to create all new metadata classes.. :-/
+
+    // TODO: Allow automatic rotation based on EXIF rotation field?
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
@@ -280,7 +285,19 @@ public class JPEGImageReader extends ImageReaderBase {
         assertInput();
         checkBounds(imageIndex);
 
-        // TODO: This test is not good enough for JDK7, which seems to have fixed some of the issues.
+//        CompoundDirectory exif = getExif();
+//        if (exif != null) {
+//            System.err.println("exif: " + exif);
+//            System.err.println("Orientation: " + exif.getEntryById(TIFF.TAG_ORIENTATION));
+//            Entry exifIFDEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
+//
+//            if (exifIFDEntry != null) {
+//                Directory exifIFD = (Directory) exifIFDEntry.getValue();
+//                System.err.println("PixelXDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_X_DIMENSION));
+//                System.err.println("PixelYDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_Y_DIMENSION));
+//            }
+//        }
+
         // NOTE: We rely on the fact that unsupported images has no valid types. This is kind of hacky.
         // Might want to look into the metadata, to see if there's a better way to identify these.
         boolean unsupported = !delegate.getImageTypes(imageIndex).hasNext();
@@ -288,7 +305,6 @@ public class JPEGImageReader extends ImageReaderBase {
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
 
-        // TODO: Probably something bogus here, as ICC profile isn't applied if reading through the delegate any more...
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
@@ -307,7 +323,7 @@ public class JPEGImageReader extends ImageReaderBase {
         if (DEBUG) {
             System.out.println("Reading using delegate");
         }
-        
+
         return delegate.read(imageIndex, param);
     }
 
@@ -442,6 +458,8 @@ public class JPEGImageReader extends ImageReaderBase {
                 // Apply further color conversion for explicit color space, or just copy the pixels into place
                 if (convert != null) {
                     convert.filter(src, dest);
+//                    WritableRaster filtered = convert.filter(src, null);
+//                    new AffineTransformOp(AffineTransform.getRotateInstance(2 * Math.PI, filtered.getWidth() / 2.0, filtered.getHeight() / 2.0), null).filter(filtered, dest);
                 }
                 else {
                     dest.setRect(0, 0, src);
@@ -728,12 +746,12 @@ public class JPEGImageReader extends ImageReaderBase {
 
     private JFIFSegment getJFIF() throws IOException{
         List<JPEGSegment> jfif = getAppSegments(JPEG.APP0, "JFIF");
-        
+
         if (!jfif.isEmpty()) {
             JPEGSegment segment = jfif.get(0);
             return JFIFSegment.read(segment.data());
         }
-        
+
         return null;
     }
 
@@ -743,6 +761,27 @@ public class JPEGImageReader extends ImageReaderBase {
         if (!jfxx.isEmpty()) {
             JPEGSegment segment = jfxx.get(0);
             return JFXXSegment.read(segment.data(), segment.length());
+        }
+
+        return null;
+    }
+
+    private CompoundDirectory getExif() throws IOException {
+        List<JPEGSegment> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+
+        if (!exifSegments.isEmpty()) {
+            JPEGSegment exif = exifSegments.get(0);
+            InputStream data = exif.data();
+
+            if (data.read() == -1) { // Read pad
+                processWarningOccurred("Exif chunk has no data.");
+            }
+            else {
+                ImageInputStream stream = ImageIO.createImageInputStream(data);
+                return (CompoundDirectory) new EXIFReader().read(stream);
+
+                // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the EXIFReader...
+            }
         }
 
         return null;
@@ -911,7 +950,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     processWarningOccurred("Exif chunk has no data.");
                 }
                 else {
-                    ImageInputStream stream = ImageIO.createImageInputStream(data);
+                    ImageInputStream stream = new MemoryCacheImageInputStream(data);
                     CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
 
                     if (exifMetadata.directoryCount() == 2) {
@@ -965,16 +1004,15 @@ public class JPEGImageReader extends ImageReaderBase {
         return thumbnails.get(thumbnailIndex).read();
     }
 
-
     // Metadata
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        // TODO: Nice try, but no cigar.. getAsTree does not return a "live" view, so any modifications are thrown away
         IIOMetadata metadata = delegate.getImageMetadata(imageIndex);
 
-//        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
-//        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
+        String format = metadata.getNativeMetadataFormatName();
+        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(format);
+        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
 
         // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
         // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
@@ -996,11 +1034,16 @@ public class JPEGImageReader extends ImageReaderBase {
         the version to the method/constructor used to obtain an IIOMetadata object.)
          */
 
-//        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
-//        app2ICC.setUserObject(getEmbeddedICCProfile());
-//        jpegVariety.getFirstChild().appendChild(app2ICC);
+        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
+        app2ICC.setUserObject(getEmbeddedICCProfile(true));
+        Node jpegVarietyFirstChild = jpegVariety.getFirstChild();
+        if (jpegVarietyFirstChild != null) {
+            jpegVarietyFirstChild.appendChild(app2ICC);
+        }
 
     //        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
+
+        metadata.mergeTree(format, tree);
 
         return metadata;
     }
