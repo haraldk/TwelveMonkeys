@@ -31,6 +31,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Abstract base class for RLE decoding as specified by in the Windows BMP (aka DIB) file format.
@@ -86,25 +87,24 @@ abstract class AbstractRLEDecoder implements Decoder {
      * Decodes as much data as possible, from the stream into the buffer.
      *
      * @param pStream the input stream containing RLE data
-     * @param pBuffer tge buffer to decode the data to
+     * @param pBuffer the buffer to decode the data to
      *
      * @return the number of bytes decoded from the stream, to the buffer
      *
      * @throws IOException if an I/O related exception ocurs while reading
      */
-    public final int decode(InputStream pStream, byte[] pBuffer) throws IOException {
-        int decoded = 0;
-
-        while (decoded < pBuffer.length && dstY >= 0) {
+    public final int decode(InputStream pStream, ByteBuffer pBuffer) throws IOException {
+        while (pBuffer.hasRemaining() && dstY >= 0) {
             // NOTE: Decode only full rows, don't decode if y delta
             if (dstX == 0 && srcY == dstY) {
                 decodeRow(pStream);
             }
 
-            int length = Math.min(row.length - dstX, pBuffer.length - decoded);
-            System.arraycopy(row, dstX, pBuffer, decoded, length);
+            int length = Math.min(row.length - dstX, pBuffer.remaining());
+//            System.arraycopy(row, dstX, pBuffer, decoded, length);
+            pBuffer.put(row, 0, length);
             dstX += length;
-            decoded += length;
+//            decoded += length;
 
             if (dstX == row.length) {
                 dstX = 0;
@@ -120,7 +120,7 @@ abstract class AbstractRLEDecoder implements Decoder {
             }
         }
 
-        return decoded;
+        return pBuffer.position();
     }
 
     /**
