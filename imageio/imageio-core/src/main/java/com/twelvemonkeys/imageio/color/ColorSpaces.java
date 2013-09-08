@@ -209,6 +209,7 @@ public final class ColorSpaces {
         // being 1 (01000000) - "Media Relative Colormetric" in the offending profiles,
         // and 0 (00000000) - "Perceptual" in the good profiles
         // (that is 1 single bit of difference right there.. ;-)
+        // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7064516
 
         // This is particularly annoying, as the byte copying isn't really necessary,
         // except the getRenderingIntent method is package protected in java.awt.color
