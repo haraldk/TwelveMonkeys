@@ -79,7 +79,7 @@ public final class FileUtil {
 
     /*
      * Method main for test only.
-     */
+     *
     public static void main0(String[] pArgs) {
         if (pArgs.length != 2) {
             System.out.println("usage: java Copy in out");
@@ -94,6 +94,7 @@ public final class FileUtil {
             System.out.println(e.getMessage());
         }
     }
+    //*/
 
     // Avoid instances/constructor showing up in API doc
     private FileUtil() {}
@@ -204,7 +205,7 @@ public final class FileUtil {
             close(out);
         }
 
-        return true;  // If we got here, everything's probably okay.. ;-)
+        return true;  // If we got here, everything is probably okay.. ;-)
     }
 
     /**
@@ -581,7 +582,7 @@ public final class FileUtil {
      * @throws IOException if an i/o error occurs during read.
      */
     public static byte[] read(InputStream pInput) throws IOException {
-        // Create bytearray
+        // Create byte array
         ByteArrayOutputStream bytes = new FastByteArrayOutputStream(BUF_SIZE);
 
         // Copy from stream to byte array
