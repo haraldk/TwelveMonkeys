@@ -98,6 +98,8 @@ public class HTTPUtil {
         }
     }
 
+    private HTTPUtil() {}
+
     /**
      * Formats the time to a HTTP date, using the RFC 1123 format, as described
      * in <a href="http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3"
