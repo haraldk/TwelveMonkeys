@@ -60,6 +60,8 @@ import java.awt.image.RGBImageFilter;
 
 public class BrightnessContrastFilter extends RGBImageFilter {
 
+    // TODO: Replace with RescaleOp?
+
     // This filter can filter IndexColorModel, as it is does not depend on
     // the pixels' location
     {
