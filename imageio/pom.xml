@@ -42,6 +42,8 @@
 
         <!-- Wrappers for 3rd party libs  -->
         <module>imageio-batik</module>
+        <module>batik-transcoder-fix42408</module>
+        <module>imageio-batik17</module>
         <module>imageio-jmagick</module>
 
         <!-- Test cases for the JRE provided ImageIO plugins -->
