@@ -78,20 +78,20 @@ public final class PackBits16Decoder implements Decoder {
     /**
      * Decodes bytes from the given input stream, to the given buffer.
      *
-     * @param pStream the stream to decode from
-     * @param pBuffer a byte array, minimum 128 (or 129 if no-op is disabled)
+     * @param stream the stream to decode from
+     * @param buffer a byte array, minimum 128 (or 129 if no-op is disabled)
      * bytes long
      * @return The number of bytes decoded
      *
      * @throws java.io.IOException
      */
-    public int decode(final InputStream pStream, final ByteBuffer pBuffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         if (reachedEOF) {
             return -1;
         }
 
         int read = 0;
-        final int max = pBuffer.capacity();
+        final int max = buffer.capacity();
 
         while (read < max) {
             int n;
@@ -103,7 +103,7 @@ public final class PackBits16Decoder implements Decoder {
             }
             else {
                 // Start new run
-                int b = pStream.read();
+                int b = stream.read();
                 if (b < 0) {
                     reachedEOF = true;
                     break;
@@ -127,18 +127,18 @@ public final class PackBits16Decoder implements Decoder {
                 if (n >= 0) {
                     // Copy next n + 1 shorts literally
                     int len = 2 * (n + 1);
-                    readFully(pStream, pBuffer, len);
+                    readFully(stream, buffer, len);
                     read += len;
                 }
                 // Allow -128 for compatibility, see above
                 else if (disableNoop || n != -128) {
                     // Replicate the next short -n + 1 times
-                    byte value1 = readByte(pStream);
-                    byte value2 = readByte(pStream);
+                    byte value1 = readByte(stream);
+                    byte value2 = readByte(stream);
 
                     for (int i = -n + 1; i > 0; i--) {
-                        pBuffer.put(value1);
-                        pBuffer.put(value2);
+                        buffer.put(value1);
+                        buffer.put(value2);
                     }
                 }
                 // else NOOP (-128)

@@ -76,17 +76,17 @@ final class InflateDecoder implements Decoder {
         buffer = new byte[1024];
     }
 
-    public int decode(final InputStream pStream, final ByteBuffer pBuffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         try {
             int decoded;
 
-            while ((decoded = inflater.inflate(pBuffer.array(), pBuffer.arrayOffset(), pBuffer.capacity())) == 0) {
+            while ((decoded = inflater.inflate(buffer.array(), buffer.arrayOffset(), buffer.capacity())) == 0) {
                 if (inflater.finished() || inflater.needsDictionary()) {
                     return 0;
                 }
 
                 if (inflater.needsInput()) {
-                    fill(pStream);
+                    fill(stream);
                 }
             }
 

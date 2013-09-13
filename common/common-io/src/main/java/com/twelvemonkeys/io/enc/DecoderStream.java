@@ -47,9 +47,6 @@ public final class DecoderStream extends FilterInputStream {
     protected final ByteBuffer buffer;
     protected final Decoder decoder;
 
-    // TODO: Consider replacing the wrapped input stream with a channel like this
-    // ReadableByteChannel inChannel = Channels.newChannel(stream);
-
     /**
      * Creates a new decoder stream and chains it to the
      * input stream specified by the {@code pStream} argument.
@@ -77,6 +74,7 @@ public final class DecoderStream extends FilterInputStream {
      */
     public DecoderStream(final InputStream pStream, final Decoder pDecoder, final int pBufferSize) {
         super(pStream);
+
         decoder = pDecoder;
         buffer = ByteBuffer.allocate(pBufferSize);
         buffer.flip();

@@ -164,23 +164,23 @@ public final class Base64Decoder implements Decoder {
         return true;
     }
 
-    public int decode(final InputStream pStream, final ByteBuffer pBuffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         do {
             int k = 72;
             int i;
 
             for (i = 0; i + 4 < k; i += 4) {
-                if(!decodeAtom(pStream, pBuffer, 4)) {
+                if(!decodeAtom(stream, buffer, 4)) {
                     break;
                 }
             }
 
-            if (!decodeAtom(pStream, pBuffer, k - i)) {
+            if (!decodeAtom(stream, buffer, k - i)) {
                 break;
             }
         }
-        while (pBuffer.remaining() > 54); // 72 char lines should produce no more than 54 bytes
+        while (buffer.remaining() > 54); // 72 char lines should produce no more than 54 bytes
 
-        return pBuffer.position();
+        return buffer.position();
     }
 }
