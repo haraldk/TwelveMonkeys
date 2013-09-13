@@ -47,7 +47,7 @@ public final class Base64Decoder implements Decoder {
     /**
      * This array maps the characters to their 6 bit values
      */
-    final static char[] PEM_ARRAY = {
+    final static byte[] PEM_ARRAY = {
             //0   1    2    3    4    5    6    7
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', // 0
             'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', // 1

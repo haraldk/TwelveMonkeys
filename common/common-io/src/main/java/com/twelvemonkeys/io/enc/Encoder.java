@@ -30,6 +30,7 @@ package com.twelvemonkeys.io.enc;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Interface for endcoders.
@@ -50,14 +51,12 @@ public interface Encoder {
      * Encodes up to {@code pBuffer.length} bytes into the given input stream,
      * from the given buffer.
      *
-     * @param pStream the outputstream to encode data to
-     * @param pBuffer buffer to read data from
-     * @param pOffset offset into the buffer array
-     * @param pLength length of data in the buffer
+     * @param stream the output stream to encode data to
+     * @param buffer buffer to read data from
      *
      * @throws java.io.IOException if an I/O error occurs
      */
-    void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException;
+    void encode(OutputStream stream, ByteBuffer buffer) throws IOException;
 
     //TODO: int requiredBufferSize(): -1 == any, otherwise, use this buffer size
     // void flush()?

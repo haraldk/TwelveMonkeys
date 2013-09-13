@@ -30,6 +30,7 @@ package com.twelvemonkeys.io.enc;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Encoder implementation for Apple PackBits run-length encoding.
@@ -71,53 +72,54 @@ public final class PackBitsEncoder implements Encoder {
     public PackBitsEncoder() {
     }
 
-    public void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException {
+    public void encode(final OutputStream stream, final ByteBuffer buffer) throws IOException {
         // NOTE: It's best to encode a 2 byte repeat
         // run as a replicate run except when preceded and followed by a
         // literal run, in which case it's best to merge the three into one
         // literal run. Always encode 3 byte repeats as replicate runs.
         // NOTE: Worst case: output = input + (input + 127) / 128
 
-        int offset = pOffset;
-        final int max = pOffset + pLength - 1;
+        int offset = buffer.position();
+        final int max = buffer.remaining() - 1;
         final int maxMinus1 = max - 1;
+        final byte[] pBuffer = buffer.array();
 
         while (offset <= max) {
             // Compressed run
             int run = 1;
             byte replicate = pBuffer[offset];
-            while(run < 127 && offset < max && pBuffer[offset] == pBuffer[offset + 1]) {
+            while (run < 127 && offset < max && pBuffer[offset] == pBuffer[offset + 1]) {
                 offset++;
                 run++;
             }
 
             if (run > 1) {
                 offset++;
-                pStream.write(-(run - 1));
-                pStream.write(replicate);
+                stream.write(-(run - 1));
+                stream.write(replicate);
             }
 
             // Literal run
             run = 0;
             while ((run < 128 && ((offset < max && pBuffer[offset] != pBuffer[offset + 1])
                     || (offset < maxMinus1 && pBuffer[offset] != pBuffer[offset + 2])))) {
-                buffer[run++] = pBuffer[offset++];
+                this.buffer[run++] = pBuffer[offset++];
             }
 
             // If last byte, include it in literal run, if space
             if (offset == max && run > 0 && run < 128) {
-                buffer[run++] = pBuffer[offset++];
+                this.buffer[run++] = pBuffer[offset++];
             }
 
             if (run > 0) {
-                pStream.write(run - 1);
-                pStream.write(buffer, 0, run);
+                stream.write(run - 1);
+                stream.write(this.buffer, 0, run);
             }
 
             // If last byte, and not space, start new literal run
             if (offset == max && (run <= 0 || run >= 128)) {
-                pStream.write(0);
-                pStream.write(pBuffer[offset++]);
+                stream.write(0);
+                stream.write(pBuffer[offset++]);
             }
         }
     }

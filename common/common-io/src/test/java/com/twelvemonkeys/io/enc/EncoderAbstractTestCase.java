@@ -35,7 +35,7 @@ public abstract class EncoderAbstractTestCase extends ObjectAbstractTestCase {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         try {
-            encoder.encode(bytes, null, 0, 1);
+            encoder.encode(bytes, null);
             fail("null should throw NullPointerException");
         }
         catch (NullPointerException expected) {

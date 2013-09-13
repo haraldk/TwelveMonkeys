@@ -2,7 +2,9 @@ package com.twelvemonkeys.io.enc;
 
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 import static org.junit.Assert.*;
 
@@ -21,19 +23,6 @@ public class Base64EncoderTestCase extends EncoderAbstractTestCase {
 
     protected Decoder createCompatibleDecoder() {
         return new Base64Decoder();
-    }
-
-    @Test
-    public void testNegativeEncode() throws IOException {
-        Encoder encoder = createEncoder();
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-
-        try {
-            encoder.encode(bytes, new byte[1], 2, 1);
-            fail("wrong index should throw IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException expected) {
-        }
     }
 
     @Test
