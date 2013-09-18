@@ -31,10 +31,12 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.lang.Validate;
 
 import java.io.EOFException;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * A decoder for data converted using "horizontal differencing predictor".
@@ -43,29 +45,26 @@ import java.nio.ByteOrder;
  * @author last modified by $Author: haraldk$
  * @version $Id: HorizontalDeDifferencingStream.java,v 1.0 11.03.13 14:20 haraldk Exp$
  */
-final class HorizontalDeDifferencingStream extends FilterInputStream {
+final class HorizontalDeDifferencingStream extends InputStream {
     // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
 
     private final int columns;
     // NOTE: PlanarConfiguration == 2 may be treated as samplesPerPixel == 1
     private final int samplesPerPixel;
     private final int bitsPerSample;
-    private final ByteOrder byteOrder;
 
-    int decodedLength;
-    int decodedPos;
-
-    private final byte[] buffer;
+    private final ReadableByteChannel channel;
+    private final ByteBuffer buffer;
 
     public HorizontalDeDifferencingStream(final InputStream stream, final int columns, final int samplesPerPixel, final int bitsPerSample, final ByteOrder byteOrder) {
-        super(Validate.notNull(stream, "stream"));
+        channel = Channels.newChannel(Validate.notNull(stream, "stream"));
 
         this.columns = Validate.isTrue(columns > 0, columns, "width must be greater than 0");
         this.samplesPerPixel = Validate.isTrue(bitsPerSample >= 8 || samplesPerPixel == 1, samplesPerPixel, "Unsupported samples per pixel for < 8 bit samples: %s");
         this.bitsPerSample = Validate.isTrue(isValidBPS(bitsPerSample), bitsPerSample, "Unsupported bits per sample value: %s");
-        this.byteOrder = byteOrder;
 
-        buffer = new byte[(columns * samplesPerPixel * bitsPerSample + 7) / 8];
+        buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8).order(byteOrder);
+        buffer.flip();
     }
 
     private boolean isValidBPS(final int bitsPerSample) {
@@ -83,75 +82,81 @@ final class HorizontalDeDifferencingStream extends FilterInputStream {
         }
     }
 
-    private void fetch() throws IOException {
-        int pos = 0;
-        int read;
+    @SuppressWarnings("StatementWithEmptyBody")
+    private boolean fetch() throws IOException {
+        buffer.clear();
 
-        // This *SHOULD* read an entire row of pixels (or nothing at all) into the buffer, otherwise we will throw EOFException below
-        while (pos < buffer.length && (read = in.read(buffer, pos, buffer.length - pos)) > 0) {
-            pos += read;
-        }
+        // This *SHOULD* read an entire row of pixels (or nothing at all) into the buffer,
+        // otherwise we will throw EOFException below
+        while (channel.read(buffer) > 0);
 
-        if (pos > 0) {
-            if (buffer.length > pos) {
+        if (buffer.position() > 0) {
+            if (buffer.hasRemaining()) {
                 throw new EOFException("Unexpected end of stream");
             }
 
             decodeRow();
+            buffer.flip();
 
-            decodedLength = buffer.length;
-            decodedPos = 0;
+            return true;
         }
         else {
-            decodedLength = -1;
+            buffer.position(buffer.capacity());
+
+            return false;
         }
     }
 
     private void decodeRow() throws EOFException {
         // Un-apply horizontal predictor
+        byte original;
         int sample = 0;
         byte temp;
 
         switch (bitsPerSample) {
             case 1:
                 for (int b = 0; b < (columns + 7) / 8; b++) {
-                    sample += (buffer[b] >> 7) & 0x1;
+                    original = buffer.get(b);
+                    sample += (original >> 7) & 0x1;
                     temp = (byte) ((sample << 7) & 0x80);
-                    sample += (buffer[b] >> 6) & 0x1;
+                    sample += (original >> 6) & 0x1;
                     temp |= (byte) ((sample << 6) & 0x40);
-                    sample += (buffer[b] >> 5) & 0x1;
+                    sample += (original >> 5) & 0x1;
                     temp |= (byte) ((sample << 5) & 0x20);
-                    sample += (buffer[b] >> 4) & 0x1;
+                    sample += (original >> 4) & 0x1;
                     temp |= (byte) ((sample << 4) & 0x10);
-                    sample += (buffer[b] >> 3) & 0x1;
+                    sample += (original >> 3) & 0x1;
                     temp |= (byte) ((sample << 3) & 0x08);
-                    sample += (buffer[b] >> 2) & 0x1;
+                    sample += (original >> 2) & 0x1;
                     temp |= (byte) ((sample << 2) & 0x04);
-                    sample += (buffer[b] >> 1) & 0x1;
+                    sample += (original >> 1) & 0x1;
                     temp |= (byte) ((sample << 1) & 0x02);
-                    sample += buffer[b] & 0x1;
-                    buffer[b] = (byte) (temp | sample & 0x1);
+                    sample += original & 0x1;
+                    buffer.put(b, (byte) (temp | sample & 0x1));
                 }
                 break;
+
             case 2:
                 for (int b = 0; b < (columns + 3) / 4; b++) {
-                    sample += (buffer[b] >> 6) & 0x3;
+                    original = buffer.get(b);
+                    sample += (original >> 6) & 0x3;
                     temp = (byte) ((sample << 6) & 0xc0);
-                    sample += (buffer[b] >> 4) & 0x3;
+                    sample += (original >> 4) & 0x3;
                     temp |= (byte) ((sample << 4) & 0x30);
-                    sample += (buffer[b] >> 2) & 0x3;
+                    sample += (original >> 2) & 0x3;
                     temp |= (byte) ((sample << 2) & 0x0c);
-                    sample += buffer[b] & 0x3;
-                    buffer[b] = (byte) (temp | sample & 0x3);
+                    sample += original & 0x3;
+                    buffer.put(b, (byte) (temp | sample & 0x3));
                 }
                 break;
 
             case 4:
                 for (int b = 0; b < (columns + 1) / 2; b++) {
-                    sample += (buffer[b] >> 4) & 0xf;
+                    original = buffer.get(b);
+                    sample += (original >> 4) & 0xf;
                     temp = (byte) ((sample << 4) & 0xf0);
-                    sample += buffer[b] & 0x0f;
-                    buffer[b] = (byte) (temp | sample & 0xf);
+                    sample += original & 0x0f;
+                    buffer.put(b, (byte) (temp | sample & 0xf));
                 }
                 break;
 
@@ -159,7 +164,7 @@ final class HorizontalDeDifferencingStream extends FilterInputStream {
                 for (int x = 1; x < columns; x++) {
                     for (int b = 0; b < samplesPerPixel; b++) {
                         int off = x * samplesPerPixel + b;
-                        buffer[off] = (byte) (buffer[off - samplesPerPixel] + buffer[off]);
+                        buffer.put(off, (byte) (buffer.get(off - samplesPerPixel) + buffer.get(off)));
                     }
                 }
                 break;
@@ -168,7 +173,7 @@ final class HorizontalDeDifferencingStream extends FilterInputStream {
                 for (int x = 1; x < columns; x++) {
                     for (int b = 0; b < samplesPerPixel; b++) {
                         int off = x * samplesPerPixel + b;
-                        putShort(off, asShort(off - samplesPerPixel) + asShort(off));
+                        buffer.putShort(2 * off, (short) (buffer.getShort(2 * (off - samplesPerPixel)) + buffer.getShort(2 * off)));
                     }
                 }
                 break;
@@ -177,7 +182,7 @@ final class HorizontalDeDifferencingStream extends FilterInputStream {
                 for (int x = 1; x < columns; x++) {
                     for (int b = 0; b < samplesPerPixel; b++) {
                         int off = x * samplesPerPixel + b;
-                        putInt(off, asInt(off - samplesPerPixel) + asInt(off));
+                        buffer.putInt(4 * off, buffer.getInt(4 * (off - samplesPerPixel)) + buffer.getInt(4 * off));
                     }
                 }
                 break;
@@ -186,7 +191,7 @@ final class HorizontalDeDifferencingStream extends FilterInputStream {
                 for (int x = 1; x < columns; x++) {
                     for (int b = 0; b < samplesPerPixel; b++) {
                         int off = x * samplesPerPixel + b;
-                        putLong(off, asLong(off - samplesPerPixel) + asLong(off));
+                        buffer.putLong(8 * off, buffer.getLong(8 * (off - samplesPerPixel)) + buffer.getLong(8 * off));
                     }
                 }
                 break;
@@ -196,145 +201,58 @@ final class HorizontalDeDifferencingStream extends FilterInputStream {
         }
     }
 
-    private void putLong(final int index, final long value) {
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            buffer[index * 8    ] = (byte) ((value >> 56) & 0xff);
-            buffer[index * 8 + 1] = (byte) ((value >> 48) & 0xff);
-            buffer[index * 8 + 2] = (byte) ((value >> 40) & 0xff);
-            buffer[index * 8 + 3] = (byte) ((value >> 32) & 0xff);
-            buffer[index * 8 + 4] = (byte) ((value >> 24) & 0xff);
-            buffer[index * 8 + 5] = (byte) ((value >> 16) & 0xff);
-            buffer[index * 8 + 6] = (byte) ((value >>  8) & 0xff);
-            buffer[index * 8 + 7] = (byte) ((value) & 0xff);
-        }
-        else {
-            buffer[index * 8 + 7] = (byte) ((value >> 56) & 0xff);
-            buffer[index * 8 + 6] = (byte) ((value >> 48) & 0xff);
-            buffer[index * 8 + 5] = (byte) ((value >> 40) & 0xff);
-            buffer[index * 8 + 4] = (byte) ((value >> 32) & 0xff);
-            buffer[index * 8 + 3] = (byte) ((value >> 24) & 0xff);
-            buffer[index * 8 + 2] = (byte) ((value >> 16) & 0xff);
-            buffer[index * 8 + 1] = (byte) ((value >>  8) & 0xff);
-            buffer[index * 8    ] = (byte) ((value) & 0xff);
-        }
-    }
-
-    private long asLong(final int index) {
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            return (buffer[index * 8  ] & 0xffl) << 56l | (buffer[index * 8 + 1] & 0xffl) << 48l |
-                    (buffer[index * 8 + 2] & 0xffl) << 40l | (buffer[index * 8 + 3] & 0xffl) << 32l |
-                    (buffer[index * 8 + 4] & 0xffl) << 24 | (buffer[index * 8 + 5] & 0xffl) << 16 |
-                    (buffer[index * 8 + 6] & 0xffl) << 8 | buffer[index * 8 + 7] & 0xffl;
-        }
-        else {
-            return (buffer[index * 8 + 7] & 0xffl) << 56l | (buffer[index * 8 + 6] & 0xffl) << 48l |
-                    (buffer[index * 8 + 5] & 0xffl) << 40l | (buffer[index * 8 + 4] & 0xffl) << 32l |
-                    (buffer[index * 8 + 3] & 0xffl) << 24 | (buffer[index * 8 + 2] & 0xffl) << 16 |
-                    (buffer[index * 8 + 1] & 0xffl) << 8 | buffer[index * 8] & 0xffl;
-        }
-    }
-
-    private void putInt(final int index, final int value) {
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            buffer[index * 4    ] = (byte) ((value >> 24) & 0xff);
-            buffer[index * 4 + 1] = (byte) ((value >> 16) & 0xff);
-            buffer[index * 4 + 2] = (byte) ((value >> 8) & 0xff);
-            buffer[index * 4 + 3] = (byte) ((value) & 0xff);
-        }
-        else {
-            buffer[index * 4 + 3] = (byte) ((value >> 24) & 0xff);
-            buffer[index * 4 + 2] = (byte) ((value >> 16) & 0xff);
-            buffer[index * 4 + 1] = (byte) ((value >> 8) & 0xff);
-            buffer[index * 4    ] = (byte) ((value) & 0xff);
-        }
-    }
-
-    private int asInt(final int index) {
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            return (buffer[index * 4] & 0xff) << 24 | (buffer[index * 4 + 1] & 0xff) << 16 |
-                    (buffer[index * 4 + 2] & 0xff) << 8 | buffer[index * 4 + 3] & 0xff;
-        }
-        else {
-            return (buffer[index * 4 + 3] & 0xff) << 24 | (buffer[index * 4 + 2] & 0xff) << 16 |
-                    (buffer[index * 4 + 1] & 0xff) << 8 | buffer[index * 4] & 0xff;
-        }
-    }
-
-    private void putShort(final int index, final int value) {
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            buffer[index * 2    ] = (byte) ((value >> 8) & 0xff);
-            buffer[index * 2 + 1] = (byte) ((value) & 0xff);
-        }
-        else {
-            buffer[index * 2 + 1] = (byte) ((value >> 8) & 0xff);
-            buffer[index * 2    ] = (byte) ((value) & 0xff);
-        }
-    }
-
-    private short asShort(final int index) {
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            return (short) ((buffer[index * 2] & 0xff) << 8 | buffer[index * 2 + 1] & 0xff);
-        }
-        else {
-            return (short) ((buffer[index * 2 + 1] & 0xff) << 8 | buffer[index * 2] & 0xff);
-        }
-    }
-
     @Override
     public int read() throws IOException {
-        if (decodedLength < 0) {
-            return -1;
-        }
-
-        if (decodedPos >= decodedLength) {
-            fetch();
-
-            if (decodedLength < 0) {
+        if (!buffer.hasRemaining()) {
+            if (!fetch()) {
                 return -1;
             }
         }
 
-        return buffer[decodedPos++] & 0xff;
+        return buffer.get() & 0xff;
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        if (decodedLength < 0) {
-            return -1;
-        }
-
-        if (decodedPos >= decodedLength) {
-            fetch();
-
-            if (decodedLength < 0) {
+        if (!buffer.hasRemaining()) {
+            if (!fetch()) {
                 return -1;
             }
         }
 
-        int read = Math.min(decodedLength - decodedPos, len);
-        System.arraycopy(buffer, decodedPos, b, off, read);
-        decodedPos += read;
+        int read = Math.min(buffer.remaining(), len);
+        buffer.get(b, off, read);
 
         return read;
     }
 
     @Override
     public long skip(long n) throws IOException {
-        if (decodedLength < 0) {
-            return -1;
+        if (n < 0) {
+            return 0;
         }
 
-        if (decodedPos >= decodedLength) {
-            fetch();
-
-            if (decodedLength < 0) {
-                return -1;
+        if (!buffer.hasRemaining()) {
+            if (!fetch()) {
+                return 0; // SIC
             }
         }
 
-        int skipped = (int) Math.min(decodedLength - decodedPos, n);
-        decodedPos += skipped;
+        int skipped = (int) Math.min(buffer.remaining(), n);
+        buffer.position(buffer.position() + skipped);
 
         return skipped;
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            super.close();
+        }
+        finally {
+            if (channel.isOpen()) {
+                channel.close();
+            }
+        }
     }
 }
