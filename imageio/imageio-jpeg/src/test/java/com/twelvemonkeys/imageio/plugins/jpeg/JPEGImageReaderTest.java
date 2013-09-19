@@ -600,6 +600,38 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         reader.dispose();
     }
 
+    @Test
+    public void testReadNoJFIFYCbCr() throws IOException {
+        // Basically the same issue as http://stackoverflow.com/questions/9340569/jpeg-image-with-wrong-colors
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/no-jfif-ycbcr.jpg")));
+
+        assertEquals(310, reader.getWidth(0));
+        assertEquals(206, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, 310, 8));
+        BufferedImage image = reader.read(0, param);
+        assertNotNull(image);
+        assertEquals(310, image.getWidth());
+        assertEquals(8, image.getHeight());
+
+        int[] expectedRGB = new int[] {
+                0xff3c1b14, 0xff35140b, 0xff4b2920, 0xff3b160e, 0xff49231a, 0xff874e3d, 0xff563d27, 0xff926c61,
+                0xff350005, 0xff84432d, 0xff754f46, 0xff2c2223, 0xff422016, 0xff220f0b, 0xff251812, 0xff1c1209,
+                0xff483429, 0xff1b140c, 0xff231c16, 0xff2f261f, 0xff2e2923, 0xff170c08, 0xff383025, 0xff443b34,
+                0xff574a39, 0xff3b322b, 0xffeee1d0, 0xffebdecd, 0xffe9dccb, 0xffe8dbca, 0xffe7dcca,
+        };
+
+        // Validate strip colors
+        for (int i = 0; i < image.getWidth() / 10; i++) {
+            int actualRGB = image.getRGB(i * 10, 7);
+            assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
+            assertEquals((actualRGB >> 8) & 0xff, (expectedRGB[i] >> 8) & 0xff, 5);
+            assertEquals((actualRGB) & 0xff, (expectedRGB[i]) & 0xff, 5);
+        }
+    }
+
     // TODO: Test RGBA/YCbCrA handling
 
     @Test

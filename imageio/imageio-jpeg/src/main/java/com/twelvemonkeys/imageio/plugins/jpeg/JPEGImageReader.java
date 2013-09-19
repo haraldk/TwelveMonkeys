@@ -66,6 +66,7 @@ import java.util.List;
  * <p/>
  * Main features:
  * <ul>
+ * <li>Support for YCbCr JPEGs without JFIF segment (converted to RGB, using the embedded ICC profile if applicable)</li>
  * <li>Support for CMYK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)</li>
  * <li>Support for Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)</li>
  * <li>Support for JPEGs containing ICC profiles with interpretation other than 'Perceptual' (profile is assumed to be 'Perceptual' and used)</li>
@@ -298,26 +299,25 @@ public class JPEGImageReader extends ImageReaderBase {
 //            }
 //        }
 
-        // NOTE: We rely on the fact that unsupported images has no valid types. This is kind of hacky.
-        // Might want to look into the metadata, to see if there's a better way to identify these.
-        boolean unsupported = !delegate.getImageTypes(imageIndex).hasNext();
-
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
+        SOFSegment sof = getSOF();
+        JPEGColorSpace sourceCSType = getSourceCSType(adobeDCT, sof);
 
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
-                unsupported ||
+                sourceCSType == JPEGColorSpace.CMYK ||
+                sourceCSType == JPEGColorSpace.YCCK ||
                 adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile))) {
-//                profile != null && (ColorSpaces.isOffendingColorProfile(profile) || profile.getColorSpaceType() == ColorSpace.TYPE_CMYK))) {
+                profile != null && !ColorSpaces.isCS_sRGB(profile)) ||
+                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
             }
 
-            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, ensureDisplayProfile(profile));
+            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, adobeDCT, ensureDisplayProfile(profile));
         }
 
         if (DEBUG) {
@@ -327,13 +327,9 @@ public class JPEGImageReader extends ImageReaderBase {
         return delegate.read(imageIndex, param);
     }
 
-    private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, ICC_Profile profile) throws IOException {
+    private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, SOFSegment startOfFrame, JPEGColorSpace csType, AdobeDCTSegment adobeDCT, ICC_Profile profile) throws IOException {
         int origWidth = getWidth(imageIndex);
         int origHeight = getHeight(imageIndex);
-
-        AdobeDCTSegment adobeDCT = getAdobeDCT();
-        SOFSegment startOfFrame = getSOF();
-        JPEGColorSpace csType = getSourceCSType(adobeDCT, startOfFrame);
 
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
         BufferedImage image = getDestination(param, imageTypes, origWidth, origHeight);
