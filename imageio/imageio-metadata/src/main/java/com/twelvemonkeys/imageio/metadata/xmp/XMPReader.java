@@ -128,20 +128,8 @@ public final class XMPReader extends MetadataReader {
 
                 Object value;
 
-                Node parseType = node.getAttributes().getNamedItemNS(XMP.NS_RDF, "parseType");
-                if (parseType != null && "Resource".equals(parseType.getNodeValue())) {
-                    // See: http://www.w3.org/TR/REC-rdf-syntax/#section-Syntax-parsetype-resource
-                    List<Entry> entries = new ArrayList<Entry>();
-
-                    for (Node child : asIterable(node.getChildNodes())) {
-                        if (child.getNodeType() != Node.ELEMENT_NODE) {
-                            continue;
-                        }
-
-                        entries.add(new XMPEntry(child.getNamespaceURI() + child.getLocalName(), child.getLocalName(), getChildTextValue(child)));
-                    }
-
-                    value = new RDFDescription(entries);
+                if (isResourceType(node)) {
+                    value = parseAsResource(node);
                 }
                 else {
                     // TODO: This method contains loads of duplication an should be cleaned up...
@@ -178,6 +166,27 @@ public final class XMPReader extends MetadataReader {
         return new XMPDirectory(entries, toolkit);
     }
 
+    private boolean isResourceType(Node node) {
+        Node parseType = node.getAttributes().getNamedItemNS(XMP.NS_RDF, "parseType");
+
+        return parseType != null && "Resource".equals(parseType.getNodeValue());
+    }
+
+    private RDFDescription parseAsResource(Node node) {
+        // See: http://www.w3.org/TR/REC-rdf-syntax/#section-Syntax-parsetype-resource
+        List<Entry> entries = new ArrayList<Entry>();
+
+        for (Node child : asIterable(node.getChildNodes())) {
+            if (child.getNodeType() != Node.ELEMENT_NODE) {
+                continue;
+            }
+
+            entries.add(new XMPEntry(child.getNamespaceURI() + child.getLocalName(), child.getLocalName(), getChildTextValue(child)));
+        }
+
+        return new RDFDescription(entries);
+    }
+
     private void parseAttributesForKnownElements(Map<String, List<Entry>> subdirs, Node desc) {
         // NOTE: NamedNodeMap does not have any particular order...
         NamedNodeMap attributes = desc.getAttributes();
@@ -201,15 +210,13 @@ public final class XMPReader extends MetadataReader {
     private Object getChildTextValue(final Node node) {
         for (Node child : asIterable(node.getChildNodes())) {
             if (XMP.NS_RDF.equals(child.getNamespaceURI()) && "Alt".equals(child.getLocalName())) {
-                // Support for <rdf:Alt><rdf:li> -> return a Map<String, Object> (keyed on xml:lang?)
+                // Support for <rdf:Alt><rdf:li> -> return a Map<String, Object> keyed on xml:lang
                 Map<String, Object> alternatives = new LinkedHashMap<String, Object>();
                 for (Node alternative : asIterable(child.getChildNodes())) {
                     if (XMP.NS_RDF.equals(alternative.getNamespaceURI()) && "li".equals(alternative.getLocalName())) {
-                        //return getChildTextValue(alternative);
                         NamedNodeMap attributes = alternative.getAttributes();
                         Node key = attributes.getNamedItem("xml:lang");
-
-                        alternatives.put(key.getTextContent(), getChildTextValue(alternative));
+                        alternatives.put(key == null ? null : key.getTextContent(), getChildTextValue(alternative));
                     }
                 }
 
@@ -235,9 +242,13 @@ public final class XMPReader extends MetadataReader {
             }
         }
 
+        // Need to support rdf:parseType="Resource" here as well...
+        if (isResourceType(node)) {
+            return parseAsResource(node);
+        }
+
         Node child = node.getFirstChild();
         String strVal = child != null ? child.getNodeValue() : null;
-
         return strVal != null ? strVal.trim() : "";
     }
 

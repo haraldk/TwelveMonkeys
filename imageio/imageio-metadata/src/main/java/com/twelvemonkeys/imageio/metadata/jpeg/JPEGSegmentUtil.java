@@ -33,6 +33,7 @@ import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMP;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -245,38 +246,48 @@ public final class JPEGSegmentUtil {
     }
 
     public static void main(String[] args) throws IOException {
-        List<JPEGSegment> segments = readSegments(ImageIO.createImageInputStream(new File(args[0])), ALL_SEGMENTS);
-
-        for (JPEGSegment segment : segments) {
-            System.err.println("segment: " + segment);
-
-            if ("Exif".equals(segment.identifier())) {
-                InputStream data = segment.data();
-                //noinspection ResultOfMethodCallIgnored
-                data.read(); // Pad
-
-                ImageInputStream stream = ImageIO.createImageInputStream(data);
-
-                // Root entry is TIFF, that contains the EXIF sub-IFD
-                Directory tiff = new EXIFReader().read(stream);
-                System.err.println("EXIF: " + tiff);
+        for (String arg : args) {
+            if (args.length > 1) {
+                System.out.println("File: " + arg);
+                System.out.println("------");
             }
-            else if (XMP.NS_XAP.equals(segment.identifier())) {
-                Directory xmp = new XMPReader().read(ImageIO.createImageInputStream(segment.data()));
-                System.err.println("XMP: " + xmp);
+
+            List<JPEGSegment> segments = readSegments(ImageIO.createImageInputStream(new File(arg)), ALL_SEGMENTS);
+
+            for (JPEGSegment segment : segments) {
+                System.err.println("segment: " + segment);
+
+                if ("Exif".equals(segment.identifier())) {
+                    ImageInputStream stream = new ByteArrayImageInputStream(segment.data, segment.offset() + 1, segment.length() - 1);
+
+                    // Root entry is TIFF, that contains the EXIF sub-IFD
+                    Directory tiff = new EXIFReader().read(stream);
+                    System.err.println("EXIF: " + tiff);
+                }
+                else if (XMP.NS_XAP.equals(segment.identifier())) {
+                    Directory xmp = new XMPReader().read(new ByteArrayImageInputStream(segment.data, segment.offset(), segment.length()));
+                    System.err.println("XMP: " + xmp);
+                    System.err.println(EXIFReader.HexDump.dump(segment.data));
+                }
+                else if ("Photoshop 3.0".equals(segment.identifier())) {
+                    // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
+                    //       IPTC metadata. Probably duplicated in the XMP though...
+                    ImageInputStream stream = new ByteArrayImageInputStream(segment.data, segment.offset(), segment.length());
+                    Directory psd = new PSDReader().read(stream);
+                    System.err.println("PSD: " + psd);
+                    System.err.println(EXIFReader.HexDump.dump(segment.data));
+                }
+                else if ("ICC_PROFILE".equals(segment.identifier())) {
+                    // Skip
+                }
+                else {
+                    System.err.println(EXIFReader.HexDump.dump(segment.data));
+                }
             }
-            else if ("Photoshop 3.0".equals(segment.identifier())) {
-                // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
-                //       IPTC metadata. Probably duplicated in the XMP though...
-                ImageInputStream stream = ImageIO.createImageInputStream(segment.data());
-                Directory psd = new PSDReader().read(stream);
-                System.err.println("PSD: " + psd);
-            }
-            else if ("ICC_PROFILE".equals(segment.identifier())) {
-                // Skip
-            }
-            else {
-                System.err.println(EXIFReader.HexDump.dump(segment.data));
+
+            if (args.length > 1) {
+                System.out.println("------");
+                System.out.println();
             }
         }
     }

@@ -87,7 +87,7 @@ public final class JPEGSegment implements Serializable {
         return data != null ? data.length - offset() : 0;
     }
 
-    private int offset() {
+    int offset() {
         String identifier = identifier();
 
         return identifier == null ? 0 : identifier.length() + 1;
