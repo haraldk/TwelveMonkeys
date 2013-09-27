@@ -44,6 +44,7 @@ import java.nio.ByteBuffer;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/EncoderStream.java#2 $
  */
 public final class EncoderStream extends FilterOutputStream {
+    // TODO: This class need a test case ASAP!!!
 
     protected final Encoder encoder;
     private final boolean flushOnWrite;
@@ -91,7 +92,9 @@ public final class EncoderStream extends FilterOutputStream {
     }
 
     private void encodeBuffer() throws IOException {
-        if (buffer.hasRemaining()) {
+        if (buffer.position() != 0) {
+            buffer.flip();
+
             // Make sure all remaining data in buffer is written to the stream
             encoder.encode(out, buffer);
 

@@ -54,7 +54,12 @@ public abstract class EncoderAbstractTestCase extends ObjectAbstractTestCase {
         OutputStream out = new EncoderStream(outBytes, createEncoder(), true);
 
         try {
-            out.write(data);
+            // Provoke failure for encoders that doesn't take array offset properly into account
+            int off = (data.length + 1) / 2;
+            out.write(data, 0, off);
+            if (data.length > off) {
+                out.write(data, off, data.length - off);
+            }
         }
         finally {
             out.close();
@@ -127,4 +132,8 @@ public abstract class EncoderAbstractTestCase extends ObjectAbstractTestCase {
             }
         }
     }
+
+    // TODO: Test that the transition from byte[] to ByteBuffer didn't introduce bugs when writing to a wrapped array with offset.
+
+
 }
