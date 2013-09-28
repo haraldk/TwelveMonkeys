@@ -1006,9 +1006,10 @@ public class JPEGImageReader extends ImageReaderBase {
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         IIOMetadata metadata = delegate.getImageMetadata(imageIndex);
 
-        String format = metadata.getNativeMetadataFormatName();
-        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(format);
-        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
+        if (metadata != null) {
+            String format = metadata.getNativeMetadataFormatName();
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(format);
+            Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
 
         // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
         // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
@@ -1030,16 +1031,17 @@ public class JPEGImageReader extends ImageReaderBase {
         the version to the method/constructor used to obtain an IIOMetadata object.)
          */
 
-        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
-        app2ICC.setUserObject(getEmbeddedICCProfile(true));
-        Node jpegVarietyFirstChild = jpegVariety.getFirstChild();
-        if (jpegVarietyFirstChild != null) {
-            jpegVarietyFirstChild.appendChild(app2ICC);
-        }
+            IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
+            app2ICC.setUserObject(getEmbeddedICCProfile(true));
+            Node jpegVarietyFirstChild = jpegVariety.getFirstChild();
+            if (jpegVarietyFirstChild != null) {
+                jpegVarietyFirstChild.appendChild(app2ICC);
+            }
 
     //        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
 
-        metadata.mergeTree(format, tree);
+            metadata.mergeTree(format, tree);
+        }
 
         return metadata;
     }
