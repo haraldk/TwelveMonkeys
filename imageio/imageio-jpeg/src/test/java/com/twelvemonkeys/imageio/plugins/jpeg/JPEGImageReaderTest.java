@@ -29,26 +29,33 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
+import org.mockito.internal.matchers.GreaterThan;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.plugins.jpeg.JPEGHuffmanTable;
+import javax.imageio.plugins.jpeg.JPEGQTable;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
+import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -627,15 +634,15 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         for (int i = 0; i < image.getWidth() / 10; i++) {
             int actualRGB = image.getRGB(i * 10, 7);
             assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
-            assertEquals((actualRGB >> 8) & 0xff, (expectedRGB[i] >> 8) & 0xff, 5);
-            assertEquals((actualRGB) & 0xff, (expectedRGB[i]) & 0xff, 5);
+            assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
+            assertEquals((actualRGB      ) & 0xff, (expectedRGB[i]      ) & 0xff, 5);
         }
     }
 
     // TODO: Test RGBA/YCbCrA handling
 
     @Test
-    public void testReadMetadataMaybeNull() throws IOException {
+    public void testReadMetadata() throws IOException {
         // Just test that we can read the metadata without exceptions
         JPEGImageReader reader = createReader();
 
@@ -646,11 +653,276 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 try {
                     IIOMetadata metadata = reader.getImageMetadata(i);
                     assertNotNull(String.format("Image metadata null for %s image %s", testData, i), metadata);
+
+                    Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+                    assertNotNull(tree);
+                    assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+
+                    IIOMetadataNode iioTree = (IIOMetadataNode) tree;
+                    assertEquals(1, iioTree.getElementsByTagName("JPEGvariety").getLength());
+                    Node jpegVariety = iioTree.getElementsByTagName("JPEGvariety").item(0);
+                    assertNotNull(jpegVariety);
+
+                    Node app0JFIF = jpegVariety.getFirstChild();
+                    if (app0JFIF != null) {
+                        assertEquals("app0JFIF", app0JFIF.getLocalName());
+                    }
+
+                    NodeList markerSequences = iioTree.getElementsByTagName("markerSequence");
+                    assertTrue(markerSequences.getLength() == 1 || markerSequences.getLength() == 2); // In case of JPEG encoded thumbnail, there will be 2
+                    IIOMetadataNode markerSequence = (IIOMetadataNode) markerSequences.item(0);
+                    assertNotNull(markerSequence);
+                    assertThat(markerSequence.getChildNodes().getLength(), new GreaterThan<Integer>(0));
+
+                    NodeList unknowns = markerSequence.getElementsByTagName("unknown");
+                    for (int j = 0; j < unknowns.getLength(); j++) {
+                        IIOMetadataNode unknown = (IIOMetadataNode) unknowns.item(j);
+                        assertNotNull(unknown.getUserObject()); // All unknowns must have user object (data array)
+                    }
                 }
                 catch (IIOException e) {
-                    System.err.println(String.format("WARNING: Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
+                    fail(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
                 }
             }
         }
+    }
+
+    @Test
+    public void testReadInconsistentMetadata() throws IOException {
+        // A collection of JPEG files that makes the JPEGImageReader throw exception "Inconsistent metadata read from stream"...
+        List<String> resources = Arrays.asList(
+                "/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg", // Ok
+                "/jpeg/gray-sample.jpg", // Ok
+                "/jpeg/cmyk-sample.jpg",
+                "/jpeg/cmyk-sample-multiple-chunk-icc.jpg",
+                "/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-xerox-dc250-heavyweight-1-progressive-jfif.jpg",
+                "/jpeg/no-image-types-rgb-us-web-coated-v2-ms-photogallery-exif.jpg"
+        );
+
+        for (String resource : resources) {
+            // Just test that we can read the metadata without exceptions
+            JPEGImageReader reader = createReader();
+            ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(resource));
+
+            try {
+                reader.setInput(stream);
+                IIOMetadata metadata = reader.getImageMetadata(0);
+                assertNotNull(String.format("%s: null metadata", resource), metadata);
+
+                Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+                assertNotNull(tree);
+//                new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
+
+            }
+            catch (IIOException e) {
+                AssertionError fail = new AssertionError(String.format("Reading metadata failed for %ss: %s", resource, e.getMessage()));
+                fail.initCause(e);
+                throw fail;
+            }
+            finally {
+                stream.close();
+            }
+        }
+    }
+
+    @Test
+    public void testReadMetadataEqualReference() throws IOException {
+        // Compares the metadata for JFIF-conformant files with metadata from com.sun...JPEGImageReader
+        JPEGImageReader reader = createReader();
+        ImageReader referenceReader;
+
+        try {
+            @SuppressWarnings("unchecked")
+            Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+            ImageReaderSpi provider = spiClass.newInstance();
+            referenceReader = provider.createReaderInstance();
+        }
+        catch (Throwable t) {
+            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
+            return;
+        }
+
+        for (TestData testData : getTestData()) {
+            reader.setInput(testData.getInputStream());
+            referenceReader.setInput(testData.getInputStream());
+
+            for (int i = 0; i < reader.getNumImages(true); i++) {
+                try {
+                    IIOMetadata reference = referenceReader.getImageMetadata(i);
+
+                    try {
+                        IIOMetadata metadata = reader.getImageMetadata(i);
+
+                        String[] formatNames = reference.getMetadataFormatNames();
+                        for (String formatName : formatNames) {
+                            Node referenceTree = reference.getAsTree(formatName);
+                            Node actualTree = metadata.getAsTree(formatName);
+
+//                            new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(actualTree, false);
+                            assertTreesEquals(String.format("Metadata differs for %s image %s ", testData, i), referenceTree, actualTree);
+                        }
+                    }
+                    catch (IIOException e) {
+                        AssertionError fail = new AssertionError(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
+                        fail.initCause(e);
+                        throw fail;
+                    }
+                }
+                catch (IIOException ignore) {
+                    // The reference reader will fail on certain images, we'll just ignore that
+                    System.err.println(String.format("WARNING: Reading reference metadata failed for %s image %s: %s", testData, i, ignore.getMessage()));
+                }
+            }
+        }
+    }
+
+    private void assertTreesEquals(String message, Node expectedTree, Node actualTree) {
+        if (expectedTree == actualTree) {
+            return;
+        }
+
+        if (expectedTree == null) {
+            assertNull(actualTree);
+        }
+
+        assertEquals(String.format("%s: Node names differ", message), expectedTree.getNodeName(), actualTree.getNodeName());
+
+        NamedNodeMap expectedAttributes = expectedTree.getAttributes();
+        NamedNodeMap actualAttributes = actualTree.getAttributes();
+        assertEquals(String.format("%s: Number of attributes for <%s> differ", message, expectedTree.getNodeName()), expectedAttributes.getLength(), actualAttributes.getLength());
+        for (int i = 0; i < expectedAttributes.getLength(); i++) {
+            Node item = expectedAttributes.item(i);
+            assertEquals(String.format("%s: \"%s\" attribute for <%s> differ", message, item.getNodeName(), expectedTree.getNodeName()), item.getNodeValue(), actualAttributes.getNamedItem(item.getNodeName()).getNodeValue());
+        }
+
+        // Test for equal user objects.
+        // - array equals or reflective equality... Most user objects does not have a decent equals method.. :-P
+        if (expectedTree instanceof IIOMetadataNode) {
+            assertTrue(String.format("%s: %s not an IIOMetadataNode", message, expectedTree.getNodeName()), actualTree instanceof IIOMetadataNode);
+
+            Object expectedUserObject = ((IIOMetadataNode) expectedTree).getUserObject();
+
+            if (expectedUserObject != null) {
+                Object actualUserObject = ((IIOMetadataNode) actualTree).getUserObject();
+                assertNotNull(String.format("%s: User object missing for <%s>", message, expectedTree.getNodeName()), actualUserObject);
+                assertEqualUserObjects(String.format("%s: User objects for <%s MarkerTag\"%s\"> differ", message, expectedTree.getNodeName(), ((IIOMetadataNode) expectedTree).getAttribute("MarkerTag")), expectedUserObject, actualUserObject);
+            }
+        }
+
+        // Sort nodes to make sure that sequence of equally named tags does not matter
+        List<IIOMetadataNode> expectedChildren = sortNodes(expectedTree.getChildNodes());
+        List<IIOMetadataNode> actualChildren = sortNodes(actualTree.getChildNodes());
+
+        assertEquals(String.format("%s: Number of child nodes for %s differ", message, expectedTree.getNodeName()), expectedChildren.size(), actualChildren.size());
+
+        for (int i = 0; i < expectedChildren.size(); i++) {
+            assertTreesEquals(message + "<" + expectedTree.getNodeName() + ">", expectedChildren.get(i), actualChildren.get(i));
+        }
+    }
+
+    private void assertEqualUserObjects(String message, Object expectedUserObject, Object actualUserObject) {
+        if (expectedUserObject.equals(actualUserObject)) {
+            return;
+        }
+
+        if (expectedUserObject instanceof ICC_Profile) {
+            if (actualUserObject instanceof ICC_Profile) {
+                assertArrayEquals(message, ((ICC_Profile) expectedUserObject).getData(), ((ICC_Profile) actualUserObject).getData());
+                return;
+            }
+        }
+        else if (expectedUserObject instanceof byte[]) {
+            if (actualUserObject instanceof byte[]) {
+                assertArrayEquals(message, (byte[]) expectedUserObject, (byte[]) actualUserObject);
+                return;
+            }
+        }
+        else if (expectedUserObject instanceof JPEGHuffmanTable) {
+            if (actualUserObject instanceof JPEGHuffmanTable) {
+                assertArrayEquals(message, ((JPEGHuffmanTable) expectedUserObject).getLengths(), ((JPEGHuffmanTable) actualUserObject).getLengths());
+                assertArrayEquals(message, ((JPEGHuffmanTable) expectedUserObject).getValues(), ((JPEGHuffmanTable) actualUserObject).getValues());
+                return;
+            }
+        }
+        else if (expectedUserObject instanceof JPEGQTable) {
+            if (actualUserObject instanceof JPEGQTable) {
+                assertArrayEquals(message, ((JPEGQTable) expectedUserObject).getTable(), ((JPEGQTable) actualUserObject).getTable());
+                return;
+            }
+        }
+
+        fail(expectedUserObject.getClass().getName());
+    }
+
+    private List<IIOMetadataNode> sortNodes(final NodeList nodes) {
+        ArrayList<IIOMetadataNode> sortedNodes = new ArrayList<IIOMetadataNode>(new AbstractList<IIOMetadataNode>() {
+            @Override
+            public IIOMetadataNode get(int index) {
+                return (IIOMetadataNode) nodes.item(index);
+            }
+
+            @Override
+            public int size() {
+                return nodes.getLength();
+            }
+        });
+
+        Collections.sort(
+                sortedNodes,
+                new Comparator<IIOMetadataNode>() {
+                    public int compare(IIOMetadataNode left, IIOMetadataNode right) {
+                        int res = left.getNodeName().compareTo(right.getNodeName());
+                        if (res != 0) {
+                            return res;
+                        }
+
+                        // Compare attribute values
+                        NamedNodeMap leftAttributes = left.getAttributes(); // TODO: We should sort left's attributes as well, for stable sorting + handle diffs in attributes
+                        NamedNodeMap rightAttributes = right.getAttributes();
+
+                        for (int i = 0; i < leftAttributes.getLength(); i++) {
+                            Node leftAttribute = leftAttributes.item(i);
+                            Node rightAttribute = rightAttributes.getNamedItem(leftAttribute.getNodeName());
+
+                            if (rightAttribute == null) {
+                                return 1;
+                            }
+
+                            res = leftAttribute.getNodeValue().compareTo(rightAttribute.getNodeValue());
+                            if (res != 0) {
+                                return res;
+                            }
+                        }
+
+                        if (left.getUserObject() instanceof byte[] && right.getUserObject() instanceof byte[]) {
+                            byte[] leftBytes = (byte[]) left.getUserObject();
+                            byte[] rightBytes = (byte[]) right.getUserObject();
+
+                            if (leftBytes.length < rightBytes.length) {
+                                return 1;
+                            }
+
+                            if (leftBytes.length > rightBytes.length) {
+                                return -1;
+                            }
+
+                            if (leftBytes.length > 0) {
+                                for (int i = 0; i < leftBytes.length; i++) {
+                                    if (leftBytes[i] < rightBytes[i]) {
+                                        return -1;
+                                    }
+                                    if (leftBytes[i] > rightBytes[i]) {
+                                        return 1;
+                                    }
+                                }
+                            }
+                        }
+
+                        return 0;
+                    }
+                }
+        );
+
+        return sortedNodes;
     }
 }

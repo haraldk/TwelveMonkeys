@@ -41,11 +41,15 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.xml.XMLSerializer;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
@@ -57,6 +61,7 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.List;
 
@@ -97,12 +102,16 @@ public class JPEGImageReader extends ImageReaderBase {
 
     private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
+    /** Internal constant for referring all APP segments */
+    private static final int ALL_APP_MARKERS = -1;
+
     /** Segment identifiers for the JPEG segments we care about reading. */
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
 
     private static Map<Integer, List<String>> createSegmentIds() {
         Map<Integer, List<String>> map = new LinkedHashMap<Integer, List<String>>();
 
+        /*
         // JFIF/JFXX APP0 markers
         map.put(JPEG.APP0, JPEGSegmentUtil.ALL_IDS);
 
@@ -114,6 +123,12 @@ public class JPEGImageReader extends ImageReaderBase {
 
         // Adobe APP14 marker
         map.put(JPEG.APP14, Collections.singletonList("Adobe"));
+        //*/
+
+        // Need all APP markers to be able to re-generate proper metadata later
+        for (int appMarker = JPEG.APP0; appMarker <= JPEG.APP15; appMarker++) {
+            map.put(appMarker, JPEGSegmentUtil.ALL_IDS);
+        }
 
         // SOFn markers
         map.put(JPEG.SOF0, null);
@@ -135,6 +150,7 @@ public class JPEGImageReader extends ImageReaderBase {
 
     /** Our JPEG reading delegate */
     private final ImageReader delegate;
+    private ImageReader thumbnailReader;
 
     /** Listens to progress updates in the delegate, and delegates back to this instance */
     private final ProgressDelegator progressDelegator;
@@ -163,12 +179,21 @@ public class JPEGImageReader extends ImageReaderBase {
         segments = null;
         thumbnails = null;
 
+        if (thumbnailReader != null) {
+            thumbnailReader.reset();
+        }
+
         installListeners();
     }
 
     @Override
     public void dispose() {
         super.dispose();
+
+        if (thumbnailReader != null) {
+            thumbnailReader.dispose();
+            thumbnailReader = null;
+        }
 
         delegate.dispose();
     }
@@ -317,6 +342,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 System.out.println("ICC color profile: " + profile);
             }
 
+            // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMyK and other good types?
             return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, adobeDCT, ensureDisplayProfile(profile));
         }
 
@@ -673,7 +699,8 @@ public class JPEGImageReader extends ImageReaderBase {
         List<JPEGSegment> appSegments = Collections.emptyList();
 
         for (JPEGSegment segment : segments) {
-            if (segment.marker() == marker && (identifier == null || identifier.equals(segment.identifier()))) {
+            if ((marker == ALL_APP_MARKERS && segment.marker() >= JPEG.APP0 && segment.marker() <= JPEG.APP15 || segment.marker() == marker)
+                    && (identifier == null || identifier.equals(segment.identifier()))) {
                 if (appSegments == Collections.EMPTY_LIST) {
                     appSegments = new ArrayList<JPEGSegment>(segments.size());
                 }
@@ -928,7 +955,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     case JFXXSegment.JPEG:
                     case JFXXSegment.INDEXED:
                     case JFXXSegment.RGB:
-                        thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, imageIndex, thumbnails.size(), jfxx));
+                        thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), imageIndex, thumbnails.size(), jfxx));
                         break;
                     default:
                         processWarningOccurred("Unknown JFXX extension code: " + jfxx.extensionCode);
@@ -956,7 +983,7 @@ public class JPEGImageReader extends ImageReaderBase {
 
                         // 1 = no compression, 6 = JPEG compression (default)
                         if (compression == null || compression.getValue().equals(1) || compression.getValue().equals(6)) {
-                            thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, 0, thumbnails.size(), ifd1, stream));
+                            thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
                         }
                         else {
                             processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression.getValue());
@@ -965,6 +992,14 @@ public class JPEGImageReader extends ImageReaderBase {
                 }
             }
         }
+    }
+
+    private ImageReader getThumbnailReader() throws IOException {
+        if (thumbnailReader == null) {
+            thumbnailReader = delegate.getOriginatingProvider().createReaderInstance();
+        }
+
+        return thumbnailReader;
     }
 
     @Override
@@ -1004,43 +1039,240 @@ public class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        // TODO: Extract metadata handling in separate class, for less mess and easier testing
+        // We filter out pretty much everything from the stream..
+        // Meaning we have to read *all APP segments* and re-insert into metadata.
+
+        // TODO: There's a bug in the merging code in JPEGMetadata mergeUnknownNode that makes sure all "unknown" nodes are added twice in certain conditions.... ARGHBL...
+        // TODO: 1: Work around
+        // TODO: 2: REPORT BUG!
+
+        List<JPEGSegment> appSegments = getAppSegments(ALL_APP_MARKERS, null);
+//        System.out.println("appSegments: " + appSegments);
+
         IIOMetadata metadata = delegate.getImageMetadata(imageIndex);
 
         if (metadata != null) {
             String format = metadata.getNativeMetadataFormatName();
             IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(format);
-            Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
+            IIOMetadataNode jpegVariety = (IIOMetadataNode) tree.getElementsByTagName("JPEGvariety").item(0);
+            IIOMetadataNode markerSequence = (IIOMetadataNode) tree.getElementsByTagName("markerSequence").item(0);
 
-        // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
-        // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
-        // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
-        /*
-        from: http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
+            JFIFSegment jfifSegment = getJFIF();
+            JFXXSegment jfxxSegment = getJFXX();
+            AdobeDCTSegment adobeDCT = getAdobeDCT();
+            ICC_Profile embeddedICCProfile = getEmbeddedICCProfile(true);
+            SOFSegment sof = getSOF();
 
-        In future versions of the JPEG metadata format, other varieties of JPEG metadata may be supported (e.g. Exif)
-        by defining other types of nodes which may appear as a child of the JPEGvariety node.
+            boolean hasRealJFIF = false;
+            boolean hasRealJFXX = false;
+            boolean hasRealICC = false;
 
-        (Note that an application wishing to interpret Exif metadata given a metadata tree structure in the
-        javax_imageio_jpeg_image_1.0 format must check for an unknown marker segment with a tag indicating an
-        APP1 marker and containing data identifying it as an Exif marker segment. Then it may use application-specific
-        code to interpret the data in the marker segment. If such an application were to encounter a metadata tree
-        formatted according to a future version of the JPEG metadata format, the Exif marker segment might not be
-        unknown in that format - it might be structured as a child node of the JPEGvariety node.
+            if (jfifSegment != null) {
+                // Normal case, conformant JFIF with 1 or 3 components
+                // TODO: Test if we have CMY or other bad color space?
+                // TODO: Remove JFIF if app14Adobe transform is YCCK (and isn't incorrect...)
+                if (sof.componentsInFrame() == 1 || sof.componentsInFrame() == 3) {
+                    IIOMetadataNode jfif = new IIOMetadataNode("app0JFIF");
+                    jfif.setAttribute("majorVersion", String.valueOf(jfifSegment.majorVersion));
+                    jfif.setAttribute("minorVersion", String.valueOf(jfifSegment.minorVersion));
+                    jfif.setAttribute("resUnits", String.valueOf(jfifSegment.units));
+                    jfif.setAttribute("Xdensity", String.valueOf(jfifSegment.xDensity));
+                    jfif.setAttribute("Ydensity", String.valueOf(jfifSegment.yDensity));
+                    jfif.setAttribute("thumbWidth", String.valueOf(jfifSegment.xThumbnail));
+                    jfif.setAttribute("thumbHeight", String.valueOf(jfifSegment.yThumbnail));
 
-        Thus, it is important for an application to specify which version to use by passing the string identifying
-        the version to the method/constructor used to obtain an IIOMetadata object.)
-         */
+                    jpegVariety.appendChild(jfif);
+                    hasRealJFIF = true;
 
-            IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
-            app2ICC.setUserObject(getEmbeddedICCProfile(true));
-            Node jpegVarietyFirstChild = jpegVariety.getFirstChild();
-            if (jpegVarietyFirstChild != null) {
-                jpegVarietyFirstChild.appendChild(app2ICC);
+                    // Add app2ICC and JFXX as proper nodes
+                    if (embeddedICCProfile != null) {
+                        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
+                        app2ICC.setUserObject(embeddedICCProfile);
+                        jfif.appendChild(app2ICC);
+                        hasRealICC = true;
+                    }
+
+                    if (jfxxSegment != null) {
+                        IIOMetadataNode JFXX = new IIOMetadataNode("JFXX");
+                        jfif.appendChild(JFXX);
+                        IIOMetadataNode app0JFXX = new IIOMetadataNode("app0JFXX");
+                        app0JFXX.setAttribute("extensionCode", String.valueOf(jfxxSegment.extensionCode));
+
+                        JFXXThumbnailReader reader = new JFXXThumbnailReader(null, getThumbnailReader(), imageIndex, -1, jfxxSegment);
+
+                        IIOMetadataNode jfifThumb;
+                        switch (jfxxSegment.extensionCode) {
+                            case JFXXSegment.JPEG:
+                                jfifThumb = new IIOMetadataNode("JFIFthumbJPEG");
+                                // Contains it's own "markerSequence" with full DHT, DQT, SOF etc...
+                                IIOMetadata thumbMeta = reader.readMetadata();
+                                Node thumbTree = thumbMeta.getAsTree(format);
+                                jfifThumb.appendChild(thumbTree.getLastChild());
+                                app0JFXX.appendChild(jfifThumb);
+                                break;
+
+                            case JFXXSegment.INDEXED:
+                                jfifThumb = new IIOMetadataNode("JFIFthumbPalette");
+                                jfifThumb.setAttribute("thumbWidth", String.valueOf(reader.getWidth()));
+                                jfifThumb.setAttribute("thumbHeight", String.valueOf(reader.getHeight()));
+                                app0JFXX.appendChild(jfifThumb);
+                                break;
+
+                            case JFXXSegment.RGB:
+                                jfifThumb = new IIOMetadataNode("JFIFthumbRGB");
+                                jfifThumb.setAttribute("thumbWidth", String.valueOf(reader.getWidth()));
+                                jfifThumb.setAttribute("thumbHeight", String.valueOf(reader.getHeight()));
+                                app0JFXX.appendChild(jfifThumb);
+                                break;
+
+                            default:
+                                processWarningOccurred(String.format("Unknown JFXX extension code: %d", jfxxSegment.extensionCode));
+                        }
+
+                        JFXX.appendChild(app0JFXX);
+                        hasRealJFXX = true;
+                    }
+                }
+                else {
+                    // Typically CMYK with JFIF segment (Adobe or similar).
+                    processWarningOccurred(String.format(
+                            "Incompatible JFIF marker segment in stream. " +
+                                    "SOF%d has %d color components, JFIF allows only 1 or 3 components. Ignoring JFIF marker.",
+                            sof.marker & 0xf, sof.componentsInFrame()
+                    ));
+                }
             }
 
-    //        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
+            // Special case: Broken AdobeDCT segment, inconsistent with SOF, use values from SOF
+            if (adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4) {
+                processWarningOccurred(String.format(
+                        "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOF%d has %d color components. " +
+                                "Ignoring Adobe App14 marker.",
+                        sof.marker & 0xf, sof.componentsInFrame()
+                ));
 
-            metadata.mergeTree(format, tree);
+                // Remove bad AdobeDCT
+                NodeList app14Adobe = tree.getElementsByTagName("app14Adobe");
+                for (int i = app14Adobe.getLength() - 1; i >= 0; i--) {
+                    Node item = app14Adobe.item(i);
+                    item.getParentNode().removeChild(item);
+                }
+
+
+                // TODO: Add app14 as "unknown" marker?
+//                IIOMetadataNode app14Adobe = new IIOMetadataNode("app14Adobe");
+//                app14Adobe.setAttribute("version", String.valueOf(adobeDCT.getVersion()));
+//                app14Adobe.setAttribute("flags0", String.valueOf(adobeDCT.getFlags0()));
+//                app14Adobe.setAttribute("flags1", String.valueOf(adobeDCT.getFlags1()));
+//                app14Adobe.setAttribute("transform", String.valueOf(sof.componentsInFrame() == 3 ? ));
+//                markerSequence.appendChild(app14Adobe);
+            }
+
+            Node next = null;
+            for (JPEGSegment segment : appSegments) {
+                // TODO: Except real app0JFIF, app0JFXX, app2ICC and app14Adobe, add all the app segments that we filtered away as "unknown" markers
+                if (segment.marker() == JPEG.APP0 && "JFIF".equals(segment.identifier()) && hasRealJFIF) {
+                    continue;
+                }
+                else if (segment.marker() == JPEG.APP0 && "JFXX".equals(segment.identifier()) && hasRealJFXX) {
+                    continue;
+                }
+                else if (segment.marker() == JPEG.APP1 && "Exif".equals(segment.identifier()) /* always inserted */) {
+                    continue;
+                }
+                else if (segment.marker() == JPEG.APP2 && "ICC_PROFILE".equals(segment.identifier()) && hasRealICC) {
+                    continue;
+                }
+                else if (segment.marker() == JPEG.APP14 && "Adobe".equals(segment.identifier()) /* always inserted */) {
+                    continue;
+                }
+
+                IIOMetadataNode unknown = new IIOMetadataNode("unknown");
+                unknown.setAttribute("MarkerTag", Integer.toString(segment.marker() & 0xff));
+
+                DataInputStream stream = new DataInputStream(segment.data());
+
+                try {
+                    String identifier = segment.identifier();
+                    int off = identifier != null ? identifier.length() + 1 : 0;
+
+                    byte[] data = new byte[off + segment.length()];
+
+                    if (identifier != null) {
+                        System.arraycopy(identifier.getBytes(Charset.forName("ASCII")), 0, data, 0, identifier.length());
+                    }
+
+                    stream.readFully(data, off, segment.length());
+
+                    unknown.setUserObject(data);
+                }
+                finally {
+                    stream.close();
+                }
+
+                if (next == null) {
+                    next = markerSequence.getFirstChild();
+                }
+
+                markerSequence.insertBefore(unknown, next);
+            }
+
+            // Inconsistency issue in the com.sun classes, it can read metadata with dht containing
+            // more than 4 children, but will not allow setting such a tree...
+            // We'll split AC/DC tables into separate dht nodes.
+            NodeList dhts = markerSequence.getElementsByTagName("dht");
+            for (int j = 0; j < dhts.getLength(); j++) {
+                Node dht = dhts.item(j);
+                NodeList dhtables = dht.getChildNodes();
+
+                if (dhtables.getLength() > 4) {
+                    IIOMetadataNode acTables = new IIOMetadataNode("dht");
+                    dht.getParentNode().insertBefore(acTables, dht.getNextSibling());
+
+
+                    // Split into 2 dht nodes, one for AC and one for DC
+                    for (int i = 0; i < dhtables.getLength(); i++) {
+                        Element dhtable = (Element) dhtables.item(i);
+                        String tableClass = dhtable.getAttribute("class");
+                        if ("1".equals(tableClass)) {
+                            dht.removeChild(dhtable);
+                            acTables.appendChild(dhtable);
+                        }
+                    }
+                }
+            }
+
+            // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
+            // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
+            // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
+            /*
+            from: http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
+
+            In future versions of the JPEG metadata format, other varieties of JPEG metadata may be supported (e.g. Exif)
+            by defining other types of nodes which may appear as a child of the JPEGvariety node.
+
+            (Note that an application wishing to interpret Exif metadata given a metadata tree structure in the
+            javax_imageio_jpeg_image_1.0 format must check for an unknown marker segment with a tag indicating an
+            APP1 marker and containing data identifying it as an Exif marker segment. Then it may use application-specific
+            code to interpret the data in the marker segment. If such an application were to encounter a metadata tree
+            formatted according to a future version of the JPEG metadata format, the Exif marker segment might not be
+            unknown in that format - it might be structured as a child node of the JPEGvariety node.
+
+            Thus, it is important for an application to specify which version to use by passing the string identifying
+            the version to the method/constructor used to obtain an IIOMetadata object.)
+             */
+
+//            new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
+
+            try {
+                metadata.setFromTree(format, tree);
+            }
+            catch (IIOInvalidTreeException e) {
+                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
+                throw e;
+            }
+//            metadata.mergeTree(format, tree); // TODO: Merging does not work, as the "unknown" tags duplicate insert bug ruins everything. Try set instead...
         }
 
         return metadata;
@@ -1379,9 +1611,11 @@ public class JPEGImageReader extends ImageReaderBase {
 //                        System.err.println("thumbnail: " + thumbnail);
                         showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
                     }
+
+                    reader.getImageMetadata(0);
                 }
                 catch (IIOException e) {
-                    System.err.println("Could not read thumbnails: " + e.getMessage());
+                    System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             }

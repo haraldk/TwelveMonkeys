@@ -28,12 +28,12 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * ThumbnailReader
@@ -42,6 +42,7 @@ import java.io.InputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: ThumbnailReader.java,v 1.0 18.04.12 12:22 haraldk Exp$
  */
+// TODO: Get rid of the com.sun import!!
 abstract class ThumbnailReader {
 
     private final ThumbnailReadProgressListener progressListener;
@@ -49,10 +50,11 @@ abstract class ThumbnailReader {
     protected final int thumbnailIndex;
 
     protected ThumbnailReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex) {
-        this.progressListener = progressListener;
+        this.progressListener = progressListener != null ? progressListener : new NullProgressListener();
         this.imageIndex = imageIndex;
         this.thumbnailIndex = thumbnailIndex;
     }
+
     protected final void processThumbnailStarted() {
         progressListener.processThumbnailStarted(imageIndex, thumbnailIndex);
     }
@@ -65,8 +67,20 @@ abstract class ThumbnailReader {
         progressListener.processThumbnailComplete();
     }
 
-    static protected BufferedImage readJPEGThumbnail(InputStream stream) throws IOException {
-        return ImageIO.read(stream);
+    static protected BufferedImage readJPEGThumbnail(final ImageReader reader, final ImageInputStream stream) throws IOException {
+//        try {
+//            try {
+                reader.setInput(stream);
+
+                return reader.read(0);
+//            }
+//            finally {
+//                input.close();
+//            }
+//        }
+//        finally {
+//            reader.dispose();
+//        }
     }
 
     static protected BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {
@@ -82,4 +96,15 @@ abstract class ThumbnailReader {
     public abstract int getWidth() throws IOException;
 
     public abstract int getHeight() throws IOException;
+
+    private static class NullProgressListener implements ThumbnailReadProgressListener {
+        public void processThumbnailStarted(int imageIndex, int thumbnailIndex) {
+        }
+
+        public void processThumbnailProgress(float percentageDone) {
+        }
+
+        public void processThumbnailComplete() {
+        }
+    }
 }
