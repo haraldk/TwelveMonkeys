@@ -32,13 +32,14 @@ final class JPEGImage10MetadataCleaner {
 
     private final JPEGImageReader reader;
 
-    JPEGImage10MetadataCleaner(JPEGImageReader reader) {
+    JPEGImage10MetadataCleaner(final JPEGImageReader reader) {
         this.reader = reader;
     }
 
-    IIOMetadata cleanMetadata(final int imageIndex, final IIOMetadata imageMetadata, final List<JPEGSegment> appSegments) throws IOException {
+    IIOMetadata cleanMetadata(final IIOMetadata imageMetadata) throws IOException {
         // We filter out pretty much everything from the stream..
         // Meaning we have to read get *all APP segments* and re-insert into metadata.
+        List<JPEGSegment> appSegments = reader.getAppSegments(JPEGImageReader.ALL_APP_MARKERS, null);
 
         // NOTE: There's a bug in the merging code in JPEGMetadata mergeUnknownNode that makes sure all "unknown" nodes are added twice in certain conditions.... ARGHBL...
         // DONE: 1: Work around
@@ -109,7 +110,7 @@ final class JPEGImage10MetadataCleaner {
                     IIOMetadataNode app0JFXX = new IIOMetadataNode("app0JFXX");
                     app0JFXX.setAttribute("extensionCode", String.valueOf(jfxxSegment.extensionCode));
 
-                    JFXXThumbnailReader thumbnailReader = new JFXXThumbnailReader(null, reader.getThumbnailReader(), imageIndex, -1, jfxxSegment);
+                    JFXXThumbnailReader thumbnailReader = new JFXXThumbnailReader(null, reader.getThumbnailReader(), 0, 0, jfxxSegment);
                     IIOMetadataNode jfifThumb;
 
                     switch (jfxxSegment.extensionCode) {

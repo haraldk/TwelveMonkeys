@@ -102,7 +102,7 @@ public class JPEGImageReader extends ImageReaderBase {
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
     /** Internal constant for referring all APP segments */
-    private static final int ALL_APP_MARKERS = -1;
+    static final int ALL_APP_MARKERS = -1;
 
     /** Segment identifiers for the JPEG segments we care about reading. */
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
@@ -683,7 +683,7 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
+    List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
         initHeader();
 
         List<JPEGSegment> appSegments = Collections.emptyList();
@@ -1036,9 +1036,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 metadataCleaner = new JPEGImage10MetadataCleaner(this);
             }
 
-            List<JPEGSegment> appSegments = getAppSegments(JPEGImageReader.ALL_APP_MARKERS, null);
-
-            return metadataCleaner.cleanMetadata(imageIndex, imageMetadata, appSegments);
+            return metadataCleaner.cleanMetadata(imageMetadata);
         }
 
         return imageMetadata;
