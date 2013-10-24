@@ -613,11 +613,11 @@ public class IFFImageReader extends ImageReaderBase {
                 }
 
                 // Skip rows outside AOI
-                if (srcY < aoi.y || (srcY - aoi.y) % sourceYSubsampling != 0) {
-                    continue;
-                }
-                else if (srcY >= (aoi.y + aoi.height)) {
+                if (srcY >= (aoi.y + aoi.height)) {
                     return;
+                }
+                else if (srcY < aoi.y || (srcY - aoi.y) % sourceYSubsampling != 0) {
+                    continue;
                 }
 
                 if (formType == IFF.TYPE_ILBM) {
@@ -639,19 +639,21 @@ public class IFFImageReader extends ImageReaderBase {
                 }
             }
 
-            int dstY = (srcY - aoi.y) / sourceYSubsampling;
-            // TODO: Support conversion to INT (A)RGB rasters (maybe using ColorConvertOp?)
-            // TODO: Avoid createChild if no region?
-            if (sourceXSubsampling == 1) {
-                destination.setRect(0, dstY, sourceRow);
+            if (srcY >= aoi.y && (srcY - aoi.y) % sourceYSubsampling == 0) {
+                int dstY = (srcY - aoi.y) / sourceYSubsampling;
+                // TODO: Support conversion to INT (A)RGB rasters (maybe using ColorConvertOp?)
+                // TODO: Avoid createChild if no region?
+                if (sourceXSubsampling == 1) {
+                    destination.setRect(0, dstY, sourceRow);
 //                dataElements = raster.getDataElements(aoi.x, 0, aoi.width, 1, dataElements);
 //                destination.setDataElements(offset.x, offset.y + (srcY - aoi.y) / sourceYSubsampling, aoi.width, 1, dataElements);
-            }
-            else {
-                for (int srcX = 0; srcX < sourceRow.getWidth(); srcX += sourceXSubsampling) {
-                    dataElements = sourceRow.getDataElements(srcX, 0, dataElements);
-                    int dstX = srcX / sourceXSubsampling;
-                    destination.setDataElements(dstX, dstY, dataElements);
+                }
+                else {
+                    for (int srcX = 0; srcX < sourceRow.getWidth(); srcX += sourceXSubsampling) {
+                        dataElements = sourceRow.getDataElements(srcX, 0, dataElements);
+                        int dstX = srcX / sourceXSubsampling;
+                        destination.setDataElements(dstX, dstY, dataElements);
+                    }
                 }
             }
 

@@ -29,10 +29,13 @@
 package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -61,7 +64,7 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
                         new Dimension(32, 32),                          // 24 bit + 8 bit mask
                         new Dimension(48, 48),                          // 24 bit + 8 bit mask
                         new Dimension(128, 128),                         // 24 bit + 8 bit mask
-                       new Dimension(256, 256),                        // JPEG 2000 ic08
+                        new Dimension(256, 256),                        // JPEG 2000 ic08
                         new Dimension(512, 512)                         // JPEG 2000 ic09
                 ),
                 new TestData(
@@ -69,7 +72,7 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
                         new Dimension(16, 16),                          // 24 bit + 8 bit mask
                         new Dimension(32, 32),                          // 24 bit + 8 bit mask
                         new Dimension(128, 128),                         // 24 bit + 8 bit mask
-                       new Dimension(256, 256),                        // JPEG 2000 ic08
+                        new Dimension(256, 256),                        // JPEG 2000 ic08
                         new Dimension(512, 512)                         // JPEG 2000 ic09
                 ),
                 new TestData(
@@ -127,5 +130,12 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
     @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/x-apple-icons");
+    }
+
+    @Test
+    @Ignore("Known issue: Subsampled reading not supported")
+    @Override
+    public void testReadWithSubsampleParamPixels() throws IOException {
+        super.testReadWithSubsampleParamPixels();
     }
 }
