@@ -88,8 +88,8 @@ final class JPEGImage10MetadataCleaner {
                 jfif.setAttribute("majorVersion", String.valueOf(jfifSegment.majorVersion));
                 jfif.setAttribute("minorVersion", String.valueOf(jfifSegment.minorVersion));
                 jfif.setAttribute("resUnits", String.valueOf(jfifSegment.units));
-                jfif.setAttribute("Xdensity", String.valueOf(jfifSegment.xDensity));
-                jfif.setAttribute("Ydensity", String.valueOf(jfifSegment.yDensity));
+                jfif.setAttribute("Xdensity", String.valueOf(Math.max(1, jfifSegment.xDensity))); // Avoid 0 density
+                jfif.setAttribute("Ydensity", String.valueOf(Math.max(1,jfifSegment.yDensity)));
                 jfif.setAttribute("thumbWidth", String.valueOf(jfifSegment.xThumbnail));
                 jfif.setAttribute("thumbHeight", String.valueOf(jfifSegment.yThumbnail));
 

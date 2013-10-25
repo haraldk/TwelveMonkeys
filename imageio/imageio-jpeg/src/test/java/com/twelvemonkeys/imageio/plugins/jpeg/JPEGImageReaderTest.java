@@ -55,7 +55,6 @@ import java.util.*;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -637,6 +636,16 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
             assertEquals((actualRGB      ) & 0xff, (expectedRGB[i]      ) & 0xff, 5);
         }
+    }
+
+    @Test
+    public void testXDensityOutOfRangeIssue() throws IOException {
+        // Image has JFIF with x/y density 0
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/xdensity-out-of-range-zero.jpg")));
+
+        IIOMetadata imageMetadata = reader.getImageMetadata(0);
+        assertNotNull(imageMetadata);
     }
 
     // TODO: Test RGBA/YCbCrA handling
