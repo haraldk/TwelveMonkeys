@@ -19,10 +19,10 @@ Mainstream format support
 
 #### JPEG
 
-* EXIF support
+* Exif support
 * Support for CMYK/YCCK data
 * Support for non-JFIF YCbCr data
-* Thumbnail support (JFIF, JFXX and EXIF)
+* Thumbnail support (JFIF, JFXX and Exif)
 * Extended metadata support
 * Extended write support in progress
 
@@ -30,9 +30,8 @@ Mainstream format support
 
 * Possibly coming in the future, pending some license issues
 
-#### PSD
+#### Adobe Photoshop Document (PSD)
 
-* Adobe
 * Read-only support for the following file types:
   * Monochrome, 1 channel, 1 bit
   * Indexed, 1 channel, 8 bit
@@ -44,7 +43,7 @@ Mainstream format support
   * Uncompressed
   * RLE (PackBits)
 
-#### TIFF
+#### Adobe (Aldus) Tagged Image File Format (TIFF)
 
 * Read-only support (for now)
 * Write support in progress
@@ -69,7 +68,7 @@ Mainstream format support
   * BitsPerSample values up to 16 for most PhotometricInterpretations
   * Multiple images (pages) in one file
 
-#### PICT
+#### Apple Mac Paint Picture Format (PICT)
 
 * Legacy format, especially useful for reading OS X clipboard data.
 * Read and limited write support
@@ -80,7 +79,7 @@ Mainstream format support
   * QuickTime stills
 * Writing is limited to RGB pixel data
 
-#### IFF
+#### Amiga/Electronic Arts Interchange File Format (IFF)
 
 * Legacy format, allows reading popular image from the Commodore Amiga computer.
 * Read and write support
@@ -99,11 +98,11 @@ Mainstream format support
 
 Icon/other formats
 
-#### ICNS
+#### Apple Icon Image (ICNS=
 
 * Read support for most icon types, including PNG and JPEG 2000 (requires JPEG 2000 ImageIO plugin)
 
-#### ICO
+#### MS Windows Icon and Cursor Formats (ICO & CUR)
 
 * Read support for the following file types:
   * ICO Indexed color, 1, 4 and 8 bit
@@ -111,7 +110,7 @@ Icon/other formats
   * CUR Indexed color, 1, 4 and 8 bit
   * CUR RGB, 16, 24 and 32 bit
 
-#### Thumbs.db
+#### MS Windows Thumbs DB (Thumbs.db)
 
 * Read support
 
