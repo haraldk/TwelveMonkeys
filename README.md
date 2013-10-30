@@ -21,34 +21,34 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 Mainstream format support
 
-# JPEG
+#### JPEG
 
     full EXIF support
     support for CMYK/YCCK
 
 
-# JPEG-LS
+#### JPEG-LS
 
     possibly coming in the future
 
-# JPEG-2000
+#### JPEG-2000
 
     possibly coming in the future, pending some license issues
 
-# PSD
+#### PSD
 
     read-only support
 
-# TIFF
+#### TIFF
 
     read-only support (for now)
 
-# PICT
+#### PICT
 
     Legacy format, especially useful for reading OS X clipboard data.
     read and limited write support
 
-# IFF
+#### IFF
 
     Legacy format, allows reading popular image from the Commodore Amiga computer.
     read and write support
@@ -56,20 +56,20 @@ Mainstream format support
 
 Icon/other formats
 
-# ICNS
+#### ICNS
 
-# ICO
+#### ICO
 
-# Thumbs.db
+#### Thumbs.db
 
 
 Other formats, using 3rd party libraries
 
-# SVG
+#### SVG
 
     read-only support using Batik
 
-# WMF
+#### WMF
 
     limited read-only support using Batik
 
