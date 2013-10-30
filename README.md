@@ -21,48 +21,60 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 Mainstream format support
 
-JPEG
+# JPEG
+
     full EXIF support
     support for CMYK/YCCK
 
 
-JPEG-LS
+# JPEG-LS
+
     possibly coming in the future
 
-JPEG-2000
+# JPEG-2000
+
     possibly coming in the future, pending some license issues
 
-PSD
+# PSD
+
     read-only support
 
-TIFF
+# TIFF
+
     read-only support (for now)
 
-PICT
+# PICT
+
     Legacy format, especially useful for reading OS X clipboard data.
     read and limited write support
 
-IFF
+# IFF
+
     Legacy format, allows reading popular image from the Commodore Amiga computer.
     read and write support
 
 
 Icon/other formats
 
-ICNS
-ICO
-Thumbs.db
+# ICNS
+
+# ICO
+
+# Thumbs.db
 
 
 Other formats, using 3rd party libraries
-SVG
+
+# SVG
+
     read-only support using Batik
-WMF
+
+# WMF
+
     limited read-only support using Batik
 
 
-Other useful stuff in the core package?
-
+TODO: Docuemnt other useful stuff in the core package?
 
 
 ## Usage
@@ -76,6 +88,7 @@ For more advanced usage, and information on how to use the ImageIO API, I sugges
 from Oracle.
 
 
+TODO: Docuemnt ResampleOp as well?
 
     ResampleOp
 
@@ -110,7 +123,6 @@ TODO: Maven dependency example
 TODO: Manual dependency with hierarchy
 
 TODO: Links to prebuilt binaries
-
 
 
 ## FAQ
