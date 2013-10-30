@@ -130,8 +130,10 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             };
 
             input = new SequenceInputStream(new ByteArrayInputStream(fakeEmptyExif), input);
+
             try {
                 MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(input);
+
                 try {
                     return readJPEGThumbnail(reader, stream);
                 }
