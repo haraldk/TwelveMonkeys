@@ -100,7 +100,10 @@ Icon/other formats
 
 #### Apple Icon Image (ICNS)
 
-* Read support for most icon types, including PNG and JPEG 2000 (requires JPEG 2000 ImageIO plugin)
+* Read support for the following icon types:
+  * all known "native" icon types
+  * Large PNG encoded icons
+  * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin)
 
 #### MS Windows Icon and Cursor Formats (ICO & CUR)
 
