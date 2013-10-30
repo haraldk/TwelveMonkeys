@@ -1,7 +1,3 @@
-We did it
-
------
-
 ## Background
 
 TwelveMonkeys ImageIO is a collection of plug-ins for Java's ImageIO.
@@ -15,7 +11,7 @@ Support for formats is important, both to be able to read data found
 Because there is lots of legacy data out there, we see the need for open implementations of readers for popular formats.
 The goal is to create a set of efficient and robust ImageIO plug-ins, that can be distributed independently.
 
-
+----
 
 ## Features
 
