@@ -43,7 +43,7 @@ Mainstream format support
   * Uncompressed
   * RLE (PackBits)
 
-#### Adobe (Aldus) Tagged Image File Format (TIFF)
+#### Aldus/Adobe Tagged Image File Format (TIFF)
 
 * Read-only support (for now)
 * Write support in progress
@@ -79,7 +79,7 @@ Mainstream format support
   * QuickTime stills
 * Writing is limited to RGB pixel data
 
-#### Amiga/Electronic Arts Interchange File Format (IFF)
+#### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
 
 * Legacy format, allows reading popular image from the Commodore Amiga computer.
 * Read and write support
@@ -98,7 +98,7 @@ Mainstream format support
 
 Icon/other formats
 
-#### Apple Icon Image (ICNS=
+#### Apple Icon Image (ICNS)
 
 * Read support for most icon types, including PNG and JPEG 2000 (requires JPEG 2000 ImageIO plugin)
 
