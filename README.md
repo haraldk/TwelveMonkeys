@@ -23,13 +23,12 @@ Mainstream format support
 
 #### JPEG
 
-* Full EXIF support
-* Support for CMYK/YCCK
+* EXIF support
+* Support for CMYK/YCCK data
 * Support for non-JFIF YCbCr data
-
-#### JPEG-LS
-
-* Possibly coming in the future?
+* Thumbnail support (JFIF, JFXX and EXIF)
+* Extended metadata support
+* Extended write support in progress
 
 #### JPEG-2000
 
@@ -37,32 +36,88 @@ Mainstream format support
 
 #### PSD
 
-* Read-only support
+* Adobe
+* Read-only support for the following file types:
+** Monochrome, 1 channel, 1 bit
+** Indexed, 1 channel, 8 bit
+** Gray, 1 channel, 8 and 16 bit
+** Duotone, 1 channel, 8 and 16 bit
+** RGB, 3-4 channels, 8 and 16 bit
+** CMYK, 4-5 channels, 8 and 16 bit
+* Read support for the following compression types:
+** Uncompressed
+** RLE (PackBits)
 
 #### TIFF
 
 * Read-only support (for now)
 * Write support in progress
+* Read support for the following "Baseline" TIFF file types:
+** Class B (Bi-level), all relevant compression types, 1 bit per sample<
+** Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer
+** Class P (Palette/indexed color), all relevant compression types, 1, 2, 4, 8 or 16 bits per sample, unsigned integer
+** Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer
+* Read support for the following TIFF extensions:
+** Tiling
+** LZW Compression (type 5)
+** "Old-style" JPEG Compression (type 6), as a best effort, as the spec is not well-defined
+** JPEG Compression (type 7)
+** ZLib (aka Adobe-style Deflate) Compression (type 8)
+** Deflate Compression (type 32946)
+** Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate and PackBits compression
+** Alpha channel (ExtraSamples type 1/Associated Alpha)
+** CMYK data (PhotometricInterpretation type 5/Separated)
+** YCbCr data (PhotometricInterpretation type 6/YCbCr) for JPEG
+** Planar data (PlanarConfiguration type 2/Planar)
+** ICC profiles (ICCProfile)
+** BitsPerSample values up to 16 for most PhotometricInterpretations
+** Multiple images (pages) in one file
 
 #### PICT
 
 * Legacy format, especially useful for reading OS X clipboard data.
 * Read and limited write support
+* Read support for the following file types:
+** QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
+** QuickDraw bitmap
+** QuickDraw pixmap
+** QuickTime stills
+* Writing is limited to RGB pixel data
 
 #### IFF
 
 * Legacy format, allows reading popular image from the Commodore Amiga computer.
 * Read and write support
-
+* Read support for the following file types:
+** ILBM Indexed color, 1-8 interleaved bit planes, including 6 bit EHB
+** ILBM  Gray, 8 bit interleaved bit planes
+** ILBM RGB, 24 and 32 bit interleaved bit planes
+** ILBM HAM6 and HAM8
+** PBM Indexed color, 1-8 bit,
+** PBM Gray, 8 bit
+** PBM RGB, 24 and 32 bit
+** PBM HAM6 and HAM8
+* Support for the following compression types:
+** Uncompressed
+** RLE (PackBits)
 
 Icon/other formats
 
 #### ICNS
 
+* Read support for most icon types, including PNG and JPEG 2000 (requires JPEG 2000 ImageIO plugin)
+
 #### ICO
+
+* Read support for the following file types:
+** ICO Indexed color, 1, 4 and 8 bit
+** ICO RGB, 16, 24 and 32 bit
+** CUR Indexed color, 1, 4 and 8 bit
+** CUR RGB, 16, 24 and 32 bit
 
 #### Thumbs.db
 
+* Read support
 
 Other formats, using 3rd party libraries
 
