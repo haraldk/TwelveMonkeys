@@ -19,11 +19,26 @@ Mainstream format support
 
 #### JPEG
 
-* Exif support
-* Support for CMYK/YCCK data
-* Support for non-JFIF YCbCr data
-* Thumbnail support (JFIF, JFXX and Exif)
-* Extended metadata support
+* Read support for the following JPEG flavors:
+  * YCbCr JPEGs without JFIF segment (converted to RGB, using the embedded ICC profile if applicable)
+  * CMYK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)
+  * Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)
+  * JPEGs containing ICC profiles with interpretation other than 'Perceptual' (profile is assumed to be 'Perceptual' and used)
+  * JPEGs containing ICC profiles with class other than 'Display' (profile is assumed to have class 'Display' and used)
+  * JPEGs containing ICC profiles that are incompatible with stream data (image data is read, profile is ignored)
+  * JPEGs with corrupted ICC profiles (image data is read, profile is ignored)
+  * JPEGs with corrupted {@code ICC_PROFILE} segments (image data is read, profile is ignored)
+  * JPEGs using non-standard color spaces, unsupported by Java 2D (image data is read, profile is ignored)
+  * Issues warnings instead of throwing exceptions in cases of corrupted data where ever the image data can still be read in a reasonable way
+* Thumbnail support:
+  * JFIF thumbnails (even if stream contains inconsistent metadata)
+  * JFXX thumbnails (JPEG, Indexed and RGB)
+  * EXIF thumbnails (JPEG, RGB and YCbCr)
+* Metadata support:
+  * JPEG metadata in both standard and native formats (even if stream contains inconsistent metadata)
+  * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
+  * illegal combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
+  * "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
 * Extended write support in progress
 
 #### JPEG-2000
