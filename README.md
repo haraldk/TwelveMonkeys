@@ -23,35 +23,36 @@ Mainstream format support
 
 #### JPEG
 
-    full EXIF support
-    support for CMYK/YCCK
-
+* Full EXIF support
+* Support for CMYK/YCCK
+* Support for non-JFIF YCbCr data
 
 #### JPEG-LS
 
-    possibly coming in the future
+* Possibly coming in the future?
 
 #### JPEG-2000
 
-    possibly coming in the future, pending some license issues
+* Possibly coming in the future, pending some license issues
 
 #### PSD
 
-    read-only support
+* Read-only support
 
 #### TIFF
 
-    read-only support (for now)
+* Read-only support (for now)
+* Write support in progress
 
 #### PICT
 
-    Legacy format, especially useful for reading OS X clipboard data.
-    read and limited write support
+* Legacy format, especially useful for reading OS X clipboard data.
+* Read and limited write support
 
 #### IFF
 
-    Legacy format, allows reading popular image from the Commodore Amiga computer.
-    read and write support
+* Legacy format, allows reading popular image from the Commodore Amiga computer.
+* Read and write support
 
 
 Icon/other formats
@@ -67,11 +68,11 @@ Other formats, using 3rd party libraries
 
 #### SVG
 
-    read-only support using Batik
+* Read-only support using Batik
 
 #### WMF
 
-    limited read-only support using Batik
+* Limited read-only support using Batik
 
 
 TODO: Docuemnt other useful stuff in the core package?
