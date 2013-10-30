@@ -138,7 +138,7 @@ Other formats, using 3rd party libraries
 
 * Read-only support using Batik
 
-#### Windows MetaFile (WMF)
+#### MS Windows MetaFile (WMF)
 
 * Limited read-only support using Batik
 
