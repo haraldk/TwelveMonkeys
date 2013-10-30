@@ -38,7 +38,7 @@ Mainstream format support
 
 * Adobe
 * Read-only support for the following file types:
-** Monochrome, 1 channel, 1 bit
+  * Monochrome, 1 channel, 1 bit
 ** Indexed, 1 channel, 8 bit
 ** Gray, 1 channel, 8 and 16 bit
 ** Duotone, 1 channel, 8 and 16 bit
@@ -53,7 +53,7 @@ Mainstream format support
 * Read-only support (for now)
 * Write support in progress
 * Read support for the following "Baseline" TIFF file types:
-** Class B (Bi-level), all relevant compression types, 1 bit per sample<
+ * Class B (Bi-level), all relevant compression types, 1 bit per sample
 ** Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer
 ** Class P (Palette/indexed color), all relevant compression types, 1, 2, 4, 8 or 16 bits per sample, unsigned integer
 ** Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer
