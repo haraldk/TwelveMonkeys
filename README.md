@@ -134,11 +134,11 @@ Icon/other formats
 
 Other formats, using 3rd party libraries
 
-#### SVG
+#### Scalable Vector Graphics (SVG)
 
 * Read-only support using Batik
 
-#### WMF
+#### Windows MetaFile (WMF)
 
 * Limited read-only support using Batik
 
