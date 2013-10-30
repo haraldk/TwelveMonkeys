@@ -186,7 +186,7 @@ TODO: Links to prebuilt binaries
 q: How do I use it?
 
 a: The easiest way is to build your own project using Maven, and just add dependencies to the specific plug-ins you need.
- If you don't use Maven, make sure you have all the necessary JARs in classpath. See the Install section below.
+ If you don't use Maven, make sure you have all the necessary JARs in classpath. See the Install section above.
 
 
 q: What changes do I have to make to my code in order to use the plug-ins?
