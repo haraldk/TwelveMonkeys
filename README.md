@@ -157,7 +157,8 @@ from Oracle.
 
 ### Using the ResampleOp
 
-The library comes with a
+The library comes with a resampling (image resizing) operation, that contains many different algorithms
+to provide excellent results at reasonable speed.
 
     import com.twelvemonkeys.image.ResampleOp;
 
@@ -166,8 +167,22 @@ The library comes with a
     BufferedImage input = ...; // Image to resample
     int width, height = ...; // new width/height
 
-    BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS);
+    BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS); // A good default filter, see class documentation for more info
     BufferedImage output = resampler.filter(input, null);
+
+### Using the DiffusionDither
+
+The library comes with a dithering operation, that can be used to convert `BufferedImage`s to `IndexColorModel` using
+Floyd-Steinberg error-diffusion dither.
+
+    import com.twelvemonkeys.image.DiffusionDither;
+
+    ...
+
+    BufferedImage input = ...; // Image to dither
+
+    BufferedImageOp ditherer = new DiffusionDither();
+    BufferedImage output = ditherer.filter(input, null);
 
 
 ## Building
