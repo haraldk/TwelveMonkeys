@@ -155,7 +155,7 @@ For more advanced usage, and information on how to use the ImageIO API, I sugges
 from Oracle.
 
 
-### Using the ResampleOp
+#### Using the ResampleOp
 
 The library comes with a resampling (image resizing) operation, that contains many different algorithms
 to provide excellent results at reasonable speed.
@@ -170,7 +170,7 @@ to provide excellent results at reasonable speed.
     BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS); // A good default filter, see class documentation for more info
     BufferedImage output = resampler.filter(input, null);
 
-### Using the DiffusionDither
+#### Using the DiffusionDither
 
 The library comes with a dithering operation, that can be used to convert `BufferedImage`s to `IndexColorModel` using
 Floyd-Steinberg error-diffusion dither.
