@@ -47,7 +47,7 @@ Mainstream format support
 
 #### Adobe Photoshop Document (PSD)
 
-* Read-only support for the following file types:
+* Read support for the following file types:
   * Monochrome, 1 channel, 1 bit
   * Indexed, 1 channel, 8 bit
   * Gray, 1 channel, 8 and 16 bit
@@ -60,10 +60,8 @@ Mainstream format support
 
 #### Aldus/Adobe Tagged Image File Format (TIFF)
 
-* Read-only support (for now)
-* Write support in progress
 * Read support for the following "Baseline" TIFF file types:
- * Class B (Bi-level), all relevant compression types, 1 bit per sample
+  * Class B (Bi-level), all relevant compression types, 1 bit per sample
   * Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer
   * Class P (Palette/indexed color), all relevant compression types, 1, 2, 4, 8 or 16 bits per sample, unsigned integer
   * Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer
@@ -82,22 +80,23 @@ Mainstream format support
   * ICC profiles (ICCProfile)
   * BitsPerSample values up to 16 for most PhotometricInterpretations
   * Multiple images (pages) in one file
+* Write support in progress
+  * Will support writing most "Baseline" TIFF file types
 
 #### Apple Mac Paint Picture Format (PICT)
 
 * Legacy format, especially useful for reading OS X clipboard data.
-* Read and limited write support
 * Read support for the following file types:
   * QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
   * QuickDraw bitmap
   * QuickDraw pixmap
   * QuickTime stills
-* Writing is limited to RGB pixel data
+* Write support for RGB pixel data:
+  * QuickDraw pixmap
 
 #### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
 
 * Legacy format, allows reading popular image from the Commodore Amiga computer.
-* Read and write support
 * Read support for the following file types:
   * ILBM Indexed color, 1-8 interleaved bit planes, including 6 bit EHB
   * ILBM  Gray, 8 bit interleaved bit planes
@@ -107,7 +106,9 @@ Mainstream format support
   * PBM Gray, 8 bit
   * PBM RGB, 24 and 32 bit
   * PBM HAM6 and HAM8
-* Support for the following compression types:
+* Write support
+  * ILBM Indexed color, 1-8 bits per sample, 8 bit gray, 24 and 32 bit true color.
+* Support for the following compression types (read/write):
   * Uncompressed
   * RLE (PackBits)
 
@@ -116,9 +117,9 @@ Icon/other formats
 #### Apple Icon Image (ICNS)
 
 * Read support for the following icon types:
-  * all known "native" icon types
+  * All known "native" icon types
   * Large PNG encoded icons
-  * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin)
+  * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin or fallback to `sips` command line tool)
 
 #### MS Windows Icon and Cursor Formats (ICO & CUR)
 
@@ -143,9 +144,6 @@ Other formats, using 3rd party libraries
 * Limited read-only support using Batik
 
 
-TODO: Docuemnt other useful stuff in the core package?
-
-
 ## Usage
 
 Most of the time, all you need to do is simply:
@@ -157,26 +155,48 @@ For more advanced usage, and information on how to use the ImageIO API, I sugges
 from Oracle.
 
 
-TODO: Docuemnt ResampleOp as well?
+### Using the ResampleOp
 
-    ResampleOp
+The library comes with a
 
+    import com.twelvemonkeys.image.ResampleOp;
+
+    ...
+
+    BufferedImage input = ...; // Image to resample
+    int width, height = ...; // new width/height
+
+    BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS);
+    BufferedImage output = resampler.filter(input, null);
 
 
 ## Building
 
-    $ mvn clean install
+Download the project (using Git):
+
+    $ git clone git@github.com:haraldk/TwelveMonkeys.git
+
+Build the project (using Maven):
+
+    $ mvn package
+
+Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable `MAVEN_OPTS`
+to give the Java process that runs Maven more memory. I suggest something like `-Xmx512m -XX:MaxPermSize=256m`.
+
+Optionally install the project in your local Maven repository:
+
+    $ mvn install
 
 
 ## Installing
 
 To install the plug-ins,
-Either use Maven and add the necessary dependencies to your project,
+either use Maven and add the necessary dependencies to your project,
 or manually add the needed JARs along with required dependencies in class-path.
 
 The ImageIO registry and service lookup mechanism will make sure the plugins are available for use.
 
-To verify that the plugin is installed and used at run-time, you could use the following code:
+To verify that the JPEG plugin is installed and used at run-time, you could use the following code:
 
     Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
     while (readers.hasNext()) {
@@ -187,12 +207,40 @@ The first line should print:
 
     reader: com.twelvemonkeys.imageio.jpeg.JPEGImageReader@somehash
 
-TODO: Maven dependency example
+#### Maven dependency example
 
-TODO: Manual dependency with hierarchy
+To depend on the JPEG and TIFF plugin using Maven, add the following to your POM:
 
-TODO: Links to prebuilt binaries
+    ...
+    <dependencies>
+        ...
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>3.0-SNAPSHOT</version> <!-- Alternatively, build your own 3.0-something version -->
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-tiff</artifactId>
+            <version>3.0-SNAPSHOT</version> <!-- Alternatively, build your own 3.0-something version -->
+        </dependency>
+    </dependencies>
 
+#### Manual dependency example
+
+To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
+
+    twelvemonkeys-common-lang-3.0-SNAPSHOT.jar
+    twelvemonkeys-common-io-3.0-SNAPSHOT.jar
+    twelvemonkeys-common-image-3.0-SNAPSHOT.jar
+    twelvemonkeys-imageio-core-3.0-SNAPSHOT.jar
+    twelvemonkeys-imageio-metadata-3.0-SNAPSHOT.jar
+    twelvemonkeys-imageio-jpeg-3.0-SNAPSHOT.jar
+    twelvemonkeys-imageio-tiff-3.0-SNAPSHOT.jar
+
+### Links to prebuilt binaries
+
+There's no prebuilt binaries yet.
 
 ## FAQ
 
