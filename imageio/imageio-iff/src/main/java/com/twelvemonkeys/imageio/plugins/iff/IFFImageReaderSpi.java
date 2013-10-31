@@ -108,7 +108,7 @@ public class IFFImageReaderSpi extends ImageReaderSpi {
     }
 
     public String getDescription(Locale pLocale) {
-        return "Amiga (Electronic Arts) Image Interchange Format (IFF) image reader";
+        return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image reader";
     }
 
     public static ImageReaderSpi sharedProvider() {

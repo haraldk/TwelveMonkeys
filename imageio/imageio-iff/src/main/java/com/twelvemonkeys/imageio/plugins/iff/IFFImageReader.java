@@ -50,7 +50,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Reader for Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) and PBM
+ * Reader for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) and PBM
  * format (Packed BitMap).
  * The IFF format (Interchange File Format) is the standard file format
  * supported by allmost all image software for the Amiga computer.

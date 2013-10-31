@@ -79,6 +79,6 @@ public class IFFImageWriterSpi extends ImageWriterSpi {
     }
 
     public String getDescription(Locale pLocale) {
-        return "Amiga (Electronic Arts) IFF image writer";
+        return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image writer";
     }
 }
