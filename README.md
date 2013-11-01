@@ -155,6 +155,34 @@ For more advanced usage, and information on how to use the ImageIO API, I sugges
 from Oracle.
 
 
+#### Deploying the plugins in a web app
+
+Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doesn't by default work well with
+servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
+
+Servlet contexts dynamically loads and unloads classes (using a new class loader per context).
+If you restart your application, old classes will by default remain in memory forever (because the next time
+`scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
+in the registry).
+
+To work around this resource leak, I recommend using the `IIOProviderContextListener` that implements
+dynamic loading and unloading of ImageIO plugins.
+
+    <web-app ...>
+
+    ...
+
+        <listener>
+            <display-name>IIOProviderContextListener</display-name>
+            <listener-class>com.twelvemonkeys.servlet.image.IIOProviderContextListener</listener-class>
+        </listener>
+
+    ...
+
+    </web-app>
+
+
+
 #### Using the ResampleOp
 
 The library comes with a resampling (image resizing) operation, that contains many different algorithms
