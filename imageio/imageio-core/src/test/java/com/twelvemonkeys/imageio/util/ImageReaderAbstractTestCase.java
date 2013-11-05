@@ -1322,13 +1322,14 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
                 // The problem is that the checkReadParamBandSettings throws IllegalArgumentException, which seems more appropriate...
                 String message = expected.getMessage().toLowerCase();
-                assertTrue(
-                        "Wrong message: " + message + " for type " + destination.getType(),
-                        message.contains("destination") ||
-                                ((destination.getType() == BufferedImage.TYPE_BYTE_BINARY || 
-                                        destination.getType() == BufferedImage.TYPE_BYTE_INDEXED)
-                                        && message.contains("indexcolormodel"))
-                );
+                if (!(message.contains("destination") || message.contains("band size") || // For JDK classes
+                        ((destination.getType() == BufferedImage.TYPE_BYTE_BINARY ||
+                                destination.getType() == BufferedImage.TYPE_BYTE_INDEXED) &&
+                                message.contains("indexcolormodel")))) {
+                    failBecause(
+                        "Wrong message: " + message + " for type " + destination.getType(), expected
+                    );
+                }
             }
             catch (IllegalArgumentException expected) {
                 String message = expected.getMessage().toLowerCase();
@@ -1453,6 +1454,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
                 failBecause("Could not read " + data.getInput() + " with explicit destination type " + type, e);
             }
 
+            assertNotNull(result);
             assertEquals(type.getColorModel(), result.getColorModel());
 
             // The following logically tests

@@ -56,9 +56,9 @@ import java.util.List;
  * supported by allmost all image software for the Amiga computer.
  * <p/>
  * This reader supports the original palette-based 1-8 bit formats, including
- * EHB (Extra Halfbright), HAM (Hold and Modify), and the more recent "deep"
+ * EHB (Extra Half-Bright), HAM (Hold and Modify), and the more recent "deep"
  * formats, 8 bit gray, 24 bit RGB and 32 bit ARGB.
- * Uncompressed and ByteRun1 compressed (run lenght encoding) files are
+ * Uncompressed and ByteRun1 compressed (run length encoding) files are
  * supported.
  * <p/>
  * Palette based images are read as {@code BufferedImage} of
