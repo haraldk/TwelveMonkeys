@@ -61,7 +61,7 @@ public final class ICOImageReaderSpi extends ImageReaderSpi {
                         "image/ico"                 // Unofficial, but common
                 },
                 "com.twelvemonkeys.imageio.plugins.ico.ICOImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 null,
                 true, null, null, null, null,
                 true,

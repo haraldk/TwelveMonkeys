@@ -69,7 +69,7 @@ abstract class JMagickImageReaderSpiSupport extends ImageReaderSpi {
                 AVAILABLE ? pSuffixes : null, // Suffixes
                 AVAILABLE ? pMimeTypes : null, // Mime-types
                 pReaderClassName, // Reader class name
-                ImageReaderSpi.STANDARD_INPUT_TYPE, // Output types
+                new Class[] {ImageInputStream.class}, // Input types
                 pWriterSpiNames, // Writer SPI names
                 true, // Supports standard stream metadata format
                 null, // Native stream metadata format name

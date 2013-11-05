@@ -65,7 +65,7 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
                 SVG_READER_AVAILABLE ? new String[]{"svg"} : null, // Suffixes
                 SVG_READER_AVAILABLE ? new String[]{"image/svg", "image/x-svg", "image/svg+xml", "image/svg-xml"} : null, // Mime-types
                 "com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", // Reader class name
-                ImageReaderSpi.STANDARD_INPUT_TYPE, // Output types
+                new Class[] {ImageInputStream.class}, // Input types
                 null, // Writer SPI names
                 true, // Supports standard stream metadata format
                 null, // Native stream metadata format name

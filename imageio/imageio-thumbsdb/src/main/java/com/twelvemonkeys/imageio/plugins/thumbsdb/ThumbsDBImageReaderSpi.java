@@ -65,8 +65,8 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
                 new String[]{"thumbs", "THUMBS", "Thumbs DB"},
                 new String[]{"db"},
                 new String[]{"image/x-thumbs-db", "application/octet-stream"}, // TODO: Check IANA et al...
-                ThumbsDBImageReader.class.getName(),
-                STANDARD_INPUT_TYPE,
+                "com.twelvemonkeys.imageio.plugins.thumbsdb.ThumbsDBImageReader",
+                new Class[] {ImageInputStream.class},
                 null,
                 true, null, null, null, null,
                 true, null, null, null, null

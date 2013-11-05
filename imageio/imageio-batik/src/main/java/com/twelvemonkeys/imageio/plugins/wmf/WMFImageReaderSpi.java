@@ -65,8 +65,8 @@ public class WMFImageReaderSpi extends ImageReaderSpi {
                 WMF_READER_AVAILABLE ? new String[]{"wmf", "WMF"} : new String[]{""}, // Names
                 WMF_READER_AVAILABLE ? new String[]{"wmf", "emf"} : null, // Suffixes
                 WMF_READER_AVAILABLE ? new String[]{"application/x-msmetafile", "image/x-wmf"} : null, // Mime-types
-                WMFImageReader.class.getName(), // Reader class name..?
-                ImageReaderSpi.STANDARD_INPUT_TYPE, // Output types
+                "com.twelvemonkeys.imageio.plugins.wmf.WMFImageReader", // Reader class name..?
+                new Class[] {ImageInputStream.class}, // Input types
                 null, // Writer SPI names
                 true, // Supports standard stream metadata format
                 null, // Native stream metadata format name

@@ -36,6 +36,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -65,7 +66,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
                 new String[]{"jpg", "jpeg"},
                 new String[]{"image/jpeg"},
                 "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null
