@@ -2,8 +2,7 @@
 
 TwelveMonkeys ImageIO is a collection of plug-ins for Java's ImageIO.
 
-
-These plugins extends the number of file formats supported in Java, using the javax.imageio.* package.
+These plugins extends the number of image file formats supported in Java, using the javax.imageio.* package.
 The main purpose of this project is to provide support for formats not covered by the JDK itself.
 
 Support for formats is important, both to be able to read data found
@@ -146,9 +145,11 @@ Other formats, using 3rd party libraries
 
 ## Usage
 
-Most of the time, all you need to do is simply:
+Most of the time, all you need to do is simply include the plugins in your project and write:
 
     BufferedImage image = ImageIO.read(file);
+
+The plugins are discovered automatically at run time. See the FAQ for more info on how this mechanism works.
 
 For more advanced usage, and information on how to use the ImageIO API, I suggest you read the
 [Java Image I/O API Guide](http://docs.oracle.com/javase/6/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html)
@@ -165,22 +166,21 @@ If you restart your application, old classes will by default remain in memory fo
 `scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
 in the registry).
 
-To work around this resource leak, I recommend using the `IIOProviderContextListener` that implements
-dynamic loading and unloading of ImageIO plugins.
+To work around this resource leak, it is recommended to use the `IIOProviderContextListener` that implements
+dynamic loading and unloading of ImageIO plugins for web applications.
 
     <web-app ...>
 
     ...
 
         <listener>
-            <display-name>IIOProviderContextListener</display-name>
+            <display-name>ImageIO service provider loader/unloader</display-name>
             <listener-class>com.twelvemonkeys.servlet.image.IIOProviderContextListener</listener-class>
         </listener>
 
     ...
 
     </web-app>
-
 
 
 #### Using the ResampleOp
@@ -197,6 +197,7 @@ to provide excellent results at reasonable speed.
 
     BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS); // A good default filter, see class documentation for more info
     BufferedImage output = resampler.filter(input, null);
+
 
 #### Using the DiffusionDither
 
@@ -284,6 +285,40 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 ### Links to prebuilt binaries
 
 There's no prebuilt binaries yet.
+
+## License
+
+The project is distributed under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
+
+   Copyright (c) 2008-2013, Harald Kuhr
+   All rights reserved.
+
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+
+   o Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+   o Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+   o Neither the name "TwelveMonkeys" nor the
+   names of its contributors may be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 
 ## FAQ
 
