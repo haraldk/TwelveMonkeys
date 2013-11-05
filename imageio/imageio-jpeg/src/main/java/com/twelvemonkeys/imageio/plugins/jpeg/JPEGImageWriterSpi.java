@@ -66,9 +66,9 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
                 new String[]{"JPEG", "jpeg", "JPG", "jpg"},
                 new String[]{"jpg", "jpeg"},
                 new String[]{"image/jpeg"},
-                "twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
+                "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
                 STANDARD_OUTPUT_TYPE,
-                new String[] {"twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"}, 
+                new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null
         );
