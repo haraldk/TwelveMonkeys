@@ -156,7 +156,7 @@ Most of the time, all you need to do is simply include the plugins in your proje
 
 This will load the first image of the file, entirely into memory.
 
-The simple form of writing is:
+The basic and simplest form of writing is:
 
     if (!ImageIO.write(image, format, file)) {
        // Handle image not written case
@@ -192,7 +192,7 @@ If you need more control of read parameters and the reading process, the common 
 
             ImageReadParam param = reader.getDefaultReadParam();
 
-            // Optionally, control read settings like sub sampling, source region or destination etc., using param...
+            // Optionally, control read settings like sub sampling, source region or destination etc.
             param.setSourceSubsampling(...);
             param.setSourceRegion(...);
             param.setDestination(...);
@@ -244,7 +244,7 @@ If you need more control of write parameters and the writing process, the common
             ImageWriteParam param = writer.getDefaultWriteParam();
 
             // Optionally, control format specific settings of param (requires casting), or
-            // control generic write settings like sub sampling, source region, output type etc., using param...
+            // control generic write settings like sub sampling, source region, output type etc.
 
             // Optionally, provide thumbnails and image/stream metadata
             writer.write(..., new IIOImage(..., image, ...), param);
@@ -260,7 +260,7 @@ If you need more control of write parameters and the writing process, the common
     }
 
 For more advanced usage, and information on how to use the ImageIO API, I suggest you read the
-[Java Image I/O API Guide](http://docs.oracle.com/javase/6/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html)
+[Java Image I/O API Guide](http://docs.oracle.com/javase/7/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html)
 from Oracle.
 
 
