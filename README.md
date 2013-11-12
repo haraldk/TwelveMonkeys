@@ -28,7 +28,7 @@ Mainstream format support
   * JPEGs with corrupted ICC profiles
   * JPEGs with corrupted `ICC_PROFILE` segments
   * JPEGs using non-standard color spaces, unsupported by Java 2D
-  * Issues warnings instead of throwing exceptions in cases of corrupted data where ever the image data can still be read in a reasonable way
+  * Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image data can still be read in a reasonable way
 * Thumbnail support:
   * JFIF thumbnails (even if stream contains inconsistent metadata)
   * JFXX thumbnails (JPEG, Indexed and RGB)
@@ -38,11 +38,16 @@ Mainstream format support
   * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
   * Illegal combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
    "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
-* Extended write support in progress
+* Extended write support in progress:
+  * CMYK JPEGs
+  * YCCK JPEGs
 
 #### JPEG-2000
 
-* Possibly coming in the future, pending some license issues
+* Possibly coming in the future, pending some license issues.
+
+If you are one of the authors, or know one of the authors and/or the current license holders of either the original jj2000 package or the JAI ImageIO project, please contact me
+(I've tried to get in touch in various ways, without success so far).
 
 #### Adobe Photoshop Document (PSD)
 
@@ -149,6 +154,15 @@ Most of the time, all you need to do is simply include the plugins in your proje
 
     BufferedImage image = ImageIO.read(file);
 
+TODO: Alternative usage using ImageIO.createImageInputStream + getImageReaders(stream) iterator, setInput + param
+
+    if (!ImageIO.write(image, format, file)) {
+       // Handle image not written
+    }
+
+TODO: Alternative usage using ImageIO.createImageOutputStream + getImageWritersByFormatName(format) iterator, setOutput + param
+
+
 The plugins are discovered automatically at run time. See the FAQ for more info on how this mechanism works.
 
 For more advanced usage, and information on how to use the ImageIO API, I suggest you read the
@@ -216,21 +230,23 @@ Floyd-Steinberg error-diffusion dither.
 
 ## Building
 
-Download the project (using Git):
+Download the project (using [Git](http://git-scm.com/downloads)):
 
     $ git clone git@github.com:haraldk/TwelveMonkeys.git
 
-Build the project (using Maven):
+This should create a folder named `TwelveMonkeys` in your current directory. Change directory to the `TwelveMonkeys`
+folder, and issue the command below to build.
+
+Build the project (using [Maven](http://maven.apache.org/download.cgi)):
 
     $ mvn package
 
 Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable `MAVEN_OPTS`
 to give the Java process that runs Maven more memory. I suggest something like `-Xmx512m -XX:MaxPermSize=256m`.
 
-Optionally install the project in your local Maven repository:
+Optionally, you can install the project in your local Maven repository using:
 
     $ mvn install
-
 
 ## Installing
 
