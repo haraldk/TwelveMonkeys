@@ -148,22 +148,116 @@ Other formats, using 3rd party libraries
 * Limited read-only support using Batik
 
 
-## Usage
+## Basic usage
 
 Most of the time, all you need to do is simply include the plugins in your project and write:
 
     BufferedImage image = ImageIO.read(file);
 
-TODO: Alternative usage using ImageIO.createImageInputStream + getImageReaders(stream) iterator, setInput + param
+This will load the first image of the file, entirely into memory.
+
+The simple form of writing is:
 
     if (!ImageIO.write(image, format, file)) {
-       // Handle image not written
+       // Handle image not written case
     }
 
-TODO: Alternative usage using ImageIO.createImageOutputStream + getImageWritersByFormatName(format) iterator, setOutput + param
-
+This will write the entire image into a single file, using the default settings for the given format.
 
 The plugins are discovered automatically at run time. See the FAQ for more info on how this mechanism works.
+
+## Advanced usage
+
+If you need more control of read parameters and the reading process, the common idiom for reading is something like:
+
+    // Create input stream
+    ImageInputStream input = ImageIO.createImageInputStream(file);
+
+    try {
+        // Get the reader
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+
+        if (!readers.hasNext()) {
+            throw new IllegalArgumentException("No reader for: " + file);
+        }
+
+        ImageReader reader = readers.next();
+
+        try {
+            reader.setInput(input);
+
+            // Optionally, listen for read warnings, progress, etc.
+            reader.addIIOReadWarningListener(...);
+            reader.addIIOReadProgressListener(...);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+
+            // Optionally, control read settings like sub sampling, source region or destination etc., using param...
+            param.setSourceSubsampling(...);
+            param.setSourceRegion(...);
+            param.setDestination(...);
+            // ...
+
+            // Finally read the image, using settings from param
+            BufferedImage image = reader.read(0, param);
+
+            // Optionally, read thumbnails, meta data, etc...
+            int numThumbs = reader.getNumThumbnails(0);
+            // ...
+        }
+        finally {
+            // Dispose reader in finally block to avoid memory leaks
+            reader.dispose();
+        }
+    }
+    finally {
+        // Close stream in finally block to avoid resource leaks
+        input.close();
+    }
+
+Query the reader for source image dimensions using `reader.getWidth(n)` and `reader.getHeight(n)` without reading the
+entire image into memory first.
+
+It's also possible to read multiple images from the same file in a loop, using `reader.getNumImages()`.
+
+
+If you need more control of write parameters and the writing process, the common idiom for writing is something like:
+
+    // Get the writer
+    Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(format);
+
+    if (!writers.hasNext()) {
+        throw new IllegalArgumentException("No writer for: " + format);
+    }
+
+    ImageWriter writer = writers.next();
+
+    try {
+        // Create output stream
+        ImageOutputStream output = ImageIO.createImageOutputStream(file);
+
+        try {
+            writer.setOutput(output);
+
+            // Optionally, listen to progress, warnings, etc.
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+
+            // Optionally, control format specific settings of param (requires casting), or
+            // control generic write settings like sub sampling, source region, output type etc., using param...
+
+            // Optionally, provide thumbnails and image/stream metadata
+            writer.write(..., new IIOImage(..., image, ...), param);
+        }
+        finally {
+            // Close stream in finally block to avoid resource leaks
+            output.close();
+        }
+    }
+    finally {
+        // Dispose writer in finally block to avoid memory leaks
+        writer.dispose();
+    }
 
 For more advanced usage, and information on how to use the ImageIO API, I suggest you read the
 [Java Image I/O API Guide](http://docs.oracle.com/javase/6/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html)
