@@ -164,7 +164,7 @@ The simple form of writing is:
 
 This will write the entire image into a single file, using the default settings for the given format.
 
-The plugins are discovered automatically at run time. See the FAQ for more info on how this mechanism works.
+The plugins are discovered automatically at run time. See the [FAQ](#faq) for more info on how this mechanism works.
 
 ## Advanced usage
 
