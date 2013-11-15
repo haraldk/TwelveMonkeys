@@ -268,13 +268,15 @@ from Oracle.
 
 Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doesn't by default work well with
 servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
+Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins might never be available at all.
 
-Servlet contexts dynamically loads and unloads classes (using a new class loader per context).
+I addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
 If you restart your application, old classes will by default remain in memory forever (because the next time
 `scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
 in the registry).
 
-To work around this resource leak, it is recommended to use the `IIOProviderContextListener` that implements
+To work around both the discovery problem and the resource leak,
+it is recommended to use the `IIOProviderContextListener` that implements
 dynamic loading and unloading of ImageIO plugins for web applications.
 
     <web-app ...>
