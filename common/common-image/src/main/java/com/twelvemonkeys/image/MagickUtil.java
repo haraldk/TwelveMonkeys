@@ -165,7 +165,7 @@ public final class MagickUtil {
                     image = cmykToBuffered(pImage, false);
                     break;
                 case ImageType.ColorSeparationMatteType:
-                    image = cmykToBuffered(pImage, true); // Not tested actually
+                    image = cmykToBuffered(pImage, true);
                     break;
                 case ImageType.OptimizeType:
                 default:
@@ -568,42 +568,40 @@ public final class MagickUtil {
      * @see BufferedImage
      */
     private static BufferedImage cmykToBuffered(MagickImage pImage, boolean pAlpha) throws MagickException {
-		final Dimension size = pImage.getDimension();
-		final int length = size.width * size.height;
+		Dimension size = pImage.getDimension();
+		int length = size.width * size.height;
 		
 		// Retreive the ICC profile
-		final ICC_Profile profile = ICC_Profile.getInstance(pImage.getColorProfile().getInfo());
-		final ColorSpace cs = new ICC_ColorSpace(profile);
+		ICC_Profile profile = ICC_Profile.getInstance(pImage.getColorProfile().getInfo());
+		ColorSpace cs = new ICC_ColorSpace(profile);
 		
-		final int bands = cs.getNumComponents() + (pAlpha ? 1 : 0);
+		int bands = cs.getNumComponents() + (pAlpha ? 1 : 0);
 		
-		final ColorModel cm;
-		final int[] bits = new int[bands];
+		int[] bits = new int[bands];
 		for (int i = 0; i < bands; i++) {
 			bits[i] = 8;
 		}
-		if (pAlpha) {
-			cm = new ComponentColorModel(cs, bits, true, true, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
-		} else {
-			cm = new ComponentColorModel(cs, bits, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-		}
-		
-		final byte[] pixels = new byte[length * bands];
+
+        ColorModel cm = pAlpha ?
+                new ComponentColorModel(cs, bits, true, true, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE) :
+                new ComponentColorModel(cs, bits, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+
+        byte[] pixels = new byte[length * bands];
 
 		// TODO: If we do multiple dispatches (one per line, typically), we could provide listener
 		//       feedback. But it's currently a lot slower than fetching all the pixels in one go.
 		// TODO: handle more generic cases if profile is not CMYK
-		// The "ACMYK" value has not been tested with an alpha picture actually...
+		// TODO: Test "ACMYK"
 		pImage.dispatchImage(0, 0, size.width, size.height, pAlpha ? "ACMYK" : "CMYK", pixels);
 
         // Init databuffer with array, to avoid allocation of empty array
-        final DataBuffer buffer = new DataBufferByte(pixels, pixels.length);
+        DataBuffer buffer = new DataBufferByte(pixels, pixels.length);
 
 		// TODO: build array from bands variable, here it just works for CMYK
 		// The values has not been tested with an alpha picture actually...
-        final int[] bandOffsets = pAlpha ? new int[] {0, 1, 2, 3, 4} : new int[] {0, 1, 2, 3};
+        int[] bandOffsets = pAlpha ? new int[] {0, 1, 2, 3, 4} : new int[] {0, 1, 2, 3};
 
-        final WritableRaster raster =
+        WritableRaster raster =
                 Raster.createInterleavedRaster(buffer, size.width, size.height,
                         size.width * bands, bands, bandOffsets, LOCATION_UPPER_LEFT);
 		
