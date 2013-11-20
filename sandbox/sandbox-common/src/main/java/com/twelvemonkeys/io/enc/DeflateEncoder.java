@@ -51,7 +51,6 @@ final class DeflateEncoder implements Encoder {
     private final byte[] buffer = new byte[1024];
 
     public DeflateEncoder() {
-//        this(new Deflater());
         this(new Deflater(Deflater.DEFAULT_COMPRESSION, true)); // TODO: Should we use "no wrap"?
     }
 
