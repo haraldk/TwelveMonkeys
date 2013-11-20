@@ -94,6 +94,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "SamplesPerPixels";
             case TIFF.TAG_ROWS_PER_STRIP:
                 return "RowsPerStrip";
+            case TIFF.TAG_STRIP_BYTE_COUNTS:
+                return "StripByteCounts";
             case TIFF.TAG_X_RESOLUTION:
                 return "XResolution";
             case TIFF.TAG_Y_RESOLUTION:
