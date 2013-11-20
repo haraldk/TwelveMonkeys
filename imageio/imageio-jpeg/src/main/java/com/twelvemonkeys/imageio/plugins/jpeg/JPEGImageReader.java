@@ -47,6 +47,7 @@ import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -504,16 +505,17 @@ public class JPEGImageReader extends ImageReaderBase {
 
         When reading, the contents of the stream are interpreted by the usual JPEG conventions, as follows:
 
-        • If a JFIF APP0 marker segment is present, the colorspace is known to be either grayscale, YCbCr or CMYK.
+        • If a JFIF APP0 marker segment is present, the colorspace should be either grayscale or YCbCr.
         If an APP2 marker segment containing an embedded ICC profile is also present, then YCbCr is converted to RGB according
         to the formulas given in the JFIF spec, and the ICC profile is assumed to refer to the resulting RGB space.
-        CMYK data is read as is, and the ICC profile is assumed to refer to the resulting CMYK space.
+        But, as software does not follow the spec, we can't really assume anything.
 
         • If an Adobe APP14 marker segment is present, the colorspace is determined by consulting the transform flag.
         The transform flag takes one of three values:
          o 2 - The image is encoded as YCCK (implicitly converted from CMYK on encoding).
          o 1 - The image is encoded as YCbCr (implicitly converted from RGB on encoding).
-         o 0 - Unknown. 3-channel images are assumed to be RGB, 4-channel images are assumed to be CMYK.
+         o 0 - Unknown. 1-channel images are assumed to be Gray, 3-channel images are assumed to be RGB,
+               4-channel images are assumed to be CMYK.
 
         • If neither marker segment is present, the following procedure is followed: Single-channel images are assumed
         to be grayscale, and 2-channel images are assumed to be grayscale with an alpha channel. For 3- and 4-channel
@@ -541,8 +543,10 @@ public class JPEGImageReader extends ImageReaderBase {
         if (adobeDCT != null) {
             switch (adobeDCT.getTransform()) {
                 case AdobeDCTSegment.YCC:
+                    // TODO: Verify that startOfFrame has 3 components, otherwise issue warning and ignore adobeDCT
                     return JPEGColorSpace.YCbCr;
                 case AdobeDCTSegment.YCCK:
+                    // TODO: Verify that startOfFrame has 4 components, otherwise issue warning and ignore adobeDCT
                     return JPEGColorSpace.YCCK;
                 case AdobeDCTSegment.Unknown:
                     if (startOfFrame.components.length == 1) {
@@ -575,7 +579,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     return JPEGColorSpace.PhotoYCC;
                 }
                 else {
-                    // if subsampled, YCbCr else RGB
+                    // If subsampled, YCbCr else RGB
                     for (SOFComponent component : startOfFrame.components) {
                         if (component.hSub != 1 || component.vSub != 1) {
                             return JPEGColorSpace.YCbCr;
@@ -601,7 +605,8 @@ public class JPEGImageReader extends ImageReaderBase {
                     return JPEGColorSpace.YCCK;
                 }
                 else {
-                    // if subsampled, YCCK else CMYK
+                    // TODO: JPEGMetadata (standard format) will report YCbCrA for 4 channel subsampled... :-/
+                    // If subsampled, YCCK else CMYK
                     for (SOFComponent component : startOfFrame.components) {
                         if (component.hSub != 1 || component.vSub != 1) {
                             return JPEGColorSpace.YCCK;
@@ -970,10 +975,16 @@ public class JPEGImageReader extends ImageReaderBase {
                         Directory ifd1 = exifMetadata.getDirectory(1);
 
                         Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-
                         // 1 = no compression, 6 = JPEG compression (default)
                         if (compression == null || compression.getValue().equals(1) || compression.getValue().equals(6)) {
-                            thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                            Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+
+                            if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
+                                thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                            }
+                            else {
+                                processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
+                            }
                         }
                         else {
                             processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression.getValue());
@@ -1374,15 +1385,20 @@ public class JPEGImageReader extends ImageReaderBase {
                 showIt(image, String.format("Image: %s [%d x %d]", file.getName(), reader.getWidth(0), reader.getHeight(0)));
 
                 try {
+                    IIOMetadata imageMetadata = reader.getImageMetadata(0);
+                    System.out.println("Metadata for File: " + file.getName());
+                    System.out.println("Native:");
+                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+                    System.out.println("Standard:");
+                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                    System.out.println();
+
                     int numThumbnails = reader.getNumThumbnails(0);
                     for (int i = 0; i < numThumbnails; i++) {
                         BufferedImage thumbnail = reader.readThumbnail(0, i);
 //                        System.err.println("thumbnail: " + thumbnail);
                         showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
                     }
-
-                    IIOMetadata imageMetadata = reader.getImageMetadata(0);
-                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
                 }
                 catch (IIOException e) {
                     System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());

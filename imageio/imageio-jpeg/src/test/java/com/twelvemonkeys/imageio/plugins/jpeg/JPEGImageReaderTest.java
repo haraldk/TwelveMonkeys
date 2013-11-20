@@ -32,6 +32,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 import org.mockito.internal.matchers.GreaterThan;
+import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -39,6 +40,7 @@ import org.w3c.dom.NodeList;
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGHuffmanTable;
 import javax.imageio.plugins.jpeg.JPEGQTable;
@@ -646,6 +648,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         IIOMetadata imageMetadata = reader.getImageMetadata(0);
         assertNotNull(imageMetadata);
+
+        // Assume that the aspect ratio is 1 if both x/y density is 0.
+        IIOMetadataNode tree = (IIOMetadataNode) imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList dimensions = tree.getElementsByTagName("Dimension");
+        assertEquals(1, dimensions.getLength());
+        assertEquals("PixelAspectRatio", dimensions.item(0).getFirstChild().getNodeName());
+        assertEquals("1.0", ((Element) dimensions.item(0).getFirstChild()).getAttribute("value"));
     }
 
     // TODO: Test RGBA/YCbCrA handling
