@@ -28,11 +28,13 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.io.InputStreamAbstractTestCase;
-import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+
+import static org.junit.Assert.*;
 
 /**
  * YCbCrUpsamplerStreamTest
@@ -41,11 +43,77 @@ import java.io.InputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: YCbCrUpsamplerStreamTest.java,v 1.0 31.01.13 14:35 haraldk Exp$
  */
-@Ignore
-public class YCbCrUpsamplerStreamTest extends InputStreamAbstractTestCase {
-    // TODO: Implement + add @Ignore for all tests that makes no sense for this class.
-    @Override
-    protected InputStream makeInputStream(byte[] pBytes) {
-        return new YCbCrUpsamplerStream(new ByteArrayInputStream(pBytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, pBytes.length / 4, null);
+public class YCbCrUpsamplerStreamTest  {
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateNullStream() {
+        new YCbCrUpsamplerStream(null, new int[2], 7, 5, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateNullChroma() {
+        new YCbCrUpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5, null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateShortChroma() {
+        new YCbCrUpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5, null);
+    }
+
+    @Test
+    public void testUpsample22() throws IOException {
+        byte[] bytes = new byte[] {
+                1, 2, 3, 4, 5, 6, 7, 8, 42, 96,
+                108, 109, 110, 111, 112, 113, 114, 115, 43, 97
+        };
+        YCbCrUpsamplerStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 8, null);
+
+        byte[] expected = new byte[] {
+                0, -126, 0, 0, -125, 0, 0, 27, 0, 0, 28, 0, 92, 124, 85, 93, 125, 86, 0, -78, 0, 0, -24, 0,
+                0, -124, 0, 0, -123, 0, 15, 62, 7, 69, 116, 61, 94, 126, 87, 95, 127, 88, 0, -121, 0, 0, -121, 0
+        };
+        byte[] upsampled = new byte[expected.length];
+
+        new DataInputStream(stream).readFully(upsampled);
+
+        assertArrayEquals(expected, upsampled);
+        assertEquals(-1, stream.read());
+    }
+
+    @Test
+    public void testUpsample21() throws IOException {
+        byte[] bytes = new byte[] {
+                1, 2, 3, 4, 42, 96, 77,
+                112, 113, 114, 115, 43, 97, 43
+        };
+        YCbCrUpsamplerStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 1}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null);
+
+        byte[] expected = new byte[] {
+                0, -123, 0, 0, -122, 0, 20, 71, 0, 74, 125, 6, 0, -78, 90, 0, -77, 91, 75, 126, 7, 21, 72, 0
+        };
+        byte[] upsampled = new byte[expected.length];
+
+        new DataInputStream(stream).readFully(upsampled);
+
+        assertArrayEquals(expected, upsampled);
+        assertEquals(-1, stream.read());
+    }
+
+    @Test
+    public void testUpsample12() throws IOException {
+        byte[] bytes = new byte[] {
+                1, 2, 3, 4, 42, 96, 77,
+                112, 113, 114, 115, 43, 97, 43
+        };
+        YCbCrUpsamplerStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {1, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null);
+
+        byte[] expected = new byte[] {
+                0, -123, 0, 20, 71, 0, 0, -78, 90, 0, -24, 0, 0, -122, 0, 74, 125, 6, 0, -77, 91, 0, -78, 0
+        };
+        byte[] upsampled = new byte[expected.length];
+
+        new DataInputStream(stream).readFully(upsampled);
+
+        assertArrayEquals(expected, upsampled);
+        assertEquals(-1, stream.read());
     }
 }
