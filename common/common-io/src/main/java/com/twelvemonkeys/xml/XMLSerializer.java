@@ -69,12 +69,15 @@ public class XMLSerializer {
         context = new SerializationContext();
     }
 
-    public final void setIndentation(String pIndent) {
+    public final XMLSerializer indentation(String pIndent) {
+        // TODO: Verify that indent value is only whitespace?
         context.indent = pIndent != null ? pIndent : "\t";
+        return this;
     }
 
-    public final void setStripComments(boolean pStrip) {
+    public final XMLSerializer stripComments(boolean pStrip) {
         context.stripComments = pStrip;
+        return this;
     }
 
     /**
