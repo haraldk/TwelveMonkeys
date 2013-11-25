@@ -1,11 +1,11 @@
 package com.twelvemonkeys.imageio.stream;
 
-import com.twelvemonkeys.lang.Validate;
-
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * A buffered {@code ImageInputStream}.
@@ -32,9 +32,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     }
 
     private BufferedImageInputStream(final ImageInputStream pStream, final int pBufferSize) throws IOException {
-        Validate.notNull(pStream, "stream");
-
-        stream = pStream;
+        stream = notNull(pStream, "stream");
         streamPos = pStream.getStreamPosition();
         buffer = ByteBuffer.allocate(pBufferSize);
         buffer.limit(0);
