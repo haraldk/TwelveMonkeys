@@ -266,7 +266,7 @@ public final class ColorSpaces {
 
                     if (profile == null) {
                         // Try to get system default or user-defined profile
-//                        profile = readProfileFromPath(Profiles.getPath("GENERIC_CMYK"));
+                        profile = readProfileFromPath(Profiles.getPath("GENERIC_CMYK"));
 
                         if (profile == null) {
                             if (DEBUG) {
