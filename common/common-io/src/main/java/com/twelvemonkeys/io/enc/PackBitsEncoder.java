@@ -92,7 +92,7 @@ public final class PackBitsEncoder implements Encoder {
             // Compressed run
             int run = 1;
             byte replicate = pBuffer[offset];
-            while(run < 127 && offset < max && pBuffer[offset] == pBuffer[offset + 1]) {
+            while (run < 127 && offset < max && pBuffer[offset] == pBuffer[offset + 1]) {
                 offset++;
                 run++;
             }
