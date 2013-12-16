@@ -91,6 +91,18 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 long realPosition = stream.getStreamPosition();
                 int marker = stream.readUnsignedShort();
 
+                // Skip over weird 0x00 padding, but leave in stream, read seems to handle it well with a warning
+                int trash = 0;
+                while (marker == 0) {
+                    marker = stream.readUnsignedShort();
+                    trash += 2;
+                }
+
+                if (marker == 0x00ff) {
+                    trash++;
+                    marker = 0xff00 | stream.readUnsignedByte();
+                }
+
                 // Skip over 0xff padding between markers
                 while (marker == 0xffff) {
                     realPosition++;
@@ -101,7 +113,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment, 'Exif' APP1 and very few others
                 if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream)) && marker != JPEG.APP14) {
                     int length = stream.readUnsignedShort(); // Length including length field itself
-                    stream.seek(realPosition + 2 + length);  // Skip marker (2) + length
+                    stream.seek(realPosition + trash + 2 + length);  // Skip marker (2) + length
                 }
                 else {
                     if (marker == JPEG.EOI) {
@@ -117,7 +129,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         }
                         else {
                             // Length including length field itself
-                            length = stream.readUnsignedShort() + 2;
+                            length = trash + stream.readUnsignedShort() + 2;
                         }
 
                         segment = new Segment(marker, realPosition, segment.end(), length);
