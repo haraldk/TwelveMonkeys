@@ -50,10 +50,10 @@ import java.util.Enumeration;
  * <p/
  * {@code GenericFilter} has an auto-init system, that automatically invokes
  * the method matching the signature {@code void setX(&lt;Type&gt;)},
- * for every init-parameter {@code x}. Both camelCase and lisp-style paramter
+ * for every init-parameter {@code x}. Both camelCase and lisp-style parameter
  * naming is supported, lisp-style names will be converted to camelCase.
- * Parameter values are automatically converted from string represenation to
- * most basic types, if neccessary.
+ * Parameter values are automatically converted from string representation to
+ * most basic types, if necessary.
  * <p/>
  * To write a generic filter, you need only override the abstract
  * {@link #doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}  doFilterImpl} method.
@@ -67,6 +67,7 @@ import java.util.Enumeration;
  * @see FilterConfig
  */
 public abstract class GenericFilter implements Filter, FilterConfig, Serializable {
+    // TODO: Rewrite to use ServletConfigurator instead of BeanUtil
 
     /**
      * The filter config.
@@ -76,32 +77,29 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
     /**
      * Makes sure the filter runs once per request
      * <p/>
-     * see #isRunOnce
-     *
+     * @see #isRunOnce
+     * @see #ATTRIB_RUN_ONCE_VALUE
      * @see #oncePerRequest
-     *      see #ATTRIB_RUN_ONCE_VALUE
      */
     private final static String ATTRIB_RUN_ONCE_EXT = ".REQUEST_HANDLED";
 
     /**
      * Makes sure the filter runs once per request.
      * Must be configured through init method, as the filter name is not
-     * available before we have a FitlerConfig object.
+     * available before we have a {@code FilterConfig} object.
      * <p/>
-     * see #isRunOnce
-     *
+     * @see #isRunOnce
+     * @see #ATTRIB_RUN_ONCE_VALUE
      * @see #oncePerRequest
-     *      see #ATTRIB_RUN_ONCE_VALUE
      */
     private String attribRunOnce = null;
 
     /**
      * Makes sure the filter runs once per request
      * <p/>
-     * see #isRunOnce
-     *
+     * @see #isRunOnce
+     * @see #ATTRIB_RUN_ONCE_EXT
      * @see #oncePerRequest
-     *      see #ATTRIB_RUN_ONCE_EXT
      */
     private static final Object ATTRIB_RUN_ONCE_VALUE = new Object();
 
@@ -213,16 +211,16 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * and returns false.
      * A return value of false, indicates that the filter has not yet run.
      * A return value of true, indicates that the filter has run for this
-     * request, and processing should not contine.
+     * request, and processing should not continue.
      * <P/>
      * Note that the method will mark the request as filtered on first
      * invocation.
      * <p/>
-     * see #ATTRIB_RUN_ONCE_EXT
-     * see #ATTRIB_RUN_ONCE_VALUE
+     * @see #ATTRIB_RUN_ONCE_EXT
+     * @see #ATTRIB_RUN_ONCE_VALUE
      *
      * @param pRequest the servlet request
-     * @return {@code true} if the request is allready filtered, otherwise
+     * @return {@code true} if the request is already filtered, otherwise
      *         {@code false}.
      */
     private boolean isRunOnce(final ServletRequest pRequest) {
@@ -233,6 +231,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
 
         // Set attribute and return false (continue)
         pRequest.setAttribute(attribRunOnce, ATTRIB_RUN_ONCE_VALUE);
+
         return false;
     }
 
@@ -286,7 +285,6 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * @see ServletContext
      */
     public ServletContext getServletContext() {
-        // TODO: Create a servlet context wrapper that lets you log to a log4j appender?
         return filterConfig.getServletContext();
     }
 
@@ -347,6 +345,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *
      * @deprecated For compatibility only, use {@link #init init} instead.
      */
+    @SuppressWarnings("UnusedDeclaration")
     public void setFilterConfig(final FilterConfig pFilterConfig) {
         try {
             init(pFilterConfig);
