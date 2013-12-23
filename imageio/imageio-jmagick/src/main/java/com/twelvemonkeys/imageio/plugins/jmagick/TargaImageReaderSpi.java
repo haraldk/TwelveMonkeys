@@ -63,7 +63,11 @@ public class TargaImageReaderSpi extends JMagickImageReaderSpiSupport {
         //                  new byte[] {-1, 0x01, 0x20},                      // Type 31: Compressed CM
         //                  new byte[] {-1, 0x01, 0x21},                      // Type 32: Compressed CM, 4 pass
         //                  },
-        pSource.seek(pSource.length() - 18);
+        try {
+            pSource.seek(pSource.length() - 18);
+        } catch (IndexOutOfBoundsException e) {
+            return false;
+        }
         byte[] magic = new byte[18];
         pSource.readFully(magic);
 

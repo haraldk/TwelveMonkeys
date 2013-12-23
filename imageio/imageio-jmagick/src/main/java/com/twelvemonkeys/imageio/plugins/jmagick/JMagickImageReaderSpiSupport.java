@@ -46,7 +46,7 @@ import java.util.Locale;
  */
 abstract class JMagickImageReaderSpiSupport extends ImageReaderSpi {
 
-    final static boolean AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.jmagick.JMagick");
+    final static boolean AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.jmagick.JMagick", JMagickImageReaderSpiSupport.class);
 
     /**
      * Creates a JMagickImageReaderSpiSupport
