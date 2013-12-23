@@ -273,7 +273,8 @@ Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins mi
 I addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
 If you restart your application, old classes will by default remain in memory forever (because the next time
 `scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
-in the registry).
+in the registry). If a read is attempted using one of the remaining ("old") readers, weird exceptions
+(like `NullPointerException`s when accessing `static final` initialized fields) may occur.
 
 To work around both the discovery problem and the resource leak,
 it is recommended to use the `IIOProviderContextListener` that implements
