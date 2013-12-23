@@ -47,9 +47,11 @@ import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
@@ -62,7 +64,6 @@ import java.awt.image.*;
 import java.io.*;
 import java.nio.ByteOrder;
 import java.util.*;
-import java.util.List;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
@@ -80,6 +81,7 @@ import java.util.zip.InflaterInputStream;
  * <ul>
  *     <li>Tiling</li>
  *     <li>LZW Compression (type 5)</li>
+ *     <li>"Old-style" JPEG Compression (type 6), as a best effort, as the spec is not well-defined</li>
  *     <li>JPEG Compression (type 7)</li>
  *     <li>ZLib (aka Adobe-style Deflate) Compression (type 8)</li>
  *     <li>Deflate Compression (type 32946)</li>
@@ -90,6 +92,7 @@ import java.util.zip.InflaterInputStream;
  *     <li>Planar data (PlanarConfiguration type 2/Planar)</li>
  *     <li>ICC profiles (ICCProfile)</li>
  *     <li>BitsPerSample values up to 16 for most PhotometricInterpretations</li>
+ *     <li>Multiple images (pages) in one file</li>
  * </ul>
  *
  * @see <a href="http://partners.adobe.com/public/developer/tiff/index.html">Adobe TIFF developer resources</a>
@@ -104,6 +107,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODOs ImageIO basic functionality:
     // TODO: Subsampling (*tests should be failing*)
     // TODO: Source region (*tests should be failing*)
+    // TODO: Thumbnail support
     // TODO: TIFFImageWriter + Spi
 
     // TODOs Full BaseLine support:
@@ -111,7 +115,8 @@ public class TIFFImageReader extends ImageReaderBase {
     //       (0: Unspecified (not alpha), 1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
 
     // TODOs ImageIO advanced functionality:
-    // TODO: Implement readAsRenderedImage to allow tiled renderImage?
+    // TODO: Tiling support (readTile, readTileRaster)
+    // TODO: Implement readAsRenderedImage to allow tiled RenderedImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
     // TODO: Implement readAsRaster directly
     // TODO: IIOMetadata (stay close to Sun's TIFF metadata)
@@ -119,6 +124,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
     // TODOs Extension support
     // TODO: Support PlanarConfiguration 2
+    // TODO: Auto-rotate based on Orientation
     // TODO: Support ICCProfile (fully)
     // TODO: Support Compression 3 & 4 (CCITT T.4 & T.6)
     // TODO: Support Compression 34712 (JPEG2000)? Depends on JPEG2000 ImageReader
@@ -290,7 +296,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
                     case 4:
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
-                            // ExtraSamples 0=unspecified, 1=associated (premultiplied), 2=unassociated (TODO: Support unspecified, not alpha)
+                            // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
                             long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
 
                             switch (planarConfiguration) {
@@ -356,7 +362,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
                     case 5:
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
-                            // ExtraSamples 0=unspecified, 1=associated (premultiplied), 2=unassociated (TODO: Support unspecified, not alpha)
+                            // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
                             long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
 
                             switch (planarConfiguration) {
@@ -428,19 +434,19 @@ public class TIFFImageReader extends ImageReaderBase {
         readIFD(imageIndex);
 
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
-        List<ImageTypeSpecifier> specs = new ArrayList<ImageTypeSpecifier>();
+        Set<ImageTypeSpecifier> specs = new LinkedHashSet<ImageTypeSpecifier>(5);
 
         // TODO: Based on raw type, we can probably convert to most RGB types at least, maybe gray etc
         // TODO: Planar to chunky by default
-        if (!rawType.getColorModel().getColorSpace().isCS_sRGB() && rawType.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB) {
+        if (rawType.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB) {
             if (rawType.getNumBands() == 3 && rawType.getBitsPerBand(0) == 8) {
                 specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
-                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
-                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+//                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
+//                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
             }
             else if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 8) {
                 specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
-                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+//                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
                 specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
             }
         }
@@ -666,53 +672,10 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     jpegReader.setInput(new ByteArrayImageInputStream(tablesValue));
 
-                    // NOTE: This initializes the tables AND MORE secret internal settings for the reader (as if by magic).
-                    // This is probably a bug, as later setInput calls should clear/override the tables.
-                    // However, it would be extremely convenient, not having to actually fiddle with the stream meta data (as below)
+                    // NOTE: This initializes the tables and other internal settings for the reader (as if by magic).
+                    // This is actually a feature of JPEG,
+                    // see: http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
                     /*IIOMetadata streamMetadata = */jpegReader.getStreamMetadata();
-
-                    /*
-                    IIOMetadataNode root = (IIOMetadataNode) streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName());
-                    NodeList dqt = root.getElementsByTagName("dqt");
-                    NodeList dqtables = ((IIOMetadataNode) dqt.item(0)).getElementsByTagName("dqtable");
-                    JPEGQTable[] qTables = new JPEGQTable[dqtables.getLength()];
-                    for (int i = 0; i < dqtables.getLength(); i++) {
-                        qTables[i] = (JPEGQTable) ((IIOMetadataNode) dqtables.item(i)).getUserObject();
-                        System.err.println("qTables: " + qTables[i]);
-                    }
-
-                    List<JPEGHuffmanTable> acHTables = new ArrayList<JPEGHuffmanTable>();
-                    List<JPEGHuffmanTable> dcHTables = new ArrayList<JPEGHuffmanTable>();
-
-                    NodeList dht = root.getElementsByTagName("dht");
-                    for (int i = 0; i < dht.getLength(); i++) {
-                        NodeList dhtables = ((IIOMetadataNode) dht.item(i)).getElementsByTagName("dhtable");
-                        for (int j = 0; j < dhtables.getLength(); j++) {
-                            System.err.println("dhtables.getLength(): " + dhtables.getLength());
-                            IIOMetadataNode dhtable = (IIOMetadataNode) dhtables.item(j);
-                            JPEGHuffmanTable userObject = (JPEGHuffmanTable) dhtable.getUserObject();
-                            if ("0".equals(dhtable.getAttribute("class"))) {
-                                dcHTables.add(userObject);
-                            }
-                            else {
-                                acHTables.add(userObject);
-                            }
-                        }
-                    }
-
-                    JPEGHuffmanTable[] dcTables = dcHTables.toArray(new JPEGHuffmanTable[dcHTables.size()]);
-                    JPEGHuffmanTable[] acTables = acHTables.toArray(new JPEGHuffmanTable[acHTables.size()]);
-*/
-//                    JPEGTables tables = new JPEGTables(new ByteArrayImageInputStream(tablesValue));
-//                    JPEGQTable[] qTables = tables.getQTables();
-//                    JPEGHuffmanTable[] dcTables = tables.getDCHuffmanTables();
-//                    JPEGHuffmanTable[] acTables = tables.getACHuffmanTables();
-
-//                    System.err.println("qTables: " + Arrays.toString(qTables));
-//                    System.err.println("dcTables: " + Arrays.toString(dcTables));
-//                    System.err.println("acTables: " + Arrays.toString(acTables));
-
-//                    jpegParam.setDecodeTables(qTables, dcTables, acTables);
                 }
                 else {
                     processWarningOccurred("Missing JPEGTables for TIFF with compression: 7 (JPEG)");
@@ -732,6 +695,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                         imageInput.seek(stripTileOffsets[i]);
                         ImageInputStream subStream = new SubImageInputStream(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE);
+
                         try {
                             jpegReader.setInput(subStream);
                             jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
@@ -1236,6 +1200,15 @@ public class TIFFImageReader extends ImageReaderBase {
         return ICC_Profile.getInstance(value);
     }
 
+    // TODO: Tiling support
+    // isImageTiled
+    // getTileWidth
+    // getTileHeight
+    // readTile
+    // readTileRaster
+
+    // TODO: Thumbnail support
+
     public static void main(final String[] args) throws IOException {
         for (final String arg : args) {
             File file = new File(arg);
@@ -1312,6 +1285,12 @@ public class TIFFImageReader extends ImageReaderBase {
 //                    param.setSourceSubsampling(2, 2, 0, 0);
                     BufferedImage image = reader.read(imageNo, param);
                     System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
+
+                    IIOMetadata metadata = reader.getImageMetadata(0);
+                    if (metadata != null) {
+                        new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
+                    }
+
 //                System.err.println("image: " + image);
 
 //                    File tempFile = File.createTempFile("lzw-", ".bin");
@@ -1369,6 +1348,10 @@ public class TIFFImageReader extends ImageReaderBase {
                 input.close();
             }
         }
+    }
+
+    protected static void showIt(BufferedImage image, String title) {
+        ImageReaderBase.showIt(image, title);
     }
 
     private static void deregisterOSXTIFFImageReaderSpi() {
