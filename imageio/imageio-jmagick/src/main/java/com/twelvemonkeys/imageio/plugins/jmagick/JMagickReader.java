@@ -93,11 +93,11 @@ abstract class JMagickReader extends ImageReaderBase {
     private static final ColorModel CM_GRAY_ALPHA =
             new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), true, true, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE);
 
-    private final boolean mUseTempFile;
-    private File mTempFile;
+    private final boolean useTempFile;
+    private File tempFile;
 
-    private MagickImage mImage;
-    private Dimension mSize;
+    private MagickImage image;
+    private Dimension size;
 
     protected JMagickReader(final JMagickImageReaderSpiSupport pProvider) {
         this(pProvider, pProvider.useTempFile());
@@ -105,28 +105,29 @@ abstract class JMagickReader extends ImageReaderBase {
 
     protected JMagickReader(final ImageReaderSpi pProvider, final boolean pUseTemp) {
         super(pProvider);
-        mUseTempFile = pUseTemp;
+        useTempFile = pUseTemp;
     }
 
     @Override
     protected void resetMembers() {
-        if (mTempFile != null) {
-            mTempFile.delete();
+        if (tempFile != null&& !tempFile.delete()) {
+            tempFile.deleteOnExit();
         }
-        mTempFile = null;
 
-        if (mImage != null) {
-            mImage.destroyImages();
+        tempFile = null;
+
+        if (image != null) {
+            image.destroyImages();
         }
-        mImage = null;
 
-        mSize = null;
+        image = null;
+        size = null;
     }    
 
     // TODO: Handle multi-image formats
-    // if (mImage.hasFrames()) {
-    //    int count = mImage.getNumFrames();
-    //    MagickImage[] images = mImage.breakFrames();
+    // if (image.hasFrames()) {
+    //    int count = image.getNumFrames();
+    //    MagickImage[] images = image.breakFrames();
     // }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
@@ -140,7 +141,7 @@ abstract class JMagickReader extends ImageReaderBase {
         try {
             ColorModel cm;
             // NOTE: These are all fall-through by intention 
-            switch (mImage.getImageType()) {
+            switch (image.getImageType()) {
                 case ImageType.BilevelType:
                     specs.add(IndexedImageTypeSpecifier.createFromIndexColorModel(MonochromeColorModel.getInstance()));
                 case ImageType.GrayscaleType:
@@ -158,11 +159,11 @@ abstract class JMagickReader extends ImageReaderBase {
                     ));
                 case ImageType.PaletteType:
                     specs.add(IndexedImageTypeSpecifier.createFromIndexColorModel(
-                            MagickUtil.createIndexColorModel(mImage.getColormap(), false)
+                            MagickUtil.createIndexColorModel(image.getColormap(), false)
                     ));
                 case ImageType.PaletteMatteType:
                     specs.add(IndexedImageTypeSpecifier.createFromIndexColorModel(
-                            MagickUtil.createIndexColorModel(mImage.getColormap(), true)
+                            MagickUtil.createIndexColorModel(image.getColormap(), true)
                     ));
                 case ImageType.TrueColorType:
 //                    cm = MagickUtil.CM_COLOR_OPAQUE;
@@ -183,7 +184,7 @@ abstract class JMagickReader extends ImageReaderBase {
                 case ImageType.ColorSeparationMatteType:
                 case ImageType.OptimizeType:
                 default:
-                    throw new MagickException("Unknown JMagick image type: " + mImage.getImageType());
+                    throw new MagickException("Unknown JMagick image type: " + image.getImageType());
             }
         }
         catch (MagickException e) {
@@ -196,19 +197,19 @@ abstract class JMagickReader extends ImageReaderBase {
     public int getWidth(int pIndex) throws IOException {
         checkBounds(pIndex);
 
-        if (mSize == null) {
+        if (size == null) {
             init(0);
         }
-        return mSize != null ? mSize.width : -1;
+        return size != null ? size.width : -1;
     }
 
     public int getHeight(int pIndex) throws IOException {
         checkBounds(pIndex);
 
-        if (mSize == null) {
+        if (size == null) {
             init(0);
         }
-        return mSize != null ? mSize.height : -1;
+        return size != null ? size.height : -1;
     }
 
     public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
@@ -218,14 +219,14 @@ abstract class JMagickReader extends ImageReaderBase {
             processImageStarted(pIndex);
 
             // Some more waste of time and space...
-            Dimension size = mSize;
+            Dimension size = this.size;
 
             if (pParam != null) {
                 // Source region
                 // TODO: Maybe have to do some tests, to check if we are within bounds...
                 Rectangle sourceRegion = pParam.getSourceRegion();
                 if (sourceRegion != null) {
-                    mImage = mImage.cropImage(sourceRegion);
+                    image = image.cropImage(sourceRegion);
                     size = sourceRegion.getSize();
                 }
 
@@ -234,7 +235,7 @@ abstract class JMagickReader extends ImageReaderBase {
                     int w = size.width / pParam.getSourceXSubsampling();
                     int h = size.height / pParam.getSourceYSubsampling();
 
-                    mImage = mImage.sampleImage(w, h);
+                    image = image.sampleImage(w, h);
                     size = new Dimension(w, h);
                 }
             }
@@ -245,7 +246,7 @@ abstract class JMagickReader extends ImageReaderBase {
             }
 
             processImageProgress(10f);
-            BufferedImage buffered = MagickUtil.toBuffered(mImage);
+            BufferedImage buffered = MagickUtil.toBuffered(image);
             processImageProgress(100f);
 
             /**/
@@ -260,12 +261,12 @@ abstract class JMagickReader extends ImageReaderBase {
             //*/
 
             /**
-            System.out.println("Colorspace: " + mImage.getColorspace());
-            System.out.println("Depth: " + mImage.getDepth());
-            System.out.println("Format: " + mImage.getImageFormat());
-            System.out.println("Type: " + mImage.getImageType());
-            System.out.println("IPTCProfile: " + StringUtil.deepToString(mImage.getIptcProfile()));
-            System.out.println("StorageClass: " + mImage.getStorageClass());
+            System.out.println("Colorspace: " + image.getColorspace());
+            System.out.println("Depth: " + image.getDepth());
+            System.out.println("Format: " + image.getImageFormat());
+            System.out.println("Type: " + image.getImageType());
+            System.out.println("IPTCProfile: " + StringUtil.deepToString(image.getIptcProfile()));
+            System.out.println("StorageClass: " + image.getStorageClass());
             //*/
 
             processImageComplete();
@@ -282,11 +283,11 @@ abstract class JMagickReader extends ImageReaderBase {
         checkBounds(pIndex);
 
         try {
-            if (mImage == null) {
+            if (image == null) {
                 // TODO: If ImageInputStream is already file-backed, maybe we can peek into that file?
                 //       At the moment, the cache/file is not accessible, but we could create our own
                 //       FileImageInputStream provider that gives us this access.
-                if (!mUseTempFile && imageInput.length() >= 0 && imageInput.length() <= Integer.MAX_VALUE) {
+                if (!useTempFile && imageInput.length() >= 0 && imageInput.length() <= Integer.MAX_VALUE) {
                     // This works for most file formats, as long as ImageMagick
                     // uses the file magic to decide file format
                     byte[] bytes = new byte[(int) imageInput.length()];
@@ -294,17 +295,18 @@ abstract class JMagickReader extends ImageReaderBase {
 
                     // Unfortunately, this is a waste of space & time...
                     ImageInfo info = new ImageInfo();
-                    mImage = new MagickImage(info);
-                    mImage.blobToImage(info, bytes);
+                    image = new MagickImage(info);
+                    image.blobToImage(info, bytes);
                 }
                 else {
                     // Quirks mode: Use temp file to get correct file extension
                     // (which is even more waste of space & time, but might save memory)
                     String ext = getFormatName().toLowerCase();
 
-                    mTempFile = File.createTempFile("jmagickreader", "." + ext);
-                    mTempFile.deleteOnExit();
-                    OutputStream out = new BufferedOutputStream(new FileOutputStream(mTempFile));
+                    tempFile = File.createTempFile("jmagickreader", "." + ext);
+                    tempFile.deleteOnExit();
+                    OutputStream out = new BufferedOutputStream(new FileOutputStream(tempFile));
+
                     try {
                         byte[] buffer = new byte[FileUtil.BUF_SIZE];
                         int count;
@@ -320,11 +322,11 @@ abstract class JMagickReader extends ImageReaderBase {
                         out.close();
                     }
 
-                    ImageInfo info = new ImageInfo(mTempFile.getAbsolutePath());
-                    mImage = new MagickImage(info);
+                    ImageInfo info = new ImageInfo(tempFile.getAbsolutePath());
+                    image = new MagickImage(info);
                 }
 
-                mSize = mImage.getDimension();
+                size = image.getDimension();
             }
         }
         catch (MagickException e) {
