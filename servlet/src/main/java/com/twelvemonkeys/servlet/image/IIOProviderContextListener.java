@@ -28,12 +28,15 @@
 
 package com.twelvemonkeys.servlet.image;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ServiceRegistry;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import java.util.Iterator;
 
 /**
  * Takes care of registering and de-registering local ImageIO plugins (service providers) for the servlet context.
@@ -66,8 +69,13 @@ public final class IIOProviderContextListener implements ServletContextListener 
             Class<?> category = categories.next();
             Iterator<?> providers = registry.getServiceProviders(category, localFilter, false);
 
+            // Copy the providers, deregistering while iterating over providers can lead to ConcurrentModificationExceptions.
+            List<Object> providerObjects = new ArrayList<Object>();
             while (providers.hasNext()) {
-                Object provider = providers.next();
+                providerObjects.add(providers.next());
+            }
+
+            for (Object provider : providerObjects) {
                 registry.deregisterServiceProvider(provider);
                 event.getServletContext().log(String.format("Unregistered locally installed provider class: %s", provider.getClass()));
             }
