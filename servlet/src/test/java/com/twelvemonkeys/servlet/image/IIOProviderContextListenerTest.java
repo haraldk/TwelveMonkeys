@@ -68,7 +68,7 @@ public class IIOProviderContextListenerTest {
         listener.contextDestroyed(destroyed);
     }
 
-    // Regression test for issue #30
+    // Regression test for issue #29
     @Test
     public void testDestroyConcurrentModRegression() {
         ServletContext context = mock(ServletContext.class);
