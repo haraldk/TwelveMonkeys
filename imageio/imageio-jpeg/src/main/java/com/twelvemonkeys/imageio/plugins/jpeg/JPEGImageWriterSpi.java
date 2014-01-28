@@ -89,15 +89,14 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
     static ImageWriterSpi lookupDelegateProvider(final ServiceRegistry registry) {
         Iterator<ImageWriterSpi> it = registry.getServiceProviders(ImageWriterSpi.class, new ImageFormatFilter("JPEG"), true);
 
-        ImageWriterSpi ret = null;
         while (it.hasNext()) {
             ImageWriterSpi imageWriterSpi = it.next();
             if (imageWriterSpi.getClass().getCanonicalName().equals("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi")) {
-                ret = imageWriterSpi;
+                return imageWriterSpi;
             }
         }
 
-        return ret;
+        return null;
     }
 
     @SuppressWarnings({"unchecked"})
