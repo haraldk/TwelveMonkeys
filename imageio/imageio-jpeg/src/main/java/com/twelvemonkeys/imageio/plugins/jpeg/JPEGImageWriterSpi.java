@@ -37,6 +37,7 @@ import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
 import java.util.Iterator;
@@ -68,7 +69,7 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
                 new String[]{"jpg", "jpeg"},
                 new String[]{"image/jpeg"},
                 "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
-                STANDARD_OUTPUT_TYPE,
+                new Class[] { ImageOutputStream.class },
                 new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null
