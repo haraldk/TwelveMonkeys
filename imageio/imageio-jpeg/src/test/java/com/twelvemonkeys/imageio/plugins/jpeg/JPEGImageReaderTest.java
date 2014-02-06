@@ -330,6 +330,25 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testCorbisRGB() throws IOException {
+        // Special case, throws exception below without special treatment
+        // java.awt.color.CMMException: General CMM error517
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/cmm-exception-corbis-rgb.jpg")));
+
+        assertEquals(512, reader.getWidth(0));
+        assertEquals(384, reader.getHeight(0));
+
+        BufferedImage image = reader.read(0);
+
+        assertNotNull(image);
+        assertEquals(512, image.getWidth());
+        assertEquals(384, image.getHeight());
+
+        reader.dispose();
+   }
+
+    @Test
     public void testHasThumbnailNoIFD1() throws IOException {
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/srgb-exif-no-ifd1.jpg")));

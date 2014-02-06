@@ -632,6 +632,8 @@ public class JPEGImageReader extends ImageReaderBase {
             byte[] profileData = profile.getData(); // Need to clone entire profile, due to a JDK 7 bug
 
             if (profileData[ICC_Profile.icHdrRenderingIntent] == ICC_Profile.icPerceptual) {
+                processWarningOccurred("ICC profile is Perceptual but Display class, treating as Display class");
+
                 intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass); // Header is first
 
                 return ICC_Profile.getInstance(profileData);
@@ -1374,10 +1376,10 @@ public class JPEGImageReader extends ImageReaderBase {
 //                    start = System.currentTimeMillis();
                     float aspect = reader.getAspectRatio(0);
                     if (aspect >= 1f) {
-                        image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_DEFAULT);
+                        image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_SMOOTH);
                     }
                     else {
-                        image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_DEFAULT);
+                        image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_SMOOTH);
                     }
 //                    System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
                 }

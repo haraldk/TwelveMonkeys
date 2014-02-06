@@ -86,6 +86,9 @@ public final class ColorSpaces {
     /** A best-effort "generic" CMYK color space. Either read from disk or built-in. */
     public static final int CS_GENERIC_CMYK = 5001;
 
+    /** Value used instead of 'XYZ ' in problematic Corbis RGB Profiles */
+    private static final byte[] CORBIS_RGB_ALTERNATE_XYZ = new byte[] {0x17, (byte) 0xA5, 0x05, (byte) 0xB8};
+
     // Weak references to hold the color spaces while cached
     private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<ICC_Profile>(null);
     private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<ICC_Profile>(null);
@@ -135,7 +138,40 @@ public final class ColorSpaces {
             }
         }
 
+        // Special handling to detect problematic Corbis RGB ICC Profile.
+        // This makes sure tags that are expected to be of type 'XYZ ' really have this expected type.
+        // Should leave other ICC profiles unchanged.
+        if (fixProfileXYZTag(profile, ICC_Profile.icSigMediaWhitePointTag)) {
+            fixProfileXYZTag(profile, ICC_Profile.icSigRedColorantTag);
+            fixProfileXYZTag(profile, ICC_Profile.icSigGreenColorantTag);
+            fixProfileXYZTag(profile, ICC_Profile.icSigBlueColorantTag);
+        }
+
         return getCachedOrCreateCS(profile, profileHeader);
+    }
+
+    /**
+     * Fixes problematic 'XYZ ' tags in Corbis RGB profile.
+     *
+     * @return {@code true} if found and fixed, otherwise {@code false} for short-circuiting
+     * to avoid unnecessary array copying.
+     */
+    private static boolean fixProfileXYZTag(ICC_Profile profile, final int tagSignature) {
+        byte[] data = profile.getData(tagSignature);
+
+        // The CMM expects 0x64 65 73 63 ('XYZ ') but is 0x17 A5 05 B8..?
+        if (data != null && Arrays.equals(Arrays.copyOfRange(data, 0, 4), CORBIS_RGB_ALTERNATE_XYZ)) {
+            data[0] = 'X';
+            data[1] = 'Y';
+            data[2] = 'Z';
+            data[3] = ' ';
+
+            profile.setData(tagSignature, data);
+
+            return true;
+        }
+
+        return false;
     }
 
     private static ICC_ColorSpace getInternalCS(final int profileCSType, final byte[] profileHeader) {

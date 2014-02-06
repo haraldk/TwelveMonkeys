@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -183,5 +184,16 @@ public class ColorSpacesTest {
     @Test(expected = IllegalArgumentException.class)
     public void testIsCS_sRGBNull() {
         ColorSpaces.isCS_sRGB(null);
+    }
+
+    @Test
+    public void testCorbisRGBSpecialHandling() throws IOException {
+        ICC_Profile corbisRGB = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB.icc"));
+        ICC_Profile corbisRGBFixed = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB_fixed.icc"));
+
+        ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(corbisRGB);
+
+        assertNotNull(colorSpace);
+        assertArrayEquals(colorSpace.getProfile().getData(), corbisRGBFixed.getData());
     }
 }
