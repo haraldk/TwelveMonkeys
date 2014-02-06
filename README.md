@@ -61,6 +61,11 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Read support for the following compression types:
   * Uncompressed
   * RLE (PackBits)
+* Layer support
+  * Image layers only, in all of the above types
+* Thumbnail support
+  * JPEG
+  * RAW (RGB)
 
 #### Aldus/Adobe Tagged Image File Format (TIFF)
 
