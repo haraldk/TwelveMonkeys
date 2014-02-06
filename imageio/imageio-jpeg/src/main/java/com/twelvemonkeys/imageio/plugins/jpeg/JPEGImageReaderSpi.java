@@ -86,12 +86,13 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     }
 
     static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
-        Iterator<ImageReaderSpi> it = registry.getServiceProviders(ImageReaderSpi.class, new ImageFormatFilter("JPEG"), true);
+        Iterator<ImageReaderSpi> providers = registry.getServiceProviders(ImageReaderSpi.class, true);
 
-        while (it.hasNext()) {
-            ImageReaderSpi imageReaderSpi = it.next();
-            if (imageReaderSpi.getClass().getCanonicalName().equals("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi")) {
-                return imageReaderSpi;
+        while (providers.hasNext()) {
+            ImageReaderSpi provider = providers.next();
+
+            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi")) {
+                return provider;
             }
         }
 
