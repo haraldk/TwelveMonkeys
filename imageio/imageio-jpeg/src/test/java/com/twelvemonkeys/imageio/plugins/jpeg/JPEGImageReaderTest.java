@@ -962,4 +962,54 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         return sortedNodes;
     }
+    @Test
+    public void testReadImage1028() throws IOException {
+      JPEGImageReader reader = createReader();
+      reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1028.jpg")));
+      
+      ImageReadParam param = reader.getDefaultReadParam();
+      param.setSourceSubsampling(3, 3, 1, 1);
+      BufferedImage image = reader.read(0, param);
+      assertNotNull(image);
+    }
+    @Test
+    public void testReadImage1027() throws IOException {
+      JPEGImageReader reader = createReader();
+      reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1027.jpg")));
+      
+      ImageReadParam param = reader.getDefaultReadParam();
+      param.setSourceSubsampling(3, 3, 2, 2);
+      BufferedImage image = reader.read(0, param);
+      assertNotNull(image);
+    }
+    @Test
+    public void testReadImage1026() throws IOException {
+      JPEGImageReader reader = createReader();
+      reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1026.jpg")));
+      
+      ImageReadParam param = reader.getDefaultReadParam();
+      param.setSourceSubsampling(3, 3, 1, 1);
+      BufferedImage image = reader.read(0, param);
+      assertNotNull(image);
+    }
+    @Test
+    public void testReadImage1025() throws IOException {
+      JPEGImageReader reader = createReader();
+      reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1025.jpg")));
+      
+      ImageReadParam param = reader.getDefaultReadParam();
+      param.setSourceSubsampling(3, 3, 1, 1);
+      BufferedImage image = reader.read(0, param);
+      assertNotNull(image);
+    }
+    @Test
+    public void testReadImage1024() throws IOException {
+      JPEGImageReader reader = createReader();
+      reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1024.jpg")));
+      
+      ImageReadParam param = reader.getDefaultReadParam();
+      param.setSourceSubsampling(3, 3, 1, 1);
+      BufferedImage image = reader.read(0, param);
+      assertNotNull(image);
+    }
 }
