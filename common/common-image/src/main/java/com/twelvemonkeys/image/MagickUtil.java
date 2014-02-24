@@ -32,6 +32,8 @@ import magick.*;
 
 import java.awt.*;
 import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 
 /**
@@ -160,7 +162,11 @@ public final class MagickUtil {
                     image = rgbToBuffered(pImage, true);
                     break;
                 case ImageType.ColorSeparationType:
+                    image = cmykToBuffered(pImage, false);
+                    break;
                 case ImageType.ColorSeparationMatteType:
+                    image = cmykToBuffered(pImage, true);
+                    break;
                 case ImageType.OptimizeType:
                 default:
                     throw new IllegalArgumentException("Unknown JMagick image type: " + pImage.getImageType());
@@ -545,5 +551,61 @@ public final class MagickUtil {
                         size.width * bands, bands, bandOffsets, LOCATION_UPPER_LEFT);
 
         return new BufferedImage(pAlpha ? CM_COLOR_ALPHA : CM_COLOR_OPAQUE, raster, pAlpha, null);
+    }
+	
+	
+	
+
+    /**
+     * Converts an {@code MagickImage} to a {@code BufferedImage} which holds an CMYK ICC profile
+     *
+     * @param pImage the original {@code MagickImage}
+     * @param pAlpha keep alpha channel
+     * @return a new {@code BufferedImage}
+     *
+     * @throws MagickException if an exception occurs during conversion
+     *
+     * @see BufferedImage
+     */
+    private static BufferedImage cmykToBuffered(MagickImage pImage, boolean pAlpha) throws MagickException {
+		Dimension size = pImage.getDimension();
+		int length = size.width * size.height;
+		
+		// Retreive the ICC profile
+		ICC_Profile profile = ICC_Profile.getInstance(pImage.getColorProfile().getInfo());
+		ColorSpace cs = new ICC_ColorSpace(profile);
+		
+		int bands = cs.getNumComponents() + (pAlpha ? 1 : 0);
+		
+		int[] bits = new int[bands];
+		for (int i = 0; i < bands; i++) {
+			bits[i] = 8;
+		}
+
+        ColorModel cm = pAlpha ?
+                new ComponentColorModel(cs, bits, true, true, Transparency.TRANSLUCENT, DataBuffer.TYPE_BYTE) :
+                new ComponentColorModel(cs, bits, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+
+        byte[] pixels = new byte[length * bands];
+
+		// TODO: If we do multiple dispatches (one per line, typically), we could provide listener
+		//       feedback. But it's currently a lot slower than fetching all the pixels in one go.
+		// TODO: handle more generic cases if profile is not CMYK
+		// TODO: Test "ACMYK"
+		pImage.dispatchImage(0, 0, size.width, size.height, pAlpha ? "ACMYK" : "CMYK", pixels);
+
+        // Init databuffer with array, to avoid allocation of empty array
+        DataBuffer buffer = new DataBufferByte(pixels, pixels.length);
+
+		// TODO: build array from bands variable, here it just works for CMYK
+		// The values has not been tested with an alpha picture actually...
+        int[] bandOffsets = pAlpha ? new int[] {0, 1, 2, 3, 4} : new int[] {0, 1, 2, 3};
+
+        WritableRaster raster =
+                Raster.createInterleavedRaster(buffer, size.width, size.height,
+                        size.width * bands, bands, bandOffsets, LOCATION_UPPER_LEFT);
+		
+        return new BufferedImage(cm, raster, pAlpha, null);
+		
     }
 }

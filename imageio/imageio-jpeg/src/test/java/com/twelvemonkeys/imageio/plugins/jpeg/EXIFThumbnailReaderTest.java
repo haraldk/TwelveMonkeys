@@ -74,7 +74,7 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
         assertEquals(2, ifds.directoryCount());
 
-        return new EXIFThumbnailReader(progressListener, imageIndex, thumbnailIndex, ifds.getDirectory(1), exifStream);
+        return new EXIFThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("JPEG").next(), imageIndex, thumbnailIndex, ifds.getDirectory(1), exifStream);
     }
 
     @Test

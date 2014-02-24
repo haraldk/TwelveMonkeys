@@ -27,6 +27,7 @@ public final class PSDMetadata extends AbstractMetadata {
     // TODO: Decide on image/stream metadata...
     static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_image_1.0";
     static final String NATIVE_METADATA_FORMAT_CLASS_NAME = "com.twelvemonkeys.imageio.plugins.psd.PSDMetadataFormat";
+    // TODO: Support TIFF metadata, based on EXIF/XMP + merge in PSD specifics
 
     PSDHeader header;
     PSDColorData colorData;
@@ -626,7 +627,6 @@ public final class PSDMetadata extends AbstractMetadata {
         }
 
         IIOMetadataNode text = new IIOMetadataNode("Text");
-        IIOMetadataNode node;
 
         // TODO: Alpha channel names? (PSDAlphaChannelInfo/PSDUnicodeAlphaNames)
         // TODO: Reader/writer (PSDVersionInfo)
@@ -691,7 +691,7 @@ public final class PSDMetadata extends AbstractMetadata {
                 String fieldName = entry.getFieldName();
 
                 if (fieldName != null) {
-                    tag.setAttribute("keyword", String.format("%s", fieldName));
+                    tag.setAttribute("keyword", fieldName);
                 }
                 else {
                     // TODO: This should never happen, as we filter out only specific nodes
@@ -722,8 +722,8 @@ public final class PSDMetadata extends AbstractMetadata {
     }
 
     private boolean hasAlpha() {
-        return header.mode == PSD.COLOR_MODE_RGB && header.channels >= 4 ||
-                header.mode == PSD.COLOR_MODE_CMYK & header.channels >= 5;
+        return header.mode == PSD.COLOR_MODE_RGB && header.channels > 3 ||
+                header.mode == PSD.COLOR_MODE_CMYK & header.channels > 4;
     }
 
     <T extends PSDImageResource> Iterator<T> getResources(final Class<T> resourceType) {

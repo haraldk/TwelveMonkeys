@@ -50,15 +50,15 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Reader for Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) and PBM
+ * Reader for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) and PBM
  * format (Packed BitMap).
  * The IFF format (Interchange File Format) is the standard file format
  * supported by allmost all image software for the Amiga computer.
  * <p/>
  * This reader supports the original palette-based 1-8 bit formats, including
- * EHB (Extra Halfbright), HAM (Hold and Modify), and the more recent "deep"
+ * EHB (Extra Half-Bright), HAM (Hold and Modify), and the more recent "deep"
  * formats, 8 bit gray, 24 bit RGB and 32 bit ARGB.
- * Uncompressed and ByteRun1 compressed (run lenght encoding) files are
+ * Uncompressed and ByteRun1 compressed (run length encoding) files are
  * supported.
  * <p/>
  * Palette based images are read as {@code BufferedImage} of
@@ -613,11 +613,11 @@ public class IFFImageReader extends ImageReaderBase {
                 }
 
                 // Skip rows outside AOI
-                if (srcY < aoi.y || (srcY - aoi.y) % sourceYSubsampling != 0) {
-                    continue;
-                }
-                else if (srcY >= (aoi.y + aoi.height)) {
+                if (srcY >= (aoi.y + aoi.height)) {
                     return;
+                }
+                else if (srcY < aoi.y || (srcY - aoi.y) % sourceYSubsampling != 0) {
+                    continue;
                 }
 
                 if (formType == IFF.TYPE_ILBM) {
@@ -639,19 +639,21 @@ public class IFFImageReader extends ImageReaderBase {
                 }
             }
 
-            int dstY = (srcY - aoi.y) / sourceYSubsampling;
-            // TODO: Support conversion to INT (A)RGB rasters (maybe using ColorConvertOp?)
-            // TODO: Avoid createChild if no region?
-            if (sourceXSubsampling == 1) {
-                destination.setRect(0, dstY, sourceRow);
+            if (srcY >= aoi.y && (srcY - aoi.y) % sourceYSubsampling == 0) {
+                int dstY = (srcY - aoi.y) / sourceYSubsampling;
+                // TODO: Support conversion to INT (A)RGB rasters (maybe using ColorConvertOp?)
+                // TODO: Avoid createChild if no region?
+                if (sourceXSubsampling == 1) {
+                    destination.setRect(0, dstY, sourceRow);
 //                dataElements = raster.getDataElements(aoi.x, 0, aoi.width, 1, dataElements);
 //                destination.setDataElements(offset.x, offset.y + (srcY - aoi.y) / sourceYSubsampling, aoi.width, 1, dataElements);
-            }
-            else {
-                for (int srcX = 0; srcX < sourceRow.getWidth(); srcX += sourceXSubsampling) {
-                    dataElements = sourceRow.getDataElements(srcX, 0, dataElements);
-                    int dstX = srcX / sourceXSubsampling;
-                    destination.setDataElements(dstX, dstY, dataElements);
+                }
+                else {
+                    for (int srcX = 0; srcX < sourceRow.getWidth(); srcX += sourceXSubsampling) {
+                        dataElements = sourceRow.getDataElements(srcX, 0, dataElements);
+                        int dstX = srcX / sourceXSubsampling;
+                        destination.setDataElements(dstX, dstY, dataElements);
+                    }
                 }
             }
 

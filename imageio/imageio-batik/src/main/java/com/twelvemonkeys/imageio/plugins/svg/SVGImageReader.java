@@ -526,10 +526,11 @@ public class SVGImageReader extends ImageReaderBase {
                 processImageProgress(99f);
 
                 return dest;
-                //writeImage(dest, output);
             }
             catch (Exception ex) {
-                throw new TranscoderException(ex.getMessage(), ex);
+                TranscoderException exception = new TranscoderException(ex.getMessage());
+                exception.initCause(ex);
+                throw exception;
             }
             finally {
                 if (mContext != null) {

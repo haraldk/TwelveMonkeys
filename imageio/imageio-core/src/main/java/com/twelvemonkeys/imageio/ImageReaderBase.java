@@ -235,7 +235,7 @@ public abstract class ImageReaderBase extends ImageReader {
 
         // If param is non-null, use it
         if (param != null) {
-            // Try to get the explicit destinaton image
+            // Try to get the explicit destination image
             BufferedImage dest = param.getDestination();
 
             if (dest != null) {

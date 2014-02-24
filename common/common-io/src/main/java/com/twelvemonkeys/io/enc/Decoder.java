@@ -28,8 +28,9 @@
 
 package com.twelvemonkeys.io.enc;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Interface for decoders.
@@ -47,11 +48,11 @@ import java.io.IOException;
 public interface Decoder {
     
     /**
-     * Decodes up to {@code pBuffer.length} bytes from the given input stream,
+     * Decodes up to {@code buffer.length} bytes from the given input stream,
      * into the given buffer.
      *
-     * @param pStream the input stream to decode data from
-     * @param pBuffer buffer to store the read data
+     * @param stream the input stream to decode data from
+     * @param buffer buffer to store the read data
      *
      * @return the total number of bytes read into the buffer, or {@code 0}
      * if there is no more data because the end of the stream has been reached.
@@ -60,5 +61,5 @@ public interface Decoder {
      * @throws IOException if an I/O error occurs
      * @throws java.io.EOFException if a premature end-of-file is encountered
      */
-    int decode(InputStream pStream, byte[] pBuffer) throws IOException;
+    int decode(InputStream stream, ByteBuffer buffer) throws IOException;
 }

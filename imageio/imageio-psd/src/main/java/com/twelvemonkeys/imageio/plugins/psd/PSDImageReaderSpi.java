@@ -64,7 +64,7 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
                         "image/x-psd", "application/x-photoshop", "image/x-photoshop"
                 },
                 "com.twelvemkonkeys.imageio.plugins.psd.PSDImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
 //                new String[]{"com.twelvemkonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
                 null,
                 true, // supports standard stream metadata

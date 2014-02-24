@@ -31,6 +31,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Abstract base class for RLE decoding as specified by in the Windows BMP (aka DIB) file format.
@@ -49,13 +50,13 @@ abstract class AbstractRLEDecoder implements Decoder {
     protected int dstY;
 
     /**
-     * Creates an RLEDecoder. As RLE encoded BMP's may contain x and y deltas,
+     * Creates an RLEDecoder. As RLE encoded BMPs may contain x and y deltas,
      * etc, we need to know height and width of the image.
      *
      * @param pWidth width of the image
-     * @param pHeight heigth of the image
+     * @param pHeight height of the image
      */
-    AbstractRLEDecoder(int pWidth, int pHeight) {
+    AbstractRLEDecoder(final int pWidth, final int pHeight) {
         width = pWidth;
         int bytesPerRow = width;
         int mod = bytesPerRow % 4;
@@ -76,35 +77,34 @@ abstract class AbstractRLEDecoder implements Decoder {
     /**
      * Decodes one full row of image data.
      *
-     * @param pStream the input stream containint RLE data
+     * @param pStream the input stream containing RLE data
      *
-     * @throws IOException if an I/O related exception ocurs while reading
+     * @throws IOException if an I/O related exception occurs while reading
      */
-    protected abstract void decodeRow(InputStream pStream) throws IOException;
+    protected abstract void decodeRow(final InputStream pStream) throws IOException;
 
     /**
      * Decodes as much data as possible, from the stream into the buffer.
      *
-     * @param pStream the input stream containing RLE data
-     * @param pBuffer tge buffer to decode the data to
+     * @param stream the input stream containing RLE data
+     * @param buffer the buffer to decode the data to
      *
      * @return the number of bytes decoded from the stream, to the buffer
      *
      * @throws IOException if an I/O related exception ocurs while reading
      */
-    public final int decode(InputStream pStream, byte[] pBuffer) throws IOException {
-        int decoded = 0;
-
-        while (decoded < pBuffer.length && dstY >= 0) {
+    public final int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
+        while (buffer.hasRemaining() && dstY >= 0) {
             // NOTE: Decode only full rows, don't decode if y delta
             if (dstX == 0 && srcY == dstY) {
-                decodeRow(pStream);
+                decodeRow(stream);
             }
 
-            int length = Math.min(row.length - dstX, pBuffer.length - decoded);
-            System.arraycopy(row, dstX, pBuffer, decoded, length);
+            int length = Math.min(row.length - dstX, buffer.remaining());
+//            System.arraycopy(row, dstX, buffer, decoded, length);
+            buffer.put(row, 0, length);
             dstX += length;
-            decoded += length;
+//            decoded += length;
 
             if (dstX == row.length) {
                 dstX = 0;
@@ -120,7 +120,7 @@ abstract class AbstractRLEDecoder implements Decoder {
             }
         }
 
-        return decoded;
+        return buffer.position();
     }
 
     /**
@@ -131,7 +131,7 @@ abstract class AbstractRLEDecoder implements Decoder {
      *
      * @throws EOFException if {@code pByte} is negative
      */
-    protected static int checkEOF(int pByte) throws EOFException {
+    protected static int checkEOF(final int pByte) throws EOFException {
         if (pByte < 0) {
             throw new EOFException("Premature end of file");
         }

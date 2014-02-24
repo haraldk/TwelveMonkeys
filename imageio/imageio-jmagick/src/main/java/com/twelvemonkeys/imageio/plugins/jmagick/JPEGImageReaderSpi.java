@@ -52,12 +52,13 @@ public class JPEGImageReaderSpi extends JMagickImageReaderSpiSupport {
     boolean canDecode(ImageInputStream pSource) throws IOException {
         //    new byte[][] {new byte[] {(byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xe0},
         //                  new byte[] {(byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xe1}},                   // JPEG
+        //    new byte[][] {new byte[] {(byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xed}},                   // PHOTOSHOP 3 JPEG
         //    new byte[][] {new byte[] {(byte) 0xff, (byte) 0xd8, (byte) 0xff, (byte) 0xee}},                   // JPG
         byte[] magic = new byte[4];
         pSource.readFully(magic);
 
         return magic[0] == (byte) 0xFF && magic[1] == (byte) 0xD8 && magic[2] == (byte) 0xFF &&
-                (magic[3] == (byte) 0xE0 || magic[0] == (byte) 0xE1 || magic[0] == (byte) 0xEE);
+                (magic[3] == (byte) 0xE0 || magic[3] == (byte) 0xE1 || magic[3] == (byte) 0xED || magic[3] == (byte) 0xEE);
 
     }
 

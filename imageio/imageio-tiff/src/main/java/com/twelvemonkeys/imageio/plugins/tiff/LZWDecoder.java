@@ -33,6 +33,7 @@ import com.twelvemonkeys.io.enc.Decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Lempel–Ziv–Welch (LZW) decompression. LZW is a universal loss-less data compression algorithm
@@ -94,10 +95,9 @@ abstract class LZWDecoder implements Decoder {
         maxString = 1;
     }
 
-    public int decode(final InputStream stream, final byte[] buffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         // Adapted from the pseudo-code example found in the TIFF 6.0 Specification, 1992.
         // See Section 13: "LZW Compression"/"LZW Decoding", page 61+
-        int bufferPos = 0;
         int code;
 
         while ((code = getNextCode(stream)) != EOI_CODE) {
@@ -109,30 +109,30 @@ abstract class LZWDecoder implements Decoder {
                     break;
                 }
 
-                bufferPos += table[code].writeTo(buffer, bufferPos);
+                table[code].writeTo(buffer);
             }
             else {
                 if (isInTable(code)) {
-                    bufferPos += table[code].writeTo(buffer, bufferPos);
+                    table[code].writeTo(buffer);
                     addStringToTable(table[oldCode].concatenate(table[code].firstChar));
                 }
                 else {
                     String outString = table[oldCode].concatenate(table[oldCode].firstChar);
 
-                    bufferPos += outString.writeTo(buffer, bufferPos);
+                    outString.writeTo(buffer);
                     addStringToTable(outString);
                 }
             }
 
             oldCode = code;
 
-            if (bufferPos >= buffer.length - maxString - 1) {
+            if (buffer.remaining() < maxString + 1) {
                 // Buffer full, stop decoding for now
                 break;
             }
         }
 
-        return bufferPos;
+        return buffer.position();
     }
 
     private void addStringToTable(final String string) throws IOException {
@@ -301,24 +301,24 @@ abstract class LZWDecoder implements Decoder {
             return new String(firstChar, this.firstChar, length + 1, this);
         }
 
-        public final int writeTo(final byte[] buffer, final int offset) {
+        public final void writeTo(final ByteBuffer buffer) {
             if (length == 0) {
-                return 0;
+                return;
             }
-            else if (length == 1) {
-                buffer[offset] = value;
 
-                return 1;
+            if (length == 1) {
+                buffer.put(value);
             }
             else {
                 String e = this;
+                final int offset = buffer.position();
 
                 for (int i = length - 1; i >= 0; i--) {
-                    buffer[offset + i] = e.value;
+                    buffer.put(offset + i, e.value);
                     e = e.previous;
                 }
 
-                return length;
+                buffer.position(offset + length);
             }
         }
     }

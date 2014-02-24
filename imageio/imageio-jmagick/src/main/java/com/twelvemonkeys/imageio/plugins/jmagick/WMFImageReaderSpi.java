@@ -54,7 +54,7 @@ public class WMFImageReaderSpi extends JMagickImageReaderSpiSupport {
         //                              (byte) 0x9a, (byte) 0x00, (byte) 0x00,}},
         byte[] magic = new byte[6];
         pSource.readFully(magic);
-        return magic[0] == (byte) 0xD7 && magic[2] == (byte) 0xCD && 
+        return magic[0] == (byte) 0xD7 && magic[1] == (byte) 0xCD &&
                 magic[2] == (byte) 0xC6 && magic[3] == (byte) 0x9A &&
                 magic[4] == (byte) 0x00 && magic[5] == (byte) 0x00;
     }

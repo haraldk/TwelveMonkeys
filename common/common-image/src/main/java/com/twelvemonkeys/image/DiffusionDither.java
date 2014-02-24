@@ -17,7 +17,7 @@ import java.util.Random;
  * This {@code BufferedImageOp/RasterOp} implements basic
  * Floyd-Steinberg error-diffusion algorithm for dithering.
  * <P/>
- * The weights used are 7/16 3/16 5/16 1/16, distributed like this:
+ * The weights used are 7/16, 3/16, 5/16 and 1/16, distributed like this:
  * <!-- - -
  *  | |x|7|
  *  - - - -
@@ -37,7 +37,6 @@ import java.util.Random;
  * @author last modified by $Author: haku $
  *
  * @version $Id: DiffusionDither.java#1 $
- *
  */
 public class DiffusionDither implements BufferedImageOp, RasterOp {
 
@@ -72,6 +71,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * Sets the scan mode. If the parameter is true, error distribution for
      * every even line will be left-to-right, while odd lines will be
      * right-to-left.
+     * The default is {@code true}.
      *
      * @param pUse {@code true} if scan mode should be alternating left/right
      */
@@ -219,7 +219,7 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * Floyd-Steinberg error-diffusion to the image.
      *
      * @param pSource the source image
-     * @param pDest the destiantion image
+     * @param pDest the destination image
      *
      * @return the destination image, or a new image, if {@code pDest} was
      * {@code null}.
@@ -243,8 +243,8 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * Performs a single-input/single-output dither operation, applying basic
      * Floyd-Steinberg error-diffusion to the image.
      *
-     * @param pSource
-     * @param pDest
+     * @param pSource the source raster, assumed to be in sRGB
+     * @param pDest the destination raster, may be {@code null}
      *
      * @return the destination raster, or a new raster, if {@code pDest} was
      * {@code null}.
@@ -271,9 +271,9 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
      * Performs a single-input/single-output dither operation, applying basic
      * Floyd-Steinberg error-diffusion to the image.
      *
-     * @param pSource
-     * @param pDest
-     * @param pColorModel
+     * @param pSource the source raster, assumed to be in sRGB
+     * @param pDest the destination raster, may be {@code null}
+     * @param pColorModel the indexed color model to use
      *
      * @return the destination raster, or a new raster, if {@code pDest} was
      * {@code null}.
@@ -298,11 +298,6 @@ public class DiffusionDither implements BufferedImageOp, RasterOp {
         // Random errors in [-1 .. 1] - for first row
         for (int i = 0; i < width + 2; i++) {
             // Note: This is broken for the strange cases where nextInt returns Integer.MIN_VALUE
-            /*
-            currErr[i][0] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
-            currErr[i][1] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
-            currErr[i][2] = (Math.abs(RANDOM.nextInt()) % (FS_SCALE * 2)) - FS_SCALE;
-            */
             currErr[i][0] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
             currErr[i][1] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;
             currErr[i][2] = RANDOM.nextInt(FS_SCALE * 2) - FS_SCALE;

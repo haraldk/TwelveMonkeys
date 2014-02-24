@@ -28,8 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.image.InverseColorMapIndexColorModel;
-
 import javax.imageio.IIOException;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -159,7 +157,7 @@ final class CMAPChunk extends IFFChunk {
             // with alpha, where all colors above the original color is all transparent?
             // This is a waste of time and space, of course...
             int transparent = header.maskType == BMHDChunk.MASK_TRANSPARENT_COLOR ? header.transparentIndex : -1;
-            model = new InverseColorMapIndexColorModel(header.bitplanes, reds.length, reds, greens, blues, transparent);
+            model = new IndexColorModel(header.bitplanes, reds.length, reds, greens, blues, transparent); // https://github.com/haraldk/TwelveMonkeys/issues/15
         }
 
         return model;

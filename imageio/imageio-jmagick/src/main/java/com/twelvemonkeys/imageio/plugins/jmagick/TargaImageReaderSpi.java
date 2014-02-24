@@ -48,7 +48,7 @@ public class TargaImageReaderSpi extends JMagickImageReaderSpiSupport {
         );
     }
 
-    boolean canDecode(ImageInputStream pSource) throws IOException {
+    boolean canDecode(final ImageInputStream pSource) throws IOException {
         //    // TODO: Targa 1989 signature look like (bytes 8-23 of 26 LAST bytes):
         //    // 'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E'
         //    // Targa 1987:
@@ -63,6 +63,12 @@ public class TargaImageReaderSpi extends JMagickImageReaderSpiSupport {
         //                  new byte[] {-1, 0x01, 0x20},                      // Type 31: Compressed CM
         //                  new byte[] {-1, 0x01, 0x21},                      // Type 32: Compressed CM, 4 pass
         //                  },
+
+        // If we don't know the stream length, just give up, as the Targa format has trailing magic bytes...
+        if (pSource.length() < 0) {
+            return false;
+        }
+
         pSource.seek(pSource.length() - 18);
         byte[] magic = new byte[18];
         pSource.readFully(magic);

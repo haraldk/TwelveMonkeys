@@ -32,7 +32,7 @@ import java.io.InputStream;
 import java.io.IOException;
 
 /**
- * Implements 8 bit RLE decoding as specifed by in the Windows BMP (aka DIB) file format.
+ * Implements 8 bit RLE decoding as specified by in the Windows BMP (aka DIB) file format.
  * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -41,7 +41,7 @@ import java.io.IOException;
 // TODO: Move to other package or make public
 final class RLE8Decoder extends AbstractRLEDecoder {
 
-    public RLE8Decoder(int pWidth, int pHeight) {
+    public RLE8Decoder(final int pWidth, final int pHeight) {
         super(pWidth, pHeight);
     }
 

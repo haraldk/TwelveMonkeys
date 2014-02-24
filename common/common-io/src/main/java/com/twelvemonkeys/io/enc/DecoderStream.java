@@ -28,9 +28,10 @@
 
 package com.twelvemonkeys.io.enc;
 
-import java.io.InputStream;
-import java.io.IOException;
 import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * An {@code InputStream} that provides on-the-fly decoding from an underlying
@@ -43,10 +44,7 @@ import java.io.FilterInputStream;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/DecoderStream.java#2 $
  */
 public final class DecoderStream extends FilterInputStream {
-
-    protected int bufferPos;
-    protected int bufferLimit;
-    protected final byte[] buffer;
+    protected final ByteBuffer buffer;
     protected final Decoder decoder;
 
     /**
@@ -76,30 +74,24 @@ public final class DecoderStream extends FilterInputStream {
      */
     public DecoderStream(final InputStream pStream, final Decoder pDecoder, final int pBufferSize) {
         super(pStream);
+
         decoder = pDecoder;
-        buffer = new byte[pBufferSize];
-        bufferPos = 0;
-        bufferLimit = 0;
+        buffer = ByteBuffer.allocate(pBufferSize);
+        buffer.flip();
     }
 
     public int available() throws IOException {
-        return bufferLimit - bufferPos + super.available();
+        return buffer.remaining();
     }
 
     public int read() throws IOException {
-        if (bufferPos == bufferLimit) {
-            bufferLimit = fill();
+        if (!buffer.hasRemaining()) {
+            if (fill() < 0) {
+                return -1;
+            }
         }
 
-        if (bufferLimit < 0) {
-            return -1;
-        }
-
-        return buffer[bufferPos++] & 0xff;
-    }
-
-    public int read(final byte pBytes[]) throws IOException {
-        return read(pBytes, 0, pBytes.length);
+        return buffer.get() & 0xff;
     }
 
     public int read(final byte pBytes[], final int pOffset, final int pLength) throws IOException {
@@ -115,8 +107,10 @@ public final class DecoderStream extends FilterInputStream {
         }
 
         // End of file?
-        if ((bufferLimit - bufferPos) < 0) {
-            return -1;
+        if (!buffer.hasRemaining()) {
+            if (fill() < 0) {
+                return -1;
+            }
         }
 
         // Read until we have read pLength bytes, or have reached EOF
@@ -124,21 +118,15 @@ public final class DecoderStream extends FilterInputStream {
         int off = pOffset;
 
         while (pLength > count) {
-            int avail = bufferLimit - bufferPos;
-
-            if (avail <= 0) {
-                bufferLimit = fill();
-
-                if (bufferLimit < 0) {
+            if (!buffer.hasRemaining()) {
+                if (fill() < 0) {
                     break;
                 }
             }
 
             // Copy as many bytes as possible
-            int dstLen = Math.min(pLength - count, avail);
-            System.arraycopy(buffer, bufferPos, pBytes, off, dstLen);
-
-            bufferPos += dstLen;
+            int dstLen = Math.min(pLength - count, buffer.remaining());
+            buffer.get(pBytes, off, dstLen);
 
             // Update offset (rest)
             off += dstLen;
@@ -152,29 +140,25 @@ public final class DecoderStream extends FilterInputStream {
 
     public long skip(final long pLength) throws IOException {
         // End of file?
-        if (bufferLimit - bufferPos < 0) {
-            return 0;
+        if (!buffer.hasRemaining()) {
+            if (fill() < 0) {
+                return 0; // Yes, 0, not -1
+            }
         }
 
         // Skip until we have skipped pLength bytes, or have reached EOF
         long total = 0;
 
         while (total < pLength) {
-            int avail = bufferLimit - bufferPos;
-
-            if (avail == 0) {
-                bufferLimit = fill();
-
-                if (bufferLimit < 0) {
+            if (!buffer.hasRemaining()) {
+                if (fill() < 0) {
                     break;
                 }
             }
 
             // NOTE: Skipped can never be more than avail, which is
             // an int, so the cast is safe
-            int skipped = (int) Math.min(pLength - total, avail);
-
-            bufferPos += skipped; // Just skip these bytes
+            int skipped = (int) Math.min(pLength - total, buffer.remaining());
             total += skipped;
         }
 
@@ -190,19 +174,20 @@ public final class DecoderStream extends FilterInputStream {
      * @throws IOException if an I/O error occurs
      */
     protected int fill() throws IOException {
+        buffer.clear();
         int read = decoder.decode(in, buffer);
 
         // TODO: Enforce this in test case, leave here to aid debugging
-        if (read > buffer.length) {
+        if (read > buffer.capacity()) {
             throw new AssertionError(
                     String.format(
                             "Decode beyond buffer (%d): %d (using %s decoder)",
-                            buffer.length, read, decoder.getClass().getName()
+                            buffer.capacity(), read, decoder.getClass().getName()
                     )
             );
         }
 
-        bufferPos = 0;
+        buffer.flip();
 
         if (read == 0) {
             return -1;

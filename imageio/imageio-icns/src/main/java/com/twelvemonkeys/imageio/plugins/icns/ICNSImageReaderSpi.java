@@ -59,7 +59,7 @@ public final class ICNSImageReaderSpi extends ImageReaderSpi{
                         "image/x-apple-icons",               // Common extension MIME
                 },
                 "com.twelvemonkeys.imageio.plugins.icns.ICNSImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 null,
                 true, null, null, null, null,
                 true,

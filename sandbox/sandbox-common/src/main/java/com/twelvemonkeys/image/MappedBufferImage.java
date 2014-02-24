@@ -61,6 +61,7 @@ import java.util.concurrent.*;
 public class MappedBufferImage {
     private static int threads = Runtime.getRuntime().availableProcessors();
     private static ExecutorService executorService = Executors.newFixedThreadPool(threads * 4);
+    private static ExecutorService executorService2 = Executors.newFixedThreadPool(2);
 
     public static void main(String[] args) throws IOException {
         int argIndex = 0;
@@ -553,15 +554,15 @@ public class MappedBufferImage {
                 }
             }
 
-            public void drawTo(Graphics2D g) {
+            public boolean drawTo(Graphics2D g) {
                 BufferedImage img = data.get();
 
                 if (img != null) {
                     g.drawImage(img, x, y, null);
+                    return true;
                 }
 
-//                g.setPaint(Color.GREEN);
-//                g.drawString(String.format("[%d, %d]", x, y), x + 20, y + 20);
+                return false;
             }
 
             public int getX() {
@@ -622,6 +623,7 @@ public class MappedBufferImage {
         }
 
         // TODO: Consider a fixed size (mem) LRUCache instead
+        // TODO: Better yet, re-use tiles
         Map<Point, Tile> tiles = createTileCache();
 
         private void repaintImage(final Rectangle rect, final Graphics2D g2) {
@@ -633,6 +635,15 @@ public class MappedBufferImage {
             try {
                 // Paint tiles of the image, to preserve memory
                 final int tileSize = 200;
+
+                // Calculate relative to image(0,0), rather than rect(x, y)
+                int xOff = rect.x % tileSize;
+                int yOff = rect.y % tileSize;
+
+                rect.x -= xOff;
+                rect.y -= yOff;
+                rect.width += xOff;
+                rect.height += yOff;
 
                 int tilesW = 1 + rect.width / tileSize;
                 int tilesH = 1 + rect.height / tileSize;
@@ -658,10 +669,10 @@ public class MappedBufferImage {
                         // TODO: Could we use ImageProducer/ImageConsumer/ImageObserver interface??
 
                         // Destination (display) coordinates
-                        int dstX = (int) Math.round(x * zoom);
-                        int dstY = (int) Math.round(y * zoom);
-                        int dstW = (int) Math.round(w * zoom);
-                        int dstH = (int) Math.round(h * zoom);
+                        int dstX = (int) Math.floor(x * zoom);
+                        int dstY = (int) Math.floor(y * zoom);
+                        int dstW = (int) Math.ceil(w * zoom);
+                        int dstH = (int) Math.ceil(h * zoom);
 
                         if (dstW == 0 || dstH == 0) {
                             continue;
@@ -678,8 +689,8 @@ public class MappedBufferImage {
 //                            final int tileSrcH = Math.min(tileSize, image.getHeight() - tileSrcY);
 
                             // Destination (display) coordinates
-                            int tileDstX = (int) Math.round(tileSrcX * zoom);
-                            int tileDstY = (int) Math.round(tileSrcY * zoom);
+                            int tileDstX = (int) Math.floor(tileSrcX * zoom);
+                            int tileDstY = (int) Math.floor(tileSrcY * zoom);
 //                            final int tileDstW = (int) Math.round(tileSrcW * zoom);
 //                            final int tileDstH = (int) Math.round(tileSrcH * zoom);
 
@@ -699,9 +710,7 @@ public class MappedBufferImage {
                             Tile tile = tiles.get(point);
 
                             if (tile != null) {
-                                Reference<BufferedImage> img = tile.data;
-                                if (img != null) {
-                                    tile.drawTo(g2);
+                                if (tile.drawTo(g2)) {
                                     continue;
                                 }
                                 else {
@@ -713,9 +722,8 @@ public class MappedBufferImage {
 
                             // Dispatch to off-thread worker
                             final Map<Point, Tile> localTiles = tiles;
-                            executorService.submit(new Runnable() {
+                            executorService2.submit(new Runnable() {
                                 public void run() {
-                                    // TODO: Fix rounding issues... Problem is that sometimes the srcW/srcH is 1 pixel off filling the tile...
                                     int tileSrcX = (int) Math.round(point.x / zoom);
                                     int tileSrcY = (int) Math.round(point.y / zoom);
                                     int tileSrcW = Math.min(tileSize, image.getWidth() - tileSrcX);
@@ -735,8 +743,14 @@ public class MappedBufferImage {
                                         }
 
                                         // Test against current view rect, to avoid computing tiles that will be thrown away immediately
-                                        // TODO: EDT safe?
-                                        if (!getVisibleRect().intersects(new Rectangle(point.x, point.y, tileDstW, tileDstH))) {
+                                        final Rectangle visibleRect = new Rectangle();
+                                        SwingUtilities.invokeAndWait(new Runnable() {
+                                            public void run() {
+                                                visibleRect.setBounds(getVisibleRect());
+                                            }
+                                        });
+
+                                        if (!visibleRect.intersects(new Rectangle(point.x, point.y, tileDstW, tileDstH))) {
                                             return;
                                         }
 

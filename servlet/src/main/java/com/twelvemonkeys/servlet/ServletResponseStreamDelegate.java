@@ -28,17 +28,20 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.Validate;
-
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.OutputStream;
+
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * A delegate for handling stream support in wrapped servlet responses.
+ * <p/>
+ * Client code should delegate {@code getOutputStream}, {@code getWriter},
+ * {@code flushBuffer} and {@code resetBuffer} methods from the servlet response.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -48,35 +51,33 @@ public class ServletResponseStreamDelegate {
     private Object out = null;
     protected final ServletResponse response;
 
-    public ServletResponseStreamDelegate(ServletResponse pResponse) {
-        response = Validate.notNull(pResponse, "response");
+    public ServletResponseStreamDelegate(final ServletResponse pResponse) {
+        response = notNull(pResponse, "response");
     }
 
-    // NOTE: Intentionally NOT threadsafe, as one request/response should be
-    // handled by one thread ONLY.
+    // NOTE: Intentionally NOT thread safe, as one request/response should be handled by one thread ONLY.
     public final ServletOutputStream getOutputStream() throws IOException {
         if (out == null) {
             OutputStream out = createOutputStream();
             this.out = out instanceof ServletOutputStream ? out : new OutputStreamAdapter(out);
         }
         else if (out instanceof PrintWriter) {
-            throw new IllegalStateException("getWriter() allready called.");
+            throw new IllegalStateException("getWriter() already called.");
         }
 
         return (ServletOutputStream) out;
     }
 
-    // NOTE: Intentionally NOT threadsafe, as one request/response should be
-    // handled by one thread ONLY.
+    // NOTE: Intentionally NOT thread safe, as one request/response should be handled by one thread ONLY.
     public final PrintWriter getWriter() throws IOException {
         if (out == null) {
-            // NOTE: getCharacterEncoding may should not return null
+            // NOTE: getCharacterEncoding may/should not return null
             OutputStream out = createOutputStream();
             String charEncoding = response.getCharacterEncoding();
             this.out = new PrintWriter(charEncoding != null ? new OutputStreamWriter(out, charEncoding) : new OutputStreamWriter(out));
         }
         else if (out instanceof ServletOutputStream) {
-            throw new IllegalStateException("getOutputStream() allready called.");
+            throw new IllegalStateException("getOutputStream() already called.");
         }
 
         return (PrintWriter) out;
@@ -84,8 +85,9 @@ public class ServletResponseStreamDelegate {
 
     /**
      * Returns the {@code OutputStream}.
-     * Override this method to provide a decoreated outputstream.
-     * This method is guaranteed to be invoked only once for a request/response.
+     * Subclasses should override this method to provide a decorated output stream.
+     * This method is guaranteed to be invoked only once for a request/response
+     * (unless {@code resetBuffer} is invoked).
      * <P/>
      * This implementation simply returns the output stream from the wrapped
      * response.
@@ -107,7 +109,6 @@ public class ServletResponseStreamDelegate {
     }
 
     public void resetBuffer() {
-        // TODO: Is this okay? Probably not... :-)
         out = null;
     }
 }

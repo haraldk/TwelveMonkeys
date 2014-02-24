@@ -69,6 +69,9 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     public YCbCrUpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns, final double[] coefficients) {
         super(Validate.notNull(stream, "stream"));
 
+        Validate.notNull(chromaSub, "chromaSub");
+        Validate.isTrue(chromaSub.length == 2, "chromaSub.length != 2");
+
         this.horizChromaSub = chromaSub[0];
         this.vertChromaSub = chromaSub[1];
         this.yCbCrPos = yCbCrPos;

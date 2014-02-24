@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,9 +46,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.awt.image.SampleModel;
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,29 +73,6 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
     }
 
     protected abstract List<TestData> getTestData();
-
-    /**
-     * Convenience method to get a list of test files from the classpath.
-     * Currently only works for resources on the filesystem (not in jars or
-     * archives).
-     *
-     * @param pResourceInFolder a resource in the correct classpath folder.
-     * @return a list of files
-     */
-    protected final List<File> getInputsFromClasspath(final String pResourceInFolder) {
-        URL resource = getClass().getClassLoader().getResource(pResourceInFolder);
-        assertNotNull(resource);
-        File dir;
-        try {
-            dir = new File(resource.toURI()).getParentFile();
-        }
-        catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-        List<File> files = Arrays.asList(dir.listFiles());
-        assertFalse(files.isEmpty());
-        return files;
-    }
 
     protected abstract ImageReaderSpi createProvider();
 
@@ -476,7 +452,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
     }
 
     @Test
-    public void testReadWithSubsampleParam() {
+    public void testReadWithSubsampleParamDimensions() {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -493,8 +469,61 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         }
 
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: ", (double) data.getDimension(0).width / 5.0, image.getWidth(), 1.0);
-        assertEquals("Read image has wrong height: ", (double) data.getDimension(0).height / 5.0, image.getHeight(), 1.0);
+        assertEquals("Read image has wrong width: ", (data.getDimension(0).width + 4) / 5, image.getWidth());
+        assertEquals("Read image has wrong height: ", (data.getDimension(0).height + 4) / 5, image.getHeight());
+    }
+
+    @Ignore
+    @Test
+    public void testReadWithSubsampleParamPixels() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = getTestData().get(0);
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(Math.min(100, reader.getWidth(0)), Math.min(100, reader.getHeight(0))));
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+            param.setSourceSubsampling(2, 2, 1, 1); // Hmm.. Seems to be the offset the fake version (ReplicateScaleFilter) uses
+
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        BufferedImage expected = ImageUtil.toBuffered(IIOUtil.fakeSubsampling(image, param));
+
+//        JPanel panel = new JPanel();
+//        panel.add(new JLabel("Expected", new BufferedImageIcon(expected, 300, 300), JLabel.CENTER));
+//        panel.add(new JLabel("Actual", new BufferedImageIcon(subsampled, 300, 300), JLabel.CENTER));
+//        JOptionPane.showConfirmDialog(null, panel);
+
+        assertImageDataEquals("Subsampled image data does not match expected", expected, subsampled);
+    }
+
+    protected final void assertImageDataEquals(String message, BufferedImage expected, BufferedImage actual) {
+        assertNotNull("Expected image was null", expected);
+        assertNotNull("Actual image was null!", actual);
+
+        if (expected == actual) {
+            return;
+        }
+
+        for (int y = 0; y < expected.getHeight(); y++) {
+            for (int x = 0; x < expected.getWidth(); x++) {
+                int expectedRGB = expected.getRGB(x, y);
+                int actualRGB = actual.getRGB(x, y);
+
+                assertEquals(String.format("%s alpha at (%d, %d)", message, x, y), (expectedRGB >> 24) & 0xff, (actualRGB >> 24) & 0xff, 5);
+                assertEquals(String.format("%s red at (%d, %d)", message, x, y), (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
+                assertEquals(String.format("%s green at (%d, %d)", message, x, y), (expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5);
+                assertEquals(String.format("%s blue at (%d, %d)", message, x, y), expectedRGB & 0xff, actualRGB & 0xff, 5);
+            }
+        }
     }
 
     @Test
@@ -513,6 +542,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
@@ -540,6 +570,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             catch (IOException e) {
                 failBecause("Image could not be read", e);
             }
+
             assertNotNull("Image was null!", image);
             assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
             assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
@@ -1291,13 +1322,14 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
                 // The problem is that the checkReadParamBandSettings throws IllegalArgumentException, which seems more appropriate...
                 String message = expected.getMessage().toLowerCase();
-                assertTrue(
-                        "Wrong message: " + message + " for type " + destination.getType(),
-                        message.contains("destination") ||
-                                ((destination.getType() == BufferedImage.TYPE_BYTE_BINARY || 
-                                        destination.getType() == BufferedImage.TYPE_BYTE_INDEXED)
-                                        && message.contains("indexcolormodel"))
-                );
+                if (!(message.contains("destination") || message.contains("band size") || // For JDK classes
+                        ((destination.getType() == BufferedImage.TYPE_BYTE_BINARY ||
+                                destination.getType() == BufferedImage.TYPE_BYTE_INDEXED) &&
+                                message.contains("indexcolormodel")))) {
+                    failBecause(
+                        "Wrong message: " + message + " for type " + destination.getType(), expected
+                    );
+                }
             }
             catch (IllegalArgumentException expected) {
                 String message = expected.getMessage().toLowerCase();
@@ -1352,7 +1384,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             boolean removed = illegalTypes.remove(valid);
 
             // TODO: 4BYTE_ABGR (6) and 4BYTE_ABGR_PRE (7) is essentially the same type... 
-            // !#$#�%$! ImageTypeSpecifier.equals is not well-defined
+            // #$@*%$! ImageTypeSpecifier.equals is not well-defined
             if (!removed) {
                 for (Iterator<ImageTypeSpecifier> iterator = illegalTypes.iterator(); iterator.hasNext();) {
                     ImageTypeSpecifier illegalType = iterator.next();
@@ -1422,6 +1454,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
                 failBecause("Could not read " + data.getInput() + " with explicit destination type " + type, e);
             }
 
+            assertNotNull(result);
             assertEquals(type.getColorModel(), result.getColorModel());
 
             // The following logically tests

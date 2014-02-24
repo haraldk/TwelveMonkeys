@@ -46,6 +46,8 @@ final class EXIFEntry extends AbstractEntry {
         if (type < 1 || type > TIFF.TYPE_NAMES.length) {
             throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
         }
+
+        // TODO: Validate that type is applicable to value?
         
         this.type = type;
     }
@@ -92,6 +94,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "SamplesPerPixels";
             case TIFF.TAG_ROWS_PER_STRIP:
                 return "RowsPerStrip";
+            case TIFF.TAG_STRIP_BYTE_COUNTS:
+                return "StripByteCounts";
             case TIFF.TAG_X_RESOLUTION:
                 return "XResolution";
             case TIFF.TAG_Y_RESOLUTION:

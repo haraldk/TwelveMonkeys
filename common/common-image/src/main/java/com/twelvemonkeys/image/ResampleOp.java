@@ -52,8 +52,6 @@
 
 package com.twelvemonkeys.image;
 
-import com.twelvemonkeys.lang.SystemUtil;
-
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
@@ -294,7 +292,6 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     int height;
 
     int filterType;
-    private static final boolean TRANSFORM_OP_BICUBIC_SUPPORT = SystemUtil.isFieldAvailable(AffineTransformOp.class.getName(), "TYPE_BICUBIC");
 
     /**
      * RendereingHints.Key implementation, works only with Value values.
@@ -320,7 +317,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     }
 
     /**
-     * RenderingHints value implementaion, works with Key keys.
+     * RenderingHints value implementation, works with Key keys.
      */
     // TODO: Extract abstract Value class, and move to AbstractBufferedImageOp
     static final class Value {
@@ -331,8 +328,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         public Value(final RenderingHints.Key pKey, final String pName, final int pType) {
             key = pKey;
             name = pName;
-            validateFilterType(pType);
-            type = pType;// TODO: test for duplicates
+            type = validateFilterType(pType);
         }
 
         public boolean isCompatibleKey(Key pKey) {
@@ -422,11 +418,10 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         this.width = width;
         this.height = height;
 
-        validateFilterType(filterType);
-        this.filterType = filterType;
+        this.filterType = validateFilterType(filterType);
     }
 
-    private static void validateFilterType(int pFilterType) {
+    private static int validateFilterType(int pFilterType) {
         switch (pFilterType) {
             case FILTER_UNDEFINED:
             case FILTER_POINT:
@@ -444,7 +439,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
             case FILTER_LANCZOS:
             case FILTER_BLACKMAN_BESSEL:
             case FILTER_BLACKMAN_SINC:
-                break;
+                return pFilterType;
             default:
                 throw new IllegalArgumentException("Unknown filter type: " + pFilterType);
         }
@@ -529,8 +524,8 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
                 }
                 // Else fall through
             case FILTER_QUADRATIC:
-                if (input.getType() != BufferedImage.TYPE_CUSTOM && TRANSFORM_OP_BICUBIC_SUPPORT) {
-                    return fastResample(input, output, width, height, 3); // AffineTransformOp.TYPE_BICUBIC
+                if (input.getType() != BufferedImage.TYPE_CUSTOM) {
+                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_BICUBIC);
                 }
                 // Else fall through
             default:

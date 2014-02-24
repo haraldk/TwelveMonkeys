@@ -61,7 +61,7 @@ public final class CURImageReaderSpi extends ImageReaderSpi {
                         "image/cursor"                  // Unofficial, but common
                 },
                 "com.twelvemonkeys.imageio.plugins.ico.CURImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 null,
                 true, null, null, null, null,
                 true,

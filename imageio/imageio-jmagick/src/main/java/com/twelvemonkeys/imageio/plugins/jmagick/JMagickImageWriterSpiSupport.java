@@ -30,9 +30,9 @@ package com.twelvemonkeys.imageio.plugins.jmagick;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
+import javax.imageio.stream.ImageOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -68,7 +68,7 @@ abstract class JMagickImageWriterSpiSupport extends ImageWriterSpi {
                 AVAILABLE ? pSuffixes : null, // Suffixes
                 AVAILABLE ? pMimeTypes : null, // Mime-types
                 pWriterClassName, // Writer class name
-                ImageReaderSpi.STANDARD_INPUT_TYPE, // Output types
+                new Class[] {ImageOutputStream.class}, // Output types
                 pReaderSpiNames, // Reader SPI names
                 true, // Supports standard stream metadata format
                 null, // Native stream metadata format name

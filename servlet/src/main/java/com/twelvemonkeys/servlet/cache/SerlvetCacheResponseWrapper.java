@@ -29,7 +29,7 @@
 package com.twelvemonkeys.servlet.cache;
 
 import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.net.NetUtil;
+import com.twelvemonkeys.net.HTTPUtil;
 import com.twelvemonkeys.servlet.ServletResponseStreamDelegate;
 
 import javax.servlet.ServletOutputStream;
@@ -224,7 +224,7 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
         if (Boolean.FALSE.equals(cacheable)) {
             super.setDateHeader(pName, pValue);
         }
-        cacheResponse.setHeader(pName, NetUtil.formatHTTPDate(pValue));
+        cacheResponse.setHeader(pName, HTTPUtil.formatHTTPDate(pValue));
     }
 
     public void addDateHeader(String pName, long pValue) {
@@ -232,7 +232,7 @@ class SerlvetCacheResponseWrapper extends HttpServletResponseWrapper {
         if (Boolean.FALSE.equals(cacheable)) {
             super.addDateHeader(pName, pValue);
         }
-        cacheResponse.addHeader(pName, NetUtil.formatHTTPDate(pValue));
+        cacheResponse.addHeader(pName, HTTPUtil.formatHTTPDate(pValue));
     }
 
     public void setHeader(String pName, String pValue) {

@@ -29,7 +29,7 @@
 package com.twelvemonkeys.servlet.cache;
 
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.net.NetUtil;
+import com.twelvemonkeys.net.HTTPUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,7 +53,7 @@ class WritableCachedResponseImpl implements WritableCachedResponse {
     protected WritableCachedResponseImpl() {
         cachedResponse = new CachedResponseImpl();
         // Hmmm..
-        setHeader(HTTPCache.HEADER_CACHED_TIME, NetUtil.formatHTTPDate(System.currentTimeMillis()));
+        setHeader(HTTPCache.HEADER_CACHED_TIME, HTTPUtil.formatHTTPDate(System.currentTimeMillis()));
     }
 
     public CachedResponse getCachedResponse() {

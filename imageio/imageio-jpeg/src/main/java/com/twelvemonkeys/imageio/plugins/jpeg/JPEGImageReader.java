@@ -41,13 +41,16 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
@@ -63,6 +66,7 @@ import java.util.List;
  * <p/>
  * Main features:
  * <ul>
+ * <li>Support for YCbCr JPEGs without JFIF segment (converted to RGB, using the embedded ICC profile if applicable)</li>
  * <li>Support for CMYK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)</li>
  * <li>Support for Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using the embedded ICC profile if applicable)</li>
  * <li>Support for JPEGs containing ICC profiles with interpretation other than 'Perceptual' (profile is assumed to be 'Perceptual' and used)</li>
@@ -75,9 +79,16 @@ import java.util.List;
  * </ul>
  * Thumbnail support:
  * <ul>
- * <li>Support for JFIF thumbnails (even if stream contains "inconsistent metadata")</li>
+ * <li>Support for JFIF thumbnails (even if stream contains inconsistent metadata)</li>
  * <li>Support for JFXX thumbnails (JPEG, Indexed and RGB)</li>
  * <li>Support for EXIF thumbnails (JPEG, RGB and YCbCr)</li>
+ * </ul>
+ * Metadata support:
+ * <ul>
+ * <li>Support for JPEG metadata in both standard and native formats (even if stream contains inconsistent metadata)</li>
+ * <li>Support for {@code javax_imageio_jpeg_image_1.0} format (currently as native format, may change in the future)</li>
+ * <li>Support for illegal combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
+ * "MarkerSequence" tag for the unsupported segments (for {@code javax_imageio_jpeg_image_1.0} format)</li>
  * </ul>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -86,10 +97,13 @@ import java.util.List;
  * @version $Id: JPEGImageReader.java,v 1.0 24.01.11 16.37 haraldk Exp$
  */
 public class JPEGImageReader extends ImageReaderBase {
-    // TODO: Fix the (stream) metadata inconsistency issues.
-    // - Sun JPEGMetadata class does not (and can not be made to) support CMYK data.. We need to create all new metadata classes.. :-/
+    // TODO: Allow automatic rotation based on EXIF rotation field?
+    // TODO: Create a simplified native metadata format that is closer to the actual JPEG stream AND supports EXIF in a sensible way
 
-    private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
+
+    /** Internal constant for referring all APP segments */
+    static final int ALL_APP_MARKERS = -1;
 
     /** Segment identifiers for the JPEG segments we care about reading. */
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
@@ -97,17 +111,10 @@ public class JPEGImageReader extends ImageReaderBase {
     private static Map<Integer, List<String>> createSegmentIds() {
         Map<Integer, List<String>> map = new LinkedHashMap<Integer, List<String>>();
 
-        // JFIF/JFXX APP0 markers
-        map.put(JPEG.APP0, JPEGSegmentUtil.ALL_IDS);
-
-        // Exif metadata
-        map.put(JPEG.APP1, Collections.singletonList("Exif"));
-
-        // ICC Color Profile
-        map.put(JPEG.APP2, Collections.singletonList("ICC_PROFILE"));
-
-        // Adobe APP14 marker
-        map.put(JPEG.APP14, Collections.singletonList("Adobe"));
+        // Need all APP markers to be able to re-generate proper metadata later
+        for (int appMarker = JPEG.APP0; appMarker <= JPEG.APP15; appMarker++) {
+            map.put(appMarker, JPEGSegmentUtil.ALL_IDS);
+        }
 
         // SOFn markers
         map.put(JPEG.SOF0, null);
@@ -133,10 +140,14 @@ public class JPEGImageReader extends ImageReaderBase {
     /** Listens to progress updates in the delegate, and delegates back to this instance */
     private final ProgressDelegator progressDelegator;
 
-    /** Cached JPEG app segments */
-    private List<JPEGSegment> segments;
-
+    /** Extra delegate for reading JPEG encoded thumbnails */
+    private ImageReader thumbnailReader;
     private List<ThumbnailReader> thumbnails;
+
+    private JPEGImage10MetadataCleaner metadataCleaner;
+
+    /** Cached list of JPEG segments we filter from the underlying stream */
+    private List<JPEGSegment> segments;
 
     JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
@@ -157,12 +168,23 @@ public class JPEGImageReader extends ImageReaderBase {
         segments = null;
         thumbnails = null;
 
+        if (thumbnailReader != null) {
+            thumbnailReader.reset();
+        }
+
+        metadataCleaner = null;
+
         installListeners();
     }
 
     @Override
     public void dispose() {
         super.dispose();
+
+        if (thumbnailReader != null) {
+            thumbnailReader.dispose();
+            thumbnailReader = null;
+        }
 
         delegate.dispose();
     }
@@ -280,44 +302,51 @@ public class JPEGImageReader extends ImageReaderBase {
         assertInput();
         checkBounds(imageIndex);
 
-        // TODO: This test is not good enough for JDK7, which seems to have fixed some of the issues.
-        // NOTE: We rely on the fact that unsupported images has no valid types. This is kind of hacky.
-        // Might want to look into the metadata, to see if there's a better way to identify these.
-        boolean unsupported = !delegate.getImageTypes(imageIndex).hasNext();
+//        CompoundDirectory exif = getExif();
+//        if (exif != null) {
+//            System.err.println("exif: " + exif);
+//            System.err.println("Orientation: " + exif.getEntryById(TIFF.TAG_ORIENTATION));
+//            Entry exifIFDEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
+//
+//            if (exifIFDEntry != null) {
+//                Directory exifIFD = (Directory) exifIFDEntry.getValue();
+//                System.err.println("PixelXDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_X_DIMENSION));
+//                System.err.println("PixelYDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_Y_DIMENSION));
+//            }
+//        }
 
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
+        SOFSegment sof = getSOF();
+        JPEGColorSpace sourceCSType = getSourceCSType(adobeDCT, sof);
 
-        // TODO: Probably something bogus here, as ICC profile isn't applied if reading through the delegate any more...
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
-                unsupported ||
+                sourceCSType == JPEGColorSpace.CMYK ||
+                sourceCSType == JPEGColorSpace.YCCK ||
                 adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile))) {
-//                profile != null && (ColorSpaces.isOffendingColorProfile(profile) || profile.getColorSpaceType() == ColorSpace.TYPE_CMYK))) {
+                profile != null && !ColorSpaces.isCS_sRGB(profile)) ||
+                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
             }
 
-            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, ensureDisplayProfile(profile));
+            // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMyK and other good types?
+            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, adobeDCT, ensureDisplayProfile(profile));
         }
 
         if (DEBUG) {
             System.out.println("Reading using delegate");
         }
-        
+
         return delegate.read(imageIndex, param);
     }
 
-    private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, ICC_Profile profile) throws IOException {
+    private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, SOFSegment startOfFrame, JPEGColorSpace csType, AdobeDCTSegment adobeDCT, ICC_Profile profile) throws IOException {
         int origWidth = getWidth(imageIndex);
         int origHeight = getHeight(imageIndex);
-
-        AdobeDCTSegment adobeDCT = getAdobeDCT();
-        SOFSegment startOfFrame = getSOF();
-        JPEGColorSpace csType = getSourceCSType(adobeDCT, startOfFrame);
 
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
         BufferedImage image = getDestination(param, imageTypes, origWidth, origHeight);
@@ -442,6 +471,8 @@ public class JPEGImageReader extends ImageReaderBase {
                 // Apply further color conversion for explicit color space, or just copy the pixels into place
                 if (convert != null) {
                     convert.filter(src, dest);
+//                    WritableRaster filtered = convert.filter(src, null);
+//                    new AffineTransformOp(AffineTransform.getRotateInstance(2 * Math.PI, filtered.getWidth() / 2.0, filtered.getHeight() / 2.0), null).filter(filtered, dest);
                 }
                 else {
                     dest.setRect(0, 0, src);
@@ -474,16 +505,17 @@ public class JPEGImageReader extends ImageReaderBase {
 
         When reading, the contents of the stream are interpreted by the usual JPEG conventions, as follows:
 
-        • If a JFIF APP0 marker segment is present, the colorspace is known to be either grayscale, YCbCr or CMYK.
+        • If a JFIF APP0 marker segment is present, the colorspace should be either grayscale or YCbCr.
         If an APP2 marker segment containing an embedded ICC profile is also present, then YCbCr is converted to RGB according
         to the formulas given in the JFIF spec, and the ICC profile is assumed to refer to the resulting RGB space.
-        CMYK data is read as is, and the ICC profile is assumed to refer to the resulting CMYK space.
+        But, as software does not follow the spec, we can't really assume anything.
 
         • If an Adobe APP14 marker segment is present, the colorspace is determined by consulting the transform flag.
         The transform flag takes one of three values:
          o 2 - The image is encoded as YCCK (implicitly converted from CMYK on encoding).
          o 1 - The image is encoded as YCbCr (implicitly converted from RGB on encoding).
-         o 0 - Unknown. 3-channel images are assumed to be RGB, 4-channel images are assumed to be CMYK.
+         o 0 - Unknown. 1-channel images are assumed to be Gray, 3-channel images are assumed to be RGB,
+               4-channel images are assumed to be CMYK.
 
         • If neither marker segment is present, the following procedure is followed: Single-channel images are assumed
         to be grayscale, and 2-channel images are assumed to be grayscale with an alpha channel. For 3- and 4-channel
@@ -511,8 +543,10 @@ public class JPEGImageReader extends ImageReaderBase {
         if (adobeDCT != null) {
             switch (adobeDCT.getTransform()) {
                 case AdobeDCTSegment.YCC:
+                    // TODO: Verify that startOfFrame has 3 components, otherwise issue warning and ignore adobeDCT
                     return JPEGColorSpace.YCbCr;
                 case AdobeDCTSegment.YCCK:
+                    // TODO: Verify that startOfFrame has 4 components, otherwise issue warning and ignore adobeDCT
                     return JPEGColorSpace.YCCK;
                 case AdobeDCTSegment.Unknown:
                     if (startOfFrame.components.length == 1) {
@@ -545,7 +579,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     return JPEGColorSpace.PhotoYCC;
                 }
                 else {
-                    // if subsampled, YCbCr else RGB
+                    // If subsampled, YCbCr else RGB
                     for (SOFComponent component : startOfFrame.components) {
                         if (component.hSub != 1 || component.vSub != 1) {
                             return JPEGColorSpace.YCbCr;
@@ -571,7 +605,8 @@ public class JPEGImageReader extends ImageReaderBase {
                     return JPEGColorSpace.YCCK;
                 }
                 else {
-                    // if subsampled, YCCK else CMYK
+                    // TODO: JPEGMetadata (standard format) will report YCbCrA for 4 channel subsampled... :-/
+                    // If subsampled, YCCK else CMYK
                     for (SOFComponent component : startOfFrame.components) {
                         if (component.hSub != 1 || component.vSub != 1) {
                             return JPEGColorSpace.YCCK;
@@ -597,6 +632,8 @@ public class JPEGImageReader extends ImageReaderBase {
             byte[] profileData = profile.getData(); // Need to clone entire profile, due to a JDK 7 bug
 
             if (profileData[ICC_Profile.icHdrRenderingIntent] == ICC_Profile.icPerceptual) {
+                processWarningOccurred("ICC profile is Perceptual but Display class, treating as Display class");
+
                 intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass); // Header is first
 
                 return ICC_Profile.getInstance(profileData);
@@ -653,13 +690,14 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
+    List<JPEGSegment> getAppSegments(final int marker, final String identifier) throws IOException {
         initHeader();
 
         List<JPEGSegment> appSegments = Collections.emptyList();
 
         for (JPEGSegment segment : segments) {
-            if (segment.marker() == marker && (identifier == null || identifier.equals(segment.identifier()))) {
+            if ((marker == ALL_APP_MARKERS && segment.marker() >= JPEG.APP0 && segment.marker() <= JPEG.APP15 || segment.marker() == marker)
+                    && (identifier == null || identifier.equals(segment.identifier()))) {
                 if (appSegments == Collections.EMPTY_LIST) {
                     appSegments = new ArrayList<JPEGSegment>(segments.size());
                 }
@@ -671,7 +709,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return appSegments;
     }
 
-    private SOFSegment getSOF() throws IOException {
+    SOFSegment getSOF() throws IOException {
         for (JPEGSegment segment : segments) {
             if (JPEG.SOF0 >= segment.marker() && segment.marker() <= JPEG.SOF3 ||
                     JPEG.SOF5 >= segment.marker() && segment.marker() <= JPEG.SOF7 ||
@@ -707,7 +745,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    private AdobeDCTSegment getAdobeDCT() throws IOException {
+    AdobeDCTSegment getAdobeDCT() throws IOException {
         // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe APP14 markers
         List<JPEGSegment> adobe = getAppSegments(JPEG.APP14, "Adobe");
 
@@ -726,23 +764,44 @@ public class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    private JFIFSegment getJFIF() throws IOException{
+    JFIFSegment getJFIF() throws IOException{
         List<JPEGSegment> jfif = getAppSegments(JPEG.APP0, "JFIF");
-        
+
         if (!jfif.isEmpty()) {
             JPEGSegment segment = jfif.get(0);
             return JFIFSegment.read(segment.data());
         }
-        
+
         return null;
     }
 
-    private JFXXSegment getJFXX() throws IOException {
+    JFXXSegment getJFXX() throws IOException {
         List<JPEGSegment> jfxx = getAppSegments(JPEG.APP0, "JFXX");
 
         if (!jfxx.isEmpty()) {
             JPEGSegment segment = jfxx.get(0);
             return JFXXSegment.read(segment.data(), segment.length());
+        }
+
+        return null;
+    }
+
+    private CompoundDirectory getExif() throws IOException {
+        List<JPEGSegment> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+
+        if (!exifSegments.isEmpty()) {
+            JPEGSegment exif = exifSegments.get(0);
+            InputStream data = exif.data();
+
+            if (data.read() == -1) { // Read pad
+                processWarningOccurred("Exif chunk has no data.");
+            }
+            else {
+                ImageInputStream stream = ImageIO.createImageInputStream(data);
+                return (CompoundDirectory) new EXIFReader().read(stream);
+
+                // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the EXIFReader...
+            }
         }
 
         return null;
@@ -759,7 +818,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return data;
     }
 
-    private ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
+    ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
@@ -893,7 +952,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     case JFXXSegment.JPEG:
                     case JFXXSegment.INDEXED:
                     case JFXXSegment.RGB:
-                        thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, imageIndex, thumbnails.size(), jfxx));
+                        thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), imageIndex, thumbnails.size(), jfxx));
                         break;
                     default:
                         processWarningOccurred("Unknown JFXX extension code: " + jfxx.extensionCode);
@@ -911,17 +970,23 @@ public class JPEGImageReader extends ImageReaderBase {
                     processWarningOccurred("Exif chunk has no data.");
                 }
                 else {
-                    ImageInputStream stream = ImageIO.createImageInputStream(data);
+                    ImageInputStream stream = new MemoryCacheImageInputStream(data);
                     CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
 
                     if (exifMetadata.directoryCount() == 2) {
                         Directory ifd1 = exifMetadata.getDirectory(1);
 
                         Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-
                         // 1 = no compression, 6 = JPEG compression (default)
                         if (compression == null || compression.getValue().equals(1) || compression.getValue().equals(6)) {
-                            thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, 0, thumbnails.size(), ifd1, stream));
+                            Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+
+                            if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
+                                thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                            }
+                            else {
+                                processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
+                            }
                         }
                         else {
                             processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression.getValue());
@@ -930,6 +995,14 @@ public class JPEGImageReader extends ImageReaderBase {
                 }
             }
         }
+    }
+
+    ImageReader getThumbnailReader() throws IOException {
+        if (thumbnailReader == null) {
+            thumbnailReader = delegate.getOriginatingProvider().createReaderInstance();
+        }
+
+        return thumbnailReader;
     }
 
     @Override
@@ -965,49 +1038,31 @@ public class JPEGImageReader extends ImageReaderBase {
         return thumbnails.get(thumbnailIndex).read();
     }
 
-
     // Metadata
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        // TODO: Nice try, but no cigar.. getAsTree does not return a "live" view, so any modifications are thrown away
-        IIOMetadata metadata = delegate.getImageMetadata(imageIndex);
+        IIOMetadata imageMetadata = delegate.getImageMetadata(imageIndex);
 
-//        IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
-//        Node jpegVariety = tree.getElementsByTagName("JPEGvariety").item(0);
+        if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
+            if (metadataCleaner == null) {
+                metadataCleaner = new JPEGImage10MetadataCleaner(this);
+            }
 
-        // TODO: Allow EXIF (as app1EXIF) in the JPEGvariety (sic) node.
-        // As EXIF is (a subset of) TIFF, (and the EXIF data is a valid TIFF stream) probably use something like:
-        // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
-        /*
-        from: http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html
+            return metadataCleaner.cleanMetadata(imageMetadata);
+        }
 
-        In future versions of the JPEG metadata format, other varieties of JPEG metadata may be supported (e.g. Exif)
-        by defining other types of nodes which may appear as a child of the JPEGvariety node.
-
-        (Note that an application wishing to interpret Exif metadata given a metadata tree structure in the
-        javax_imageio_jpeg_image_1.0 format must check for an unknown marker segment with a tag indicating an
-        APP1 marker and containing data identifying it as an Exif marker segment. Then it may use application-specific
-        code to interpret the data in the marker segment. If such an application were to encounter a metadata tree
-        formatted according to a future version of the JPEG metadata format, the Exif marker segment might not be
-        unknown in that format - it might be structured as a child node of the JPEGvariety node.
-
-        Thus, it is important for an application to specify which version to use by passing the string identifying
-        the version to the method/constructor used to obtain an IIOMetadata object.)
-         */
-
-//        IIOMetadataNode app2ICC = new IIOMetadataNode("app2ICC");
-//        app2ICC.setUserObject(getEmbeddedICCProfile());
-//        jpegVariety.getFirstChild().appendChild(app2ICC);
-
-    //        new XMLSerializer(System.err, System.getProperty("file.encoding")).serialize(tree, false);
-
-        return metadata;
+        return imageMetadata;
     }
 
     @Override
     public IIOMetadata getStreamMetadata() throws IOException {
         return delegate.getStreamMetadata();
+    }
+
+    @Override
+    protected void processWarningOccurred(String warning) {
+        super.processWarningOccurred(warning);
     }
 
     private static void invertCMYK(final Raster raster) {
@@ -1321,10 +1376,10 @@ public class JPEGImageReader extends ImageReaderBase {
 //                    start = System.currentTimeMillis();
                     float aspect = reader.getAspectRatio(0);
                     if (aspect >= 1f) {
-                        image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_DEFAULT);
+                        image = ImageUtil.createResampled(image, maxW, Math.round(maxW / aspect), Image.SCALE_SMOOTH);
                     }
                     else {
-                        image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_DEFAULT);
+                        image = ImageUtil.createResampled(image, Math.round(maxH * aspect), maxH, Image.SCALE_SMOOTH);
                     }
 //                    System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
                 }
@@ -1332,6 +1387,14 @@ public class JPEGImageReader extends ImageReaderBase {
                 showIt(image, String.format("Image: %s [%d x %d]", file.getName(), reader.getWidth(0), reader.getHeight(0)));
 
                 try {
+                    IIOMetadata imageMetadata = reader.getImageMetadata(0);
+                    System.out.println("Metadata for File: " + file.getName());
+                    System.out.println("Native:");
+                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+                    System.out.println("Standard:");
+                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                    System.out.println();
+
                     int numThumbnails = reader.getNumThumbnails(0);
                     for (int i = 0; i < numThumbnails; i++) {
                         BufferedImage thumbnail = reader.readThumbnail(0, i);
@@ -1340,7 +1403,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     }
                 }
                 catch (IIOException e) {
-                    System.err.println("Could not read thumbnails: " + e.getMessage());
+                    System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             }

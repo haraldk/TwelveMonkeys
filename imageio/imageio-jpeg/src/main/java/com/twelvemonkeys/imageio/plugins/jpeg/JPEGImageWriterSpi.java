@@ -37,8 +37,10 @@ import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Locale;
 
 /**
@@ -66,9 +68,9 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
                 new String[]{"JPEG", "jpeg", "JPG", "jpg"},
                 new String[]{"jpg", "jpeg"},
                 new String[]{"image/jpeg"},
-                "twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
-                STANDARD_OUTPUT_TYPE,
-                new String[] {"twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"}, 
+                "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
+                new Class[] { ImageOutputStream.class },
+                new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null
         );
@@ -86,14 +88,14 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
     }
     
     static ImageWriterSpi lookupDelegateProvider(final ServiceRegistry registry) {
-        // Should be safe to lookup now, as the bundled providers are hardcoded usually
-        try {
-            return (ImageWriterSpi) registry.getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi"));
-        }
-        catch (ClassNotFoundException ignore) {
-        }
-        catch (SecurityException e) {
-            e.printStackTrace();
+        Iterator<ImageWriterSpi> providers = registry.getServiceProviders(ImageWriterSpi.class, true);
+
+        while (providers.hasNext()) {
+            ImageWriterSpi provider = providers.next();
+
+            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi")) {
+                return provider;
+            }
         }
 
         return null;

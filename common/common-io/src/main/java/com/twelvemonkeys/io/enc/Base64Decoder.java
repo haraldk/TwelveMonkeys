@@ -28,9 +28,9 @@
 
 package com.twelvemonkeys.io.enc;
 
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * {@code Decoder} implementation for standard base64 encoding.
@@ -47,7 +47,7 @@ public final class Base64Decoder implements Decoder {
     /**
      * This array maps the characters to their 6 bit values
      */
-    final static char[] PEM_ARRAY = {
+    final static byte[] PEM_ARRAY = {
             //0   1    2    3    4    5    6    7
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', // 0
             'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', // 1
@@ -62,8 +62,6 @@ public final class Base64Decoder implements Decoder {
     final static byte[] PEM_CONVERT_ARRAY;
 
     private byte[] decodeBuffer = new byte[4];
-    private ByteArrayOutputStream wrapped;
-    private Object wrappedObject;
 
     static {
         PEM_CONVERT_ARRAY = new byte[256];
@@ -93,7 +91,7 @@ public final class Base64Decoder implements Decoder {
         return pLength;
     }
 
-    protected boolean decodeAtom(final InputStream pInput, final OutputStream pOutput, final int pLength)
+    protected boolean decodeAtom(final InputStream pInput, final ByteBuffer pOutput, final int pLength)
             throws IOException {
 
         byte byte0 = -1;
@@ -147,16 +145,16 @@ public final class Base64Decoder implements Decoder {
             default:
                 switch (length) {
                     case 2:
-                        pOutput.write((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
+                        pOutput.put((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
                         break;
                     case 3:
-                        pOutput.write((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
-                        pOutput.write((byte) (byte1 << 4 & 240 | byte2 >>> 2 & 15));
+                        pOutput.put((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
+                        pOutput.put((byte) (byte1 << 4 & 240 | byte2 >>> 2 & 15));
                         break;
                     case 4:
-                        pOutput.write((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
-                        pOutput.write((byte) (byte1 << 4 & 240 | byte2 >>> 2 & 15));
-                        pOutput.write((byte) (byte2 << 6 & 192 | byte3 & 63));
+                        pOutput.put((byte) (byte0 << 2 & 252 | byte1 >>> 4 & 3));
+                        pOutput.put((byte) (byte1 << 4 & 240 | byte2 >>> 2 & 15));
+                        pOutput.put((byte) (byte2 << 6 & 192 | byte3 & 63));
                         break;
                 }
 
@@ -166,34 +164,23 @@ public final class Base64Decoder implements Decoder {
         return true;
     }
 
-    void decodeBuffer(final InputStream pInput, final ByteArrayOutputStream pOutput, final int pLength) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         do {
             int k = 72;
             int i;
 
             for (i = 0; i + 4 < k; i += 4) {
-                if(!decodeAtom(pInput, pOutput, 4)) {
+                if(!decodeAtom(stream, buffer, 4)) {
                     break;
                 }
             }
 
-            if (!decodeAtom(pInput, pOutput, k - i)) {
+            if (!decodeAtom(stream, buffer, k - i)) {
                 break;
             }
         }
-        while (pOutput.size() + 54 < pLength); // 72 char lines should produce no more than 54 bytes
-    }
+        while (buffer.remaining() > 54); // 72 char lines should produce no more than 54 bytes
 
-    public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
-        if (wrappedObject != pBuffer) {
-            // NOTE: Array not cloned in FastByteArrayOutputStream
-            wrapped = new FastByteArrayOutputStream(pBuffer);
-            wrappedObject = pBuffer;
-        }
-
-        wrapped.reset(); // NOTE: This only resets count to 0
-        decodeBuffer(pStream, wrapped, pBuffer.length);
-
-        return wrapped.size();
+        return buffer.position();
     }
 }

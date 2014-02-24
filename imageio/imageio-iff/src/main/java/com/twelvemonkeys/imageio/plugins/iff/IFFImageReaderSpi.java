@@ -63,7 +63,7 @@ public class IFFImageReaderSpi extends ImageReaderSpi {
                 new String[]{"iff", "lbm", "ham", "ham8", "ilbm"},
                 new String[]{"image/iff", "image/x-iff"},
                 "com.twelvemonkeys.imageio.plugins.iff.IFFImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 new String[]{"com.twelvemonkeys.imageio.plugins.iff.IFFImageWriterSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null
@@ -108,7 +108,7 @@ public class IFFImageReaderSpi extends ImageReaderSpi {
     }
 
     public String getDescription(Locale pLocale) {
-        return "Amiga (Electronic Arts) Image Interchange Format (IFF) image reader";
+        return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image reader";
     }
 
     public static ImageReaderSpi sharedProvider() {

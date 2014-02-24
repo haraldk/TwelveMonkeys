@@ -62,7 +62,7 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
                 new String[]{"pct", "pict"},
                 new String[]{"image/pict", "image/x-pict"},
                 "com.twelvemkonkeys.imageio.plugins.pict.PICTImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 new String[]{"com.twelvemkonkeys.imageio.plugins.pict.PICTImageWriterSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null

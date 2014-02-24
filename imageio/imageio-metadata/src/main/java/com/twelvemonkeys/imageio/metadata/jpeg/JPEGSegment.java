@@ -77,6 +77,8 @@ public final class JPEGSegment implements Serializable {
         return marker >= 0xFFE0 && marker <= 0xFFEF;
     }
 
+    // TODO: Consider returning an ImageInputStream and use ByteArrayImageInputStream directly, for less wrapping and better performance
+    // TODO: BUT: Must find a way to skip padding in/after segment identifier (eg: Exif has null-term + null-pad, ICC_PROFILE has only null-term). Is data always word-aligned?
     public InputStream data() {
         return data != null ? new ByteArrayInputStream(data, offset(), length()) : null;
     }
@@ -85,7 +87,7 @@ public final class JPEGSegment implements Serializable {
         return data != null ? data.length - offset() : 0;
     }
 
-    private int offset() {
+    int offset() {
         String identifier = identifier();
 
         return identifier == null ? 0 : identifier.length() + 1;

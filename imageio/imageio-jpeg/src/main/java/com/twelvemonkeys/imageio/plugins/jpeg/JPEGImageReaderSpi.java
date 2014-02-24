@@ -36,7 +36,9 @@ import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Locale;
 
 /**
@@ -65,7 +67,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
                 new String[]{"jpg", "jpeg"},
                 new String[]{"image/jpeg"},
                 "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader",
-                STANDARD_INPUT_TYPE,
+                new Class[] {ImageInputStream.class},
                 new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi"},
                 true, null, null, null, null,
                 true, null, null, null, null
@@ -84,14 +86,14 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     }
 
     static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
-        // Should be safe to lookup now, as the bundled providers are hardcoded usually
-        try {
-            return (ImageReaderSpi) registry.getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi"));
-        }
-        catch (ClassNotFoundException ignore) {
-        }
-        catch (SecurityException e) {
-            e.printStackTrace();
+        Iterator<ImageReaderSpi> providers = registry.getServiceProviders(ImageReaderSpi.class, true);
+
+        while (providers.hasNext()) {
+            ImageReaderSpi provider = providers.next();
+
+            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi")) {
+                return provider;
+            }
         }
 
         return null;

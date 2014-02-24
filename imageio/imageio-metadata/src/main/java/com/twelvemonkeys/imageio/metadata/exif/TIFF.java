@@ -37,8 +37,25 @@ package com.twelvemonkeys.imageio.metadata.exif;
  */
 @SuppressWarnings("UnusedDeclaration")
 public interface TIFF {
+    short BYTE_ORDER_MARK_BIG_ENDIAN = ('M' << 8) | 'M';
+    short BYTE_ORDER_MARK_LITTLE_ENDIAN = ('I' << 8) | 'I';
+
     int TIFF_MAGIC = 42;
 
+    short TYPE_BYTE = 1;
+    short TYPE_ASCII = 2;
+    short TYPE_SHORT = 3;
+    short TYPE_LONG = 4;
+    short TYPE_RATIONAL = 5;
+
+    short TYPE_SBYTE = 6;
+    short TYPE_UNDEFINED = 7;
+    short TYPE_SSHORT = 8;
+    short TYPE_SLONG = 9;
+    short TYPE_SRATIONAL = 10;
+    short TYPE_FLOAT = 11;
+    short TYPE_DOUBLE = 12;
+    short TYPE_IFD = 13;
     /*
     1 = BYTE 8-bit unsigned integer.
     2 = ASCII 8-bit byte that contains a 7-bit ASCII code; the last byte
