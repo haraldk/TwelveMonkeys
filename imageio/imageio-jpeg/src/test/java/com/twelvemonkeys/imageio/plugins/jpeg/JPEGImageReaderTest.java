@@ -330,6 +330,32 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testYCbCrNotSubsampledNonstandardChannelIndexes() throws IOException {
+        // Regression: Make sure 3 channel, non-subsampled JFIF, defaults to YCbCr, even if unstandard channel indexes
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-ycbcr-no-subsampling-intel.jpg")));
+
+        assertEquals(600, reader.getWidth(0));
+        assertEquals(600, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(8, 8));
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(8, image.getWidth());
+        assertEquals(8, image.getHeight());
+
+        // QnD test: Make sure all pixels are white (if treated as RGB, they will be pink-ish)
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                assertEquals(0xffffff, image.getRGB(x, y) & 0xffffff);
+            }
+        }
+    }
+
+    @Test
     public void testCorbisRGB() throws IOException {
         // Special case, throws exception below without special treatment
         // java.awt.color.CMMException: General CMM error517

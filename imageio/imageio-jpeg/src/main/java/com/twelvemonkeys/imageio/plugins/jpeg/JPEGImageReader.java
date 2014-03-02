@@ -212,7 +212,7 @@ public class JPEGImageReader extends ImageReaderBase {
     @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
         Iterator<ImageTypeSpecifier> types = delegate.getImageTypes(imageIndex);
-        JPEGColorSpace csType = getSourceCSType(getAdobeDCT(), getSOF());
+        JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
         if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
             ArrayList<ImageTypeSpecifier> typeList = new ArrayList<ImageTypeSpecifier>();
@@ -266,7 +266,7 @@ public class JPEGImageReader extends ImageReaderBase {
         }
 
         // Otherwise, consult the image metadata
-        JPEGColorSpace csType = getSourceCSType(getAdobeDCT(), getSOF());
+        JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
         switch (csType) {
             case CMYK:
@@ -318,7 +318,7 @@ public class JPEGImageReader extends ImageReaderBase {
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
         SOFSegment sof = getSOF();
-        JPEGColorSpace sourceCSType = getSourceCSType(adobeDCT, sof);
+        JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
 
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
@@ -499,7 +499,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return image;
     }
 
-    static JPEGColorSpace getSourceCSType(AdobeDCTSegment adobeDCT, final SOFSegment startOfFrame) throws IIOException {
+    static JPEGColorSpace getSourceCSType(JFIFSegment jfif, AdobeDCTSegment adobeDCT, final SOFSegment startOfFrame) throws IIOException {
         /*
         ADAPTED from http://download.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html:
 
@@ -586,7 +586,7 @@ public class JPEGImageReader extends ImageReaderBase {
                         }
                     }
 
-                    return JPEGColorSpace.RGB;
+                    return jfif != null ? JPEGColorSpace.YCbCr : JPEGColorSpace.RGB;
                 }
             case 4:
                 if (startOfFrame.components[0].id == 1 && startOfFrame.components[1].id == 2 && startOfFrame.components[2].id == 3 && startOfFrame.components[3].id == 4) {
@@ -629,10 +629,10 @@ public class JPEGImageReader extends ImageReaderBase {
         // See ColorConvertOp#filter(Raster, WritableRaster)
 
         if (profile != null && profile.getProfileClass() != ICC_Profile.CLASS_DISPLAY) {
-            byte[] profileData = profile.getData(); // Need to clone entire profile, due to a JDK 7 bug
+            byte[] profileData = profile.getData(); // Need to clone entire profile, due to a OpenJDK bug
 
             if (profileData[ICC_Profile.icHdrRenderingIntent] == ICC_Profile.icPerceptual) {
-                processWarningOccurred("ICC profile is Perceptual but Display class, treating as Display class");
+                processWarningOccurred("ICC profile is Perceptual, ignoring, treating as Display class");
 
                 intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass); // Header is first
 
