@@ -157,6 +157,7 @@ public final class ColorSpaces {
      * to avoid unnecessary array copying.
      */
     private static boolean fixProfileXYZTag(ICC_Profile profile, final int tagSignature) {
+        // TODO: This blows up on OpenJDK... Bug?
         byte[] data = profile.getData(tagSignature);
 
         // The CMM expects 0x64 65 73 63 ('XYZ ') but is 0x17 A5 05 B8..?
