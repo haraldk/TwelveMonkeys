@@ -438,19 +438,20 @@ public class JPEGImageReader extends ImageReaderBase {
         // Unfortunately looping is slower than reading all at once, but
         // that requires 2 x memory or more, so a few steps is an ok compromise I guess
         try {
-            final int step = Math.max(1024, srcRegion.height / 10); // * param.getSourceYSubsampling(); // TODO: Using a multiple of 8 is probably a good idea for JPEG
+            final int step = Math.max(1024, srcRegion.height / 10); // TODO: Using a multiple of 8 is probably a good idea for JPEG
             final int srcMaxY = srcRegion.y + srcRegion.height;
             int destY = dstRegion.y;
 
             for (int y = srcRegion.y; y < srcMaxY; y += step) {
                 int scan = Math.min(step, srcMaxY - y);
 
-                if(scan <= param.getSubsamplingYOffset()) {
-                    param.setSourceSubsampling(param.getSourceXSubsampling(),param.getSourceYSubsampling(),param.getSubsamplingXOffset(),0);
-                }
-
                 // Let the progress delegator handle progress, using corrected range
                 progressDelegator.updateProgressRange(100f * (y + scan) / srcRegion.height);
+
+                // Make sure subsampling is within bounds
+                if (scan <= param.getSubsamplingYOffset()) {
+                    param.setSourceSubsampling(param.getSourceXSubsampling(), param.getSourceYSubsampling(), param.getSubsamplingXOffset(), scan - 1);
+                }
 
                 Rectangle subRegion = new Rectangle(srcRegion.x, y, srcRegion.width, scan);
                 param.setSourceRegion(subRegion);
