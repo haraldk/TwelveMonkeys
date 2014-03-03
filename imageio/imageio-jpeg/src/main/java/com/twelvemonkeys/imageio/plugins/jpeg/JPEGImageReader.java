@@ -445,10 +445,6 @@ public class JPEGImageReader extends ImageReaderBase {
             for (int y = srcRegion.y; y < srcMaxY; y += step) {
                 int scan = Math.min(step, srcMaxY - y);
 
-                if(scan <= param.getSubsamplingYOffset()) {
-                    param.setSourceSubsampling(param.getSourceXSubsampling(),param.getSourceYSubsampling(),param.getSubsamplingXOffset(),0);
-                }
-
                 // Let the progress delegator handle progress, using corrected range
                 progressDelegator.updateProgressRange(100f * (y + scan) / srcRegion.height);
 
