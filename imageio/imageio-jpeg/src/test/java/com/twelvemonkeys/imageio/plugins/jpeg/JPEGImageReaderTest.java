@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.hamcrest.core.IsInstanceOf;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.matchers.GreaterThan;
 import org.w3c.dom.Element;
@@ -327,6 +328,32 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(8, image.getHeight());
 
         verify(warningListener).warningOccurred(eq(reader), anyString());
+    }
+
+    @Test
+    public void testYCbCrNotSubsampledNonstandardChannelIndexes() throws IOException {
+        // Regression: Make sure 3 channel, non-subsampled JFIF, defaults to YCbCr, even if unstandard channel indexes
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-ycbcr-no-subsampling-intel.jpg")));
+
+        assertEquals(600, reader.getWidth(0));
+        assertEquals(600, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(8, 8));
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(8, image.getWidth());
+        assertEquals(8, image.getHeight());
+
+        // QnD test: Make sure all pixels are white (if treated as RGB, they will be pink-ish)
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                assertEquals(0xffffff, image.getRGB(x, y) & 0xffffff);
+            }
+        }
     }
 
     @Test
@@ -657,6 +684,122 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
             assertEquals((actualRGB      ) & 0xff, (expectedRGB[i]      ) & 0xff, 5);
         }
+    }
+
+    // Regression: Test subsampling offset within  of bounds
+    // NOTE: These tests assumes the reader will read at least 1024 scanlines (if available) each iteration,
+    //       this might change in the future. If so, the tests will no longer test what tey are supposed to....
+    @Test
+    public void testReadSubsamplingBounds1028() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1028.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+    }
+
+    @Ignore
+    @Test
+    public void testReadSubsamplingNotSkippingLines1028() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1028.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+
+        // Make sure correct color is actually read, not just left empty
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+    }
+
+    @Test
+    public void testReadSubsamplingBounds1027() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1027.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 2, 2);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+
+        // Make sure correct color is actually read, not just left empty
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+    }
+
+    @Test
+    public void testReadSubsamplingBounds1026() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1026.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+
+        // Make sure correct color is actually read, not just left empty
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+    }
+
+    @Test
+    public void testReadSubsamplingBounds1025() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1025.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+    }
+
+    @Ignore
+    @Test
+    public void testReadSubsamplingNotSkippingLines1025() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1025.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+
+        // Make sure correct color is actually read, not just left empty
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+    }
+
+    @Test
+    public void testReadSubsamplingBounds1024() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1024.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceSubsampling(3, 3, 1, 1);
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+
+        // Make sure correct color is actually read, not just left empty
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
+        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
     }
 
     @Test
