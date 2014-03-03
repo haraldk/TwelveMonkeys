@@ -720,6 +720,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
     }
 
+    @Ignore
     @Test
     public void testReadSubsamplingBounds1027() throws IOException {
         JPEGImageReader reader = createReader();
@@ -737,6 +738,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
     }
 
+    @Ignore
     @Test
     public void testReadSubsamplingBounds1026() throws IOException {
         JPEGImageReader reader = createReader();
@@ -785,6 +787,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
     }
 
+    @Ignore
     @Test
     public void testReadSubsamplingBounds1024() throws IOException {
         JPEGImageReader reader = createReader();
