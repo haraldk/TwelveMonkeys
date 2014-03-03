@@ -513,9 +513,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // Validate strip colors
         for (int i = 0; i < strip.getWidth() / 128; i++) {
             int actualRGB = strip.getRGB(i * 128, 4);
-            assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
-            assertEquals((actualRGB >> 8) & 0xff, (expectedRGB[i] >> 8) & 0xff, 5);
-            assertEquals((actualRGB) & 0xff, (expectedRGB[i]) & 0xff, 5);
+            assertRGBEquals(expectedRGB[i], actualRGB);
         }
     }
 
@@ -543,9 +541,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // Validate strip colors
         for (int i = 0; i < thumbnail.getWidth() / 8; i++) {
             int actualRGB = thumbnail.getRGB(i * 8, 4);
-            assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
-            assertEquals((actualRGB >> 8) & 0xff, (expectedRGB[i] >> 8) & 0xff, 5);
-            assertEquals((actualRGB) & 0xff, (expectedRGB[i]) & 0xff, 5);
+            assertRGBEquals(expectedRGB[i], actualRGB);
         }
     }
 
@@ -680,10 +676,17 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // Validate strip colors
         for (int i = 0; i < image.getWidth() / 10; i++) {
             int actualRGB = image.getRGB(i * 10, 7);
-            assertEquals((actualRGB >> 16) & 0xff, (expectedRGB[i] >> 16) & 0xff, 5);
-            assertEquals((actualRGB >>  8) & 0xff, (expectedRGB[i] >>  8) & 0xff, 5);
-            assertEquals((actualRGB      ) & 0xff, (expectedRGB[i]      ) & 0xff, 5);
+            assertRGBEquals(expectedRGB[i], actualRGB);
         }
+    }
+
+    /**
+     * Slightly fuzzy RGB equals method. Tolerance +/-5 steps.
+     */
+    private void assertRGBEquals(int expectedRGB, int actualRGB) {
+        assertEquals((expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
+        assertEquals((expectedRGB >>  8) & 0xff, (actualRGB >>  8) & 0xff, 5);
+        assertEquals((expectedRGB      ) & 0xff, (actualRGB      ) & 0xff, 5);
     }
 
     // Regression: Test subsampling offset within  of bounds
@@ -716,8 +719,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -733,8 +736,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -750,8 +753,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -781,8 +784,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -798,8 +801,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2) & 0xffffff);
-        assertEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1) & 0xffffff);
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
