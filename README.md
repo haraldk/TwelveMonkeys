@@ -406,7 +406,31 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 
 ### Links to prebuilt binaries
 
-There's no prebuilt binaries yet.
+Common dependencies
+* [common-lang-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0-rc5/common-lang-3.0-rc5.jar)
+* [common-io-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0-rc5/common-io-3.0-rc5.jar)
+* [common-image-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0-rc5/common-image-3.0-rc5.jar)
+
+ImageIO dependencies
+* [imageio-core-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0-rc5/imageio-core-3.0-rc5.jar)
+* [imageio-metadata-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0-rc5/imageio-metadata-3.0-rc5.jar)
+
+ImageIO plugins
+* [imageio-jpeg-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0-rc5/imageio-jpeg-3.0-rc5.jar)
+* [imageio-tiff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0-rc5/imageio-tiff-3.0-rc5.jar)
+* [imageio-psd-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0-rc5/imageio-psd-3.0-rc5.jar)
+* [imageio-pict-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0-rc5/imageio-pict-3.0-rc5.jar)
+* [imageio-iff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0-rc5/imageio-iff-3.0-rc5.jar)
+* [imageio-icns-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0-rc5/imageio-icns-3.0-rc5.jar)
+* [imageio-ico-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0-rc5/imageio-ico-3.0-rc5.jar)
+* [imageio-thumbsdb-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0-rc5/imageio-thumbsdb-3.0-rc5.jar)
+
+ImageIO plugins requiring 3rd party libs
+* [imageio-batik-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0-rc5/imageio-batik-3.0-rc5.jar)
+* [imageio-jmagick-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0-rc5/imageio-jmagick-3.0-rc5.jar)
+
+Servlet support
+* [servlet-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0-rc5/servlet-3.0-rc5.jar)
 
 ## License
 
