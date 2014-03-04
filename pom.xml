@@ -213,4 +213,11 @@
         </plugins>
     </reporting>
 
+    <distributionManagement>
+      <snapshotRepository>
+        <id>central</id>
+        <url>http://repo.dev.escenic.com/content/repositories/thirdparty-snapshots</url>
+        <uniqueVersion>false</uniqueVersion>
+      </snapshotRepository>
+    </distributionManagement>
 </project>
