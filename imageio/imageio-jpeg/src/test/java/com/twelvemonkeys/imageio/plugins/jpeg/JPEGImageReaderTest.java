@@ -705,8 +705,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
     }
 
-    @Ignore
     @Test
+    @Ignore
     public void testReadSubsamplingNotSkippingLines1028() throws IOException {
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1028.jpg")));
@@ -723,7 +723,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
-    @Ignore
     @Test
     public void testReadSubsamplingBounds1027() throws IOException {
         JPEGImageReader reader = createReader();
@@ -741,7 +740,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
-    @Ignore
     @Test
     public void testReadSubsamplingBounds1026() throws IOException {
         JPEGImageReader reader = createReader();
@@ -772,8 +770,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
     }
 
-    @Ignore
     @Test
+    @Ignore
     public void testReadSubsamplingNotSkippingLines1025() throws IOException {
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/read-error1025.jpg")));
@@ -790,7 +788,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
-    @Ignore
     @Test
     public void testReadSubsamplingBounds1024() throws IOException {
         JPEGImageReader reader = createReader();
