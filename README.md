@@ -343,6 +343,10 @@ Build the project (using [Maven](http://maven.apache.org/download.cgi)):
 
     $ mvn package
 
+Currently, the only supported JDK for making a build is Oracle JDK 7.x. 
+
+It's possible to build using OpenJDK, but some tests will fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether. To build using JDK 8, you need to pass `-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider` to revert to the color manangement system used in Java 7.
+
 Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable `MAVEN_OPTS`
 to give the Java process that runs Maven more memory. I suggest something like `-Xmx512m -XX:MaxPermSize=256m`.
 
@@ -379,12 +383,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.0-SNAPSHOT</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0-rc-5</version> <!-- Alternatively, build your own 3.0-something version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.0-SNAPSHOT</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0-rc-5</version> <!-- Alternatively, build your own 3.0-something version -->
         </dependency>
     </dependencies>
 
@@ -392,17 +396,41 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.0-SNAPSHOT.jar
-    twelvemonkeys-common-io-3.0-SNAPSHOT.jar
-    twelvemonkeys-common-image-3.0-SNAPSHOT.jar
-    twelvemonkeys-imageio-core-3.0-SNAPSHOT.jar
-    twelvemonkeys-imageio-metadata-3.0-SNAPSHOT.jar
-    twelvemonkeys-imageio-jpeg-3.0-SNAPSHOT.jar
-    twelvemonkeys-imageio-tiff-3.0-SNAPSHOT.jar
+    twelvemonkeys-common-lang-3.0-rc-5.jar
+    twelvemonkeys-common-io-3.0-rc-5.jar
+    twelvemonkeys-common-image-3.0-rc-5.jar
+    twelvemonkeys-imageio-core-3.0-rc-5.jar
+    twelvemonkeys-imageio-metadata-3.0-rc-5.jar
+    twelvemonkeys-imageio-jpeg-3.0-rc-5.jar
+    twelvemonkeys-imageio-tiff-3.0-rc-5.jar
 
 ### Links to prebuilt binaries
 
-There's no prebuilt binaries yet.
+Common dependencies
+* [common-lang-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0-rc5/common-lang-3.0-rc5.jar)
+* [common-io-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0-rc5/common-io-3.0-rc5.jar)
+* [common-image-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0-rc5/common-image-3.0-rc5.jar)
+
+ImageIO dependencies
+* [imageio-core-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0-rc5/imageio-core-3.0-rc5.jar)
+* [imageio-metadata-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0-rc5/imageio-metadata-3.0-rc5.jar)
+
+ImageIO plugins
+* [imageio-jpeg-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0-rc5/imageio-jpeg-3.0-rc5.jar)
+* [imageio-tiff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0-rc5/imageio-tiff-3.0-rc5.jar)
+* [imageio-psd-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0-rc5/imageio-psd-3.0-rc5.jar)
+* [imageio-pict-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0-rc5/imageio-pict-3.0-rc5.jar)
+* [imageio-iff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0-rc5/imageio-iff-3.0-rc5.jar)
+* [imageio-icns-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0-rc5/imageio-icns-3.0-rc5.jar)
+* [imageio-ico-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0-rc5/imageio-ico-3.0-rc5.jar)
+* [imageio-thumbsdb-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0-rc5/imageio-thumbsdb-3.0-rc5.jar)
+
+ImageIO plugins requiring 3rd party libs
+* [imageio-batik-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0-rc5/imageio-batik-3.0-rc5.jar)
+* [imageio-jmagick-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0-rc5/imageio-jmagick-3.0-rc5.jar)
+
+Servlet support
+* [servlet-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0-rc5/servlet-3.0-rc5.jar)
 
 ## License
 
