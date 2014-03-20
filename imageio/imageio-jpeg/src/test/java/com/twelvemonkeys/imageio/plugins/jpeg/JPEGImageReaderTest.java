@@ -965,6 +965,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         if (expectedTree == null) {
             assertNull(actualTree);
+            return;
         }
 
         assertEquals(String.format("%s: Node names differ", message), expectedTree.getNodeName(), actualTree.getNodeName());
