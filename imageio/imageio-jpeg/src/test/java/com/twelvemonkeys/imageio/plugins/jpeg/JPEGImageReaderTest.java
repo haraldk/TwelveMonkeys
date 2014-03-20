@@ -108,7 +108,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         }
     }
 
-    @SuppressWarnings({"unchecked"})
     @Override
     protected Class<JPEGImageReader> getReaderClass() {
         return JPEGImageReader.class;
