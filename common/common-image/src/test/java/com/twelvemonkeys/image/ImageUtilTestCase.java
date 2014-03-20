@@ -1,27 +1,18 @@
 
 package com.twelvemonkeys.image;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.awt.image.RenderedImage;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 
-/**
- * Created by IntelliJ IDEA.
- *
- * @author $author wmhakur$
- * @version $id: $
- * To change this template use Options | File Templates.
- */
-public class ImageUtilTestCase extends TestCase {
+import static org.junit.Assert.*;
+
+public class ImageUtilTestCase {
 
     private final static String IMAGE_NAME = "/sunflower.jpg";
     private BufferedImage original;
@@ -56,6 +47,7 @@ public class ImageUtilTestCase extends TestCase {
     }
     */
 
+    @Test
     public void testToBufferedImageNull() {
         BufferedImage img = null;
         boolean threwRuntimeException = false;
@@ -73,6 +65,7 @@ public class ImageUtilTestCase extends TestCase {
         assertTrue(threwRuntimeException);
     }
 
+    @Test
     public void testToBufferedImageTypeNull() {
         BufferedImage img = null;
         boolean threwRuntimeException = false;
@@ -90,6 +83,7 @@ public class ImageUtilTestCase extends TestCase {
         assertTrue(threwRuntimeException);
     }
 
+    @Test
     public void testImageIsNotBufferedImage() {
         // Should not be a buffered image
         assertFalse(
@@ -98,6 +92,7 @@ public class ImageUtilTestCase extends TestCase {
         );
     }
 
+    @Test
     public void testToBufferedImage() {
         BufferedImage sameAsImage = ImageUtil.toBuffered((RenderedImage) image);
         BufferedImage bufferedScaled = ImageUtil.toBuffered(scaled);
@@ -111,10 +106,11 @@ public class ImageUtilTestCase extends TestCase {
 
         // Hmmm...
         assertTrue(new Integer(42).equals(bufferedScaled.getProperty("lucky-number"))
-                   || bufferedScaled.getPropertyNames() == null
-                   || bufferedScaled.getPropertyNames().length == 0);
+                || bufferedScaled.getPropertyNames() == null
+                || bufferedScaled.getPropertyNames().length == 0);
     }
 
+    @Test
     public void testToBufferedImageType() {
         // Assumes image is TYPE_INT_ARGB
         BufferedImage converted = ImageUtil.toBuffered(image, BufferedImage.TYPE_BYTE_INDEXED);
@@ -136,6 +132,7 @@ public class ImageUtilTestCase extends TestCase {
         assertEquals(image.getHeight(), convertedToo.getHeight());
     }
 
+    @Test
     public void testBrightness() {
         final BufferedImage original = this.original;
         assertNotNull(original);
@@ -181,7 +178,7 @@ public class ImageUtilTestCase extends TestCase {
         final BufferedImage brightenedMaxNegative = ImageUtil.toBuffered(ImageUtil.brightness(original, -2f));
         for (int y = 0; y < brightenedMaxNegative.getHeight(); y++) {
             for (int x = 0; x < brightenedMaxNegative.getWidth(); x++) {
-               assertEquals(0x0, brightenedMaxNegative.getRGB(x, y) & 0x00FFFFFF);
+                assertEquals(0x0, brightenedMaxNegative.getRGB(x, y) & 0x00FFFFFF);
             }
         }
 
@@ -215,7 +212,7 @@ public class ImageUtilTestCase extends TestCase {
         */
     }
 
-
+    @Test
     public void testContrast() {
         final BufferedImage original = this.original;
 
@@ -273,7 +270,6 @@ public class ImageUtilTestCase extends TestCase {
                 else {
                     assertTrue("Contrast should be increased or same", oB <= cB && cB <= dB);
                 }
-
             }
         }
         // Assumed: Only primary colors (w/b/r/g/b/c/y/m)
@@ -337,7 +333,7 @@ public class ImageUtilTestCase extends TestCase {
                 int r = rgb >> 16 & 0xFF;
                 int g = rgb >> 8 & 0xFF;
                 int b = rgb & 0xFF;
-                assertTrue("Minimum contrast should be all gray", r == 127 && g == 127 &&b == 127);
+                assertTrue("Minimum contrast should be all gray", r == 127 && g == 127 && b == 127);
             }
         }
 
@@ -369,6 +365,7 @@ public class ImageUtilTestCase extends TestCase {
         */
     }
 
+    @Test
     public void testSharpen() {
         final BufferedImage original = this.original;
 
@@ -390,10 +387,10 @@ public class ImageUtilTestCase extends TestCase {
         final BufferedImage sharpenedDefault = ImageUtil.sharpen(original, 0.3f);
         final BufferedImage sharpenedMore = ImageUtil.sharpen(original, 1.3f);
 
-        long diffOriginal = 0;
-        long diffSharpened = 0;
-        long diffDefault = 0;
-        long diffMore = 0;
+//        long diffOriginal = 0;
+//        long diffSharpened = 0;
+//        long diffDefault = 0;
+//        long diffMore = 0;
 
         long absDiffOriginal = 0;
         long absDiffSharpened = 0;
@@ -412,10 +409,10 @@ public class ImageUtilTestCase extends TestCase {
                 int pdRGB = 0x00FFFFFF & sharpenedDefault.getRGB(x - 1, y);
                 int pmRGB = 0x00FFFFFF & sharpenedMore.getRGB(x - 1, y);
 
-                diffOriginal += poRGB - oRGB;
-                diffSharpened += psRGB - sRGB;
-                diffDefault += pdRGB - dRGB;
-                diffMore += pmRGB - mRGB;
+//                diffOriginal += poRGB - oRGB;
+//                diffSharpened += psRGB - sRGB;
+//                diffDefault += pdRGB - dRGB;
+//                diffMore += pmRGB - mRGB;
 
                 absDiffOriginal += Math.abs(poRGB - oRGB);
                 absDiffSharpened += Math.abs(psRGB - sRGB);
@@ -423,10 +420,6 @@ public class ImageUtilTestCase extends TestCase {
                 absDiffMore += Math.abs(pmRGB - mRGB);
             }
         }
-
-        //*
-        showEm(original, notSharpened, sharpened, sharpenedDefault, sharpenedMore, "sharpen");
-        //*/
 
 //        assertEquals("Difference should not change", diffOriginal, diffSharpened);
         assertTrue("Abs difference should increase", absDiffOriginal < absDiffSharpened);
@@ -438,66 +431,7 @@ public class ImageUtilTestCase extends TestCase {
         assertTrue("Abs difference should increase", absDiffSharpened < absDiffMore);
     }
 
-    private void showEm(final BufferedImage pOriginal, final BufferedImage pNotSharpened, final BufferedImage pSharpened, final BufferedImage pSharpenedDefault, final BufferedImage pSharpenedMore, final String pTitle) {
-        if (pOriginal == null) {
-            return;
-        }
-
-        if (GraphicsEnvironment.isHeadless()) {
-            return;
-        }
-
-        try {
-            SwingUtilities.invokeAndWait(new Runnable() {
-                public void run() {
-                    JFrame frame = new JFrame("Sunflower - " + pTitle);
-                    frame.setSize(pOriginal.getWidth() * 4, pOriginal.getHeight() * 2);
-
-                    Canvas canvas = new Canvas() {
-                        public void paint(Graphics g) {
-                            // Draw original for comparison
-                            g.drawImage(pOriginal, 0, 0, null);
-
-                            // This should look like original
-                            g.drawImage(pNotSharpened, 0, pOriginal.getHeight(), null);
-
-                            // Different versions
-                            g.drawImage(pSharpened, pOriginal.getWidth(), 0, null);
-                            g.drawImage(pSharpenedDefault, pOriginal.getWidth() * 2, 0, null);
-                            g.drawImage(pSharpenedMore, pOriginal.getWidth() * 3, 0, null);
-                        }
-                    };
-
-                    frame.getContentPane().add(canvas);
-                    frame.addWindowListener(new WindowAdapter() {
-                        @Override
-                        public void windowClosing(WindowEvent e) {
-                            synchronized (ImageUtilTestCase.this) {
-                                ImageUtilTestCase.this.notify();
-                            }
-                        }
-                    });
-                    frame.setVisible(true);
-                }
-            });
-        }
-        catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-
-        synchronized (ImageUtilTestCase.this) {
-            try {
-                ImageUtilTestCase.this.wait();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
+    @Test
     public void testBlur() {
         final BufferedImage original = this.original;
 
@@ -519,16 +453,15 @@ public class ImageUtilTestCase extends TestCase {
         final BufferedImage blurredDefault = ImageUtil.blur(original, 1.5f);
         final BufferedImage blurredMore = ImageUtil.blur(original, 3f);
 
-        long diffOriginal = 0;
-        long diffBlurred = 0;
-        long diffDefault = 0;
-        long diffMore = 0;
+//        long diffOriginal = 0;
+//        long diffBlurred = 0;
+//        long diffDefault = 0;
+//        long diffMore = 0;
 
         long absDiffOriginal = 0;
         long absDiffBlurred = 0;
         long absDiffDefault = 0;
         long absDiffMore = 0;
-
 
         for (int y = 0; y < original.getHeight(); y++) {
             for (int x = 1; x < original.getWidth(); x++) {
@@ -542,10 +475,10 @@ public class ImageUtilTestCase extends TestCase {
                 int pdRGB = 0x00FFFFFF & blurredDefault.getRGB(x - 1, y);
                 int pmRGB = 0x00FFFFFF & blurredMore.getRGB(x - 1, y);
 
-                diffOriginal += poRGB - oRGB;
-                diffBlurred += pbRGB - bRGB;
-                diffDefault += pdRGB - dRGB;
-                diffMore += pmRGB - mRGB;
+//                diffOriginal += poRGB - oRGB;
+//                diffBlurred += pbRGB - bRGB;
+//                diffDefault += pdRGB - dRGB;
+//                diffMore += pmRGB - mRGB;
 
                 absDiffOriginal += Math.abs(poRGB - oRGB);
                 absDiffBlurred += Math.abs(pbRGB - bRGB);
@@ -553,8 +486,6 @@ public class ImageUtilTestCase extends TestCase {
                 absDiffMore += Math.abs(pmRGB - mRGB);
             }
         }
-
-        showEm(original, notBlurred, blurred,  blurredDefault, blurredMore, "blur");
 
 //        assertEquals("Difference should not change", diffOriginal, diffBlurred);
         assertTrue(String.format("Abs difference should decrease: %s <= %s", absDiffOriginal, absDiffBlurred), absDiffOriginal > absDiffBlurred);
@@ -566,6 +497,7 @@ public class ImageUtilTestCase extends TestCase {
         assertTrue("Abs difference should decrease", absDiffBlurred > absDiffMore);
     }
 
+    @Test
     public void testIndexImage() {
         BufferedImage sunflower = original;
 
