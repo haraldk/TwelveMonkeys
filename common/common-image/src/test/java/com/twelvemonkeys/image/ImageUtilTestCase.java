@@ -439,7 +439,11 @@ public class ImageUtilTestCase extends TestCase {
     }
 
     private void showEm(final BufferedImage pOriginal, final BufferedImage pNotSharpened, final BufferedImage pSharpened, final BufferedImage pSharpenedDefault, final BufferedImage pSharpenedMore, final String pTitle) {
-        if (pOriginal != null) {
+        if (pOriginal == null) {
+            return;
+        }
+
+        if (GraphicsEnvironment.isHeadless()) {
             return;
         }
 
