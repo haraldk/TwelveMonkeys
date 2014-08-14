@@ -383,12 +383,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.0-rc-5</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0-rc5</version> <!-- Alternatively, build your own 3.0-something version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.0-rc-5</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0-rc5</version> <!-- Alternatively, build your own 3.0-something version -->
         </dependency>
     </dependencies>
 
@@ -396,13 +396,13 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.0-rc-5.jar
-    twelvemonkeys-common-io-3.0-rc-5.jar
-    twelvemonkeys-common-image-3.0-rc-5.jar
-    twelvemonkeys-imageio-core-3.0-rc-5.jar
-    twelvemonkeys-imageio-metadata-3.0-rc-5.jar
-    twelvemonkeys-imageio-jpeg-3.0-rc-5.jar
-    twelvemonkeys-imageio-tiff-3.0-rc-5.jar
+    twelvemonkeys-common-lang-3.0-rc5.jar
+    twelvemonkeys-common-io-3.0-rc5.jar
+    twelvemonkeys-common-image-3.0-rc5.jar
+    twelvemonkeys-imageio-core-3.0-rc5.jar
+    twelvemonkeys-imageio-metadata-3.0-rc5.jar
+    twelvemonkeys-imageio-jpeg-3.0-rc5.jar
+    twelvemonkeys-imageio-tiff-3.0-rc5.jar
 
 ### Links to prebuilt binaries
 
