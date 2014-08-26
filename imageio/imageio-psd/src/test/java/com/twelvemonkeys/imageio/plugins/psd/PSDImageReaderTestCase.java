@@ -76,14 +76,20 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
     }
 
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/x-psd");
+        return Arrays.asList(
+                "image/vnd.adobe.photoshop",
+                "application/vnd.adobe.photoshop",
+                "image/x-psd"
+        );
     }
 
+    @Test
     public void testSupportsThumbnail() {
         PSDImageReader imageReader = createReader();
         assertTrue(imageReader.readerSupportsThumbnails());
     }
 
+    @Test
     public void testThumbnailReading() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -98,6 +104,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         assertEquals(96, thumbnail.getHeight());
     }
 
+    @Test
     public void testThumbnailReadingNoInput() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -134,6 +141,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         }
     }
 
+    @Test
     public void testThumbnailReadingOutOfBounds() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -175,6 +183,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         }
     }
 
+    @Test
     public void testThumbnailDimensions() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -186,6 +195,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         assertEquals(96, imageReader.getThumbnailHeight(0, 0));
     }
 
+    @Test
     public void testThumbnailReadListeners() throws IOException {
         PSDImageReader imageReader = createReader();
 
