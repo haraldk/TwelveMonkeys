@@ -60,7 +60,8 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
                 new String[]{"psd", "PSD"},
                 new String[]{"psd"},
                 new String[]{
-                        "application/vnd.adobe.photoshop", // This one seems official, used in XMP
+                		"image/vnd.adobe.photoshop", // This one seems official
+                        "application/vnd.adobe.photoshop", 
                         "image/x-psd", "application/x-photoshop", "image/x-photoshop"
                 },
                 "com.twelvemkonkeys.imageio.plugins.psd.PSDImageReader",
