@@ -186,7 +186,7 @@ public class TIFFImageReader extends ImageReaderBase {
         Entry entry = currentIFD.getEntryById(tag);
 
         if (entry == null) {
-            if (defaultValue != null)  {
+            if (defaultValue != null) {
                 return defaultValue;
             }
 
@@ -291,7 +291,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2}, dataType, false, false);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[]{0, 0, 0}, dataType, false, false);
                             }
                         }
                     case 4:
@@ -308,7 +308,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, extraSamples[0] == 1);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[]{0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
                         // TODO: More samples might be ok, if multiple alpha or unknown samples
@@ -357,7 +357,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, false, false);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[]{0, 0, 0, 0}, dataType, false, false);
                             }
                         }
                     case 5:
@@ -369,7 +369,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, extraSamples[0] == 1);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[]{0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
 
@@ -467,17 +467,20 @@ public class TIFFImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
         checkReadParamBandSettings(param, rawType.getNumBands(), destination.getSampleModel().getNumBands());
 
-        final Rectangle source = new Rectangle();
-        final Rectangle dest = new Rectangle();
-        computeRegions(param, width, height, destination, source, dest);
+        final Rectangle srcRegion = new Rectangle();
+        final Rectangle dstRegion = new Rectangle();
+        computeRegions(param, width, height, destination, srcRegion, dstRegion);
 
-        WritableRaster raster = destination.getRaster();
+        int xSub = param != null ? param.getSourceXSubsampling() : 1;
+        int ySub = param != null ? param.getSourceYSubsampling() : 1;
+
+        WritableRaster destRaster = clipToRect(destination.getRaster(), dstRegion, param != null ? param.getDestinationBands() : null);
 
         final int interpretation = getValueAsInt(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation");
         final int compression = getValueAsIntWithDefault(TIFF.TAG_COMPRESSION, TIFFBaseline.COMPRESSION_NONE);
         final int predictor = getValueAsIntWithDefault(TIFF.TAG_PREDICTOR, 1);
         final int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFBaseline.PLANARCONFIG_CHUNKY);
-        final int numBands = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? 1 : raster.getNumBands();
+        final int numBands = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? 1 : rawType.getNumBands();
 
         // NOTE: We handle strips as tiles of tileWidth == width by tileHeight == rowsPerStrip
         //       Strips are top/down, tiles are left/right, top/down
@@ -540,10 +543,10 @@ public class TIFFImageReader extends ImageReaderBase {
                 double[] yCbCrCoefficients = null;
                 if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
                     // getRawImageType does the lookup/conversion for these
-                    if (raster.getNumBands() != 3) {
-                        throw new IIOException("TIFF PhotometricInterpretation YCbCr requires SamplesPerPixel == 3: " + raster.getNumBands());
+                    if (rowRaster.getNumBands() != 3) {
+                        throw new IIOException("TIFF PhotometricInterpretation YCbCr requires SamplesPerPixel == 3: " + rowRaster.getNumBands());
                     }
-                    if (raster.getTransferType() != DataBuffer.TYPE_BYTE) {
+                    if (rowRaster.getTransferType() != DataBuffer.TYPE_BYTE) {
                         throw new IIOException("TIFF PhotometricInterpretation YCbCr requires BitsPerSample == [8,8,8]");
                     }
 
@@ -613,7 +616,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     : IIOUtil.createStreamAdapter(imageInput);
 
                             adapter = createDecompressorStream(compression, width, adapter);
-                            adapter = createUnpredictorStream(predictor, width, planarConfiguration == 2 ? 1 : raster.getNumBands(), getBitsPerSample(), adapter, imageInput.getByteOrder());
+                            adapter = createUnpredictorStream(predictor, width, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
 
                             if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
                                 adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, yCbCrCoefficients);
@@ -626,7 +629,10 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
 
                         // Read a full strip/tile
-                        readStripTileData(rowRaster, interpretation, raster, col, row, colsInTile, rowsInTile, input);
+                        Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
+                                param != null ? param.getSourceBands() : null,
+                                param != null ? param.getSourceXSubsampling() : 1);
+                        readStripTileData(clippedRow, srcRegion, xSub, ySub, numBands, interpretation, destRaster, col, row, colsInTile, rowsInTile, input);
 
                         if (abortRequested()) {
                             break;
@@ -635,7 +641,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         col += colsInTile;
                     }
 
-                    processImageProgress(100f * row / (float) height);
+                    processImageProgress(100f * row / height);
 
                     if (abortRequested()) {
                         processReadAborted();
@@ -683,7 +689,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
 
                 // Read data
-                processImageStarted(imageIndex);
+                processImageStarted(imageIndex); // Better yet, would be to delegate read progress here...
 
                 for (int y = 0; y < tilesDown; y++) {
                     int col = 0;
@@ -716,7 +722,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         col += colsInTile;
                     }
 
-                    processImageProgress(100f * row / (float) height);
+                    processImageProgress(100f * row / height);
 
                     if (abortRequested()) {
                         processReadAborted();
@@ -776,7 +782,7 @@ public class TIFFImageReader extends ImageReaderBase {
                     jpegReader.setInput(stream);
 
                     // Read data
-                    processImageStarted(imageIndex);
+                    processImageStarted(imageIndex); // Better yet, would be to delegate read progress here...
 
                     try {
                         jpegParam.setSourceRegion(new Rectangle(0, 0, width, height));
@@ -817,7 +823,6 @@ public class TIFFImageReader extends ImageReaderBase {
                     // JPEGDCTables, and JPEGACTables tags are incorrect values beyond EOF. However, these files do always
                     // seem to contain a useful JPEGInterchangeFormat tag. Therefore, we recommend a careful attempt to read
                     // the Tables tags only as a last resort, if no table data is found in a JPEGInterchangeFormat stream.
-
 
                     // TODO: If any of the q/dc/ac tables are equal (or have same offset, even if "spec" violation),
                     // use only the first occurrence, and update selectors in SOF0 and SOS
@@ -863,7 +868,7 @@ public class TIFFImageReader extends ImageReaderBase {
                             imageInput.seek(stripTileOffsets[i]);
                             stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
                                     Arrays.asList(
-                                            createJFIFStream(raster, stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
+                                            createJFIFStream(destRaster, stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
                                             IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE),
                                             new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
                                     )
@@ -890,7 +895,7 @@ public class TIFFImageReader extends ImageReaderBase {
                             col += colsInTile;
                         }
 
-                        processImageProgress(100f * row / (float) height);
+                        processImageProgress(100f * row / height);
 
                         if (abortRequested()) {
                             processReadAborted();
@@ -938,10 +943,10 @@ public class TIFFImageReader extends ImageReaderBase {
     private static InputStream createJFIFStream(WritableRaster raster, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
         FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
                 2 + 2 + 2 + 6 + 3 * raster.getNumBands() +
-                5 * qTables.length + qTables.length * qTables[0].length +
-                5 * dcTables.length + dcTables.length * dcTables[0].length +
-                5 * acTables.length + acTables.length * acTables[0].length +
-                8 + 2 * raster.getNumBands()
+                        5 * qTables.length + qTables.length * qTables[0].length +
+                        5 * dcTables.length + dcTables.length * dcTables[0].length +
+                        5 * acTables.length + acTables.length * acTables[0].length +
+                        8 + 2 * raster.getNumBands()
         );
 
         DataOutputStream out = new DataOutputStream(stream);
@@ -1004,81 +1009,115 @@ public class TIFFImageReader extends ImageReaderBase {
         return stream.createInputStream();
     }
 
-    private void readStripTileData(final WritableRaster rowRaster, final int interpretation,
-                                   final WritableRaster raster, final int col, final int startRow,
-                                   final int colsInStrip, final int rowsInStrip, final DataInput input)
+    private Raster clipRowToRect(final Raster raster, final Rectangle rect, final int[] bands, final int xSub) {
+        if (rect.contains(raster.getMinX(), 0, raster.getWidth(), 1)
+                && xSub == 1
+                && bands == null /* TODO: Compare bands with that of raster */) {
+            return raster;
+        }
+
+        return raster.createChild(rect.x / xSub, 0, rect.width / xSub, 1, 0, 0, bands);
+    }
+
+    private WritableRaster clipToRect(final WritableRaster raster, final Rectangle rect, final int[] bands) {
+        if (rect.contains(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight())
+                && bands == null /* TODO: Compare bands with that of raster */) {
+            return raster;
+        }
+
+        return raster.createWritableChild(rect.x, rect.y, rect.width, rect.height, 0, 0, bands);
+    }
+
+    private void readStripTileData(final Raster tileRowRaster, final Rectangle srcRegion, final int xSub, final int ySub,
+                                   final int numBands, final int interpretation,
+                                   final WritableRaster raster, final int startCol, final int startRow,
+                                   final int colsInTile, final int rowsInTile, final DataInput input)
             throws IOException {
-        switch (rowRaster.getTransferType()) {
+
+        switch (tileRowRaster.getTransferType()) {
             case DataBuffer.TYPE_BYTE:
-                byte[] rowData = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                byte[] rowDataByte = ((DataBufferByte) tileRowRaster.getDataBuffer()).getData();
 
-                for (int j = 0; j < rowsInStrip; j++) {
-                    int row = startRow + j;
-
-                    if (row >= raster.getHeight()) {
-                        break;
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
 
-                    input.readFully(rowData);
-                    normalizeBlack(interpretation, rowData);
+                    input.readFully(rowDataByte);
 
-                    if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
-                        raster.setDataElements(col, row, rowRaster);
-                    }
-                    else if (col >= raster.getMinX() && col < raster.getWidth()) {
-                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, Math.min(colsInStrip, raster.getWidth() - col), 1, 0, 0, null));
+                    if (row % ySub == 0 && row >= srcRegion.y) {
+                        normalizeBlack(interpretation, rowDataByte);
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                for (int b = 0; b < numBands; b++) {
+                                    rowDataByte[x + b] = rowDataByte[x * xSub + b];
+                                }
+                            }
+                        }
+
+                        raster.setDataElements(startCol, (row - srcRegion.y) / ySub, tileRowRaster);
                     }
                     // Else skip data
                 }
 
                 break;
             case DataBuffer.TYPE_USHORT:
-                short [] rowDataShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
+                short[] rowDataShort = ((DataBufferUShort) tileRowRaster.getDataBuffer()).getData();
 
-                for (int j = 0; j < rowsInStrip; j++) {
-                    int row = startRow + j;
-
-                    if (row >= raster.getHeight()) {
-                        break;
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
 
                     for (int k = 0; k < rowDataShort.length; k++) {
                         rowDataShort[k] = input.readShort();
                     }
 
-                    normalizeBlack(interpretation, rowDataShort);
+                    if (row >= srcRegion.y) {
+                        normalizeBlack(interpretation, rowDataShort);
 
-                    if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
-                        raster.setDataElements(col, row, rowRaster);
-                    }
-                    else if (col >= raster.getMinX() && col < raster.getWidth()) {
-                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, Math.min(colsInStrip, raster.getWidth() - col), 1, 0, 0, null));
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                for (int b = 0; b < numBands; b++) {
+                                    rowDataShort[x + b] = rowDataShort[x * xSub + b];
+                                }
+                            }
+                        }
+
+                        raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
                     }
                     // Else skip data
                 }
 
                 break;
             case DataBuffer.TYPE_INT:
-                int [] rowDataInt = ((DataBufferInt) rowRaster.getDataBuffer()).getData();
+                int[] rowDataInt = ((DataBufferInt) tileRowRaster.getDataBuffer()).getData();
 
-                for (int j = 0; j < rowsInStrip; j++) {
-                    int row = startRow + j;
-
-                    if (row >= raster.getHeight()) {
-                        break;
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
 
                     for (int k = 0; k < rowDataInt.length; k++) {
                         rowDataInt[k] = input.readInt();
                     }
 
-                    normalizeBlack(interpretation, rowDataInt);
+                    if (row >= srcRegion.y) {
+                        normalizeBlack(interpretation, rowDataInt);
 
-                    if (colsInStrip == rowRaster.getWidth() && col + colsInStrip <= raster.getWidth()) {
-                        raster.setDataElements(col, row, rowRaster);
-                    }
-                    else if (col >= raster.getMinX() && col < raster.getWidth()) {
-                        raster.setDataElements(col, row, rowRaster.createChild(0, 0, Math.min(colsInStrip, raster.getWidth() - col), 1, 0, 0, null));
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                for (int b = 0; b < numBands; b++) {
+                                    rowDataInt[x + b] = rowDataInt[x * xSub + b];
+                                }
+                            }
+                        }
+
+                        raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
                     }
                     // Else skip data
                 }
@@ -1162,7 +1201,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
         if (entry.valueCount() == 1) {
             // For single entries, this will be a boxed type
-            value = new long[] {((Number) entry.getValue()).longValue()};
+            value = new long[]{((Number) entry.getValue()).longValue()};
         }
         else if (entry.getValue() instanceof short[]) {
             short[] shorts = (short[]) entry.getValue();
@@ -1280,13 +1319,16 @@ public class TIFFImageReader extends ImageReaderBase {
                     //            }
 
                     long start = System.currentTimeMillis();
-//                    param.setSourceRegion(new Rectangle(100, 100, 100, 100));
+//                    int width = reader.getWidth(imageNo);
+//                    int height = reader.getHeight(imageNo);
+//                    param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
+//                    param.setSourceRegion(new Rectangle(100, 300, 400, 400));
 //                    param.setDestinationOffset(new Point(50, 150));
 //                    param.setSourceSubsampling(2, 2, 0, 0);
                     BufferedImage image = reader.read(imageNo, param);
                     System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 
-                    IIOMetadata metadata = reader.getImageMetadata(0);
+                    IIOMetadata metadata = reader.getImageMetadata(imageNo);
                     if (metadata != null) {
                         new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
                     }
