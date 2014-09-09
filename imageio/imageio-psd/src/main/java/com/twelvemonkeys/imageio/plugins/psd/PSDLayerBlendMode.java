@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDLayerBlendMode.java,v 1.0 May 8, 2008 4:34:35 PM haraldk Exp$
  */
-class PSDLayerBlendMode {
+final class PSDLayerBlendMode {
     final int blendMode;
     final int opacity; // 0-255
     final int clipping; // 0: base, 1: non-base

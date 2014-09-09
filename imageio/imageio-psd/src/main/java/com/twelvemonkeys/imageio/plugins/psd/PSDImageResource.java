@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,7 @@ public class PSDImageResource {
 
         builder.append("[ID: 0x");
         builder.append(Integer.toHexString(id));
-        if (name != null && name.trim().length() != 0) {
+        if (name != null && !name.trim().isEmpty()) {
             builder.append(", name: \"");
             builder.append(name);
             builder.append("\"");
@@ -139,6 +139,13 @@ public class PSDImageResource {
             case PSD.RES_PRINT_FLAGS_INFORMATION:
                 return null;
             default:
+                if (pId >= PSD.RES_PATH_INFO_MIN && pId <= PSD.RES_PATH_INFO_MAX) {
+                    return "PathInformationResource";
+                }
+                if (pId >= PSD.RES_PLUGIN_MIN && pId <= PSD.RES_PLUGIN_MAX) {
+                    return "PluginResource";
+                }
+
                 try {
                     for (Field field : PSD.class.getDeclaredFields()) {
                         if (field.getName().startsWith("RES_") && field.getInt(null) == pId) {
@@ -149,7 +156,7 @@ public class PSDImageResource {
                 }
                 catch (IllegalAccessException ignore) {
                 }
-                
+
                 return "UnknownResource";
         }
     }
@@ -160,9 +167,9 @@ public class PSDImageResource {
             throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%s'", PSDUtil.intToStr(type)));
         }
 
-        // TODO: Process more of the resource stuff, most important are IPTC, EXIF and XMP data,
-        // version info, and thumbnail for thumbnail-support.
+        // TODO: Have PSDImageResources defer actual parsing? (Just store stream offsets)
         short id = pInput.readShort();
+
         switch (id) {
             case PSD.RES_RESOLUTION_INFO:
                 return new PSDResolutionInfo(id, pInput);
@@ -196,9 +203,8 @@ public class PSDImageResource {
             case PSD.RES_PRINT_FLAGS_INFORMATION:
                 return new PSDPrintFlagsInformation(id, pInput);
             default:
-                if (id >= 0x07d0 && id <= 0x0bb6) {
-                    // TODO: Parse saved path information
-                    return new PSDImageResource(id, pInput);
+                if (id >= PSD.RES_PATH_INFO_MIN && id <= PSD.RES_PATH_INFO_MAX) {
+                    return new PSDPathResource(id, pInput);
                 }
                 else {
                     return new PSDImageResource(id, pInput);

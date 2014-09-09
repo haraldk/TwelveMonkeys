@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
+
+import java.io.DataInput;
 import java.io.IOException;
 
 /**
@@ -39,19 +40,21 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDHeader.java,v 1.0 Apr 29, 2008 5:18:22 PM haraldk Exp$
  */
-class PSDHeader {
-//    The header is 26 bytes in length and is structured as follows:
+final class PSDHeader {
+    static final int PSD_MAX_SIZE = 30000;
+    static final int PSB_MAX_SIZE = 300000;
+    //    The header is 26 bytes in length and is structured as follows:
 //
 //    typedef struct _PSD_HEADER
 //    {
 //       BYTE Signature[4];   /* File ID "8BPS" */
-//       WORD Version;        /* Version number, always 1 */
+//       WORD Version;        /* Version number, always 1. 2 for PSB */
 //       BYTE Reserved[6];    /* Reserved, must be zeroed */
-//       WORD Channels;       /* Number of color channels (1-24) including alpha
+//       WORD Channels;       /* Number of color channels (1-56) including alpha
 //                               channels */
-//       LONG Rows;           /* Height of image in pixels (1-30000) */
-//       LONG Columns;        /* Width of image in pixels (1-30000) */
-//       WORD Depth;          /* Number of bits per channel (1, 8, and 16) */
+//       LONG Rows;           /* Height of image in pixels (1-30000/1-300000 for PSB) */
+//       LONG Columns;        /* Width of image in pixels (1-30000/1-300000 for PSB) */
+//       WORD Depth;          /* Number of bits per channel (1, 8, 16 or 32) */
 //       WORD Mode;           /* Color mode */
 //    } PSD_HEADER;
 
@@ -60,8 +63,9 @@ class PSDHeader {
     final int height;
     final short bits;
     final short mode;
+    final boolean largeFormat;
 
-    PSDHeader(final ImageInputStream pInput) throws IOException {
+    PSDHeader(final DataInput pInput) throws IOException {
         int signature = pInput.readInt();
         if (signature != PSD.SIGNATURE_8BPS) {
             throw new IIOException("Not a PSD document, expected signature \"8BPS\": \"" + PSDUtil.intToStr(signature) + "\" (0x" + Integer.toHexString(signature) + ")");
@@ -70,67 +74,105 @@ class PSDHeader {
         int version = pInput.readUnsignedShort();
 
         switch (version) {
-            case 1:
+            case PSD.VERSION_PSD:
+                largeFormat = false;
                 break;
-            case 2:
-                throw new IIOException("Photoshop Large Document Format (PSB) not supported yet.");
+            case PSD.VERSION_PSB:
+                largeFormat = true;
+                break;
             default:
                 throw new IIOException(String.format("Unknown PSD version, expected 1 or 2: 0x%08x", version));
         }
 
         byte[] reserved = new byte[6];
-        pInput.readFully(reserved);
+        pInput.readFully(reserved); // We don't really care
 
         channels = pInput.readShort();
+        if (channels <= 0) {
+            throw new IIOException(String.format("Unsupported number of channels: %d", channels));
+        }
+
         height = pInput.readInt(); // Rows
         width = pInput.readInt(); // Columns
+
         bits = pInput.readShort();
+
+        switch (bits) {
+            case 1:
+            case 8:
+            case 16:
+            case 32:
+                break;
+            default:
+                throw new IIOException(String.format("Unsupported bit depth for PSD: %d bits", bits));
+        }
+
         mode = pInput.readShort();
+
+        switch (mode) {
+            case PSD.COLOR_MODE_BITMAP:
+            case PSD.COLOR_MODE_GRAYSCALE:
+            case PSD.COLOR_MODE_INDEXED:
+            case PSD.COLOR_MODE_RGB:
+            case PSD.COLOR_MODE_CMYK:
+            case PSD.COLOR_MODE_MULTICHANNEL:
+            case PSD.COLOR_MODE_DUOTONE:
+            case PSD.COLOR_MODE_LAB:
+                break;
+            default:
+                throw new IIOException(String.format("Unsupported mode depth for PSD: %d", mode));
+        }
     }
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder(getClass().getSimpleName());
-        builder.append("[Channels: ");
-        builder.append(channels);
-        builder.append(", width: ");
-        builder.append(width);
-        builder.append(", height: ");
-        builder.append(height);
-        builder.append(", depth: ");
-        builder.append(bits);
-        builder.append(", mode: ");
-        builder.append(mode);
-        switch (mode) {
-            case PSD.COLOR_MODE_MONOCHROME:
-                builder.append(" (Monochrome)");
-                break;
-            case PSD.COLOR_MODE_GRAYSCALE:
-                builder.append(" (Grayscale)");
-                break;
-            case PSD.COLOR_MODE_INDEXED:
-                builder.append(" (Indexed)");
-                break;
-            case PSD.COLOR_MODE_RGB:
-                builder.append(" (RGB)");
-                break;
-            case PSD.COLOR_MODE_CMYK:
-                builder.append(" (CMYK)");
-                break;
-            case PSD.COLOR_MODE_MULTICHANNEL:
-                builder.append(" (Multi channel)");
-                break;
-            case PSD.COLOR_MODE_DUOTONE:
-                builder.append(" (Duotone)");
-                break;
-            case PSD.COLOR_MODE_LAB:
-                builder.append(" (Lab color)");
-                break;
-            default:
-                builder.append(" (Unkown mode)");
-        }
-        builder.append("]");
+        return new StringBuilder(getClass().getSimpleName())
+                .append("[version: ")
+                .append(largeFormat ? "2" : "1")
+                .append(", channels: ")
+                .append(channels)
+                .append(", width: ")
+                .append(width)
+                .append(", height: ")
+                .append(height)
+                .append(", depth: ")
+                .append(bits)
+                .append(", mode: ")
+                .append(mode)
+                .append(" (")
+                .append(modeAsString())
+                .append(")]")
+                .toString();
+    }
 
-        return builder.toString();
+    int getMaxSize() {
+        return largeFormat ? PSB_MAX_SIZE : PSD_MAX_SIZE;
+    }
+
+    boolean hasValidDimensions() {
+        return width <= getMaxSize() && height <= getMaxSize();
+    }
+
+    private String modeAsString() {
+        switch (mode) {
+            case PSD.COLOR_MODE_BITMAP:
+                return "Monochrome";
+            case PSD.COLOR_MODE_GRAYSCALE:
+                return "Grayscale";
+            case PSD.COLOR_MODE_INDEXED:
+                return "Indexed";
+            case PSD.COLOR_MODE_RGB:
+                return "RGB";
+            case PSD.COLOR_MODE_CMYK:
+                return "CMYK";
+            case PSD.COLOR_MODE_MULTICHANNEL:
+                return "Multi channel";
+            case PSD.COLOR_MODE_DUOTONE:
+                return "Duotone";
+            case PSD.COLOR_MODE_LAB:
+                return "Lab color";
+            default:
+                return "Unkown mode";
+        }
     }
 }

@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
@@ -35,7 +63,11 @@ public final class PSDMetadata extends AbstractMetadata {
     List<PSDImageResource> imageResources;
     PSDGlobalLayerMask globalLayerMask;
     List<PSDLayerInfo> layerInfo;
+
+    long imageResourcesStart;
+    long layerAndMaskInfoStart;
     long layersStart;
+    long imageDataStart;
 
     static final String[] COLOR_MODES = {
             "MONOCHROME", "GRAYSCALE", "INDEXED", "RGB", "CMYK", null, null, "MULTICHANNEL", "DUOTONE", "LAB"
@@ -85,17 +117,17 @@ public final class PSDMetadata extends AbstractMetadata {
     }
 
     private Node createHeaderNode() {
-        IIOMetadataNode header = new IIOMetadataNode("Header");
+        IIOMetadataNode headerNode = new IIOMetadataNode("Header");
 
-        header.setAttribute("type", "PSD");
-        header.setAttribute("version", "1");
-        header.setAttribute("channels", Integer.toString(this.header.channels));
-        header.setAttribute("height", Integer.toString(this.header.height));
-        header.setAttribute("width", Integer.toString(this.header.width));
-        header.setAttribute("bits", Integer.toString(this.header.bits));
-        header.setAttribute("mode", COLOR_MODES[this.header.mode]);
+        headerNode.setAttribute("type", "PSD");
+        headerNode.setAttribute("version", header.largeFormat ? "2" : "1");
+        headerNode.setAttribute("channels", Integer.toString(header.channels));
+        headerNode.setAttribute("height", Integer.toString(header.height));
+        headerNode.setAttribute("width", Integer.toString(header.width));
+        headerNode.setAttribute("bits", Integer.toString(header.bits));
+        headerNode.setAttribute("mode", COLOR_MODES[header.mode]);
 
-        return header;
+        return headerNode;
     }
 
     private Node createImageResourcesNode() {
@@ -112,18 +144,6 @@ public final class PSDMetadata extends AbstractMetadata {
                 // TODO: Format spec
                 node = new IIOMetadataNode("ICCProfile");
                 node.setAttribute("colorSpaceType", JAVA_CS[profile.getProfile().getColorSpaceType()]);
-//
-//                FastByteArrayOutputStream data = new FastByteArrayOutputStream(0);
-//                EncoderStream base64 = new EncoderStream(data, new Base64Encoder(), true);
-//
-//                try {
-//                    base64.write(profile.getProfile().getData());
-//                }
-//                catch (IOException ignore) {
-//                }
-//
-//                byte[] bytes = data.toByteArray();
-//                node.setAttribute("data", StringUtil.decode(bytes, 0, bytes.length, "ASCII"));
                 node.setUserObject(profile.getProfile());
             }
             else if (imageResource instanceof PSDAlphaChannelInfo) {
@@ -347,13 +367,12 @@ public final class PSDMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardChromaNode() {
-        IIOMetadataNode chroma_node = new IIOMetadataNode("Chroma");
-        IIOMetadataNode node; // scratch node
+        IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
-        node = new IIOMetadataNode("ColorSpaceType");
+        IIOMetadataNode colorSpaceType = new IIOMetadataNode("ColorSpaceType");
         String cs;
         switch (header.mode) {
-            case PSD.COLOR_MODE_MONOCHROME:
+            case PSD.COLOR_MODE_BITMAP:
             case PSD.COLOR_MODE_GRAYSCALE:
             case PSD.COLOR_MODE_DUOTONE: // Rationale: Spec says treat as gray...
                 cs = "GRAY";
@@ -374,25 +393,24 @@ public final class PSDMetadata extends AbstractMetadata {
             default:
                 throw new AssertionError("Unreachable");
         }
-        node.setAttribute("name", cs);
-        chroma_node.appendChild(node);
+        colorSpaceType.setAttribute("name", cs);
+        chroma.appendChild(colorSpaceType);
 
         // TODO: Channels might be 5 for RGB + A + Mask... Probably not correct
-        node = new IIOMetadataNode("NumChannels");
-        node.setAttribute("value", Integer.toString(header.channels));
-        chroma_node.appendChild(node);
+        IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
+        numChannels.setAttribute("value", Integer.toString(header.channels));
+        chroma.appendChild(numChannels);
 
-        // TODO: Check if this is correct with bitmap (monchrome)
-        node = new IIOMetadataNode("BlackIsZero");
-        node.setAttribute("value", "true");
-        chroma_node.appendChild(node);
+        IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
+        blackIsZero.setAttribute("value", "true");
+        chroma.appendChild(blackIsZero);
 
         if (header.mode == PSD.COLOR_MODE_INDEXED) {
-            node = createPaletteNode();
-            chroma_node.appendChild(node);
+            IIOMetadataNode paletteNode = createPaletteNode();
+            chroma.appendChild(paletteNode);
         }
 
-        // TODO: Hardcode background color to white?
+        // TODO: Use
 //        if (bKGD_present) {
 //            if (bKGD_colorType == PNGImageReader.PNG_COLOR_PALETTE) {
 //                node = new IIOMetadataNode("BackgroundIndex");
@@ -415,24 +433,25 @@ public final class PSDMetadata extends AbstractMetadata {
 //            chroma_node.appendChild(node);
 //        }
 
-        return chroma_node;
+        return chroma;
     }
 
     private IIOMetadataNode createPaletteNode() {
-        IIOMetadataNode node = new IIOMetadataNode("Palette");
+        IIOMetadataNode palette = new IIOMetadataNode("Palette");
         IndexColorModel cm = colorData.getIndexColorModel();
 
         for (int i = 0; i < cm.getMapSize(); i++) {
             IIOMetadataNode entry = new IIOMetadataNode("PaletteEntry");
+
             entry.setAttribute("index", Integer.toString(i));
             entry.setAttribute("red", Integer.toString(cm.getRed(i)));
             entry.setAttribute("green", Integer.toString(cm.getGreen(i)));
             entry.setAttribute("blue", Integer.toString(cm.getBlue(i)));
 
-            node.appendChild(entry);
+            palette.appendChild(entry);
         }
 
-        return node;
+        return palette;
     }
 
     private String getMultiChannelCS(short channels) {
@@ -446,33 +465,33 @@ public final class PSDMetadata extends AbstractMetadata {
     @Override
     protected IIOMetadataNode getStandardCompressionNode() {
         IIOMetadataNode compressionNode = new IIOMetadataNode("Compression");
-        IIOMetadataNode node; // scratch node
 
-        node = new IIOMetadataNode("CompressionTypeName");
-        String compression;
+        IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
+        String compressionName;
 
-        switch (this.compression) {
+        switch (compression) {
             case PSD.COMPRESSION_NONE:
-                compression = "none";
+                compressionName = "none";
                 break;
             case PSD.COMPRESSION_RLE:
-                compression = "PackBits";
+                compressionName = "PackBits";
                 break;
             case PSD.COMPRESSION_ZIP:
             case PSD.COMPRESSION_ZIP_PREDICTION:
-                compression = "Deflate"; // TODO: ZLib? (TIFF native metadata format specifies both.. :-P)
+                compressionName = "Zip";
                 break;
             default:
                 throw new AssertionError("Unreachable");
         }
 
-        node.setAttribute("value", compression);
-        compressionNode.appendChild(node);
+        compressionTypeName.setAttribute("value", compressionName);
+        compressionNode.appendChild(compressionTypeName);
 
-        // TODO: Does it make sense to specify lossless for compression "none"?
-        node = new IIOMetadataNode("Lossless");
-        node.setAttribute("value", "true");
-        compressionNode.appendChild(node);
+        if (compression != PSD.COMPRESSION_NONE) {
+            IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
+            lossless.setAttribute("value", "true");
+            compressionNode.appendChild(lossless);
+        }
 
         return compressionNode;
     }
@@ -480,15 +499,14 @@ public final class PSDMetadata extends AbstractMetadata {
     @Override
     protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode dataNode = new IIOMetadataNode("Data");
-        IIOMetadataNode node; // scratch node
 
-        node = new IIOMetadataNode("PlanarConfiguration");
-        node.setAttribute("value", "PlaneInterleaved"); // TODO: Check with spec
-        dataNode.appendChild(node);
+        IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
+        planarConfiguration.setAttribute("value", "PlaneInterleaved");
+        dataNode.appendChild(planarConfiguration);
 
-        node = new IIOMetadataNode("SampleFormat");
-        node.setAttribute("value", header.mode == PSD.COLOR_MODE_INDEXED ? "Index" : "UnsignedIntegral");
-        dataNode.appendChild(node);
+        IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
+        sampleFormat.setAttribute("value", header.mode == PSD.COLOR_MODE_INDEXED ? "Index" : "UnsignedIntegral");
+        dataNode.appendChild(sampleFormat);
 
         String bitDepth = Integer.toString(header.bits); // bits per plane
 
@@ -496,11 +514,9 @@ public final class PSDMetadata extends AbstractMetadata {
         String[] bps = new String[header.channels];
         Arrays.fill(bps, bitDepth);
 
-        node = new IIOMetadataNode("BitsPerSample");
-        node.setAttribute("value", StringUtil.toCSVString(bps, " "));
-        dataNode.appendChild(node);
-
-        // TODO: SampleMSB? Or is network (aka Motorola/big endian) byte order assumed?
+        IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
+        bitsPerSample.setAttribute("value", StringUtil.toCSVString(bps, " "));
+        dataNode.appendChild(bitsPerSample);
 
         return dataNode;
     }
@@ -542,33 +558,6 @@ public final class PSDMetadata extends AbstractMetadata {
             dimensionNode.appendChild(node);
         }
 
-        // TODO:
-        /*
-      <!ELEMENT "HorizontalPixelOffset" EMPTY>
-        <!-- The horizonal position, in pixels, where the image should be
-             rendered onto a raster display -->
-        <!ATTLIST "HorizontalPixelOffset" "value" #CDATA #REQUIRED>
-          <!-- Data type: Integer -->
-
-      <!ELEMENT "VerticalPixelOffset" EMPTY>
-        <!-- The vertical position, in pixels, where the image should be
-             rendered onto a raster display -->
-        <!ATTLIST "VerticalPixelOffset" "value" #CDATA #REQUIRED>
-          <!-- Data type: Integer -->
-
-      <!ELEMENT "HorizontalScreenSize" EMPTY>
-        <!-- The width, in pixels, of the raster display into which the
-             image should be rendered -->
-        <!ATTLIST "HorizontalScreenSize" "value" #CDATA #REQUIRED>
-          <!-- Data type: Integer -->
-
-      <!ELEMENT "VerticalScreenSize" EMPTY>
-        <!-- The height, in pixels, of the raster display into which the
-             image should be rendered -->
-        <!ATTLIST "VerticalScreenSize" "value" #CDATA #REQUIRED>
-          <!-- Data type: Integer -->
-
-         */
         return dimensionNode;
     }
 
@@ -580,11 +569,10 @@ public final class PSDMetadata extends AbstractMetadata {
     @Override
     protected IIOMetadataNode getStandardDocumentNode() {
         IIOMetadataNode document_node = new IIOMetadataNode("Document");
-        IIOMetadataNode node; // scratch node
 
-        node = new IIOMetadataNode("FormatVersion");
-        node.setAttribute("value", "1"); // PSD format version is always 1
-        document_node.appendChild(node);
+        IIOMetadataNode formatVersion = new IIOMetadataNode("FormatVersion");
+        formatVersion.setAttribute("value", header.largeFormat ? "2" : "1"); // PSD format version is always 1, PSB is 2
+        document_node.appendChild(formatVersion);
 
         // Get EXIF data if present
         Iterator<PSDEXIF1Data> exif = getResources(PSDEXIF1Data.class);
@@ -594,18 +582,18 @@ public final class PSDMetadata extends AbstractMetadata {
             // Get the EXIF DateTime (aka ModifyDate) tag if present
             Entry dateTime = data.directory.getEntryById(TIFF.TAG_DATE_TIME);
             if (dateTime != null) {
-                node = new IIOMetadataNode("ImageCreationTime"); // As TIFF, but could just as well be ImageModificationTime
+                IIOMetadataNode imageCreationTime = new IIOMetadataNode("ImageCreationTime"); // As TIFF, but could just as well be ImageModificationTime
                 // Format: "YYYY:MM:DD hh:mm:ss"
                 String value = dateTime.getValueAsString();
 
-                node.setAttribute("year", value.substring(0, 4));
-                node.setAttribute("month", value.substring(5, 7));
-                node.setAttribute("day", value.substring(8, 10));
-                node.setAttribute("hour", value.substring(11, 13));
-                node.setAttribute("minute", value.substring(14, 16));
-                node.setAttribute("second", value.substring(17, 19));
+                imageCreationTime.setAttribute("year", value.substring(0, 4));
+                imageCreationTime.setAttribute("month", value.substring(5, 7));
+                imageCreationTime.setAttribute("day", value.substring(8, 10));
+                imageCreationTime.setAttribute("hour", value.substring(11, 13));
+                imageCreationTime.setAttribute("minute", value.substring(14, 16));
+                imageCreationTime.setAttribute("second", value.substring(17, 19));
 
-                document_node.appendChild(node);
+                document_node.appendChild(imageCreationTime);
             }
         }
 
@@ -614,7 +602,7 @@ public final class PSDMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardTextNode() {
-        // TODO: TIFF uses
+        // NOTE: TIFF uses
         // DocumentName, ImageDescription, Make, Model, PageName, Software, Artist, HostComputer, InkNames, Copyright:
         // /Text/TextEntry@keyword = field name, /Text/TextEntry@value = field value.
         // Example: TIFF Software field => /Text/TextEntry@keyword = "Software",
@@ -679,9 +667,10 @@ public final class PSDMetadata extends AbstractMetadata {
     }
 
     private void appendTextEntriesFlat(final IIOMetadataNode node, final Directory directory, final FilterIterator.Filter<Entry> filter) {
-        FilterIterator<Entry> pEntries = new FilterIterator<Entry>(directory.iterator(), filter);
-        while (pEntries.hasNext()) {
-            Entry entry = pEntries.next();
+        FilterIterator<Entry> entries = new FilterIterator<Entry>(directory.iterator(), filter);
+
+        while (entries.hasNext()) {
+            Entry entry = entries.next();
 
             if (entry.getValue() instanceof Directory) {
                 appendTextEntriesFlat(node, (Directory) entry.getValue(), filter);
@@ -694,7 +683,7 @@ public final class PSDMetadata extends AbstractMetadata {
                     tag.setAttribute("keyword", fieldName);
                 }
                 else {
-                    // TODO: This should never happen, as we filter out only specific nodes
+                    // NOTE: This should never happen, as we filter out only specific nodes
                     tag.setAttribute("keyword", String.format("%s", entry.getIdentifier()));
                 }
 
@@ -711,14 +700,13 @@ public final class PSDMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardTransparencyNode() {
-        IIOMetadataNode transparency_node = new IIOMetadataNode("Transparency");
-        IIOMetadataNode node; // scratch node
+        IIOMetadataNode transparencyNode = new IIOMetadataNode("Transparency");
 
-        node = new IIOMetadataNode("Alpha");
-        node.setAttribute("value", hasAlpha() ? "nonpremultiplied" : "none"); // TODO: Check  spec
-        transparency_node.appendChild(node);
+        IIOMetadataNode node = new IIOMetadataNode("Alpha");
+        node.setAttribute("value", hasAlpha() ? "premultiplied" : "none");
+        transparencyNode.appendChild(node);
 
-        return transparency_node;
+        return transparencyNode;
     }
 
     private boolean hasAlpha() {

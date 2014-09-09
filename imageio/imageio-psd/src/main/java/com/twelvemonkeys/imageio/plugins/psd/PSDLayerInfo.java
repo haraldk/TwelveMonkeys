@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ import java.util.Arrays;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDLayerInfo.java,v 1.0 Apr 29, 2008 6:01:12 PM haraldk Exp$
  */
-class PSDLayerInfo {
+final class PSDLayerInfo {
     final int top;
     final int left;
     final int bottom;
@@ -52,7 +52,7 @@ class PSDLayerInfo {
     final PSDChannelSourceDestinationRange[] ranges;
     final String layerName;
 
-    PSDLayerInfo(ImageInputStream pInput) throws IOException {
+    PSDLayerInfo(final boolean largeFormat, final ImageInputStream pInput) throws IOException {
         top = pInput.readInt();
         left = pInput.readInt();
         bottom = pInput.readInt();
@@ -63,7 +63,7 @@ class PSDLayerInfo {
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
-            long length = pInput.readUnsignedInt();
+            long length = largeFormat ? pInput.readLong() : pInput.readUnsignedInt();
 
             channelInfo[i] = new PSDChannelInfo(channelId, length);
         }

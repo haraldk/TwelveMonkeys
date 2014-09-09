@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageReaderSpi.java,v 1.0 Apr 29, 2008 4:49:03 PM haraldk Exp$
  */
-public class PSDImageReaderSpi extends ImageReaderSpi {
+final public class PSDImageReaderSpi extends ImageReaderSpi {
 
     /**
      * Creates a {@code PSDImageReaderSpi}.
@@ -57,18 +57,18 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
         super(
                 providerInfo.getVendorName(),
                 providerInfo.getVersion(),
-                new String[]{"psd", "PSD"},
-                new String[]{"psd"},
-                new String[]{
+                new String[] {"psd", "PSD"},
+                new String[] {"psd"},
+                new String[] {
                         "image/vnd.adobe.photoshop",        // Official, IANA registered
-                        "application/vnd.adobe.photoshop",  // Used in XMP 
-                        "image/x-psd", 
-                        "application/x-photoshop", 
+                        "application/vnd.adobe.photoshop",  // Used in XMP
+                        "image/x-psd",
+                        "application/x-photoshop",
                         "image/x-photoshop"
                 },
                 "com.twelvemkonkeys.imageio.plugins.psd.PSDImageReader",
                 new Class[] {ImageInputStream.class},
-//                new String[]{"com.twelvemkonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
+//                new String[] {"com.twelvemkonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
                 null,
                 true, // supports standard stream metadata
                 null, null, // native stream format name and class
@@ -87,9 +87,23 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
         ImageInputStream stream = (ImageInputStream) pSource;
 
         stream.mark();
+
         try {
-            return stream.readInt() == PSD.SIGNATURE_8BPS;
-            // TODO: Test more of the header, see PSDImageReader#readHeader
+            if (stream.readInt() == PSD.SIGNATURE_8BPS) {
+                int version = stream.readUnsignedShort();
+
+                switch (version) {
+                    case PSD.VERSION_PSD:
+                    case PSD.VERSION_PSB:
+                        break;
+                    default:
+                        return false;
+                }
+
+                return true;
+            }
+
+            return false;
         }
         finally {
             stream.reset();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,14 +35,19 @@ package com.twelvemonkeys.imageio.plugins.psd;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSD.java,v 1.0 Apr 29, 2008 4:47:47 PM haraldk Exp$
  *
+ * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml">Adobe Photoshop File Formats Specification</a>
  * @see <a href="http://www.fileformat.info/format/psd/egff.htm">http://www.fileformat.info/format/psd/egff.htm</a>
  */
 interface PSD {
     /** PSD 2+ Native format (.PSD) identifier "8BPS" */
     int SIGNATURE_8BPS = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'S';
 
+    // TODO: Is this ever used??! Spec says (and sample files uses) 8BPS + version == 2 for PSB...
     /** PSD 5+ Large Document Format (.PSB) identifier "8BPB" */
     int SIGNATURE_8BPB = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'B';
+
+    int VERSION_PSD = 1;
+    int VERSION_PSB = 2;
 
     /** PSD Resource type identifier "8BIM" */
     int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
@@ -105,7 +110,7 @@ interface PSD {
 
     // Color Modes
     /** Bitmap (monochrome) */
-    short COLOR_MODE_MONOCHROME = 0;
+    short COLOR_MODE_BITMAP = 0;
 
     /** Gray-scale */
     short COLOR_MODE_GRAYSCALE = 1;
@@ -540,5 +545,14 @@ interface PSD {
      * WORD indicating the bleed width scale.
      */
     int RES_PRINT_FLAGS_INFORMATION = 0x2710;
+
+    int RES_PATH_INFO_MAX = 0x0bb6;
+    int RES_PATH_INFO_MIN = 0x07d0;
+
+    /** Plug-In resource(s). Resources added by a plug-in. See the plug-in API found in the SDK documentation */
+    int RES_PLUGIN_MIN = 0x0fa0;
+
+    /** Plug-In resource(s). Resources added by a plug-in. See the plug-in API found in the SDK documentation */
+    int RES_PLUGIN_MAX = 0x1387;
 
 }

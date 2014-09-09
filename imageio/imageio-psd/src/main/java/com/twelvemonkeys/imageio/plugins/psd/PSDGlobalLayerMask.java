@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,8 +38,8 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDGlobalLayerMask.java,v 1.0 May 8, 2008 5:33:48 PM haraldk Exp$
  */
-class PSDGlobalLayerMask {
-    final int colorSpace;
+final class PSDGlobalLayerMask {
+     final int colorSpace;
     final int color1;
     final int color2;
     final int color3;

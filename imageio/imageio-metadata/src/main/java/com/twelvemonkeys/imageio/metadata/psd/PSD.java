@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +36,9 @@ package com.twelvemonkeys.imageio.metadata.psd;
  * @version $Id: PSD.java,v 1.0 24.01.12 16:51 haraldk Exp$
  */
 public interface PSD {
-    static final int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
+    /** PSD image resource marker "8BIM". */
+    int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
 
-    static final int RES_IPTC_NAA = 0x0404;
+    /** IPTC image resource id. */
+    int RES_IPTC_NAA = 0x0404;
 }
