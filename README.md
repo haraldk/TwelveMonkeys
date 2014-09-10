@@ -54,10 +54,10 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Read support for the following file types:
   * Monochrome, 1 channel, 1 bit
   * Indexed, 1 channel, 8 bit
-  * Gray, 1 channel, 8 and 16 bit
-  * Duotone, 1 channel, 8 and 16 bit
-  * RGB, 3-4 channels, 8 and 16 bit
-  * CMYK, 4-5 channels, 8 and 16 bit
+  * Gray, 1 channel, 8, 16 and 32 bit
+  * Duotone, 1 channel, 8, 16 and 32 bit
+  * RGB, 3-4 channels, 8, 16 and 32 bit
+  * CMYK, 4-5 channels, 8, 16 and 32 bit
 * Read support for the following compression types:
   * Uncompressed
   * RLE (PackBits)
@@ -66,6 +66,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Thumbnail support
   * JPEG
   * RAW (RGB)
+* Support for "Large Document Format" (PSB)
 
 #### Aldus/Adobe Tagged Image File Format (TIFF)
 
