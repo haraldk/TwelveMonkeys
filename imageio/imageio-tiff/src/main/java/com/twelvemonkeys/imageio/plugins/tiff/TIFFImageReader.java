@@ -1071,9 +1071,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         break; // We're done with this tile
                     }
 
-                    for (int k = 0; k < rowDataShort.length; k++) {
-                        rowDataShort[k] = input.readShort();
-                    }
+                    readFully(input, rowDataShort);
 
                     if (row >= srcRegion.y) {
                         normalizeBlack(interpretation, rowDataShort);
@@ -1101,9 +1099,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         break; // We're done with this tile
                     }
 
-                    for (int k = 0; k < rowDataInt.length; k++) {
-                        rowDataInt[k] = input.readInt();
-                    }
+                    readFully(input, rowDataInt);
 
                     if (row >= srcRegion.y) {
                         normalizeBlack(interpretation, rowDataInt);
@@ -1123,6 +1119,32 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
 
                 break;
+        }
+    }
+
+    // TODO: Candidate util method (with off/len + possibly byte order)
+    private void readFully(final DataInput input, final int[] rowDataInt) throws IOException {
+        if (input instanceof ImageInputStream) {
+            ImageInputStream imageInputStream = (ImageInputStream) input;
+            imageInputStream.readFully(rowDataInt, 0, rowDataInt.length);
+        }
+        else {
+            for (int k = 0; k < rowDataInt.length; k++) {
+                rowDataInt[k] = input.readInt();
+            }
+        }
+    }
+
+    // TODO: Candidate util method (with off/len + possibly byte order)
+    private void readFully(final DataInput input, final short[] rowDataShort) throws IOException {
+        if (input instanceof ImageInputStream) {
+            ImageInputStream imageInputStream = (ImageInputStream) input;
+            imageInputStream.readFully(rowDataShort, 0, rowDataShort.length);
+        }
+        else {
+            for (int k = 0; k < rowDataShort.length; k++) {
+                rowDataShort[k] = input.readShort();
+            }
         }
     }
 
