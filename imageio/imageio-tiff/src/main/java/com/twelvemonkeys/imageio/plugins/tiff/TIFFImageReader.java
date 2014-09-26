@@ -105,8 +105,6 @@ import java.util.zip.InflaterInputStream;
  */
 public class TIFFImageReader extends ImageReaderBase {
     // TODOs ImageIO basic functionality:
-    // TODO: Subsampling (*tests should be failing*)
-    // TODO: Source region (*tests should be failing*)
     // TODO: Thumbnail support
     // TODO: TIFFImageWriter + Spi
 
@@ -134,6 +132,8 @@ public class TIFFImageReader extends ImageReaderBase {
     // Handle SampleFormat (and give up if not == 1)
     // Support Compression 6 ('Old-style' JPEG)
     // Support Compression 2 (CCITT Modified Huffman RLE) for bi-level images
+    // Source region
+    // Subsampling
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
@@ -291,7 +291,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2}, dataType, false, false);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[]{0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, dataType, false, false);
                             }
                         }
                     case 4:
@@ -308,7 +308,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, extraSamples[0] == 1);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[]{0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
                         // TODO: More samples might be ok, if multiple alpha or unknown samples
@@ -357,7 +357,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, false, false);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[]{0, 0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
                             }
                         }
                     case 5:
@@ -369,7 +369,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, extraSamples[0] == 1);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[]{0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
 
@@ -546,8 +546,8 @@ public class TIFFImageReader extends ImageReaderBase {
                     if (rowRaster.getNumBands() != 3) {
                         throw new IIOException("TIFF PhotometricInterpretation YCbCr requires SamplesPerPixel == 3: " + rowRaster.getNumBands());
                     }
-                    if (rowRaster.getTransferType() != DataBuffer.TYPE_BYTE) {
-                        throw new IIOException("TIFF PhotometricInterpretation YCbCr requires BitsPerSample == [8,8,8]");
+                    if (rowRaster.getTransferType() != DataBuffer.TYPE_BYTE  && rowRaster.getTransferType() != DataBuffer.TYPE_USHORT) {
+                        throw new IIOException("TIFF PhotometricInterpretation YCbCr requires BitsPerSample == [8,8,8] or [16,16,16]");
                     }
 
                     yCbCrPos = getValueAsIntWithDefault(TIFF.TAG_YCBCR_POSITIONING, TIFFExtension.YCBCR_POSITIONING_CENTERED);
@@ -666,21 +666,14 @@ public class TIFFImageReader extends ImageReaderBase {
                 Entry tablesEntry = currentIFD.getEntryById(TIFF.TAG_JPEG_TABLES);
                 byte[] tablesValue = tablesEntry != null ? (byte[]) tablesEntry.getValue() : null;
                 if (tablesValue != null) {
-                    // TODO: Work this out...
                     // Whatever values I pass the reader as the read param, it never gets the same quality as if
-                    // I just invoke jpegReader.getStreamMetadata...
-                    // Might have something to do with subsampling?
-                    // How do we pass the chroma-subsampling parameter from the TIFF structure to the JPEG reader?
-
-                    // TODO: Consider splicing the TAG_JPEG_TABLES into the streams for each tile, for a
-                    // (slightly slower for multiple images, but) more compatible approach..?
-
+                    // I just invoke jpegReader.getStreamMetadata(), so we'll do that...
                     jpegReader.setInput(new ByteArrayImageInputStream(tablesValue));
 
-                    // NOTE: This initializes the tables and other internal settings for the reader (as if by magic).
-                    // This is actually a feature of JPEG,
-                    // see: http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
-                    /*IIOMetadata streamMetadata = */jpegReader.getStreamMetadata();
+                    // This initializes the tables and other internal settings for the reader,
+                    // and is actually a feature of JPEG, see abbreviated streams:
+                    // http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
+                    jpegReader.getStreamMetadata();
                 }
                 else {
                     processWarningOccurred("Missing JPEGTables for TIFF with compression: 7 (JPEG)");
@@ -1229,7 +1222,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
         if (entry.valueCount() == 1) {
             // For single entries, this will be a boxed type
-            value = new long[]{((Number) entry.getValue()).longValue()};
+            value = new long[] {((Number) entry.getValue()).longValue()};
         }
         else if (entry.getValue() instanceof short[]) {
             short[] shorts = (short[]) entry.getValue();
@@ -1393,6 +1386,12 @@ public class TIFFImageReader extends ImageReaderBase {
 //                    }
 //    //                    System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
 //                }
+
+                    if (image.getType() == BufferedImage.TYPE_CUSTOM) {
+                        start = System.currentTimeMillis();
+                        image = new ColorConvertOp(null).filter(image, new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB));
+                        System.err.println("Conversion time: " + (System.currentTimeMillis() - start) + " ms");
+                    }
 
                     showIt(image, String.format("Image: %s [%d x %d]", file.getName(), reader.getWidth(imageNo), reader.getHeight(imageNo)));
 

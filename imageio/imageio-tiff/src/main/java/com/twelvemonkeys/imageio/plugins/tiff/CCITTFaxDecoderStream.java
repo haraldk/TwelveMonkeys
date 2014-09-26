@@ -81,6 +81,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     private void fetch() throws IOException {
         if (decodedPos >= decodedLength) {
             decodedLength = 0;
+
             try {
                 decodeRow();
             }
