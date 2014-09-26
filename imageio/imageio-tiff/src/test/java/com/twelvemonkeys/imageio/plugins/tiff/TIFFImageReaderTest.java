@@ -27,9 +27,11 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
  */
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -60,7 +62,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
                 new TestData(getClassLoaderResource("/tiff/ycbcr-cat.tif"), new Dimension(250, 325)), // YCbCr, LZW compressed
                 new TestData(getClassLoaderResource("/tiff/quad-jpeg.tif"), new Dimension(512, 384)), // YCbCr, JPEG compressed, striped
                 new TestData(getClassLoaderResource("/tiff/smallliz.tif"), new Dimension(160, 160)), // YCbCr, Old-Style JPEG compressed (full JFIF stream)
-                new TestData(getClassLoaderResource("/tiff/zackthecat.tif"), new Dimension(234, 213)) // YCbCr, Old-Style JPEG compressed (tables, no JFIF stream)
+                new TestData(getClassLoaderResource("/tiff/zackthecat.tif"), new Dimension(234, 213)), // YCbCr, Old-Style JPEG compressed (tables, no JFIF stream)
+                new TestData(getClassLoaderResource("/tiff/test-single-gray-compression-type-2.tiff"), new Dimension(1728, 1146)) // Gray, CCITT type 2 compressed
         );
     }
 
@@ -92,6 +95,28 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
     @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/tiff");
+    }
+
+
+    @Test
+    public void testReadWithSourceRegionParamEqualImageTiled() throws IOException {
+        assertReadWithSourceRegionParamEqualImage(
+                new Rectangle(23, 23, 15, 15),
+                new TestData(getClassLoaderResource("/tiff/sm_colors_pb_tile.tif"), new Dimension(64, 64)),
+                0
+        );
+    }
+
+    // TODO: Should test USHORT & INT datatypes
+
+    @Test
+    public void testReadWithSourceRegionParamEqualImageJPEG() throws IOException {
+        // The tiles are 512 x 16, make sure we read across tiles
+        assertReadWithSourceRegionParamEqualImage(
+                new Rectangle(71, 71, 17, 21),
+                new TestData(getClassLoaderResource("/tiff/quad-jpeg.tif"), new Dimension(512, 384)),
+                0
+        );
     }
 
     // TODO: Test YCbCr colors

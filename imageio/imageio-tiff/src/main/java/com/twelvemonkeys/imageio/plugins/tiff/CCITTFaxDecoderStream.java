@@ -179,7 +179,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             throw new IOException("Sum of run-lengths does not equal scan line width: " + index + " > " + columns);
         }
 
-        decodedLength = (index / 8) + 1;
+        decodedLength = (index + 7) / 8;
     }
 
     private int decodeRun(short[][] codes, short[][] runLengths, int minCodeSize) throws IOException {

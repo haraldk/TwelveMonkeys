@@ -54,9 +54,9 @@ interface TIFFCustom {
     int PHOTOMETRIC_LOGL = 32844;
     int PHOTOMETRIC_LOGLUV = 32845;
 
-    /** DNG: CFA (Color Filter Array)*/
+    /** DNG: CFA (Color Filter Array). */
     int PHOTOMETRIC_CFA = 32803;
-    /** DNG: LinearRaw*/
+    /** DNG: LinearRaw. */
     int PHOTOMETRIC_LINEAR_RAW = 34892;
 
     int SAMPLEFORMAT_COMPLEX_INT = 5;

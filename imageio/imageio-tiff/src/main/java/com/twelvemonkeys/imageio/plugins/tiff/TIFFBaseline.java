@@ -55,4 +55,8 @@ interface TIFFBaseline {
     int EXTRASAMPLE_UNASSOCIATED_ALPHA = 2;
 
     int PREDICTOR_NONE = 1;
+
+    int RESOLUTION_UNIT_NONE = 1;
+    int RESOLUTION_UNIT_DPI = 2; // Default
+    int RESOLUTION_UNIT_CENTIMETER = 3;
 }

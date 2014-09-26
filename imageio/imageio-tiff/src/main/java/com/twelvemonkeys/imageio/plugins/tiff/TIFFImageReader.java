@@ -593,7 +593,6 @@ public class TIFFImageReader extends ImageReaderBase {
                 // Read data
                 processImageStarted(imageIndex);
 
-                // TODO: Read only tiles that lies within region
                 // General uncompressed/compressed reading
                 for (int y = 0; y < tilesDown; y++) {
                     int col = 0;
@@ -699,20 +698,24 @@ public class TIFFImageReader extends ImageReaderBase {
                         int i = y * tilesAcross + x;
                         int colsInTile = Math.min(stripTileWidth, width - col);
 
-                        imageInput.seek(stripTileOffsets[i]);
-                        ImageInputStream subStream = new SubImageInputStream(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE);
+                        // Read only tiles that lies within region
+                        if (new Rectangle(col, row, colsInTile, rowsInTile).intersects(srcRegion)) {
+                            imageInput.seek(stripTileOffsets[i]);
+                            ImageInputStream subStream = new SubImageInputStream(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE);
 
-                        try {
-                            jpegReader.setInput(subStream);
-                            jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
-                            jpegParam.setDestinationOffset(new Point(col, row));
-                            jpegParam.setDestination(destination);
-                            // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
-                            // In the latter case we will have to use readAsRaster and do color conversion ourselves
-                            jpegReader.read(0, jpegParam);
-                        }
-                        finally {
-                            subStream.close();
+                            try {
+                                jpegReader.setInput(subStream);
+                                jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
+                                jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
+                                jpegParam.setDestination(destination);
+                                // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
+                                // In the latter case we will have to use readAsRaster and do color conversion ourselves
+                                jpegReader.read(0, jpegParam);
+                            }
+                            finally {
+                                subStream.close();
+                            }
+
                         }
 
                         if (abortRequested()) {
@@ -865,27 +868,30 @@ public class TIFFImageReader extends ImageReaderBase {
                             int colsInTile = Math.min(stripTileWidth, width - col);
                             int i = y * tilesAcross + x;
 
-                            imageInput.seek(stripTileOffsets[i]);
-                            stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
-                                    Arrays.asList(
-                                            createJFIFStream(destRaster, stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
-                                            IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE),
-                                            new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
-                                    )
-                            )));
+                            // Read only tiles that lies within region
+                            if (new Rectangle(col, row, colsInTile, rowsInTile).intersects(srcRegion)) {
+                                imageInput.seek(stripTileOffsets[i]);
+                                stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
+                                        Arrays.asList(
+                                                createJFIFStream(destRaster, stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
+                                                IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE),
+                                                new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
+                                        )
+                                )));
 
-                            jpegReader.setInput(stream);
+                                jpegReader.setInput(stream);
 
-                            try {
-                                jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
-                                jpegParam.setDestinationOffset(new Point(col, row));
-                                jpegParam.setDestination(destination);
-                                // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
-                                // In the latter case we will have to use readAsRaster and do color conversion ourselves
-                                jpegReader.read(0, jpegParam);
-                            }
-                            finally {
-                                stream.close();
+                                try {
+                                    jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
+                                    jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
+                                    jpegParam.setDestination(destination);
+                                    // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
+                                    // In the latter case we will have to use readAsRaster and do color conversion ourselves
+                                    jpegReader.read(0, jpegParam);
+                                }
+                                finally {
+                                    stream.close();
+                                }
                             }
 
                             if (abortRequested()) {
