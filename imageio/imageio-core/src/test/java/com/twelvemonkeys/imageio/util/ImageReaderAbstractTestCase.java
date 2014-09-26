@@ -64,7 +64,7 @@ import static org.mockito.Mockito.*;
  * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 Apr 1, 2008 10:36:46 PM haraldk Exp$
  */
 public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
-    // TODO: Should we really test if he provider is installed?
+    // TODO: Should we really test if the provider is installed?
     //       - Pro: Tests the META-INF/services config
     //       - Con: Not all providers should be installed at runtime...
 
@@ -635,10 +635,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             failBecause("Image could not be read", e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(),
-                5, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(),
-                5, image.getHeight());
+        assertEquals("Read image has wrong width: " + image.getWidth(), 5, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), 5, image.getHeight());
 
     }
 
