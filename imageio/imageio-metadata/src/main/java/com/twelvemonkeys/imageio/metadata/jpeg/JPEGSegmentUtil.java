@@ -29,7 +29,9 @@
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
+import com.twelvemonkeys.imageio.metadata.psd.PSD;
 import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMP;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
@@ -38,6 +40,8 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -290,6 +294,11 @@ public final class JPEGSegmentUtil {
                     //       IPTC metadata. Probably duplicated in the XMP though...
                     ImageInputStream stream = new ByteArrayImageInputStream(segment.data, segment.offset(), segment.length());
                     Directory psd = new PSDReader().read(stream);
+                    Entry iccEntry = psd.getEntryById(PSD.RES_ICC_PROFILE);
+                    if (iccEntry != null) {
+                        ICC_ColorSpace colorSpace = new ICC_ColorSpace(ICC_Profile.getInstance((byte[]) iccEntry.getValue()));
+                        System.err.println("colorSpace: " + colorSpace);
+                    }
                     System.err.println("PSD: " + psd);
                     System.err.println(EXIFReader.HexDump.dump(segment.data));
                 }

@@ -41,4 +41,7 @@ public interface PSD {
 
     /** IPTC image resource id. */
     int RES_IPTC_NAA = 0x0404;
+
+    /** ICC profile image resource id. */
+    int RES_ICC_PROFILE = 0x040f;
 }
