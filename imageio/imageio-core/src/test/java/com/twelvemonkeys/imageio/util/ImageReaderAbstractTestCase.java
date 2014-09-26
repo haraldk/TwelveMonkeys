@@ -549,6 +549,44 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
     }
 
     @Test
+    public void testReadWithSourceRegionParamEqualImage() throws IOException {
+        // Default invocation
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(3, 3, 9, 9), getTestData().get(0), 0);
+    }
+
+    protected void assertReadWithSourceRegionParamEqualImage(final Rectangle r, final TestData data, final int imageIndex) throws IOException {
+        ImageReader reader = createReader();
+        reader.setInput(data.getInputStream());
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        // Read full image and get sub image for comparison
+        final BufferedImage roi = reader.read(imageIndex, param).getSubimage(r.x, r.y, r.width, r.height);
+
+        param.setSourceRegion(r);
+
+        final BufferedImage image = reader.read(imageIndex, param);
+
+//        try {
+//            SwingUtilities.invokeAndWait(new Runnable() {
+//                public void run() {
+//                    JPanel panel = new JPanel(new FlowLayout());
+//                    panel.add(new JLabel(new BufferedImageIcon(roi, r.width * 10, r.height * 10, true)));
+//                    panel.add(new JLabel(new BufferedImageIcon(image, r.width * 10, r.height * 10, true)));
+//                    JOptionPane.showConfirmDialog(null, panel);
+//                }
+//            });
+//        }
+//        catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+
+        assertNotNull("Image was null!", image);
+        assertEquals("Read image has wrong width: " + image.getWidth(), r.width, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), r.height, image.getHeight());
+        assertImageDataEquals("Images differ", roi, image);
+    }
+
+    @Test
     public void testReadWithSizeAndSourceRegionParam() {
         // TODO: Is this test correct???
         ImageReader reader = createReader();

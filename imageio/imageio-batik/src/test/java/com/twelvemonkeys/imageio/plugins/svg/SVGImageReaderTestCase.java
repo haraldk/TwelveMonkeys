@@ -29,10 +29,13 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.awt.image.ImagingOpException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -77,6 +80,7 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
         return Arrays.asList("image/svg+xml");
     }
 
+    @Test
     @Override
     public void testReadWithSizeParam() {
         try {
@@ -98,5 +102,12 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
                 throw failure;
             }
         }
+    }
+
+    @Test
+    @Ignore("Known issue: Source region reading not supported")
+    @Override
+    public void testReadWithSourceRegionParamEqualImage() throws IOException {
+        super.testReadWithSourceRegionParamEqualImage();
     }
 }

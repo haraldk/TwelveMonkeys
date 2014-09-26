@@ -2623,8 +2623,13 @@ public class PICTImageReader extends ImageReaderBase {
         Graphics2D g = image.createGraphics();
         try {
             // TODO: Might need to clear background
-
-            g.setTransform(AffineTransform.getScaleInstance(screenImageXRatio / subX, screenImageYRatio / subY));
+            AffineTransform instance = new AffineTransform();
+            if (pParam != null && pParam.getSourceRegion() != null) {
+                Rectangle rectangle = pParam.getSourceRegion();
+                instance.translate(-rectangle.x, -rectangle.y);
+            }
+            instance.scale(screenImageXRatio / subX, screenImageYRatio / subY);
+            g.setTransform(instance);
 //            try {
                 drawOnto(g);
 //            }
