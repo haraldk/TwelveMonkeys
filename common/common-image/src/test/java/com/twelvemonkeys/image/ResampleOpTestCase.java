@@ -1,6 +1,7 @@
 package com.twelvemonkeys.image;
 
-import junit.framework.TestCase;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -9,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.*;
+
 /**
  * ResampleOpTestCase
  *
@@ -16,7 +19,7 @@ import java.util.List;
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/image/ResampleOpTestCase.java#1 $
  */
-public class ResampleOpTestCase extends TestCase {
+public class ResampleOpTestCase {
 
     protected BufferedImage createImage(final int pWidth, final int pHeigth) {
         return createImage(pWidth, pHeigth, BufferedImage.TYPE_INT_ARGB);
@@ -36,6 +39,7 @@ public class ResampleOpTestCase extends TestCase {
         return image;
     }
 
+    @Test
     public void testCreateImage() {
         // Sanity test the create method
         BufferedImage image = createImage(79, 84);
@@ -94,170 +98,225 @@ public class ResampleOpTestCase extends TestCase {
     }
 
     // 1x1
+    @Test
     public void testResample1x1Point() {
         assertResample(createImage(1, 1), 10, 11, ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResample1x1Box() {
         assertResample(createImage(1, 1), 10, 11, ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResample1x1Triangle() {
         assertResample(createImage(1, 1), 19, 13, ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResample1x1Lanczos() {
         assertResample(createImage(1, 1), 7, 49, ResampleOp.FILTER_LANCZOS);
     }
 
+    @Test
     public void testResample1x1Gaussian() {
         assertResample(createImage(1, 1), 11, 34, ResampleOp.FILTER_GAUSSIAN);
     }
 
+    @Test
     public void testResample1x1Sinc() {
         assertResample(createImage(1, 1), 2, 8, ResampleOp.FILTER_BLACKMAN_SINC);
     }
 
     // 2x2
+    @Test
     public void testResample2x2Point() {
         assertResample(createImage(2, 2), 10, 11, ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResample2x2Box() {
         assertResample(createImage(2, 2), 10, 11, ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResample2x2Triangle() {
         assertResample(createImage(2, 2), 19, 13, ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResample2x2Lanczos() {
         assertResample(createImage(2, 2), 7, 49, ResampleOp.FILTER_LANCZOS);
     }
 
+    @Test
     public void testResample2x2Gaussian() {
         assertResample(createImage(2, 2), 11, 34, ResampleOp.FILTER_GAUSSIAN);
     }
 
+    @Test
     public void testResample2x2Sinc() {
         assertResample(createImage(2, 2), 2, 8, ResampleOp.FILTER_BLACKMAN_SINC);
     }
 
     // 3x3
+    @Test
     public void testResample3x3Point() {
         assertResample(createImage(3, 3), 10, 11, ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResample3x3Box() {
         assertResample(createImage(3, 3), 10, 11, ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResample3x3Triangle() {
         assertResample(createImage(3, 3), 19, 13, ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResample3x3Lanczos() {
         assertResample(createImage(3, 3), 7, 49, ResampleOp.FILTER_LANCZOS);
     }
 
+    @Test
     public void testResample3x3Gaussian() {
         assertResample(createImage(3, 3), 11, 34, ResampleOp.FILTER_GAUSSIAN);
     }
 
+    @Test
     public void testResample3x3Sinc() {
         assertResample(createImage(3, 3), 2, 8, ResampleOp.FILTER_BLACKMAN_SINC);
     }
 
     // 4x4
+    @Test
     public void testResample4x4Point() {
         assertResample(createImage(4, 4), 10, 11, ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResample4x4Box() {
         assertResample(createImage(4, 4), 10, 11, ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResample4x4Triangle() {
         assertResample(createImage(4, 4), 19, 13, ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResample4x4Lanczos() {
         assertResample(createImage(4, 4), 7, 49, ResampleOp.FILTER_LANCZOS);
     }
 
+    @Test
     public void testResample4x4Gaussian() {
         assertResample(createImage(4, 4), 11, 34, ResampleOp.FILTER_GAUSSIAN);
     }
 
+    @Test
     public void testResample4x4Sinc() {
         assertResample(createImage(4, 4), 2, 8, ResampleOp.FILTER_BLACKMAN_SINC);
     }
 
     // 20x20
+    @Test
     public void testResample20x20Point() {
         assertResample(createImage(20, 20), 10, 11, ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResample20x20Box() {
         assertResample(createImage(20, 20), 10, 11, ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResample20x20Triangle() {
         assertResample(createImage(20, 20), 19, 13, ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResample20x20Lanczos() {
         assertResample(createImage(20, 20), 7, 49, ResampleOp.FILTER_LANCZOS);
     }
 
+    @Test
     public void testResample20x20Gaussian() {
         assertResample(createImage(20, 20), 11, 34, ResampleOp.FILTER_GAUSSIAN);
     }
 
+    @Test
     public void testResample20x20Sinc() {
         assertResample(createImage(20, 20), 2, 8, ResampleOp.FILTER_BLACKMAN_SINC);
     }
 
     // 200x160
+    @Test
     public void testResample200x160Point() {
         assertResample(createImage(200, 160), 10, 11, ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResample200x160Box() {
         assertResample(createImage(200, 160), 10, 11, ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResample200x160Triangle() {
         assertResample(createImage(200, 160), 19, 13, ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResample200x160Lanczos() {
         assertResample(createImage(200, 160), 7, 49, ResampleOp.FILTER_LANCZOS);
     }
 
+    @Test
     public void testResample200x160Gaussian() {
         assertResample(createImage(200, 160), 11, 34, ResampleOp.FILTER_GAUSSIAN);
     }
 
+    @Test
     public void testResample200x160Sinc() {
         assertResample(createImage(200, 160), 2, 8, ResampleOp.FILTER_BLACKMAN_SINC);
     }
 
     // Test 10x10 -> 15x5 with different algorithms and types
+    @Test
     public void testResamplePoint() {
         assertResampleBufferedImageTypes(ResampleOp.FILTER_POINT);
     }
 
+    @Test
     public void testResampleBox() {
         assertResampleBufferedImageTypes(ResampleOp.FILTER_BOX);
     }
 
+    @Test
     public void testResampleTriangle() {
         assertResampleBufferedImageTypes(ResampleOp.FILTER_TRIANGLE);
     }
 
+    @Test
     public void testResampleLanczos() {
         assertResampleBufferedImageTypes(ResampleOp.FILTER_LANCZOS);
+    }
+
+    @Ignore("Not for general unit testing")
+    @Test
+    public void testTime() {
+        int iterations = 1000;
+        for (int i = 0; i < iterations; i++) {
+            assertResample(createImage(50, 50), 33, 33, ResampleOp.FILTER_LANCZOS);
+        }
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < iterations; i++) {
+            assertResample(createImage(512, 512), 145, 145, ResampleOp.FILTER_LANCZOS);
+        }
+        long end = System.currentTimeMillis();
+        System.out.printf("time: %d ms, avg %s ms%n", end - start, (end - start) / (double) iterations);
     }
 }
 
