@@ -57,11 +57,11 @@ final class HorizontalDeDifferencingStream extends InputStream {
     private final ByteBuffer buffer;
 
     public HorizontalDeDifferencingStream(final InputStream stream, final int columns, final int samplesPerPixel, final int bitsPerSample, final ByteOrder byteOrder) {
-        channel = Channels.newChannel(Validate.notNull(stream, "stream"));
-
         this.columns = Validate.isTrue(columns > 0, columns, "width must be greater than 0");
         this.samplesPerPixel = Validate.isTrue(bitsPerSample >= 8 || samplesPerPixel == 1, samplesPerPixel, "Unsupported samples per pixel for < 8 bit samples: %s");
         this.bitsPerSample = Validate.isTrue(isValidBPS(bitsPerSample), bitsPerSample, "Unsupported bits per sample value: %s");
+
+        channel = Channels.newChannel(Validate.notNull(stream, "stream"));
 
         buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8).order(byteOrder);
         buffer.flip();
@@ -113,10 +113,15 @@ final class HorizontalDeDifferencingStream extends InputStream {
         int sample = 0;
         byte temp;
 
+        // Optimization:
+        // Access array directly for <= 8 bits per sample, as buffer does extra index bounds check for every
+        // put/get operation... (Measures to about 100 ms difference for 4000 x 3000 image)
+        final byte[] array = buffer.array();
+
         switch (bitsPerSample) {
             case 1:
                 for (int b = 0; b < (columns + 7) / 8; b++) {
-                    original = buffer.get(b);
+                    original = array[b];
                     sample += (original >> 7) & 0x1;
                     temp = (byte) ((sample << 7) & 0x80);
                     sample += (original >> 6) & 0x1;
@@ -132,13 +137,13 @@ final class HorizontalDeDifferencingStream extends InputStream {
                     sample += (original >> 1) & 0x1;
                     temp |= (byte) ((sample << 1) & 0x02);
                     sample += original & 0x1;
-                    buffer.put(b, (byte) (temp | sample & 0x1));
+                    array[b] = (byte) (temp | sample & 0x1);
                 }
                 break;
 
             case 2:
                 for (int b = 0; b < (columns + 3) / 4; b++) {
-                    original = buffer.get(b);
+                    original = array[b];
                     sample += (original >> 6) & 0x3;
                     temp = (byte) ((sample << 6) & 0xc0);
                     sample += (original >> 4) & 0x3;
@@ -146,17 +151,17 @@ final class HorizontalDeDifferencingStream extends InputStream {
                     sample += (original >> 2) & 0x3;
                     temp |= (byte) ((sample << 2) & 0x0c);
                     sample += original & 0x3;
-                    buffer.put(b, (byte) (temp | sample & 0x3));
+                    array[b] = (byte) (temp | sample & 0x3);
                 }
                 break;
 
             case 4:
                 for (int b = 0; b < (columns + 1) / 2; b++) {
-                    original = buffer.get(b);
+                    original = array[b];
                     sample += (original >> 4) & 0xf;
                     temp = (byte) ((sample << 4) & 0xf0);
                     sample += original & 0x0f;
-                    buffer.put(b, (byte) (temp | sample & 0xf));
+                    array[b] = (byte) (temp | sample & 0xf);
                 }
                 break;
 
@@ -164,7 +169,7 @@ final class HorizontalDeDifferencingStream extends InputStream {
                 for (int x = 1; x < columns; x++) {
                     for (int b = 0; b < samplesPerPixel; b++) {
                         int off = x * samplesPerPixel + b;
-                        buffer.put(off, (byte) (buffer.get(off - samplesPerPixel) + buffer.get(off)));
+                        array[off] = (byte) (array[off - samplesPerPixel] + array[off]);
                     }
                 }
                 break;

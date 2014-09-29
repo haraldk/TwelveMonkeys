@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import static org.junit.Assert.*;
 
@@ -65,7 +66,7 @@ public class YCbCrUpsamplerStreamTest  {
                 1, 2, 3, 4, 5, 6, 7, 8, 42, 96,
                 108, 109, 110, 111, 112, 113, 114, 115, 43, 97
         };
-        YCbCrUpsamplerStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 8, null);
+        InputStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 8, null);
 
         byte[] expected = new byte[] {
                 0, -126, 0, 0, -125, 0, 0, 27, 0, 0, 28, 0, 92, 124, 85, 93, 125, 86, 0, -78, 0, 0, -24, 0,
@@ -85,7 +86,7 @@ public class YCbCrUpsamplerStreamTest  {
                 1, 2, 3, 4, 42, 96, 77,
                 112, 113, 114, 115, 43, 97, 43
         };
-        YCbCrUpsamplerStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 1}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null);
+        InputStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 1}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null);
 
         byte[] expected = new byte[] {
                 0, -123, 0, 0, -122, 0, 20, 71, 0, 74, 125, 6, 0, -78, 90, 0, -77, 91, 75, 126, 7, 21, 72, 0
@@ -104,7 +105,7 @@ public class YCbCrUpsamplerStreamTest  {
                 1, 2, 3, 4, 42, 96, 77,
                 112, 113, 114, 115, 43, 97, 43
         };
-        YCbCrUpsamplerStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {1, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null);
+        InputStream stream = new YCbCrUpsamplerStream(new ByteArrayInputStream(bytes), new int[] {1, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null);
 
         byte[] expected = new byte[] {
                 0, -123, 0, 20, 71, 0, 0, -78, 90, 0, -24, 0, 0, -122, 0, 74, 125, 6, 0, -77, 91, 0, -78, 0

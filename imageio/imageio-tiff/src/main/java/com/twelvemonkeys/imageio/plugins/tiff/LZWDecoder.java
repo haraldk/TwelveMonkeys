@@ -33,6 +33,7 @@ import com.twelvemonkeys.io.enc.Decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.String;
 import java.nio.ByteBuffer;
 
 /**
@@ -58,7 +59,7 @@ abstract class LZWDecoder implements Decoder {
 
     private final boolean compatibilityMode;
 
-    private final String[] table;
+    private final LZWString[] table;
     private int tableLength;
     int bitsPerCode;
     private int oldCode = CLEAR_CODE;
@@ -73,11 +74,11 @@ abstract class LZWDecoder implements Decoder {
     protected LZWDecoder(final boolean compatibilityMode) {
         this.compatibilityMode = compatibilityMode;
 
-        table = new String[compatibilityMode ? TABLE_SIZE + 1024 : TABLE_SIZE]; // libTiff adds 1024 "for compatibility"...
+        table = new LZWString[compatibilityMode ? TABLE_SIZE + 1024 : TABLE_SIZE]; // libTiff adds 1024 "for compatibility"...
 
         // First 258 entries of table is always fixed
         for (int i = 0; i < 256; i++) {
-            table[i] = new String((byte) i);
+            table[i] = new LZWString((byte) i);
         }
 
         init();
@@ -112,12 +113,17 @@ abstract class LZWDecoder implements Decoder {
                 table[code].writeTo(buffer);
             }
             else {
+                if (table[oldCode] == null) {
+                    System.err.println("tableLength: " + tableLength);
+                    System.err.println("oldCode: " + oldCode);
+                }
+
                 if (isInTable(code)) {
                     table[code].writeTo(buffer);
                     addStringToTable(table[oldCode].concatenate(table[code].firstChar));
                 }
                 else {
-                    String outString = table[oldCode].concatenate(table[oldCode].firstChar);
+                    LZWString outString = table[oldCode].concatenate(table[oldCode].firstChar);
 
                     outString.writeTo(buffer);
                     addStringToTable(outString);
@@ -135,7 +141,7 @@ abstract class LZWDecoder implements Decoder {
         return buffer.position();
     }
 
-    private void addStringToTable(final String string) throws IOException {
+    private void addStringToTable(final LZWString string) throws IOException {
         table[tableLength++] = string;
 
         if (tableLength > maxCode) {
@@ -146,7 +152,7 @@ abstract class LZWDecoder implements Decoder {
                     bitsPerCode--;
                 }
                 else {
-                    throw new DecodeException(java.lang.String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
+                    throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
                 }
             }
 
@@ -279,26 +285,26 @@ abstract class LZWDecoder implements Decoder {
         }
     }
 
-    private static final class String {
-        final String previous;
+    static final class LZWString {
+        final LZWString previous;
 
         final int length;
         final byte value;
         final byte firstChar; // Copied forward for fast access
 
-        public String(final byte code) {
+        public LZWString(final byte code) {
             this(code, code, 1, null);
         }
 
-        private String(final byte value, final byte firstChar, final int length, final String previous) {
+        private LZWString(final byte value, final byte firstChar, final int length, final LZWString previous) {
             this.value = value;
             this.firstChar = firstChar;
             this.length = length;
             this.previous = previous;
         }
 
-        public final String concatenate(final byte firstChar) {
-            return new String(firstChar, this.firstChar, length + 1, this);
+        public final LZWString concatenate(final byte firstChar) {
+            return new LZWString(firstChar, this.firstChar, length + 1, this);
         }
 
         public final void writeTo(final ByteBuffer buffer) {
@@ -310,7 +316,7 @@ abstract class LZWDecoder implements Decoder {
                 buffer.put(value);
             }
             else {
-                String e = this;
+                LZWString e = this;
                 final int offset = buffer.position();
 
                 for (int i = length - 1; i >= 0; i--) {
@@ -321,6 +327,47 @@ abstract class LZWDecoder implements Decoder {
                 buffer.position(offset + length);
             }
         }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder("ZLWString[");
+            int offset = builder.length();
+            LZWString e = this;
+            for (int i = length - 1; i >= 0; i--) {
+                builder.insert(offset, String.format("%2x", e.value));
+                e = e.previous;
+            }
+            builder.append("]");
+            return builder.toString();
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            LZWString string = (LZWString) other;
+
+            return firstChar == string.firstChar &&
+                    length == string.length &&
+                    value == string.value &&
+//                    !(previous != null ? !previous.equals(string.previous) : string.previous != null);
+                    previous == string.previous;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = previous != null ? previous.hashCode() : 0;
+            result = 31 * result + length;
+            result = 31 * result + (int) value;
+            result = 31 * result + (int) firstChar;
+            return result;
+        }
+
     }
 }
 

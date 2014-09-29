@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,34 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.lang.Validate;
 
-import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
 import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.nio.ByteOrder;
 
 /**
- * Input stream that provides on-the-fly conversion and upsampling of TIFF subsampled YCbCr samples to (raw) RGB samples.
+ * Input stream that provides on-the-fly conversion and upsampling of TIFF subsampled YCbCr 16 bit samples
+ * to (raw) RGB 16 bit samples.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: YCbCrUpsamplerStream.java,v 1.0 31.01.13 09:25 haraldk Exp$
  */
-final class YCbCrUpsamplerStream extends FilterInputStream {
-    // NOTE: DO NOT MODIFY OR EXPOSE THIS ARRAY OUTSIDE PACKAGE!
-    static final double[] CCIR_601_1_COEFFICIENTS = new double[] {299.0 / 1000.0, 587.0 / 1000.0, 114.0 / 1000.0};
-
+final class YCbCr16UpsamplerStream extends FilterInputStream {
+    // TODO: As we deal with short/16 bit samples, we need to take byte order into account
     private final int horizChromaSub;
     private final int vertChromaSub;
     private final int yCbCrPos;
     private final int columns;
     private final double[] coefficients;
+    private final ByteOrder byteOrder;
 
     private final int units;
     private final int unitSize;
     private final int padding;
     private final byte[] decodedRows;
+
     int decodedLength;
     int decodedPos;
 
@@ -66,17 +65,19 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     int bufferLength;
     int bufferPos;
 
-    public YCbCrUpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns, final double[] coefficients) {
+    public YCbCr16UpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns, final double[] coefficients, final ByteOrder byteOrder) {
         super(Validate.notNull(stream, "stream"));
 
         Validate.notNull(chromaSub, "chromaSub");
         Validate.isTrue(chromaSub.length == 2, "chromaSub.length != 2");
+        Validate.notNull(byteOrder, "byteOrder");
 
         this.horizChromaSub = chromaSub[0];
         this.vertChromaSub = chromaSub[1];
         this.yCbCrPos = yCbCrPos;
         this.columns = columns;
-        this.coefficients = Arrays.equals(CCIR_601_1_COEFFICIENTS, coefficients) ? null : coefficients;
+        this.coefficients = coefficients == null ? YCbCrUpsamplerStream.CCIR_601_1_COEFFICIENTS : coefficients;
+        this.byteOrder = byteOrder;
 
         // In TIFF, subsampled streams are stored in "units" of horiz * vert pixels.
         // For a 4:2 subsampled stream like this:
@@ -86,10 +87,11 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
         //
         // In the stream, the order is: Y0,Y1,Y2..Y7,Cb0,Cr0, Y8...Y15,Cb1,Cr1, Y16...
 
-        unitSize = horizChromaSub * vertChromaSub + 2;
+        unitSize = 2 * (horizChromaSub * vertChromaSub + 2);
         units = (columns + horizChromaSub - 1) / horizChromaSub;    // If columns % horizChromasSub != 0...
-        padding = units * horizChromaSub - columns;                 // ...each coded row will be padded to fill unit
-        decodedRows = new byte[columns * vertChromaSub * 3];
+        padding = 2 * (units * horizChromaSub - columns);           // ...each coded row will be padded to fill unit
+
+        decodedRows = new byte[2 * columns * vertChromaSub * 3];
         buffer = new byte[unitSize * units];
     }
 
@@ -124,8 +126,10 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
             }
 
             // Decode one unit
-            byte cb = buffer[bufferPos + unitSize - 2];
-            byte cr = buffer[bufferPos + unitSize - 1];
+            byte cb1 = buffer[bufferPos + unitSize - 4];
+            byte cb2 = buffer[bufferPos + unitSize - 3];
+            byte cr1 = buffer[bufferPos + unitSize - 2];
+            byte cr2 = buffer[bufferPos + unitSize - 1];
 
             for (int y = 0; y < vertChromaSub; y++) {
                 for (int x = 0; x < horizChromaSub; x++) {
@@ -136,23 +140,21 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
                         break;
                     }
 
-                    int pixelOff = 3 * (column + columns * y);
+                    int pixelOff = 2 * 3 * (column + columns * y);
 
-                    decodedRows[pixelOff] = buffer[bufferPos++];
-                    decodedRows[pixelOff + 1] = cb;
-                    decodedRows[pixelOff + 2] = cr;
+                    decodedRows[pixelOff    ] = buffer[bufferPos++];
+                    decodedRows[pixelOff + 1] = buffer[bufferPos++];
+                    decodedRows[pixelOff + 2] = cb1;
+                    decodedRows[pixelOff + 3] = cb2;
+                    decodedRows[pixelOff + 4] = cr1;
+                    decodedRows[pixelOff + 5] = cr2;
 
                     // Convert to RGB
-                    if (coefficients == null) {
-                        YCbCrConverter.convertYCbCr2RGB(decodedRows, decodedRows, pixelOff);
-                    }
-                    else {
-                        convertYCbCr2RGB(decodedRows, decodedRows, coefficients, pixelOff);
-                    }
+                    convertYCbCr2RGB(decodedRows, decodedRows, coefficients, pixelOff);
                 }
             }
 
-            bufferPos += 2; // Skip CbCr bytes at end of unit
+            bufferPos += 2 * 2; // Skip CbCr bytes at end of unit
         }
 
         bufferPos = bufferLength;
@@ -228,9 +230,21 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     }
 
     private void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, final int offset) {
-        double y  = (yCbCr[offset    ] & 0xff);
-        double cb = (yCbCr[offset + 1] & 0xff) - 128;
-        double cr = (yCbCr[offset + 2] & 0xff) - 128;
+        int y;
+        int cb;
+        int cr;
+
+        // Short values, depends on byte order!
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+            y  = ((yCbCr[offset     ] & 0xff) << 8) | (yCbCr[offset + 1] & 0xff);
+            cb = (((yCbCr[offset + 2] & 0xff) << 8) | (yCbCr[offset + 3] & 0xff)) - 32768;
+            cr = (((yCbCr[offset + 4] & 0xff) << 8) | (yCbCr[offset + 5] & 0xff)) - 32768;
+        }
+        else {
+            y  = ((yCbCr[offset  + 1] & 0xff) << 8) | (yCbCr[offset    ] & 0xff);
+            cb = (((yCbCr[offset + 3] & 0xff) << 8) | (yCbCr[offset + 2] & 0xff)) - 32768;
+            cr = (((yCbCr[offset + 5] & 0xff) << 8) | (yCbCr[offset + 4] & 0xff)) - 32768;
+        }
 
         double lumaRed   = coefficients[0];
         double lumaGreen = coefficients[1];
@@ -238,109 +252,32 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
 
         int red = (int) Math.round(cr * (2 - 2 * lumaRed) + y);
         int blue = (int) Math.round(cb * (2 - 2 * lumaBlue) + y);
-        int green = (int) Math.round((y - lumaRed * red - lumaBlue * blue) / lumaGreen);
+        int green = (int) Math.round((y - lumaRed * (red) - lumaBlue * (blue)) / lumaGreen);
 
-        rgb[offset    ] = clamp(red);
-        rgb[offset + 2] = clamp(blue);
-        rgb[offset + 1] = clamp(green);
+        short r = clampShort(red);
+        short g = clampShort(green);
+        short b = clampShort(blue);
+
+        // Short values, depends on byte order!
+        if (byteOrder == ByteOrder.BIG_ENDIAN) {
+            rgb[offset    ] = (byte) ((r >>> 8) & 0xff);
+            rgb[offset + 1] = (byte) (r & 0xff);
+            rgb[offset + 2] = (byte) ((g >>> 8) & 0xff);
+            rgb[offset + 3] = (byte) (g & 0xff);
+            rgb[offset + 4] = (byte) ((b >>> 8) & 0xff);
+            rgb[offset + 5] = (byte) (b & 0xff);
+        }
+        else {
+            rgb[offset    ] = (byte) (r & 0xff);
+            rgb[offset + 1] = (byte) ((r >>> 8) & 0xff);
+            rgb[offset + 2] = (byte) (g & 0xff);
+            rgb[offset + 3] = (byte) ((g >>> 8) & 0xff);
+            rgb[offset + 4] = (byte) (b & 0xff);
+            rgb[offset + 5] = (byte) ((b >>> 8) & 0xff);
+        }
     }
 
-    private static byte clamp(int val) {
-        return (byte) Math.max(0, Math.min(255, val));
-    }
-
-    // TODO: This code is copied from JPEG package, make it "more" public: com.tm.imageio.color package?
-    /**
-     * Static inner class for lazy-loading of conversion tables.
-     */
-    static final class YCbCrConverter {
-        /** Define tables for YCC->RGB color space conversion. */
-        private final static int SCALEBITS = 16;
-        private final static int MAXJSAMPLE = 255;
-        private final static int CENTERJSAMPLE = 128;
-        private final static int ONE_HALF = 1 << (SCALEBITS - 1);
-
-        private final static int[] Cr_R_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cb_B_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cr_G_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cb_G_LUT = new int[MAXJSAMPLE + 1];
-
-        /**
-         * Initializes tables for YCC->RGB color space conversion.
-         */
-        private static void buildYCCtoRGBtable() {
-            if (TIFFImageReader.DEBUG) {
-                System.err.println("Building YCC conversion table");
-            }
-
-            for (int i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
-                // i is the actual input pixel value, in the range 0..MAXJSAMPLE
-                // The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE
-                // Cr=>R value is nearest int to 1.40200 * x
-                Cr_R_LUT[i] = (int) ((1.40200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-                // Cb=>B value is nearest int to 1.77200 * x
-                Cb_B_LUT[i] = (int) ((1.77200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-                // Cr=>G value is scaled-up -0.71414 * x
-                Cr_G_LUT[i] = -(int) (0.71414 * (1 << SCALEBITS) + 0.5) * x;
-                // Cb=>G value is scaled-up -0.34414 * x
-                // We also add in ONE_HALF so that need not do it in inner loop
-                Cb_G_LUT[i] = -(int) ((0.34414) * (1 << SCALEBITS) + 0.5) * x + ONE_HALF;
-            }
-        }
-
-        static {
-            buildYCCtoRGBtable();
-        }
-
-        static void convertYCbCr2RGB(final Raster raster) {
-            final int height = raster.getHeight();
-            final int width = raster.getWidth();
-            final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    convertYCbCr2RGB(data, data, (x + y * width) * 3);
-                }
-            }
-        }
-
-        static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
-            int y  = yCbCr[offset    ] & 0xff;
-            int cr = yCbCr[offset + 2] & 0xff;
-            int cb = yCbCr[offset + 1] & 0xff;
-
-            rgb[offset    ] = clamp(y + Cr_R_LUT[cr]);
-            rgb[offset + 1] = clamp(y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            rgb[offset + 2] = clamp(y + Cb_B_LUT[cb]);
-        }
-
-        static void convertYCCK2CMYK(final Raster raster) {
-            final int height = raster.getHeight();
-            final int width = raster.getWidth();
-            final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    convertYCCK2CMYK(data, data, (x + y * width) * 4);
-                }
-            }
-        }
-
-        private static void convertYCCK2CMYK(byte[] ycck, byte[] cmyk, int offset) {
-            // Inverted
-            int y  = 255 - ycck[offset    ] & 0xff;
-            int cb = 255 - ycck[offset + 1] & 0xff;
-            int cr = 255 - ycck[offset + 2] & 0xff;
-            int k  = 255 - ycck[offset + 3] & 0xff;
-
-            int cmykC = MAXJSAMPLE - (y + Cr_R_LUT[cr]);
-            int cmykM = MAXJSAMPLE - (y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            int cmykY = MAXJSAMPLE - (y + Cb_B_LUT[cb]);
-
-            cmyk[offset    ] = clamp(cmykC);
-            cmyk[offset + 1] = clamp(cmykM);
-            cmyk[offset + 2] = clamp(cmykY);
-            cmyk[offset + 3] = (byte) k; // K passes through unchanged
-        }
+    private short clampShort(int val) {
+        return (short) Math.max(0, Math.min(0xffff, val));
     }
 }

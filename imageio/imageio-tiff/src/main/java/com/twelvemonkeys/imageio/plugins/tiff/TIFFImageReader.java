@@ -274,7 +274,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:
                 // JPEG reader will handle YCbCr to RGB for us, otherwise we'll convert while reading
-                // TODO: Sanity check that we have SamplesPerPixel == 3, BitsPerSample == [8,8,8] and Compression == 1 (none), 5 (LZW), or 6 (JPEG)
+                // TODO: Sanity check that we have SamplesPerPixel == 3, BitsPerSample == [8,8,8] (or [16,16,16]) and Compression == 1 (none), 5 (LZW), or 6 (JPEG)
             case TIFFBaseline.PHOTOMETRIC_RGB:
                 // RGB
                 cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_sRGB) : ColorSpaces.createColorSpace(profile);
@@ -617,8 +617,15 @@ public class TIFFImageReader extends ImageReaderBase {
                             adapter = createDecompressorStream(compression, width, adapter);
                             adapter = createUnpredictorStream(predictor, width, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
 
-                            if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+                            if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_BYTE) {
                                 adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, yCbCrCoefficients);
+                            }
+                            else if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_USHORT) {
+                                adapter = new YCbCr16UpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, yCbCrCoefficients, imageInput.getByteOrder());
+                            }
+                            else if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+                                // Handled in getRawImageType
+                                throw new AssertionError();
                             }
 
                             // According to the spec, short/long/etc should follow order of containing stream
@@ -765,8 +772,9 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 if (jpegOffset != -1) {
                     // Straight forward case: We're good to go! We'll disregard tiling and any tables tags
-
-                    if (currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES) != null || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES) != null) {
+                    if (currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES) != null
+                            || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES) != null
+                            || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES) != null) {
                         processWarningOccurred("Old-style JPEG compressed TIFF with JFIF stream encountered. Ignoring JPEG tables. Reading as single tile.");
                     }
                     else {
