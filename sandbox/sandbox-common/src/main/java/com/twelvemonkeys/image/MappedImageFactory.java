@@ -50,6 +50,7 @@ public final class MappedImageFactory {
 
     // TODO: Create a way to do ColorConvertOp (or other color space conversion) on these images. 
     // - Current implementation of CCOp delegates to internal sun.awt classes that assumes java.awt.DataBufferByte for type byte buffers :-/
+    // - Might be possible (but slow) to copy parts to memory and do CCOp on these copies
 
     private static final boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.image.mapped.debug"));
     static final RasterFactory RASTER_FACTORY = createRasterFactory();
@@ -62,8 +63,6 @@ public final class MappedImageFactory {
     }
 
     public static BufferedImage createCompatibleMappedImage(int width, int height, GraphicsConfiguration configuration, int transparency) throws IOException {
-//        BufferedImage temp = configuration.createCompatibleImage(1, 1, transparency);
-//        return createCompatibleMappedImage(width, height, temp.getSampleModel().createCompatibleSampleModel(width, height), temp.getColorModel());
         return createCompatibleMappedImage(width, height, configuration.getColorModel(transparency));
     }
 
