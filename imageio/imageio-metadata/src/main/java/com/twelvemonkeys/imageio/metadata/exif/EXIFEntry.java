@@ -120,6 +120,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "Artist";
             case TIFF.TAG_HOST_COMPUTER:
                 return "HostComputer";
+            case TIFF.TAG_PREDICTOR:
+                return "Predictor";
             case TIFF.TAG_COPYRIGHT:
                 return "Copyright";
             case TIFF.TAG_YCBCR_SUB_SAMPLING:
