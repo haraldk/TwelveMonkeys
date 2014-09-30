@@ -71,6 +71,22 @@
                     </archive>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <inherited>true</inherited>
+                <executions>
+                     <execution>
+                         <phase>package</phase>
+                         <id>attach-sources</id>
+                         <goals>
+                             <goal>jar</goal>
+                             <goal>test-jar</goal>
+                         </goals>
+                     </execution>
+                 </executions>
+             </plugin>
         </plugins>
 
         <pluginManagement>
@@ -107,18 +123,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>2.2.1</version>
-                    <inherited>true</inherited>
-                    <!-- THIS DOES NOT WORK..?! -->
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar</goal>
-                                <goal>test-jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
