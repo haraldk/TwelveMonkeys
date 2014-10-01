@@ -49,6 +49,19 @@ Mainstream format support
 If you are one of the authors, or know one of the authors and/or the current license holders of either the original jj2000 package or the JAI ImageIO project, please contact me
 (I've tried to get in touch in various ways, without success so far).
 
+#### NetPBM Portable Any Map (PNM) *3.1*
+
+* Read support for the following file types
+  * PBM in 'P1' (ASCII) and 'P4' (binary) formats, 1 bit per pixel
+  * PGM in 'P2' (ASCII) and 'P5' (binary) formats, up to 16/32 bits per pixel
+  * PPM in 'P3' (ASCII) and 'P6' (binary) formats, up to 16/32 bits per pixel component
+  * PAM in 'P7' (binary) format up to 32 bits per pixel component
+  * Limited support for PFM in Pf (gray) and PF (RGB) formats, 32 bits floating point
+  
+* Write support for the following formats
+  * PPM in 'P6' (binary) format
+  * PAM in 'P7' (binary) format
+
 #### Adobe Photoshop Document (PSD)
 
 * Read support for the following file types:
@@ -93,16 +106,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Write support in progress
   * Will support writing most "Baseline" TIFF file types
 
-#### Apple Mac Paint Picture Format (PICT)
-
-* Legacy format, especially useful for reading OS X clipboard data.
-* Read support for the following file types:
-  * QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
-  * QuickDraw bitmap
-  * QuickDraw pixmap
-  * QuickTime stills
-* Write support for RGB pixel data:
-  * QuickDraw pixmap
+Legacy formats
 
 #### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
 
@@ -121,6 +125,47 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Support for the following compression types (read/write):
   * Uncompressed
   * RLE (PackBits)
+
+#### ZSoft Paintbrush Format (PCX) *3.1*
+
+* Read support for the following file types:
+  * Indexed color, 1, 2, 4 or 8 bits per pixel, bit planes or interleaved
+  * Grayscale, 8 bits per pixel
+  * Color (RGB), 8 bits per pixel component
+* Read support for DCX (multi-page) fax format, containing any of the above types
+* Support for the following compression types:
+  * Uncompressed (experimental)
+  * RLE compressed
+
+#### Apple Mac Paint Picture Format (PICT)
+
+* Legacy format, especially useful for reading OS X clipboard data.
+* Read support for the following file types:
+  * QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
+  * QuickDraw bitmap
+  * QuickDraw pixmap
+  * QuickTime stills
+* Write support for RGB pixel data:
+  * QuickDraw pixmap
+
+#### Silicon Graphics Image Format (SGI) *3.1*
+
+* Read support for the following file types:
+  * 1, 2, 3 or 4 channel image data
+  * 8 or 16 bits per pixel component
+* Support for the following compression types:
+  * Uncompressed
+  * RLE compressed
+
+#### Truevision TGA Image Format (TGA) *3.1*
+
+* Read support for the following file types:
+  * ColorMapped
+  * Monochrome
+  * TrueColor
+* Support for the following compression types:
+  * Uncompressed
+  * RLE compressed
 
 Icon/other formats
 
