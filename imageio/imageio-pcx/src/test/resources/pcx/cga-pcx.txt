@@ -1,0 +1,33 @@
+From Jim Leonard (trixter -at- oldskool.org)
+
+Here you go.  I made these myself, and made sure to flex all of the 
+PCX format's CGA attributes.  These all load perfectly under *REAL* 
+PC Paintbrush 4.0 in DOS on a CGA card, so if your decoder screws it 
+up, it's the fault of your decoder!
+
+They are:
+
+CGA_FSD.PCX    Standard lightcyan-lightmagenta-white palette (intensity 
+bit set) with black background.  When most people think of CGA, they're 
+thinking of this.
+
+0x00
+000 0 0000
+
+CGA_TST1.PCX    Different palette (intensite bit NOT set) and different
+background color.  If you can read the text inside the box at the bottom, 
+your decoder is shite :-)
+
+0xf0
+111 1 0000
+
+
+CGA_RGBI.PCX    Less commonly-used lightred-lightgreen-yellow palette 
+(intensity bit set) with a blue background.
+
+0xa4
+101 0 0100
+
+
+CGA_BW.PCX    640x200 B&W pic in case he didn't have a sample.  
+Most PCX decoders handle this just fine.
