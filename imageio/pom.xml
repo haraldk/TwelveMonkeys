@@ -47,8 +47,8 @@
     </modules>
 
     <properties>
-        <core.version>3.0-SNAPSHOT</core.version>
-        <imageio.core.version>3.0-SNAPSHOT</imageio.core.version>
+        <core.version>3.1-SNAPSHOT</core.version>
+        <imageio.core.version>3.1-SNAPSHOT</imageio.core.version>
     </properties>
 
     <dependencies>
