@@ -34,6 +34,7 @@
         <module>imageio-jpeg</module>
         <module>imageio-pdf</module>
         <module>imageio-pict</module>
+        <module>imageio-pnm</module>
         <module>imageio-psd</module>
         <module>imageio-thumbsdb</module>
         <module>imageio-tiff</module>
