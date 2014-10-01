@@ -56,7 +56,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
   * PGM in 'P2' (ASCII) and 'P5' (binary) formats, up to 16/32 bits per pixel
   * PPM in 'P3' (ASCII) and 'P6' (binary) formats, up to 16/32 bits per pixel component
   * PAM in 'P7' (binary) format up to 32 bits per pixel component
-  * Limited support for PFM in Pf (gray) and PF (RGB) formats, 32 bits floating point
+  * Limited support for PFM in 'Pf' (gray) and 'PF' (RGB) formats, 32 bits floating point
   
 * Write support for the following formats
   * PPM in 'P6' (binary) format
