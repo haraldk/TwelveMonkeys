@@ -428,12 +428,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.0</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0</version> <!-- Alternatively, build your own 3.1-something version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.0</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0</version> <!-- Alternatively, build your own 3.1-something version -->
         </dependency>
     </dependencies>
 
