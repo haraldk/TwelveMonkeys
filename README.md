@@ -384,12 +384,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.0-rc5</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0</version> <!-- Alternatively, build your own 3.0-something version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.0-rc5</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0</version> <!-- Alternatively, build your own 3.0-something version -->
         </dependency>
     </dependencies>
 
@@ -397,41 +397,41 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.0-rc5.jar
-    twelvemonkeys-common-io-3.0-rc5.jar
-    twelvemonkeys-common-image-3.0-rc5.jar
-    twelvemonkeys-imageio-core-3.0-rc5.jar
-    twelvemonkeys-imageio-metadata-3.0-rc5.jar
-    twelvemonkeys-imageio-jpeg-3.0-rc5.jar
-    twelvemonkeys-imageio-tiff-3.0-rc5.jar
+    twelvemonkeys-common-lang-3.0.jar
+    twelvemonkeys-common-io-3.0.jar
+    twelvemonkeys-common-image-3.0.jar
+    twelvemonkeys-imageio-core-3.0.jar
+    twelvemonkeys-imageio-metadata-3.0.jar
+    twelvemonkeys-imageio-jpeg-3.0.jar
+    twelvemonkeys-imageio-tiff-3.0.jar
 
 ### Links to prebuilt binaries
 
 Common dependencies
-* [common-lang-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0-rc5/common-lang-3.0-rc5.jar)
-* [common-io-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0-rc5/common-io-3.0-rc5.jar)
-* [common-image-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0-rc5/common-image-3.0-rc5.jar)
+* [common-lang-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0/common-lang-3.0.jar)
+* [common-io-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0/common-io-3.0.jar)
+* [common-image-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0/common-image-3.0.jar)
 
 ImageIO dependencies
-* [imageio-core-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0-rc5/imageio-core-3.0-rc5.jar)
-* [imageio-metadata-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0-rc5/imageio-metadata-3.0-rc5.jar)
+* [imageio-core-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0/imageio-core-3.0.jar)
+* [imageio-metadata-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0/imageio-metadata-3.0.jar)
 
 ImageIO plugins
-* [imageio-jpeg-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0-rc5/imageio-jpeg-3.0-rc5.jar)
-* [imageio-tiff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0-rc5/imageio-tiff-3.0-rc5.jar)
-* [imageio-psd-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0-rc5/imageio-psd-3.0-rc5.jar)
-* [imageio-pict-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0-rc5/imageio-pict-3.0-rc5.jar)
-* [imageio-iff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0-rc5/imageio-iff-3.0-rc5.jar)
-* [imageio-icns-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0-rc5/imageio-icns-3.0-rc5.jar)
-* [imageio-ico-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0-rc5/imageio-ico-3.0-rc5.jar)
-* [imageio-thumbsdb-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0-rc5/imageio-thumbsdb-3.0-rc5.jar)
+* [imageio-jpeg-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0/imageio-jpeg-3.0.jar)
+* [imageio-tiff-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0/imageio-tiff-3.0.jar)
+* [imageio-psd-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0/imageio-psd-3.0.jar)
+* [imageio-pict-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0/imageio-pict-3.0.jar)
+* [imageio-iff-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0/imageio-iff-3.0.jar)
+* [imageio-icns-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0/imageio-icns-3.0.jar)
+* [imageio-ico-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0/imageio-ico-3.0.jar)
+* [imageio-thumbsdb-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0/imageio-thumbsdb-3.0.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0-rc5/imageio-batik-3.0-rc5.jar)
-* [imageio-jmagick-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0-rc5/imageio-jmagick-3.0-rc5.jar)
+* [imageio-batik-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0/imageio-batik-3.0.jar)
+* [imageio-jmagick-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0/imageio-jmagick-3.0.jar)
 
 Servlet support
-* [servlet-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0-rc5/servlet-3.0-rc5.jar)
+* [servlet-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0/servlet-3.0.jar)
 
 ## License
 
