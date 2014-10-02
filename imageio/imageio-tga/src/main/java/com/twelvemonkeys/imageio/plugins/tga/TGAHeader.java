@@ -1,12 +1,11 @@
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.IndexColorModel;
 import java.io.DataInput;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-
-import javax.imageio.IIOException;
-import javax.imageio.stream.ImageInputStream;
+import java.nio.charset.Charset;
 
 final class TGAHeader {
 
@@ -125,7 +124,7 @@ final class TGAHeader {
             byte[] idBytes = new byte[imageIdLength];
             imageInput.readFully(idBytes);
 
-            header.identification = new String(idBytes, StandardCharsets.US_ASCII);
+            header.identification = new String(idBytes, Charset.forName("US-ASCII"));
         }
 
         // Color map, not *really* part of the header
