@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.twelvemonkeys.imageio</groupId>
+        <artifactId>imageio</artifactId>
+        <version>3.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>batik-transcoder-fix42408</artifactId>
+    <name>TwelveMonkeys :: ImageIO :: Batik 1.7 Transcoder Fix</name>
+    <description>
+        <![CDATA[
+        fix for batik 1.7 transcoders
+
+Bugzilla #42408:
+Fixed HeadlessException by introducing Platform.getScreenResolution().
+
+Based on http://svn.apache.org/viewvc?view=revision&amp;revision=1076146]]>
+    </description>
+        
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-transcoder</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+
+            <!--
+            There seems to be some weirdness in the
+            Batik/FOP poms (Batik depends on FOP 0.20-5) that screws things up,
+            making everything end up depending on Batik 1.5, not 1.6
+            -->
+            <exclusions>
+                <exclusion>
+                    <groupId>fop</groupId>
+                    <artifactId>fop</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>        
+    </dependencies>
+</project>
