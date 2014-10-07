@@ -532,13 +532,11 @@ Should you want to use very specific/advanced features of some of the formats, y
 
 q: How does it work?
 
-a: The TwelveMonkeys ImageIO project contains plug-ins for ImageIO.
-
-ImageIO uses a service lookup mechanism, to discover plug-ins at runtime.
-
-TODO: Describe SPI mechanism.
+a: The TwelveMonkeys ImageIO project contains plug-ins for ImageIO. ImageIO uses a service lookup mechanism, to discover plug-ins at runtime. 
 
 All you have have to do, is to make sure you have the TwelveMonkeys JARs in your classpath.
+
+You can read more about the registry and the lookup mechanism in the [IIORegistry API doc](http://docs.oracle.com/javase/7/docs/api/javax/imageio/spi/IIORegistry.html).
 
 The fine print: The TwelveMonkeys service providers for TIFF and JPEG overrides the onRegistration method, and
 utilizes the pairwise partial ordering mechanism of the IIOServiceRegistry to make sure it is installed before
