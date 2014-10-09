@@ -30,10 +30,15 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * TIFFImageReaderTest
@@ -120,4 +125,22 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
     }
 
     // TODO: Test YCbCr colors
+
+    @Test
+    public void testReadOldStyleJPEGGrayscale() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/grayscale-old-style-jpeg.tiff"), new Dimension(600, 600));
+        ImageInputStream stream = testData.getInputStream();
+
+        try {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+        }
+        finally {
+            stream.close();
+        }
+    }
 }
