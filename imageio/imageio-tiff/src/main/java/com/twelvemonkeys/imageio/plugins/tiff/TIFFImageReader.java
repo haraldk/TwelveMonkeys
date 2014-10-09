@@ -764,7 +764,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 int jpegLenght = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
                 // TODO: 515/JPEGRestartInterval (may be absent)
 
-                // Currently ignored
+                // Currently ignored (for lossless only)
                 // 517/JPEGLosslessPredictors
                 // 518/JPEGPointTransforms
 
@@ -782,6 +782,33 @@ public class TIFFImageReader extends ImageReaderBase {
                     }
 
                     imageInput.seek(jpegOffset);
+
+                    // NOTE: Some known TIFF encoder encodes bad JPEGInterchangeFormat tags,
+                    // but has the correct offset to the JPEG stream in the StripOffset tag.
+                    long realJPEGOffset = jpegOffset;
+
+                    short expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
+                    if (expectedSOI != (short) JPEG.SOI) {
+                        if (stripTileOffsets != null && stripTileOffsets.length == 1) {
+                            imageInput.seek(stripTileOffsets[0]);
+
+                            expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
+                            if (expectedSOI == (short) JPEG.SOI) {
+                                realJPEGOffset = stripTileOffsets[0];
+                            }
+                        }
+
+                        if (realJPEGOffset != jpegOffset) {
+                            processWarningOccurred("Incorrect JPEGInterchangeFormat tag, using StripOffset/TileOffset instead.");
+                        }
+                        else {
+                            processWarningOccurred("Incorrect JPEGInterchangeFormat tag encountered (not a valid SOI marker).");
+                            // We'll fail below, but we don't need to handle this especially
+                        }
+                    }
+
+                    imageInput.seek(realJPEGOffset);
+
                     stream = new SubImageInputStream(imageInput, jpegLenght != -1 ? jpegLenght : Short.MAX_VALUE);
                     jpegReader.setInput(stream);
 
@@ -807,7 +834,6 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
                 else {
                     // The hard way: Read tables and re-create a full JFIF stream
-
                     processWarningOccurred("Old-style JPEG compressed TIFF without JFIF stream encountered. Attempting to re-create JFIF stream.");
 
                     // 519/JPEGQTables
