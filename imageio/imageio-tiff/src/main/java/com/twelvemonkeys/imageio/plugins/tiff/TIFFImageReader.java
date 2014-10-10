@@ -784,7 +784,7 @@ public class TIFFImageReader extends ImageReaderBase {
                     imageInput.seek(jpegOffset);
 
                     // NOTE: Some known TIFF encoder encodes bad JPEGInterchangeFormat tags,
-                    // but has the correct offset to the JPEG stream in the StripOffset tag.
+                    // but has the correct offset to the JPEG stream in the StripOffsets tag.
                     long realJPEGOffset = jpegOffset;
 
                     short expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
@@ -799,7 +799,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
 
                         if (realJPEGOffset != jpegOffset) {
-                            processWarningOccurred("Incorrect JPEGInterchangeFormat tag, using StripOffset/TileOffset instead.");
+                            processWarningOccurred("Incorrect JPEGInterchangeFormat tag, using StripOffsets/TileOffsets instead.");
                         }
                         else {
                             processWarningOccurred("Incorrect JPEGInterchangeFormat tag encountered (not a valid SOI marker).");
