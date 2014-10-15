@@ -133,6 +133,11 @@ final class EXIFEntry extends AbstractEntry {
             case TIFF.TAG_EXTRA_SAMPLES:
                 return "ExtraSamples";
 
+            case TIFF.TAG_SUB_IFD:
+                return "SubIFD";
+            case TIFF.TAG_SUBFILE_TYPE:
+                return "SubfileType";
+
             case EXIF.TAG_EXPOSURE_TIME:
                 return "ExposureTime";
             case EXIF.TAG_F_NUMBER:
