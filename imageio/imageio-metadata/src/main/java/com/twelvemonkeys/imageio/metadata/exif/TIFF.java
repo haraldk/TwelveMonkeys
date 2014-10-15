@@ -160,6 +160,8 @@ public interface TIFF {
     int TAG_HOST_COMPUTER = 316;
     int TAG_COPYRIGHT = 33432;
 
+    int TAG_SUBFILE_TYPE = 254;
+    int TAG_OLD_SUBFILE_TYPE = 255; // Deprecated NO NOT WRITE!
     int TAG_SUB_IFD = 330;
 
     int TAG_XMP = 700;
