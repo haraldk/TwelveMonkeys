@@ -36,7 +36,6 @@ import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import com.twelvemonkeys.imageio.plugins.jpeg.LosslessJPEGDecoder;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
 import javax.imageio.IIOException;
@@ -50,10 +49,11 @@ import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
+//import com.twelvemonkeys.imageio.plugins.jpeg.LosslessJPEGDecoder;
 
 /**
  * Canon CR2 RAW ImageReader.
@@ -443,24 +443,24 @@ public final class CR2ImageReader extends ImageReaderBase {
             int height = getHeight(0);
 
             imageInput.seek(stripOffsets);
-            byte[] data = new LosslessJPEGDecoder().decompress(new SubImageInputStream(imageInput, stripByteCounts), null);
-
-            // TODO: We really have 2 bytes/sample
-            short[] data2 = new short[data.length / 2];
-            ByteBuffer wrap = ByteBuffer.wrap(data);
-            wrap.asShortBuffer().get(data2);
-
-            System.err.println("data.length: " + data2.length);
-            System.err.println("width x height: " + width * height);
-
-            DataBuffer dataBuffer = new DataBufferUShort(data2, data2.length);
-            WritableRaster raster = Raster.createInterleavedRaster(dataBuffer, width, height, width, 1, new int[] {0}, null);
-            ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, raster.getTransferType());
-            BufferedImage image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
-
-            System.err.println("image: " + image);
-
-            return image;
+//            byte[] data = new LosslessJPEGDecoder().decompress(new SubImageInputStream(imageInput, stripByteCounts), null);
+//
+//            // TODO: We really have 2 bytes/sample
+//            short[] data2 = new short[data.length / 2];
+//            ByteBuffer wrap = ByteBuffer.wrap(data);
+//            wrap.asShortBuffer().get(data2);
+//
+//            System.err.println("data.length: " + data2.length);
+//            System.err.println("width x height: " + width * height);
+//
+//            DataBuffer dataBuffer = new DataBufferUShort(data2, data2.length);
+//            WritableRaster raster = Raster.createInterleavedRaster(dataBuffer, width, height, width, 1, new int[] {0}, null);
+//            ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, raster.getTransferType());
+//            BufferedImage image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+//
+//            System.err.println("image: " + image);
+//
+//            return image;
         }
 
         return null;
