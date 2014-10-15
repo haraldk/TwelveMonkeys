@@ -28,11 +28,14 @@
         <module>imageio-metadata</module>
 
         <!-- Stand-alone readers/writers -->
+        <module>imageio-cr2</module>
+        <module>imageio-dng</module>
         <module>imageio-ico</module>
         <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>
         <module>imageio-pcx</module>
+        <module>imageio-nef</module>
         <module>imageio-pdf</module>
         <module>imageio-pict</module>
         <module>imageio-pnm</module>
