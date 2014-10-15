@@ -46,6 +46,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: CR2ImageReaderTest.java,v 1.0 07.04.14 21:52 haraldk Exp$
  */
+@Ignore
 public class DNGImageReaderTest extends ImageReaderAbstractTestCase {
     @Override
     protected List<TestData> getTestData() {
