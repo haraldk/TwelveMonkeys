@@ -634,10 +634,14 @@ public class TIFFImageReader extends ImageReaderBase {
                                     : new LittleEndianDataInputStream(adapter);
                         }
 
-                        // Read a full strip/tile
-                        Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
+                        // Clip the stripTile rowRaster to not exceed the srcRegion
+                        Rectangle clip = new Rectangle(srcRegion);
+                        clip.width = Math.min((colsInTile + xSub - 1) / xSub, srcRegion.width);
+                        Raster clippedRow = clipRowToRect(rowRaster, clip,
                                 param != null ? param.getSourceBands() : null,
                                 param != null ? param.getSourceXSubsampling() : 1);
+
+                        // Read a full strip/tile
                         readStripTileData(clippedRow, srcRegion, xSub, ySub, numBands, interpretation, destRaster, col, row, colsInTile, rowsInTile, input);
 
                         if (abortRequested()) {
