@@ -8,7 +8,7 @@
     </parent>
     <artifactId>imageio-icns</artifactId>
     <name>TwelveMonkeys :: ImageIO :: ICNS plugin</name>
-    <description>ImageIO plugin for Apple Icon Image (icns) format.</description>
+    <description>ImageIO plugin for Apple Icon Image (ICNS) format.</description>
 
     <dependencies>
         <dependency>
