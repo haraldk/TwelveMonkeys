@@ -28,7 +28,7 @@
         <module>imageio-metadata</module>
 
         <!-- Stand-alone readers/writers -->
-        <module>imageio-ico</module>
+        <module>imageio-bmp</module>
         <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>
