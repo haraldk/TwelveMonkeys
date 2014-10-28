@@ -29,6 +29,8 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Test;
 
+import javax.imageio.ImageReader;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -39,6 +41,12 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.contains;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * TIFFImageReaderTest
@@ -139,6 +147,30 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
 
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+        }
+        finally {
+            stream.close();
+        }
+    }
+
+    @Test
+    public void testReadIncompatibleICCProfileIgnoredWithWarning() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/rgb-with-embedded-cmyk-icc.tif"), new Dimension(1500, 1500));
+
+        ImageInputStream stream = testData.getInputStream();
+
+        try {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ICC"));
         }
         finally {
             stream.close();
