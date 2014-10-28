@@ -258,6 +258,11 @@ public class TIFFImageReader extends ImageReaderBase {
                     case 1:
                         // TIFF 6.0 Spec says: 1, 4 or 8 for baseline (1 for bi-level, 4/8 for gray)
                         // ImageTypeSpecifier supports 1, 2, 4, 8 or 16 bits, we'll go with that for now
+                        if (profile != null && profile.getColorSpaceType() != ColorSpace.TYPE_GRAY) {
+                            processWarningOccurred(String.format("Embedded ICC color profile (type %s), is incompatible with image data (GRAY/type 6). Ignoring profile.", profile.getColorSpaceType()));
+                            profile = null;
+                        }
+
                         cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
 
                         if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16)) {
@@ -277,6 +282,11 @@ public class TIFFImageReader extends ImageReaderBase {
                 // TODO: Sanity check that we have SamplesPerPixel == 3, BitsPerSample == [8,8,8] (or [16,16,16]) and Compression == 1 (none), 5 (LZW), or 6 (JPEG)
             case TIFFBaseline.PHOTOMETRIC_RGB:
                 // RGB
+                if (profile != null && profile.getColorSpaceType() != ColorSpace.TYPE_RGB) {
+                    processWarningOccurred(String.format("Embedded ICC color profile (type %s), is incompatible with image data (RGB/type 5). Ignoring profile.", profile.getColorSpaceType()));
+                    profile = null;
+                }
+
                 cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_sRGB) : ColorSpaces.createColorSpace(profile);
 
                 switch (samplesPerPixel) {
@@ -346,8 +356,22 @@ public class TIFFImageReader extends ImageReaderBase {
 
             case TIFFExtension.PHOTOMETRIC_SEPARATED:
                 // Separated (CMYK etc)
-                // TODO: Consult the 332/InkSet (1=CMYK, 2=Not CMYK; see InkNames), 334/NumberOfInks (def=4) and optionally 333/InkNames
+                // Consult the 332/InkSet (1=CMYK, 2=Not CMYK; see InkNames), 334/NumberOfInks (def=4) and optionally 333/InkNames
                 // If "Not CMYK" we'll need an ICC profile to be able to display (in a useful way), readAsRaster should still work.
+                int inkSet = getValueAsIntWithDefault(TIFF.TAG_INK_SET, TIFFExtension.INKSET_CMYK);
+                int numberOfInks = getValueAsIntWithDefault(TIFF.TAG_NUMBER_OF_INKS, 4);
+
+                // Profile must be CMYK, OR color component must match NumberOfInks
+                if (inkSet != TIFFExtension.INKSET_CMYK && (profile == null || profile.getNumComponents() != numberOfInks)) {
+                    throw new IIOException(String.format(
+                            "Embedded ICC color profile for Photometric Separated is missing or is incompatible with image data: %s != NumberOfInks (%s).",
+                            profile != null ? profile.getNumComponents() : "null", numberOfInks));
+                }
+                if (profile != null && inkSet == TIFFExtension.INKSET_CMYK && profile.getColorSpaceType() != ColorSpace.TYPE_CMYK) {
+                    processWarningOccurred(String.format("Embedded ICC color profile (type %s), is incompatible with image data (CMYK/type 9). Ignoring profile.", profile.getColorSpaceType()));
+                    profile = null;
+                }
+
                 cs = profile == null ? ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK) : ColorSpaces.createColorSpace(profile);
 
                 switch (samplesPerPixel) {

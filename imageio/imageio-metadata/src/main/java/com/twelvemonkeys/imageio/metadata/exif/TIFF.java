@@ -143,6 +143,9 @@ public interface TIFF {
     int TAG_WHITE_POINT = 318;
     int TAG_PRIMARY_CHROMATICITIES = 319;
     int TAG_COLOR_MAP = 320;
+    int TAG_INK_SET = 332;
+    int TAG_INK_NAMES = 333;
+    int TAG_NUMBER_OF_INKS = 334;
     int TAG_EXTRA_SAMPLES = 338;
     int TAG_TRANSFER_RANGE = 342;
     int TAG_YCBCR_COEFFICIENTS = 529;
