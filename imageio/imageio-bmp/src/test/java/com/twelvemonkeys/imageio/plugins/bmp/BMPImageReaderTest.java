@@ -2,19 +2,30 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadProgressListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
-import java.net.URL;
+import java.lang.reflect.Constructor;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 
 /**
  * BMPImageReaderTest
@@ -160,4 +171,189 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
         }
     }
 
+    @Test
+    public void testAddIIOReadProgressListenerCallbacksJPEG() {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb24jpeg.bmp"), new Dimension(127, 64));
+        reader.setInput(data.getInputStream());
+
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
+
+        try {
+            reader.read(0);
+        }
+        catch (IOException e) {
+            fail("Could not read image");
+        }
+
+        // At least imageStarted and imageComplete, plus any number of imageProgress
+        InOrder ordered = inOrder(listener);
+        ordered.verify(listener).imageStarted(reader, 0);
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener).imageComplete(reader);
+    }
+
+    @Test
+    public void testAddIIOReadProgressListenerCallbacksPNG() {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb24png.bmp"), new Dimension(127, 64));
+        reader.setInput(data.getInputStream());
+
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
+
+        try {
+            reader.read(0);
+        }
+        catch (IOException e) {
+            fail("Could not read image");
+        }
+
+        // At least imageStarted and imageComplete, plus any number of imageProgress
+        InOrder ordered = inOrder(listener);
+        ordered.verify(listener).imageStarted(reader, 0);
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener).imageComplete(reader);
+    }
+
+    @Test
+    public void testMetadataEqualsJRE() throws IOException, URISyntaxException {
+        // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
+        ImageReader jreReader;
+        try {
+            @SuppressWarnings("unchecked")
+            Class<ImageReader> jreReaderClass = (Class<ImageReader>) Class.forName("com.sun.imageio.plugins.bmp.BMPImageReader");
+            Constructor<ImageReader> constructor = jreReaderClass.getConstructor(ImageReaderSpi.class);
+            jreReader = constructor.newInstance(new Object[] {null});
+        }
+        catch (Exception e) {
+            System.err.println("WARNING: Skipping metadata tests: " + e);
+            e.printStackTrace();
+            return;
+        }
+
+        ImageReader reader = createReader();
+
+        for (TestData data : getTestData()) {
+            if (data.getInput().toString().contains("pal8offs")) {
+                continue;
+            }
+
+            reader.setInput(data.getInputStream());
+            jreReader.setInput(data.getInputStream());
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+
+            // WORKAROUND: JRE reader does not reset metadata on setInput. Invoking getWidth forces re-read of header and metadata.
+            try {
+                jreReader.getWidth(0);
+            }
+            catch (Exception e) {
+                System.err.println("WARNING: Reading " + data + " caused exception: " + e.getMessage());
+                continue;
+            }
+            IIOMetadata jreMetadata = jreReader.getImageMetadata(0);
+
+            assertEquals(true, metadata.isStandardMetadataFormatSupported());
+            assertEquals(jreMetadata.getNativeMetadataFormatName(), metadata.getNativeMetadataFormatName());
+            assertArrayEquals(jreMetadata.getExtraMetadataFormatNames(), metadata.getExtraMetadataFormatNames());
+
+            // TODO: Allow our standard metadata to be richer, but contain at least the information from the JRE impl
+
+            for (String format : jreMetadata.getMetadataFormatNames()) {
+                String absolutePath = data.toString();
+                String localPath = absolutePath.substring(absolutePath.lastIndexOf("test-classes") + 12);
+
+                Node expectedTree = jreMetadata.getAsTree(format);
+                Node actualTree = metadata.getAsTree(format);
+
+//                try {
+                    assertNodeEquals(localPath + " - " + format, expectedTree, actualTree);
+//                }
+//                catch (AssertionError e) {
+//                    ByteArrayOutputStream expected = new ByteArrayOutputStream();
+//                    ByteArrayOutputStream actual = new ByteArrayOutputStream();
+//
+//                    new XMLSerializer(expected, "UTF-8").serialize(expectedTree, false);
+//                    new XMLSerializer(actual, "UTF-8").serialize(actualTree, false);
+//
+//                    assertEquals(e.getMessage(), new String(expected.toByteArray(), "UTF-8"), new String(actual.toByteArray(), "UTF-8"));
+//
+//                    throw e;
+//                }
+            }
+        }
+    }
+
+    private void assertNodeEquals(final String message, final Node expected, final Node actual) {
+        assertEquals(message + " class differs", expected.getClass(), actual.getClass());
+
+        if (!excludeEqualValueTest(expected)) {
+            assertEquals(message, expected.getNodeValue(), actual.getNodeValue());
+
+            if (expected instanceof IIOMetadataNode) {
+                IIOMetadataNode expectedIIO = (IIOMetadataNode) expected;
+                IIOMetadataNode actualIIO = (IIOMetadataNode) actual;
+
+                assertEquals(message, expectedIIO.getUserObject(), actualIIO.getUserObject());
+            }
+        }
+
+        NodeList expectedChildNodes = expected.getChildNodes();
+        NodeList actualChildNodes = actual.getChildNodes();
+
+        assertEquals(message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes),
+                expectedChildNodes.getLength(), actualChildNodes.getLength());
+
+        for (int i = 0; i < expectedChildNodes.getLength(); i++) {
+            Node expectedChild = expectedChildNodes.item(i);
+            Node actualChild = actualChildNodes.item(i);
+
+            assertEquals(message + " node name differs", expectedChild.getLocalName(), actualChild.getLocalName());
+            assertNodeEquals(message + "/" + expectedChild.getLocalName(), expectedChild, actualChild);
+        }
+    }
+
+    private boolean excludeEqualValueTest(final Node expected) {
+        if (expected.getLocalName().equals("ImageSize")) {
+            // JRE metadata returns 0, even if known in reader...
+            return true;
+        }
+        if (expected.getLocalName().equals("ColorsImportant")) {
+            // JRE metadata returns 0, even if known in reader...
+            return true;
+        }
+        if (expected.getParentNode() != null && expected.getParentNode().getLocalName().equals("PaletteEntry") && !expected.getNodeValue().equals("Green")) {
+            // JRE metadata returns RGB colors in BGR order
+            // JRE metadata returns 0 for alpha, when -1 (0xff) is at least just as correct (why contain alpha at all?)
+            return true;
+        }
+        if (expected.getLocalName().equals("Height") && expected.getNodeValue().startsWith("-")) {
+            // JRE metadata returns negative height for bottom/up images
+            // TODO: Decide if we should do the same, as there is no "orientation" or flag for bottom/up
+            return true;
+        }
+
+        return false;
+    }
+
+    private String toString(final NodeList list) {
+        if (list.getLength() == 0) {
+            return "[]";
+        }
+
+        StringBuilder builder = new StringBuilder("[");
+        for (int i = 0; i < list.getLength(); i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+
+            Node node = list.item(i);
+            builder.append(node.getLocalName());
+        }
+        builder.append("]");
+
+        return builder.toString();
+    }
 }

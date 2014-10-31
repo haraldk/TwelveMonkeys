@@ -65,10 +65,10 @@ public final class BMPImageReaderSpi extends ImageReaderSpi {
                 },
                 "com.twelvemonkeys.imageio.plugins.bmp.BMPImageReader",
                 new Class[]{ImageInputStream.class},
-                null,
-                true, null, null, null, null,
+                new String[]{"com.sun.imageio.plugins.bmp.BMPImageWriterSpi"}, // We support the same native metadata format
+                false, null, null, null, null,
                 true,
-                null, null,
+                BMPMetadata.nativeMetadataFormatName, "com.sun.imageio.plugins.bmp.BMPMetadataFormat",
                 null, null
         );
     }

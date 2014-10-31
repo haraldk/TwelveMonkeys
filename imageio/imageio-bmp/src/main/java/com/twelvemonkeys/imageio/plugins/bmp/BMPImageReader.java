@@ -32,11 +32,15 @@ import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.xml.XMLSerializer;
 
 import javax.imageio.*;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
@@ -45,7 +49,6 @@ import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.DataInput;
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -58,15 +61,16 @@ import java.util.Iterator;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: CURImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
- *
  * @see com.twelvemonkeys.imageio.plugins.bmp.ICOImageReader
  */
 public final class BMPImageReader extends ImageReaderBase {
     private long pixelOffset;
     private DIBHeader header;
+    private int[] colors;
+    private IndexColorModel colorMap;
 
-    private transient ImageReader jpegReaderDelegate;
-    private transient ImageReader pngReaderDelegate;
+    private ImageReader jpegReaderDelegate;
+    private ImageReader pngReaderDelegate;
 
     public BMPImageReader() {
         super(new BMPImageReaderSpi());
@@ -80,6 +84,8 @@ public final class BMPImageReader extends ImageReaderBase {
     protected void resetMembers() {
         pixelOffset = 0;
         header = null;
+        colors = null;
+        colorMap = null;
 
         if (pngReaderDelegate != null) {
             pngReaderDelegate.dispose();
@@ -121,6 +127,53 @@ public final class BMPImageReader extends ImageReaderBase {
         }
     }
 
+    private IndexColorModel readColorMap() throws IOException {
+        readHeader();
+
+        if (colors == null) {
+            if (header.getBitCount() > 8 && header.colorsUsed == 0) {
+                // RGB without color map
+                colors = new int[0];
+            }
+            else {
+                int offset = DIB.BMP_FILE_HEADER_SIZE + header.getSize();
+                if (offset != imageInput.getStreamPosition()) {
+                    imageInput.seek(offset);
+                }
+
+                if (header.getSize() == DIB.BITMAP_CORE_HEADER_SIZE) {
+                    colors = new int[Math.min(header.getColorsUsed(), (int) (pixelOffset - DIB.BMP_FILE_HEADER_SIZE - header.getSize()) / 3)];
+
+                    // Byte triplets in BGR form
+                    for (int i = 0; i < colors.length; i++) {
+                        int b = imageInput.readUnsignedByte();
+                        int g = imageInput.readUnsignedByte();
+                        int r = imageInput.readUnsignedByte();
+                        colors[i] = r << 16 | g << 8 | b | 0xff000000;
+                    }
+                }
+                else {
+                    colors = new int[Math.min(header.getColorsUsed(), (int) (pixelOffset - DIB.BMP_FILE_HEADER_SIZE - header.getSize()) / 4)];
+
+                    // Byte quadruples in BGRa (or little-endian ints in aRGB) form, where a is "Reserved"
+                    for (int i = 0; i < colors.length; i++) {
+                        colors[i] = imageInput.readInt() & 0x00ffffff | 0xff000000;
+                    }
+                }
+
+                // There might be more entries in the color map, but we ignore these for reading
+                int mapSize = Math.min(colors.length, 1 << header.getBitCount());
+
+                // Compute bits for > 8 bits (used only for meta data)
+                int bits = header.getBitCount() <= 8 ? header.getBitCount() : mapSize <= 256 ? 8 : 16;
+
+                colorMap = new IndexColorModel(bits, mapSize, colors, 0, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+            }
+        }
+
+        return colorMap;
+    }
+
     @Override
     public int getWidth(int pImageIndex) throws IOException {
         checkBounds(pImageIndex);
@@ -143,40 +196,6 @@ public final class BMPImageReader extends ImageReaderBase {
         return Arrays.asList(getRawImageType(pImageIndex)).iterator();
     }
 
-    private void readColorMap(final BitmapIndexed pBitmap) throws IOException {
-        int offset = DIB.BMP_FILE_HEADER_SIZE + header.getSize();
-        if (offset != imageInput.getStreamPosition()) {
-            imageInput.seek(offset);
-        }
-
-        switch (header.getCompression()) {
-            case DIB.COMPRESSION_RGB:
-            case DIB.COMPRESSION_RLE4:
-            case DIB.COMPRESSION_RLE8:
-                break;
-            default:
-                throw new IIOException("Unsupported compression for palette: " + header.getCompression());
-        }
-
-        int colorCount = pBitmap.getColorCount();
-
-        if (header.getSize() == DIB.BITMAP_CORE_HEADER_SIZE) {
-            // Byte triplets in BGR form
-            for (int i = 0; i < colorCount; i++) {
-                int b = imageInput.readUnsignedByte();
-                int g = imageInput.readUnsignedByte();
-                int r = imageInput.readUnsignedByte();
-                pBitmap.colors[i] = r << 16 | g << 8 | b | 0xff000000;
-            }
-        }
-        else {
-            // Byte quadruples in BGRa (or ints in aRGB) form (where a is "Reserved")
-            for (int i = 0; i < colorCount; i++) {
-                pBitmap.colors[i] = (imageInput.readInt() & 0xffffff) | 0xff000000;
-            }
-        }
-    }
-
     @Override
     public ImageTypeSpecifier getRawImageType(int pImageIndex) throws IOException {
         checkBounds(pImageIndex);
@@ -190,22 +209,17 @@ public final class BMPImageReader extends ImageReaderBase {
             case 2:
             case 4:
             case 8:
-                // TODO: Get rid of the fake DirectoryEntry and support color maps directly
-                BitmapIndexed indexed = new BitmapIndexed(new DirectoryEntry() {}, header);
-                readColorMap(indexed);
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(indexed.createColorModel());
+                return IndexedImageTypeSpecifier.createFromIndexColorModel(readColorMap());
 
             case 16:
                 if (header.hasMasks()) {
                     int[] masks = getMasks();
 
-                    return ImageTypeSpecifier.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                                masks[0],
-                                masks[1],
-                                masks[2],
-                                masks[3],
-                                DataBuffer.TYPE_USHORT,
-                                false);
+                    return ImageTypeSpecifier.createPacked(
+                            ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                            masks[0], masks[1], masks[2], masks[3],
+                            DataBuffer.TYPE_USHORT, false
+                    );
                 }
 
                 // Default if no mask is 555
@@ -222,13 +236,11 @@ public final class BMPImageReader extends ImageReaderBase {
                 if (header.hasMasks()) {
                     int[] masks = getMasks();
 
-                    return ImageTypeSpecifier.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0],
-                            masks[1],
-                            masks[2],
-                            masks[3],
-                            DataBuffer.TYPE_INT,
-                            false);
+                    return ImageTypeSpecifier.createPacked(
+                            ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                            masks[0], masks[1], masks[2], masks[3],
+                            DataBuffer.TYPE_INT, false
+                    );
                 }
 
                 // Default if no mask
@@ -290,10 +302,18 @@ public final class BMPImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
+        ColorModel colorModel = destination.getColorModel();
+        if (colorModel instanceof IndexColorModel && ((IndexColorModel) colorModel).getMapSize() < header.getColorsUsed()) {
+            processWarningOccurred(
+                    String.format("Color map contains more colors than raster allows (%d). Ignoring entries above %d.",
+                            header.getColorsUsed(), ((IndexColorModel) colorModel).getMapSize())
+            );
+        }
+
         // BMP rows are padded to 4 byte boundary
         int rowSizeBytes = ((header.getBitCount() * width + 31) / 32) * 4;
 
-        // Wrap
+        // Wrap input according to compression
         imageInput.seek(pixelOffset);
         DataInput input;
 
@@ -369,17 +389,7 @@ public final class BMPImageReader extends ImageReaderBase {
                 case 8:
                 case 24:
                     byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                    try {
-                        readRowByte(input, height, srcRegion, xSub, ySub, rowDataByte, destRaster, clippedRow, y);
-                    }
-                    catch (IndexOutOfBoundsException ioob) {
-                        System.err.println("IOOB: " + ioob);
-                        System.err.println("y: " + y);
-                    }
-                    catch (EOFException eof) {
-                        System.err.println("EOF: " + eof);
-                        System.err.println("y: " + y);
-                    }
+                    readRowByte(input, height, srcRegion, xSub, ySub, rowDataByte, destRaster, clippedRow, y);
                     break;
 
                 case 16:
@@ -414,9 +424,7 @@ public final class BMPImageReader extends ImageReaderBase {
     }
 
     private BufferedImage readUsingDelegate(final int compression, final ImageReadParam param) throws IOException {
-        ImageReader reader = initReaderDelegate(compression);
-
-        return reader.read(0, param);
+        return initReaderDelegate(compression).read(0, param);
     }
 
     private ImageReader initReaderDelegate(int compression) throws IOException {
@@ -454,11 +462,18 @@ public final class BMPImageReader extends ImageReaderBase {
 
         // Consider looking for specific PNG and JPEG implementations.
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(format);
+
         if (!readers.hasNext()) {
             throw new IIOException(String.format("Delegate ImageReader for %s format not found", format));
         }
 
         ImageReader reader = readers.next();
+
+        // Install listener
+        ListenerDelegator listenerDelegator = new ListenerDelegator();
+        reader.addIIOReadWarningListener(listenerDelegator);
+        reader.addIIOReadProgressListener(listenerDelegator);
+        reader.addIIOReadUpdateListener(listenerDelegator);
 
         // Cache for later use
         switch (compression) {
@@ -503,8 +518,7 @@ public final class BMPImageReader extends ImageReaderBase {
 
         if (header.topDown) {
             destChannel.setDataElements(0, y, srcChannel);
-        }
-        else {
+        } else {
             // Flip into position
             int dstY = (height - 1 - y - srcRegion.y) / ySub;
             destChannel.setDataElements(0, dstY, srcChannel);
@@ -536,8 +550,7 @@ public final class BMPImageReader extends ImageReaderBase {
 
         if (header.topDown) {
             destChannel.setDataElements(0, y, srcChannel);
-        }
-        else {
+        } else {
             // Flip into position
             int dstY = (height - 1 - y - srcRegion.y) / ySub;
             destChannel.setDataElements(0, dstY, srcChannel);
@@ -545,7 +558,7 @@ public final class BMPImageReader extends ImageReaderBase {
     }
 
     private void readRowInt(final DataInput input, final int height, final Rectangle srcRegion, final int xSub, final int ySub,
-                            final int [] rowDataInt, final WritableRaster destChannel, final Raster srcChannel, final int y) throws IOException {
+                            final int[] rowDataInt, final WritableRaster destChannel, final Raster srcChannel, final int y) throws IOException {
         // If subsampled or outside source region, skip entire row
         if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
             input.skipBytes(rowDataInt.length * 4);
@@ -564,8 +577,7 @@ public final class BMPImageReader extends ImageReaderBase {
 
         if (header.topDown) {
             destChannel.setDataElements(0, y, srcChannel);
-        }
-        else {
+        } else {
             // Flip into position
             int dstY = (height - 1 - y - srcRegion.y) / ySub;
             destChannel.setDataElements(0, dstY, srcChannel);
@@ -577,8 +589,7 @@ public final class BMPImageReader extends ImageReaderBase {
         if (input instanceof ImageInputStream) {
             // Optimization for ImageInputStreams, read all in one go
             ((ImageInputStream) input).readFully(shorts, 0, shorts.length);
-        }
-        else {
+        } else {
             for (int i = 0; i < shorts.length; i++) {
                 shorts[i] = input.readShort();
             }
@@ -590,8 +601,7 @@ public final class BMPImageReader extends ImageReaderBase {
         if (input instanceof ImageInputStream) {
             // Optimization for ImageInputStreams, read all in one go
             ((ImageInputStream) input).readFully(ints, 0, ints.length);
-        }
-        else {
+        } else {
             for (int i = 0; i < ints.length; i++) {
                 ints[i] = input.readInt();
             }
@@ -615,6 +625,31 @@ public final class BMPImageReader extends ImageReaderBase {
         }
 
         return raster.createWritableChild(rect.x, rect.y, rect.width, rect.height, 0, 0, bands);
+    }
+
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        readHeader();
+
+        switch (header.getBitCount()) {
+            case 1:
+            case 2:
+            case 4:
+            case 8:
+                readColorMap();
+                break;
+
+            default:
+                if (header.colorsUsed > 0) {
+                    readColorMap();
+                }
+                break;
+        }
+
+        // Why, oh why..? Instead of accepting it's own native format as it should,
+        // The BMPImageWriter only accepts instances of com.sun.imageio.plugins.bmp.BMPMetadata...
+        // TODO: Consider reflectively construct a BMPMetadata and inject fields
+        return new BMPMetadata(header, colors);
     }
 
     public static void main(String[] args) throws IOException {
@@ -656,14 +691,12 @@ public final class BMPImageReader extends ImageReaderBase {
                 if (imageMetadata != null) {
                     new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
                 }
-            }
-            catch (Throwable t) {
+            } catch (Throwable t) {
                 if (args.length > 1) {
                     System.err.println("---");
                     System.err.println("---> " + t.getClass().getSimpleName() + ": " + t.getMessage() + " for " + arg);
                     System.err.println("---");
-                }
-                else {
+                } else {
                     throwAs(RuntimeException.class, t);
                 }
             }
@@ -673,5 +706,80 @@ public final class BMPImageReader extends ImageReaderBase {
     @SuppressWarnings({"unchecked", "UnusedDeclaration"})
     static <T extends Throwable> void throwAs(final Class<T> pType, final Throwable pThrowable) throws T {
         throw (T) pThrowable;
+    }
+
+    private class ListenerDelegator extends ProgressListenerBase implements IIOReadUpdateListener, IIOReadWarningListener {
+        @Override
+        public void imageComplete(ImageReader source) {
+            processImageComplete();
+        }
+
+        @Override
+        public void imageProgress(ImageReader source, float percentageDone) {
+            processImageProgress(percentageDone);
+        }
+
+        @Override
+        public void imageStarted(ImageReader source, int imageIndex) {
+            processImageStarted(imageIndex);
+        }
+
+        @Override
+        public void readAborted(ImageReader source) {
+            processReadAborted();
+        }
+
+        @Override
+        public void sequenceComplete(ImageReader source) {
+            processSequenceComplete();
+        }
+
+        @Override
+        public void sequenceStarted(ImageReader source, int minIndex) {
+            processSequenceStarted(minIndex);
+        }
+
+        @Override
+        public void thumbnailComplete(ImageReader source) {
+            processThumbnailComplete();
+        }
+
+        @Override
+        public void thumbnailProgress(ImageReader source, float percentageDone) {
+            processThumbnailProgress(percentageDone);
+        }
+
+        @Override
+        public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
+            processThumbnailStarted(imageIndex, thumbnailIndex);
+        }
+
+        public void passStarted(ImageReader source, BufferedImage theImage, int pass, int minPass, int maxPass, int minX, int minY, int periodX, int periodY, int[] bands) {
+            processPassStarted(theImage, pass, minPass, maxPass, minX, minY, periodX, periodY, bands);
+        }
+
+        public void imageUpdate(ImageReader source, BufferedImage theImage, int minX, int minY, int width, int height, int periodX, int periodY, int[] bands) {
+            processImageUpdate(theImage, minX, minY, width, height, periodX, periodY, bands);
+        }
+
+        public void passComplete(ImageReader source, BufferedImage theImage) {
+            processPassComplete(theImage);
+        }
+
+        public void thumbnailPassStarted(ImageReader source, BufferedImage theThumbnail, int pass, int minPass, int maxPass, int minX, int minY, int periodX, int periodY, int[] bands) {
+            processThumbnailPassStarted(theThumbnail, pass, minPass, maxPass, minX, minY, periodX, periodY, bands);
+        }
+
+        public void thumbnailUpdate(ImageReader source, BufferedImage theThumbnail, int minX, int minY, int width, int height, int periodX, int periodY, int[] bands) {
+            processThumbnailUpdate(theThumbnail, minX, minY, width, height, periodX, periodY, bands);
+        }
+
+        public void thumbnailPassComplete(ImageReader source, BufferedImage theThumbnail) {
+            processThumbnailPassComplete(theThumbnail);
+        }
+
+        public void warningOccurred(ImageReader source, String warning) {
+            processWarningOccurred(warning);
+        }
     }
 }

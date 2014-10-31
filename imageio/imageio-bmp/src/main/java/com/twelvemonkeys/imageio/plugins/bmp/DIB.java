@@ -39,8 +39,6 @@ package com.twelvemonkeys.imageio.plugins.bmp;
  * @see <a href="http://en.wikipedia.org/wiki/ICO_(icon_image_file_format)">ICO file format (Wikipedia)</a>
  */
 interface DIB {
-    int TYPE_UNKNOWN = 0;
-
     int TYPE_ICO = 1;
     int TYPE_CUR = 2;
 
@@ -88,6 +86,13 @@ interface DIB {
     // int COMPRESSION_CMYK = 11;
     // int COMPRESSION_CMYK_RLE8 = 12;
     // int COMPRESSION_CMYK_RLE5 = 13;
+
+    /* Color space types. */
+    int LCS_CALIBRATED_RGB = 0;
+    int LCS_sRGB = 's' << 24 | 'R' << 16 | 'G' << 8 | 'B'; // 0x73524742
+    int LCS_WINDOWS_COLOR_SPACE = 'W' << 24 | 'i' << 16 | 'n' << 8 | ' '; // 0x57696e20
+    int PROFILE_LINKED = 'L' << 24 | 'I' << 16 | 'N' << 8 | 'K'; // 0x4c494e4b
+    int PROFILE_EMBEDDED = 'M' << 24 | 'B' << 16 | 'E' << 8 | 'D'; // 0x4d424544
 
     /** PNG "magic" identifier */
     long PNG_MAGIC = 0x89l << 56 | (long) 'P' << 48 | (long) 'N' << 40 | (long) 'G' << 32 | 0x0dl << 24 | 0x0al << 16 | 0x1al << 8 | 0x0al;

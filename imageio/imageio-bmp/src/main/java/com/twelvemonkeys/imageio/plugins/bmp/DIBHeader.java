@@ -41,6 +41,9 @@ import java.io.IOException;
  * @see <a href="http://en.wikipedia.org/wiki/BMP_file_format">BMP file format (Wikipedia)</a>
  */
 abstract class DIBHeader {
+    // Roughly 72 DPI
+    private final int DEFAULT_PIXELS_PER_METER = 2835;
+
     protected int size;
     protected int width;
     // NOTE: If a bitmask is present, this value includes the height of the mask
@@ -70,7 +73,16 @@ abstract class DIBHeader {
     // 0 means all colors are important
     protected int colorsImportant;
 
+    // V4+ members below
     protected int[] masks;
+    protected int colorSpaceType;
+    protected double[] cieXYZEndpoints;
+    protected int[] gamma;
+
+    // V5+ members below
+    protected int intent;
+    protected long profileData;
+    protected long profileSize;
 
     protected DIBHeader() {
     }
@@ -139,19 +151,19 @@ abstract class DIBHeader {
     }
 
     public int getXPixelsPerMeter() {
-        return xPixelsPerMeter;
+        return xPixelsPerMeter != 0 ? xPixelsPerMeter : DEFAULT_PIXELS_PER_METER;
     }
 
     public int getYPixelsPerMeter() {
-        return yPixelsPerMeter;
+        return yPixelsPerMeter != 0 ? yPixelsPerMeter : DEFAULT_PIXELS_PER_METER;
     }
 
     public int getColorsUsed() {
-        return colorsUsed;
+        return colorsUsed != 0 ? colorsUsed : 1 << bitCount;
     }
 
     public int getColorsImportant() {
-        return colorsImportant;
+        return colorsImportant != 0 ? colorsImportant : getColorsUsed();
     }
 
     public boolean hasMasks() {
@@ -167,10 +179,11 @@ abstract class DIBHeader {
                         "colors used: %d%s, colors important: %d%s",
                 getClass().getSimpleName(),
                 getSize(), getWidth(), getHeight(), getPlanes(), getBitCount(), getCompression(),
-                getImageSize(), (getImageSize() == 0 ? " (unknown)" : ""),
-                getXPixelsPerMeter(), getYPixelsPerMeter(),
-                getColorsUsed(), (getColorsUsed() == 0 ? " (unknown)" : ""),
-                getColorsImportant(), (getColorsImportant() == 0 ? " (all)" : "")
+                getImageSize(), (imageSize == 0 ? " (calculated)" : ""),
+                getXPixelsPerMeter(),
+                getYPixelsPerMeter(),
+                getColorsUsed(), (colorsUsed == 0 ? " (unknown)" : ""),
+                getColorsImportant(), (colorsImportant == 0 ? " (all)" : "")
         );
     }
 
@@ -182,6 +195,8 @@ abstract class DIBHeader {
 
         return masks;
     }
+
+    protected abstract String getBMPVersion();
 
     // TODO: Get rid of code duplication below...
 
@@ -204,10 +219,10 @@ abstract class DIBHeader {
 
             planes = pStream.readUnsignedShort();
             bitCount = pStream.readUnsignedShort();
+        }
 
-            // Roughly 72 DPI
-            xPixelsPerMeter = 2835;
-            yPixelsPerMeter = 2835;
+        public String getBMPVersion() {
+            return "BMP v. 2.x";
         }
     }
 
@@ -239,12 +254,7 @@ abstract class DIBHeader {
             planes = pStream.readUnsignedShort();
             bitCount = pStream.readUnsignedShort();
 
-            if (pSize == DIB.OS2_V2_HEADER_16_SIZE) {
-                // Roughly 72 DPI
-                xPixelsPerMeter = 2835;
-                yPixelsPerMeter = 2835;
-            }
-            else {
+            if (pSize != DIB.OS2_V2_HEADER_16_SIZE) {
                 compression = pStream.readInt();
 
                 imageSize = pStream.readInt();
@@ -256,6 +266,7 @@ abstract class DIBHeader {
                 colorsImportant = pStream.readInt();
             }
 
+            // TODO: Use? These fields are not reflected in metadata as per now...
             int units = pStream.readShort();
             int reserved = pStream.readShort();
             int recording = pStream.readShort(); // Recording algorithm
@@ -264,6 +275,10 @@ abstract class DIBHeader {
             int size2 = pStream.readInt(); // Reserved for halftoning use
             int colorEncoding = pStream.readInt(); // Color model used in bitmap
             int identifier = pStream.readInt(); // Reserved for application use
+        }
+
+        public String getBMPVersion() {
+            return "BMP v. 2.2";
         }
     }
 
@@ -306,6 +321,11 @@ abstract class DIBHeader {
             colorsUsed = pStream.readInt();
             colorsImportant = pStream.readInt();
         }
+
+        public String getBMPVersion() {
+            // This is to be compatible with the native metadata of the original com.sun....BMPMetadata
+            return compression == DIB.COMPRESSION_BITFIELDS ? "BMP v. 3.x NT" : "BMP v. 3.x";
+        }
     }
 
     /**
@@ -342,6 +362,10 @@ abstract class DIBHeader {
 
             masks = readMasks(pStream);
         }
+
+        public String getBMPVersion() {
+            return "BMP v. 3.x Photoshop";
+        }
     }
 
     /**
@@ -377,10 +401,22 @@ abstract class DIBHeader {
 
             masks = readMasks(pStream);
 
-            byte[] data = new byte[52];
-            pStream.readFully(data);
+            colorSpaceType = pStream.readInt(); // Should be 0 for V4
+            cieXYZEndpoints = new double[9];
 
-//            System.out.println("data = " + Arrays.toString(data));
+            for (int i = 0; i < cieXYZEndpoints.length; i++) {
+                cieXYZEndpoints[i] = pStream.readInt(); // TODO: Hmmm...?
+            }
+
+            gamma = new int[3];
+
+            for (int i = 0; i < gamma.length; i++) {
+                gamma[i] = pStream.readInt();
+            }
+        }
+
+        public String getBMPVersion() {
+            return "BMP v. 4.x";
         }
     }
 
@@ -417,10 +453,28 @@ abstract class DIBHeader {
 
             masks = readMasks(pStream);
 
-            byte[] data = new byte[68];
-            pStream.readFully(data);
+            colorSpaceType = pStream.readInt();
 
-//            System.out.println("data = " + Arrays.toString(data));
+            cieXYZEndpoints = new double[9];
+
+            for (int i = 0; i < cieXYZEndpoints.length; i++) {
+                cieXYZEndpoints[i] = pStream.readInt(); // TODO: Hmmm...?
+            }
+
+            gamma = new int[3];
+
+            for (int i = 0; i < gamma.length; i++) {
+                gamma[i] = pStream.readInt();
+            }
+
+            intent = pStream.readInt(); // TODO: Verify if this is same as ICC intent
+            profileData = pStream.readInt() & 0xffffffffL;
+            profileSize = pStream.readInt() & 0xffffffffL;
+            pStream.readInt(); // Reserved
+        }
+
+        public String getBMPVersion() {
+            return "BMP v. 5.x";
         }
     }
 }
