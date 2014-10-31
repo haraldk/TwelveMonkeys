@@ -340,17 +340,7 @@ public class TIFFImageReader extends ImageReaderBase {
                     throw new IIOException("Missing ColorMap for Palette TIFF");
                 }
 
-                int[] cmapShort = (int[]) colorMap.getValue();
-                int[] cmap = new int[colorMap.valueCount() / 3];
-
-                // All reds, then greens, and finally blues
-                for (int i = 0; i < cmap.length; i++) {
-                    cmap[i] = (cmapShort[i                  ] / 256) << 16
-                            | (cmapShort[i +     cmap.length] / 256) << 8
-                            | (cmapShort[i + 2 * cmap.length] / 256);
-                }
-
-                IndexColorModel icm = new IndexColorModel(bitsPerSample, cmap.length, cmap, 0, false, -1, dataType);
+                IndexColorModel icm = createIndexColorModel(bitsPerSample, dataType, (int[]) colorMap.getValue());
 
                 return IndexedImageTypeSpecifier.createFromIndexColorModel(icm);
 
@@ -411,6 +401,43 @@ public class TIFFImageReader extends ImageReaderBase {
             default:
                 throw new IIOException("Unknown TIFF PhotometricInterpretation value: " + interpretation);
         }
+    }
+
+    private IndexColorModel createIndexColorModel(final int bitsPerSample, final int dataType, final int[] cmapShort) {
+        // According to the spec, there should be exactly 3 * bitsPerSample^2 entries in the color map for TIFF.
+        // Should we enforce this?
+
+        int[] cmap = new int[cmapShort.length / 3];
+
+        // We'll detect whether the color map data is 8 bit, rather than 16 bit while converting
+        boolean cmapIs8Bit = true;
+
+        // All reds, then greens, and finally blues
+        for (int i = 0; i < cmap.length; i++) {
+            cmap[i] = (cmapShort[i                  ] / 256) << 16
+                    | (cmapShort[i +     cmap.length] / 256) << 8
+                    | (cmapShort[i + 2 * cmap.length] / 256);
+
+            if (cmapIs8Bit && cmap[i] != 0) {
+                cmapIs8Bit = false;
+            }
+        }
+
+        if (cmapIs8Bit) {
+            // This color map is using only the lower 8 bits, making the image all black.
+            // We'll create a new color map, based on the non-scaled 8 bit values.
+
+            processWarningOccurred("8 bit ColorMap detected.");
+
+            // All reds, then greens, and finally blues
+            for (int i = 0; i < cmap.length; i++) {
+                cmap[i] = (cmapShort[i                  ]) << 16
+                        | (cmapShort[i +     cmap.length]) << 8
+                        | (cmapShort[i + 2 * cmap.length]);
+            }
+        }
+
+        return new IndexColorModel(bitsPerSample, cmap.length, cmap, 0, false, -1, dataType);
     }
 
     private int getSampleFormat() throws IIOException {
