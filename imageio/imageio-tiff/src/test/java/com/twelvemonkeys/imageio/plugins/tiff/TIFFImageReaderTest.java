@@ -29,6 +29,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Test;
 
+import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
@@ -171,6 +172,33 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ICC"));
+        }
+        finally {
+            stream.close();
+        }
+    }
+
+    @Test
+    public void testColorMap8Bit() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/scan-lzw-8bit-colormap.tiff"), new Dimension(2550, 3300));
+
+        ImageInputStream stream = testData.getInputStream();
+
+        try {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(8, 8));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(new Dimension(8, 8), new Dimension(image.getWidth(), image.getHeight()));
+            assertEquals(0xffffffff, image.getRGB(0, 0)); // The pixel at 0, 0 should be white, not black
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ColorMap"));
         }
         finally {
             stream.close();
