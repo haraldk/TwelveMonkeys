@@ -367,7 +367,6 @@ abstract class LZWDecoder implements Decoder {
             result = 31 * result + (int) firstChar;
             return result;
         }
-
     }
 }
 
