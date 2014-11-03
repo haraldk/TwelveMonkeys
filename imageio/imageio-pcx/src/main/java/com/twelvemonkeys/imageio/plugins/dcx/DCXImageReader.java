@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.dcx;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.plugins.pcx.PCXImageReader;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.xml.XMLSerializer;
 
@@ -134,7 +135,7 @@ public final class DCXImageReader extends ImageReaderBase {
 
         imageInput.seek(header.getOffset(imageIndex));
         progressDelegator.index = imageIndex;
-        readerDelegate.setInput(imageInput);
+        readerDelegate.setInput(new SubImageInputStream(imageInput, Long.MAX_VALUE));
     }
 
     private void readHeader() throws IOException {
