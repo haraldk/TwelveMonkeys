@@ -42,6 +42,7 @@ import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -202,8 +203,8 @@ public final class DCXImageReader extends ImageReaderBase {
 //            param.setSourceSubsampling(2, 3, 0, 0);
 //            param.setSourceSubsampling(2, 1, 0, 0);
 //
-//            int width = reader.getHdpi(0);
-//            int height = reader.getVdpi(0);
+//            int width = reader.getWidth(0);
+//            int height = reader.getHeight(0);
 //
 //            param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //            param.setSourceRegion(new Rectangle(width / 2, height / 2));

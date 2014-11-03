@@ -28,13 +28,15 @@
 
 package com.twelvemonkeys.imageio.plugins.dcx;
 
-import java.awt.Dimension;
+import java.awt.*;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.spi.ImageReaderSpi;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Test;
 
 /**
  * DCXImageReaderTest
@@ -81,5 +83,11 @@ public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageRead
         return Arrays.asList(
                 "image/dcx", "image/x-dcx"
         );
+    }
+
+    @Test
+    public void testReadWithSourceRegionParamEqualImage() throws IOException {
+        // Default invocation
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(0, 0, 32, 32), getTestData().get(0), 0);
     }
 }
