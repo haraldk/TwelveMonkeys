@@ -129,8 +129,11 @@ public final class PCXImageReader extends ImageReaderBase {
                 // PCX has 1 or 3 channels for 8 bit gray or 24 bit RGB, will be validated by ImageTypeSpecifier
                 return ImageTypeSpecifier.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, false, false);
             case 24:
-                // Some sources says this is possible... Untested.
-                return ImageTypeSpecifier.createInterleaved(cs, createIndices(channels, 0), DataBuffer.TYPE_BYTE, false, false);
+                // Some sources says this is possible...
+                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+            case 32:
+                // Some sources says this is possible...
+                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
             default:
                 throw new IIOException("Unknown number of bytes per pixel: " + header.getBitsPerPixel());
         }
@@ -208,6 +211,32 @@ public final class PCXImageReader extends ImageReaderBase {
                     BitRotator.bitRotateCW(planeData, planePos, planeWidth, rowDataByte, pixelPos, 1);
                     pixelPos += 8;
                 }
+
+                processImageProgress(100f * y / height);
+
+                if (y < srcRegion.y) {
+                    break;
+                }
+
+                if (abortRequested()) {
+                    processReadAborted();
+                    break;
+                }
+            }
+        }
+        else if (header.getBitsPerPixel() == 24 || header.getBitsPerPixel() == 32) {
+            // Can't use width here, as we need to take bytesPerLine into account, and re-create a width based on this
+            int rowWidth = (header.getBytesPerLine() * 8) / header.getBitsPerPixel();
+            WritableRaster rowRaster = rawType.createBufferedImage(rowWidth, 1).getRaster();
+
+            // Clip to source region
+            Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
+                    param != null ? param.getSourceBands() : null,
+                    param != null ? param.getSourceXSubsampling() : 1);
+
+            for (int y = 0; y < height; y++) {
+                byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                readRowByte(input, srcRegion, xSub, ySub, rowDataByte, 0, rowDataByte.length, destRaster, clippedRow, y);
 
                 processImageProgress(100f * y / height);
 
