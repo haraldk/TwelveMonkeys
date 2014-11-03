@@ -89,19 +89,24 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             // Scan forward
             while (true) {
                 long realPosition = stream.getStreamPosition();
-                int marker = stream.readUnsignedShort();
 
-                // Skip over weird 0x00 padding, but leave in stream, read seems to handle it well with a warning
                 int trash = 0;
-                while (marker == 0) {
-                    marker = stream.readUnsignedShort();
-                    trash += 2;
+                int marker = stream.readUnsignedByte();
+
+                // Skip bad padding before the marker
+                while (marker != 0xff) {
+                    marker = stream.readUnsignedByte();
+                    trash++;
+                    realPosition++;
                 }
 
-                if (marker == 0x00ff) {
-                    trash++;
-                    marker = 0xff00 | stream.readUnsignedByte();
+                if (trash != 0) {
+                    // NOTE: We previously allowed these bytes to pass through to the native reader, as it could cope
+                    // and issued the correct warning. However, the native metadata chokes on it, so we'll mask it out.
+                    // TODO: Issue warning from the JPEGImageReader, telling how many bytes we skipped
                 }
+
+                marker = 0xff00 | stream.readUnsignedByte();
 
                 // Skip over 0xff padding between markers
                 while (marker == 0xffff) {
@@ -113,7 +118,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment, 'Exif' APP1 and very few others
                 if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream)) && marker != JPEG.APP14) {
                     int length = stream.readUnsignedShort(); // Length including length field itself
-                    stream.seek(realPosition + trash + 2 + length);  // Skip marker (2) + length
+                    stream.seek(realPosition + 2 + length);  // Skip marker (2) + length
                 }
                 else {
                     if (marker == JPEG.EOI) {
@@ -129,7 +134,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         }
                         else {
                             // Length including length field itself
-                            length = trash + stream.readUnsignedShort() + 2;
+                            length = stream.readUnsignedShort() + 2;
                         }
 
                         segment = new Segment(marker, realPosition, segment.end(), length);

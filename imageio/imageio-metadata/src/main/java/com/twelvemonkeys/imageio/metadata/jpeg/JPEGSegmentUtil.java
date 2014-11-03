@@ -159,23 +159,21 @@ public final class JPEGSegmentUtil {
     }
 
     static JPEGSegment readSegment(final ImageInputStream stream, final Map<Integer, List<String>> segmentIdentifiers) throws IOException {
-        int marker = stream.readUnsignedShort();
+//        int trash = 0;
+        int marker = stream.readUnsignedByte();
 
-        // Skip over weird 0x00 padding...?
-        int bad = 0;
-        while (marker == 0) {
-            marker = stream.readUnsignedShort();
-            bad += 2;
+        // Skip trash padding before the marker
+        while (marker != 0xff) {
+            marker = stream.readUnsignedByte();
+//            trash++;
         }
 
-        if (marker == 0x00ff) {
-            bad++;
-            marker = 0xff00 | stream.readUnsignedByte();
-        }
+//        if (trash != 0) {
+            // TODO: Issue warning?
+//            System.err.println("trash: " + trash);
+//        }
 
-        if (bad != 0) {
-//            System.err.println("bad: " + bad);
-        }
+        marker = 0xff00 | stream.readUnsignedByte();
 
         // Skip over 0xff padding between markers
         while (marker == 0xffff) {
