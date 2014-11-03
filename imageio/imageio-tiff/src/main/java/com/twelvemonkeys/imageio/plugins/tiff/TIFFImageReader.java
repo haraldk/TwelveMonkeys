@@ -665,8 +665,8 @@ public class TIFFImageReader extends ImageReaderBase {
                                     ? IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts[i])
                                     : IIOUtil.createStreamAdapter(imageInput);
 
-                            adapter = createDecompressorStream(compression, width, adapter);
-                            adapter = createUnpredictorStream(predictor, width, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
+                            adapter = createDecompressorStream(compression, stripTileWidth, adapter);
+                            adapter = createUnpredictorStream(predictor, stripTileWidth, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
 
                             if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_BYTE) {
                                 adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, yCbCrCoefficients);
