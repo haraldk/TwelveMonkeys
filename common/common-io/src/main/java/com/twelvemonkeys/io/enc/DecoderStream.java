@@ -156,9 +156,9 @@ public final class DecoderStream extends FilterInputStream {
                 }
             }
 
-            // NOTE: Skipped can never be more than avail, which is
-            // an int, so the cast is safe
+            // NOTE: Skipped can never be more than avail, which is an int, so the cast is safe
             int skipped = (int) Math.min(pLength - total, buffer.remaining());
+            buffer.position(buffer.position() + skipped);
             total += skipped;
         }
 
