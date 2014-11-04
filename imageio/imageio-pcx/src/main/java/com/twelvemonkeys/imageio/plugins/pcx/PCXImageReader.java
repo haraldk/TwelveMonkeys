@@ -45,10 +45,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -214,7 +211,7 @@ public final class PCXImageReader extends ImageReaderBase {
 
                 processImageProgress(100f * y / height);
 
-                if (y < srcRegion.y) {
+                if (y >= srcRegion.y + srcRegion.height) {
                     break;
                 }
 
@@ -240,7 +237,7 @@ public final class PCXImageReader extends ImageReaderBase {
 
                 processImageProgress(100f * y / height);
 
-                if (y < srcRegion.y) {
+                if (y >= srcRegion.y + srcRegion.height) {
                     break;
                 }
 
@@ -279,13 +276,13 @@ public final class PCXImageReader extends ImageReaderBase {
 
                     processImageProgress(100f * y / height * c / header.getChannels());
 
-                    if (y < srcRegion.y) {
-                        break;
-                    }
-
                     if (abortRequested()) {
                         break;
                     }
+                }
+
+                if (y >= srcRegion.y + srcRegion.height) {
+                    break;
                 }
 
                 if (abortRequested()) {
@@ -444,8 +441,8 @@ public final class PCXImageReader extends ImageReaderBase {
 //            param.setSourceSubsampling(2, 3, 0, 0);
 //            param.setSourceSubsampling(2, 1, 0, 0);
 //
-//            int width = reader.getHdpi(0);
-//            int height = reader.getVdpi(0);
+//            int width = reader.getWidth(0);
+//            int height = reader.getHeight(0);
 //
 //            param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //            param.setSourceRegion(new Rectangle(width / 2, height / 2));

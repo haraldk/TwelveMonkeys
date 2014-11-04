@@ -29,9 +29,11 @@
 package com.twelvemonkeys.imageio.plugins.pcx;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -97,5 +99,12 @@ public class PCXImageReaderTest extends ImageReaderAbstractTestCase<PCXImageRead
         return Arrays.asList(
                 "image/pcx", "image/x-pcx"
         );
+    }
+
+    @Test
+    public void testReadWithSourceRegionParamEqualImage() throws IOException {
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(200, 0, 4, 4), getTestData().get(0), 0);
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(100, 100, 4, 4), getTestData().get(0), 0);
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(0, 200, 4, 4), getTestData().get(0), 0);
     }
 }

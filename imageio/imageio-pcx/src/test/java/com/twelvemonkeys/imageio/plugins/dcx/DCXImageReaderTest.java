@@ -84,10 +84,4 @@ public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageRead
                 "image/dcx", "image/x-dcx"
         );
     }
-
-    @Test
-    public void testReadWithSourceRegionParamEqualImage() throws IOException {
-        // Default invocation
-        assertReadWithSourceRegionParamEqualImage(new Rectangle(0, 0, 32, 32), getTestData().get(0), 0);
-    }
 }
