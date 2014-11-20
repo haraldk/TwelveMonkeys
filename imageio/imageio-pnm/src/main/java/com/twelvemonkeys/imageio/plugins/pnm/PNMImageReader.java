@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio.plugins.pnm;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -116,29 +117,29 @@ public final class PNMImageReader extends ImageReaderBase {
                 ColorSpace gray = ColorSpace.getInstance(ColorSpace.CS_GRAY);
 
                 if (header.getTransferType() == DataBuffer.TYPE_FLOAT) {
-                    return ImageTypeSpecifier.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
+                    return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
                 }
                 if (header.getMaxSample() <= PNM.MAX_VAL_16BIT) {
-                    return hasAlpha ? ImageTypeSpecifier.createGrayscale(bitsPerSample, transferType, false, false)
-                            : ImageTypeSpecifier.createGrayscale(bitsPerSample, transferType, false);
+                    return hasAlpha ? ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false, false)
+                            : ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false);
                 }
 
-                return ImageTypeSpecifier.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
+                return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
 
             case RGB:
             case RGB_ALPHA:
                 // Using sRGB seems sufficient for PPM, as it is very close to ITU-R Recommendation BT.709 (same gamut and white point CIE D65)
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
                 if (header.getTransferType() == DataBuffer.TYPE_FLOAT) {
-                    return ImageTypeSpecifier.createInterleaved(sRGB, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
+                    return ImageTypeSpecifiers.createInterleaved(sRGB, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
                 }
 
-                return ImageTypeSpecifier.createInterleaved(sRGB, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
+                return ImageTypeSpecifiers.createInterleaved(sRGB, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
 
             case CMYK:
             case CMYK_ALPHA:
                 ColorSpace cmyk = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
-                return ImageTypeSpecifier.createInterleaved(cmyk, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
+                return ImageTypeSpecifiers.createInterleaved(cmyk, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
 
             default:
                 // TODO: Allow reading unknown tuple types as Raster!

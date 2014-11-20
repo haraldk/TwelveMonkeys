@@ -1,10 +1,12 @@
 package com.twelvemonkeys.imageio.util;
 
 import javax.imageio.ImageTypeSpecifier;
-import java.awt.image.IndexColorModel;
 import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
 import java.awt.image.WritableRaster;
 import java.util.Hashtable;
+
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * IndexedImageTypeSpecifier
@@ -13,18 +15,14 @@ import java.util.Hashtable;
  * @author last modified by $Author: haraldk$
  * @version $Id: IndexedImageTypeSpecifier.java,v 1.0 May 19, 2008 11:04:28 AM haraldk Exp$
  */
-public class IndexedImageTypeSpecifier extends ImageTypeSpecifier {
-    IndexedImageTypeSpecifier(IndexColorModel pColorModel) {
+final class IndexedImageTypeSpecifier extends ImageTypeSpecifier {
+    IndexedImageTypeSpecifier(final IndexColorModel pColorModel) {
         // For some reason, we need a sample model
-        super(pColorModel, pColorModel.createCompatibleSampleModel(1, 1));
-    }
-
-    public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel pColorModel) {
-        return new IndexedImageTypeSpecifier(pColorModel);
+        super(notNull(pColorModel, "colorModel"), pColorModel.createCompatibleSampleModel(1, 1));
     }
 
     @Override
-    public final BufferedImage createBufferedImage(int pWidth, int pHeight) {
+    public final BufferedImage createBufferedImage(final int pWidth, final int pHeight) {
         try {
             // This is a fix for the super-method, that first creates a sample model, and then
             // creates a raster from it, using Raster.createWritableRaster. The problem with

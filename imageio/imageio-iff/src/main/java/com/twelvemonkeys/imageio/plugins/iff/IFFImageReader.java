@@ -32,7 +32,7 @@ import com.twelvemonkeys.image.ResampleOp;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
@@ -149,7 +149,7 @@ public class IFFImageReader extends ImageReaderBase {
         int remaining = imageInput.readInt() - 4; // We'll read 4 more in a sec
 
         formType = imageInput.readInt();
-        if (formType != IFF.TYPE_ILBM && formType != IFF.TYPE_PBM) {
+        if (formType != IFF.TYPE_ILBM && formType != IFF.TYPE_PBM/* && formType != IFF.TYPE_DEEP*/) {
             throw new IIOException(String.format("Only IFF FORM types 'ILBM' and 'PBM ' supported: %s", IFFUtil.toChunkStr(formType)));
         }
 
@@ -324,7 +324,7 @@ public class IFFImageReader extends ImageReaderBase {
 
         List<ImageTypeSpecifier> types = Arrays.asList(
                 getRawImageType(pIndex),
-                ImageTypeSpecifier.createFromBufferedImageType(header.bitplanes == 32 ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR)
+                ImageTypeSpecifiers.createFromBufferedImageType(header.bitplanes == 32 ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR)
                 // TODO: ImageTypeSpecifier.createFromBufferedImageType(header.bitplanes == 32 ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB),
                 // TODO: Allow 32 bit always. Allow RGB and discard alpha, if present?
         );
@@ -357,22 +357,22 @@ public class IFFImageReader extends ImageReaderBase {
                 if (!isConvertToRGB()) {
                     if (colorMap != null) {
                         IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
-                        specifier = IndexedImageTypeSpecifier.createFromIndexColorModel(cm);
+                        specifier = ImageTypeSpecifiers.createFromIndexColorModel(cm);
                         break;
                     }
                     else {
-                        specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+                        specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
                         break;
                     }
                 }
                 // NOTE: HAM modes falls through, as they are converted to RGB
             case 24:
                 // 24 bit RGB
-                specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
                 break;
             case 32:
                 // 32 bit ARGB
-                specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
                 break;
             default:
                 throw new IIOException(String.format("Bit depth not implemented: %d", header.bitplanes));
@@ -818,6 +818,9 @@ public class IFFImageReader extends ImageReaderBase {
                     }
 
                     showIt(image, arg);
+                }
+                else {
+                    System.err.println("Foo!");
                 }
             }
             catch (IOException e) {

@@ -39,6 +39,7 @@ import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.xml.XMLSerializer;
@@ -217,36 +218,36 @@ public class JPEGImageReader extends ImageReaderBase {
         if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
             ArrayList<ImageTypeSpecifier> typeList = new ArrayList<ImageTypeSpecifier>();
             // Add the standard types, we can always convert to these
-            typeList.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
-            typeList.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
-            typeList.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
+            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
 
             // We also read and return CMYK if the source image is CMYK/YCCK + original color profile if present
             ICC_Profile profile = getEmbeddedICCProfile(false);
 
             if (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
                 if (profile != null) {
-                    typeList.add(ImageTypeSpecifier.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
+                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
                 }
 
-                typeList.add(ImageTypeSpecifier.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
+                typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
             }
             else if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.RGB) {
                 if (profile != null) {
-                    typeList.add(ImageTypeSpecifier.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2}, DataBuffer.TYPE_BYTE, false, false));
+                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2}, DataBuffer.TYPE_BYTE, false, false));
                 }
             }
             else if (csType == JPEGColorSpace.YCbCrA || csType == JPEGColorSpace.RGBA) {
                 // Prepend ARGB types
                 typeList.addAll(0, Arrays.asList(
-                        ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB),
-                        ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR),
-                        ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE),
-                        ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE)
+                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB),
+                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR),
+                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE),
+                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE)
                 ));
 
                 if (profile != null) {
-                    typeList.add(ImageTypeSpecifier.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, false, false));
+                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, false, false));
                 }
             }
 
@@ -274,10 +275,12 @@ public class JPEGImageReader extends ImageReaderBase {
                 ICC_Profile profile = getEmbeddedICCProfile(false);
 
                 if (profile != null) {
-                    return ImageTypeSpecifier.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+                    return ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[]{
+                            3, 2, 1, 0
+                    }, DataBuffer.TYPE_BYTE, false, false);
                 }
 
-                return ImageTypeSpecifier.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+                return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
             default:
                 // For other types, we probably can't give a proper type, return null
                 return null;
@@ -1070,7 +1073,7 @@ public class JPEGImageReader extends ImageReaderBase {
         super.processWarningOccurred(warning);
     }
 
-    private static void invertCMYK(final Raster raster) {
+    static void invertCMYK(final Raster raster) {
         byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
         for (int i = 0, dataLength = data.length; i < dataLength; i++) {

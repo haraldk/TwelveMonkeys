@@ -31,11 +31,10 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.xml.XMLSerializer;
 
 import javax.imageio.*;
@@ -167,7 +166,7 @@ public final class BMPImageReader extends ImageReaderBase {
                 // Compute bits for > 8 bits (used only for meta data)
                 int bits = header.getBitCount() <= 8 ? header.getBitCount() : mapSize <= 256 ? 8 : 16;
 
-                colorMap = new IndexColorModel(bits, mapSize, colors, 0, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+                colorMap = new IndexColorModel(bits, mapSize, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
             }
         }
 
@@ -209,13 +208,13 @@ public final class BMPImageReader extends ImageReaderBase {
             case 2:
             case 4:
             case 8:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(readColorMap());
+                return ImageTypeSpecifiers.createFromIndexColorModel(readColorMap());
 
             case 16:
                 if (header.hasMasks()) {
                     int[] masks = getMasks();
 
-                    return ImageTypeSpecifier.createPacked(
+                    return ImageTypeSpecifiers.createPacked(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
                             masks[0], masks[1], masks[2], masks[3],
                             DataBuffer.TYPE_USHORT, false
@@ -223,20 +222,20 @@ public final class BMPImageReader extends ImageReaderBase {
                 }
 
                 // Default if no mask is 555
-                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
 
             case 24:
                 if (header.getCompression() != DIB.COMPRESSION_RGB) {
                     throw new IIOException("Unsupported compression for RGB: " + header.getCompression());
                 }
 
-                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
 
             case 32:
                 if (header.hasMasks()) {
                     int[] masks = getMasks();
 
-                    return ImageTypeSpecifier.createPacked(
+                    return ImageTypeSpecifiers.createPacked(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
                             masks[0], masks[1], masks[2], masks[3],
                             DataBuffer.TYPE_INT, false
@@ -244,7 +243,7 @@ public final class BMPImageReader extends ImageReaderBase {
                 }
 
                 // Default if no mask
-                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
 
             case 0:
                 if (header.getCompression() == DIB.COMPRESSION_JPEG || header.getCompression() == DIB.COMPRESSION_PNG) {

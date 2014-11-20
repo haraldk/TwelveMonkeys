@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.sgi;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.xml.XMLSerializer;
 
@@ -107,9 +108,9 @@ public final class SGIImageReader extends ImageReaderBase {
 
         switch (header.getBytesPerPixel()) {
             case 1:
-                return ImageTypeSpecifier.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, channels == 2 || channels == 4, false);
+                return ImageTypeSpecifiers.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, channels == 2 || channels == 4, false);
             case 2:
-                return ImageTypeSpecifier.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_USHORT, channels == 2 || channels == 4, false);
+                return ImageTypeSpecifiers.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_USHORT, channels == 2 || channels == 4, false);
             default:
                 throw new IIOException("Unknown number of bytes per pixel: " + header.getBytesPerPixel());
         }

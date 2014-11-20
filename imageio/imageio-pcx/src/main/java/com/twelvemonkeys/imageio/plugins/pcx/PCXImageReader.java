@@ -30,7 +30,7 @@ package com.twelvemonkeys.imageio.plugins.pcx;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.xml.XMLSerializer;
 
@@ -45,7 +45,10 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -53,7 +56,7 @@ import java.util.List;
 
 public final class PCXImageReader extends ImageReaderBase {
     /** 8 bit ImageTypeSpecifer used for reading bitplane images. */
-    private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifier.createGrayscale(8, DataBuffer.TYPE_BYTE, false);
+    private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE, false);
 
     private PCXHeader header;
     private boolean readPalette;
@@ -111,7 +114,7 @@ public final class PCXImageReader extends ImageReaderBase {
             case 1:
             case 2:
             case 4:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(header.getEGAPalette());
+                return ImageTypeSpecifiers.createFromIndexColorModel(header.getEGAPalette());
             case 8:
                 // We may have IndexColorModel here for 1 channel images
                 if (channels == 1 && paletteInfo != PCX.PALETTEINFO_GRAY) {
@@ -120,17 +123,17 @@ public final class PCXImageReader extends ImageReaderBase {
                         throw new IIOException("Expected VGA palette not found");
                     }
 
-                    return IndexedImageTypeSpecifier.createFromIndexColorModel(palette);
+                    return ImageTypeSpecifiers.createFromIndexColorModel(palette);
                 }
 
                 // PCX has 1 or 3 channels for 8 bit gray or 24 bit RGB, will be validated by ImageTypeSpecifier
-                return ImageTypeSpecifier.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, false, false);
+                return ImageTypeSpecifiers.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, false, false);
             case 24:
                 // Some sources says this is possible...
-                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
             case 32:
                 // Some sources says this is possible...
-                return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
             default:
                 throw new IIOException("Unknown number of bytes per pixel: " + header.getBitsPerPixel());
         }

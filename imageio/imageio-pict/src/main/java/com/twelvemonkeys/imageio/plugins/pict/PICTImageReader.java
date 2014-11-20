@@ -61,6 +61,7 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBits16Decoder;
@@ -2659,7 +2660,7 @@ public class PICTImageReader extends ImageReaderBase {
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         // TODO: The images look slightly different in Preview.. Could indicate the color space is wrong...
         return Arrays.asList(
-                ImageTypeSpecifier.createPacked(
+                ImageTypeSpecifiers.createPacked(
                         ColorSpace.getInstance(ColorSpace.CS_sRGB),
                         0xff0000, 0xff00, 0xff, 0xff000000, DataBuffer.TYPE_INT, false
                 )

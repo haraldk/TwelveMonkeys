@@ -31,7 +31,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -145,14 +145,14 @@ public final class PSDImageReader extends ImageReaderBase {
         switch (header.mode) {
             case PSD.COLOR_MODE_BITMAP:
                 if (header.channels == 1 && header.bits == 1) {
-                    return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY);
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY);
                 }
 
                 throw new IIOException(String.format("Unsupported channel count/bit depth for Monochrome PSD: %d channels/%d bits", header.channels, header.bits));
 
             case PSD.COLOR_MODE_INDEXED:
                 if (header.channels == 1 && header.bits == 8) {
-                    return IndexedImageTypeSpecifier.createFromIndexColorModel(metadata.colorData.getIndexColorModel());
+                    return ImageTypeSpecifiers.createFromIndexColorModel(metadata.colorData.getIndexColorModel());
                 }
 
                 throw new IIOException(String.format("Unsupported channel count/bit depth for Indexed Color PSD: %d channels/%d bits", header.channels, header.bits));
@@ -167,22 +167,22 @@ public final class PSDImageReader extends ImageReaderBase {
                 }
 
                 if (header.channels == 1 && header.bits == 8) {
-                    return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
                 }
                 else if (header.channels == 2 && header.bits == 8) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_BYTE, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_BYTE, true, false);
                 }
                 else if (header.channels == 1 && header.bits == 16) {
-                    return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_USHORT_GRAY);
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_GRAY);
                 }
                 else if (header.channels == 2 && header.bits == 16) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_USHORT, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_USHORT, true, false);
                 }
                 else if (header.channels == 1 && header.bits == 32) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0}, new int[] {0}, DataBuffer.TYPE_INT, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0}, new int[] {0}, DataBuffer.TYPE_INT, false, false);
                 }
                 else if (header.channels == 2 && header.bits == 32) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_INT, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_INT, true, false);
                 }
 
                 throw new IIOException(String.format("Unsupported channel count/bit depth for Gray Scale PSD: %d channels/%d bits", header.channels, header.bits));
@@ -194,22 +194,22 @@ public final class PSDImageReader extends ImageReaderBase {
                 }
 
                 if (header.channels == 3 && header.bits == 8) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_BYTE, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_BYTE, false, false);
                 }
                 else if (header.channels >= 4 && header.bits == 8) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_BYTE, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_BYTE, true, false);
                 }
                 else if (header.channels == 3 && header.bits == 16) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_USHORT, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_USHORT, false, false);
                 }
                 else if (header.channels >= 4 && header.bits == 16) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_USHORT, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_USHORT, true, false);
                 }
                 else if (header.channels == 3 && header.bits == 32) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_INT, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_INT, false, false);
                 }
                 else if (header.channels >= 4 && header.bits == 32) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false);
                 }
 
                 throw new IIOException(String.format("Unsupported channel count/bit depth for RGB PSD: %d channels/%d bits", header.channels, header.bits));
@@ -221,22 +221,22 @@ public final class PSDImageReader extends ImageReaderBase {
                 }
 
                 if (header.channels == 4 &&  header.bits == 8) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_BYTE, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_BYTE, false, false);
                 }
                 else if (header.channels == 5 &&  header.bits == 8) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_BYTE, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_BYTE, true, false);
                 }
                 else if (header.channels == 4 &&  header.bits == 16) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_USHORT, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_USHORT, false, false);
                 }
                 else if (header.channels == 5 &&  header.bits == 16) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_USHORT, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_USHORT, true, false);
                 }
                 else if (header.channels == 4 &&  header.bits == 32) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, false, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, false, false);
                 }
                 else if (header.channels == 5 &&  header.bits == 32) {
-                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false);
                 }
 
                 throw new IIOException(String.format("Unsupported channel count/bit depth for CMYK PSD: %d channels/%d bits", header.channels, header.bits));
@@ -269,11 +269,11 @@ public final class PSDImageReader extends ImageReaderBase {
                     // TODO: ColorConvertOp to CS_sRGB
                     // TODO: Integer raster
                     // types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.INT_RGB));
-                    types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+                    types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
 
                     if (!cs.isCS_sRGB()) {
                         // Basically BufferedImage.TYPE_3BYTE_BGR, with corrected ColorSpace. Possibly slow.
-                        types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
+                        types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
                     }
                 }
 //                else if (header.channels >= 4 && header.bits == 8) {
@@ -281,20 +281,20 @@ public final class PSDImageReader extends ImageReaderBase {
                     // TODO: ColorConvertOp to CS_sRGB
                     // TODO: Integer raster
                     // types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.INT_ARGB));
-                    types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+                    types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
 //
                     if (!cs.isCS_sRGB()) {
                         // Basically BufferedImage.TYPE_4BYTE_ABGR, with corrected ColorSpace. Possibly slow.
-                        types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
+                        types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                     }
                 }
 //                else if (header.channels == 3 && header.bits == 16) {
                 else if (rawType.getNumBands() == 3 && rawType.getBitsPerBand(0) == 16) {
-                    types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
                 }
 //                else if (header.channels >= 4 && header.bits == 16) {
                 else if (rawType.getNumBands() >= 4 && rawType.getBitsPerBand(0) == 16) {
-                    types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
                 }
                 break;
             case PSD.COLOR_MODE_CMYK:
@@ -306,19 +306,19 @@ public final class PSDImageReader extends ImageReaderBase {
                 // Doing this, will require rewriting the image reading, as the raw image data is channelled, not interleaved :-/
 //                if (header.channels == 4 &&  header.bits == 8) {
                 if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 8) {
-                    types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
                 }
 //                else if (header.channels == 5 &&  header.bits == 8) {
                 else if (rawType.getNumBands() == 5 && rawType.getBitsPerBand(0) == 8) {
-                    types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                 }
 //                else if (header.channels == 4 &&  header.bits == 16) {
                 else if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 16) {
-                    types.add(ImageTypeSpecifier.createInterleaved(cs, new int[]{3, 2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[]{3, 2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
                 }
 //                else if (header.channels == 5 &&  header.bits == 16) {
                 else if (rawType.getNumBands() == 5 && rawType.getBitsPerBand(0) == 16) {
-                    types.add(ImageTypeSpecifier.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
                 }
                 break;
             default:
@@ -1134,7 +1134,7 @@ public final class PSDImageReader extends ImageReaderBase {
                     offs[i] = 0;
                 }
 
-                return ImageTypeSpecifier.createBanded(compositeType.getColorModel().getColorSpace(), indices, offs, compositeType.getSampleModel().getDataType(), true, false);
+                return ImageTypeSpecifiers.createBanded(compositeType.getColorModel().getColorSpace(), indices, offs, compositeType.getSampleModel().getDataType(), true, false);
             }
         }
 

@@ -31,7 +31,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.util.WeakWeakMap;
 
 import javax.imageio.*;
@@ -118,16 +118,16 @@ abstract class DIBImageReader extends ImageReaderBase {
                 }
                 BitmapIndexed indexed = new BitmapIndexed(entry, header);
                 readColorMap(indexed);
-                specifier = IndexedImageTypeSpecifier.createFromIndexColorModel(indexed.createColorModel());
+                specifier = ImageTypeSpecifiers.createFromIndexColorModel(indexed.createColorModel());
                 break;
             case 16:
-                specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
+                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
                 break;
             case 24:
-                specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
                 break;
             case 32:
-                specifier = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
+                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
                 break;
             default:
                 throw new IIOException(String.format("Unknown bit depth: %d", header.getBitCount()));

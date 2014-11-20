@@ -41,7 +41,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
@@ -121,7 +121,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
 
     // TODOs Extension support
-    // TODO: Support PlanarConfiguration 2
+    // TODO: Support PlanarConfiguration 2, look at PCXImageReader
     // TODO: Auto-rotate based on Orientation
     // TODO: Support ICCProfile (fully)
     // TODO: Support Compression 3 & 4 (CCITT T.4 & T.6)
@@ -266,10 +266,10 @@ public class TIFFImageReader extends ImageReaderBase {
                         cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
 
                         if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16)) {
-                            return ImageTypeSpecifier.createGrayscale(bitsPerSample, dataType, false);
+                            return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType, false);
                         }
                         else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            return ImageTypeSpecifier.createInterleaved(cs, new int[] {0}, dataType, false, false);
+                            return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0}, dataType, false, false);
                         }
                     default:
                         // TODO: If ExtraSamples is used, PlanarConfiguration must be taken into account also for gray data
@@ -291,34 +291,34 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 switch (samplesPerPixel) {
                     case 3:
-                        if (bitsPerSample == 8 || bitsPerSample == 16) {
+                        if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     if (bitsPerSample == 8 && cs.isCS_sRGB()) {
-                                        return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
                                     }
 
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2}, dataType, false, false);
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2}, dataType, false, false);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, dataType, false, false);
                             }
                         }
                     case 4:
-                        if (bitsPerSample == 8 || bitsPerSample == 16) {
+                        if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
                             long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
 
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     if (bitsPerSample == 8 && cs.isCS_sRGB()) {
-                                        return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+                                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
                                     }
 
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[]{ 0, 1, 2, 3}, dataType, true, extraSamples[0] == 1);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
                         // TODO: More samples might be ok, if multiple alpha or unknown samples
@@ -342,7 +342,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 IndexColorModel icm = createIndexColorModel(bitsPerSample, dataType, (int[]) colorMap.getValue());
 
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(icm);
+                return ImageTypeSpecifiers.createFromIndexColorModel(icm);
 
             case TIFFExtension.PHOTOMETRIC_SEPARATED:
                 // Separated (CMYK etc)
@@ -369,9 +369,9 @@ public class TIFFImageReader extends ImageReaderBase {
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, false, false);
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, false, false);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, false, false);
                             }
                         }
                     case 5:
@@ -381,9 +381,9 @@ public class TIFFImageReader extends ImageReaderBase {
 
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    return ImageTypeSpecifier.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, extraSamples[0] == 1);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifier.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
 
@@ -1443,7 +1443,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
                     }
 
-//                System.err.println("image: " + image);
+                System.err.println("image: " + image);
 
 //                    File tempFile = File.createTempFile("lzw-", ".bin");
 //                    byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();

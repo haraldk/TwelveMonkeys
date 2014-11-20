@@ -30,7 +30,7 @@ package com.twelvemonkeys.imageio.plugins.tga;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.xml.XMLSerializer;
@@ -107,22 +107,22 @@ public final class TGAImageReader extends ImageReaderBase {
             case TGA.IMAGETYPE_COLORMAPPED_RLE:
             case TGA.IMAGETYPE_COLORMAPPED_HUFFMAN:
             case TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(header.getColorMap());
+                return ImageTypeSpecifiers.createFromIndexColorModel(header.getColorMap());
             case TGA.IMAGETYPE_MONOCHROME:
             case TGA.IMAGETYPE_MONOCHROME_RLE:
-                return ImageTypeSpecifier.createGrayscale(1, DataBuffer.TYPE_BYTE, false);
+                return ImageTypeSpecifiers.createGrayscale(1, DataBuffer.TYPE_BYTE, false);
             case TGA.IMAGETYPE_TRUECOLOR:
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
 
                 switch (header.getPixelDepth()) {
                     case 16:
-                        return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
+                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
                     case 24:
-                        return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
                     case 32:
                         // 4BYTE_BGRA...
-                        return ImageTypeSpecifier.createInterleaved(sRGB, new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, false);
+                        return ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, false);
                     default:
                         throw new IIOException("Unknown pixel depth for truecolor: " + header.getPixelDepth());
                 }
@@ -162,7 +162,7 @@ public final class TGAImageReader extends ImageReaderBase {
         int imageType = header.getImageType();
 
         // Wrap input if RLE encoded.
-        // NOTE: As early sepcs said it was ok to compress across boundaries, we need to support that.
+        // NOTE: As early specs said it was ok to compress across boundaries, we need to support that.
         DataInput input;
         if (imageType == TGA.IMAGETYPE_COLORMAPPED_RLE || imageType == TGA.IMAGETYPE_TRUECOLOR_RLE || imageType == TGA.IMAGETYPE_MONOCHROME_RLE) {
             input = new LittleEndianDataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput), new RLEDecoder(header.getPixelDepth())));
