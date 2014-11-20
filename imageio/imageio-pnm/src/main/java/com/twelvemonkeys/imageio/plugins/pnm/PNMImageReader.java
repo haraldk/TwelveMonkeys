@@ -120,8 +120,8 @@ public final class PNMImageReader extends ImageReaderBase {
                     return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
                 }
                 if (header.getMaxSample() <= PNM.MAX_VAL_16BIT) {
-                    return hasAlpha ? ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false, false)
-                            : ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false);
+                    return hasAlpha ? ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false)
+                            : ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType);
                 }
 
                 return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);

@@ -265,8 +265,8 @@ public class TIFFImageReader extends ImageReaderBase {
 
                         cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
 
-                        if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16)) {
-                            return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType, false);
+                        if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32)) {
+                            return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType);
                         }
                         else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0}, dataType, false, false);

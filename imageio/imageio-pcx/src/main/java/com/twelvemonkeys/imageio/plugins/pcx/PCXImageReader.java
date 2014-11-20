@@ -56,7 +56,7 @@ import java.util.List;
 
 public final class PCXImageReader extends ImageReaderBase {
     /** 8 bit ImageTypeSpecifer used for reading bitplane images. */
-    private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE, false);
+    private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
 
     private PCXHeader header;
     private boolean readPalette;

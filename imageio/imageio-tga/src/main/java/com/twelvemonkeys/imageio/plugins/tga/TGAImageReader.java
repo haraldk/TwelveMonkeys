@@ -110,7 +110,7 @@ public final class TGAImageReader extends ImageReaderBase {
                 return ImageTypeSpecifiers.createFromIndexColorModel(header.getColorMap());
             case TGA.IMAGETYPE_MONOCHROME:
             case TGA.IMAGETYPE_MONOCHROME_RLE:
-                return ImageTypeSpecifiers.createGrayscale(1, DataBuffer.TYPE_BYTE, false);
+                return ImageTypeSpecifiers.createGrayscale(1, DataBuffer.TYPE_BYTE);
             case TGA.IMAGETYPE_TRUECOLOR:
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
