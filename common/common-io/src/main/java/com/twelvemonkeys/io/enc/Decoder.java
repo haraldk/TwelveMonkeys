@@ -57,9 +57,10 @@ public interface Decoder {
      * @return the total number of bytes read into the buffer, or {@code 0}
      * if there is no more data because the end of the stream has been reached.
      *
-     * @throws DecodeException if encoded data is corrupt
-     * @throws IOException if an I/O error occurs
-     * @throws java.io.EOFException if a premature end-of-file is encountered
+     * @throws DecodeException if encoded data is corrupt.
+     * @throws IOException if an I/O error occurs.
+     * @throws java.io.EOFException if a premature end-of-file is encountered.
+     * @throws java.lang.NullPointerException if either argument is {@code null}.
      */
     int decode(InputStream stream, ByteBuffer buffer) throws IOException;
 }

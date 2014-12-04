@@ -33,12 +33,11 @@ import com.twelvemonkeys.io.enc.Decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.String;
 import java.nio.ByteBuffer;
 
 /**
- * Lempel–Ziv–Welch (LZW) decompression. LZW is a universal loss-less data compression algorithm
- * created by Abraham Lempel, Jacob Ziv, and Terry Welch.
+ * Lempel–Ziv–Welch (LZW) decompression.
+ * LZW is a universal loss-less data compression algorithm created by Abraham Lempel, Jacob Ziv, and Terry Welch.
  * Inspired by libTiff's LZW decompression.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -57,8 +56,6 @@ abstract class LZWDecoder implements Decoder {
 
     private static final int TABLE_SIZE = 1 << MAX_BITS;
 
-    private final boolean compatibilityMode;
-
     private final LZWString[] table;
     private int tableLength;
     int bitsPerCode;
@@ -70,11 +67,8 @@ abstract class LZWDecoder implements Decoder {
     int nextData;
     int nextBits;
 
-
-    protected LZWDecoder(final boolean compatibilityMode) {
-        this.compatibilityMode = compatibilityMode;
-
-        table = new LZWString[compatibilityMode ? TABLE_SIZE + 1024 : TABLE_SIZE]; // libTiff adds 1024 "for compatibility"...
+    protected LZWDecoder(int tableSize) {
+        table = new LZWString[tableSize];
 
         // First 258 entries of table is always fixed
         for (int i = 0; i < 256; i++) {
@@ -97,6 +91,10 @@ abstract class LZWDecoder implements Decoder {
     }
 
     public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
+        if (buffer == null) {
+            throw new NullPointerException("buffer == null"); // As per contract
+        }
+
         // Adapted from the pseudo-code example found in the TIFF 6.0 Specification, 1992.
         // See Section 13: "LZW Compression"/"LZW Decoding", page 61+
         int code;
@@ -114,8 +112,7 @@ abstract class LZWDecoder implements Decoder {
             }
             else {
                 if (table[oldCode] == null) {
-                    System.err.println("tableLength: " + tableLength);
-                    System.err.println("oldCode: " + oldCode);
+                    throw new DecodeException(String.format("Corrupted TIFF LZW: code %d (table size: %d)", oldCode, tableLength));
                 }
 
                 if (isInTable(code)) {
@@ -133,7 +130,7 @@ abstract class LZWDecoder implements Decoder {
             oldCode = code;
 
             if (buffer.remaining() < maxString + 1) {
-                // Buffer full, stop decoding for now
+                // Buffer (almost) full, stop decoding for now
                 break;
             }
         }
@@ -142,18 +139,18 @@ abstract class LZWDecoder implements Decoder {
     }
 
     private void addStringToTable(final LZWString string) throws IOException {
+        if (tableLength > table.length) {
+            throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
+        }
+
         table[tableLength++] = string;
 
         if (tableLength > maxCode) {
             bitsPerCode++;
 
             if (bitsPerCode > MAX_BITS) {
-                if (compatibilityMode) {
-                    bitsPerCode--;
-                }
-                else {
-                    throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
-                }
+                // Continue reading MAX_BITS (12 bit) length codes
+                bitsPerCode = MAX_BITS;
             }
 
             bitMask = bitmaskFor(bitsPerCode);
@@ -173,9 +170,9 @@ abstract class LZWDecoder implements Decoder {
 
     protected abstract int getNextCode(final InputStream stream) throws IOException;
 
-
     static boolean isOldBitReversedStream(final InputStream stream) throws IOException {
         stream.mark(2);
+
         try {
             int one = stream.read();
             int two = stream.read();
@@ -191,10 +188,10 @@ abstract class LZWDecoder implements Decoder {
         return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWSpecDecoder();
     }
 
-    private static final class LZWSpecDecoder extends LZWDecoder {
+    static final class LZWSpecDecoder extends LZWDecoder {
 
         protected LZWSpecDecoder() {
-            super(false);
+            super(TABLE_SIZE);
         }
 
         @Override
@@ -243,7 +240,7 @@ abstract class LZWDecoder implements Decoder {
         // compressed data will be identical whether it is an ‘II’ or ‘MM’ file."
 
         protected LZWCompatibilityDecoder() {
-            super(true);
+            super(TABLE_SIZE + 1024); // libTiff adds 1024 "for compatibility", this value seems to work fine...
         }
 
         @Override
