@@ -140,6 +140,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "ColorMap";
             case TIFF.TAG_EXTRA_SAMPLES:
                 return "ExtraSamples";
+            case TIFF.TAG_SAMPLE_FORMAT:
+                return "SampleFormat";
 
             case TIFF.TAG_SUB_IFD:
                 return "SubIFD";

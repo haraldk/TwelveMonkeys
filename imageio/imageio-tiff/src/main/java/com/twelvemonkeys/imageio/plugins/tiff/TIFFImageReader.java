@@ -234,12 +234,12 @@ public class TIFFImageReader extends ImageReaderBase {
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         readIFD(imageIndex);
 
-        getSampleFormat(); // We don't support anything but SAMPLEFORMAT_UINT at the moment, just sanity checking input
+        int sampleFormat = getSampleFormat();
         int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFExtension.PLANARCONFIG_PLANAR);
         int interpretation = getValueAsInt(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation");
         int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXEL, 1);
         int bitsPerSample = getBitsPerSample();
-        int dataType = bitsPerSample <= 8 ? DataBuffer.TYPE_BYTE : bitsPerSample <= 16 ? DataBuffer.TYPE_USHORT : DataBuffer.TYPE_INT;
+        int dataType = getDataType(sampleFormat, bitsPerSample);
 
         // Read embedded cs
         ICC_Profile profile = getICCProfile();
@@ -403,6 +403,24 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
+    private int getDataType(int sampleFormat, int bitsPerSample) throws IIOException {
+        switch (sampleFormat) {
+            case TIFFBaseline.SAMPLEFORMAT_UINT:
+                return bitsPerSample <= 8 ? DataBuffer.TYPE_BYTE : bitsPerSample <= 16 ? DataBuffer.TYPE_USHORT : DataBuffer.TYPE_INT;
+            case TIFFExtension.SAMPLEFORMAT_INT:
+                if (bitsPerSample == 16) {
+                    return DataBuffer.TYPE_SHORT;
+                }
+                throw new IIOException("Unsupported BitPerSample for SampleFormat 2/Signed Integer (expected 16): " + bitsPerSample);
+            case TIFFExtension.SAMPLEFORMAT_FP:
+                throw new IIOException("Unsupported TIFF SampleFormat: (3/Floating point)");
+            case TIFFExtension.SAMPLEFORMAT_UNDEFINED:
+                throw new IIOException("Unsupported TIFF SampleFormat (4/Undefined)");
+            default:
+                throw new IIOException("Unknown TIFF SampleFormat (expected 1, 2, 3 or 4): " + sampleFormat);
+        }
+    }
+
     private IndexColorModel createIndexColorModel(final int bitsPerSample, final int dataType, final int[] cmapShort) {
         // According to the spec, there should be exactly 3 * bitsPerSample^2 entries in the color map for TIFF.
         // Should we enforce this?
@@ -452,12 +470,10 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
             }
 
-            if (sampleFormat != TIFFBaseline.SAMPLEFORMAT_UINT) {
-                throw new IIOException("Unsupported TIFF SampleFormat (expected 1/Unsigned Integer): " + sampleFormat);
-            }
+            return (int) sampleFormat;
         }
 
-        // The default, and the only value we support
+        // The default
         return TIFFBaseline.SAMPLEFORMAT_UINT;
     }
 
@@ -1152,7 +1168,10 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 break;
             case DataBuffer.TYPE_USHORT:
-                short[] rowDataShort = ((DataBufferUShort) tileRowRaster.getDataBuffer()).getData();
+            case DataBuffer.TYPE_SHORT:
+                short[] rowDataShort = tileRowRaster.getTransferType() == DataBuffer.TYPE_USHORT
+                                       ? ((DataBufferUShort) tileRowRaster.getDataBuffer()).getData()
+                                       : ((DataBufferShort) tileRowRaster.getDataBuffer()).getData();
 
                 for (int row = startRow; row < startRow + rowsInTile; row++) {
                     if (row >= srcRegion.y + srcRegion.height) {
