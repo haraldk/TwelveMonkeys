@@ -167,9 +167,28 @@ public interface TIFF {
     int TAG_OLD_SUBFILE_TYPE = 255; // Deprecated NO NOT WRITE!
     int TAG_SUB_IFD = 330;
 
+    /**
+     * XMP record.
+     * @see com.twelvemonkeys.imageio.metadata.xmp.XMP
+     */
     int TAG_XMP = 700;
+
+    /**
+     * IPTC record.
+     * @see com.twelvemonkeys.imageio.metadata.iptc.IPTC
+     */
     int TAG_IPTC = 33723;
+
+    /**
+     * Photoshop image resources.
+     * @see com.twelvemonkeys.imageio.metadata.psd.PSD
+     */
     int TAG_PHOTOSHOP = 34377;
+
+    /**
+     * ICC Color Profile.
+     * @see java.awt.color.ICC_Profile
+     */
     int TAG_ICC_PROFILE = 34675;
 
     // Microsoft Office Document Imaging (MODI)

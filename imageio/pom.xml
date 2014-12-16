@@ -26,6 +26,7 @@
         <!-- Support -->
         <module>imageio-core</module>
         <module>imageio-metadata</module>
+        <module>imageio-clippath</module>
 
         <!-- Stand-alone readers/writers -->
         <module>imageio-bmp</module>

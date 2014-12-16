@@ -36,6 +36,9 @@ package com.twelvemonkeys.imageio.metadata.psd;
  * @version $Id: PSD.java,v 1.0 24.01.12 16:51 haraldk Exp$
  */
 public interface PSD {
+    /** PSD 2+ Native format (.PSD) identifier "8BPS" */
+    int SIGNATURE_8BPS = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'S';
+
     /** PSD image resource marker "8BIM". */
     int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
 
@@ -44,4 +47,7 @@ public interface PSD {
 
     /** ICC profile image resource id. */
     int RES_ICC_PROFILE = 0x040f;
+
+    /** PSD Path resource id. */
+    int RES_CLIPPING_PATH = 0x07d0;
 }
