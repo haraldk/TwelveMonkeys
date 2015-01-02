@@ -681,7 +681,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     ? IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts[i])
                                     : IIOUtil.createStreamAdapter(imageInput);
 
-                            adapter = createDecompressorStream(compression, stripTileWidth, adapter);
+                            adapter = createDecompressorStream(compression, stripTileWidth, numBands, adapter);
                             adapter = createUnpredictorStream(predictor, stripTileWidth, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
 
                             if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_BYTE) {
@@ -1282,14 +1282,14 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private InputStream createDecompressorStream(final int compression, final int width, final InputStream stream) throws IOException {
+    private InputStream createDecompressorStream(final int compression, final int width, final int bands, final InputStream stream) throws IOException {
         switch (compression) {
             case TIFFBaseline.COMPRESSION_NONE:
                 return stream;
             case TIFFBaseline.COMPRESSION_PACKBITS:
                 return new DecoderStream(stream, new PackBitsDecoder(), 1024);
             case TIFFExtension.COMPRESSION_LZW:
-                return new DecoderStream(stream, LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), width);
+                return new DecoderStream(stream, LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), width * bands);
             case TIFFExtension.COMPRESSION_ZLIB:
                 // TIFFphotoshop.pdf (aka TIFF specification, supplement 2) says ZLIB (8) and DEFLATE (32946) algorithms are identical
             case TIFFExtension.COMPRESSION_DEFLATE:
