@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.0.2-SNAPSHOT</version>
+        <version>3.0.2</version>
     </parent>
     <artifactId>imageio-ico</artifactId>
     <name>TwelveMonkeys :: ImageIO :: ICO plugin</name>
