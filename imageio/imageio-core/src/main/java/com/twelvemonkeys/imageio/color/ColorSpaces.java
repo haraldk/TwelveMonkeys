@@ -141,7 +141,7 @@ public final class ColorSpaces {
         // Special handling to detect problematic Corbis RGB ICC Profile.
         // This makes sure tags that are expected to be of type 'XYZ ' really have this expected type.
         // Should leave other ICC profiles unchanged.
-        if (fixProfileXYZTag(profile, ICC_Profile.icSigMediaWhitePointTag)) {
+        if (!JDK_HANDLES_RENDERING_INTENTS && fixProfileXYZTag(profile, ICC_Profile.icSigMediaWhitePointTag)) {
             fixProfileXYZTag(profile, ICC_Profile.icSigRedColorantTag);
             fixProfileXYZTag(profile, ICC_Profile.icSigGreenColorantTag);
             fixProfileXYZTag(profile, ICC_Profile.icSigBlueColorantTag);
@@ -156,7 +156,7 @@ public final class ColorSpaces {
      * @return {@code true} if found and fixed, otherwise {@code false} for short-circuiting
      * to avoid unnecessary array copying.
      */
-    private static boolean fixProfileXYZTag(ICC_Profile profile, final int tagSignature) {
+    private static boolean fixProfileXYZTag(final ICC_Profile profile, final int tagSignature) {
         // TODO: This blows up on OpenJDK... Bug?
         byte[] data = profile.getData(tagSignature);
 
