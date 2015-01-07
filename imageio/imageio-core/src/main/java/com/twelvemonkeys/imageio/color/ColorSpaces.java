@@ -70,13 +70,10 @@ import java.util.Properties;
  * @version $Id: ColorSpaces.java,v 1.0 24.01.11 17.51 haraldk Exp$
  */
 public final class ColorSpaces {
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
 
-    private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
-
-    // OpenJDK 7 seems to handle non-perceptual rendering intents gracefully, so we don't need to fiddle with the profiles.
-    // However, the later Oracle distribute JDK seems to include the color management code that has the known bugs...
-    private final static boolean JDK_HANDLES_RENDERING_INTENTS =
-            SystemUtil.isClassAvailable("java.lang.invoke.CallSite") && !SystemUtil.isClassAvailable("sun.java2d.cmm.kcms.CMM");
+    /** We need special ICC profile handling for KCMS vs LCMS. Delegate to specific strategy. */
+    private final static ICCProfileSanitizer profileCleaner = ICCProfileSanitizer.Factory.get();
 
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
@@ -85,9 +82,6 @@ public final class ColorSpaces {
 
     /** A best-effort "generic" CMYK color space. Either read from disk or built-in. */
     public static final int CS_GENERIC_CMYK = 5001;
-
-    /** Value used instead of 'XYZ ' in problematic Corbis RGB Profiles */
-    private static final byte[] CORBIS_RGB_ALTERNATE_XYZ = new byte[] {0x17, (byte) 0xA5, 0x05, (byte) 0xB8};
 
     // Weak references to hold the color spaces while cached
     private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<ICC_Profile>(null);
@@ -129,50 +123,14 @@ public final class ColorSpaces {
                 return cs;
             }
 
-            // NOTE: The intent change breaks JDK7: Seems to be a bug in ICC_Profile.getData/setData,
-            // as calling it with unchanged header data, still breaks when creating new ICC_ColorSpace...
-            // However, we simply skip that, as JDK7 handles the rendering intents already.
-            if (!JDK_HANDLES_RENDERING_INTENTS) {
-                // Fix profile before lookup/create
-                profile.setData(ICC_Profile.icSigHead, profileHeader);
-            }
+            // Fix profile before lookup/create
+            profileCleaner.fixProfile(profile, profileHeader);
         }
-
-        // Special handling to detect problematic Corbis RGB ICC Profile.
-        // This makes sure tags that are expected to be of type 'XYZ ' really have this expected type.
-        // Should leave other ICC profiles unchanged.
-        if (!JDK_HANDLES_RENDERING_INTENTS && fixProfileXYZTag(profile, ICC_Profile.icSigMediaWhitePointTag)) {
-            fixProfileXYZTag(profile, ICC_Profile.icSigRedColorantTag);
-            fixProfileXYZTag(profile, ICC_Profile.icSigGreenColorantTag);
-            fixProfileXYZTag(profile, ICC_Profile.icSigBlueColorantTag);
+        else {
+            profileCleaner.fixProfile(profile, null);
         }
 
         return getCachedOrCreateCS(profile, profileHeader);
-    }
-
-    /**
-     * Fixes problematic 'XYZ ' tags in Corbis RGB profile.
-     *
-     * @return {@code true} if found and fixed, otherwise {@code false} for short-circuiting
-     * to avoid unnecessary array copying.
-     */
-    private static boolean fixProfileXYZTag(final ICC_Profile profile, final int tagSignature) {
-        // TODO: This blows up on OpenJDK... Bug?
-        byte[] data = profile.getData(tagSignature);
-
-        // The CMM expects 0x64 65 73 63 ('XYZ ') but is 0x17 A5 05 B8..?
-        if (data != null && Arrays.equals(Arrays.copyOfRange(data, 0, 4), CORBIS_RGB_ALTERNATE_XYZ)) {
-            data[0] = 'X';
-            data[1] = 'Y';
-            data[2] = 'Z';
-            data[3] = ' ';
-
-            profile.setData(tagSignature, data);
-
-            return true;
-        }
-
-        return false;
     }
 
     private static ICC_ColorSpace getInternalCS(final int profileCSType, final byte[] profileHeader) {
@@ -414,6 +372,7 @@ public final class ColorSpaces {
 
         private static Properties loadProfiles(final Platform.OperatingSystem os) {
             Properties systemDefaults;
+
             try {
                 systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os.id());
             }
@@ -422,6 +381,7 @@ public final class ColorSpaces {
                         "Warning: Could not load system default ICC profile locations from %s, will use bundled fallback profiles.\n",
                         ignore.getMessage()
                 );
+
                 if (DEBUG) {
                     ignore.printStackTrace();
                 }

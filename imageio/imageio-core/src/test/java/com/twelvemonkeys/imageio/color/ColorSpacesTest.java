@@ -33,8 +33,6 @@ import org.junit.Test;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
-import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -46,8 +44,6 @@ import static org.junit.Assert.*;
  * @version $Id: ColorSpacesTest.java,v 1.0 07.02.11 14.32 haraldk Exp$
  */
 public class ColorSpacesTest {
-
-    private static final byte[] XYZ = new byte[] {'X', 'Y', 'Z', ' '};
 
     @Test
     public void testCreateColorSpaceFromKnownProfileReturnsInternalCS_sRGB() {
@@ -188,20 +184,5 @@ public class ColorSpacesTest {
     @Test(expected = IllegalArgumentException.class)
     public void testIsCS_sRGBNull() {
         ColorSpaces.isCS_sRGB(null);
-    }
-
-    @Test
-    public void testCorbisRGBSpecialHandling() throws IOException {
-        ICC_Profile corbisRGB = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB.icc"));
-        ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(corbisRGB);
-
-        assertNotNull(colorSpace);
-
-        // Make sure all known affected tags have type 'XYZ '
-        ICC_Profile profile = colorSpace.getProfile();
-        assertArrayEquals(XYZ, Arrays.copyOfRange(profile.getData(ICC_Profile.icSigMediaWhitePointTag), 0, 4));
-        assertArrayEquals(XYZ, Arrays.copyOfRange(profile.getData(ICC_Profile.icSigRedColorantTag), 0, 4));
-        assertArrayEquals(XYZ, Arrays.copyOfRange(profile.getData(ICC_Profile.icSigGreenColorantTag), 0, 4));
-        assertArrayEquals(XYZ, Arrays.copyOfRange(profile.getData(ICC_Profile.icSigBlueColorantTag), 0, 4));
     }
 }
