@@ -68,6 +68,9 @@ import java.util.List;
 // See http://www.adobeforums.com/webx?14@@.3bc381dc/0  
 // Done: Allow reading the extra alpha channels (index after composite data)
 public final class PSDImageReader extends ImageReaderBase {
+
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.psd.debug"));
+
     private PSDHeader header;
     private ICC_ColorSpace colorSpace;
     private PSDMetadata metadata;
@@ -264,9 +267,7 @@ public final class PSDImageReader extends ImageReaderBase {
         switch (header.mode) {
             case PSD.COLOR_MODE_RGB:
                 // Prefer interleaved versions as they are much faster to display
-//                if (header.channels == 3 && header.bits == 8) {
                 if (rawType.getNumBands() == 3 && rawType.getBitsPerBand(0) == 8) {
-                    // TODO: ColorConvertOp to CS_sRGB
                     // TODO: Integer raster
                     // types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.INT_RGB));
                     types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
@@ -276,9 +277,7 @@ public final class PSDImageReader extends ImageReaderBase {
                         types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
                     }
                 }
-//                else if (header.channels >= 4 && header.bits == 8) {
                 else if (rawType.getNumBands() >= 4 && rawType.getBitsPerBand(0) == 8) {
-                    // TODO: ColorConvertOp to CS_sRGB
                     // TODO: Integer raster
                     // types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.INT_ARGB));
                     types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
@@ -288,35 +287,28 @@ public final class PSDImageReader extends ImageReaderBase {
                         types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                     }
                 }
-//                else if (header.channels == 3 && header.bits == 16) {
                 else if (rawType.getNumBands() == 3 && rawType.getBitsPerBand(0) == 16) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
                 }
-//                else if (header.channels >= 4 && header.bits == 16) {
                 else if (rawType.getNumBands() >= 4 && rawType.getBitsPerBand(0) == 16) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
                 }
                 break;
             case PSD.COLOR_MODE_CMYK:
                 // Prefer interleaved versions as they are much faster to display
-                // TODO: ColorConvertOp to CS_sRGB
                 // TODO: We should convert these to their RGB equivalents while reading for the common-case,
                 // as Java2D is extremely slow displaying custom images.
                 // Converting to RGB is also correct behaviour, according to the docs.
                 // Doing this, will require rewriting the image reading, as the raw image data is channelled, not interleaved :-/
-//                if (header.channels == 4 &&  header.bits == 8) {
                 if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 8) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
                 }
-//                else if (header.channels == 5 &&  header.bits == 8) {
                 else if (rawType.getNumBands() == 5 && rawType.getBitsPerBand(0) == 8) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                 }
-//                else if (header.channels == 4 &&  header.bits == 16) {
                 else if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 16) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[]{3, 2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
                 }
-//                else if (header.channels == 5 &&  header.bits == 16) {
                 else if (rawType.getNumBands() == 5 && rawType.getBitsPerBand(0) == 16) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
                 }
@@ -375,24 +367,16 @@ public final class PSDImageReader extends ImageReaderBase {
 
         // TODO: Create temp raster in native format w * 1
         // Read (sub-sampled) row into temp raster (skip other rows)
-        // If color model (color space) is not RGB, do color convert op
-        // Otherwise, copy "through" ColorModel?
         // Copy pixels from temp raster
         // If possible, leave the destination image "untouched" (accelerated)
         // See Jim Grahams comments:
         // http://forums.java.net/jive/message.jspa?messageID=295758#295758
-
-        // TODO: Doing a per line color convert will be expensive, as data is channelled...
-        // Will need to either convert entire image, or skip back/forth between channels...
 
         // TODO: Banding...
 
         ImageTypeSpecifier spec = getRawImageType(imageIndex);
         BufferedImage temp = spec.createBufferedImage(getWidth(imageIndex), 1);
         temp.getRaster();
-
-        if (...)
-        ColorConvertOp convert = new ColorConvertOp(...);
 
         */
 
@@ -470,7 +454,6 @@ public final class PSDImageReader extends ImageReaderBase {
                                final int[] pByteCounts, final int pCompression) throws IOException {
 
         final WritableRaster raster = pImage.getRaster();
-        // TODO: Conversion if destination cm is not compatible
         final ColorModel destCM = pImage.getColorModel();
 
         // TODO: This raster is 3-5 times longer than needed, depending on number of channels...
@@ -513,6 +496,39 @@ public final class PSDImageReader extends ImageReaderBase {
             // Compose out the background of the semi-transparent pixels, as PS somehow has the background composed in
             decomposeAlpha(destCM, raster.getDataBuffer(), pDest.width, pDest.height, raster.getNumBands());
         }
+
+        // NOTE: ColorSpace uses Object.equals(), so we rely on using same instances!
+        if (!pSourceCM.getColorSpace().equals(pImage.getColorModel().getColorSpace())) {
+            convertToDestinationCS(pSourceCM, pImage.getColorModel(), raster);
+        }
+    }
+
+    private void convertToDestinationCS(final ColorModel sourceCM, ColorModel destinationCM, final WritableRaster raster) {
+        long start = DEBUG ? System.currentTimeMillis() : 0;
+
+        // Color conversion from embedded color space, to destination color space
+        WritableRaster alphaMaskedRaster = destinationCM.hasAlpha()
+                                           ? raster.createWritableChild(0, 0, raster.getWidth(), raster.getHeight(),
+                                                    raster.getMinX(), raster.getMinY(),
+                                                    createBandList(sourceCM.getColorSpace().getNumComponents()))
+                                           : raster;
+
+        new ColorConvertOp(sourceCM.getColorSpace(), destinationCM.getColorSpace(), null)
+                .filter(alphaMaskedRaster, alphaMaskedRaster);
+
+        if (DEBUG) {
+            System.out.println("Color conversion " + (System.currentTimeMillis() - start) + "ms");
+        }
+    }
+
+    private int[] createBandList(final int numBands) {
+        int[] bands = new int[numBands];
+
+        for (int i = 0; i < numBands; i++) {
+            bands[i] = i;
+        }
+
+        return bands;
     }
 
     private void processImageProgressForChannel(int channel, int channelCount, int y, int height) {
@@ -542,6 +558,7 @@ public final class PSDImageReader extends ImageReaderBase {
             if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
                 if (pRLECompressed) {
                     DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length);
+
                     try {
                         for (int x = 0; x < pChannelWidth; x++) {
                             pRow[x] = input.readInt();
@@ -853,17 +870,15 @@ public final class PSDImageReader extends ImageReaderBase {
             metadata = new PSDMetadata();
             metadata.header = header;
 
-            /*
-            Contains the required data to define the color mode.
-
-            For indexed color images, the count will be equal to 768, and the mode data
-            will contain the color table for the image, in non-interleaved order.
-
-            For duotone images, the mode data will contain the duotone specification, 
-            the format of which is not documented.  Non-Photoshop readers can treat
-            the duotone image as a grayscale image, and keep the duotone specification
-            around as a black box for use when saving the file.
-             */
+            // Contains the required data to define the color mode.
+            //
+            // For indexed color images, the count will be equal to 768, and the mode data
+            // will contain the color table for the image, in non-interleaved order.
+            //
+            // For duotone images, the mode data will contain the duotone specification,
+            // the format of which is not documented.  Non-Photoshop readers can treat
+            // the duotone image as a grayscale image, and keep the duotone specification
+            // around as a black box for use when saving the file.
             if (header.mode == PSD.COLOR_MODE_INDEXED) {
                 metadata.colorData = new PSDColorData(imageInput);
             }
@@ -936,11 +951,9 @@ public final class PSDImageReader extends ImageReaderBase {
                     long layerInfoLength = header.largeFormat ? imageInput.readLong() : imageInput.readUnsignedInt();
 
                     if (layerInfoLength > 0) {
-                    /*
-                     "Layer count. If it is a negative number, its absolute value is the number of
-                     layers and the first alpha channel contains the transparency data for the
-                     merged result."
-                     */
+                        // "Layer count. If it is a negative number, its absolute value is the number of
+                        // layers and the first alpha channel contains the transparency data for the
+                        // merged result."
                         int layerCount = imageInput.readShort();
 
                         PSDLayerInfo[] layerInfos = new PSDLayerInfo[Math.abs(layerCount)];
@@ -985,7 +998,6 @@ public final class PSDImageReader extends ImageReaderBase {
         }
     }
 
-//    private BufferedImage readLayerData(int layerIndex, final PSDLayerInfo pLayerInfo, final ImageTypeSpecifier pRawType, final ImageTypeSpecifier pImageType, ImageReadParam param) throws IOException {
     private BufferedImage readLayerData(final int layerIndex, final ImageReadParam param) throws IOException {
         final int width = getLayerWidth(layerIndex);
         final int height = getLayerHeight(layerIndex);
@@ -1015,14 +1027,12 @@ public final class PSDImageReader extends ImageReaderBase {
         final int ysub = 1;
 
         final WritableRaster raster = layer.getRaster();
-        // TODO: Conversion if destination cm is not compatible
         final ColorModel destCM = layer.getColorModel();
 
         // TODO: This raster is 3-5 times longer than needed, depending on number of channels...
         ColorModel sourceCM = imageType.getColorModel();
         final WritableRaster rowRaster = width > 0 ? sourceCM.createCompatibleWritableRaster(width, 1) : null;
 
-//                        final int channels = rowRaster.getNumBands();
         final boolean banded = raster.getDataBuffer().getNumBanks() > 1;
         final int interleavedBands = banded ? 1 : raster.getNumBands();
 
@@ -1101,6 +1111,10 @@ public final class PSDImageReader extends ImageReaderBase {
             }
         }
 
+        if (!sourceCM.getColorSpace().equals(destCM.getColorSpace())) {
+            convertToDestinationCS(sourceCM, destCM, raster);
+        }
+
         return layer;
     }
 
@@ -1143,7 +1157,8 @@ public final class PSDImageReader extends ImageReaderBase {
 
     /// Layer support
 
-    @Override protected void checkBounds(final int index) throws IOException {
+    @Override
+    protected void checkBounds(final int index) throws IOException {
         // Avoid parsing layer stuff, if we just want to read the composite data
         if (index == 0) {
             assertInput();

@@ -293,7 +293,6 @@ public final class ColorSpaces {
             }
 
             try {
-
                 return ICC_Profile.getInstance(stream);
             }
             catch (IOException ignore) {
