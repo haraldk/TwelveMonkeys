@@ -49,7 +49,7 @@ final class SGIMetadata extends IIOMetadata {
     }
 
     @Override public Node getAsTree(final String formatName) {
-        if (formatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
+        if (IIOMetadataFormatImpl.standardMetadataFormatName.equals(formatName)) {
             return getStandardTree();
         }
         else {

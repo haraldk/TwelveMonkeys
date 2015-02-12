@@ -34,7 +34,6 @@ import org.w3c.dom.Node;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
-import java.awt.image.IndexColorModel;
 
 /**
  * BMPMetadata.
@@ -58,10 +57,10 @@ final class BMPMetadata extends IIOMetadata {
     }
 
     @Override public Node getAsTree(final String formatName) {
-        if (formatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
+        if (IIOMetadataFormatImpl.standardMetadataFormatName.equals(formatName)) {
             return getStandardTree();
         }
-        else if (formatName.equals(nativeMetadataFormatName)) {
+        else if (nativeMetadataFormatName.equals(formatName)) {
             return getNativeTree();
         }
         else {
