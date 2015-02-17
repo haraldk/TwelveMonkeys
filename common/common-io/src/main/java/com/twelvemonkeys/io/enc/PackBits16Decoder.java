@@ -46,7 +46,7 @@ import java.nio.ByteBuffer;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/PackBits16Decoder.java#2 $
  */
 public final class PackBits16Decoder implements Decoder {
-    // TODO: Refactor this into an option for the PackBitsDecoder?
+    // TODO: Refactor this into an option for the PackBitsDecoder (bytesPerSample, default == 1)?
     private final boolean disableNoop;
 
     private int leftOfRun;
@@ -90,10 +90,7 @@ public final class PackBits16Decoder implements Decoder {
             return -1;
         }
 
-        int read = 0;
-        final int max = buffer.capacity();
-
-        while (read < max) {
+        while (buffer.hasRemaining()) {
             int n;
 
             if (splitRun) {
@@ -112,12 +109,12 @@ public final class PackBits16Decoder implements Decoder {
             }
 
             // Split run at or before max
-            if (n >= 0 && 2 * (n + 1) + read > max) {
+            if (n >= 0 && 2 * (n + 1) > buffer.remaining()) {
                 leftOfRun = n;
                 splitRun = true;
                 break;
             }
-            else if (n < 0 && 2 * (-n + 1) + read > max) {
+            else if (n < 0 && 2 * (-n + 1) > buffer.remaining()) {
                 leftOfRun = n;
                 splitRun = true;
                 break;
@@ -126,9 +123,7 @@ public final class PackBits16Decoder implements Decoder {
             try {
                 if (n >= 0) {
                     // Copy next n + 1 shorts literally
-                    int len = 2 * (n + 1);
-                    readFully(stream, buffer, len);
-                    read += len;
+                    readFully(stream, buffer, 2 * (n + 1));
                 }
                 // Allow -128 for compatibility, see above
                 else if (disableNoop || n != -128) {
@@ -148,7 +143,7 @@ public final class PackBits16Decoder implements Decoder {
             }
         }
 
-        return read;
+        return buffer.position();
     }
 
     private static byte readByte(final InputStream pStream) throws IOException {
@@ -166,16 +161,18 @@ public final class PackBits16Decoder implements Decoder {
             throw new IndexOutOfBoundsException();
         }
 
-        int read = 0;
+        int total = 0;
 
-        while (read < pLength) {
-            int count = pStream.read(pBuffer.array(), pBuffer.arrayOffset() + pBuffer.position() + read, pLength - read);
+        while (total < pLength) {
+            int count = pStream.read(pBuffer.array(), pBuffer.arrayOffset() + pBuffer.position() + total, pLength - total);
 
             if (count < 0) {
                 throw new EOFException("Unexpected end of PackBits stream");
             }
 
-            read += count;
+            total += count;
         }
+
+        pBuffer.position(pBuffer.position() + total);
     }
 }
