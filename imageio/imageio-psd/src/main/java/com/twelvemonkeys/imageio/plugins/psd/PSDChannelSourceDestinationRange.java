@@ -45,7 +45,7 @@ final class PSDChannelSourceDestinationRange {
     private short destBlack;
     private short destWhite;
 
-    public PSDChannelSourceDestinationRange(ImageInputStream pInput, String pChannel) throws IOException {
+    public PSDChannelSourceDestinationRange(final ImageInputStream pInput, final String pChannel) throws IOException {
         channel = pChannel;
         sourceBlack = pInput.readShort();
         sourceWhite = pInput.readShort();
@@ -56,7 +56,7 @@ final class PSDChannelSourceDestinationRange {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
-        
+
         builder.append("[(").append(channel);
         builder.append("): sourceBlack: ").append(Integer.toHexString(sourceBlack & 0xffff));
         builder.append(", sourceWhite: ").append(Integer.toHexString(sourceWhite & 0xffff));

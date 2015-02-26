@@ -55,10 +55,11 @@ final class PSDLayerMaskData {
     private int realBottom;
     private int realRight;
 
-    PSDLayerMaskData(ImageInputStream pInput, int pSize) throws IOException {
+    PSDLayerMaskData(final ImageInputStream pInput, final int pSize) throws IOException {
         if (pSize != 20 && pSize != 36) {
-            throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expeced 20 or 36)");
+            throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expected 20 or 36)");
         }
+
         top = pInput.readInt();
         left = pInput.readInt();
         bottom = pInput.readInt();

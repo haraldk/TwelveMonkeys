@@ -35,6 +35,7 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * PSDMetadataFormat
@@ -46,6 +47,19 @@ import java.util.Arrays;
 public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
     private static final PSDMetadataFormat instance = new PSDMetadataFormat();
+
+    static final List<String> PSD_BLEND_MODES = Arrays.asList(
+            PSDUtil.intToStr(PSD.BLEND_PASS), PSDUtil.intToStr(PSD.BLEND_NORM), PSDUtil.intToStr(PSD.BLEND_DISS),
+            PSDUtil.intToStr(PSD.BLEND_DARK), PSDUtil.intToStr(PSD.BLEND_MUL), PSDUtil.intToStr(PSD.BLEND_IDIV),
+            PSDUtil.intToStr(PSD.BLEND_LBRN), PSDUtil.intToStr(PSD.BLEND_DKCL), PSDUtil.intToStr(PSD.BLEND_LITE),
+            PSDUtil.intToStr(PSD.BLEND_SCRN), PSDUtil.intToStr(PSD.BLEND_DIV), PSDUtil.intToStr(PSD.BLEND_LDDG),
+            PSDUtil.intToStr(PSD.BLEND_LGCL), PSDUtil.intToStr(PSD.BLEND_OVER), PSDUtil.intToStr(PSD.BLEND_SLIT),
+            PSDUtil.intToStr(PSD.BLEND_HLIT), PSDUtil.intToStr(PSD.BLEND_VLIT), PSDUtil.intToStr(PSD.BLEND_LLIT),
+            PSDUtil.intToStr(PSD.BLEND_PLIT), PSDUtil.intToStr(PSD.BLEND_HMIX), PSDUtil.intToStr(PSD.BLEND_DIFF),
+            PSDUtil.intToStr(PSD.BLEND_SMUD), PSDUtil.intToStr(PSD.BLEND_FSUB), PSDUtil.intToStr(PSD.BLEND_FDIV),
+            PSDUtil.intToStr(PSD.BLEND_HUE), PSDUtil.intToStr(PSD.BLEND_SAT), PSDUtil.intToStr(PSD.BLEND_COLR),
+            PSDUtil.intToStr(PSD.BLEND_LUM)
+    );
 
     /**
      * Private constructor.
@@ -214,13 +228,35 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // TODO: Incorporate XMP metadata here somehow (or treat as opaque bytes?)
         addObjectValue("XMP", Document.class, true, null);
 
-        // TODO: Layers
-        //addElement("ChannelSourceDestinationRange", "LayerSomething", CHILD_POLICY_CHOICE);
+        // root -> Layers
+        addElement("Layers", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_REPEAT);
 
-        // TODO: Global layer mask info
+        // root -> Layers -> LayerInfo
+        addElement("LayerInfo", "Layers", CHILD_POLICY_REPEAT);
+        addAttribute("LayerInfo", "name", DATATYPE_STRING, false, "");
+        addAttribute("LayerInfo", "top", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "left", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "bottom", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "right", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "blendmode", DATATYPE_STRING, false, PSDUtil.intToStr(PSD.BLEND_NORM), PSD_BLEND_MODES);
+        addAttribute("LayerInfo", "opacity", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "clipping", DATATYPE_STRING, false, "base", Arrays.asList("base", "non-base"));
+        addAttribute("LayerInfo", "flags", DATATYPE_INTEGER, false, "0");
+
+        // Redundant (derived from flags)
+        addAttribute("LayerInfo", "transparencyProtected", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "visible", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "obsolete", DATATYPE_BOOLEAN, false, "false"); // Spec doesn't say if the flag is obsolete, or if this means the layer is obsolete...?
+        addAttribute("LayerInfo", "pixelDataIrrelevant", DATATYPE_BOOLEAN, false, "false");
+
+
+        // root -> GlobalLayerMask
+        addElement("GlobalLayerMask", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
+        addAttribute("GlobalLayerMask", "colorSpace", DATATYPE_INTEGER, false, "0");
+        addAttribute("GlobalLayerMask", "colors", DATATYPE_INTEGER, false, 4, 4);
+        addAttribute("GlobalLayerMask", "opacity", DATATYPE_INTEGER, false, "0");
+        addAttribute("GlobalLayerMask", "kind", DATATYPE_STRING, false, "layer", Arrays.asList("selected", "protected", "layer"));
     }
-
-
 
     @Override
     public boolean canNodeAppear(final String elementName, final ImageTypeSpecifier imageType) {

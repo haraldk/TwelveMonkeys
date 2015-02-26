@@ -54,6 +54,7 @@ import java.util.List;
 /**
  * ImageReader for Adobe Photoshop Document (PSD) format.
  *
+ * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/">Adobe Photoshop File Formats Specification<a>
  * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -593,6 +594,7 @@ public final class PSDImageReader extends ImageReaderBase {
             if (abortRequested()) {
                 break;
             }
+
             processImageProgressForChannel(pChannel, pChannelCount, y, pChannelHeight);
         }
     }
@@ -654,6 +656,7 @@ public final class PSDImageReader extends ImageReaderBase {
             if (abortRequested()) {
                 break;
             }
+
             processImageProgressForChannel(pChannel, pChannelCount, y, pChannelHeight);
         }
     }
@@ -712,6 +715,7 @@ public final class PSDImageReader extends ImageReaderBase {
             if (abortRequested()) {
                 break;
             }
+
             processImageProgressForChannel(pChannel, pChannelCount, y, pChannelHeight);
         }
     }
@@ -791,6 +795,7 @@ public final class PSDImageReader extends ImageReaderBase {
             if (abortRequested()) {
                 break;
             }
+
             processImageProgressForChannel(pChannel, pChannelCount, y, pChannelHeight);
         }
     }
@@ -974,10 +979,10 @@ public final class PSDImageReader extends ImageReaderBase {
 
                     // Global LayerMaskInfo (18 bytes or more..?)
                     // 4 (length), 2 (colorSpace), 8 (4 * 2 byte color components), 2 (opacity %), 1 (kind), variable (pad)
-                    long layerMaskInfoLength = imageInput.readUnsignedInt(); // NOTE: Not long for PSB!
+                    long globalLayerMaskInfoLength = imageInput.readUnsignedInt(); // NOTE: Not long for PSB!
 
-                    if (layerMaskInfoLength > 0) {
-                        metadata.globalLayerMask = new PSDGlobalLayerMask(imageInput);
+                    if (globalLayerMaskInfoLength > 0) {
+                        metadata.globalLayerMask = new PSDGlobalLayerMask(imageInput, globalLayerMaskInfoLength);
                     }
 
                     // TODO: Parse "Additional layer information"
@@ -986,12 +991,6 @@ public final class PSDImageReader extends ImageReaderBase {
 //                    imageInput.seek(metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4));
 //                    imageInput.flushBefore(metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4));
                 }
-
-//                read = imageInput.getStreamPosition() - pos;
-//
-//                long toSkip = layerAndMaskInfoLength - read;
-//                System.out.println("toSkip: " + toSkip);
-//                imageInput.skipBytes(toSkip);
             }
 
             metadata.imageDataStart = metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4);

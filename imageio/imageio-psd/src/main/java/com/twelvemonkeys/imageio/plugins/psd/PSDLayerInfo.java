@@ -28,8 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -70,10 +70,8 @@ final class PSDLayerInfo {
 
         blendMode = new PSDLayerBlendMode(pInput);
 
-        // Lenght of layer mask data
+        // Length of layer mask data
         long extraDataSize = pInput.readUnsignedInt();
-        // TODO: Allow skipping the rest here?
-        // pInput.skipBytes(extraDataSize);
 
         // Layer mask/adjustment layer data
         int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or 36 bytes...
@@ -94,7 +92,6 @@ final class PSDLayerInfo {
             ranges[i] = new PSDChannelSourceDestinationRange(pInput, (i == 0 ? "Gray" : "Channel " + (i - 1)));
         }
 
-
         layerName = PSDUtil.readPascalString(pInput);
 
         int layerNameSize = layerName.length() + 1;
@@ -106,8 +103,7 @@ final class PSDLayerInfo {
             layerNameSize += skip;
         }
 
-        // TODO: There's some data skipped here...
-        // Adjustment layer info etc...
+        // TODO: Consider reading this: Adjustment layer info etc...
         pInput.skipBytes(extraDataSize - layerMaskDataSize - 4 - layerBlendingDataSize - 4 - layerNameSize);
     }
 

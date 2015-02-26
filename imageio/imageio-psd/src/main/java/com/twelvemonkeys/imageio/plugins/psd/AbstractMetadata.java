@@ -129,4 +129,9 @@ abstract class AbstractMetadata extends IIOMetadata implements Cloneable {
                 String.format("Bad format name: \"%s\". Expected one of %s", pFormatName, Arrays.toString(metadataFormatNames))
         );
     }
+
+    protected static String toListString(short[] values) {
+        String string = Arrays.toString(values);
+        return string.substring(1, string.length() - 1);
+    }
 }
