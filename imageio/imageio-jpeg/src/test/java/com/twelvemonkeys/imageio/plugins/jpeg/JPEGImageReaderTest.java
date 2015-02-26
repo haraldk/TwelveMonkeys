@@ -272,6 +272,29 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testCMYKWithRGBProfile() throws IOException {
+        // File contains JFIF (!), RGB ICC profile AND Adobe App14 specifying unknown conversion,
+        // but image data is 4 channel CMYK (from SOF0 channel Ids 'C', 'M', 'Y', 'K').
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-cmyk-invalid-icc-profile-srgb.jpg")));
+
+        assertEquals(493, reader.getWidth(0));
+        assertEquals(500, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, 493, 16)); // Save some memory
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(493, image.getWidth());
+        assertEquals(16, image.getHeight());
+
+        // TODO: Need to test colors!
+
+        assertFalse(reader.hasThumbnails(0)); // Should not blow up!
+    }
+
+    @Test
     public void testWarningEmbeddedColorProfileInvalidIgnored() throws IOException {
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/warning-embedded-color-profile-invalid-ignored-cmyk.jpg")));

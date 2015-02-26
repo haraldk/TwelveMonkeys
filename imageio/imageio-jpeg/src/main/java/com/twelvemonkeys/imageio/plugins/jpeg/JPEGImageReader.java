@@ -226,14 +226,14 @@ public class JPEGImageReader extends ImageReaderBase {
             ICC_Profile profile = getEmbeddedICCProfile(false);
 
             if (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-                if (profile != null) {
+                if (profile != null && profile.getNumComponents() == 4) {
                     typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
                 }
 
                 typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
             }
             else if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.RGB) {
-                if (profile != null) {
+                if (profile != null && profile.getNumComponents() == 3) {
                     typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2}, DataBuffer.TYPE_BYTE, false, false));
                 }
             }
@@ -246,8 +246,8 @@ public class JPEGImageReader extends ImageReaderBase {
                         ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE)
                 ));
 
-                if (profile != null) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, false, false));
+                if (profile != null && profile.getNumComponents() == 3) {
+                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, true, false));
                 }
             }
 
@@ -274,10 +274,8 @@ public class JPEGImageReader extends ImageReaderBase {
                 // Create based on embedded profile if exists, or create from "Generic CMYK"
                 ICC_Profile profile = getEmbeddedICCProfile(false);
 
-                if (profile != null) {
-                    return ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[]{
-                            3, 2, 1, 0
-                    }, DataBuffer.TYPE_BYTE, false, false);
+                if (profile != null && profile.getNumComponents() == 4) {
+                    return ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
                 }
 
                 return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
@@ -385,6 +383,10 @@ public class JPEGImageReader extends ImageReaderBase {
                                     "Ignoring ICC profile, assuming source color space %s.",
                             intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame(), csType
                     ));
+
+                    if (csType == JPEGColorSpace.CMYK && image.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_CMYK) {
+                        convert = new ColorConvertOp(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), image.getColorModel().getColorSpace(), null);
+                    }
                 }
             }
             // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
