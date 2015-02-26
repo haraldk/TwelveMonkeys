@@ -67,6 +67,7 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * </ul>
  *
  * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_17587">Adobe Photoshop Path resource format</a>
+ * @see com.twelvemonkeys.imageio.path.AdobePathBuilder
  * @author <a href="mailto:jpalmer@itemmaster.com">Jason Palmer, itemMaster LLC</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
