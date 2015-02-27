@@ -52,7 +52,7 @@ import java.util.List;
  */
 public final class PSDMetadata extends AbstractMetadata {
 
-    static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_image_1.0";
+    public static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_image_1.0";
     static final String NATIVE_METADATA_FORMAT_CLASS_NAME = "com.twelvemonkeys.imageio.plugins.psd.PSDMetadataFormat";
     // TODO: Support TIFF metadata, based on EXIF/XMP + merge in PSD specifics
 
