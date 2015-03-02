@@ -559,13 +559,11 @@ public class JPEGImageReader extends ImageReaderBase {
         if (adobeDCT != null) {
             switch (adobeDCT.getTransform()) {
                 case AdobeDCTSegment.YCC:
-                    // TODO: Verify that startOfFrame has 3 components, otherwise issue warning and ignore adobeDCT
                     if (startOfFrame.components.length != 3) {
                         break;
                     }
                     return JPEGColorSpace.YCbCr;
                 case AdobeDCTSegment.YCCK:
-                    // TODO: Verify that startOfFrame has 4 components, otherwise issue warning and ignore adobeDCT
                     if (startOfFrame.components.length != 4) {
                         break;
                     }
