@@ -319,6 +319,19 @@ public class JPEGImageReader extends ImageReaderBase {
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
         SOFSegment sof = getSOF();
+
+        if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() != 3 ||
+                adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() != 4)) {
+            processWarningOccurred(String.format(
+                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color components. " +
+                            "Ignoring Adobe App14 marker.",
+                    adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
+                    sof.marker & 0xf, sof.componentsInFrame()
+            ));
+
+            adobeDCT = null;
+        }
+
         JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
 
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
@@ -335,7 +348,7 @@ public class JPEGImageReader extends ImageReaderBase {
             }
 
             // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMyK and other good types?
-            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, adobeDCT, ensureDisplayProfile(profile));
+            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, ensureDisplayProfile(profile));
         }
 
         if (DEBUG) {
@@ -345,7 +358,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return delegate.read(imageIndex, param);
     }
 
-    private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, SOFSegment startOfFrame, JPEGColorSpace csType, AdobeDCTSegment adobeDCT, ICC_Profile profile) throws IOException {
+    private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, SOFSegment startOfFrame, JPEGColorSpace csType, ICC_Profile profile) throws IOException {
         int origWidth = getWidth(imageIndex);
         int origHeight = getHeight(imageIndex);
 
@@ -366,27 +379,16 @@ public class JPEGImageReader extends ImageReaderBase {
         else if (intendedCS != null) {
             // Handle inconsistencies
             if (startOfFrame.componentsInFrame() != intendedCS.getNumComponents()) {
-                if (startOfFrame.componentsInFrame() < 4 && (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK)) {
-                    processWarningOccurred(String.format(
-                            "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOF%d has %d color components. " +
-                                    "Ignoring Adobe App14 marker, assuming YCbCr/RGB data.",
-                            startOfFrame.marker & 0xf, startOfFrame.componentsInFrame()
-                    ));
+                // If ICC profile number of components and startOfFrame does not match, ignore ICC profile
+                processWarningOccurred(String.format(
+                        "Embedded ICC color profile is incompatible with image data. " +
+                                "Profile indicates %d components, but SOF%d has %d color components. " +
+                                "Ignoring ICC profile, assuming source color space %s.",
+                        intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame(), csType
+                ));
 
-                    csType = JPEGColorSpace.YCbCr;
-                }
-                else {
-                    // If ICC profile number of components and startOfFrame does not match, ignore ICC profile
-                    processWarningOccurred(String.format(
-                            "Embedded ICC color profile is incompatible with image data. " +
-                                    "Profile indicates %d components, but SOF%d has %d color components. " +
-                                    "Ignoring ICC profile, assuming source color space %s.",
-                            intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame(), csType
-                    ));
-
-                    if (csType == JPEGColorSpace.CMYK && image.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_CMYK) {
-                        convert = new ColorConvertOp(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), image.getColorModel().getColorSpace(), null);
-                    }
+                if (csType == JPEGColorSpace.CMYK && image.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_CMYK) {
+                    convert = new ColorConvertOp(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), image.getColorModel().getColorSpace(), null);
                 }
             }
             // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
@@ -510,6 +512,10 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     static JPEGColorSpace getSourceCSType(JFIFSegment jfif, AdobeDCTSegment adobeDCT, final SOFSegment startOfFrame) throws IIOException {
+        if (startOfFrame == null) {
+            throw new IIOException("No SOF segment in stream");
+        }
+
         /*
         ADAPTED from http://download.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html:
 
@@ -554,9 +560,15 @@ public class JPEGImageReader extends ImageReaderBase {
             switch (adobeDCT.getTransform()) {
                 case AdobeDCTSegment.YCC:
                     // TODO: Verify that startOfFrame has 3 components, otherwise issue warning and ignore adobeDCT
+                    if (startOfFrame.components.length != 3) {
+                        break;
+                    }
                     return JPEGColorSpace.YCbCr;
                 case AdobeDCTSegment.YCCK:
                     // TODO: Verify that startOfFrame has 4 components, otherwise issue warning and ignore adobeDCT
+                    if (startOfFrame.components.length != 4) {
+                        break;
+                    }
                     return JPEGColorSpace.YCCK;
                 case AdobeDCTSegment.Unknown:
                     if (startOfFrame.components.length == 1) {
@@ -1052,7 +1064,19 @@ public class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        IIOMetadata imageMetadata = delegate.getImageMetadata(imageIndex);
+        // TMI-101: As we catch the IndexOutOfBoundsException below, we need to make sure that we don't catch the
+        // IndexOutOfBoundsException that should be thrown, if (imageIndex < 0 || imageIndex > numImages).
+        checkBounds(imageIndex);
+
+        IIOMetadata imageMetadata;
+
+        try {
+            imageMetadata = delegate.getImageMetadata(imageIndex);
+        }
+        catch (IndexOutOfBoundsException knownIssue) {
+            // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
+            throw new IIOException("Corrupt JPEG data: Bad segment offset/length", knownIssue);
+        }
 
         if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
             if (metadataCleaner == null) {
@@ -1369,9 +1393,16 @@ public class JPEGImageReader extends ImageReaderBase {
 //                int sub = 4;
 //                param.setSourceSubsampling(sub, sub, 0, 0);
 //            }
+                BufferedImage image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                param.setDestination(image);
 
 //                long start = System.currentTimeMillis();
-                BufferedImage image = reader.read(0, param);
+                try {
+                    image = reader.read(0, param);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }
 //                System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 //                System.err.println("image: " + image);
 
@@ -1380,8 +1411,6 @@ public class JPEGImageReader extends ImageReaderBase {
 
                 int maxW = 1280;
                 int maxH = 800;
-//                int maxW = 400;
-//                int maxH = 400;
                 if (image.getWidth() > maxW || image.getHeight() > maxH) {
 //                    start = System.currentTimeMillis();
                     float aspect = reader.getAspectRatio(0);

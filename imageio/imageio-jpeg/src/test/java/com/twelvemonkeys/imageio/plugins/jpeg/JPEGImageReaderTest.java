@@ -94,6 +94,16 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // More test data in specific tests below
     }
 
+    protected List<TestData> getBrokenTestData() {
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)),
+                new TestData(getClassLoaderResource("/jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)),
+                new TestData(getClassLoaderResource("/jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440))
+        );
+
+        // More test data in specific tests below
+    }
+
     @Override
     protected ImageReaderSpi createProvider() {
         return SPI;
@@ -396,7 +406,120 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(384, image.getHeight());
 
         reader.dispose();
-   }
+    }
+
+    @Test
+    public void testBrokenRead() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(ImageIO.createImageInputStream(broken.getInput()));
+
+                try {
+                    reader.read(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testBrokenGetDimensions() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(ImageIO.createImageInputStream(broken.getInput()));
+
+                Dimension exptectedSize = broken.getDimension(0);
+
+                try {
+                    assertEquals(exptectedSize.width, reader.getWidth(0));
+                    assertEquals(exptectedSize.height, reader.getHeight(0));
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testBrokenGetImageMetadata() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(ImageIO.createImageInputStream(broken.getInput()));
+
+                try {
+                    reader.getImageMetadata(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testGetImageMetadataOutOfBounds() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            // Any sample should do here
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/gray-sample.jpg")));
+            reader.getImageMetadata(-1);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = IIOException.class)
+    public void testBrokenBogusSegmentLengthReadWithDestination() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/broken-bogus-segment-length.jpg")));
+
+            assertEquals(467, reader.getWidth(0));
+            assertEquals(612, reader.getHeight(0));
+
+            ImageTypeSpecifier type = reader.getImageTypes(0).next();
+            BufferedImage image = type.createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setDestination(image);
+
+            try {
+                reader.read(0, param);
+            }
+            catch (IOException e) {
+                // Even if we get an exception here, the image should contain 10-15% of the image
+                assertEquals(0xffffffff, image.getRGB(0, 0));   // white area
+                assertEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
+                assertEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
+
+                throw e;
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 
     @Test
     public void testHasThumbnailNoIFD1() throws IOException {
