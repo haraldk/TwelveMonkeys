@@ -80,6 +80,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Override
     protected List<TestData> getTestData() {
+        // While a lot of these files don't conform to any spec (Exif/JFIF), we will read these.
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
@@ -96,10 +97,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     protected List<TestData> getBrokenTestData() {
+        // These files are considered too broken to be read (ie. most other software does not read them either).
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)),
-                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)),
-                new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440))
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)), // Semi-readable, parts missing
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)), // Unreadable, segment lengths are wrong
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440)) // Image readable, broken metadata (fixable?)
         );
 
         // More test data in specific tests below
@@ -473,6 +475,33 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         finally {
             reader.dispose();
         }
+    }
+
+    @Test
+    public void testImageMetadata1ChannelGrayWithBogusAdobeYCC() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            // Any sample should do here
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-adobe-ycc-gray-with-metadata.jpg")));
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+            IIOMetadataNode chroma = getSingleElementByName(root, "Chroma");
+            IIOMetadataNode numChannels = getSingleElementByName(chroma, "NumChannels");
+            assertEquals("1", numChannels.getAttribute("value"));
+            IIOMetadataNode colorSpaceType = getSingleElementByName(chroma, "ColorSpaceType");
+            assertEquals("GRAY", colorSpaceType.getAttribute("name"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private IIOMetadataNode getSingleElementByName(final IIOMetadataNode root, final String name) {
+        NodeList elements = root.getElementsByTagName(name);
+        assertEquals(1, elements.getLength());
+        return (IIOMetadataNode) elements.item(0);
     }
 
     @Test(expected = IndexOutOfBoundsException.class)

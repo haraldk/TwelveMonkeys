@@ -323,7 +323,7 @@ public class JPEGImageReader extends ImageReaderBase {
         if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() != 3 ||
                 adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() != 4)) {
             processWarningOccurred(String.format(
-                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color components. " +
+                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
                             "Ignoring Adobe App14 marker.",
                     adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
                     sof.marker & 0xf, sof.componentsInFrame()
@@ -1075,8 +1075,7 @@ public class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        // TMI-101: As we catch the IndexOutOfBoundsException below, we need to make sure that we don't catch the
-        // IndexOutOfBoundsException that should be thrown, if (imageIndex < 0 || imageIndex > numImages).
+        // checkBounds needed, as we catch the IndexOutOfBoundsException below.
         checkBounds(imageIndex);
 
         IIOMetadata imageMetadata;

@@ -156,10 +156,12 @@ final class JPEGImage10MetadataCleaner {
         }
 
         // Special case: Broken AdobeDCT segment, inconsistent with SOF, use values from SOF
-        if (adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4) {
+        if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4 ||
+                adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() < 3)) {
             reader.processWarningOccurred(String.format(
-                    "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOF%d has %d color components. " +
+                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
                             "Ignoring Adobe App14 marker.",
+                    adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
                     sof.marker & 0xf, sof.componentsInFrame()
             ));
 
