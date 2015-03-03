@@ -88,7 +88,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"), new Dimension(640, 480)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-padded-segments.jpg"), new Dimension(20, 45)),
-                new TestData(getClassLoaderResource("/jpeg/0x00-to-0xFF-between-segments.jpg"), new Dimension(16, 16))
+                new TestData(getClassLoaderResource("/jpeg/0x00-to-0xFF-between-segments.jpg"), new Dimension(16, 16)),
+                new TestData(getClassLoaderResource("/jpeg/jfif-bogus-empty-jfif-segment.jpg"), new Dimension(942, 714))
         );
 
         // More test data in specific tests below
@@ -96,9 +97,9 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     protected List<TestData> getBrokenTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)),
-                new TestData(getClassLoaderResource("/jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)),
-                new TestData(getClassLoaderResource("/jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440))
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)),
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)),
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440))
         );
 
         // More test data in specific tests below
@@ -493,7 +494,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         JPEGImageReader reader = createReader();
 
         try {
-            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/broken-bogus-segment-length.jpg")));
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg")));
 
             assertEquals(467, reader.getWidth(0));
             assertEquals(612, reader.getHeight(0));
@@ -509,9 +510,9 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             }
             catch (IOException e) {
                 // Even if we get an exception here, the image should contain 10-15% of the image
-                assertEquals(0xffffffff, image.getRGB(0, 0));   // white area
-                assertEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
-                assertEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
+                assertRGBEquals(0xffffffff, image.getRGB(0, 0));   // white area
+                assertRGBEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
+                assertRGBEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
 
                 throw e;
             }

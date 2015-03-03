@@ -560,11 +560,13 @@ public class JPEGImageReader extends ImageReaderBase {
             switch (adobeDCT.getTransform()) {
                 case AdobeDCTSegment.YCC:
                     if (startOfFrame.components.length != 3) {
+                        // This probably means the Adobe marker is bogus
                         break;
                     }
                     return JPEGColorSpace.YCbCr;
                 case AdobeDCTSegment.YCCK:
                     if (startOfFrame.components.length != 4) {
+                        // This probably means the Adobe marker is bogus
                         break;
                     }
                     return JPEGColorSpace.YCCK;
@@ -789,7 +791,13 @@ public class JPEGImageReader extends ImageReaderBase {
 
         if (!jfif.isEmpty()) {
             JPEGSegment segment = jfif.get(0);
-            return JFIFSegment.read(segment.data());
+
+            if (segment.length() >= 9) {
+                return JFIFSegment.read(segment.data());
+            }
+            else {
+                processWarningOccurred("Bogus JFIF segment, ignoring");
+            }
         }
 
         return null;
@@ -800,7 +808,12 @@ public class JPEGImageReader extends ImageReaderBase {
 
         if (!jfxx.isEmpty()) {
             JPEGSegment segment = jfxx.get(0);
-            return JFXXSegment.read(segment.data(), segment.length());
+            if (segment.length() >= 1) {
+                return JFXXSegment.read(segment.data(), segment.length());
+            }
+            else {
+                processWarningOccurred("Bogus JFXX segment, ignoring");
+            }
         }
 
         return null;
