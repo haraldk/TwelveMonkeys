@@ -74,7 +74,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         if (streamPos >= segment.end()) {
             // Go forward in cache
-            while (++currentSegment < segments.size()) {
+            int cachedSegment = currentSegment;
+            while (++cachedSegment < segments.size()) {
+                currentSegment = cachedSegment;
                 segment = segments.get(currentSegment);
 
                 if (streamPos >= segment.start && streamPos < segment.end()) {
@@ -157,7 +159,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         }
         else if (streamPos < segment.start) {
             // Go back in cache
-            while (--currentSegment >= 0) {
+            int cachedSegment = currentSegment;
+            while (--cachedSegment >= 0) {
+                currentSegment = cachedSegment;
                 segment = segments.get(currentSegment);
 
                 if (streamPos >= segment.start && streamPos < segment.end()) {

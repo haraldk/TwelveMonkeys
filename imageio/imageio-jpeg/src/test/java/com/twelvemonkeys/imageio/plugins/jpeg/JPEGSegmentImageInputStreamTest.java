@@ -56,6 +56,7 @@ import static org.junit.Assert.*;
 public class JPEGSegmentImageInputStreamTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected URL getClassLoaderResource(final String pName) {

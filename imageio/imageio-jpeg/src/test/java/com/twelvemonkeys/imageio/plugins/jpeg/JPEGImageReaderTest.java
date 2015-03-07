@@ -417,10 +417,43 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     @Ignore("Known issue in com.sun...JPEGMetadata")
     @Test
     public void testExifStandardMetadataColorSpaceTypeYCbCr() {
-        // These reports RGB (by Exif non-presence?), while the data is really YCbCr
+        // These reports RGB in standard metadata, while the data is really YCbCr
         fail("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg");
         fail("/jpeg/exif-pspro-13-inverted-colors.jpg");
         fail("/jpeg/no-jfif-ycbcr.jpg");
+    }
+
+    @Test
+    public void testBrokenReadRasterAfterGetMetadataException() throws IOException {
+        // See issue 107, from PDFBox team
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                try {
+                    reader.getImageMetadata(0);
+                }
+                catch (IOException ignore) {
+                    // Expected IOException here, due to broken file
+//                    ignore.printStackTrace();
+                }
+
+                try {
+                    reader.readRaster(0, null);
+                }
+                catch (IOException expected) {
+                    // Should not throw anything other than IOException here
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
@@ -429,7 +462,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         try {
             for (TestData broken : getBrokenTestData()) {
-                reader.setInput(ImageIO.createImageInputStream(broken.getInput()));
+                reader.setInput(broken.getInputStream());
 
                 try {
                     reader.read(0);
@@ -455,7 +488,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         try {
             for (TestData broken : getBrokenTestData()) {
-                reader.setInput(ImageIO.createImageInputStream(broken.getInput()));
+                reader.setInput(broken.getInputStream());
 
                 Dimension exptectedSize = broken.getDimension(0);
 
@@ -484,7 +517,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         try {
             for (TestData broken : getBrokenTestData()) {
-                reader.setInput(ImageIO.createImageInputStream(broken.getInput()));
+                reader.setInput(broken.getInputStream());
 
                 try {
                     reader.getImageMetadata(0);
