@@ -411,6 +411,15 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         reader.dispose();
     }
 
+    @Ignore("Known issue in com.sun...JPEGMetadata")
+    @Test
+    public void testExifStandardMetadataColorSpaceTypeYCbCr() {
+        // These reports RGB (by Exif non-presence?), while the data is really YCbCr
+        fail("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg");
+        fail("/jpeg/exif-pspro-13-inverted-colors.jpg");
+        fail("/jpeg/no-jfif-ycbcr.jpg");
+    }
+
     @Test
     public void testBrokenRead() throws IOException {
         JPEGImageReader reader = createReader();

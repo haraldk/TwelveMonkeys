@@ -316,9 +316,9 @@ public class JPEGImageReader extends ImageReaderBase {
 //            }
 //        }
 
+        SOFSegment sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
-        SOFSegment sof = getSOF();
 
         if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() != 3 ||
                 adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() != 4)) {
@@ -347,7 +347,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 System.out.println("ICC color profile: " + profile);
             }
 
-            // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMyK and other good types?
+            // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMYK and other good types?
             return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, ensureDisplayProfile(profile));
         }
 
@@ -512,10 +512,6 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     static JPEGColorSpace getSourceCSType(JFIFSegment jfif, AdobeDCTSegment adobeDCT, final SOFSegment startOfFrame) throws IIOException {
-        if (startOfFrame == null) {
-            throw new IIOException("No SOF segment in stream");
-        }
-
         /*
         ADAPTED from http://download.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html:
 
@@ -585,6 +581,7 @@ public class JPEGImageReader extends ImageReaderBase {
             }
         }
 
+        // TODO: We should probably allow component ids out of order (ie. BGR or KMCY)...
         switch (startOfFrame.components.length) {
             case 1:
                 return JPEGColorSpace.Gray;
@@ -592,6 +589,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 return JPEGColorSpace.GrayA;
             case 3:
                 if (startOfFrame.components[0].id == 1 && startOfFrame.components[1].id == 2 && startOfFrame.components[2].id == 3) {
+                    // NOTE: Due to a bug in JPEGMetadata, standard format will report RGB for non-subsampled, non-JFIF files
                     return JPEGColorSpace.YCbCr;
                 }
                 else if (startOfFrame.components[0].id == 'R' && startOfFrame.components[1].id == 'G' && startOfFrame.components[2].id == 'B') {
@@ -612,6 +610,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 }
             case 4:
                 if (startOfFrame.components[0].id == 1 && startOfFrame.components[1].id == 2 && startOfFrame.components[2].id == 3 && startOfFrame.components[3].id == 4) {
+                    // NOTE: Due to a bug in JPEGMetadata, standard format will report RGBA for non-subsampled, non-JFIF files
                     return JPEGColorSpace.YCbCrA;
                 }
                 else if (startOfFrame.components[0].id == 'R' && startOfFrame.components[1].id == 'G' && startOfFrame.components[2].id == 'B' && startOfFrame.components[3].id == 'A') {
@@ -732,6 +731,8 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     SOFSegment getSOF() throws IOException {
+        initHeader();
+
         for (JPEGSegment segment : segments) {
             if (JPEG.SOF0 >= segment.marker() && segment.marker() <= JPEG.SOF3 ||
                     JPEG.SOF5 >= segment.marker() && segment.marker() <= JPEG.SOF7 ||
@@ -764,7 +765,7 @@ public class JPEGImageReader extends ImageReaderBase {
             }
         }
 
-        return null;
+        throw new IIOException("No SOF segment in stream");
     }
 
     AdobeDCTSegment getAdobeDCT() throws IOException {
@@ -1119,6 +1120,9 @@ public class JPEGImageReader extends ImageReaderBase {
 
     /**
      * Static inner class for lazy-loading of conversion tables.
+     *
+     * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+     * @author Original code by Werner Randelshofer
      */
     static final class YCbCrConverter {
         /** Define tables for YCC->RGB color space conversion. */
@@ -1412,6 +1416,10 @@ public class JPEGImageReader extends ImageReaderBase {
                 }
                 catch (IOException e) {
                     e.printStackTrace();
+
+                    if (image == null) {
+                        continue;
+                    }
                 }
 //                System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 //                System.err.println("image: " + image);
