@@ -53,6 +53,7 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
@@ -101,7 +102,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)), // Semi-readable, parts missing
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)), // Unreadable, segment lengths are wrong
-                new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440)) // Image readable, broken metadata (fixable?)
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440)), // Image readable, broken metadata (fixable?)
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-no-sof.jpg"), new Dimension(-1, -1)) // Unreadable, can't find SOFn marker
         );
 
         // More test data in specific tests below
@@ -434,6 +436,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 catch (IIOException expected) {
                     assertNotNull(expected.getMessage());
                 }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
             }
         }
         finally {
@@ -458,6 +465,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 catch (IIOException expected) {
                     assertNotNull(expected.getMessage());
                 }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
             }
         }
         finally {
@@ -478,6 +490,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 }
                 catch (IIOException expected) {
                     assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
                 }
             }
         }
