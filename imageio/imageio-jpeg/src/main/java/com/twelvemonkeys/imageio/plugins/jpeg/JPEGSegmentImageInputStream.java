@@ -33,6 +33,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ import java.util.List;
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
- * JPEGSegmentImageInputStream.
+ * ImageInputStream implementation that filters out certain JPEG segments.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -174,7 +175,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         else {
             stream.seek(segment.realStart + streamPos - segment.start);
         }
-        
+
         return segment;
     }
 
@@ -231,7 +232,15 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
     private void repositionAsNecessary() throws IOException {
         if (segment == null || streamPos < segment.start || streamPos >= segment.end()) {
-            fetchSegment();
+            try {
+                fetchSegment();
+            }
+            catch (EOFException ignore) {
+                // This might happen if the segment lengths in the stream are bad.
+                // We MUST leave internal state untouched in this case.
+                // We ignore this exception here, but client code will get
+                // an EOFException (or -1 return code) on subsequent reads.
+            }
         }
     }
 
