@@ -190,4 +190,21 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(exif);
         assertEquals(0, exif.size()); // EXIFTool reports "Warning: Bad ExifIFD directory"
     }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDir() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir.jpg"));
+        stream.seek(30);
+
+        Directory directory = createReader().read(new SubImageInputStream(stream, 65535));
+        assertEquals(11, directory.size());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(24, exif.size());
+
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(0, interop.size());
+    }
 }

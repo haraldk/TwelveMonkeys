@@ -80,10 +80,10 @@ public final class EXIFReader extends MetadataReader {
 
         long directoryOffset = input.readUnsignedInt();
 
-        return readDirectory(input, directoryOffset);
+        return readDirectory(input, directoryOffset, true);
     }
 
-    protected Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
+    protected Directory readDirectory(final ImageInputStream pInput, final long pOffset, final boolean readLinked) throws IOException {
         List<IFD> ifds = new ArrayList<IFD>();
         List<Entry> entries = new ArrayList<Entry>();
 
@@ -104,15 +104,18 @@ public final class EXIFReader extends MetadataReader {
             entries.add(entry);
         }
 
-        if (nextOffset == -1) {
-            nextOffset = pInput.readUnsignedInt();
-        }
+        if (readLinked) {
+            if (nextOffset == -1) {
+                nextOffset = pInput.readUnsignedInt();
+            }
 
-        // Read linked IFDs
-        if (nextOffset != 0) {
-            CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset);
-            for (int i = 0; i < next.directoryCount(); i++) {
-                ifds.add((IFD) next.getDirectory(i));
+            // Read linked IFDs
+            if (nextOffset != 0) {
+                CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset, true);
+
+                for (int i = 0; i < next.directoryCount(); i++) {
+                    ifds.add((IFD) next.getDirectory(i));
+                }
             }
         }
 
@@ -149,7 +152,7 @@ public final class EXIFReader extends MetadataReader {
                         List<IFD> subIFDs = new ArrayList<IFD>(pointerOffsets.length);
 
                         for (long pointerOffset : pointerOffsets) {
-                            CompoundDirectory subDirectory = (CompoundDirectory) readDirectory(input, pointerOffset);
+                            CompoundDirectory subDirectory = (CompoundDirectory) readDirectory(input, pointerOffset, false);
 
                             for (int j = 0; j < subDirectory.directoryCount(); j++) {
                                 subIFDs.add((IFD) subDirectory.getDirectory(j));
@@ -461,7 +464,7 @@ public final class EXIFReader extends MetadataReader {
             Directory directory;
 
             if (args.length > 1) {
-                directory = reader.readDirectory(stream, pos);
+                directory = reader.readDirectory(stream, pos, false);
             }
             else {
                 directory = reader.read(stream);

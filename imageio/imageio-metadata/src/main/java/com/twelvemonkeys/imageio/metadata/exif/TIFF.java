@@ -76,7 +76,6 @@ public interface TIFF {
     11 = FLOAT Single precision (4-byte) IEEE format.
     12 = DOUBLE Double precision (8-byte) IEEE format.
 
-    TODO: Verify IFD type
     See http://www.awaresystems.be/imaging/tiff/tifftags/subifds.html
     13 = IFD, same as LONG
 
