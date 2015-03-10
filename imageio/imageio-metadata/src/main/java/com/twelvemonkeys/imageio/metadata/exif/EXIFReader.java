@@ -83,7 +83,7 @@ public final class EXIFReader extends MetadataReader {
         return readDirectory(input, directoryOffset);
     }
 
-    public Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
+    protected Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
         List<IFD> ifds = new ArrayList<IFD>();
         List<Entry> entries = new ArrayList<Entry>();
 
@@ -230,7 +230,7 @@ public final class EXIFReader extends MetadataReader {
             pInput.seek(offset);
 
             try {
-                byte[] bytes = new byte[8 + Math.max(20, count)];
+                byte[] bytes = new byte[8 + Math.min(120, Math.max(20, count))];
                 int len = pInput.read(bytes);
 
                 System.err.print(HexDump.dump(offset, bytes, 0, len));
