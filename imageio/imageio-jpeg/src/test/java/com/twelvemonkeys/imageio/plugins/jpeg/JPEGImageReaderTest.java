@@ -416,10 +416,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Ignore("Known issue in com.sun...JPEGMetadata")
     @Test
-    public void testExifStandardMetadataColorSpaceTypeYCbCr() {
-        // These reports RGB in standard metadata, while the data is really YCbCr
+    public void testStandardMetadataColorSpaceTypeRGBForYCbCr() {
+        // These reports RGB in standard metadata, while the data is really YCbCr.
         fail("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg");
         fail("/jpeg/exif-pspro-13-inverted-colors.jpg");
+        // Not Exif, but same issue: SOF comp ids are JFIF standard 1-3 and *should* be interpreted as YCbCr but isn't.
         fail("/jpeg/no-jfif-ycbcr.jpg");
     }
 
@@ -1344,5 +1345,25 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         );
 
         return sortedNodes;
+    }
+
+    @Test
+    public void testInvalidDHTIssue() throws IOException {
+        // Image has JFIF with DHT that is okay on read, but not when you set back from tree...
+        JPEGImageReader reader = createReader();
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-progressive-invalid-dht.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+
+        }
+        finally {
+            reader.dispose();
+        }
     }
 }

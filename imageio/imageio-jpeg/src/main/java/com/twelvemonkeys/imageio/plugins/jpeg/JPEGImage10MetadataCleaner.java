@@ -241,7 +241,12 @@ final class JPEGImage10MetadataCleaner {
             Node dht = dhts.item(j);
             NodeList dhtables = dht.getChildNodes();
 
-            if (dhtables.getLength() > 4) {
+            if (dhtables.getLength() < 1) {
+                // Why is there an empty DHT node?
+                dht.getParentNode().removeChild(dht);
+                reader.processWarningOccurred("Metadata contains empty dht node. Ignoring.");
+            }
+            else if (dhtables.getLength() > 4) {
                 IIOMetadataNode acTables = new IIOMetadataNode("dht");
                 dht.getParentNode().insertBefore(acTables, dht.getNextSibling());
 
@@ -262,6 +267,8 @@ final class JPEGImage10MetadataCleaner {
         }
         catch (IIOInvalidTreeException e) {
             if (JPEGImageReader.DEBUG) {
+                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0), false);
+                System.out.println("-- 8< --");
                 new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
             }
 
