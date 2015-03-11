@@ -192,17 +192,86 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
     }
 
     @Test
-    public void testReadExifJPEGWithInteropSubDir() throws IOException {
-        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir.jpg"));
+    public void testReadExifJPEGWithInteropSubDirR98() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-R98.jpg"));
         stream.seek(30);
 
-        Directory directory = createReader().read(new SubImageInputStream(stream, 65535));
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 1360));
+        assertEquals(17, directory.size());
+        assertEquals(2, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(23, exif.size());
+
+        // The interop IFD is empty (entry count is 0)
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(2, interop.size());
+
+        assertNotNull(interop.getEntryById(1)); // InteropIndex
+        assertEquals("ASCII", interop.getEntryById(1).getTypeName());
+        assertEquals("R98", interop.getEntryById(1).getValue());  // Known values: R98, THM or R03
+
+        assertNotNull(interop.getEntryById(2)); // InteropVersion
+        assertEquals("UNDEFINED", interop.getEntryById(2).getTypeName());
+        assertArrayEquals(new byte[] {'0', '1', '0', '0'}, (byte[]) interop.getEntryById(2).getValue());
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirEmpty() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-empty.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 1360));
         assertEquals(11, directory.size());
+        assertEquals(1, directory.directoryCount());
 
         Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
         assertNotNull(exif);
         assertEquals(24, exif.size());
 
+        // The interop IFD is empty (entry count is 0)
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(0, interop.size());
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirEOF() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-eof.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 236));
+        assertEquals(8, directory.size());
+        assertEquals(1, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(5, exif.size());
+
+        // The interop IFD isn't there (offset points to outside the TIFF structure)...
+        // Have double-checked using ExifTool, which says "Warning : Bad InteropOffset SubDirectory start"
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(0, interop.size());
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirBad() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-bad.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 12185));
+        assertEquals(16, directory.size());
+        assertEquals(2, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(26, exif.size());
+
+        // JPEG starts at offset 1666 and length 10519, interop IFD points to offset 1900...
+        // Have double-checked using ExifTool, which says "Warning : Bad InteropIFD directory"
         Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
         assertNotNull(interop);
         assertEquals(0, interop.size());
