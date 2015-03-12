@@ -1349,8 +1349,9 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Test
     public void testInvalidDHTIssue() throws IOException {
-        // Image has JFIF with DHT that is okay on read, but not when you set back from tree...
+        // Image has JFIF, and DHT that is okay on read, but not when you set back from tree...
         JPEGImageReader reader = createReader();
+
         try {
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-progressive-invalid-dht.jpg")));
 
@@ -1360,7 +1361,26 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
             assertNotNull(tree);
             assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 
+    @Test
+    public void testComponentIdOutOfRange() throws IOException {
+        // Image has JFIF, but SOF and SOS component ids are off, but not when you set back from tree...
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-component-id-out-of-range.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
         }
         finally {
             reader.dispose();
