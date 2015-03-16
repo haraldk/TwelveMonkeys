@@ -418,9 +418,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     @Test
     public void testStandardMetadataColorSpaceTypeRGBForYCbCr() {
         // These reports RGB in standard metadata, while the data is really YCbCr.
+        // Exif files are always YCbCr AFAIK.
         fail("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg");
         fail("/jpeg/exif-pspro-13-inverted-colors.jpg");
-        // Not Exif, but same issue: SOF comp ids are JFIF standard 1-3 and *should* be interpreted as YCbCr but isn't.
+        // Not Exif, but same issue: SOF comp ids are JFIF standard 1-3 and
+        // *should* be interpreted as YCbCr but isn't.
+        // Possible fix for this, is to insert a fake JFIF segment, as this image
+        // conforms to the JFIF spec (but it won't work for the Exif samples)
         fail("/jpeg/no-jfif-ycbcr.jpg");
     }
 
@@ -1149,16 +1153,9 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     public void testReadMetadataEqualReference() throws IOException {
         // Compares the metadata for JFIF-conformant files with metadata from com.sun...JPEGImageReader
         JPEGImageReader reader = createReader();
-        ImageReader referenceReader;
+        ImageReader referenceReader = createReferenceReader();
 
-        try {
-            @SuppressWarnings("unchecked")
-            Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
-            ImageReaderSpi provider = spiClass.newInstance();
-            referenceReader = provider.createReaderInstance();
-        }
-        catch (Throwable t) {
-            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
+        if (referenceReader == null) {
             return;
         }
 
@@ -1193,6 +1190,21 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                     System.err.println(String.format("WARNING: Reading reference metadata failed for %s image %s: %s", testData, i, ignore.getMessage()));
                 }
             }
+        }
+    }
+
+    private ImageReader createReferenceReader() {
+        try {
+            @SuppressWarnings("unchecked")
+            Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+            ImageReaderSpi provider = spiClass.newInstance();
+
+            return provider.createReaderInstance();
+        }
+        catch (Throwable t) {
+            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
+
+            return null;
         }
     }
 
@@ -1348,8 +1360,86 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testNegativeSOSComponentCount() throws IOException {
+        // The data in the stream looks like this:
+        // FF DA 00 08 01 01 01 06 3F 02 0E 70 9A A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 64 05 5D ...
+        // ..but the JPEGBuffer class contains:
+        // FF DA 00 08 A2 A2 A2 A2 A2 64 05 5D 02 87 FC 5B 5C E1 0E BD ...
+        //             *****************??
+        // 15 bytes missing in action! Why?
+        // There's a bug in com.sun.imageio.plugins.jpeg.AdobeMarkerSegment when parsing non-standard length
+        // APP14/Adobe segments (i.e. lengths other than 14) that causes the
+        // com.sun.imageio.plugins.jpeg.JPEGBuffer#loadBuf() method to overwrite parts of the input data
+        // (the difference between the real length and 14, at the end of the stream). This can cause all
+        // sorts of weird problems later, and is a pain to track down (it is probably the real cause for
+        // many of the other issues we've found in the set).
+        // See also: http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6355567
+
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-exif-xmp-adobe-progressive-negative-component-count.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        catch (IIOException knownIssue) {
+            // This shouldn't fail, but the bug is most likely in the JPEGBuffer class
+            assertNotNull(knownIssue.getCause());
+            assertThat(knownIssue.getCause(), new IsInstanceOf(NegativeArraySizeException.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testInconsistentSOSBandCountExceedsSOFBandCount() throws IOException {
+        // Last SOS segment contains (FF DA) 00 08 01 03 03 01 3F 10  (... 18 more ...  F0 7D FB FB 6D)
+        // (14th)                    (SOS)   len 8 |  |  |  |  |  approx high: 1, approx low: 0
+        //                                         |  |  |  |  end spectral selection:
+        //                                         |  |  |  start spectral selection: 1
+        //                                         |  |  dc: 0, ac: 3
+        //                                         |  selector: 3
+        //                                         1 component
+        // Metadata reads completely different values...
+        // FF DA 00 08 01 F0 7D FB FB 6D
+        //                \_ there's 24 bytes MIA (skipped) here, between the length and the actual data read...
+
+        // Seems to be a bug in the AdobeMarkerSegment, it reads 12 bytes always,
+        // then subtracting length from bufferAvail, but *does not update bufPtr to skip the remaining*.
+        // This causes trouble for subsequent JPEGBuffer.loadBuf() calls, because it will overwrite the same
+        // number of bytes *at the end* of the buffer.
+        // This image has a 38 (36) byte App14/Adobe segment.
+        // The length 36 - 12 = 24 (the size of the missing bytes!)
+
+        // TODO: Report bug!
+
+        ImageReader reader = createReader();
+//        ImageReader reader = createReferenceReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/progressive-adobe-sof-bands-dont-match-sos-band-count.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
     public void testInvalidDHTIssue() throws IOException {
-        // Image has JFIF, and DHT that is okay on read, but not when you set back from tree...
+        // Image has empty (!) DHT that is okay on read, but not when you set back from tree...
         JPEGImageReader reader = createReader();
 
         try {
@@ -1369,7 +1459,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Test
     public void testComponentIdOutOfRange() throws IOException {
-        // Image has JFIF, but SOF and SOS component ids are off, but not when you set back from tree...
+        // Image has SOF and SOS component ids that are negative, setFromTree chokes on this...
         JPEGImageReader reader = createReader();
 
         try {

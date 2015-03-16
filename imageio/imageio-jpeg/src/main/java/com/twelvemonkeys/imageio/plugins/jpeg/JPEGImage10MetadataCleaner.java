@@ -155,24 +155,30 @@ final class JPEGImage10MetadataCleaner {
             }
         }
 
-        // Special case: Broken AdobeDCT segment, inconsistent with SOF, use values from SOF
-        if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4 ||
+        if (adobeDCT != null) {
+            // Special case: Broken AdobeDCT segment, inconsistent with SOF, use values from SOF
+            if ((adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4 ||
                 adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() < 3)) {
-            reader.processWarningOccurred(String.format(
-                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
-                            "Ignoring Adobe App14 marker.",
-                    adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
-                    sof.marker & 0xf, sof.componentsInFrame()
-            ));
+                
+                reader.processWarningOccurred(String.format(
+                        "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
+                                "Ignoring Adobe App14 marker.",
+                        adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
+                        sof.marker & 0xf, sof.componentsInFrame()
+                ));
 
-            // Remove bad AdobeDCT
-            NodeList app14Adobe = tree.getElementsByTagName("app14Adobe");
-            for (int i = app14Adobe.getLength() - 1; i >= 0; i--) {
-                Node item = app14Adobe.item(i);
-                item.getParentNode().removeChild(item);
+                // We don't add this as unknown marker, as we are certain it's bogus by now
             }
+            else {
+                // Otherwise, add back the Adobe tag we filtered out in JPEGSegmentImageInputStream
+                IIOMetadataNode app14Adobe = new IIOMetadataNode("app14Adobe");
+                app14Adobe.setAttribute("version", String.valueOf(adobeDCT.getVersion()));
+                app14Adobe.setAttribute("flags0", String.valueOf(adobeDCT.getFlags0()));
+                app14Adobe.setAttribute("flags1", String.valueOf(adobeDCT.getFlags1()));
+                app14Adobe.setAttribute("transform", String.valueOf(adobeDCT.getTransform()));
 
-            // We don't add this as unknown marker, as we are certain it's bogus by now
+                markerSequence.insertBefore(app14Adobe, markerSequence.getFirstChild());
+            }
         }
 
         Node next = null;

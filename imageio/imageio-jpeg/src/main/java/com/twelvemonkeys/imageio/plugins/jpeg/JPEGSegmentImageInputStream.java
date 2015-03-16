@@ -117,9 +117,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     marker = 0xff00 | stream.readUnsignedByte();
                 }
 
-                // TODO: Optionally skip JFIF only for non-JFIF conformant streams
-                // TODO: Refactor to make various segments optional, we probably only want the "Adobe" APP14 segment, 'Exif' APP1 and very few others
-                if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream)) && marker != JPEG.APP14) {
+                // TODO: Should we just skip all app marker segments?
+                // We are now handling all important segments ourselves
+                if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream))) {
                     int length = stream.readUnsignedShort(); // Length including length field itself
                     stream.seek(realPosition + 2 + length);  // Skip marker (2) + length
                 }
@@ -133,8 +133,12 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
                         if (marker == JPEG.SOS) {
                             // Treat rest of stream as a single segment (scanning for EOI is too much work)
+                            // TODO: For progressive, there will be more than one SOS...
                             length = Long.MAX_VALUE - realPosition;
                         }
+//                        else if (marker == JPEG.APP14 && isAppSegmentWithId("Adobe", stream)) {
+//                            length = 16;
+//                        }
                         else {
                             // Length including length field itself
                             length = stream.readUnsignedShort() + 2;
