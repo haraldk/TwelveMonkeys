@@ -111,15 +111,12 @@ public class JPEGSegmentImageInputStreamTest {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/no-image-types-rgb-us-web-coated-v2-ms-photogallery-exif.jpg")));
         List<JPEGSegment> appSegments = JPEGSegmentUtil.readSegments(stream, JPEGSegmentUtil.APP_SEGMENTS);
 
-        assertEquals(2, appSegments.size());
+        assertEquals(1, appSegments.size());
 
         assertEquals(JPEG.APP1, appSegments.get(0).marker());
         assertEquals("Exif", appSegments.get(0).identifier());
 
-        assertEquals(JPEG.APP14, appSegments.get(1).marker());
-        assertEquals("Adobe", appSegments.get(1).identifier());
-
-        // And thus, no JFIF, no XMP, no ICC_PROFILE or other segments
+        // And thus, no JFIF, no Adobe, no XMP, no ICC_PROFILE or other segments
     }
 
     @Test
@@ -157,13 +154,12 @@ public class JPEGSegmentImageInputStreamTest {
     @Test
     public void testEOFExceptionInSegmentParsingShouldNotCreateBadState() throws IOException {
         ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg")));
-        int fileLength = 2021;
 
         byte[] buffer = new byte[4096];
 
         // NOTE: This is a simulation of how the native parts of com.sun...JPEGImageReader would read the image...
-        assertEquals(fileLength, iis.read(buffer, 0, buffer.length));
-        assertEquals(fileLength, iis.getStreamPosition());
+        assertEquals(2, iis.read(buffer, 0, buffer.length));
+        assertEquals(2, iis.getStreamPosition());
 
         iis.seek(0x2012); // bad segment length, should have been 0x0012, not 0x2012
         assertEquals(0x2012, iis.getStreamPosition());

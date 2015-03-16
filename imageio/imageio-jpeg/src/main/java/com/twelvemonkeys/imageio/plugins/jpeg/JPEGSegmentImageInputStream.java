@@ -136,9 +136,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                             // TODO: For progressive, there will be more than one SOS...
                             length = Long.MAX_VALUE - realPosition;
                         }
-//                        else if (marker == JPEG.APP14 && isAppSegmentWithId("Adobe", stream)) {
-//                            length = 16;
-//                        }
                         else {
                             // Length including length field itself
                             length = stream.readUnsignedShort() + 2;
