@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import javax.imageio.IIOException;
-
 import java.io.DataInput;
 import java.io.IOException;
 
@@ -120,7 +119,7 @@ final class PSDHeader {
             case PSD.COLOR_MODE_LAB:
                 break;
             default:
-                throw new IIOException(String.format("Unsupported mode depth for PSD: %d", mode));
+                throw new IIOException(String.format("Unsupported color mode for PSD: %d", mode));
         }
     }
 
