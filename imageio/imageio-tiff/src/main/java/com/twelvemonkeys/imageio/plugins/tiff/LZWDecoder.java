@@ -300,8 +300,8 @@ abstract class LZWDecoder implements Decoder {
             this.previous = previous;
         }
 
-        public final LZWString concatenate(final byte firstChar) {
-            return new LZWString(firstChar, this.firstChar, length + 1, this);
+        public final LZWString concatenate(final byte value) {
+            return new LZWString(value, this.firstChar, length + 1, this);
         }
 
         public final void writeTo(final ByteBuffer buffer) {

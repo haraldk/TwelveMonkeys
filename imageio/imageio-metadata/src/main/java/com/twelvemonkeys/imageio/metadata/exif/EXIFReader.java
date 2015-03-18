@@ -290,6 +290,8 @@ public final class EXIFReader extends MetadataReader {
 
     private static Object readValue(final ImageInputStream pInput, final short pType, final int pCount) throws IOException {
         // TODO: Review value "widening" for the unsigned types. Right now it's inconsistent. Should we leave it to client code?
+        // TODO: New strategy: Leave data as is, instead perform the widening in EXIFEntry.getValue.
+        // TODO: Add getValueByte/getValueUnsignedByte/getValueShort/getValueUnsignedShort/getValueInt/etc... in API.
 
         long pos = pInput.getStreamPosition();
 

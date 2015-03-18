@@ -58,15 +58,14 @@ public class TIFFImageReaderSpi extends ImageReaderSpi {
         super(
                 providerInfo.getVendorName(),
                 providerInfo.getVersion(),
-                new String[]{"tiff", "TIFF"},
-                new String[]{"tif", "tiff"},
-                new String[]{
+                new String[] {"tiff", "TIFF"},
+                new String[] {"tif", "tiff"},
+                new String[] {
                         "image/tiff", "image/x-tiff"
                 },
                 "com.twelvemkonkeys.imageio.plugins.tiff.TIFFImageReader",
                 new Class[] {ImageInputStream.class},
-//                new String[]{"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
-                null,
+                new String[] {"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
                 true, // supports standard stream metadata
                 null, null, // native stream format name and class
                 null, null, // extra stream formats
