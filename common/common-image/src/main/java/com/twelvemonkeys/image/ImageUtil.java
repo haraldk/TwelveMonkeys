@@ -706,30 +706,15 @@ public final class ImageUtil {
 
         AffineTransform transform = AffineTransform.getTranslateInstance((newW - w) / 2.0, (newH - h) / 2.0);
         transform.rotate(pAngle, w / 2.0, h / 2.0);
-        //AffineTransformOp transformOp = new AffineTransformOp(
-        //        transform, fast ? AffineTransformOp.TYPE_NEAREST_NEIGHBOR : 3 // 3 == TYPE_BICUBIC
-        //);
-        //
-        //return transformOp.filter(pSource, null);
 
         // TODO: Figure out if this is correct
         BufferedImage dest = createTransparent(newW, newH);
-        //ColorModel cm = pSource.getColorModel();
-        //new BufferedImage(cm,
-        //                                       createCompatibleWritableRaster(pSource, cm, newW, newH),
-        //                                       cm.isAlphaPremultiplied(), null);
 
         // See: http://weblogs.java.net/blog/campbell/archive/2007/03/java_2d_tricker_1.html
         Graphics2D g = dest.createGraphics();
         try {
             g.transform(transform);
             if (!fast) {
-                // Clear with all transparent
-                //Composite normal = g.getComposite();
-                //g.setComposite(AlphaComposite.Clear);
-                //g.fillRect(0, 0, newW, newH);
-                //g.setComposite(normal);
-
                 // Max quality
                 g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION,
                                    RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
