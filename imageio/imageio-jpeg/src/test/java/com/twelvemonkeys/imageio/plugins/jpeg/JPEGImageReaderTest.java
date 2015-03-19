@@ -104,7 +104,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)), // Unreadable, segment lengths are wrong
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440)), // Image readable, broken metadata (fixable?)
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg"), new Dimension(-1, -1)), // Unreadable, can't find SOFn marker
-                new TestData(getClassLoaderResource("/broken-jpeg/broken-sos-before-sof.jpg"), new Dimension(-1, -1)) // Unreadable, can't find SOFn marker
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-sos-before-sof.jpg"), new Dimension(-1, -1)), // Unreadable, can't find SOFn marker
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-segment-length-beyond-eof.jpg"), new Dimension(-1, -1)) // Unreadable, no EOI
         );
 
         // More test data in specific tests below

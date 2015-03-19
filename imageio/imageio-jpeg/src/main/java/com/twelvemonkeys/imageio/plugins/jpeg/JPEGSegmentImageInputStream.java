@@ -271,7 +271,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         while (total < len) {
             repositionAsNecessary();
 
-            int count = stream.read(b, off + total, (int) Math.min(len - total, segment.end() - streamPos));
+            long bytesLeft = segment.end() - streamPos; // If no more bytes after reposition, we're at EOF
+            int count = bytesLeft == 0 ? -1 : stream.read(b, off + total, (int) Math.min(len - total, bytesLeft));
 
             if (count == -1) {
                 // EOF
