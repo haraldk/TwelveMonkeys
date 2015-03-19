@@ -258,7 +258,7 @@ public class PICTImageWriter extends ImageWriterBase {
             // Treat the scanline.
             for (int j = 0; j < w; j++) {
                 if (model instanceof ComponentColorModel && model.getColorSpace().getType() == ColorSpace.TYPE_RGB) {
-                    // NOTE: Assumes component order always (A)BGR
+                    // NOTE: Assumes component order always (A)BGR and sRGB
                     // TODO: Alpha support
                     scanlineBytes[x         + j] = pixels[off + i * scansize * components + components * j + components - 1];
                     scanlineBytes[x +     w + j] = pixels[off + i * scansize * components + components * j + components - 2];

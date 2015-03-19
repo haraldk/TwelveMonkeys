@@ -34,8 +34,8 @@ import com.twelvemonkeys.imageio.util.IIOUtil;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
 import java.io.EOFException;
+import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -85,7 +85,7 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
             else {
                 // Skip header 512 bytes for file-based streams
                 stream.reset();
-                PICTImageReader.skipNullHeader(stream);
+                skipNullHeader(stream);
             }
 
             return isPICT(stream);
@@ -96,6 +96,12 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
         finally {
             stream.reset();
         }
+    }
+
+    static void skipNullHeader(final ImageInputStream pStream) throws IOException {
+        // NOTE: Only skip if FILE FORMAT, not needed for Mac OS DnD
+        // Spec says "platofrm dependent", may not be all nulls..
+        pStream.skipBytes(PICT.PICT_NULL_HEADER_SIZE);
     }
 
     private boolean isPICT(final ImageInputStream pStream) throws IOException {

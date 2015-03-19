@@ -29,10 +29,9 @@
 package com.twelvemonkeys.imageio.plugins.pict;
 
 import java.awt.*;
-import java.awt.image.WritableRaster;
-import java.awt.image.DataBufferByte;
-import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.*;
 
 /**
  * BitMapPattern
@@ -43,22 +42,46 @@ import java.awt.image.Raster;
  */
 final class BitMapPattern extends Pattern {
 
+    private final byte[] pattern;
+
     BitMapPattern(final Paint pColor) {
-        super(pColor);
+        this(pColor, null);
     }
 
     public BitMapPattern(final byte[] pPattern) {
-        this(create8x8Pattern(pPattern));
+        this(create8x8Pattern(pPattern), pPattern);
+    }
+
+    private BitMapPattern(final Paint pColor, final byte[] pPattern) {
+        super(pColor);
+
+        pattern = pPattern;
+    }
+
+    // TODO: Refactor, don't need both BitMapPattern constructors and create8x8Pattern methods?
+    public BitMapPattern(final byte[] pPattern, Color fg, Color bg) {
+        this(create8x8Pattern(pPattern, fg, bg));
     }
 
     BitMapPattern(final int pPattern) {
         this(create8x8Pattern(pPattern));
     }
 
-    private static TexturePaint create8x8Pattern(final int pPattern) {
-        // TODO: Creating a special purpose Pattern might be faster than piggy-backing on TexturePaint
-        WritableRaster raster = QuickDraw.MONOCHROME.createCompatibleWritableRaster(8, 8);
-        byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
+    private static Paint create8x8Pattern(final int pPattern) {
+//        // TODO: Creating a special purpose Pattern might be faster than piggy-backing on TexturePaint
+//        WritableRaster raster = QuickDraw.MONOCHROME.createCompatibleWritableRaster(8, 8);
+//        byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
+//
+//        for (int i = 0; i < data.length; i += 4) {
+//            data[i    ] = (byte) ((pPattern >> 24) & 0xFF);
+//            data[i + 1] = (byte) ((pPattern >> 16) & 0xFF);
+//            data[i + 2] = (byte) ((pPattern >>  8) & 0xFF);
+//            data[i + 3] = (byte) ((pPattern      ) & 0xFF);
+//        }
+//
+//        BufferedImage img = new BufferedImage(QuickDraw.MONOCHROME, raster, false, null);
+//        return new TexturePaint(img, new Rectangle(8, 8));
+        byte[] data = new byte[8];
 
         for (int i = 0; i < data.length; i += 4) {
             data[i    ] = (byte) ((pPattern >> 24) & 0xFF);
@@ -67,13 +90,57 @@ final class BitMapPattern extends Pattern {
             data[i + 3] = (byte) ((pPattern      ) & 0xFF);
         }
 
+        return create8x8Pattern(data);
+    }
+
+    private static Paint create8x8Pattern(final byte[] pPattern) {
+        WritableRaster raster = Raster.createPackedRaster(new DataBufferByte(pPattern, 8), 8, 8, 1, new Point());
         BufferedImage img = new BufferedImage(QuickDraw.MONOCHROME, raster, false, null);
         return new TexturePaint(img, new Rectangle(8, 8));
     }
 
-    private static TexturePaint create8x8Pattern(final byte[] pPattern) {
+    private static Paint create8x8Pattern(final byte[] pPattern, Color fg, Color bg) {
+        switch (isSolid(pPattern)) {
+            case 0: // 0x00
+                return bg;
+            case -1: // 0xff
+                return fg;
+            default:
+                // Fall through
+        }
+
         WritableRaster raster = Raster.createPackedRaster(new DataBufferByte(pPattern, 8), 8, 8, 1, new Point());
-        BufferedImage img = new BufferedImage(QuickDraw.MONOCHROME, raster, false, null);
+        IndexColorModel cm = new IndexColorModel(1, 2, new int[] {bg.getRGB(), fg.getRGB()}, 0, false, -1, DataBuffer.TYPE_BYTE);
+        BufferedImage img = new BufferedImage(cm, raster, false, null);
         return new TexturePaint(img, new Rectangle(8, 8));
+    }
+
+    private static int isSolid(byte[] pPattern) {
+        int prev = pPattern[0];
+
+        for (int i = 1; i < pPattern.length; i++) {
+            if (prev != pPattern[i]) {
+                return 1;
+            }
+        }
+
+        return prev;
+    }
+
+    @Override
+    public PaintContext createContext(ColorModel pModel, Rectangle pDeviceBounds, Rectangle2D pUserBounds, AffineTransform pTransform, RenderingHints pHints) {
+//        switch (isSolid(pattern)) {
+//        }
+        return super.createContext(pModel, pDeviceBounds, pUserBounds, pTransform, pHints);
+    }
+
+    @Override
+    public Pattern derive(final Color foreground, final Color background) {
+        if (paint instanceof Color) {
+            // TODO: This only holds for patterns that are already foregrounds...
+            return new BitMapPattern(foreground);
+        }
+
+        return null;
     }
 }
