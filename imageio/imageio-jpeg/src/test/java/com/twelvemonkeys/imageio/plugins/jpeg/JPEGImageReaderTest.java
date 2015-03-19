@@ -1361,6 +1361,22 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testGetNumImagesBogusDataPrepended() throws IOException {
+        // The JPEGImageReader (incorrectly) interprets this image to be a "tables only" image.
+
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-bogus-data-prepended-real-jfif-start-at-4801.jpg")));
+            assertEquals(-1, reader.getNumImages(false)); // Ok
+            assertEquals(0, reader.getNumImages(true));  // Should throw IIOException or return 0
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
     public void testNegativeSOSComponentCount() throws IOException {
         // The data in the stream looks like this:
         // FF DA 00 08 01 01 01 06 3F 02 0E 70 9A A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 64 05 5D ...

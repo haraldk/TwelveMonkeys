@@ -49,6 +49,7 @@ import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -100,6 +101,7 @@ import java.util.List;
 public class JPEGImageReader extends ImageReaderBase {
     // TODO: Allow automatic rotation based on EXIF rotation field?
     // TODO: Create a simplified native metadata format that is closer to the actual JPEG stream AND supports EXIF in a sensible way
+    // TODO: As we already parse the SOF segments, maybe we should stop delegating getWidth/getHeight etc?
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
 
@@ -197,7 +199,13 @@ public class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public int getNumImages(boolean allowSearch) throws IOException {
-        return delegate.getNumImages(allowSearch);
+        try {
+            return delegate.getNumImages(allowSearch);
+        }
+        catch (ArrayIndexOutOfBoundsException ignore) {
+            // This will happen if we find a "tables only" image, with no more images in stream.
+            return 0;
+        }
     }
 
     @Override
@@ -1086,7 +1094,11 @@ public class JPEGImageReader extends ImageReaderBase {
         }
         catch (IndexOutOfBoundsException knownIssue) {
             // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
-            throw new IIOException("Corrupt JPEG data: Bad segment offset/length", knownIssue);
+            throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
+        }
+        catch (NegativeArraySizeException knownIssue) {
+            // Most likely from com.sun.imageio.plugins.jpeg.SOSMarkerSegment
+            throw new IIOException("Corrupt JPEG data: Bad component count", knownIssue);
         }
 
         if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
@@ -1399,6 +1411,14 @@ public class JPEGImageReader extends ImageReaderBase {
             });
 
             reader.setInput(input);
+
+            // For a tables-only image, we can't read image, but we should get metadata.
+            if (reader.getNumImages(true) == 0) {
+                IIOMetadata streamMetadata = reader.getStreamMetadata();
+                IIOMetadataNode streamNativeTree = (IIOMetadataNode) streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName());
+                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(streamNativeTree, false);
+                continue;
+            }
 
             try {
                 ImageReadParam param = reader.getDefaultReadParam();
