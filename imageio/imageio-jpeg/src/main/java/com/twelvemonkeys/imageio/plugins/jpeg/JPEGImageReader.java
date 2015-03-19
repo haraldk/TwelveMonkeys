@@ -447,74 +447,45 @@ public class JPEGImageReader extends ImageReaderBase {
         Rectangle dstRegion = new Rectangle();
         computeRegions(param, origWidth, origHeight, image, srcRegion, dstRegion);
 
-        // We're ready to go
-        processImageStarted(imageIndex);
+        // Need to undo the subsampling offset translations, as they are applied again in delegate.readRaster
+        int gridX = param.getSubsamplingXOffset();
+        int gridY = param.getSubsamplingYOffset();
+        srcRegion.translate(-gridX, -gridY);
+        srcRegion.width += gridX;
+        srcRegion.height += gridY;
 
-        // Unfortunately looping is slower than reading all at once, but
-        // that requires 2 x memory or more, so a few steps is an ok compromise I guess
+        // Unfortunately, reading the image in steps, is increasingly slower
+        // for each iteration, so we'll read all at once.
         try {
-            final int step = Math.max(1024, srcRegion.height / 10); // TODO: Using a multiple of 8 is probably a good idea for JPEG
-            final int srcMaxY = srcRegion.y + srcRegion.height;
-            int destY = dstRegion.y;
+            param.setSourceRegion(srcRegion);
+            Raster raster = delegate.readRaster(imageIndex, param); // non-converted
 
-            for (int y = srcRegion.y; y < srcMaxY; y += step) {
-                int scan = Math.min(step, srcMaxY - y);
+            // Apply source color conversion from implicit color space
+            if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.YCbCrA) {
+                YCbCrConverter.convertYCbCr2RGB(raster);
+            }
+            else if (csType == JPEGColorSpace.YCCK) {
+                YCbCrConverter.convertYCCK2CMYK(raster);
+            }
+            else if (csType == JPEGColorSpace.CMYK) {
+                invertCMYK(raster);
+            }
+            // ...else assume the raster is already converted
 
-                // Let the progress delegator handle progress, using corrected range
-                progressDelegator.updateProgressRange(100f * (y + scan) / srcRegion.height);
+            WritableRaster dest = destination.createWritableChild(dstRegion.x, dstRegion.y, raster.getWidth(), raster.getHeight(), 0, 0, param.getDestinationBands());
 
-                // Make sure subsampling is within bounds
-                if (scan <= param.getSubsamplingYOffset()) {
-                    param.setSourceSubsampling(param.getSourceXSubsampling(), param.getSourceYSubsampling(), param.getSubsamplingXOffset(), scan - 1);
-                }
-
-                Rectangle subRegion = new Rectangle(srcRegion.x, y, srcRegion.width, scan);
-                param.setSourceRegion(subRegion);
-                Raster raster = delegate.readRaster(imageIndex, param); // non-converted
-
-                // Apply source color conversion from implicit color space
-                if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.YCbCrA) {
-                    YCbCrConverter.convertYCbCr2RGB(raster);
-                }
-                else if (csType == JPEGColorSpace.YCCK) {
-                    YCbCrConverter.convertYCCK2CMYK(raster);
-                }
-                else if (csType == JPEGColorSpace.CMYK) {
-                    invertCMYK(raster);
-                }
-                // ...else assume the raster is already converted
-
-                int destHeight = Math.min(raster.getHeight(), dstRegion.height - destY); // Avoid off-by-one
-                Raster src = raster.createChild(0, 0, raster.getWidth(), destHeight, 0, 0, param.getSourceBands());
-                WritableRaster dest = destination.createWritableChild(dstRegion.x, destY, raster.getWidth(), destHeight, 0, 0, param.getDestinationBands());
-
-                // Apply further color conversion for explicit color space, or just copy the pixels into place
-                if (convert != null) {
-                    convert.filter(src, dest);
-//                    WritableRaster filtered = convert.filter(src, null);
-//                    new AffineTransformOp(AffineTransform.getRotateInstance(2 * Math.PI, filtered.getWidth() / 2.0, filtered.getHeight() / 2.0), null).filter(filtered, dest);
-                }
-                else {
-                    dest.setRect(0, 0, src);
-                }
-
-                destY += raster.getHeight();
-
-                if (abortRequested()) {
-                    processReadAborted();
-                    break;
-                }
+            // Apply further color conversion for explicit color space, or just copy the pixels into place
+            if (convert != null) {
+                convert.filter(raster, dest);
+            }
+            else {
+                dest.setRect(0, 0, raster);
             }
         }
         finally {
-            // Restore normal read progress processing
-            progressDelegator.resetProgressRange();
-
             // NOTE: Would be cleaner to clone the param, unfortunately it can't be done easily...
             param.setSourceRegion(origSourceRegion);
         }
-
-        processImageComplete();
 
         return image;
     }
@@ -1232,54 +1203,25 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     private class ProgressDelegator extends ProgressListenerBase implements IIOReadUpdateListener, IIOReadWarningListener {
-        float readProgressStart = -1;
-        float readProgressStop = -1;
-
-        void resetProgressRange() {
-            readProgressStart = -1;
-            readProgressStop = -1;
-        }
-
-        private boolean isProgressRangeCorrected() {
-            return readProgressStart == -1 && readProgressStop == -1;
-        }
-
-        void updateProgressRange(float limit) {
-            Validate.isTrue(limit >= 0, limit, "Negative range limit");
-
-            readProgressStart = readProgressStop != -1 ? readProgressStop : 0;
-            readProgressStop = limit;
-        }
 
         @Override
         public void imageComplete(ImageReader source) {
-            if (isProgressRangeCorrected()) {
                 processImageComplete();
-            }
         }
 
         @Override
         public void imageProgress(ImageReader source, float percentageDone) {
-            if (isProgressRangeCorrected()) {
                 processImageProgress(percentageDone);
-            }
-            else {
-                processImageProgress(readProgressStart + (percentageDone * (readProgressStop - readProgressStart) / 100f));
-            }
         }
 
         @Override
         public void imageStarted(ImageReader source, int imageIndex) {
-            if (isProgressRangeCorrected()) {
                 processImageStarted(imageIndex);
-            }
         }
 
         @Override
         public void readAborted(ImageReader source) {
-            if (isProgressRangeCorrected()) {
                 processReadAborted();
-            }
         }
 
         @Override

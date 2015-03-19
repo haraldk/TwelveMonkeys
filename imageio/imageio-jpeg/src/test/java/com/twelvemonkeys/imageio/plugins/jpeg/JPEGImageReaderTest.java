@@ -163,7 +163,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         ImageReadParam param = reader.getDefaultReadParam();
         param.setSourceRegion(new Rectangle(800, 800, 64, 8));
-        param.setSourceSubsampling(8, 8, 1, 1);
+        param.setSourceSubsampling(8, 8, 2, 2);
 
         BufferedImage image = reader.read(0, param);
         assertNotNull(image);
@@ -180,7 +180,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, int actualOffset) {
         for (int i = 0; i < expected.length; i++) {
-            assertEquals(expected[i], actual[i + actualOffset], 5);
+            assertEquals(String.format("Difference in pixel %d", i), expected[i], actual[i + actualOffset], 5);
         }
     }
 
@@ -947,7 +947,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
     }
 
-    @Ignore
     @Test
     public void testReadSubsamplingNotSkippingLines1028() throws IOException {
         JPEGImageReader reader = createReader();
@@ -1012,7 +1011,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertNotNull(image);
     }
 
-    @Ignore
     @Test
     public void testReadSubsamplingNotSkippingLines1025() throws IOException {
         JPEGImageReader reader = createReader();
