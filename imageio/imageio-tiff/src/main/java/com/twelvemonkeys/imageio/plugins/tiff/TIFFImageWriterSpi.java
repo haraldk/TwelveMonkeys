@@ -28,13 +28,10 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-import javax.imageio.spi.ImageWriterSpi;
-import javax.imageio.stream.ImageOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -45,45 +42,27 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageWriterSpi.java,v 1.0 18.09.13 12:46 haraldk Exp$
  */
-public final class TIFFImageWriterSpi extends ImageWriterSpi {
+public final class TIFFImageWriterSpi extends ImageWriterSpiBase {
     // TODO: Implement canEncodeImage better
 
     public TIFFImageWriterSpi() {
-        this(IIOUtil.getProviderInfo(TIFFImageWriterSpi.class));
-    }
-
-    private TIFFImageWriterSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(), providerInfo.getVersion(),
-                new String[] {"tiff", "TIFF", "tif", "TIFF"},
-                new String[] {"tif", "tiff"},
-                new String[] {"image/tiff", "image/x-tiff"},
-                "com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriter",
-                new Class<?>[] {ImageOutputStream.class},
-                new String[] {"com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi"},
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
+        super(new TIFFProviderInfo());
     }
 
     @Override
-    public boolean canEncodeImage(ImageTypeSpecifier type) {
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
         // TODO: Test bit depths compatibility
 
         return true;
     }
 
     @Override
-    public ImageWriter createWriterInstance(Object extension) throws IOException {
+    public ImageWriter createWriterInstance(final Object extension) throws IOException {
         return new TIFFImageWriter(this);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return "Aldus/Adobe Tagged Image File Format (TIFF) image writer";
     }
 }

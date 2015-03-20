@@ -28,8 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
@@ -47,30 +46,9 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BMPImageReaderSpi.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-public final class BMPImageReaderSpi extends ImageReaderSpi {
+public final class BMPImageReaderSpi extends ImageReaderSpiBase {
     public BMPImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(BMPImageReaderSpi.class));
-    }
-
-    private BMPImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"bmp", "BMP"},
-                new String[]{"bmp", "rle"},
-                new String[]{
-                        "image/bmp",
-                        "image/x-bmp"
-//                        "image/vnd.microsoft.bitmap",   // TODO: Official IANA MIME
-                },
-                "com.twelvemonkeys.imageio.plugins.bmp.BMPImageReader",
-                new Class[]{ImageInputStream.class},
-                new String[]{"com.sun.imageio.plugins.bmp.BMPImageWriterSpi"}, // We support the same native metadata format
-                false, null, null, null, null,
-                true,
-                BMPMetadata.nativeMetadataFormatName, "com.sun.imageio.plugins.bmp.BMPMetadataFormat",
-                null, null
-        );
+        super(new BMPProviderInfo());
     }
 
     static ImageReaderSpi lookupDefaultProvider(final ServiceRegistry registry) {

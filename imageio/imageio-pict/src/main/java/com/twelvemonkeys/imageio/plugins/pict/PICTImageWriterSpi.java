@@ -28,12 +28,10 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-import javax.imageio.spi.ImageWriterSpi;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -44,29 +42,13 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTImageWriterSpi.java,v 1.0 02.mar.2006 19:21:05 haku Exp$
  */
-public class PICTImageWriterSpi extends ImageWriterSpi {
+public class PICTImageWriterSpi extends ImageWriterSpiBase {
 
     /**
      * Creates a {@code PICTImageWriterSpi}.
      */
     public PICTImageWriterSpi() {
-        this(IIOUtil.getProviderInfo(PICTImageWriterSpi.class));
-    }
-
-    private PICTImageWriterSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"pct", "PCT",
-                        "pict", "PICT"},
-                new String[]{"pct", "pict"},
-                new String[]{"image/pict", "image/x-pict"},
-                "com.twelvemonkeys.imageio.plugins.pict.PICTImageWriter",
-                STANDARD_OUTPUT_TYPE,
-                new String[]{"com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new PICTProviderInfo());
     }
 
     public boolean canEncodeImage(ImageTypeSpecifier pType) {

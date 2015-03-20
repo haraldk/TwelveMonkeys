@@ -28,11 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
@@ -45,28 +43,13 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class PICTImageReaderSpi extends ImageReaderSpi {
+public class PICTImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code PICTImageReaderSpi}.
      */
     public PICTImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(PICTImageReaderSpi.class));
-    }
-
-    private PICTImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"pct", "PCT", "pict", "PICT"},
-                new String[]{"pct", "pict"},
-                new String[]{"image/pict", "image/x-pict"},
-                "com.twelvemkonkeys.imageio.plugins.pict.PICTImageReader",
-                new Class[] {ImageInputStream.class},
-                new String[]{"com.twelvemkonkeys.imageio.plugins.pict.PICTImageWriterSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new PICTProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {

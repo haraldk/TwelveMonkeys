@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
@@ -41,23 +40,24 @@ public final class PNMImageWriterSpi extends ImageWriterSpi {
 
     // TODO: Consider one Spi for each sub-format, as it makes no sense for the writer to write PPM if client code requested PBM or PGM format.
     // ...Then again, what if user asks for PNM? :-P
+
     /**
      * Creates a {@code PNMImageWriterSpi}.
      */
     public PNMImageWriterSpi() {
-        this(IIOUtil.getProviderInfo(PNMImageWriterSpi.class));
+        this(new PNMProviderInfo());
     }
 
     private PNMImageWriterSpi(final ProviderInfo pProviderInfo) {
         super(
                 pProviderInfo.getVendorName(),
                 pProviderInfo.getVersion(),
-                new String[]{
+                new String[] {
                         "pnm", "pbm", "pgm", "ppm",
                         "PNM", "PBM", "PGM", "PPM"
                 },
-                new String[]{"pbm", "pgm", "ppm"},
-                new String[]{
+                new String[] {"pbm", "pgm", "ppm"},
+                new String[] {
                         // No official IANA record exists, these are conventional
                         "image/x-portable-pixmap",
                         "image/x-portable-anymap"
@@ -79,7 +79,8 @@ public final class PNMImageWriterSpi extends ImageWriterSpi {
         return new PNMImageWriter(this);
     }
 
-    @Override public String getDescription(final Locale locale) {
+    @Override
+    public String getDescription(final Locale locale) {
         return "NetPBM Portable Any Map (PNM) image writer";
     }
 }

@@ -28,11 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -43,31 +41,10 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ICOImageReaderSpi.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-public final class ICOImageReaderSpi extends ImageReaderSpi {
+public final class ICOImageReaderSpi extends ImageReaderSpiBase {
 
     public ICOImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(ICOImageReaderSpi.class));
-    }
-    
-    private ICOImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"ico", "ICO"},
-                new String[]{"ico"},
-                new String[]{
-                        "image/vnd.microsoft.icon", // Official IANA MIME
-                        "image/x-icon",             // Common extension MIME
-                        "image/ico"                 // Unofficial, but common
-                },
-                "com.twelvemonkeys.imageio.plugins.bmp.ICOImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, null, null, null, null,
-                true,
-                null, null,
-                null, null
-        );
+        super(new ICOProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {

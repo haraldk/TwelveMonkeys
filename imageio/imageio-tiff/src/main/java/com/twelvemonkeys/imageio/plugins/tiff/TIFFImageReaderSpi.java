@@ -29,8 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
@@ -46,33 +45,12 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageReaderSpi.java,v 1.0 08.05.12 15:14 haraldk Exp$
  */
-public class TIFFImageReaderSpi extends ImageReaderSpi {
+public class TIFFImageReaderSpi extends ImageReaderSpiBase {
     /**
      * Creates a {@code TIFFImageReaderSpi}.
      */
     public TIFFImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(TIFFImageReaderSpi.class));
-    }
-
-    private TIFFImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[] {"tiff", "TIFF"},
-                new String[] {"tif", "tiff"},
-                new String[] {
-                        "image/tiff", "image/x-tiff"
-                },
-                "com.twelvemkonkeys.imageio.plugins.tiff.TIFFImageReader",
-                new Class[] {ImageInputStream.class},
-                new String[] {"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
+        super(new TIFFProviderInfo());
     }
 
     @SuppressWarnings("unchecked")

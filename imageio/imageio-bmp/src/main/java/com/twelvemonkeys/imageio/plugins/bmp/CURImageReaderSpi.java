@@ -28,11 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -43,31 +41,10 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CURImageReaderSpi.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-public final class CURImageReaderSpi extends ImageReaderSpi {
+public final class CURImageReaderSpi extends ImageReaderSpiBase {
 
     public CURImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(CURImageReaderSpi.class));
-    }
-
-    private CURImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"cur", "CUR"},
-                new String[]{"cur"},
-                new String[]{
-                        "image/vnd.microsoft.cursor",   // Official IANA MIME
-                        "image/x-cursor",               // Common extension MIME
-                        "image/cursor"                  // Unofficial, but common
-                },
-                "com.twelvemonkeys.imageio.plugins.bmp.CURImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, null, null, null, null,
-                true,
-                null, null,
-                null, null
-        );
+        super(new CURProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
