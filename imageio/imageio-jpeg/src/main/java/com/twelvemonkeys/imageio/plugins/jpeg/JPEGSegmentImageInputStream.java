@@ -81,7 +81,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 segment = segments.get(currentSegment);
 
                 if (streamPos >= segment.start && streamPos < segment.end()) {
-                    stream.seek(segment.realStart + streamPos - segment.start);
+                    segment.seek(stream, segment.realStart + streamPos - segment.start);
 
                     return segment;
                 }
@@ -119,7 +119,11 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
                 // TODO: Should we just skip all app marker segments?
                 // We are now handling all important segments ourselves
-                if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream))) {
+                // TODO: Need to re-insert the APP14, and instead make sure we limit it to 16 bytes,
+                // OR use two delegates, one for reading image data, and one for reading metadata...
+                boolean isApp14Adobe = false;
+                if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream)
+                        || (isApp14Adobe = (marker == JPEG.APP14 && isAppSegmentWithId("Adobe", stream))))) {
                     int length = stream.readUnsignedShort(); // Length including length field itself
                     stream.seek(realPosition + 2 + length);  // Skip marker (2) + length
                 }
@@ -138,17 +142,24 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         }
                         else {
                             // Length including length field itself
-                            length = stream.readUnsignedShort() + 2;
+                            length = 2 + stream.readUnsignedShort();
                         }
 
-                        segment = new Segment(marker, realPosition, segment.end(), length);
+                        if (isApp14Adobe && length != 16) {
+                            // Need to rewrite this segment, so that it gets length 16 and discard the remaining bytes...
+                            segment = new AdobeAPP14Replacement(realPosition, segment.end(), length, stream);
+                        }
+                        else {
+                            segment = new Segment(marker, realPosition, segment.end(), length);
+                        }
+
                         segments.add(segment);
                     }
 
                     currentSegment = segments.size() - 1;
 
                     if (streamPos >= segment.start && streamPos < segment.end()) {
-                        stream.seek(segment.realStart + streamPos - segment.start);
+                        segment.seek(stream, segment.realStart + streamPos - segment.start);
 
                         break;
                     }
@@ -167,14 +178,14 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 segment = segments.get(currentSegment);
 
                 if (streamPos >= segment.start && streamPos < segment.end()) {
-                    stream.seek(segment.realStart + streamPos - segment.start);
+                    segment.seek(stream, segment.realStart + streamPos - segment.start);
 
                     break;
                 }
             }
         }
         else {
-            stream.seek(segment.realStart + streamPos - segment.start);
+            segment.seek(stream, segment.realStart + streamPos - segment.start);
         }
 
         return segment;
@@ -188,7 +199,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         try {
             int length = stream.readUnsignedShort(); // Length including length field itself
 
-            byte[] data = new byte[Math.max(20, length - 2)];
+            byte[] data = new byte[Math.min(segmentId.length() + 1, length - 2)];
             stream.readFully(data);
 
             return segmentId.equals(asNullTerminatedAsciiString(data, 0));
@@ -251,7 +262,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         repositionAsNecessary();
 
-        int read = stream.read();
+//        int read = stream.read();
+        int read = segment.read(stream);
 
         if (read != -1) {
             streamPos++;
@@ -272,7 +284,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             repositionAsNecessary();
 
             long bytesLeft = segment.end() - streamPos; // If no more bytes after reposition, we're at EOF
-            int count = bytesLeft == 0 ? -1 : stream.read(b, off + total, (int) Math.min(len - total, bytesLeft));
+//            int count = bytesLeft == 0 ? -1 : stream.read(b, off + total, (int) Math.min(len - total, bytesLeft));
+            int count = bytesLeft == 0 ? -1 : segment.read(stream, b, off + total, (int) Math.min(len - total, bytesLeft));
 
             if (count == -1) {
                 // EOF
@@ -298,7 +311,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     static class Segment {
-        private final int marker;
+        final int marker;
 
         final long realStart;
         final long start;
@@ -319,9 +332,86 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             return start + length;
         }
 
+        public void seek(final ImageInputStream stream, final long newPos) throws IOException {
+            stream.seek(newPos);
+        }
+
+        public int read(final ImageInputStream stream) throws IOException {
+            return stream.read();
+        }
+
+        public int read(final ImageInputStream stream, byte[] b, int off, int len) throws IOException {
+            return stream.read(b, off, len);
+        }
+
+
         @Override
         public String toString() {
             return String.format("0x%04x[%d-%d]", marker, realStart, realEnd());
+        }
+    }
+
+    /**
+     * Workaround for a known bug in com.sun.imageio.plugins.jpeg.AdobeMarkerSegment, leaving the buffer in an
+     * inconsistent state, if the length of the APP14/Adobe is not exactly 16 bytes.
+     *
+     * @see <a href="http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6355567">Bug report</a>
+     */
+    static final class AdobeAPP14Replacement extends ReplacementSegment {
+
+        AdobeAPP14Replacement(final long realStart, final long start, final long realLength, final ImageInputStream stream) throws IOException {
+            super(JPEG.APP14, realStart, start, realLength, createMarkerFixedLength(stream));
+        }
+
+        private static byte[] createMarkerFixedLength(final ImageInputStream stream) throws IOException {
+            byte[] segmentData = new byte[16];
+
+            segmentData[0] = (byte) ((JPEG.APP14 >> 8) & 0xff);
+            segmentData[1] = (byte) (JPEG.APP14 & 0xff);
+            segmentData[2] = (byte) 0;
+            segmentData[3] = (byte) 14;
+
+            stream.readFully(segmentData, 4, segmentData.length - 4);
+
+            return segmentData;
+        }
+    }
+
+    static class ReplacementSegment extends Segment {
+        final long realLength;
+        final byte[] data;
+
+        int pos;
+
+        ReplacementSegment(final int marker, final long realStart, final long start, final long realLength, final byte[] replacementData) {
+            super(marker, realStart, start, replacementData.length);
+            this.realLength = realLength;
+            this.data = replacementData;
+        }
+
+        @Override
+        long realEnd() {
+            return realStart + realLength;
+        }
+
+        @Override
+        public void seek(final ImageInputStream stream, final long newPos) throws IOException {
+            pos = (int) (newPos - realStart);
+            stream.seek(newPos);
+        }
+
+        @Override
+        public int read(final ImageInputStream stream) {
+            return data[pos++] & 0xff;
+        }
+
+        @Override
+        public int read(final ImageInputStream stream, byte[] b, int off, int len) {
+            int length = Math.min(data.length - pos, len);
+            System.arraycopy(data, pos, b, off, length);
+            pos += length;
+
+            return length;
         }
     }
 }

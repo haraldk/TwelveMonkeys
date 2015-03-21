@@ -111,12 +111,15 @@ public class JPEGSegmentImageInputStreamTest {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/no-image-types-rgb-us-web-coated-v2-ms-photogallery-exif.jpg")));
         List<JPEGSegment> appSegments = JPEGSegmentUtil.readSegments(stream, JPEGSegmentUtil.APP_SEGMENTS);
 
-        assertEquals(1, appSegments.size());
+        assertEquals(2, appSegments.size());
 
         assertEquals(JPEG.APP1, appSegments.get(0).marker());
         assertEquals("Exif", appSegments.get(0).identifier());
 
-        // And thus, no JFIF, no Adobe, no XMP, no ICC_PROFILE or other segments
+        assertEquals(JPEG.APP14, appSegments.get(1).marker());
+        assertEquals("Adobe", appSegments.get(1).identifier());
+
+        // And thus, no JFIF, no XMP, no ICC_PROFILE or other segments
     }
 
     @Test
