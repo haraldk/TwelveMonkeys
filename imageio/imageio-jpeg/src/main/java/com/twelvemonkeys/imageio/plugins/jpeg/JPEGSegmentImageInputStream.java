@@ -117,13 +117,12 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     marker = 0xff00 | stream.readUnsignedByte();
                 }
 
-                // TODO: Should we just skip all app marker segments?
-                // We are now handling all important segments ourselves
-                // TODO: Need to re-insert the APP14, and instead make sure we limit it to 16 bytes,
-                // OR use two delegates, one for reading image data, and one for reading metadata...
-                boolean isApp14Adobe = false;
-                if (isAppSegmentMarker(marker) && !(marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream)
-                        || (isApp14Adobe = (marker == JPEG.APP14 && isAppSegmentWithId("Adobe", stream))))) {
+                // We are now handling all important segments ourselves, except APP1/Exif and APP14/Adobe, as these
+                boolean appSegmentMarker = isAppSegmentMarker(marker);
+                boolean isApp14Adobe = marker == JPEG.APP14 && isAppSegmentWithId("Adobe", stream);
+                boolean isApp1Exif = marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream);
+
+                if (appSegmentMarker && !(isApp1Exif || isApp14Adobe)) {
                     int length = stream.readUnsignedShort(); // Length including length field itself
                     stream.seek(realPosition + 2 + length);  // Skip marker (2) + length
                 }
