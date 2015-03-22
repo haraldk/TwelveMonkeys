@@ -81,7 +81,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 segment = segments.get(currentSegment);
 
                 if (streamPos >= segment.start && streamPos < segment.end()) {
-                    segment.seek(stream, segment.realStart + streamPos - segment.start);
+                    segment.seek(stream, streamPos);
 
                     return segment;
                 }
@@ -159,7 +159,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     currentSegment = segments.size() - 1;
 
                     if (streamPos >= segment.start && streamPos < segment.end()) {
-                        segment.seek(stream, segment.realStart + streamPos - segment.start);
+                        segment.seek(stream, streamPos);
 
                         break;
                     }
@@ -178,14 +178,14 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 segment = segments.get(currentSegment);
 
                 if (streamPos >= segment.start && streamPos < segment.end()) {
-                    segment.seek(stream, segment.realStart + streamPos - segment.start);
+                    segment.seek(stream, streamPos);
 
                     break;
                 }
             }
         }
         else {
-            segment.seek(stream, segment.realStart + streamPos - segment.start);
+            segment.seek(stream, streamPos);
         }
 
         return segment;
@@ -262,7 +262,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         repositionAsNecessary();
 
-//        int read = stream.read();
         int read = segment.read(stream);
 
         if (read != -1) {
@@ -284,7 +283,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             repositionAsNecessary();
 
             long bytesLeft = segment.end() - streamPos; // If no more bytes after reposition, we're at EOF
-//            int count = bytesLeft == 0 ? -1 : stream.read(b, off + total, (int) Math.min(len - total, bytesLeft));
             int count = bytesLeft == 0 ? -1 : segment.read(stream, b, off + total, (int) Math.min(len - total, bytesLeft));
 
             if (count == -1) {
@@ -333,7 +331,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         }
 
         public void seek(final ImageInputStream stream, final long newPos) throws IOException {
-            stream.seek(newPos);
+            stream.seek(realStart + newPos - start);
         }
 
         public int read(final ImageInputStream stream) throws IOException {
@@ -396,8 +394,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         @Override
         public void seek(final ImageInputStream stream, final long newPos) throws IOException {
-            pos = (int) (newPos - realStart);
-            stream.seek(newPos);
+            pos = (int) (newPos - start);
+            super.seek(stream, newPos);
         }
 
         @Override
