@@ -117,7 +117,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     marker = 0xff00 | stream.readUnsignedByte();
                 }
 
-                // We are now handling all important segments ourselves, except APP1/Exif and APP14/Adobe, as these
+                // We are now handling all important segments ourselves, except APP1/Exif and APP14/Adobe,
+                // as these segments affects image decoding.
                 boolean appSegmentMarker = isAppSegmentMarker(marker);
                 boolean isApp14Adobe = marker == JPEG.APP14 && isAppSegmentWithId("Adobe", stream);
                 boolean isApp1Exif = marker == JPEG.APP1 && isAppSegmentWithId("Exif", stream);
