@@ -37,6 +37,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
@@ -148,6 +149,19 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         if (isApp14Adobe && length != 16) {
                             // Need to rewrite this segment, so that it gets length 16 and discard the remaining bytes...
                             segment = new AdobeAPP14Replacement(realPosition, segment.end(), length, stream);
+                        }
+                        else if (marker == JPEG.DQT) {
+                            // TODO: Do we need to know SOF precision before determining if the DQT precision is bad?
+                            // Inspect segment, see if we have 16 bit precision (assuming segments will not contain
+                            // multiple quality tables with varying precision)
+                            int qtInfo = stream.read();
+                            if ((qtInfo & 0x10) == 0x10) {
+                                // TODO: Warning!
+                                segment = new DownsampledDQTReplacement(realPosition, segment.end(), length, qtInfo, stream);
+                            }
+                            else {
+                                segment = new Segment(marker, realPosition, segment.end(), length);
+                            }
                         }
                         else {
                             segment = new Segment(marker, realPosition, segment.end(), length);
@@ -372,6 +386,48 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             stream.readFully(segmentData, 4, segmentData.length - 4);
 
             return segmentData;
+        }
+    }
+
+    /**
+     * Workaround for a known bug in com.sun.imageio.plugins.jpeg.DQTMarkerSegment, throwing exception,
+     * if the DQT precision is 16 bits (not 8 bits). Native reader seems to cope fine though.
+     * This downsampling of the quality tables, creates visually same results, with no exceptions thrown.
+     */
+    static final class DownsampledDQTReplacement extends ReplacementSegment {
+
+        DownsampledDQTReplacement(final long realStart, final long start, final long realLength, final int qtInfo, final ImageInputStream stream) throws IOException {
+            super(JPEG.DQT, realStart, start, realLength, createMarkerFixedLength((int) realLength, qtInfo, stream));
+        }
+
+        private static byte[] createMarkerFixedLength(final int length, final int qtInfo, final ImageInputStream stream) throws IOException {
+            byte[] replacementData = new byte[length];
+
+            int numQTs = length / 128;
+            int newSegmentLength = 2 + 1 + 64 * numQTs;
+
+            replacementData[0] = (byte) ((JPEG.DQT >> 8) & 0xff);
+            replacementData[1] = (byte) (JPEG.DQT & 0xff);
+            replacementData[2] = (byte) ((newSegmentLength >> 8) & 0xff);
+            replacementData[3] = (byte) (newSegmentLength & 0xff);
+            replacementData[4] = (byte) (qtInfo & 0x0f);
+            stream.readFully(replacementData, 5, replacementData.length - 5);
+
+            // Downsample tables to 8 bits by discarding lower 8 bits...
+            int newOff = 4;
+            int oldOff = 4;
+            for (int q = 0; q < numQTs; q++) {
+                replacementData[newOff++] = (byte) (replacementData[oldOff++] & 0x0f);
+
+                for (int i = 0; i < 64; i++) {
+                    replacementData[newOff + i] = replacementData[oldOff + 1 + i * 2];
+                }
+
+                newOff += 64;
+                oldOff += 128;
+            }
+
+            return Arrays.copyOfRange(replacementData, 0, newSegmentLength + 2);
         }
     }
 
