@@ -28,8 +28,11 @@
 
 package com.twelvemonkeys.image;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -53,6 +56,22 @@ public final class MappedImageFactory {
     // - Might be possible (but slow) to copy parts to memory and do CCOp on these copies
 
     private static final boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.image.mapped.debug"));
+
+    /* Constants for DirectColorModel masks, from BufferedImage. */
+    private static final int DCM_RED_MASK   = 0x00ff0000;
+    private static final int DCM_GREEN_MASK = 0x0000ff00;
+    private static final int DCM_BLUE_MASK  = 0x000000ff;
+    private static final int DCM_ALPHA_MASK = 0xff000000;
+    private static final int DCM_565_RED_MASK = 0xf800;
+    private static final int DCM_565_GRN_MASK = 0x07E0;
+    private static final int DCM_565_BLU_MASK = 0x001F;
+    private static final int DCM_555_RED_MASK = 0x7C00;
+    private static final int DCM_555_GRN_MASK = 0x03E0;
+    private static final int DCM_555_BLU_MASK = 0x001F;
+    private static final int DCM_BGR_RED_MASK = 0x0000ff;
+    private static final int DCM_BGR_GRN_MASK = 0x00ff00;
+    private static final int DCM_BGR_BLU_MASK = 0xff0000;
+
     static final RasterFactory RASTER_FACTORY = createRasterFactory();
 
     private MappedImageFactory() {}
@@ -78,6 +97,148 @@ public final class MappedImageFactory {
         DataBuffer buffer = MappedFileBuffer.create(sm.getTransferType(), width * height * sm.getNumDataElements(), 1);
 
         return new BufferedImage(cm, RASTER_FACTORY.createRaster(sm, buffer, new Point()), cm.isAlphaPremultiplied(), null);
+    }
+
+    /**
+     * <p>
+     * Returns the {@code BufferedImage} image type that is compatible with the data in {@code image}.
+     * This method will return <em>compatible</em> types, even if {@code BufferedImage.getType()} returns
+     * {@code BufferedImage.TYPE_CUSTOM}.
+     * </p>
+     * <p>
+     * This method is defined to work so that, for any valid {@code BufferedImage} <em>type</em>
+     * (except {@code BufferedImage.TYPE_CUSTOM}), the following is {@code true}:
+     * <br/>
+     * {@code getCompatibleBufferedImageType(createCompatibleMappedImage(w, h, type)) == type}
+     * </p>
+     * <p>
+     * If no standard type is compatible with the image data, {@code BufferedImage.TYPE_CUSTOM} is returned.
+     * </p>
+     *
+     * @param image the image to test, may not be {@code null}.
+     *
+     * @return the {@code BufferedImage} type.
+     *
+     * @throws java.lang.IllegalArgumentException if {@code image} is {@code null}.
+     *
+     * @see java.awt.image.BufferedImage#getType()
+     */
+    public static int getCompatibleBufferedImageType(final BufferedImage image) {
+        Validate.notNull(image, "image");
+
+        WritableRaster raster = image.getRaster();
+        SampleModel sm = raster.getSampleModel();
+        int numBands = raster.getNumBands();
+
+        ColorModel cm = image.getColorModel();
+        ColorSpace cs = cm.getColorSpace();
+        boolean isAlphaPre = cm.isAlphaPremultiplied();
+        int csType = cs.getType();
+
+        int dataType = raster.getDataBuffer().getDataType();
+
+        if (csType != ColorSpace.TYPE_RGB) {
+            if (csType == ColorSpace.TYPE_GRAY && cm instanceof ComponentColorModel) {
+                if (sm instanceof ComponentSampleModel && ((ComponentSampleModel) sm).getPixelStride() != numBands) {
+                    return BufferedImage.TYPE_CUSTOM;
+                }
+                else if (dataType == DataBuffer.TYPE_BYTE && raster.getNumBands() == 1 &&
+                        cm.getComponentSize(0) == 8 && ((ComponentSampleModel) sm).getPixelStride() == 1) {
+                    return BufferedImage.TYPE_BYTE_GRAY;
+                }
+                else if (dataType == DataBuffer.TYPE_USHORT && raster.getNumBands() == 1 &&
+                        cm.getComponentSize(0) == 16 && ((ComponentSampleModel) sm).getPixelStride() == 1) {
+                    return BufferedImage.TYPE_USHORT_GRAY;
+                }
+            }
+            else {
+                return BufferedImage.TYPE_CUSTOM;
+            }
+        }
+
+        if ((dataType == DataBuffer.TYPE_INT) && (numBands == 3 || numBands == 4)) {
+            // Check if the raster params and the color model are correct
+            int pixSize = cm.getPixelSize();
+
+            if (cm instanceof DirectColorModel && sm.getNumDataElements() == 1 && (pixSize == 32 || pixSize == 24)) {
+                // Now check on the DirectColorModel params
+                DirectColorModel dcm = (DirectColorModel) cm;
+                int rmask = dcm.getRedMask();
+                int gmask = dcm.getGreenMask();
+                int bmask = dcm.getBlueMask();
+
+                if (rmask == DCM_RED_MASK && gmask == DCM_GREEN_MASK && bmask == DCM_BLUE_MASK) {
+                    if (dcm.getAlphaMask() == DCM_ALPHA_MASK) {
+                        return isAlphaPre ? BufferedImage.TYPE_INT_ARGB_PRE : BufferedImage.TYPE_INT_ARGB;
+                    }
+                    else if (!dcm.hasAlpha()) {
+                        // No Alpha
+                        return BufferedImage.TYPE_INT_RGB;
+                    }
+                }
+                else if (rmask == DCM_BGR_RED_MASK && gmask == DCM_BGR_GRN_MASK && bmask == DCM_BGR_BLU_MASK) {
+                    if (!dcm.hasAlpha()) {
+                        return BufferedImage.TYPE_INT_BGR;
+                    }
+                }
+            }
+        }
+        else if ((cm instanceof IndexColorModel) && (numBands == 1) && (!cm.hasAlpha() || !isAlphaPre)) {
+            IndexColorModel icm = (IndexColorModel) cm;
+            int pixSize = icm.getPixelSize();
+
+            if (dataType == DataBuffer.TYPE_BYTE && sm instanceof MultiPixelPackedSampleModel) {
+                return BufferedImage.TYPE_BYTE_BINARY;
+            }
+            if (dataType == DataBuffer.TYPE_BYTE && sm instanceof ComponentSampleModel) {
+                ComponentSampleModel csm = (ComponentSampleModel) sm;
+
+                if (csm.getPixelStride() == 1 && pixSize <= 8) {
+                    return BufferedImage.TYPE_BYTE_INDEXED;
+                }
+            }
+        }
+        else if ((dataType == DataBuffer.TYPE_USHORT) &&
+                (cm instanceof DirectColorModel) && (numBands == 3) && !cm.hasAlpha()) {
+            DirectColorModel dcm = (DirectColorModel) cm;
+
+            if (dcm.getRedMask() == DCM_565_RED_MASK &&
+                    dcm.getGreenMask() == DCM_565_GRN_MASK && dcm.getBlueMask() == DCM_565_BLU_MASK) {
+                return BufferedImage.TYPE_USHORT_565_RGB;
+            }
+            else if (dcm.getRedMask() == DCM_555_RED_MASK &&
+                    dcm.getGreenMask() == DCM_555_GRN_MASK && dcm.getBlueMask() == DCM_555_BLU_MASK) {
+                return BufferedImage.TYPE_USHORT_555_RGB;
+            }
+        }
+        else if (dataType == DataBuffer.TYPE_BYTE && cm instanceof ComponentColorModel &&
+                raster.getSampleModel() instanceof PixelInterleavedSampleModel && (numBands == 3 || numBands == 4)) {
+            ComponentColorModel ccm = (ComponentColorModel) cm;
+            PixelInterleavedSampleModel csm = (PixelInterleavedSampleModel) raster.getSampleModel();
+
+            int[] offs = csm.getBandOffsets();
+            int[] nBits = ccm.getComponentSize();
+            boolean is8bit = true;
+
+            for (int i = 0; i < numBands; i++) {
+                if (nBits[i] != 8) {
+                    is8bit = false;
+                    break;
+                }
+            }
+
+            if (is8bit && csm.getPixelStride() == numBands &&
+                    offs[0] == numBands - 1 && offs[1] == numBands - 2 && offs[2] == numBands - 3) {
+                if (numBands == 3 && !ccm.hasAlpha()) {
+                    return BufferedImage.TYPE_3BYTE_BGR;
+                }
+                else if (offs[3] == 0 && ccm.hasAlpha()) {
+                    return isAlphaPre ? BufferedImage.TYPE_4BYTE_ABGR_PRE : BufferedImage.TYPE_4BYTE_ABGR;
+                }
+            }
+        }
+
+        return BufferedImage.TYPE_CUSTOM;
     }
 
     private static RasterFactory createRasterFactory() {
