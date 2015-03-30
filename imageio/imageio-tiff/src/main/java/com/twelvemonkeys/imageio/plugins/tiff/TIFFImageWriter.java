@@ -46,6 +46,7 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
 import java.awt.image.*;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -177,6 +178,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
         else {
             entries.add(new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numComponents));
+
+            // TODO: What is the default TIFF color space?
+            ColorSpace colorSpace = colorModel.getColorSpace();
+            if (colorSpace instanceof ICC_ColorSpace) {
+                entries.add(new TIFFEntry(TIFF.TAG_ICC_PROFILE, ((ICC_ColorSpace) colorSpace).getProfile().getData()));
+            }
         }
 
         if (sampleModel.getDataType() == DataBuffer.TYPE_SHORT /* TODO: if (isSigned(sampleModel.getDataType) or getSampleFormat(sampleModel) != 0 */) {
@@ -340,11 +347,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 return new DataOutputStream(stream);
 
             case TIFFExtension.COMPRESSION_LZW:
-//                stream = IIOUtil.createStreamAdapter(imageOutput);
-//                stream = new EncoderStream(stream, new LZWEncoder((image.getTileWidth() * image.getTileHeight() * image.getTile(0, 0).getNumBands() * image.getColorModel().getComponentSize(0) + 7) / 8));
-//                stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(), image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
-//
-//                return new DataOutputStream(stream);
+                stream = IIOUtil.createStreamAdapter(imageOutput);
+                stream = new EncoderStream(stream, new LZWEncoder((image.getTileWidth() * image.getTileHeight() * image.getTile(0, 0).getNumBands() * image.getColorModel().getComponentSize(0) + 7) / 8));
+                stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(), image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
+
+                return new DataOutputStream(stream);
         }
 
         throw new IllegalArgumentException(String.format("Unsupported TIFF compression: %d", compression));
@@ -459,6 +466,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                 }
 
                                 flushBuffer(buffer, stream);
+
                                 if (stream instanceof DataOutputStream) {
                                     DataOutputStream dataOutputStream = (DataOutputStream) stream;
                                     dataOutputStream.flush();
@@ -484,6 +492,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     }
 
                                     flushBuffer(buffer, stream);
+
                                     if (stream instanceof DataOutputStream) {
                                         DataOutputStream dataOutputStream = (DataOutputStream) stream;
                                         dataOutputStream.flush();

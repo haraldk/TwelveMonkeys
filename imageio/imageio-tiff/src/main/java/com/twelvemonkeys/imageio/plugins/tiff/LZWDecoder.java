@@ -108,6 +108,10 @@ abstract class LZWDecoder implements Decoder {
                     break;
                 }
 
+                if (table[code] == null) {
+                    throw new DecodeException(String.format("Corrupted TIFF LZW: code %d (table size: %d)", code, tableLength));
+                }
+
                 table[code].writeTo(buffer);
             }
             else {
@@ -184,8 +188,9 @@ abstract class LZWDecoder implements Decoder {
         }
     }
 
-    public static LZWDecoder create(boolean oldBitReversedStream) {
+    public static Decoder create(boolean oldBitReversedStream) {
         return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWSpecDecoder();
+//        return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWTreeDecoder();
     }
 
     static final class LZWSpecDecoder extends LZWDecoder {
@@ -282,7 +287,9 @@ abstract class LZWDecoder implements Decoder {
         }
     }
 
-    static final class LZWString {
+    static final class LZWString implements Comparable<LZWString> {
+        static final LZWString EMPTY = new LZWString((byte) 0, (byte) 0, 0, null);
+
         final LZWString previous;
 
         final int length;
@@ -301,6 +308,10 @@ abstract class LZWDecoder implements Decoder {
         }
 
         public final LZWString concatenate(final byte value) {
+            if (this == EMPTY) {
+                return new LZWString(value);
+            }
+
             return new LZWString(value, this.firstChar, length + 1, this);
         }
 
@@ -363,6 +374,35 @@ abstract class LZWDecoder implements Decoder {
             result = 31 * result + (int) value;
             result = 31 * result + (int) firstChar;
             return result;
+        }
+
+        @Override
+        public int compareTo(final LZWString other) {
+            if (other == this) {
+                return 0;
+            }
+
+            if (length != other.length) {
+                return other.length - length;
+            }
+
+            if (firstChar != other.firstChar) {
+                return other.firstChar - firstChar;
+            }
+
+            LZWString t = this;
+            LZWString o = other;
+
+            for (int i = length - 1; i > 0; i--) {
+                if (t.value != o.value) {
+                    return o.value - t.value;
+                }
+
+                t = t.previous;
+                o = o.previous;
+            }
+
+            return 0;
         }
     }
 }
