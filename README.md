@@ -1,9 +1,9 @@
-## Background
+## About
 
-TwelveMonkeys ImageIO is a collection of plug-ins for Java's ImageIO.
+TwelveMonkeys ImageIO is a collection of plugins and extensions for Java's ImageIO.
 
 These plugins extends the number of image file formats supported in Java, using the javax.imageio.* package.
-The main purpose of this project is to provide support for formats not covered by the JDK itself.
+The main purpose of this project is to provide support for formats not covered by the JRE itself.
 
 Support for formats is important, both to be able to read data found
 "in the wild", as well as to maintain access to data in legacy formats.
