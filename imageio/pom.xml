@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.twelvemonkeys</groupId>
         <artifactId>twelvemonkeys</artifactId>
-        <version>3.0-SNAPSHOT</version>
+        <version>3.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
@@ -26,32 +26,41 @@
         <!-- Support -->
         <module>imageio-core</module>
         <module>imageio-metadata</module>
+        <module>imageio-clippath</module>
 
         <!-- Stand-alone readers/writers -->
-        <module>imageio-ico</module>
+        <module>imageio-bmp</module>
         <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>
+        <module>imageio-pcx</module>
         <module>imageio-pdf</module>
         <module>imageio-pict</module>
+        <module>imageio-pnm</module>
         <module>imageio-psd</module>
+        <module>imageio-sgi</module>
+        <module>imageio-tga</module>
         <module>imageio-thumbsdb</module>
         <module>imageio-tiff</module>
 
         <!-- Wrappers for 3rd party libs  -->
         <module>imageio-batik</module>
-        <module>imageio-jmagick</module>
 
         <!-- Test cases for the JRE provided ImageIO plugins -->
         <module>imageio-reference</module>
     </modules>
 
     <properties>
-        <core.version>3.0-SNAPSHOT</core.version>
-        <imageio.core.version>3.0-SNAPSHOT</imageio.core.version>
+        <core.version>3.1-SNAPSHOT</core.version>
+        <imageio.core.version>3.1-SNAPSHOT</imageio.core.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.twelvemonkeys.common</groupId>
+            <artifactId>common-lang</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-io</artifactId>
@@ -94,6 +103,24 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-lang</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-io</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.twelvemonkeys.common</groupId>
+                <artifactId>common-image</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-core</artifactId>

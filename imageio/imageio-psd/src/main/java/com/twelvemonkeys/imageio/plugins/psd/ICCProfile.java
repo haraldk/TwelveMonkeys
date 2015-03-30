@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ import java.io.InputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: ICCProfile.java,v 1.0 May 20, 2008 6:24:10 PM haraldk Exp$
  */
-class ICCProfile extends PSDImageResource {
+final class ICCProfile extends PSDImageResource {
     private ICC_Profile profile;
 
     ICCProfile(final short pId, final ImageInputStream pInput) throws IOException {

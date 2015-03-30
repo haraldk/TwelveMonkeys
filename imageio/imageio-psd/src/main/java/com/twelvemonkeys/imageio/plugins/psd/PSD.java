@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,19 +35,27 @@ package com.twelvemonkeys.imageio.plugins.psd;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSD.java,v 1.0 Apr 29, 2008 4:47:47 PM haraldk Exp$
  *
- * @see <a href="http://www.fileformat.info/format/psd/egff.htm">http://www.fileformat.info/format/psd/egff.htm</a>
+ * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml">Adobe Photoshop File Formats Specification</a>
+ * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
  */
 interface PSD {
     /** PSD 2+ Native format (.PSD) identifier "8BPS" */
     int SIGNATURE_8BPS = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'S';
 
-    /** PSD 5+ Large Document Format (.PSB) identifier "8BPB" */
-    int SIGNATURE_8BPB = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'B';
+    // This is never used, it seems. Spec says (and sample files uses) 8BPS + version == 2 for PSB...
+    //** PSD 5+ Large Document Format (.PSB) identifier "8BPB" */
+    //int SIGNATURE_8BPB = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'B';
+
+    int VERSION_PSD = 1;
+    int VERSION_PSB = 2;
 
     /** PSD Resource type identifier "8BIM" */
     int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
 
     // Blending modes
+    /** Pass through blending mode "pass"*/
+    int BLEND_PASS = ('p' << 24) + ('a' << 16) + ('s' << 8) + 's';
+
     /** Normal blending mode "norm"*/
     int BLEND_NORM = ('n' << 24) + ('o' << 16) + ('r' << 8) + 'm';
 
@@ -70,7 +78,7 @@ interface PSD {
     int BLEND_LUM = ('l' << 24) + ('u' << 16) + ('m' << 8) + ' ';
 
     /** Multiply blending mode "mul " */
-    int BELND_MUL = ('m' << 24) + ('u' << 16) + ('l' << 8) + ' ';
+    int BLEND_MUL = ('m' << 24) + ('u' << 16) + ('l' << 8) + ' ';
 
     /** Screen blending mode "scrn" */
     int BLEND_SCRN = ('s' << 24) + ('c' << 16) + ('r' << 8) + 'n';
@@ -90,6 +98,45 @@ interface PSD {
     /** Difference blending mode "diff" */
     int BLEND_DIFF = ('d' << 24) + ('i' << 16) + ('f' << 8) + 'f';
 
+    /** Color burn blending mode "idiv" */
+    int BLEND_IDIV = ('i' << 24) + ('d' << 16) + ('i' << 8) + 'v';
+
+    /** Linear burn blending mode "lbrn" */
+    int BLEND_LBRN = ('l' << 24) + ('b' << 16) + ('r' << 8) + 'n';
+
+    /** Darker color blending mode "dkCl" */
+    int BLEND_DKCL = ('d' << 24) + ('k' << 16) + ('C' << 8) + 'l';
+
+    /** Color dodge blending mode "div " */
+    int BLEND_DIV = ('d' << 24) + ('i' << 16) + ('v' << 8) + ' ';
+
+    /** Linear dodge blending mode "lddg" */
+    int BLEND_LDDG = ('l' << 24) + ('d' << 16) + ('d' << 8) + 'g';
+
+    /** Lighter color blending mode "lgCl" */
+    int BLEND_LGCL = ('l' << 24) + ('g' << 16) + ('C' << 8) + 'l';
+
+    /** Vivid light blending mode "vLit" */
+    int BLEND_VLIT = ('v' << 24) + ('L' << 16) + ('i' << 8) + 't';
+
+    /** Linear light blending mode "lLit" */
+    int BLEND_LLIT = ('l' << 24) + ('L' << 16) + ('i' << 8) + 't';
+
+    /** Pin light blending mode "pLit" */
+    int BLEND_PLIT = ('p' << 24) + ('L' << 16) + ('i' << 8) + 't';
+
+    /** Hard mix blending mode "hMix" */
+    int BLEND_HMIX = ('h' << 24) + ('M' << 16) + ('i' << 8) + 'x';
+
+    /** Exclusion blending mode "smud" */
+    int BLEND_SMUD = ('s' << 24) + ('m' << 16) + ('u' << 8) + 'd';
+
+    /** Subtract blending mode "fsub" */
+    int BLEND_FSUB = ('f' << 24) + ('s' << 16) + ('u' << 8) + 'b';
+
+    /** Divide blending mode "fdiv" */
+    int BLEND_FDIV = ('f' << 24) + ('d' << 16) + ('i' << 8) + 'v';
+
     // Compression modes
     /** No compression */
     int COMPRESSION_NONE = 0;
@@ -105,7 +152,7 @@ interface PSD {
 
     // Color Modes
     /** Bitmap (monochrome) */
-    short COLOR_MODE_MONOCHROME = 0;
+    short COLOR_MODE_BITMAP = 0;
 
     /** Gray-scale */
     short COLOR_MODE_GRAYSCALE = 1;
@@ -499,11 +546,16 @@ interface PSD {
     /**
      * (Photoshop CS) Pixel Aspect Ratio
      * 4 bytes (version = 1), 8 bytes double, x / y of a pixel
-     * 0x0429 1065 (Photoshop CS) Layer Comps
-     * 4 bytes (descriptor version = 16), Descriptor (see ?Descriptor structure?
-     * on page57)
      */
     int RES_PIXEL_ASPECT_RATIO = 0x0428;
+
+
+    // 1065
+    /**
+     * (Photoshop CS) Layer Comps
+     * 4 bytes (descriptor version = 16), Descriptor.
+     */
+    int RES_LAYER_COMPS = 0x0429;
 
     // 1066
     /**
@@ -541,4 +593,12 @@ interface PSD {
      */
     int RES_PRINT_FLAGS_INFORMATION = 0x2710;
 
+    int RES_PATH_INFO_MAX = 0x0bb6;
+    int RES_PATH_INFO_MIN = 0x07d0;
+
+    /** Plug-In resource(s). Resources added by a plug-in. See the plug-in API found in the SDK documentation */
+    int RES_PLUGIN_MIN = 0x0fa0;
+
+    /** Plug-In resource(s). Resources added by a plug-in. See the plug-in API found in the SDK documentation */
+    int RES_PLUGIN_MAX = 0x1387;
 }

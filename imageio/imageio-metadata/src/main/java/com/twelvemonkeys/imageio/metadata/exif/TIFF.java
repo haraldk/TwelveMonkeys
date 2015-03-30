@@ -76,7 +76,6 @@ public interface TIFF {
     11 = FLOAT Single precision (4-byte) IEEE format.
     12 = DOUBLE Double precision (8-byte) IEEE format.
 
-    TODO: Verify IFD type
     See http://www.awaresystems.be/imaging/tiff/tifftags/subifds.html
     13 = IFD, same as LONG
 
@@ -143,6 +142,9 @@ public interface TIFF {
     int TAG_WHITE_POINT = 318;
     int TAG_PRIMARY_CHROMATICITIES = 319;
     int TAG_COLOR_MAP = 320;
+    int TAG_INK_SET = 332;
+    int TAG_INK_NAMES = 333;
+    int TAG_NUMBER_OF_INKS = 334;
     int TAG_EXTRA_SAMPLES = 338;
     int TAG_TRANSFER_RANGE = 342;
     int TAG_YCBCR_COEFFICIENTS = 529;
@@ -160,11 +162,32 @@ public interface TIFF {
     int TAG_HOST_COMPUTER = 316;
     int TAG_COPYRIGHT = 33432;
 
+    int TAG_SUBFILE_TYPE = 254;
+    int TAG_OLD_SUBFILE_TYPE = 255; // Deprecated NO NOT WRITE!
     int TAG_SUB_IFD = 330;
 
+    /**
+     * XMP record.
+     * @see com.twelvemonkeys.imageio.metadata.xmp.XMP
+     */
     int TAG_XMP = 700;
+
+    /**
+     * IPTC record.
+     * @see com.twelvemonkeys.imageio.metadata.iptc.IPTC
+     */
     int TAG_IPTC = 33723;
+
+    /**
+     * Photoshop image resources.
+     * @see com.twelvemonkeys.imageio.metadata.psd.PSD
+     */
     int TAG_PHOTOSHOP = 34377;
+
+    /**
+     * ICC Color Profile.
+     * @see java.awt.color.ICC_Profile
+     */
     int TAG_ICC_PROFILE = 34675;
 
     // Microsoft Office Document Imaging (MODI)

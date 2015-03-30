@@ -1,2 +1,0 @@
-- Support all DIB formats?
-- Use Sun's BMP metadata format for image metadata + separate stream metadata?

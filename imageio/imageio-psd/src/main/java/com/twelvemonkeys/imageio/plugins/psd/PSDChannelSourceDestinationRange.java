@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,14 +38,14 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDChannelSourceDestinationRange.java,v 1.0 May 6, 2008 5:14:13 PM haraldk Exp$
  */
-class PSDChannelSourceDestinationRange {
+final class PSDChannelSourceDestinationRange {
     private String channel;
     private short sourceBlack;
     private short sourceWhite;
     private short destBlack;
     private short destWhite;
 
-    public PSDChannelSourceDestinationRange(ImageInputStream pInput, String pChannel) throws IOException {
+    public PSDChannelSourceDestinationRange(final ImageInputStream pInput, final String pChannel) throws IOException {
         channel = pChannel;
         sourceBlack = pInput.readShort();
         sourceWhite = pInput.readShort();
@@ -56,7 +56,7 @@ class PSDChannelSourceDestinationRange {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
-        
+
         builder.append("[(").append(channel);
         builder.append("): sourceBlack: ").append(Integer.toHexString(sourceBlack & 0xffff));
         builder.append(", sourceWhite: ").append(Integer.toHexString(sourceWhite & 0xffff));

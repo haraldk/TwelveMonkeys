@@ -36,8 +36,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Lempel–Ziv–Welch (LZW) decompression. LZW is a universal loss-less data compression algorithm
- * created by Abraham Lempel, Jacob Ziv, and Terry Welch.
+ * Lempel–Ziv–Welch (LZW) decompression.
+ * LZW is a universal loss-less data compression algorithm created by Abraham Lempel, Jacob Ziv, and Terry Welch.
  * Inspired by libTiff's LZW decompression.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -56,9 +56,7 @@ abstract class LZWDecoder implements Decoder {
 
     private static final int TABLE_SIZE = 1 << MAX_BITS;
 
-    private final boolean compatibilityMode;
-
-    private final String[] table;
+    private final LZWString[] table;
     private int tableLength;
     int bitsPerCode;
     private int oldCode = CLEAR_CODE;
@@ -69,15 +67,12 @@ abstract class LZWDecoder implements Decoder {
     int nextData;
     int nextBits;
 
-
-    protected LZWDecoder(final boolean compatibilityMode) {
-        this.compatibilityMode = compatibilityMode;
-
-        table = new String[compatibilityMode ? TABLE_SIZE + 1024 : TABLE_SIZE]; // libTiff adds 1024 "for compatibility"...
+    protected LZWDecoder(int tableSize) {
+        table = new LZWString[tableSize];
 
         // First 258 entries of table is always fixed
         for (int i = 0; i < 256; i++) {
-            table[i] = new String((byte) i);
+            table[i] = new LZWString((byte) i);
         }
 
         init();
@@ -96,6 +91,10 @@ abstract class LZWDecoder implements Decoder {
     }
 
     public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
+        if (buffer == null) {
+            throw new NullPointerException("buffer == null"); // As per contract
+        }
+
         // Adapted from the pseudo-code example found in the TIFF 6.0 Specification, 1992.
         // See Section 13: "LZW Compression"/"LZW Decoding", page 61+
         int code;
@@ -109,15 +108,23 @@ abstract class LZWDecoder implements Decoder {
                     break;
                 }
 
+                if (table[code] == null) {
+                    throw new DecodeException(String.format("Corrupted TIFF LZW: code %d (table size: %d)", code, tableLength));
+                }
+
                 table[code].writeTo(buffer);
             }
             else {
+                if (table[oldCode] == null) {
+                    throw new DecodeException(String.format("Corrupted TIFF LZW: code %d (table size: %d)", oldCode, tableLength));
+                }
+
                 if (isInTable(code)) {
                     table[code].writeTo(buffer);
                     addStringToTable(table[oldCode].concatenate(table[code].firstChar));
                 }
                 else {
-                    String outString = table[oldCode].concatenate(table[oldCode].firstChar);
+                    LZWString outString = table[oldCode].concatenate(table[oldCode].firstChar);
 
                     outString.writeTo(buffer);
                     addStringToTable(outString);
@@ -127,7 +134,7 @@ abstract class LZWDecoder implements Decoder {
             oldCode = code;
 
             if (buffer.remaining() < maxString + 1) {
-                // Buffer full, stop decoding for now
+                // Buffer (almost) full, stop decoding for now
                 break;
             }
         }
@@ -135,19 +142,19 @@ abstract class LZWDecoder implements Decoder {
         return buffer.position();
     }
 
-    private void addStringToTable(final String string) throws IOException {
+    private void addStringToTable(final LZWString string) throws IOException {
+        if (tableLength > table.length) {
+            throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
+        }
+
         table[tableLength++] = string;
 
         if (tableLength > maxCode) {
             bitsPerCode++;
 
             if (bitsPerCode > MAX_BITS) {
-                if (compatibilityMode) {
-                    bitsPerCode--;
-                }
-                else {
-                    throw new DecodeException(java.lang.String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
-                }
+                // Continue reading MAX_BITS (12 bit) length codes
+                bitsPerCode = MAX_BITS;
             }
 
             bitMask = bitmaskFor(bitsPerCode);
@@ -167,9 +174,9 @@ abstract class LZWDecoder implements Decoder {
 
     protected abstract int getNextCode(final InputStream stream) throws IOException;
 
-
     static boolean isOldBitReversedStream(final InputStream stream) throws IOException {
         stream.mark(2);
+
         try {
             int one = stream.read();
             int two = stream.read();
@@ -181,14 +188,15 @@ abstract class LZWDecoder implements Decoder {
         }
     }
 
-    public static LZWDecoder create(boolean oldBitReversedStream) {
+    public static Decoder create(boolean oldBitReversedStream) {
         return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWSpecDecoder();
+//        return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWTreeDecoder();
     }
 
-    private static final class LZWSpecDecoder extends LZWDecoder {
+    static final class LZWSpecDecoder extends LZWDecoder {
 
         protected LZWSpecDecoder() {
-            super(false);
+            super(TABLE_SIZE);
         }
 
         @Override
@@ -237,7 +245,7 @@ abstract class LZWDecoder implements Decoder {
         // compressed data will be identical whether it is an ‘II’ or ‘MM’ file."
 
         protected LZWCompatibilityDecoder() {
-            super(true);
+            super(TABLE_SIZE + 1024); // libTiff adds 1024 "for compatibility", this value seems to work fine...
         }
 
         @Override
@@ -279,26 +287,32 @@ abstract class LZWDecoder implements Decoder {
         }
     }
 
-    private static final class String {
-        final String previous;
+    static final class LZWString implements Comparable<LZWString> {
+        static final LZWString EMPTY = new LZWString((byte) 0, (byte) 0, 0, null);
+
+        final LZWString previous;
 
         final int length;
         final byte value;
         final byte firstChar; // Copied forward for fast access
 
-        public String(final byte code) {
+        public LZWString(final byte code) {
             this(code, code, 1, null);
         }
 
-        private String(final byte value, final byte firstChar, final int length, final String previous) {
+        private LZWString(final byte value, final byte firstChar, final int length, final LZWString previous) {
             this.value = value;
             this.firstChar = firstChar;
             this.length = length;
             this.previous = previous;
         }
 
-        public final String concatenate(final byte firstChar) {
-            return new String(firstChar, this.firstChar, length + 1, this);
+        public final LZWString concatenate(final byte value) {
+            if (this == EMPTY) {
+                return new LZWString(value);
+            }
+
+            return new LZWString(value, this.firstChar, length + 1, this);
         }
 
         public final void writeTo(final ByteBuffer buffer) {
@@ -310,7 +324,7 @@ abstract class LZWDecoder implements Decoder {
                 buffer.put(value);
             }
             else {
-                String e = this;
+                LZWString e = this;
                 final int offset = buffer.position();
 
                 for (int i = length - 1; i >= 0; i--) {
@@ -320,6 +334,75 @@ abstract class LZWDecoder implements Decoder {
 
                 buffer.position(offset + length);
             }
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder("ZLWString[");
+            int offset = builder.length();
+            LZWString e = this;
+            for (int i = length - 1; i >= 0; i--) {
+                builder.insert(offset, String.format("%2x", e.value));
+                e = e.previous;
+            }
+            builder.append("]");
+            return builder.toString();
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            LZWString string = (LZWString) other;
+
+            return firstChar == string.firstChar &&
+                    length == string.length &&
+                    value == string.value &&
+//                    !(previous != null ? !previous.equals(string.previous) : string.previous != null);
+                    previous == string.previous;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = previous != null ? previous.hashCode() : 0;
+            result = 31 * result + length;
+            result = 31 * result + (int) value;
+            result = 31 * result + (int) firstChar;
+            return result;
+        }
+
+        @Override
+        public int compareTo(final LZWString other) {
+            if (other == this) {
+                return 0;
+            }
+
+            if (length != other.length) {
+                return other.length - length;
+            }
+
+            if (firstChar != other.firstChar) {
+                return other.firstChar - firstChar;
+            }
+
+            LZWString t = this;
+            LZWString o = other;
+
+            for (int i = length - 1; i > 0; i--) {
+                if (t.value != o.value) {
+                    return o.value - t.value;
+                }
+
+                t = t.previous;
+                o = o.previous;
+            }
+
+            return 0;
         }
     }
 }

@@ -138,4 +138,11 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();
     }
+
+    @Test
+    @Ignore("Known issue: Source region reading not supported")
+    @Override
+    public void testReadWithSourceRegionParamEqualImage() throws IOException {
+        super.testReadWithSourceRegionParamEqualImage();
+    }
 }

@@ -4,11 +4,11 @@
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
-        <version>7</version>
+        <version>9</version>
     </parent>
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys</artifactId>
-    <version>3.0-SNAPSHOT</version>
+    <version>3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Twelvemonkeys</name>
 
@@ -47,8 +47,8 @@
         <connection>scm:git:https://github.com/haraldk/TwelveMonkeys</connection>
         <developerConnection>scm:git:https://github.com/haraldk/TwelveMonkeys</developerConnection>
         <url>https://github.com/haraldk/TwelveMonkeys</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -71,6 +71,22 @@
                     </archive>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <inherited>true</inherited>
+                <executions>
+                     <execution>
+                         <phase>package</phase>
+                         <id>attach-sources</id>
+                         <goals>
+                             <goal>jar</goal>
+                             <goal>test-jar</goal>
+                         </goals>
+                     </execution>
+                 </executions>
+             </plugin>
         </plugins>
 
         <pluginManagement>
@@ -107,18 +123,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>2.2.1</version>
-                    <inherited>true</inherited>
-                    <!-- THIS DOES NOT WORK..?! -->
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar</goal>
-                                <goal>test-jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -126,8 +130,8 @@
                     <version>2.3.2</version>
                     <inherited>true</inherited>
                     <configuration>
-                        <source>1.5</source>
-                        <target>1.5</target>
+                        <source>1.7</source>
+                        <target>1.7</target>
                         <showDeprecation>false</showDeprecation>
                         <compilerArgument>-g:lines</compilerArgument>
                         <compilerArguments>
@@ -156,8 +160,8 @@
                     <inherited>true</inherited>
                     <version>2.2</version>
                     <configuration>
-                        <jdkName>1.5</jdkName>
-                        <jdkLevel>1.5</jdkLevel>
+                        <jdkName>1.7</jdkName>
+                        <jdkLevel>1.7</jdkLevel>
                         <downloadSources>true</downloadSources>
                     </configuration>
                 </plugin>
@@ -202,7 +206,7 @@
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>3.0.1</version>
                 <configuration>
-                    <targetJdk>1.5</targetJdk>
+                    <targetJdk>1.7</targetJdk>
                 </configuration>
             </plugin>
             <plugin>

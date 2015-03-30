@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.Validate;
 
@@ -36,7 +36,6 @@ import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
-import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
@@ -48,7 +47,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageReaderSpi.java,v 1.0 24.01.11 22.12 haraldk Exp$
  */
-public class JPEGImageReaderSpi extends ImageReaderSpi {
+public class JPEGImageReaderSpi extends ImageReaderSpiBase {
     private ImageReaderSpi delegateProvider;
 
     /**
@@ -56,22 +55,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
      * The instance created will not work without being properly registered.
      */
     public JPEGImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(JPEGImageReaderSpi.class));
-    }
-
-    private JPEGImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{"JPEG", "jpeg", "JPG", "jpg"},
-                new String[]{"jpg", "jpeg"},
-                new String[]{"image/jpeg"},
-                "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader",
-                new Class[] {ImageInputStream.class},
-                new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new JPEGProviderInfo());
     }
 
     /**
@@ -80,7 +64,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
      * @param delegateProvider a {@code ImageReaderSpi} that can read JPEG.
      */
     protected JPEGImageReaderSpi(final ImageReaderSpi delegateProvider) {
-        this(IIOUtil.getProviderInfo(JPEGImageReaderSpi.class));
+        this();
 
         this.delegateProvider = Validate.notNull(delegateProvider);
     }
@@ -128,12 +112,12 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     }
 
     @Override
-    public ImageReader createReaderInstance(Object extension) throws IOException {
+    public ImageReader createReaderInstance(final Object extension) throws IOException {
         return new JPEGImageReader(this, delegateProvider.createReaderInstance(extension));
     }
 
     @Override
-    public boolean canDecodeInput(Object source) throws IOException {
+    public boolean canDecodeInput(final Object source) throws IOException {
         return delegateProvider.canDecodeInput(source);
     }
 
@@ -183,17 +167,17 @@ public class JPEGImageReaderSpi extends ImageReaderSpi {
     }
 
     @Override
-    public IIOMetadataFormat getStreamMetadataFormat(String formatName) {
+    public IIOMetadataFormat getStreamMetadataFormat(final String formatName) {
         return delegateProvider.getStreamMetadataFormat(formatName);
     }
 
     @Override
-    public IIOMetadataFormat getImageMetadataFormat(String formatName) {
+    public IIOMetadataFormat getImageMetadataFormat(final String formatName) {
         return delegateProvider.getImageMetadataFormat(formatName);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return delegateProvider.getDescription(locale);
     }
 

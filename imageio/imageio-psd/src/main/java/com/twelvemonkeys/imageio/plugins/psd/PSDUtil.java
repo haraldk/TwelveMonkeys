@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,13 +48,13 @@ import java.util.zip.ZipInputStream;
  */
 final class PSDUtil {
     // TODO: Duplicated code from IFF plugin, move to some common util?
-    static String intToStr(int pChunkId) {
+    static String intToStr(int value) {
         return new String(
                 new byte[]{
-                        (byte) ((pChunkId & 0xff000000) >> 24),
-                        (byte) ((pChunkId & 0x00ff0000) >> 16),
-                        (byte) ((pChunkId & 0x0000ff00) >> 8),
-                        (byte) ((pChunkId & 0x000000ff))
+                        (byte) ((value & 0xff000000) >> 24),
+                        (byte) ((value & 0x00ff0000) >> 16),
+                        (byte) ((value & 0x0000ff00) >> 8),
+                        (byte) ((value & 0x000000ff))
                 }
         );
     }
@@ -73,7 +73,7 @@ final class PSDUtil {
         return StringUtil.decode(bytes, 0, bytes.length, "ASCII");
     }
 
-    // TODO: Proably also useful for PICT reader, move to some common util?
+    // TODO: Probably also useful for PICT reader, move to some common util?
     static String readUnicodeString(final DataInput pInput) throws IOException {
         int length = pInput.readInt();
 
@@ -92,7 +92,6 @@ final class PSDUtil {
     }
 
     static DataInputStream createZipStream(final ImageInputStream pInput, long pLength) {
-        //return new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pInput, pLength), new InflateDecoder()));
         return new DataInputStream(new ZipInputStream(IIOUtil.createStreamAdapter(pInput, pLength)));
     }
 

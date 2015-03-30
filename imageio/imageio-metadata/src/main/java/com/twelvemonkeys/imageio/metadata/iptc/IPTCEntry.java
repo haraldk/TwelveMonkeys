@@ -49,6 +49,12 @@ class IPTCEntry extends AbstractEntry {
                 return "RecordVersion";
             case IPTC.TAG_SOURCE:
                 return "Source";
+            case IPTC.TAG_CAPTION:
+                return "Caption";
+            case IPTC.TAG_COPYRIGHT_NOTICE:
+                return "CopyrightNotice";
+            case IPTC.TAG_BY_LINE:
+                return "ByLine";
             // TODO: More tags...
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDResolutionInfo.java,v 1.0 May 2, 2008 3:58:19 PM haraldk Exp$
  */
-class PSDResolutionInfo extends PSDImageResource {
+final class PSDResolutionInfo extends PSDImageResource {
     //    typedef struct _ResolutionInfo
     //    {
     //       LONG hRes;              /* Fixed-point number: pixels per inch */

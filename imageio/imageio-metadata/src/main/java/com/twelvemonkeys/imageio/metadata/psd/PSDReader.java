@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -134,6 +134,10 @@ public final class PSDReader extends MetadataReader {
             // TODO: This design is ugly, as subclasses readData is invoked BEFORE their respective constructor...
             data = new byte[(int) size];
             pInput.readFully(data);
+        }
+
+        public final int id() {
+            return id;
         }
 
         public final byte[] data() {

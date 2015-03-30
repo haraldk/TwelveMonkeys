@@ -56,6 +56,7 @@ import static org.junit.Assert.*;
 public class JPEGSegmentImageInputStreamTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected URL getClassLoaderResource(final String pName) {
@@ -151,5 +152,29 @@ public class JPEGSegmentImageInputStreamTest {
         }
 
         assertEquals(1061L, length); // Sanity check: same as file size, except padding and the filtered ICC_PROFILE segment
+    }
+
+    @Test
+    public void testEOFExceptionInSegmentParsingShouldNotCreateBadState() throws IOException {
+        ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg")));
+
+        byte[] buffer = new byte[4096];
+
+        // NOTE: This is a simulation of how the native parts of com.sun...JPEGImageReader would read the image...
+        assertEquals(2, iis.read(buffer, 0, buffer.length));
+        assertEquals(2, iis.getStreamPosition());
+
+        iis.seek(0x2012); // bad segment length, should have been 0x0012, not 0x2012
+        assertEquals(0x2012, iis.getStreamPosition());
+
+        // So far, so good (but stream position is now really beyond EOF)...
+
+        // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(0x2012, iis.getStreamPosition());
+
+        // Again, should just continue returning -1 for ever
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(0x2012, iis.getStreamPosition());
     }
 }

@@ -53,6 +53,7 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
@@ -80,6 +81,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Override
     protected List<TestData> getTestData() {
+        // While a lot of these files don't conform to any spec (Exif/JFIF), we will read these.
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
@@ -87,7 +89,24 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(160, 227)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"), new Dimension(640, 480)),
-                new TestData(getClassLoaderResource("/jpeg/jfif-padded-segments.jpg"), new Dimension(20, 45))
+                new TestData(getClassLoaderResource("/jpeg/jfif-padded-segments.jpg"), new Dimension(20, 45)),
+                new TestData(getClassLoaderResource("/jpeg/0x00-to-0xFF-between-segments.jpg"), new Dimension(16, 16)),
+                new TestData(getClassLoaderResource("/jpeg/jfif-bogus-empty-jfif-segment.jpg"), new Dimension(942, 714)),
+                new TestData(getClassLoaderResource("/jpeg/jfif-16bit-dqt.jpg"), new Dimension(204, 131))
+        );
+
+        // More test data in specific tests below
+    }
+
+    protected List<TestData> getBrokenTestData() {
+        // These files are considered too broken to be read (ie. most other software does not read them either).
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg"), new Dimension(467, 612)), // Semi-readable, parts missing
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-marker-bad-length.jpg"), new Dimension(1800, 1200)), // Unreadable, segment lengths are wrong
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440)), // Image readable, broken metadata (fixable?)
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg"), new Dimension(-1, -1)), // Unreadable, can't find SOFn marker
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-sos-before-sof.jpg"), new Dimension(-1, -1)), // Unreadable, can't find SOFn marker
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-segment-length-beyond-eof.jpg"), new Dimension(-1, -1)) // Unreadable, no EOI
         );
 
         // More test data in specific tests below
@@ -108,7 +127,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         }
     }
 
-    @SuppressWarnings({"unchecked"})
     @Override
     protected Class<JPEGImageReader> getReaderClass() {
         return JPEGImageReader.class;
@@ -146,7 +164,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         ImageReadParam param = reader.getDefaultReadParam();
         param.setSourceRegion(new Rectangle(800, 800, 64, 8));
-        param.setSourceSubsampling(8, 8, 1, 1);
+        param.setSourceSubsampling(8, 8, 2, 2);
 
         BufferedImage image = reader.read(0, param);
         assertNotNull(image);
@@ -163,7 +181,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, int actualOffset) {
         for (int i = 0; i < expected.length; i++) {
-            assertEquals(expected[i], actual[i + actualOffset], 5);
+            assertEquals(String.format("Difference in pixel %d", i), expected[i], actual[i + actualOffset], 5);
         }
     }
 
@@ -272,6 +290,29 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     @Test
+    public void testCMYKWithRGBProfile() throws IOException {
+        // File contains JFIF (!), RGB ICC profile AND Adobe App14 specifying unknown conversion,
+        // but image data is 4 channel CMYK (from SOF0 channel Ids 'C', 'M', 'Y', 'K').
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-cmyk-invalid-icc-profile-srgb.jpg")));
+
+        assertEquals(493, reader.getWidth(0));
+        assertEquals(500, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, 493, 16)); // Save some memory
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(493, image.getWidth());
+        assertEquals(16, image.getHeight());
+
+        // TODO: Need to test colors!
+
+        assertFalse(reader.hasThumbnails(0)); // Should not blow up!
+    }
+
+    @Test
     public void testWarningEmbeddedColorProfileInvalidIgnored() throws IOException {
         JPEGImageReader reader = createReader();
         reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/warning-embedded-color-profile-invalid-ignored-cmyk.jpg")));
@@ -373,7 +414,209 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(384, image.getHeight());
 
         reader.dispose();
-   }
+    }
+
+    @Ignore("Known issue in com.sun...JPEGMetadata")
+    @Test
+    public void testStandardMetadataColorSpaceTypeRGBForYCbCr() {
+        // These reports RGB in standard metadata, while the data is really YCbCr.
+        // Exif files are always YCbCr AFAIK.
+        fail("/jpeg/exif-jpeg-thumbnail-sony-dsc-p150-inverted-colors.jpg");
+        fail("/jpeg/exif-pspro-13-inverted-colors.jpg");
+        // Not Exif, but same issue: SOF comp ids are JFIF standard 1-3 and
+        // *should* be interpreted as YCbCr but isn't.
+        // Possible fix for this, is to insert a fake JFIF segment, as this image
+        // conforms to the JFIF spec (but it won't work for the Exif samples)
+        fail("/jpeg/no-jfif-ycbcr.jpg");
+    }
+
+    @Test
+    public void testBrokenReadRasterAfterGetMetadataException() throws IOException {
+        // See issue 107, from PDFBox team
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                try {
+                    reader.getImageMetadata(0);
+                }
+                catch (IOException ignore) {
+                    // Expected IOException here, due to broken file
+//                    ignore.printStackTrace();
+                }
+
+                try {
+                    reader.readRaster(0, null);
+                }
+                catch (IOException expected) {
+                    // Should not throw anything other than IOException here
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testBrokenRead() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                try {
+                    reader.read(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testBrokenGetDimensions() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                Dimension exptectedSize = broken.getDimension(0);
+
+                try {
+                    assertEquals(exptectedSize.width, reader.getWidth(0));
+                    assertEquals(exptectedSize.height, reader.getHeight(0));
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testBrokenGetImageMetadata() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                try {
+                    reader.getImageMetadata(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testImageMetadata1ChannelGrayWithBogusAdobeYCC() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            // Any sample should do here
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-adobe-ycc-gray-with-metadata.jpg")));
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+            IIOMetadataNode chroma = getSingleElementByName(root, "Chroma");
+            IIOMetadataNode numChannels = getSingleElementByName(chroma, "NumChannels");
+            assertEquals("1", numChannels.getAttribute("value"));
+            IIOMetadataNode colorSpaceType = getSingleElementByName(chroma, "ColorSpaceType");
+            assertEquals("GRAY", colorSpaceType.getAttribute("name"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private IIOMetadataNode getSingleElementByName(final IIOMetadataNode root, final String name) {
+        NodeList elements = root.getElementsByTagName(name);
+        assertEquals(1, elements.getLength());
+        return (IIOMetadataNode) elements.item(0);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testGetImageMetadataOutOfBounds() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            // Any sample should do here
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/gray-sample.jpg")));
+            reader.getImageMetadata(-1);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = IIOException.class)
+    public void testBrokenBogusSegmentLengthReadWithDestination() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-bogus-segment-length.jpg")));
+
+            assertEquals(467, reader.getWidth(0));
+            assertEquals(612, reader.getHeight(0));
+
+            ImageTypeSpecifier type = reader.getImageTypes(0).next();
+            BufferedImage image = type.createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setDestination(image);
+
+            try {
+                reader.read(0, param);
+            }
+            catch (IOException e) {
+                // Even if we get an exception here, the image should contain 10-15% of the image
+                assertRGBEquals(0xffffffff, image.getRGB(0, 0));   // white area
+                assertRGBEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
+                assertRGBEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
+
+                throw e;
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 
     @Test
     public void testHasThumbnailNoIFD1() throws IOException {
@@ -912,16 +1155,9 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     public void testReadMetadataEqualReference() throws IOException {
         // Compares the metadata for JFIF-conformant files with metadata from com.sun...JPEGImageReader
         JPEGImageReader reader = createReader();
-        ImageReader referenceReader;
+        ImageReader referenceReader = createReferenceReader();
 
-        try {
-            @SuppressWarnings("unchecked")
-            Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
-            ImageReaderSpi provider = spiClass.newInstance();
-            referenceReader = provider.createReaderInstance();
-        }
-        catch (Throwable t) {
-            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
+        if (referenceReader == null) {
             return;
         }
 
@@ -959,6 +1195,21 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         }
     }
 
+    private ImageReader createReferenceReader() {
+        try {
+            @SuppressWarnings("unchecked")
+            Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+            ImageReaderSpi provider = spiClass.newInstance();
+
+            return provider.createReaderInstance();
+        }
+        catch (Throwable t) {
+            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
+
+            return null;
+        }
+    }
+
     private void assertTreesEquals(String message, Node expectedTree, Node actualTree) {
         if (expectedTree == actualTree) {
             return;
@@ -966,6 +1217,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
         if (expectedTree == null) {
             assertNull(actualTree);
+            return;
         }
 
         assertEquals(String.format("%s: Node names differ", message), expectedTree.getNodeName(), actualTree.getNodeName());
@@ -1107,5 +1359,139 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         );
 
         return sortedNodes;
+    }
+
+    @Test
+    public void testGetNumImagesBogusDataPrepended() throws IOException {
+        // The JPEGImageReader (incorrectly) interprets this image to be a "tables only" image.
+
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-bogus-data-prepended-real-jfif-start-at-4801.jpg")));
+            assertEquals(-1, reader.getNumImages(false)); // Ok
+            assertEquals(0, reader.getNumImages(true));  // Should throw IIOException or return 0
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testNegativeSOSComponentCount() throws IOException {
+        // The data in the stream looks like this:
+        // FF DA 00 08 01 01 01 06 3F 02 0E 70 9A A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 A2 64 05 5D ...
+        // ..but the JPEGBuffer class contains:
+        // FF DA 00 08 A2 A2 A2 A2 A2 64 05 5D 02 87 FC 5B 5C E1 0E BD ...
+        //             *****************??
+        // 15 bytes missing in action! Why?
+        // There's a bug in com.sun.imageio.plugins.jpeg.AdobeMarkerSegment when parsing non-standard length
+        // APP14/Adobe segments (i.e. lengths other than 14) that causes the
+        // com.sun.imageio.plugins.jpeg.JPEGBuffer#loadBuf() method to overwrite parts of the input data
+        // (the difference between the real length and 14, at the end of the stream). This can cause all
+        // sorts of weird problems later, and is a pain to track down (it is probably the real cause for
+        // many of the other issues we've found in the set).
+        // See also: http://bugs.java.com/bugdatabase/view_bug.do?bug_id=6355567
+
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-exif-xmp-adobe-progressive-negative-component-count.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        catch (IIOException knownIssue) {
+            // This shouldn't fail, but the bug is most likely in the JPEGBuffer class
+            assertNotNull(knownIssue.getCause());
+            assertThat(knownIssue.getCause(), new IsInstanceOf(NegativeArraySizeException.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testInconsistentSOSBandCountExceedsSOFBandCount() throws IOException {
+        // Last SOS segment contains (FF DA) 00 08 01 03 03 01 3F 10  (... 18 more ...  F0 7D FB FB 6D)
+        // (14th)                    (SOS)   len 8 |  |  |  |  |  approx high: 1, approx low: 0
+        //                                         |  |  |  |  end spectral selection:
+        //                                         |  |  |  start spectral selection: 1
+        //                                         |  |  dc: 0, ac: 3
+        //                                         |  selector: 3
+        //                                         1 component
+        // Metadata reads completely different values...
+        // FF DA 00 08 01 F0 7D FB FB 6D
+        //                \_ there's 24 bytes MIA (skipped) here, between the length and the actual data read...
+
+        // Seems to be a bug in the AdobeMarkerSegment, it reads 12 bytes always,
+        // then subtracting length from bufferAvail, but *does not update bufPtr to skip the remaining*.
+        // This causes trouble for subsequent JPEGBuffer.loadBuf() calls, because it will overwrite the same
+        // number of bytes *at the end* of the buffer.
+        // This image has a 38 (36) byte App14/Adobe segment.
+        // The length 36 - 12 = 24 (the size of the missing bytes!)
+
+        // TODO: Report bug!
+
+        ImageReader reader = createReader();
+//        ImageReader reader = createReferenceReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/progressive-adobe-sof-bands-dont-match-sos-band-count.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testInvalidDHTIssue() throws IOException {
+        // Image has empty (!) DHT that is okay on read, but not when you set back from tree...
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-progressive-invalid-dht.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testComponentIdOutOfRange() throws IOException {
+        // Image has SOF and SOS component ids that are negative, setFromTree chokes on this...
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-component-id-out-of-range.jpg")));
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            assertNotNull(metadata);
+
+            Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+            assertNotNull(tree);
+            assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        finally {
+            reader.dispose();
+        }
     }
 }

@@ -39,7 +39,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 
 /**
- * Input stream that provides on-the-fly conversion and upsampling of TIFF susampled YCbCr samples to (raw) RGB samples.
+ * Input stream that provides on-the-fly conversion and upsampling of TIFF subsampled YCbCr samples to (raw) RGB samples.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -229,7 +229,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
 
     private void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, final int offset) {
         double y  = (yCbCr[offset    ] & 0xff);
-        double cb = (yCbCr[offset + 1] & 0xff) - 128; // TODO: The -128 part seems bogus... Consult ReferenceBlackWhite??? But default to these values?
+        double cb = (yCbCr[offset + 1] & 0xff) - 128;
         double cr = (yCbCr[offset + 2] & 0xff) - 128;
 
         double lumaRed   = coefficients[0];
@@ -238,7 +238,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
 
         int red = (int) Math.round(cr * (2 - 2 * lumaRed) + y);
         int blue = (int) Math.round(cb * (2 - 2 * lumaBlue) + y);
-        int green = (int) Math.round((y - lumaRed * (rgb[offset] & 0xff) - lumaBlue * (rgb[offset + 2] & 0xff)) / lumaGreen);
+        int green = (int) Math.round((y - lumaRed * red - lumaBlue * blue) / lumaGreen);
 
         rgb[offset    ] = clamp(red);
         rgb[offset + 2] = clamp(blue);
@@ -342,10 +342,5 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
             cmyk[offset + 2] = clamp(cmykY);
             cmyk[offset + 3] = (byte) k; // K passes through unchanged
         }
-
-//        private static byte clamp(int val) {
-//            return (byte) Math.max(0, Math.min(255, val));
-//        }
     }
-
 }

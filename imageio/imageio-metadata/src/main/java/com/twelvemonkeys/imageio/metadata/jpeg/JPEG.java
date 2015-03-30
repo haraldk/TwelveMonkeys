@@ -68,21 +68,35 @@ public interface JPEG {
     int APP15 = 0xFFEF;
 
     // Start of Frame segment markers (SOFn).
+    /** SOF0: Baseline DCT, Huffman coding. */
     int SOF0 = 0xFFC0;
+    /** SOF0: Extended DCT, Huffman coding. */
     int SOF1 = 0xFFC1;
+    /** SOF2: Progressive DCT, Huffman coding. */
     int SOF2 = 0xFFC2;
+    /** SOF3: Lossless sequential, Huffman coding. */
     int SOF3 = 0xFFC3;
+    /** SOF5: Sequential DCT, differential Huffman coding. */
     int SOF5 = 0xFFC5;
+    /** SOF6: Progressive DCT, differential Huffman coding. */
     int SOF6 = 0xFFC6;
+    /** SOF7: Lossless, Differential Huffman coding. */
     int SOF7 = 0xFFC7;
+    /** SOF9: Extended sequential DCT, arithmetic coding. */
     int SOF9 = 0xFFC9;
+    /** SOF10: Progressive DCT, arithmetic coding. */
     int SOF10 = 0xFFCA;
+    /** SOF11: Lossless sequential, arithmetic coding. */
     int SOF11 = 0xFFCB;
+    /** SOF13: Sequential DCT, differential arithmetic coding. */
     int SOF13 = 0xFFCD;
+    /** SOF14: Progressive DCT, differential arithmetic coding. */
     int SOF14 = 0xFFCE;
+    /** SOF15: Lossless, differential arithmetic coding. */
     int SOF15 = 0xFFCF;
 
     // JPEG-LS markers
+    /** SOF55: JPEG-LS. */
     int SOF55 = 0xFFF7; // NOTE: Equal to a normal SOF segment
     int LSE = 0xFFF8;   // JPEG-LS Preset Parameter marker
 

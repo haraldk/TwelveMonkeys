@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
@@ -27,7 +55,7 @@ import static org.junit.Assert.*;
  */
 public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImageReader> {
 
-    static ImageReaderSpi provider = new PSDImageReaderSpi();
+    private static final ImageReaderSpi provider = new PSDImageReaderSpi();
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -48,7 +76,21 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
                 // 1 channel, gray, 16 bit samples
                 new TestData(getClassLoaderResource("/psd/test_gray16.psd"), new Dimension(710, 512)),
                 // 4 channel, CMYK, 16 bit samples
-                new TestData(getClassLoaderResource("/psd/cmyk_16bits.psd"), new Dimension(1000, 275))
+                new TestData(getClassLoaderResource("/psd/cmyk_16bits.psd"), new Dimension(1000, 275)),
+                // 3 channel, RGB, 32 bit samples
+                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5)),
+                // 3 channel, RGB, 8 bit samples ("Large Document Format" aka PSB)
+                new TestData(getClassLoaderResource("/psd/test_original.psb"), new Dimension(710, 512)),
+                // From http://telegraphics.com.au/svn/psdparse/trunk/psd/
+                new TestData(getClassLoaderResource("/psd/adobehq.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq_ind.psd"), new Dimension(341, 512)),
+                // Contains a shorter than normal PrintFlags chunk
+                new TestData(getClassLoaderResource("/psd/adobehq-2.5.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq-3.0.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq-5.5.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq-7.0.psd"), new Dimension(341, 512)),
+                // From https://github.com/kmike/psd-tools/tree/master/tests/psd_files
+                new TestData(getClassLoaderResource("/psd/masks2.psd"), new Dimension(640, 1136)) // TODO: Test read layers!
                 // TODO: Need uncompressed PSD
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
         );
@@ -76,14 +118,20 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
     }
 
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/x-psd");
+        return Arrays.asList(
+                "image/vnd.adobe.photoshop",
+                "application/vnd.adobe.photoshop",
+                "image/x-psd"
+        );
     }
 
+    @Test
     public void testSupportsThumbnail() {
         PSDImageReader imageReader = createReader();
         assertTrue(imageReader.readerSupportsThumbnails());
     }
 
+    @Test
     public void testThumbnailReading() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -98,6 +146,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         assertEquals(96, thumbnail.getHeight());
     }
 
+    @Test
     public void testThumbnailReadingNoInput() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -134,6 +183,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         }
     }
 
+    @Test
     public void testThumbnailReadingOutOfBounds() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -175,6 +225,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         }
     }
 
+    @Test
     public void testThumbnailDimensions() throws IOException {
         PSDImageReader imageReader = createReader();
 
@@ -186,6 +237,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
         assertEquals(96, imageReader.getThumbnailHeight(0, 0));
     }
 
+    @Test
     public void testThumbnailReadListeners() throws IOException {
         PSDImageReader imageReader = createReader();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,7 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDLayerMaskData.java,v 1.0 May 6, 2008 5:15:05 PM haraldk Exp$
  */
-class PSDLayerMaskData {
+final class PSDLayerMaskData {
     private int top;
     private int left;
     private int bottom;
@@ -55,10 +55,11 @@ class PSDLayerMaskData {
     private int realBottom;
     private int realRight;
 
-    PSDLayerMaskData(ImageInputStream pInput, int pSize) throws IOException {
+    PSDLayerMaskData(final ImageInputStream pInput, final int pSize) throws IOException {
         if (pSize != 20 && pSize != 36) {
-            throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expeced 20 or 36)");
+            throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expected 20 or 36)");
         }
+
         top = pInput.readInt();
         left = pInput.readInt();
         bottom = pInput.readInt();

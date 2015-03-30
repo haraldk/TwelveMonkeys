@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -40,7 +40,7 @@ import java.util.Arrays;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDLayerInfo.java,v 1.0 Apr 29, 2008 6:01:12 PM haraldk Exp$
  */
-class PSDLayerInfo {
+final class PSDLayerInfo {
     final int top;
     final int left;
     final int bottom;
@@ -52,7 +52,7 @@ class PSDLayerInfo {
     final PSDChannelSourceDestinationRange[] ranges;
     final String layerName;
 
-    PSDLayerInfo(ImageInputStream pInput) throws IOException {
+    PSDLayerInfo(final boolean largeFormat, final ImageInputStream pInput) throws IOException {
         top = pInput.readInt();
         left = pInput.readInt();
         bottom = pInput.readInt();
@@ -63,17 +63,15 @@ class PSDLayerInfo {
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
-            long length = pInput.readUnsignedInt();
+            long length = largeFormat ? pInput.readLong() : pInput.readUnsignedInt();
 
             channelInfo[i] = new PSDChannelInfo(channelId, length);
         }
 
         blendMode = new PSDLayerBlendMode(pInput);
 
-        // Lenght of layer mask data
+        // Length of layer mask data
         long extraDataSize = pInput.readUnsignedInt();
-        // TODO: Allow skipping the rest here?
-        // pInput.skipBytes(extraDataSize);
 
         // Layer mask/adjustment layer data
         int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or 36 bytes...
@@ -94,7 +92,6 @@ class PSDLayerInfo {
             ranges[i] = new PSDChannelSourceDestinationRange(pInput, (i == 0 ? "Gray" : "Channel " + (i - 1)));
         }
 
-
         layerName = PSDUtil.readPascalString(pInput);
 
         int layerNameSize = layerName.length() + 1;
@@ -106,8 +103,7 @@ class PSDLayerInfo {
             layerNameSize += skip;
         }
 
-        // TODO: There's some data skipped here...
-        // Adjustment layer info etc...
+        // TODO: Consider reading this: Adjustment layer info etc...
         pInput.skipBytes(extraDataSize - layerMaskDataSize - 4 - layerBlendingDataSize - 4 - layerNameSize);
     }
 

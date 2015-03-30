@@ -120,6 +120,16 @@ final class EXIFEntry extends AbstractEntry {
                 return "Artist";
             case TIFF.TAG_HOST_COMPUTER:
                 return "HostComputer";
+            case TIFF.TAG_PREDICTOR:
+                return "Predictor";
+            case TIFF.TAG_TILE_WIDTH:
+                return "TileWidth";
+            case TIFF.TAG_TILE_HEIGTH:
+                return "TileHeight";
+            case TIFF.TAG_TILE_OFFSETS:
+                return "TileOffsets";
+            case TIFF.TAG_TILE_BYTE_COUNTS:
+                return "TileByteCounts";
             case TIFF.TAG_COPYRIGHT:
                 return "Copyright";
             case TIFF.TAG_YCBCR_SUB_SAMPLING:
@@ -130,6 +140,13 @@ final class EXIFEntry extends AbstractEntry {
                 return "ColorMap";
             case TIFF.TAG_EXTRA_SAMPLES:
                 return "ExtraSamples";
+            case TIFF.TAG_SAMPLE_FORMAT:
+                return "SampleFormat";
+
+            case TIFF.TAG_SUB_IFD:
+                return "SubIFD";
+            case TIFF.TAG_SUBFILE_TYPE:
+                return "SubfileType";
 
             case EXIF.TAG_EXPOSURE_TIME:
                 return "ExposureTime";

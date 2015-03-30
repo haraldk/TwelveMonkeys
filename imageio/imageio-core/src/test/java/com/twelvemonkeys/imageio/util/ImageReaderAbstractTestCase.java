@@ -64,12 +64,13 @@ import static org.mockito.Mockito.*;
  * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 Apr 1, 2008 10:36:46 PM haraldk Exp$
  */
 public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
-    // TODO: Should we really test if he provider is installed?
+    // TODO: Should we really test if the provider is installed?
     //       - Pro: Tests the META-INF/services config
     //       - Con: Not all providers should be installed at runtime...
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected abstract List<TestData> getTestData();
@@ -549,6 +550,44 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
     }
 
     @Test
+    public void testReadWithSourceRegionParamEqualImage() throws IOException {
+        // Default invocation
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(3, 3, 9, 9), getTestData().get(0), 0);
+    }
+
+    protected void assertReadWithSourceRegionParamEqualImage(final Rectangle r, final TestData data, final int imageIndex) throws IOException {
+        ImageReader reader = createReader();
+        reader.setInput(data.getInputStream());
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        // Read full image and get sub image for comparison
+        final BufferedImage roi = reader.read(imageIndex, param).getSubimage(r.x, r.y, r.width, r.height);
+
+        param.setSourceRegion(r);
+
+        final BufferedImage image = reader.read(imageIndex, param);
+
+//        try {
+//            SwingUtilities.invokeAndWait(new Runnable() {
+//                public void run() {
+//                    JPanel panel = new JPanel(new FlowLayout());
+//                    panel.add(new JLabel(new BufferedImageIcon(roi, r.width * 10, r.height * 10, true)));
+//                    panel.add(new JLabel(new BufferedImageIcon(image, r.width * 10, r.height * 10, true)));
+//                    JOptionPane.showConfirmDialog(null, panel);
+//                }
+//            });
+//        }
+//        catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+
+        assertNotNull("Image was null!", image);
+        assertEquals("Read image has wrong width: " + image.getWidth(), r.width, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), r.height, image.getHeight());
+        assertImageDataEquals("Images differ", roi, image);
+    }
+
+    @Test
     public void testReadWithSizeAndSourceRegionParam() {
         // TODO: Is this test correct???
         ImageReader reader = createReader();
@@ -597,10 +636,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             failBecause("Image could not be read", e);
         }
         assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(),
-                5, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(),
-                5, image.getHeight());
+        assertEquals("Read image has wrong width: " + image.getWidth(), 5, image.getWidth());
+        assertEquals("Read image has wrong height: " + image.getHeight(), 5, image.getHeight());
 
     }
 

@@ -42,7 +42,7 @@ interface TIFFExtension {
     int COMPRESSION_CCITT_T6 = 4;
     /** LZW Compression. Was baseline, but moved to extension due to license issues in the LZW algorithm. */
     int COMPRESSION_LZW = 5;
-    /** Deprecated. For backwards compatibility only. */
+    /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
     int COMPRESSION_OLD_JPEG = 6;
     /** JPEG Compression (lossy). */
     int COMPRESSION_JPEG = 7;
@@ -69,7 +69,18 @@ interface TIFFExtension {
     int YCBCR_POSITIONING_CENTERED = 1;
     int YCBCR_POSITIONING_COSITED = 2;
 
-    // "Old-style" JPEG (obsolete)
+    /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
     int JPEG_PROC_BASELINE = 1;
+    /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
     int JPEG_PROC_LOSSLESS = 14;
+
+    /** For use with Photometric: 5 (Separated), when image data is in CMYK color space. */
+    int INKSET_CMYK = 1;
+
+    /**
+     * For use with Photometric: 5 (Separated), when image data is in a color space other than CMYK.
+     * See {@link com.twelvemonkeys.imageio.metadata.exif.TIFF#TAG_INK_NAMES InkNames} field for a
+     * description of the inks to be used.
+     */
+    int INKSET_NOT_CMYK = 2;
 }

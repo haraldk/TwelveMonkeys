@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDChannelInfo.java,v 1.0 May 6, 2008 2:46:23 PM haraldk Exp$
  */
-class PSDChannelInfo {
+final class PSDChannelInfo {
     final short channelId;
     final long length;
 

@@ -1,3 +1,31 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
@@ -7,6 +35,7 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * PSDMetadataFormat
@@ -17,7 +46,20 @@ import java.util.Arrays;
  */
 public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
-    private final static PSDMetadataFormat sInstance = new PSDMetadataFormat();
+    private static final PSDMetadataFormat instance = new PSDMetadataFormat();
+
+    static final List<String> PSD_BLEND_MODES = Arrays.asList(
+            PSDUtil.intToStr(PSD.BLEND_PASS), PSDUtil.intToStr(PSD.BLEND_NORM), PSDUtil.intToStr(PSD.BLEND_DISS),
+            PSDUtil.intToStr(PSD.BLEND_DARK), PSDUtil.intToStr(PSD.BLEND_MUL), PSDUtil.intToStr(PSD.BLEND_IDIV),
+            PSDUtil.intToStr(PSD.BLEND_LBRN), PSDUtil.intToStr(PSD.BLEND_DKCL), PSDUtil.intToStr(PSD.BLEND_LITE),
+            PSDUtil.intToStr(PSD.BLEND_SCRN), PSDUtil.intToStr(PSD.BLEND_DIV), PSDUtil.intToStr(PSD.BLEND_LDDG),
+            PSDUtil.intToStr(PSD.BLEND_LGCL), PSDUtil.intToStr(PSD.BLEND_OVER), PSDUtil.intToStr(PSD.BLEND_SLIT),
+            PSDUtil.intToStr(PSD.BLEND_HLIT), PSDUtil.intToStr(PSD.BLEND_VLIT), PSDUtil.intToStr(PSD.BLEND_LLIT),
+            PSDUtil.intToStr(PSD.BLEND_PLIT), PSDUtil.intToStr(PSD.BLEND_HMIX), PSDUtil.intToStr(PSD.BLEND_DIFF),
+            PSDUtil.intToStr(PSD.BLEND_SMUD), PSDUtil.intToStr(PSD.BLEND_FSUB), PSDUtil.intToStr(PSD.BLEND_FDIV),
+            PSDUtil.intToStr(PSD.BLEND_HUE), PSDUtil.intToStr(PSD.BLEND_SAT), PSDUtil.intToStr(PSD.BLEND_COLR),
+            PSDUtil.intToStr(PSD.BLEND_LUM)
+    );
 
     /**
      * Private constructor.
@@ -186,13 +228,35 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // TODO: Incorporate XMP metadata here somehow (or treat as opaque bytes?)
         addObjectValue("XMP", Document.class, true, null);
 
-        // TODO: Layers
-        //addElement("ChannelSourceDestinationRange", "LayerSomething", CHILD_POLICY_CHOICE);
+        // root -> Layers
+        addElement("Layers", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_REPEAT);
 
-        // TODO: Global layer mask info
+        // root -> Layers -> LayerInfo
+        addElement("LayerInfo", "Layers", CHILD_POLICY_REPEAT);
+        addAttribute("LayerInfo", "name", DATATYPE_STRING, false, "");
+        addAttribute("LayerInfo", "top", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "left", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "bottom", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "right", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "blendmode", DATATYPE_STRING, false, PSDUtil.intToStr(PSD.BLEND_NORM), PSD_BLEND_MODES);
+        addAttribute("LayerInfo", "opacity", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "clipping", DATATYPE_STRING, false, "base", Arrays.asList("base", "non-base"));
+        addAttribute("LayerInfo", "flags", DATATYPE_INTEGER, false, "0");
+
+        // Redundant (derived from flags)
+        addAttribute("LayerInfo", "transparencyProtected", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "visible", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "obsolete", DATATYPE_BOOLEAN, false, "false"); // Spec doesn't say if the flag is obsolete, or if this means the layer is obsolete...?
+        addAttribute("LayerInfo", "pixelDataIrrelevant", DATATYPE_BOOLEAN, false, "false");
+
+
+        // root -> GlobalLayerMask
+        addElement("GlobalLayerMask", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
+        addAttribute("GlobalLayerMask", "colorSpace", DATATYPE_INTEGER, false, "0");
+        addAttribute("GlobalLayerMask", "colors", DATATYPE_INTEGER, false, 4, 4);
+        addAttribute("GlobalLayerMask", "opacity", DATATYPE_INTEGER, false, "0");
+        addAttribute("GlobalLayerMask", "kind", DATATYPE_STRING, false, "layer", Arrays.asList("selected", "protected", "layer"));
     }
-
-
 
     @Override
     public boolean canNodeAppear(final String elementName, final ImageTypeSpecifier imageType) {
@@ -207,6 +271,6 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
      * @see javax.imageio.metadata.IIOMetadata#getMetadataFormat
      */
     public static PSDMetadataFormat getInstance() {
-        return sInstance;
+        return instance;
     }
 }

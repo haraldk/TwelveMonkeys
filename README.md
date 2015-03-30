@@ -49,15 +49,27 @@ Mainstream format support
 If you are one of the authors, or know one of the authors and/or the current license holders of either the original jj2000 package or the JAI ImageIO project, please contact me
 (I've tried to get in touch in various ways, without success so far).
 
+#### NetPBM Portable Any Map (PNM) *3.1*
+
+* Read support for the following file types:
+  * PBM in 'P1' (ASCII) and 'P4' (binary) formats, 1 bit per pixel
+  * PGM in 'P2' (ASCII) and 'P5' (binary) formats, up to 16/32 bits per pixel
+  * PPM in 'P3' (ASCII) and 'P6' (binary) formats, up to 16/32 bits per pixel component
+  * PAM in 'P7' (binary) format up to 32 bits per pixel component
+  * Limited support for PFM in 'Pf' (gray) and 'PF' (RGB) formats, 32 bits floating point
+* Write support for the following formats:
+  * PPM in 'P6' (binary) format
+  * PAM in 'P7' (binary) format
+
 #### Adobe Photoshop Document (PSD)
 
 * Read support for the following file types:
   * Monochrome, 1 channel, 1 bit
   * Indexed, 1 channel, 8 bit
-  * Gray, 1 channel, 8 and 16 bit
-  * Duotone, 1 channel, 8 and 16 bit
-  * RGB, 3-4 channels, 8 and 16 bit
-  * CMYK, 4-5 channels, 8 and 16 bit
+  * Gray, 1 channel, 8, 16 and 32 bit
+  * Duotone, 1 channel, 8, 16 and 32 bit
+  * RGB, 3-4 channels, 8, 16 and 32 bit
+  * CMYK, 4-5 channels, 8, 16 and 32 bit
 * Read support for the following compression types:
   * Uncompressed
   * RLE (PackBits)
@@ -66,6 +78,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Thumbnail support
   * JPEG
   * RAW (RGB)
+* Support for "Large Document Format" (PSB)
 
 #### Aldus/Adobe Tagged Image File Format (TIFF)
 
@@ -92,16 +105,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Write support in progress
   * Will support writing most "Baseline" TIFF file types
 
-#### Apple Mac Paint Picture Format (PICT)
-
-* Legacy format, especially useful for reading OS X clipboard data.
-* Read support for the following file types:
-  * QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
-  * QuickDraw bitmap
-  * QuickDraw pixmap
-  * QuickTime stills
-* Write support for RGB pixel data:
-  * QuickDraw pixmap
+Legacy formats
 
 #### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
 
@@ -120,6 +124,47 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Support for the following compression types (read/write):
   * Uncompressed
   * RLE (PackBits)
+
+#### ZSoft Paintbrush Format (PCX) *3.1*
+
+* Read support for the following file types:
+  * Indexed color, 1, 2, 4 or 8 bits per pixel, bit planes or interleaved
+  * Grayscale, 8 bits per pixel
+  * Color (RGB), 8 bits per pixel component
+* Read support for DCX (multi-page) fax format, containing any of the above types
+* Support for the following compression types:
+  * Uncompressed (experimental)
+  * RLE compressed
+
+#### Apple Mac Paint Picture Format (PICT)
+
+* Legacy format, especially useful for reading OS X clipboard data.
+* Read support for the following file types:
+  * QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
+  * QuickDraw bitmap
+  * QuickDraw pixmap
+  * QuickTime stills
+* Write support for RGB pixel data:
+  * QuickDraw pixmap
+
+#### Silicon Graphics Image Format (SGI) *3.1*
+
+* Read support for the following file types:
+  * 1, 2, 3 or 4 channel image data
+  * 8 or 16 bits per pixel component
+* Support for the following compression types:
+  * Uncompressed
+  * RLE compressed
+
+#### Truevision TGA Image Format (TGA) *3.1*
+
+* Read support for the following file types:
+  * ColorMapped
+  * Monochrome
+  * TrueColor
+* Support for the following compression types:
+  * Uncompressed
+  * RLE compressed
 
 Icon/other formats
 
@@ -383,12 +428,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.0-rc-5</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0.2</version> <!-- Alternatively, build your own version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.0-rc-5</version> <!-- Alternatively, build your own 3.0-something version -->
+            <version>3.0.2</version> <!-- Alternatively, build your own version -->
         </dependency>
     </dependencies>
 
@@ -396,41 +441,41 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.0-rc-5.jar
-    twelvemonkeys-common-io-3.0-rc-5.jar
-    twelvemonkeys-common-image-3.0-rc-5.jar
-    twelvemonkeys-imageio-core-3.0-rc-5.jar
-    twelvemonkeys-imageio-metadata-3.0-rc-5.jar
-    twelvemonkeys-imageio-jpeg-3.0-rc-5.jar
-    twelvemonkeys-imageio-tiff-3.0-rc-5.jar
+    twelvemonkeys-common-lang-3.0.2.jar
+    twelvemonkeys-common-io-3.0.2.jar
+    twelvemonkeys-common-image-3.0.2.jar
+    twelvemonkeys-imageio-core-3.0.2.jar
+    twelvemonkeys-imageio-metadata-3.0.2.jar
+    twelvemonkeys-imageio-jpeg-3.0.2.jar
+    twelvemonkeys-imageio-tiff-3.0.2.jar
 
 ### Links to prebuilt binaries
 
 Common dependencies
-* [common-lang-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0-rc5/common-lang-3.0-rc5.jar)
-* [common-io-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0-rc5/common-io-3.0-rc5.jar)
-* [common-image-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0-rc5/common-image-3.0-rc5.jar)
+* [common-lang-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0.2/common-lang-3.0.2.jar)
+* [common-io-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0.2/common-io-3.0.2.jar)
+* [common-image-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0.2/common-image-3.0.2.jar)
 
 ImageIO dependencies
-* [imageio-core-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0-rc5/imageio-core-3.0-rc5.jar)
-* [imageio-metadata-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0-rc5/imageio-metadata-3.0-rc5.jar)
+* [imageio-core-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0.2/imageio-core-3.0.2.jar)
+* [imageio-metadata-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0.2/imageio-metadata-3.0.2.jar)
 
 ImageIO plugins
-* [imageio-jpeg-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0-rc5/imageio-jpeg-3.0-rc5.jar)
-* [imageio-tiff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0-rc5/imageio-tiff-3.0-rc5.jar)
-* [imageio-psd-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0-rc5/imageio-psd-3.0-rc5.jar)
-* [imageio-pict-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0-rc5/imageio-pict-3.0-rc5.jar)
-* [imageio-iff-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0-rc5/imageio-iff-3.0-rc5.jar)
-* [imageio-icns-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0-rc5/imageio-icns-3.0-rc5.jar)
-* [imageio-ico-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0-rc5/imageio-ico-3.0-rc5.jar)
-* [imageio-thumbsdb-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0-rc5/imageio-thumbsdb-3.0-rc5.jar)
+* [imageio-jpeg-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0.2/imageio-jpeg-3.0.2.jar)
+* [imageio-tiff-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0.2/imageio-tiff-3.0.2.jar)
+* [imageio-psd-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0.2/imageio-psd-3.0.2.jar)
+* [imageio-pict-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0.2/imageio-pict-3.0.2.jar)
+* [imageio-iff-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0.2/imageio-iff-3.0.2.jar)
+* [imageio-icns-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0.2/imageio-icns-3.0.2.jar)
+* [imageio-ico-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0.2/imageio-ico-3.0.2.jar)
+* [imageio-thumbsdb-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0.2/imageio-thumbsdb-3.0.2.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0-rc5/imageio-batik-3.0-rc5.jar)
-* [imageio-jmagick-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0-rc5/imageio-jmagick-3.0-rc5.jar)
+* [imageio-batik-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0.2/imageio-batik-3.0.2.jar)
+* [imageio-jmagick-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0.2/imageio-jmagick-3.0.2.jar)
 
 Servlet support
-* [servlet-3.0-rc5.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0-rc5/servlet-3.0-rc5.jar)
+* [servlet-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0.2/servlet-3.0.2.jar)
 
 ## License
 
@@ -487,13 +532,11 @@ Should you want to use very specific/advanced features of some of the formats, y
 
 q: How does it work?
 
-a: The TwelveMonkeys ImageIO project contains plug-ins for ImageIO.
-
-ImageIO uses a service lookup mechanism, to discover plug-ins at runtime.
-
-TODO: Describe SPI mechanism.
+a: The TwelveMonkeys ImageIO project contains plug-ins for ImageIO. ImageIO uses a service lookup mechanism, to discover plug-ins at runtime. 
 
 All you have have to do, is to make sure you have the TwelveMonkeys JARs in your classpath.
+
+You can read more about the registry and the lookup mechanism in the [IIORegistry API doc](http://docs.oracle.com/javase/7/docs/api/javax/imageio/spi/IIORegistry.html).
 
 The fine print: The TwelveMonkeys service providers for TIFF and JPEG overrides the onRegistration method, and
 utilizes the pairwise partial ordering mechanism of the IIOServiceRegistry to make sure it is installed before

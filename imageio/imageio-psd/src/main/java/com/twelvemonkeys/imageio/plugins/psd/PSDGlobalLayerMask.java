@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,30 +38,24 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDGlobalLayerMask.java,v 1.0 May 8, 2008 5:33:48 PM haraldk Exp$
  */
-class PSDGlobalLayerMask {
+final class PSDGlobalLayerMask {
     final int colorSpace;
-    final int color1;
-    final int color2;
-    final int color3;
-    final int color4;
+    final short[] colors = new short[4];
     final int opacity;
     final int kind;
 
-    PSDGlobalLayerMask(final ImageInputStream pInput) throws IOException {
+    PSDGlobalLayerMask(final ImageInputStream pInput, final long globalLayerMaskLength) throws IOException {
         colorSpace = pInput.readUnsignedShort(); // Undocumented
 
-        color1 = pInput.readUnsignedShort();
-        color2 = pInput.readUnsignedShort();
-        color3 = pInput.readUnsignedShort();
-        color4 = pInput.readUnsignedShort();
+        pInput.readFully(colors, 0, colors.length);
 
         opacity = pInput.readUnsignedShort(); // 0-100
 
-        kind = pInput.readUnsignedByte(); // 0: Selected (ie inverted), 1: Color protected, 128: Use value stored per layer
+        // Kind: 0: Selected (ie inverted), 1: Color protected, 128: Use value stored per layer (actually, the value is 80, not 0x80)
+        kind = pInput.readUnsignedByte();
 
-        // TODO: Variable: Filler zeros 
-
-        pInput.readByte(); // Pad
+        // Skip "Variable: Filler zeros"
+        pInput.skipBytes(globalLayerMaskLength - 17);
     }
 
     @Override
@@ -69,13 +63,20 @@ class PSDGlobalLayerMask {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append("[");
         builder.append("color space: 0x").append(Integer.toHexString(colorSpace));
-        builder.append(", colors: [0x").append(Integer.toHexString(color1));
-        builder.append(", 0x").append(Integer.toHexString(color2));
-        builder.append(", 0x").append(Integer.toHexString(color3));
-        builder.append(", 0x").append(Integer.toHexString(color4));
+        builder.append(", colors: [");
+
+        for (int i = 0; i < colors.length; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+
+            builder.append("0x").append(Integer.toHexString(colors[i]));
+        }
+
         builder.append("], opacity: ").append(opacity);
         builder.append(", kind: ").append(kind);
         builder.append("]");
+
         return builder.toString();
     }
 }
