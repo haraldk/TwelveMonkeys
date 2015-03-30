@@ -39,16 +39,20 @@ import java.util.Locale;
  * @version $Id: TIFFImageWriteParam.java,v 1.0 18.09.13 12:47 haraldk Exp$
  */
 public final class TIFFImageWriteParam extends ImageWriteParam {
-    // TODO: Support no compression (None/1)
-    // TODO: Support ZLIB (/Deflate) compression (8)
-    // TODO: Support PackBits compression (32773)
-    // TODO: Support JPEG compression (7)
-    // TODO: Support CCITT Modified Huffman compression (2)
-    // TODO: Support LZW compression (5)?
+    // TODO: Support CCITT Modified Huffman compression (2) BASELINE!!
+    // TODO: Support CCITT T.4 (3)
+    // TODO: Support CCITT T.6 (4)
     // TODO: Support JBIG compression via ImageIO plugin/delegate?
     // TODO: Support JPEG2000 compression via ImageIO plugin/delegate?
     // TODO: Support tiling
-    // TODO: Support predictor. See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
+    // TODO: Support OPTIONAL predictor. See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
+
+    // DONE:
+    // Support no compression (None/1)
+    // Support ZLIB (/Deflate) compression (8)
+    // Support PackBits compression (32773)
+    // Support LZW compression (5)?
+    // Support JPEG compression (7)
 
     TIFFImageWriteParam() {
         this(Locale.getDefault());
@@ -59,7 +63,12 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
 
         // NOTE: We use the same spelling/casing as the JAI equivalent to be as compatible as possible
         // See: http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/TIFFImageWriteParam.html
-        compressionTypes = new String[] {"None", /* "CCITT RLE", "CCITT T.4", "CCITT T.6", */  "LZW", "JPEG", "ZLib", "PackBits", "Deflate", /* "EXIF JPEG" */ };
+        compressionTypes = new String[] {
+                "None",
+                null, null, null,/* "CCITT RLE", "CCITT T.4", "CCITT T.6", */
+                "LZW", "JPEG", "ZLib", "PackBits", "Deflate",
+                null/* "EXIF JPEG" */ // A well-defined form of "Old-style JPEG", no tables/process, only 513 (offset) and 514 (length)
+        };
         compressionType = compressionTypes[0];
         canWriteCompressed = true;
     }
@@ -102,6 +111,9 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
         else if (param.getCompressionType().equals("JPEG")) {
             return TIFFExtension.COMPRESSION_JPEG;
         }
+//        else if (param.getCompressionType().equals("EXIF JPEG")) {
+//            return TIFFExtension.COMPRESSION_OLD_JPEG;
+//        }
 
         throw new IllegalArgumentException(String.format("Unsupported compression type: %s", param.getCompressionType()));
     }

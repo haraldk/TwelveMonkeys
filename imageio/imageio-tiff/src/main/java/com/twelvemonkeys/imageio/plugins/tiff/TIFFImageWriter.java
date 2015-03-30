@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFWriter;
 import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
@@ -157,10 +158,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 entries.add(new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, TIFFBaseline.EXTRASAMPLE_UNSPECIFIED));
             }
         }
+
         // Write compression field from param or metadata
         int compression = TIFFImageWriteParam.getCompressionType(param);
         entries.add(new TIFFEntry(TIFF.TAG_COMPRESSION, compression));
-        // TODO: Let param control
+        // TODO: Let param control predictor
         switch (compression) {
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
@@ -169,7 +171,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
             default:
         }
 
-        int photometric = getPhotometricInterpretation(colorModel);
+        int photometric = compression == TIFFExtension.COMPRESSION_JPEG ?
+                          TIFFExtension.PHOTOMETRIC_YCBCR :
+                          getPhotometricInterpretation(colorModel);
         entries.add(new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, photometric));
 
         if (photometric == TIFFBaseline.PHOTOMETRIC_PALETTE && colorModel instanceof IndexColorModel) {
@@ -179,9 +183,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
         else {
             entries.add(new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numComponents));
 
-            // TODO: What is the default TIFF color space?
+            // Note: Assuming sRGB to be the default RGB interpretation
             ColorSpace colorSpace = colorModel.getColorSpace();
-            if (colorSpace instanceof ICC_ColorSpace) {
+            if (colorSpace instanceof ICC_ColorSpace && !colorSpace.isCS_sRGB()) {
                 entries.add(new TIFFEntry(TIFF.TAG_ICC_PROFILE, ((ICC_ColorSpace) colorSpace).getProfile().getData()));
             }
         }
@@ -228,8 +232,26 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         // TODO: Create compressor stream per Tile/Strip
-        // Write image data
-        writeImageData(createCompressorStream(renderedImage, param), renderedImage, numComponents, bandOffsets, bitOffsets);
+        if (compression == TIFFExtension.COMPRESSION_JPEG) {
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
+            if (!writers.hasNext()) {
+                // This can only happen if someone deliberately uninstalled it
+                throw new IIOException("No JPEG ImageWriter found!");
+            }
+
+            ImageWriter jpegWriter = writers.next();
+            try {
+                jpegWriter.setOutput(new SubImageOutputStream(imageOutput));
+                jpegWriter.write(renderedImage);
+            }
+            finally {
+                jpegWriter.dispose();
+            }
+        }
+        else {
+            // Write image data
+            writeImageData(createCompressorStream(renderedImage, param), renderedImage, numComponents, bandOffsets, bitOffsets);
+        }
 
         // TODO: Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
@@ -304,7 +326,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
         output.length: 12600399
          */
 
-        // TODO: Use predictor only by default for -PackBits,- LZW and ZLib/Deflate, unless explicitly disabled (ImageWriteParam)
+        // Use predictor by default for LZW and ZLib/Deflate
+        // TODO: Unless explicitly disabled in TIFFImageWriteParam
         int compression = TIFFImageWriteParam.getCompressionType(param);
         OutputStream stream;
 
@@ -321,7 +344,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
-                int deflateSetting = Deflater.BEST_SPEED; // This is consistent with default compression quality being 1.0 and 0 meaning max compression....
+                int deflateSetting = Deflater.BEST_SPEED; // This is consistent with default compression quality being 1.0 and 0 meaning max compression...
                 if (param.getCompressionMode() == ImageWriteParam.MODE_EXPLICIT) {
                     // TODO: Determine how to interpret compression quality...
                     // Docs says:
@@ -740,4 +763,5 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         TIFFImageReader.showIt(read, output.getName());
     }
+
 }
