@@ -31,9 +31,13 @@ package com.twelvemonkeys.imageio.plugins.svg;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.awt.image.ImagingOpException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -109,5 +113,23 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
     @Override
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
         super.testReadWithSourceRegionParamEqualImage();
+    }
+    
+    @Test
+    public void testRepeatedRead() throws IOException {
+    	Dimension dim = new Dimension(100, 100);
+    	ImageReader reader = createReader();
+    	ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRenderSize(dim);
+    	
+    	TestData redSquare = new TestData(getClassLoaderResource("/svg/red-square.svg"), dim);
+        reader.setInput(redSquare.getInputStream());
+        BufferedImage imageRed = reader.read(0, param);
+        assertEquals(0xFF0000, imageRed.getRGB(50, 50) & 0xFFFFFF);
+        
+        TestData blueSquare = new TestData(getClassLoaderResource("/svg/blue-square.svg"), dim);
+        reader.setInput(blueSquare.getInputStream());
+        BufferedImage imageBlue = reader.read(0, param);
+        assertEquals(0x0000FF, imageBlue.getRGB(50, 50) & 0xFFFFFF);
     }
 }
