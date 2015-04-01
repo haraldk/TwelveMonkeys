@@ -156,10 +156,12 @@ final class JPEGImage10MetadataCleaner {
         }
 
         // Special case: Broken AdobeDCT segment, inconsistent with SOF, use values from SOF
-        if (adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4) {
+        if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4 ||
+                adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() < 3)) {
             reader.processWarningOccurred(String.format(
-                    "Invalid Adobe App14 marker. Indicates YCCK/CMYK data, but SOF%d has %d color components. " +
+                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
                             "Ignoring Adobe App14 marker.",
+                    adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
                     sof.marker & 0xf, sof.componentsInFrame()
             ));
 
@@ -231,6 +233,26 @@ final class JPEGImage10MetadataCleaner {
             markerSequence.insertBefore(unknown, next);
         }
 
+        // Known issues in the com.sun classes, if sof/sos component id or selector is negative,
+        // setFromTree will fail. We'll fix the range from -128...127 to be 0...255.
+        NodeList sofs = markerSequence.getElementsByTagName("sof");
+
+        if (sofs.getLength() > 0) {
+            NodeList components = sofs.item(0).getChildNodes();
+            for (int i = 0; i < components.getLength(); i++) {
+                forceComponentIdInRange((IIOMetadataNode) components.item(i), "componentId");
+            }
+        }
+
+        NodeList sos = markerSequence.getElementsByTagName("sos");
+
+        for (int i = 0; i < sos.getLength(); i++) {
+            NodeList specs = sos.item(i).getChildNodes();
+            for (int j = 0; j < specs.getLength(); j++) {
+                forceComponentIdInRange((IIOMetadataNode) specs.item(j), "componentSelector");
+            }
+        }
+
         // Inconsistency issue in the com.sun classes, it can read metadata with dht containing
         // more than 4 children, but will not allow setting such a tree...
         // We'll split AC/DC tables into separate dht nodes.
@@ -239,7 +261,12 @@ final class JPEGImage10MetadataCleaner {
             Node dht = dhts.item(j);
             NodeList dhtables = dht.getChildNodes();
 
-            if (dhtables.getLength() > 4) {
+            if (dhtables.getLength() < 1) {
+                // Why is there an empty DHT node?
+                dht.getParentNode().removeChild(dht);
+                reader.processWarningOccurred("Metadata contains empty dht node. Ignoring.");
+            }
+            else if (dhtables.getLength() > 4) {
                 IIOMetadataNode acTables = new IIOMetadataNode("dht");
                 dht.getParentNode().insertBefore(acTables, dht.getNextSibling());
 
@@ -260,6 +287,8 @@ final class JPEGImage10MetadataCleaner {
         }
         catch (IIOInvalidTreeException e) {
             if (JPEGImageReader.DEBUG) {
+                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0), false);
+                System.out.println("-- 8< --");
                 new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
             }
 
@@ -267,5 +296,30 @@ final class JPEGImage10MetadataCleaner {
         }
 
         return imageMetadata;
+    }
+
+    private void forceComponentIdInRange(final IIOMetadataNode component, final String attributeName) {
+        String attribute = component.getAttribute(attributeName);
+
+        if (attribute != null) {
+            try {
+                int componentId = Integer.parseInt(attribute);
+
+                if (componentId < 0) {
+                    // Metadata doesn't like negative component ids/specs
+                    // We'll convert to the positive value it probably should have been
+                    componentId = ((byte) componentId) & 0xff;
+                    component.setAttribute(attributeName, String.valueOf(componentId));
+                }
+            }
+            catch (NumberFormatException ignore) {
+                if ("scanComponentSpec".equals(component.getNodeName())) {
+                    reader.processWarningOccurred("Bad SOS component selector: " + attribute);
+                }
+                else {
+                    reader.processWarningOccurred("Bad SOF component id: " + attribute);
+                }
+            }
+        }
     }
 }

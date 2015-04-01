@@ -26,15 +26,18 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderAbstractTestCase;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.Encoder;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
 
@@ -46,6 +49,8 @@ import static org.junit.Assert.*;
  * @version $Id: LZWDecoderTest.java,v 1.0 08.05.12 23:44 haraldk Exp$
  */
 public class LZWDecoderTest extends DecoderAbstractTestCase {
+
+    public static final int SPEED_TEST_ITERATIONS = 1024;
 
     @Test
     public void testIsOldBitReversedStreamTrue() throws IOException {
@@ -78,13 +83,6 @@ public class LZWDecoderTest extends DecoderAbstractTestCase {
         int data;
 
         try {
-//            long toSkip = 3800;
-//            while ((toSkip -= expected.skip(toSkip)) > 0) {
-//            }
-//            toSkip = 3800;
-//            while ((toSkip -= actual.skip(toSkip)) > 0) {
-//            }
-
             while ((data = actual.read()) !=  -1) {
                 count++;
 
@@ -106,7 +104,28 @@ public class LZWDecoderTest extends DecoderAbstractTestCase {
 
     @Override
     public Encoder createCompatibleEncoder() {
-        // Don't have an encoder yet
+        // TODO: Need to know length of data to compress in advance...
         return null;
+    }
+
+    @Ignore
+    @Test(timeout = 3000)
+    public void testSpeed() throws IOException {
+        byte[] bytes = FileUtil.read(getClass().getResourceAsStream("/lzw/lzw-long.bin"));
+
+
+        for (int i = 0; i < SPEED_TEST_ITERATIONS; i++) {
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            ByteArrayInputStream input = new ByteArrayInputStream(bytes);
+            LZWDecoder decoder = new LZWDecoder.LZWSpecDecoder();
+
+            int read, total = 0;
+            while((read = decoder.decode(input, buffer)) > 0) {
+                buffer.clear();
+                total += read;
+            }
+
+            assertEquals(49152, total);
+        }
     }
 }

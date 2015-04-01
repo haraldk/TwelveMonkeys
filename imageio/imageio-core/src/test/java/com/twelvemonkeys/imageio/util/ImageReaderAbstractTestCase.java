@@ -70,6 +70,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected abstract List<TestData> getTestData();

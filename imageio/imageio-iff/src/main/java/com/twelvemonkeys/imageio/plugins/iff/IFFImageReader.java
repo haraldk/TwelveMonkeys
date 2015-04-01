@@ -113,7 +113,7 @@ public class IFFImageReader extends ImageReaderBase {
     private DataInputStream byteRunStream;
 
     public IFFImageReader() {
-        super(IFFImageReaderSpi.sharedProvider());
+        super(new IFFImageReaderSpi());
     }
 
     protected IFFImageReader(ImageReaderSpi pProvider) {

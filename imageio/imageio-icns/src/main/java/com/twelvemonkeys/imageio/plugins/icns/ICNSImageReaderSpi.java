@@ -28,11 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.icns;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -44,28 +42,9 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: ICNSImageReaderSpi.java,v 1.0 25.10.11 18:41 haraldk Exp$
  */
-public final class ICNSImageReaderSpi extends ImageReaderSpi{
+public final class ICNSImageReaderSpi extends ImageReaderSpiBase {
     public ICNSImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(ICNSImageReaderSpi.class));
-    }
-
-    private ICNSImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"icns", "ICNS"},
-                new String[]{"icns"},
-                new String[]{
-                        "image/x-apple-icons",               // Common extension MIME
-                },
-                "com.twelvemonkeys.imageio.plugins.icns.ICNSImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, null, null, null, null,
-                true,
-                null, null,
-                null, null
-        );
+        super(new ICNSProviderInfo());
     }
 
     @Override

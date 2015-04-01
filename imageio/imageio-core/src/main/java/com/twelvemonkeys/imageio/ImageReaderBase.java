@@ -179,8 +179,10 @@ public abstract class ImageReaderBase extends ImageReader {
         if (index < getMinIndex()) {
             throw new IndexOutOfBoundsException("index < minIndex");
         }
-        else if (getNumImages(false) != -1 && index >= getNumImages(false)) {
-            throw new IndexOutOfBoundsException("index >= numImages (" + index + " >= " + getNumImages(false) + ")");
+
+        int numImages = getNumImages(false);
+        if (numImages != -1 && index >= numImages) {
+            throw new IndexOutOfBoundsException("index >= numImages (" + index + " >= " + numImages + ")");
         }
     }
 

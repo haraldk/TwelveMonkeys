@@ -6,6 +6,8 @@ import org.mockito.InOrder;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.event.IIOReadProgressListener;
@@ -23,9 +25,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 /**
  * BMPImageReaderTest
@@ -168,6 +168,21 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
             }
 
             assertTrue("ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
+        }
+    }
+
+    @Test(expected = IIOException.class)
+    public void testReadCorruptCausesIIOException() throws IOException {
+        // See https://bugs.openjdk.java.net/browse/JDK-8066904
+        // NullPointerException when calling ImageIO.read(InputStream) with corrupt BMP
+        BMPImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-bmp/corrupted-bmp.bmp")));
+            reader.read(0);
+        }
+        finally {
+            reader.dispose();
         }
     }
 

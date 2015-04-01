@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
@@ -43,19 +42,19 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
      * Creates a {@code PNMImageReaderSpi}.
      */
     public PNMImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(PNMImageReaderSpi.class));
+        this(new PNMProviderInfo());
     }
 
     private PNMImageReaderSpi(final ProviderInfo providerInfo) {
         super(
                 providerInfo.getVendorName(),
                 providerInfo.getVersion(),
-                new String[]{
-                        "pnm", "pbm", "pgm", "ppm", "pam",
-                        "PNM", "PBM", "PGM", "PPM", "PAM"
+                new String[] {
+                        "pnm", "pbm", "pgm", "ppm", "pam", "pfm",
+                        "PNM", "PBM", "PGM", "PPM", "PAM", "PFM"
                 },
-                new String[]{"pbm", "pgm", "ppm", "pam"},
-                new String[]{
+                new String[] {"pbm", "pgm", "ppm", "pam", "pfm"},
+                new String[] {
                         // No official IANA record exists, these are conventional
                         "image/x-portable-pixmap",
                         "image/x-portable-anymap",
@@ -63,7 +62,7 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
                 },
                 "com.twelvemkonkeys.imageio.plugins.pnm.PNMImageReader",
                 new Class[] {ImageInputStream.class},
-                new String[]{
+                new String[] {
                         "com.twelvemkonkeys.imageio.plugins.pnm.PNMImageWriterSpi",
                         "com.twelvemkonkeys.imageio.plugins.pnm.PAMImageWriterSpi"
                 },
@@ -76,7 +75,8 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
         );
     }
 
-    @Override public boolean canDecodeInput(final Object source) throws IOException {
+    @Override
+    public boolean canDecodeInput(final Object source) throws IOException {
         if (!(source instanceof ImageInputStream)) {
             return false;
         }
@@ -109,11 +109,13 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
         }
     }
 
-    @Override public ImageReader createReaderInstance(final Object extension) throws IOException {
+    @Override
+    public ImageReader createReaderInstance(final Object extension) throws IOException {
         return new PNMImageReader(this);
     }
 
-    @Override public String getDescription(final Locale locale) {
+    @Override
+    public String getDescription(final Locale locale) {
         return "NetPBM Portable Any Map (PNM and PAM) image reader";
     }
 }

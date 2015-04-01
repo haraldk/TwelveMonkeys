@@ -28,12 +28,10 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-import javax.imageio.spi.ImageWriterSpi;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -44,28 +42,13 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: IFFImageWriterSpi.java,v 1.0 02.mar.2006 19:21:05 haku Exp$
  */
-public class IFFImageWriterSpi extends ImageWriterSpi {
+public class IFFImageWriterSpi extends ImageWriterSpiBase {
 
     /**
      * Creates an {@code IFFImageWriterSpi}.
      */
     public IFFImageWriterSpi() {
-        this(IIOUtil.getProviderInfo(IFFImageWriterSpi.class));
-    }
-
-    private IFFImageWriterSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"iff", "IFF"},
-                new String[]{"iff", "lbm", "ham", "ham8", "ilbm"},
-                new String[]{"image/iff", "image/x-iff"},
-                "com.twelvemonkeys.imageio.plugins.iff.IFFImageWriter",
-                STANDARD_OUTPUT_TYPE,
-                new String[]{"com.twelvemonkeys.imageio.plugins.iff.IFFImageReaderSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new IFFProviderInfo());
     }
 
     public boolean canEncodeImage(final ImageTypeSpecifier pType) {

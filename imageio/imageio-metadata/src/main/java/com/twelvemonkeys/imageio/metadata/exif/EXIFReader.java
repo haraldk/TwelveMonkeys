@@ -38,6 +38,7 @@ import com.twelvemonkeys.lang.Validate;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -52,6 +53,9 @@ import java.util.*;
  * @version $Id: EXIFReader.java,v 1.0 Nov 13, 2009 5:42:51 PM haraldk Exp$
  */
 public final class EXIFReader extends MetadataReader {
+
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.metadata.exif.debug"));
+
     static final Collection<Integer> KNOWN_IFDS = Collections.unmodifiableCollection(Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD, TIFF.TAG_SUB_IFD));
 
     @Override
@@ -80,16 +84,25 @@ public final class EXIFReader extends MetadataReader {
 
         long directoryOffset = input.readUnsignedInt();
 
-        return readDirectory(input, directoryOffset);
+        return readDirectory(input, directoryOffset, true);
     }
 
-    public Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
+    // TODO: Consider re-writing so that the linked IFD parsing is done externally to the method
+    protected Directory readDirectory(final ImageInputStream pInput, final long pOffset, final boolean readLinked) throws IOException {
         List<IFD> ifds = new ArrayList<IFD>();
         List<Entry> entries = new ArrayList<Entry>();
 
         pInput.seek(pOffset);
         long nextOffset = -1;
-        int entryCount = pInput.readUnsignedShort();
+
+        int entryCount;
+        try {
+            entryCount = pInput.readUnsignedShort();
+        }
+        catch (EOFException e) {
+            // Treat EOF here as empty Sub-IFD
+            entryCount = 0;
+        }
 
         for (int i = 0; i < entryCount; i++) {
             EXIFEntry entry = readEntry(pInput);
@@ -104,27 +117,24 @@ public final class EXIFReader extends MetadataReader {
             entries.add(entry);
         }
 
-        if (nextOffset == -1) {
-            nextOffset = pInput.readUnsignedInt();
-        }
+        if (readLinked) {
+            if (nextOffset == -1) {
+                nextOffset = pInput.readUnsignedInt();
+            }
 
-        // Read linked IFDs
-        if (nextOffset != 0) {
-            CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset);
-            for (int i = 0; i < next.directoryCount(); i++) {
-                ifds.add((IFD) next.getDirectory(i));
+            // Read linked IFDs
+            if (nextOffset != 0) {
+                CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset, true);
+
+                for (int i = 0; i < next.directoryCount(); i++) {
+                    ifds.add((IFD) next.getDirectory(i));
+                }
             }
         }
 
-        // TODO: Make what sub-IFDs to parse optional? Or leave this to client code? At least skip the non-TIFF data?
-        // TODO: Put it in the constructor?
+        // TODO: Consider leaving to client code what sub-IFDs to parse (but always parse TAG_SUB_IFD).
         readSubdirectories(pInput, entries,
-                Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD, TIFF.TAG_SUB_IFD
-//                        , TIFF.TAG_IPTC, TIFF.TAG_XMP
-//                        , TIFF.TAG_ICC_PROFILE
-//                        , TIFF.TAG_PHOTOSHOP
-//                        ,TIFF.TAG_MODI_OLE_PROPERTY_SET
-                )
+                Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD, TIFF.TAG_SUB_IFD)
         );
 
         ifds.add(0, new IFD(entries));
@@ -149,7 +159,7 @@ public final class EXIFReader extends MetadataReader {
                         List<IFD> subIFDs = new ArrayList<IFD>(pointerOffsets.length);
 
                         for (long pointerOffset : pointerOffsets) {
-                            CompoundDirectory subDirectory = (CompoundDirectory) readDirectory(input, pointerOffset);
+                            CompoundDirectory subDirectory = (CompoundDirectory) readDirectory(input, pointerOffset, false);
 
                             for (int j = 0; j < subDirectory.directoryCount(); j++) {
                                 subIFDs.add((IFD) subDirectory.getDirectory(j));
@@ -221,20 +231,24 @@ public final class EXIFReader extends MetadataReader {
             // Invalid tag, this is just for debugging
             long offset = pInput.getStreamPosition() - 8l;
 
-            System.err.printf("Bad EXIF");
-            System.err.println("tagId: " + tagId + (tagId <= 0 ? " (INVALID)" : ""));
-            System.err.println("type: " + type + " (INVALID)");
-            System.err.println("count: " + count);
+            if (DEBUG) {
+                System.err.printf("Bad EXIF data @%08x\n", pInput.getStreamPosition());
+                System.err.println("tagId: " + tagId + (tagId <= 0 ? " (INVALID)" : ""));
+                System.err.println("type: " + type + " (INVALID)");
+                System.err.println("count: " + count);
+            }
 
             pInput.mark();
             pInput.seek(offset);
 
             try {
-                byte[] bytes = new byte[8 + Math.max(20, count)];
+                byte[] bytes = new byte[8 + Math.min(120, Math.max(24, count))];
                 int len = pInput.read(bytes);
 
-                System.err.print(HexDump.dump(offset, bytes, 0, len));
-                System.err.println(len < count ? "[...]" : "");
+                if (DEBUG) {
+                    System.err.print(HexDump.dump(offset, bytes, 0, len));
+                    System.err.println(len < count ? "[...]" : "");
+                }
             }
             finally {
                 pInput.reset();
@@ -276,6 +290,8 @@ public final class EXIFReader extends MetadataReader {
 
     private static Object readValue(final ImageInputStream pInput, final short pType, final int pCount) throws IOException {
         // TODO: Review value "widening" for the unsigned types. Right now it's inconsistent. Should we leave it to client code?
+        // TODO: New strategy: Leave data as is, instead perform the widening in EXIFEntry.getValue.
+        // TODO: Add getValueByte/getValueUnsignedByte/getValueShort/getValueUnsignedShort/getValueInt/etc... in API.
 
         long pos = pInput.getStreamPosition();
 
@@ -461,7 +477,7 @@ public final class EXIFReader extends MetadataReader {
             Directory directory;
 
             if (args.length > 1) {
-                directory = reader.readDirectory(stream, pos);
+                directory = reader.readDirectory(stream, pos, false);
             }
             else {
                 directory = reader.read(stream);

@@ -28,49 +28,21 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Locale;
 
-public final class TGAImageReaderSpi extends ImageReaderSpi {
+public final class TGAImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code TGAImageReaderSpi}.
      */
     public TGAImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(TGAImageReaderSpi.class));
-    }
-
-    private TGAImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{
-                        "tga", "TGA",
-                        "targa", "TARGA"
-                },
-                new String[]{"tga", "tpic"},
-                new String[]{
-                        // No official IANA record exists
-                        "image/tga", "image/x-tga",
-                        "image/targa", "image/x-targa",
-                },
-                "com.twelvemkonkeys.imageio.plugins.tga.TGAImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
+        super(new TGAProviderInfo());
     }
 
     @Override public boolean canDecodeInput(final Object source) throws IOException {

@@ -232,7 +232,7 @@ public final class JPEGQuality {
                     throw new IIOException("Duplicate DQT table index: " + num);
                 }
 
-                if (bits > 1) {
+                if (bits < 0 || bits > 1) {
                     throw new IIOException("Bad DQT bit info: " + bits);
                 }
 
@@ -247,11 +247,13 @@ public final class JPEGQuality {
                         for (int j = 0, qtDataLength = qtData.length; j < qtDataLength; j++) {
                             tables[num][j] = (short) (qtData[j] & 0xff);
                         }
+
                         break;
                     case 1:
                         for (int j = 0, qtDataLength = qtData.length; j < qtDataLength; j += 2) {
                             tables[num][j / 2] = (short) ((qtData[j] & 0xff) << 8 | (qtData[j + 1] & 0xff));
                         }
+
                         break;
                 }
             }

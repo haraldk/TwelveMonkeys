@@ -68,13 +68,13 @@ public interface JPEG {
     int APP15 = 0xFFEF;
 
     // Start of Frame segment markers (SOFn).
-    /** SOF0: Baseline DCT, Huffman encoded. */
+    /** SOF0: Baseline DCT, Huffman coding. */
     int SOF0 = 0xFFC0;
-    /** SOF0: Extended DCT, Huffman encoded. */
+    /** SOF0: Extended DCT, Huffman coding. */
     int SOF1 = 0xFFC1;
-    /** SOF2: Progressive DCT, Huffman encoded. */
+    /** SOF2: Progressive DCT, Huffman coding. */
     int SOF2 = 0xFFC2;
-    /** SOF3: Lossless sequential, Huffman encoded. */
+    /** SOF3: Lossless sequential, Huffman coding. */
     int SOF3 = 0xFFC3;
     /** SOF5: Sequential DCT, differential Huffman coding. */
     int SOF5 = 0xFFC5;
@@ -86,7 +86,7 @@ public interface JPEG {
     int SOF9 = 0xFFC9;
     /** SOF10: Progressive DCT, arithmetic coding. */
     int SOF10 = 0xFFCA;
-    /** SOF11: Lossless sequential, arithmetic encoded. */
+    /** SOF11: Lossless sequential, arithmetic coding. */
     int SOF11 = 0xFFCB;
     /** SOF13: Sequential DCT, differential arithmetic coding. */
     int SOF13 = 0xFFCD;

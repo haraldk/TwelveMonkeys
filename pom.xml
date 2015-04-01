@@ -130,8 +130,8 @@
                     <version>2.3.2</version>
                     <inherited>true</inherited>
                     <configuration>
-                        <source>1.5</source>
-                        <target>1.5</target>
+                        <source>1.7</source>
+                        <target>1.7</target>
                         <showDeprecation>false</showDeprecation>
                         <compilerArgument>-g:lines</compilerArgument>
                         <compilerArguments>
@@ -160,8 +160,8 @@
                     <inherited>true</inherited>
                     <version>2.2</version>
                     <configuration>
-                        <jdkName>1.5</jdkName>
-                        <jdkLevel>1.5</jdkLevel>
+                        <jdkName>1.7</jdkName>
+                        <jdkLevel>1.7</jdkLevel>
                         <downloadSources>true</downloadSources>
                     </configuration>
                 </plugin>
@@ -206,7 +206,7 @@
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>3.0.1</version>
                 <configuration>
-                    <targetJdk>1.5</targetJdk>
+                    <targetJdk>1.7</targetJdk>
                 </configuration>
             </plugin>
             <plugin>

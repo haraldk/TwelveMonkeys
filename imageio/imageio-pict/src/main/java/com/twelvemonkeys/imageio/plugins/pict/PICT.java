@@ -175,4 +175,41 @@ interface PICT {
     int OP_UNCOMPRESSED_QUICKTIME = 0x8201;
 
     String APPLE_USE_RESERVED_FIELD = "Reserved for Apple use.";
+
+    /*
+     * Picture comment 'kind' codes from: http://developer.apple.com/technotes/qd/qd_10.html
+    int TextBegin = 150;
+    int TextEnd = 151;
+    int StringBegin = 152;
+    int StringEnd = 153;
+    int TextCenter = 154;
+    int LineLayoutOff = 155;
+    int LineLayoutOn = 156;
+    int ClientLineLayout = 157;
+    int PolyBegin = 160;
+    int PolyEnd = 161;
+    int PolyIgnore = 163;
+    int PolySmooth = 164;
+    int PolyClose = 165;
+    int DashedLine = 180;
+    int DashedStop = 181;
+    int SetLineWidth = 182;
+    int PostScriptBegin = 190;
+    int PostScriptEnd = 191;
+    int PostScriptHandle = 192;
+    int PostScriptFile = 193;
+    int TextIsPostScript = 194;
+    int ResourcePS = 195;
+    int PSBeginNoSave = 196;
+    int SetGrayLevel = 197;
+    int RotateBegin = 200;
+    int RotateEnd = 201;
+    int RotateCenter = 202;
+    int FormsPrinting = 210;
+    int EndFormsPrinting = 211;
+    int ICC_Profile = 224;
+    int Photoshop_Data = 498;
+    int BitMapThinningOff = 1000;
+    int BitMapThinningOn = 1001;
+     */
 }
