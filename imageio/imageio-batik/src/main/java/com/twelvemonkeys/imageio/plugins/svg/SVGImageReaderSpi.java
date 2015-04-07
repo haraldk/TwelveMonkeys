@@ -29,8 +29,8 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.lang.SystemUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.SystemUtil;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
@@ -80,18 +80,18 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
         );
     }
 
-    public boolean canDecodeInput(Object pSource) throws IOException {
+    public boolean canDecodeInput(final Object pSource) throws IOException {
         return pSource instanceof ImageInputStream && SVG_READER_AVAILABLE && canDecode((ImageInputStream) pSource);
     }
 
-    private static boolean canDecode(ImageInputStream pInput) throws IOException {
+    private static boolean canDecode(final ImageInputStream pInput) throws IOException {
         // NOTE: This test is quite quick as it does not involve any parsing,
         // however it requires the doctype to be "svg", which may not be correct
         // in all cases...
         try {
             pInput.mark();
 
-            // TODO: This is may not be ok for non-UTF/iso-latin encodings...
+            // TODO: This is not ok for UTF-16 and other wide encodings
             // TODO: Use an XML (encoding) aware Reader instance instead
             // Need to figure out pretty fast if this is XML or not
             int b;
@@ -111,9 +111,14 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
                     // Skip over, until begin tag
                 }
 
-                // If this is not a comment, or the DOCTYPE declaration, the doc
-                // has no DOCTYPE and it can't be svg
-                if (pInput.read() != '!') {
+                if ((b = pInput.read()) != '!') {
+                    if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g'
+                            && (Character.isWhitespace((char) (b = pInput.read())) || b == ':')) {
+                        // TODO: Support svg with prefix + recognize namespace (http://www.w3.org/2000/svg)!
+                        return true;
+                    }
+
+                    // If this is not a comment, or the DOCTYPE declaration, the doc has no DOCTYPE and it can't be svg
                     return false;
                 }
 
@@ -126,19 +131,19 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
                 }
 
                 // If we are lucky, this is DOCTYPE declaration
-                if (b == 'D' && pInput.read() == 'O' && pInput.read() == 'C'
-                        && pInput.read() == 'T' && pInput.read() == 'Y' && pInput.read() == 'P'
-                        && pInput.read() == 'E') {
+                if (b == 'D' && pInput.read() == 'O' && pInput.read() == 'C' && pInput.read() == 'T'
+                        && pInput.read() == 'Y' && pInput.read() == 'P' && pInput.read() == 'E') {
                     docTypeFound = true;
                     while (Character.isWhitespace((char) (b = pInput.read()))) {
                         // Skip over WS
                     }
+
                     if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g') {
-                        //System.out.println("It's svg!");
                         return true;
                     }
                 }
             }
+
             return false;
         }
         finally {
@@ -147,17 +152,17 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
     }
 
 
-    public ImageReader createReaderInstance(Object extension) throws IOException {
+    public ImageReader createReaderInstance(final Object extension) throws IOException {
         return new SVGImageReader(this);
     }
 
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return "Scaleable Vector Graphics (SVG) format image reader";
     }
 
     @SuppressWarnings({"deprecation"})
     @Override
-    public void onRegistration(ServiceRegistry registry, Class<?> category) {
+    public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (!SVG_READER_AVAILABLE) {
             try {
                 // NOTE: This will break, but it gives us some useful debug info

@@ -31,7 +31,6 @@ package com.twelvemonkeys.imageio.plugins.svg;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -42,6 +41,8 @@ import java.awt.image.ImagingOpException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * SVGImageReaderTestCase
@@ -55,7 +56,9 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/svg/batikLogo.svg"), new Dimension(450, 500))
+                new TestData(getClassLoaderResource("/svg/batikLogo.svg"), new Dimension(450, 500)),
+                new TestData(getClassLoaderResource("/svg/red-square.svg"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/svg/blue-square.svg"), new Dimension(100, 100))
         );
     }
 
@@ -114,19 +117,19 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
         super.testReadWithSourceRegionParamEqualImage();
     }
-    
+
     @Test
     public void testRepeatedRead() throws IOException {
-    	Dimension dim = new Dimension(100, 100);
-    	ImageReader reader = createReader();
-    	ImageReadParam param = reader.getDefaultReadParam();
+        Dimension dim = new Dimension(100, 100);
+        ImageReader reader = createReader();
+        ImageReadParam param = reader.getDefaultReadParam();
         param.setSourceRenderSize(dim);
-    	
-    	TestData redSquare = new TestData(getClassLoaderResource("/svg/red-square.svg"), dim);
+
+        TestData redSquare = new TestData(getClassLoaderResource("/svg/red-square.svg"), dim);
         reader.setInput(redSquare.getInputStream());
         BufferedImage imageRed = reader.read(0, param);
         assertEquals(0xFF0000, imageRed.getRGB(50, 50) & 0xFFFFFF);
-        
+
         TestData blueSquare = new TestData(getClassLoaderResource("/svg/blue-square.svg"), dim);
         reader.setInput(blueSquare.getInputStream());
         BufferedImage imageBlue = reader.read(0, param);
