@@ -26,30 +26,32 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.tiff;
+package com.twelvemonkeys.imageio.plugins.wmf;
 
 import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.lang.SystemUtil;
 
 /**
- * TIFFProviderInfo.
+ * WMFProviderInfo.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
- * @version $Id: TIFFProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
+ * @version $Id: WMFProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
-final class TIFFProviderInfo extends ReaderWriterProviderInfo {
-    protected TIFFProviderInfo() {
+final class WMFProviderInfo extends ReaderWriterProviderInfo {
+    // This is correct, as we rely on the SVG reader
+    final static boolean WMF_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
+
+    protected WMFProviderInfo() {
         super(
-                TIFFProviderInfo.class,
-                new String[] {"tiff", "TIFF"},
-                new String[] {"tif", "tiff"},
-                new String[] {
-                        "image/tiff", "image/x-tiff"
-                },
-                "com.twelvemkonkeys.imageio.plugins.tiff.TIFFImageReader",
-                new String[] {"com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi"},
-                "com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriter",
-                new String[] {"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
+                WMFProviderInfo.class,
+                WMF_READER_AVAILABLE ? new String[]{"wmf", "WMF"} : new String[]{""}, // Names
+                WMF_READER_AVAILABLE ? new String[]{"wmf", "emf"} : null, // Suffixes
+                WMF_READER_AVAILABLE ? new String[]{"application/x-msmetafile", "image/x-wmf"} : null, // Mime-types
+                "com.twelvemonkeys.imageio.plugins.wmf.WMFImageReader", // Reader class name..?
+                new String[] {"com.twelvemonkeys.imageio.plugins.wmf.WMFImageReaderSpi"},
+                null,
+                null,
                 false, null, null, null, null,
                 true, null, null, null, null
         );

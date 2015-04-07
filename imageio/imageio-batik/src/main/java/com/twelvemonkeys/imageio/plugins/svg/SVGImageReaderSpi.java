@@ -28,16 +28,16 @@
 
 package com.twelvemonkeys.imageio.plugins.svg;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.lang.SystemUtil;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
+
+import static com.twelvemonkeys.imageio.plugins.svg.SVGProviderInfo.SVG_READER_AVAILABLE;
 
 /**
  * SVGImageReaderSpi
@@ -46,38 +46,13 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: SVGImageReaderSpi.java,v 1.1 2003/12/02 16:45:00 haku Exp $
  */
-public class SVGImageReaderSpi extends ImageReaderSpi {
-
-    private final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
+public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates an {@code SVGImageReaderSpi}.
      */
     public SVGImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(SVGImageReaderSpi.class));
-    }
-
-    private SVGImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(), // Vendor name
-                pProviderInfo.getVersion(),           // Version
-                SVG_READER_AVAILABLE ? new String[]{"svg", "SVG"} : new String[]{""}, // Names
-                SVG_READER_AVAILABLE ? new String[]{"svg"} : null, // Suffixes
-                SVG_READER_AVAILABLE ? new String[]{"image/svg", "image/x-svg", "image/svg+xml", "image/svg-xml"} : null, // Mime-types
-                "com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", // Reader class name
-                new Class[] {ImageInputStream.class}, // Input types
-                null, // Writer SPI names
-                true, // Supports standard stream metadata format
-                null, // Native stream metadata format name
-                null, // Native stream metadata format class name
-                null, // Extra stream metadata format names
-                null, // Extra stream metadata format class names
-                true, // Supports standard image metadata format
-                null, // Native image metadata format name
-                null, // Native image metadata format class name
-                null, // Extra image metadata format names
-                null // Extra image metadata format class names
-        );
+        super(new SVGProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
@@ -151,13 +126,12 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
         }
     }
 
-
     public ImageReader createReaderInstance(final Object extension) throws IOException {
         return new SVGImageReader(this);
     }
 
     public String getDescription(final Locale locale) {
-        return "Scaleable Vector Graphics (SVG) format image reader";
+        return "Scalable Vector Graphics (SVG) format image reader";
     }
 
     @SuppressWarnings({"deprecation"})
@@ -175,5 +149,6 @@ public class SVGImageReaderSpi extends ImageReaderSpi {
 
             IIOUtil.deregisterProvider(registry, this, category);
         }
-    }}
+    }
+}
 

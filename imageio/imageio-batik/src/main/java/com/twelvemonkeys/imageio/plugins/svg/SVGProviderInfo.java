@@ -26,30 +26,31 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.tiff;
+package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.lang.SystemUtil;
 
 /**
- * TIFFProviderInfo.
+ * SVGProviderInfo.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
- * @version $Id: TIFFProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
+ * @version $Id: SVGProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
-final class TIFFProviderInfo extends ReaderWriterProviderInfo {
-    protected TIFFProviderInfo() {
+final class SVGProviderInfo extends ReaderWriterProviderInfo {
+    final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
+
+    protected SVGProviderInfo() {
         super(
-                TIFFProviderInfo.class,
-                new String[] {"tiff", "TIFF"},
-                new String[] {"tif", "tiff"},
-                new String[] {
-                        "image/tiff", "image/x-tiff"
-                },
-                "com.twelvemkonkeys.imageio.plugins.tiff.TIFFImageReader",
-                new String[] {"com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi"},
-                "com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriter",
-                new String[] {"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
+                SVGProviderInfo.class,
+                SVG_READER_AVAILABLE ? new String[]{"svg", "SVG"} : new String[]{""}, // Names
+                SVG_READER_AVAILABLE ? new String[]{"svg"} : null, // Suffixes
+                SVG_READER_AVAILABLE ? new String[]{"image/svg", "image/x-svg", "image/svg+xml", "image/svg-xml"} : null, // Mime-types
+                "com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", // Reader class name
+                new String[] {"com.twelvemonkeys.imageio.plugins.svg.SVGImageReaderSpi"},
+                null,
+                null,
                 false, null, null, null, null,
                 true, null, null, null, null
         );
