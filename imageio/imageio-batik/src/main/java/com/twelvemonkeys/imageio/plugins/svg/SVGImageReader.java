@@ -74,7 +74,7 @@ import java.util.Map;
  * @see <A href="http://www.mail-archive.com/batik-dev@xml.apache.org/msg00992.html">batik-dev</A>
  */
 public class SVGImageReader extends ImageReaderBase {
-    private Rasterizer rasterizer = new Rasterizer();
+    private Rasterizer rasterizer = null;
 
     /**
      * Creates an {@code SVGImageReader}.
@@ -100,6 +100,7 @@ public class SVGImageReader extends ImageReaderBase {
 
         if (imageInput != null) {
             TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
+            rasterizer = new Rasterizer();
             rasterizer.setInput(input);
         }
     }
