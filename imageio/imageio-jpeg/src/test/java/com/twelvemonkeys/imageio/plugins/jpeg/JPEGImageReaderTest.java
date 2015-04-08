@@ -59,6 +59,8 @@ import java.util.*;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeNotNull;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -149,7 +151,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/jpeg");
+        return Collections.singletonList("image/jpeg");
     }
 
     // TODO: Test that subsampling is actually reading something
@@ -1096,7 +1098,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                     assertTrue(markerSequences.getLength() == 1 || markerSequences.getLength() == 2); // In case of JPEG encoded thumbnail, there will be 2
                     IIOMetadataNode markerSequence = (IIOMetadataNode) markerSequences.item(0);
                     assertNotNull(markerSequence);
-                    assertThat(markerSequence.getChildNodes().getLength(), new GreaterThan<Integer>(0));
+                    assertThat(markerSequence.getChildNodes().getLength(), new GreaterThan<>(0));
 
                     NodeList unknowns = markerSequence.getElementsByTagName("unknown");
                     for (int j = 0; j < unknowns.getLength(); j++) {
@@ -1155,10 +1157,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         JPEGImageReader reader = createReader();
         ImageReader referenceReader = createReferenceReader();
 
-        if (referenceReader == null) {
-            return;
-        }
-
         for (TestData testData : getTestData()) {
             reader.setInput(testData.getInputStream());
             referenceReader.setInput(testData.getInputStream());
@@ -1199,13 +1197,15 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
             ImageReaderSpi provider = spiClass.newInstance();
 
-            return provider.createReaderInstance();
+            ImageReader reader = provider.createReaderInstance();
+            assumeNotNull(reader);
+            return reader;
         }
         catch (Throwable t) {
-            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
-
-            return null;
+            assumeNoException(t);
         }
+
+        return null;
     }
 
     private void assertTreesEquals(String message, Node expectedTree, Node actualTree) {
@@ -1288,7 +1288,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     private List<IIOMetadataNode> sortNodes(final NodeList nodes) {
-        ArrayList<IIOMetadataNode> sortedNodes = new ArrayList<IIOMetadataNode>(new AbstractList<IIOMetadataNode>() {
+        ArrayList<IIOMetadataNode> sortedNodes = new ArrayList<>(new AbstractList<IIOMetadataNode>() {
             @Override
             public IIOMetadataNode get(int index) {
                 return (IIOMetadataNode) nodes.item(index);
@@ -1436,7 +1436,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // TODO: Report bug!
 
         ImageReader reader = createReader();
-//        ImageReader reader = createReferenceReader();
 
         try {
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/progressive-adobe-sof-bands-dont-match-sos-band-count.jpg")));
