@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio;
 
 import com.twelvemonkeys.image.BufferedImageIcon;
+import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.*;
@@ -37,6 +38,9 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -424,6 +428,8 @@ public abstract class ImageReaderBase extends ImageReader {
         static final String ZOOM_OUT = "zoom-out";
         static final String ZOOM_ACTUAL = "zoom-actual";
 
+        private BufferedImage image;
+
         Paint backgroundPaint;
 
         final Paint checkeredBG;
@@ -434,6 +440,7 @@ public abstract class ImageReaderBase extends ImageReader {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 
+            image = pImage;
             checkeredBG = createTexture();
 
             // For indexed color, default to the color of the transparent pixel, if any 
@@ -441,7 +448,7 @@ public abstract class ImageReaderBase extends ImageReader {
 
             backgroundPaint = defaultBG != null ? defaultBG : checkeredBG;
 
-            setupActions(pImage);
+            setupActions();
             setComponentPopupMenu(createPopupMenu());
             addMouseListener(new MouseAdapter() {
                 @Override
@@ -451,16 +458,64 @@ public abstract class ImageReaderBase extends ImageReader {
                     }
                 }
             });
+
+            setTransferHandler(new TransferHandler() {
+                @Override
+                public int getSourceActions(JComponent c) {
+                    return COPY;
+                }
+
+                @Override
+                protected Transferable createTransferable(JComponent c) {
+                    return new ImageTransferable(image);
+                }
+
+                @Override
+                public boolean importData(JComponent comp, Transferable t) {
+                    if (canImport(comp, t.getTransferDataFlavors())) {
+                        try {
+                            Image transferData = (Image) t.getTransferData(DataFlavor.imageFlavor);
+                            image = ImageUtil.toBuffered(transferData);
+                            setIcon(new BufferedImageIcon(image));
+
+                            return true;
+                        }
+                        catch (UnsupportedFlavorException | IOException ignore) {
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override
+                public boolean canImport(JComponent comp, DataFlavor[] transferFlavors) {
+                    for (DataFlavor flavor : transferFlavors) {
+                        if (flavor.equals(DataFlavor.imageFlavor)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override
+                protected void exportDone(JComponent source, Transferable data, int action) {
+                    super.exportDone(source, data, action);
+                }
+            });
         }
 
-        private void setupActions(final BufferedImage pImage) {
+        private void setupActions() {
             // Mac weirdness... VK_MINUS/VK_PLUS seems to map to english key map always...
-            bindAction(new ZoomAction("Zoom in", pImage, 2), ZOOM_IN, KeyStroke.getKeyStroke('+'), KeyStroke.getKeyStroke(KeyEvent.VK_ADD, 0));
-            bindAction(new ZoomAction("Zoom out", pImage, .5), ZOOM_OUT, KeyStroke.getKeyStroke('-'), KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, 0));
-            bindAction(new ZoomAction("Zoom actual", pImage), ZOOM_ACTUAL, KeyStroke.getKeyStroke('0'), KeyStroke.getKeyStroke(KeyEvent.VK_0, 0));
+            bindAction(new ZoomAction("Zoom in", 2), ZOOM_IN, KeyStroke.getKeyStroke('+'), KeyStroke.getKeyStroke(KeyEvent.VK_ADD, 0));
+            bindAction(new ZoomAction("Zoom out", .5), ZOOM_OUT, KeyStroke.getKeyStroke('-'), KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, 0));
+            bindAction(new ZoomAction("Zoom actual"), ZOOM_ACTUAL, KeyStroke.getKeyStroke('0'), KeyStroke.getKeyStroke(KeyEvent.VK_0, 0));
+
+            bindAction(TransferHandler.getCopyAction(), (String) TransferHandler.getCopyAction().getValue(Action.NAME), KeyStroke.getKeyStroke(KeyEvent.VK_C, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+            bindAction(TransferHandler.getPasteAction(), (String) TransferHandler.getPasteAction().getValue(Action.NAME), KeyStroke.getKeyStroke(KeyEvent.VK_V, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         }
 
-        private void bindAction(final AbstractAction action, final String key, final KeyStroke... keyStrokes) {
+        private void bindAction(final Action action, final String key, final KeyStroke... keyStrokes) {
             for (KeyStroke keyStroke : keyStrokes) {
                 getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, key);
             }
@@ -588,20 +643,18 @@ public abstract class ImageReaderBase extends ImageReader {
         }
 
         private class ZoomAction extends AbstractAction {
-            private final BufferedImage image;
             private final double zoomFactor;
 
-            public ZoomAction(final String name, final BufferedImage image, final double zoomFactor) {
+            public ZoomAction(final String name, final double zoomFactor) {
                 super(name);
-                this.image = image;
                 this.zoomFactor = zoomFactor;
             }
 
-            public ZoomAction(final String name, final BufferedImage image) {
-                this(name, image, 0);
+            public ZoomAction(final String name) {
+                this(name, 0);
             }
 
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(final ActionEvent e) {
                 if (zoomFactor <= 0) {
                     setIcon(new BufferedImageIcon(image));
                 }
@@ -612,6 +665,33 @@ public abstract class ImageReaderBase extends ImageReader {
 
                     setIcon(new BufferedImageIcon(image, Math.max(w, 2), Math.max(h, 2), w > image.getWidth() || h > image.getHeight()));
                 }
+            }
+        }
+
+        private static class ImageTransferable implements Transferable {
+            private final BufferedImage image;
+
+            public ImageTransferable(final BufferedImage image) {
+                this.image = image;
+            }
+
+            @Override
+            public DataFlavor[] getTransferDataFlavors() {
+                return new DataFlavor[] {DataFlavor.imageFlavor};
+            }
+
+            @Override
+            public boolean isDataFlavorSupported(final DataFlavor flavor) {
+                return DataFlavor.imageFlavor.equals(flavor);
+            }
+
+            @Override
+            public Object getTransferData(final DataFlavor flavor) throws UnsupportedFlavorException, IOException {
+                if (isDataFlavorSupported(flavor)) {
+                    return image;
+                }
+
+                throw new UnsupportedFlavorException(flavor);
             }
         }
     }
