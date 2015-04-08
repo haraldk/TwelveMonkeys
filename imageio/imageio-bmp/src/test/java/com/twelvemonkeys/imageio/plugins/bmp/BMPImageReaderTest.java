@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -90,7 +91,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
                 new TestData(getClassLoaderResource("/os2/money-256-(os2).bmp"), new Dimension(455, 341)),
                 new TestData(getClassLoaderResource("/os2/money-24bit-os2.bmp"), new Dimension(455, 341)),
 
-                // Vaious other samples
+                // Various other samples
                 new TestData(getClassLoaderResource("/bmp/Blue Lace 16.bmp"), new Dimension(48, 48)),
                 new TestData(getClassLoaderResource("/bmp/blauesglas_mono.bmp"), new Dimension(301, 331)),
                 new TestData(getClassLoaderResource("/bmp/blauesglas_4.bmp"), new Dimension(301, 331)),
@@ -124,7 +125,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("bmp");
+        return Collections.singletonList("bmp");
     }
 
     protected List<String> getSuffixes() {
@@ -132,7 +133,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
     }
 
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/bmp");
+        return Collections.singletonList("image/bmp");
     }
 
     @Override
