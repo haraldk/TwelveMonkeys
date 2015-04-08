@@ -497,11 +497,6 @@ public abstract class ImageReaderBase extends ImageReader {
 
                     return false;
                 }
-
-                @Override
-                protected void exportDone(JComponent source, Transferable data, int action) {
-                    super.exportDone(source, data, action);
-                }
             });
         }
 
