@@ -84,11 +84,11 @@ public final class ColorSpaces {
     public static final int CS_GENERIC_CMYK = 5001;
 
     // Weak references to hold the color spaces while cached
-    private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<ICC_Profile>(null);
-    private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<ICC_Profile>(null);
+    private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<>(null);
+    private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<>(null);
 
     // Cache for the latest used color spaces
-    private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<Key, ICC_ColorSpace>(10);
+    private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<>(10);
 
     private ColorSpaces() {}
 
@@ -249,7 +249,7 @@ public final class ColorSpaces {
                             }
                         }
 
-                        adobeRGB1998 = new WeakReference<ICC_Profile>(profile);
+                        adobeRGB1998 = new WeakReference<>(profile);
                     }
                 }
 
@@ -272,7 +272,7 @@ public final class ColorSpaces {
                             return CMYKColorSpace.getInstance();
                         }
 
-                        genericCMYK = new WeakReference<ICC_Profile>(profile);
+                        genericCMYK = new WeakReference<>(profile);
                     }
                 }
 
@@ -367,15 +367,18 @@ public final class ColorSpaces {
     }
 
     private static class Profiles {
-        private static final Properties PROFILES = loadProfiles(Platform.os());
+        private static final Properties PROFILES = loadProfiles();
 
-        private static Properties loadProfiles(final Platform.OperatingSystem os) {
+        private static Properties loadProfiles() {
             Properties systemDefaults;
 
             try {
-                systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os.id());
+                systemDefaults = SystemUtil.loadProperties(
+                        ColorSpaces.class,
+                        "com/twelvemonkeys/imageio/color/icc_profiles_" + Platform.os().id()
+                );
             }
-            catch (IOException ignore) {
+            catch (SecurityException | IOException ignore) {
                 System.err.printf(
                         "Warning: Could not load system default ICC profile locations from %s, will use bundled fallback profiles.\n",
                         ignore.getMessage()
@@ -392,10 +395,14 @@ public final class ColorSpaces {
             Properties profiles = new Properties(systemDefaults);
 
             try {
-                Properties userOverrides = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles");
+                Properties userOverrides = SystemUtil.loadProperties(
+                        ColorSpaces.class,
+                        "com/twelvemonkeys/imageio/color/icc_profiles"
+                );
                 profiles.putAll(userOverrides);
             }
-            catch (IOException ignore) {
+            catch (SecurityException | IOException ignore) {
+                // Most likely, this file won't be there
             }
 
             if (DEBUG) {
