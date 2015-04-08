@@ -1,3 +1,7 @@
+## Latest
+
+TwelveMonkeys ImageIO 3.0.2 is released.
+
 ## About
 
 TwelveMonkeys ImageIO is a collection of plugins and extensions for Java's ImageIO.
@@ -16,27 +20,36 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 Mainstream format support
 
+#### MS Windows/IBM OS/2 Device Independent Bitmap (BMP) *3.1*
+ 
+* Read support for all known versions of the DIB/BMP format
+  * Indexed color, 1, 4 and 8 bit, including 4 and 8 bit RLE
+  * RGB, 16, 24 and 32 bit
+  * Embedded PNG and JPEG data
+  * Windows and OS/2 versions
+* Native and standard metadata format
+
 #### JPEG
 
-* Read support for the following JPEG flavors:
+* Read support for the following JPEG "flavors":
   * YCbCr JPEGs without JFIF segment (converted to RGB, using embedded ICC profile)
-  * CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile )
+  * CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
   * Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
-  * JPEGs containing ICC profiles with interpretation other than 'Perceptual'
-  * JPEGs containing ICC profiles with class other than 'Display'
-  * JPEGs containing ICC profiles that are incompatible with stream data
-  * JPEGs with corrupted ICC profiles
-  * JPEGs with corrupted `ICC_PROFILE` segments
+  * JPEGs containing ICC profiles with interpretation other than 'Perceptual' or class other than 'Display'
+  * JPEGs containing ICC profiles that are incompatible with stream data, corrupted ICC profiles or corrupted `ICC_PROFILE` segments
   * JPEGs using non-standard color spaces, unsupported by Java 2D
-  * Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image data can still be read in a reasonable way
+  * JPEGs with APP14/Adobe segments with length other than 14 bytes
+  * 8 bit JPEGs with 16 bit DQT segments
+  * Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image 
+  data can still be read in a reasonable way
 * Thumbnail support:
-  * JFIF thumbnails (even if stream contains inconsistent metadata)
+  * JFIF thumbnails (even if stream contains "inconsistent metadata")
   * JFXX thumbnails (JPEG, Indexed and RGB)
   * EXIF thumbnails (JPEG, RGB and YCbCr)
 * Metadata support:
-  * JPEG metadata in both standard and native formats (even if stream contains inconsistent metadata)
+  * JPEG metadata in both standard and native formats (even if stream contains "inconsistent metadata")
   * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
-  * Illegal combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
+  * Non-conforming combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
    "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
 * Extended write support in progress:
   * CMYK JPEGs
@@ -46,8 +59,11 @@ Mainstream format support
 
 * Possibly coming in the future, pending some license issues.
 
-If you are one of the authors, or know one of the authors and/or the current license holders of either the original jj2000 package or the JAI ImageIO project, please contact me
-(I've tried to get in touch in various ways, without success so far).
+If you are one of the authors, or know one of the authors and/or the current license holders of either the original
+jj2000 package or the JAI ImageIO project, please contact me (I've tried to get in touch in various ways, 
+without success so far).
+
+Alternatively, if you have or know of a JPEG-2000 implementation in Java with a suitable license, get in touch. :-)
 
 #### NetPBM Portable Any Map (PNM) *3.1*
 
@@ -60,6 +76,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Write support for the following formats:
   * PPM in 'P6' (binary) format
   * PAM in 'P7' (binary) format
+* Standard metadata support
 
 #### Adobe Photoshop Document (PSD)
 
@@ -79,6 +96,7 @@ If you are one of the authors, or know one of the authors and/or the current lic
   * JPEG
   * RAW (RGB)
 * Support for "Large Document Format" (PSB)
+* Native metadata support
 
 #### Aldus/Adobe Tagged Image File Format (TIFF)
 
@@ -102,8 +120,11 @@ If you are one of the authors, or know one of the authors and/or the current lic
   * ICC profiles (ICCProfile)
   * BitsPerSample values up to 16 for most PhotometricInterpretations
   * Multiple images (pages) in one file
-* Write support in progress
-  * Will support writing most "Baseline" TIFF file types
+* Write support for most "Baseline" TIFF options
+  * Uncompressed, PackBits, ZLib and Deflate 
+  * Currently missing the CCITT fax encodings
+  * Additional support for LZW and JPEG (type 7) compressions
+  * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate
 
 Legacy formats
 
@@ -135,6 +156,7 @@ Legacy formats
 * Support for the following compression types:
   * Uncompressed (experimental)
   * RLE compressed
+* Standard metadata support
 
 #### Apple Mac Paint Picture Format (PICT)
 
@@ -155,6 +177,7 @@ Legacy formats
 * Support for the following compression types:
   * Uncompressed
   * RLE compressed
+* Standard metadata support
 
 #### Truevision TGA Image Format (TGA) *3.1*
 
@@ -165,6 +188,7 @@ Legacy formats
 * Support for the following compression types:
   * Uncompressed
   * RLE compressed
+* Standard metadata support
 
 Icon/other formats
 
@@ -323,11 +347,12 @@ Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins mi
 I addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
 If you restart your application, old classes will by default remain in memory forever (because the next time
 `scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
-in the registry). If a read is attempted using one of the remaining ("old") readers, weird exceptions
-(like `NullPointerException`s when accessing `static final` initialized fields) may occur.
+in the registry). If a read is attempted using one of the remaining "old" readers, weird exceptions
+(like `NullPointerException`s when accessing `static final` initialized fields or `NoClassDefFoundError`s 
+for uninitialized inner classes) may occur.
 
 To work around both the discovery problem and the resource leak,
-it is recommended to use the `IIOProviderContextListener` that implements
+it is *strongly recommended* to use the `IIOProviderContextListener` that implements
 dynamic loading and unloading of ImageIO plugins for web applications.
 
     <web-app ...>
@@ -343,6 +368,12 @@ dynamic loading and unloading of ImageIO plugins for web applications.
 
     </web-app>
 
+Loading plugins from `WEB-INF/lib` without the context listener installed is unsupported and will not work correctly.
+
+The context listener has no dependencies to the TwelveMonkeys ImageIO plugins, and may be used with JAI ImageIO 
+or other ImageIO plugins as well.
+
+Another safe option, is to place the JAR files in the application server's shared or common lib folder. 
 
 #### Using the ResampleOp
 
@@ -416,7 +447,7 @@ To verify that the JPEG plugin is installed and used at run-time, you could use 
 
 The first line should print:
 
-    reader: com.twelvemonkeys.imageio.jpeg.JPEGImageReader@somehash
+    reader: com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader@somehash
 
 #### Maven dependency example
 
@@ -481,7 +512,7 @@ Servlet support
 
 The project is distributed under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
 
-    Copyright (c) 2008-2013, Harald Kuhr
+    Copyright (c) 2008-2015, Harald Kuhr
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -521,7 +552,7 @@ a: The easiest way is to build your own project using Maven, and just add depend
 
 q: What changes do I have to make to my code in order to use the plug-ins?
 
-a: The short answer is: None. For basic usage, like ImageIO.read(...) or ImageIO.getImageReaders(...), there is no need
+a: The short answer is: None. For basic usage, like `ImageIO.read(...)` or `ImageIO.getImageReaders(...)`, there is no need
 to change your code. Most of the functionality is available through standard ImageIO APIs, and great care has been taken
  not to introduce extra API where none is necessary.
 
@@ -538,11 +569,11 @@ All you have have to do, is to make sure you have the TwelveMonkeys JARs in your
 
 You can read more about the registry and the lookup mechanism in the [IIORegistry API doc](http://docs.oracle.com/javase/7/docs/api/javax/imageio/spi/IIORegistry.html).
 
-The fine print: The TwelveMonkeys service providers for TIFF and JPEG overrides the onRegistration method, and
-utilizes the pairwise partial ordering mechanism of the IIOServiceRegistry to make sure it is installed before
-the Sun/Oracle provided JPEGImageReader and the Apple provided TIFFImageReader on OS X, respectively.
-Using the pairwise ordering will not remove any functionality form these implementations, but in most cases you'll end
-up using the TwelveMonkeys plug-ins instead.
+The fine print: The TwelveMonkeys service providers for JPEG, BMP and TIFF, overrides the onRegistration method, and
+utilizes the pairwise partial ordering mechanism of the `IIOServiceRegistry` to make sure it is installed before
+the Sun/Oracle provided `JPEGImageReader` and `BMPImageReader`, and the Apple provided `TIFFImageReader` on OS X, 
+respectively. Using the pairwise ordering will not remove any functionality form these implementations, but in most 
+cases you'll end up using the TwelveMonkeys plug-ins instead.
 
 
 q: What about JAI? Several of the formats are already supported by JAI.
