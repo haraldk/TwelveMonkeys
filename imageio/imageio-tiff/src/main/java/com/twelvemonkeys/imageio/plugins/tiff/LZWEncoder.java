@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2015, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -58,11 +58,9 @@ final class LZWEncoder implements Encoder {
 
     private static final int TABLE_SIZE = 1 << MAX_BITS;
 
-    private int remaining;
-
     private final LZWString[] table = new LZWString[TABLE_SIZE];
-//    private final Map<LZWString, Integer> reverseTable = new HashMap<>(TABLE_SIZE - 256); // This is foobar
     private final Map<LZWString, Integer> reverseTable = new TreeMap<>(); // This is foobar
+//    private final Map<LZWString, Integer> reverseTable = new HashMap<>(TABLE_SIZE); // This is foobar
     private int tableLength;
     LZWString omega = LZWString.EMPTY;
 
@@ -71,8 +69,12 @@ final class LZWEncoder implements Encoder {
     private int maxCode;
     int bitMask;
 
-    int bits;
-    int bitPos;
+    // Buffer for partial codes
+    private int bits = 0;
+    private int bitPos = 0;
+
+    // Keep track of how many bytes we will write, to make sure we write EOI at correct position
+    private long remaining;
 
     protected LZWEncoder(final int length) {
         this.remaining = length;
@@ -85,21 +87,12 @@ final class LZWEncoder implements Encoder {
         init();
     }
 
-    private static int bitmaskFor(final int bits) {
-        return (1 << bits) - 1;
-    }
-
     private void init() {
         tableLength = 258;
         bitsPerCode = MIN_BITS;
         bitMask = bitmaskFor(bitsPerCode);
         maxCode = maxCode();
-//        omega = LZWString.EMPTY;
         reverseTable.clear();
-    }
-
-    protected int maxCode() {
-        return bitMask;
     }
 
     public void encode(final OutputStream stream, final ByteBuffer buffer) throws IOException {
@@ -173,19 +166,9 @@ final class LZWEncoder implements Encoder {
 
         Integer index = reverseTable.get(string);
         return index != null ? index : -1;
-
-        // TODO: Needs optimization :-)
-//        for (int i = 258; i < tableLength; i++) {
-//            if (table[i].equals(string)) {
-//                return i;
-//            }
-//        }
-
-//        return -1;
     }
 
     private int addStringToTable(final LZWString string) {
-//        System.err.println("LZWEncoder.addStringToTable: " + string);
         final int index = tableLength++;
         table[index] = string;
         reverseTable.put(string, index);
@@ -200,10 +183,6 @@ final class LZWEncoder implements Encoder {
             bitMask = bitmaskFor(bitsPerCode);
             maxCode = maxCode();
         }
-
-//        if (string.length > maxString) {
-//            maxString = string.length;
-//        }
 
         return index;
     }
@@ -221,5 +200,13 @@ final class LZWEncoder implements Encoder {
         }
 
         bits &= bitmaskFor(bitPos);
+    }
+
+    private static int bitmaskFor(final int bits) {
+        return (1 << bits) - 1;
+    }
+
+    protected int maxCode() {
+        return bitMask;
     }
 }
