@@ -372,7 +372,7 @@ public final class PCXImageReader extends ImageReaderBase {
             readPalette = true;
 
             // Wee can't simply skip to an offset, as the RLE compression makes the file size unpredictable
-            skiptToEOF(imageInput);
+            skipToEOF(imageInput);
 
             // Seek backwards from EOF
             long paletteStart = imageInput.getStreamPosition() - 769;
@@ -400,7 +400,7 @@ public final class PCXImageReader extends ImageReaderBase {
     }
 
     // TODO: Candidate util method
-    private static long skiptToEOF(final ImageInputStream stream) throws IOException {
+    private static long skipToEOF(final ImageInputStream stream) throws IOException {
         long length = stream.length();
 
         if (length > 0) {
