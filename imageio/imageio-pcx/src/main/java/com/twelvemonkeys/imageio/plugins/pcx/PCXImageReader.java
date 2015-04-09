@@ -277,12 +277,12 @@ public final class PCXImageReader extends ImageReaderBase {
                             throw new AssertionError();
                     }
 
-                    processImageProgress(100f * y / height * c / header.getChannels());
-
                     if (abortRequested()) {
                         break;
                     }
                 }
+
+                processImageProgress(100f * y / height);
 
                 if (y >= srcRegion.y + srcRegion.height) {
                     break;
@@ -298,6 +298,11 @@ public final class PCXImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    protected void processImageProgress(float percentageDone) {
+//        System.err.println("percentageDone: " + percentageDone);
+        super.processImageProgress(percentageDone);
     }
 
     private void readRowByte(final DataInput input,
