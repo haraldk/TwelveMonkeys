@@ -300,11 +300,6 @@ public final class PCXImageReader extends ImageReaderBase {
         return destination;
     }
 
-    protected void processImageProgress(float percentageDone) {
-//        System.err.println("percentageDone: " + percentageDone);
-        super.processImageProgress(percentageDone);
-    }
-
     private void readRowByte(final DataInput input,
                              Rectangle srcRegion,
                              int xSub,
