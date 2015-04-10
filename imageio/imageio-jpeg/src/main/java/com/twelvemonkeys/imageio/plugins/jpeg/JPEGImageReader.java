@@ -112,7 +112,7 @@ public class JPEGImageReader extends ImageReaderBase {
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
 
     private static Map<Integer, List<String>> createSegmentIds() {
-        Map<Integer, List<String>> map = new LinkedHashMap<Integer, List<String>>();
+        Map<Integer, List<String>> map = new LinkedHashMap<>();
 
         // Need all APP markers to be able to re-generate proper metadata later
         for (int appMarker = JPEG.APP0; appMarker <= JPEG.APP15; appMarker++) {
@@ -224,7 +224,7 @@ public class JPEGImageReader extends ImageReaderBase {
         JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
         if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<ImageTypeSpecifier>();
+            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
             // Add the standard types, we can always convert to these
             typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
             typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
@@ -371,6 +371,10 @@ public class JPEGImageReader extends ImageReaderBase {
         int origHeight = getHeight(imageIndex);
 
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
+        // TODO: Avoid creating destination here, if possible (as it saves time and memory)
+        // If YCbCr or RGB, we could instead create a BufferedImage around the converted raster directly.
+        // If YCCK or CMYK, we could instead create a BufferedImage around the converted raster,
+        // leaving the fourth band as alpha (or pretend it's not there, by creating a child raster).
         BufferedImage image = getDestination(param, imageTypes, origWidth, origHeight);
         WritableRaster destination = image.getRaster();
 
@@ -466,6 +470,11 @@ public class JPEGImageReader extends ImageReaderBase {
             }
             else if (csType == JPEGColorSpace.YCCK) {
                 YCbCrConverter.convertYCCK2CMYK(raster);
+                // flag0 bit 15, blend = 1 see http://graphicdesign.stackexchange.com/questions/12894/cmyk-jpegs-extracted-from-pdf-appear-inverted
+                if ((getAdobeDCT().flags0 & 0x8000) != 0) {
+                    /// TODO: Better yet would be to not inverting in the first place, add flag to convertYCCK2CMYK
+                    invertCMYK(raster);
+                }
             }
             else if (csType == JPEGColorSpace.CMYK) {
                 invertCMYK(raster);
@@ -670,14 +679,9 @@ public class JPEGImageReader extends ImageReaderBase {
 
             segments = JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
         }
-        catch (IIOException ignore) {
+        catch (IIOException | IllegalArgumentException ignore) {
             if (DEBUG) {
                 ignore.printStackTrace();
-            }
-        }
-        catch (IllegalArgumentException foo) {
-            if (DEBUG) {
-                foo.printStackTrace();
             }
         }
         finally {
@@ -699,7 +703,7 @@ public class JPEGImageReader extends ImageReaderBase {
             if ((marker == ALL_APP_MARKERS && segment.marker() >= JPEG.APP0 && segment.marker() <= JPEG.APP15 || segment.marker() == marker)
                     && (identifier == null || identifier.equals(segment.identifier()))) {
                 if (appSegments == Collections.EMPTY_LIST) {
-                    appSegments = new ArrayList<JPEGSegment>(segments.size());
+                    appSegments = new ArrayList<>(segments.size());
                 }
 
                 appSegments.add(segment);
@@ -949,7 +953,7 @@ public class JPEGImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
 
         if (thumbnails == null) {
-            thumbnails = new ArrayList<ThumbnailReader>();
+            thumbnails = new ArrayList<>();
             ThumbnailReadProgressListener thumbnailProgressDelegator = new ThumbnailProgressDelegate();
 
             // Read JFIF thumbnails if present
@@ -1408,10 +1412,16 @@ public class JPEGImageReader extends ImageReaderBase {
                 try {
                     IIOMetadata imageMetadata = reader.getImageMetadata(0);
                     System.out.println("Metadata for File: " + file.getName());
-                    System.out.println("Native:");
-                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
-                    System.out.println("Standard:");
-                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+
+                    if (imageMetadata.getNativeMetadataFormatName() != null) {
+                        System.out.println("Native:");
+                        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+                    }
+                    if (imageMetadata.isStandardMetadataFormatSupported()) {
+                        System.out.println("Standard:");
+                        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                    }
+
                     System.out.println();
 
                     int numThumbnails = reader.getNumThumbnails(0);
