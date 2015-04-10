@@ -28,7 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.sun.imageio.plugins.jpeg.JPEGImageReader;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
@@ -52,6 +51,7 @@ import com.twelvemonkeys.xml.XMLSerializer;
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
@@ -62,6 +62,8 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteOrder;
 import java.util.*;
 import java.util.zip.Inflater;
@@ -735,8 +737,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 // TODO: Refactor all JPEG reading out to separate JPEG support class?
                 // TODO: Cache the JPEG reader for later use? Remember to reset to avoid resource leaks
 
-                // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
-                ImageReader jpegReader = new JPEGImageReader(getOriginatingProvider());
+                ImageReader jpegReader = createJPEGDelegate();
                 JPEGImageReadParam jpegParam = (JPEGImageReadParam) jpegReader.getDefaultReadParam();
 
                 // JPEG_TABLES should be a full JPEG 'abbreviated table specification', containing:
@@ -825,8 +826,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 // May use normal tiling??
 
-                // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
-                jpegReader = new JPEGImageReader(getOriginatingProvider());
+                jpegReader = createJPEGDelegate();
                 jpegParam = (JPEGImageReadParam) jpegReader.getDefaultReadParam();
 
                 // 513/JPEGInterchangeFormat (may be absent...)
@@ -1039,9 +1039,35 @@ public class TIFFImageReader extends ImageReaderBase {
                 throw new IIOException("Unknown TIFF Compression value: " + compression);
         }
 
+        // TODO: Convert color space from source to destination
+
         processImageComplete();
 
         return destination;
+    }
+
+    private ImageReader createJPEGDelegate() throws IIOException {
+        // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
+        try {
+            @SuppressWarnings("unchecked")
+            Class<ImageReader> readerClass = (Class<ImageReader>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReader");
+            Constructor<ImageReader> constructor = readerClass.getConstructor(ImageReaderSpi.class);
+            return constructor.newInstance(getOriginatingProvider());
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ignore) {
+            if (DEBUG) {
+                ignore.printStackTrace();
+            }
+            // Fall back to default reader below
+        }
+
+        // If we can't get the standard reader, fall back to the default (first) reader
+        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
+        if (!readers.hasNext()) {
+            throw new IIOException("Could not instantiate JPEGImageReader. ");
+        }
+
+        return readers.next();
     }
 
     private static InputStream createJFIFStream(WritableRaster raster, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
@@ -1378,6 +1404,8 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Thumbnail support
 
     public static void main(final String[] args) throws IOException {
+        ImageIO.setUseCache(false);
+
         for (final String arg : args) {
             File file = new File(arg);
 
@@ -1459,7 +1487,12 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     IIOMetadata metadata = reader.getImageMetadata(imageNo);
                     if (metadata != null) {
-                        new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
+                        if (metadata.getNativeMetadataFormatName() != null) {
+                            new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
+                        }
+                        else if (metadata.isStandardMetadataFormatSupported()) {
+                            new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                        }
                     }
 
                 System.err.println("image: " + image);
