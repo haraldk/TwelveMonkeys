@@ -28,11 +28,12 @@
 
 package com.twelvemonkeys.imageio.plugins.sgi;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,10 +43,10 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: SGIImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
-public class SGIImageReaderTest extends ImageReaderAbstractTestCase<SGIImageReader> {
+public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> {
     @Override
     protected List<TestData> getTestData() {
-        return Arrays.asList(
+        return Collections.singletonList(
                 new TestData(getClassLoaderResource("/sgi/MARBLES.SGI"), new Dimension(1419, 1001)) // RLE encoded RGB
         );
     }
@@ -72,9 +73,7 @@ public class SGIImageReaderTest extends ImageReaderAbstractTestCase<SGIImageRead
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList(
-                "sgi"
-        );
+        return Collections.singletonList("sgi");
     }
 
     @Override

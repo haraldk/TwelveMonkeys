@@ -28,32 +28,30 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import org.junit.Test;
 
 import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.ImageReader;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ArrayList;
 import java.io.IOException;
+import java.util.*;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
 /**
- * PSDImageReaderTestCase
+ * PSDImageReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: PSDImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
+ * @version $Id: PSDImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImageReader> {
+public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> {
 
     private static final ImageReaderSpi provider = new PSDImageReaderSpi();
 
@@ -110,11 +108,11 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("psd");
+        return Collections.singletonList("psd");
     }
 
     protected List<String> getSuffixes() {
-        return Arrays.asList("psd");
+        return Collections.singletonList("psd");
     }
 
     protected List<String> getMIMETypes() {
@@ -243,7 +241,7 @@ public class PSDImageReaderTestCase extends ImageReaderAbstractTestCase<PSDImage
 
         imageReader.setInput(getTestData().get(0).getInputStream());
 
-        final List<Object> sequnce = new ArrayList<Object>();
+        final List<Object> sequnce = new ArrayList<>();
         imageReader.addIIOReadProgressListener(new ProgressListenerBase() {
             private float mLastPercentageDone = 0;
 

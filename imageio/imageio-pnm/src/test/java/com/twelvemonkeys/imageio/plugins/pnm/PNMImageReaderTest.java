@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
 import javax.imageio.ImageReader;
@@ -39,9 +39,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class PNMImageReaderTest extends ImageReaderAbstractTestCase<PNMImageReader>{
+public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> {
     @Override protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/ppm/lena.ppm"), new Dimension(128, 128)),     // P6 (PPM RAW)

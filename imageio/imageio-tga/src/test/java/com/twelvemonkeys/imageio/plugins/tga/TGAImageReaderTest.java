@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -42,7 +42,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: TGAImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
-public class TGAImageReaderTest extends ImageReaderAbstractTestCase<TGAImageReader> {
+public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(

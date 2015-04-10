@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.svg;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -40,18 +40,19 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ImagingOpException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 /**
- * SVGImageReaderTestCase
+ * SVGImageReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: SVGImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
+ * @version $Id: SVGImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImageReader> {
+public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> {
     private SVGImageReaderSpi provider = new SVGImageReaderSpi();
 
     protected List<TestData> getTestData() {
@@ -76,15 +77,15 @@ public class SVGImageReaderTestCase extends ImageReaderAbstractTestCase<SVGImage
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("svg");
+        return Collections.singletonList("svg");
     }
 
     protected List<String> getSuffixes() {
-        return Arrays.asList("svg");
+        return Collections.singletonList("svg");
     }
 
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/svg+xml");
+        return Collections.singletonList("image/svg+xml");
     }
 
     @Test

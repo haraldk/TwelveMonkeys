@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.wmf;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -36,20 +36,21 @@ import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * SVGImageReaderTestCase
+ * WMFImageReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: SVGImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
+ * @version $Id: WMFImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class WMFImageReaderTestCase extends ImageReaderAbstractTestCase<WMFImageReader> {
+public class WMFImageReaderTest extends ImageReaderAbstractTest<WMFImageReader> {
     private WMFImageReaderSpi provider = new WMFImageReaderSpi();
 
     protected List<TestData> getTestData() {
-        return Arrays.asList(
+        return Collections.singletonList(
                 // TODO: Dimensions does not look right...
                 new TestData(getClassLoaderResource("/wmf/test.wmf"), new Dimension(841, 673))
         );
@@ -69,7 +70,7 @@ public class WMFImageReaderTestCase extends ImageReaderAbstractTestCase<WMFImage
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("wmf");
+        return Collections.singletonList("wmf");
     }
 
     protected List<String> getSuffixes() {

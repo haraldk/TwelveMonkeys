@@ -57,13 +57,13 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- * ImageReaderAbstractTestCase
+ * ImageReaderAbstractTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 Apr 1, 2008 10:36:46 PM haraldk Exp$
+ * @version $Id: ImageReaderAbstractTest.java,v 1.0 Apr 1, 2008 10:36:46 PM haraldk Exp$
  */
-public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
+public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     // TODO: Should we really test if the provider is installed?
     //       - Pro: Tests the META-INF/services config
     //       - Con: Not all providers should be installed at runtime...
@@ -83,10 +83,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         try {
             return getReaderClass().newInstance();
         }
-        catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        }
-        catch (IllegalAccessException e) {
+        catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -1002,7 +999,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             /*aspectRatio =*/ reader.getAspectRatio(-1);
             //assertEquals("Wrong aspect ratio", data.getDimension().width / (float) data.getDimension().height, aspectRatio, 0f);
         }
-        catch (IndexOutOfBoundsException expected) {
+        catch (IndexOutOfBoundsException ignore) {
         }
         catch (IOException e) {
             fail("Could not read image aspect ratio" + e);
@@ -1391,15 +1388,8 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
                 reader.read(0, param);
                 fail("Expected to throw exception with illegal type specifier");
             }
-            catch (IIOException expected) {
+            catch (IIOException | IllegalArgumentException expected) {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
-                String message = expected.getMessage().toLowerCase();
-                if (!(message.contains("destination") && message.contains("type"))) {
-                    // Allow this to bubble up, du to a bug in the Sun PNGImageReader
-                    throw expected;
-                }
-            }
-            catch (IllegalArgumentException expected) {
                 String message = expected.getMessage().toLowerCase();
                 if (!(message.contains("destination") && message.contains("type"))) {
                     // Allow this to bubble up, du to a bug in the Sun PNGImageReader
@@ -1410,12 +1400,12 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
     }
 
     private List<ImageTypeSpecifier> createIllegalTypes(Iterator<ImageTypeSpecifier> pValidTypes) {
-        List<ImageTypeSpecifier> allTypes = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> allTypes = new ArrayList<>();
         for (int i = BufferedImage.TYPE_INT_RGB; i < BufferedImage.TYPE_BYTE_INDEXED; i++) {
             allTypes.add(ImageTypeSpecifier.createFromBufferedImageType(i));
         }
 
-        List<ImageTypeSpecifier> illegalTypes = new ArrayList<ImageTypeSpecifier>(allTypes);
+        List<ImageTypeSpecifier> illegalTypes = new ArrayList<>(allTypes);
         while (pValidTypes.hasNext()) {
             ImageTypeSpecifier valid = pValidTypes.next();
             boolean removed = illegalTypes.remove(valid);
@@ -1454,6 +1444,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
         assertEquals(reader.getHeight(0) + point.y, image.getHeight());
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testSetDestinationOffsetNull() throws IOException {
         final ImageReader reader = createReader();
@@ -1629,12 +1620,12 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
                 throw new IllegalArgumentException("input == null");
             }
 
-            sizes = new ArrayList<Dimension>();
-            images = new ArrayList<BufferedImage>();
+            sizes = new ArrayList<>();
+            images = new ArrayList<>();
 
             List<Dimension> sizes = pSizes;
             if (sizes == null) {
-                sizes = new ArrayList<Dimension>();
+                sizes = new ArrayList<>();
                 if (pImages != null) {
                     for (BufferedImage image : pImages) {
                         sizes.add(new Dimension(image.getWidth(), image.getHeight()));
@@ -1690,6 +1681,7 @@ public abstract class ImageReaderAbstractTestCase<T extends ImageReader> {
             return sizes.get(pIndex);
         }
 
+        @SuppressWarnings("unused")
         public BufferedImage getImage(final int pIndex) {
             return images.get(pIndex);
         }

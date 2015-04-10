@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -73,7 +73,7 @@ import static org.mockito.Mockito.verify;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageReaderTest.java,v 1.0 24.01.11 22.04 haraldk Exp$
  */
-public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageReader> {
+public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader> {
 
     private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 

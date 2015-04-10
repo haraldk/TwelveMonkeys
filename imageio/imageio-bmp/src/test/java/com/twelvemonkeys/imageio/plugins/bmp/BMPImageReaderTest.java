@@ -1,6 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.w3c.dom.Node;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: BMPImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageReader> {
+public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> {
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // BMP Suite "Good"

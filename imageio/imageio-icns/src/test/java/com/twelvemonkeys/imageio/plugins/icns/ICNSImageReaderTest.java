@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.icns;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -37,6 +37,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -46,7 +47,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: ICNSImageReaderTest.java,v 1.0 25.10.11 18:44 haraldk Exp$
  */
-public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
+public class ICNSImageReaderTest extends ImageReaderAbstractTest {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -119,17 +120,17 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTestCase {
 
     @Override
     protected List<String> getFormatNames() {
-        return Arrays.asList("icns");
+        return Collections.singletonList("icns");
     }
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList("icns");
+        return Collections.singletonList("icns");
     }
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/x-apple-icons");
+        return Collections.singletonList("image/x-apple-icons");
     }
 
     @Test

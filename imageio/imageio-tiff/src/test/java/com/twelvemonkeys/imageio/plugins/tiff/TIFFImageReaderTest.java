@@ -26,7 +26,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
 import javax.imageio.ImageReadParam;
@@ -37,6 +37,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -52,7 +53,7 @@ import static org.mockito.Mockito.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageReaderTest.java,v 1.0 08.05.12 15:25 haraldk Exp$
  */
-public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageReader> {
+public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader> {
 
     private static final TIFFImageReaderSpi SPI = new TIFFImageReaderSpi();
 
@@ -108,7 +109,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTestCase<TIFFImageRe
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/tiff");
+        return Collections.singletonList("image/tiff");
     }
 
 

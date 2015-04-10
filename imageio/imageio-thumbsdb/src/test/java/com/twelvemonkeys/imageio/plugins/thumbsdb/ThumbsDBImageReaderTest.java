@@ -29,7 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
 import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 import com.twelvemonkeys.lang.SystemUtil;
@@ -43,16 +43,19 @@ import java.awt.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertNotNull;
+
 /**
- * ICOImageReaderTestCase
+ * ICOImageReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: ICOImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
+ * @version $Id: ICOImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<ThumbsDBImageReader> {
+public class ThumbsDBImageReaderTest extends ImageReaderAbstractTest<ThumbsDBImageReader> {
     private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
 
     private ThumbsDBImageReaderSpi provider = new ThumbsDBImageReaderSpi();
@@ -97,15 +100,15 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("thumbs");
+        return Collections.singletonList("thumbs");
     }
 
     protected List<String> getSuffixes() {
-        return Arrays.asList("db");
+        return Collections.singletonList("db");
     }
 
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/x-thumbs-db");
+        return Collections.singletonList("image/x-thumbs-db");
     }
 
     @Test
@@ -115,7 +118,9 @@ public class ThumbsDBImageReaderTestCase extends ImageReaderAbstractTestCase<Thu
         Entry root = new CompoundDocument(input).getRootEntry();
         
         Entry child = root.getChildEntry("Catalog");
-        child.getInputStream();
+
+        assertNotNull(child);
+        assertNotNull(child.getInputStream());
     }
 
     @Test
