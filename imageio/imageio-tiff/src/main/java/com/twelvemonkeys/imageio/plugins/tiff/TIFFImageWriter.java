@@ -65,22 +65,18 @@ import java.util.zip.DeflaterOutputStream;
  * @version $Id: TIFFImageWriter.java,v 1.0 18.09.13 12:46 haraldk Exp$
  */
 public final class TIFFImageWriter extends ImageWriterBase {
-    // Short term
-    // TODO: Support JPEG compression (7) - might need extra input to allow multiple images with single DQT
-    // TODO: Use sensible defaults for compression based on input? None is sensible... :-)
-
     // Long term
     // TODO: Support tiling
     // TODO: Support thumbnails
     // TODO: Support ImageIO metadata
     // TODO: Support CCITT Modified Huffman compression (2)
-    // TODO: Full "Baseline TIFF" support
-    // TODO: Support LZW compression (5)?
+    // TODO: Full "Baseline TIFF" support (pending CCITT compression 2)
+    // TODO: CCITT compressions T.4 and T.6
     // ----
     // TODO: Support storing multiple images in one stream (multi-page TIFF)
     // TODO: Support use-case: Transcode multi-layer PSD to multi-page TIFF with metadata
     // TODO: Support use-case: Transcode multi-page TIFF to multiple single-page TIFFs with metadata
-    // TODO: Support use-case: Losslessly transcode JPEG to JPEG in TIFF with (EXIF) metadata (and back)
+    // TODO: Support use-case: Losslessly transcode JPEG to JPEG-in-TIFF with (EXIF) metadata (and back)
 
     // Very long term...
     // TODO: Support JBIG compression via ImageIO plugin/delegate? Pending support in Reader
@@ -92,6 +88,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // Support predictor. See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
     // Support PackBits compression (32773) - easy - BASELINE
     // Support ZLIB (/Deflate) compression (8) - easy
+    // Support LZW compression (5)
+    // Support JPEG compression (7) - might need extra input to allow multiple images with single DQT
+    // Use sensible defaults for compression based on input? None is sensible... :-)
 
     public static final Rational STANDARD_DPI = new Rational(72);
 
@@ -127,12 +126,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
         int[] bitOffsets;
         if (sampleModel instanceof ComponentSampleModel) {
             bandOffsets = ((ComponentSampleModel) sampleModel).getBandOffsets();
-//            System.err.println("bandOffsets: " + Arrays.toString(bandOffsets));
             bitOffsets =  null;
         }
         else if (sampleModel instanceof SinglePixelPackedSampleModel) {
             bitOffsets = ((SinglePixelPackedSampleModel) sampleModel).getBitOffsets();
-//            System.err.println("bitOffsets: " + Arrays.toString(bitOffsets));
             bandOffsets = null;
         }
         else if (sampleModel instanceof MultiPixelPackedSampleModel) {
@@ -143,10 +140,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
-        List<Entry> entries = new ArrayList<Entry>();
+        List<Entry> entries = new ArrayList<>();
         entries.add(new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, renderedImage.getWidth()));
         entries.add(new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
-//        entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
+        // entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
         entries.add(new TIFFEntry(TIFF.TAG_BITS_PER_SAMPLE, asShortArray(sampleModel.getSampleSize())));
         // If numComponents > 3, write ExtraSamples
         if (numComponents > 3) {
@@ -162,7 +159,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // Write compression field from param or metadata
         int compression = TIFFImageWriteParam.getCompressionType(param);
         entries.add(new TIFFEntry(TIFF.TAG_COMPRESSION, compression));
-        // TODO: Let param control predictor
+
+        // TODO: Let param/metadata control predictor
         switch (compression) {
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
@@ -253,7 +251,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             writeImageData(createCompressorStream(renderedImage, param), renderedImage, numComponents, bandOffsets, bitOffsets);
         }
 
-        // TODO: Update IFD0-pointer, and write IFD
+        // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
             long streamPosition = imageOutput.getStreamPosition();
 
