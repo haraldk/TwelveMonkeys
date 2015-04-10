@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -235,7 +236,6 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
     @Test
     public void testMetadataEqualsJRE() throws IOException, URISyntaxException {
-        // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
         ImageReader jreReader;
         try {
             @SuppressWarnings("unchecked")
@@ -244,8 +244,9 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
             jreReader = constructor.newInstance(new Object[] {null});
         }
         catch (Exception e) {
-            System.err.println("WARNING: Skipping metadata tests: " + e);
             e.printStackTrace();
+            // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
+            assumeNoException(e);
             return;
         }
 
