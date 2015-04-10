@@ -21,7 +21,7 @@ h1, h2, h3 {
 }
 
 h1 {
-  font-size:25px;
+  font-size:28px;
 }
 
 h2 {
@@ -96,7 +96,7 @@ img {
 }
 
 header {
-  width:280px;
+  width:270px;
   float:left;
   position:fixed;
 }
