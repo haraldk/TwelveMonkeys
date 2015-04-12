@@ -130,7 +130,7 @@ Legacy formats
 
 #### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
 
-* Legacy format, allows reading popular image from the Commodore Amiga computer.
+* Legacy format, allows reading popular image format from the Commodore Amiga computer.
 * Read support for the following file types:
   * ILBM Indexed color, 1-8 interleaved bit planes, including 6 bit EHB
   * ILBM  Gray, 8 bit interleaved bit planes
