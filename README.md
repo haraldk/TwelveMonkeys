@@ -206,6 +206,7 @@ Icon/other formats
   * ICO RGB, 16, 24 and 32 bit
   * CUR Indexed color, 1, 4 and 8 bit
   * CUR RGB, 16, 24 and 32 bit
+* *3.1* Note: These formats are now part of the BMP plugin
 
 #### MS Windows Thumbs DB (Thumbs.db)
 
@@ -492,17 +493,24 @@ ImageIO dependencies
 * [imageio-metadata-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.1.0/imageio-metadata-3.1.0.jar)
 
 ImageIO plugins
+* [imageio-bmp-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.1.0/imageio-bmp-3.1.0.jar)
 * [imageio-jpeg-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.1.0/imageio-jpeg-3.1.0.jar)
 * [imageio-tiff-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.1.0/imageio-tiff-3.1.0.jar)
+* [imageio-pnm-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.1.0/imageio-pnm-3.1.0.jar)
 * [imageio-psd-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.1.0/imageio-psd-3.1.0.jar)
-* [imageio-pict-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.1.0/imageio-pict-3.1.0.jar)
 * [imageio-iff-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.1.0/imageio-iff-3.1.0.jar)
+* [imageio-pcx-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.1.0/imageio-pcx-3.1.0.jar)
+* [imageio-pict-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.1.0/imageio-pict-3.1.0.jar)
+* [imageio-sgi-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.1.0/imageio-sgi-3.1.0.jar)
+* [imageio-tga-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.1.0/imageio-tga-3.1.0.jar)
 * [imageio-icns-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.1.0/imageio-icns-3.1.0.jar)
-* [imageio-ico-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.1.0/imageio-ico-3.1.0.jar)
 * [imageio-thumbsdb-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.1.0/imageio-thumbsdb-3.1.0.jar)
 
 ImageIO plugins requiring 3rd party libs
 * [imageio-batik-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.1.0/imageio-batik-3.1.0.jar)
+
+Photoshop Path support for ImageIO
+* [imageio-clippath-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.1.0/imageio-clippath-3.1.0.jar)
 
 Servlet support
 * [servlet-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.1.0/servlet-3.1.0.jar)
