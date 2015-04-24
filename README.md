@@ -32,6 +32,8 @@ Mainstream format support
 #### JPEG
 
 * Read support for the following JPEG "flavors":
+  * All JFIF compliant JPEGs
+  * All Exif compliant JPEGs
   * YCbCr JPEGs without JFIF segment (converted to RGB, using embedded ICC profile)
   * CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
   * Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
@@ -483,6 +485,10 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 
 ### Links to prebuilt binaries
 
+#### Latest version (3.1.x) 
+
+Note: Requires Java 7 or later.
+ 
 Common dependencies
 * [common-lang-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.1.0/common-lang-3.1.0.jar)
 * [common-io-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.1.0/common-io-3.1.0.jar)
@@ -514,6 +520,37 @@ Photoshop Path support for ImageIO
 
 Servlet support
 * [servlet-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.1.0/servlet-3.1.0.jar)
+
+#### Old version (3.0.x)
+
+Note: Use this version for projects that requires Java 6 or need the JMagick support. *Does not support Java 8*. 
+
+Common dependencies
+* [common-lang-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0.2/common-lang-3.0.2.jar)
+* [common-io-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0.2/common-io-3.0.2.jar)
+* [common-image-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0.2/common-image-3.0.2.jar)
+ 
+ImageIO dependencies
+* [imageio-core-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0.2/imageio-core-3.0.2.jar)
+* [imageio-metadata-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0.2/imageio-metadata-3.0.2.jar)
+ 
+ImageIO plugins
+* [imageio-jpeg-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0.2/imageio-jpeg-3.0.2.jar)
+* [imageio-tiff-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0.2/imageio-tiff-3.0.2.jar)
+* [imageio-psd-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0.2/imageio-psd-3.0.2.jar)
+* [imageio-pict-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0.2/imageio-pict-3.0.2.jar)
+* [imageio-iff-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0.2/imageio-iff-3.0.2.jar)
+* [imageio-icns-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0.2/imageio-icns-3.0.2.jar)
+* [imageio-ico-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0.2/imageio-ico-3.0.2.jar)
+* [imageio-thumbsdb-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0.2/imageio-thumbsdb-3.0.2.jar)
+ 
+ImageIO plugins requiring 3rd party libs
+* [imageio-batik-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0.2/imageio-batik-3.0.2.jar)
+* [imageio-jmagick-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0.2/imageio-jmagick-3.0.2.jar)
+ 
+Servlet support
+* [servlet-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0.2/servlet-3.0.2.jar)
+
 
 ## License
 
