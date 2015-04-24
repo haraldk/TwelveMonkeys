@@ -485,9 +485,9 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 
 ### Links to prebuilt binaries
 
-#### Latest version (3.1.x) 
+##### Latest version (3.1.x) 
 
-Note: Requires Java 7 or later.
+Requires Java 7 or later.
  
 Common dependencies
 * [common-lang-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.1.0/common-lang-3.1.0.jar)
@@ -521,9 +521,9 @@ Photoshop Path support for ImageIO
 Servlet support
 * [servlet-3.1.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.1.0/servlet-3.1.0.jar)
 
-#### Old version (3.0.x)
+##### Old version (3.0.x)
 
-Note: Use this version for projects that requires Java 6 or need the JMagick support. *Does not support Java 8*. 
+Use this version for projects that requires Java 6 or need the JMagick support. *Does not support Java 8*. 
 
 Common dependencies
 * [common-lang-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0.2/common-lang-3.0.2.jar)
