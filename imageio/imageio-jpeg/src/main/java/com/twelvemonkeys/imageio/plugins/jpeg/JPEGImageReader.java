@@ -28,7 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
@@ -152,10 +151,10 @@ public class JPEGImageReader extends ImageReaderBase {
     /** Cached list of JPEG segments we filter from the underlying stream */
     private List<JPEGSegment> segments;
 
-    JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
+    protected JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
-        this.delegate = Validate.notNull(delegate);
 
+        this.delegate = Validate.notNull(delegate);
         progressDelegator = new ProgressDelegator();
     }
 
@@ -298,7 +297,9 @@ public class JPEGImageReader extends ImageReaderBase {
         super.setInput(input, seekForwardOnly, ignoreMetadata);
 
         // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
-        delegate.setInput(imageInput != null ? new JPEGSegmentImageInputStream(imageInput) : null, seekForwardOnly, ignoreMetadata);
+        delegate.setInput(imageInput != null
+                          ? new JPEGSegmentImageInputStream(imageInput)
+                          : null, seekForwardOnly, ignoreMetadata);
     }
 
     @Override
@@ -629,7 +630,7 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
+    protected ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
         // NOTE: This is probably not the right way to do it... :-P
         // TODO: Consider moving method to ColorSpaces class or new class in imageio.color package
 
@@ -835,7 +836,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return data;
     }
 
-    ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
+    protected ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
@@ -1301,7 +1302,58 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     public static void main(final String[] args) throws IOException {
-        for (final String arg : args) {
+        ImageIO.setUseCache(false);
+
+        int subX = 1;
+        int subY = 1;
+        Rectangle roi = null;
+        boolean metadata = false;
+        boolean thumbnails = false;
+
+        for (int argIdx = 0; argIdx < args.length; argIdx++) {
+            final String arg = args[argIdx];
+
+            if (arg.charAt(0) == '-') {
+                if (arg.equals("-s") || arg.equals("--subsample") && args.length > argIdx) {
+                    String[] sub = args[++argIdx].split(",");
+
+                    try {
+                        subX = Integer.parseInt(sub[0]);
+                        subY = sub.length > 1 ? Integer.parseInt(sub[1]) : subX;
+                    }
+                    catch (NumberFormatException e) {
+                        System.err.println("Bad sub sampling (x,y): '" + args[argIdx] + "'");
+                    }
+                }
+                else if (arg.equals("-r") || arg.equals("--roi") && args.length > argIdx) {
+                    String[] region = args[++argIdx].split(",");
+
+                    try {
+                        if (region.length >= 4) {
+                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[2]), Integer.parseInt(region[2]), Integer.parseInt(region[3]));
+                        }
+                        else {
+                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[2]));
+                        }
+                    }
+                    catch (IndexOutOfBoundsException | NumberFormatException e) {
+                        System.err.println("Bad source region ([x,y,]w, h): '" + args[argIdx] + "'");
+                    }
+                }
+                else if (arg.equals("-m") || arg.equals("--metadata")) {
+                    metadata = true;
+                }
+                else if (arg.equals("-t") || arg.equals("--thumbnails")) {
+                    thumbnails = true;
+                }
+                else {
+                    System.err.println("Unknown argument: '" + arg + "'");
+                    System.exit(-1);
+                }
+
+                continue;
+            }
+
             File file = new File(arg);
 
             ImageInputStream input = ImageIO.createImageInputStream(file);
@@ -1317,15 +1369,15 @@ public class JPEGImageReader extends ImageReaderBase {
                 continue;
             }
 
-            ImageReader reader = readers.next();
-//            System.err.println("Reading using: " + reader);
+            final ImageReader reader = readers.next();
+            System.err.println("Reading using: " + reader);
 
             reader.addIIOReadWarningListener(new IIOReadWarningListener() {
                 public void warningOccurred(ImageReader source, String warning) {
                     System.err.println("Warning: " + arg + ": " + warning);
                 }
             });
-            reader.addIIOReadProgressListener(new ProgressListenerBase() {
+            final ProgressListenerBase listener = new ProgressListenerBase() {
                 private static final int MAX_W = 78;
                 int lastProgress = 0;
 
@@ -1354,29 +1406,35 @@ public class JPEGImageReader extends ImageReaderBase {
 
                     System.out.println("]");
                 }
-            });
+            };
+            reader.addIIOReadProgressListener(listener);
 
             reader.setInput(input);
 
-            // For a tables-only image, we can't read image, but we should get metadata.
-            if (reader.getNumImages(true) == 0) {
-                IIOMetadata streamMetadata = reader.getStreamMetadata();
-                IIOMetadataNode streamNativeTree = (IIOMetadataNode) streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName());
-                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(streamNativeTree, false);
-                continue;
-            }
-
             try {
+                // For a tables-only image, we can't read image, but we should get metadata.
+                if (reader.getNumImages(true) == 0) {
+                    IIOMetadata streamMetadata = reader.getStreamMetadata();
+                    IIOMetadataNode streamNativeTree = (IIOMetadataNode) streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName());
+                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(streamNativeTree, false);
+                    continue;
+                }
+
+                BufferedImage image;
                 ImageReadParam param = reader.getDefaultReadParam();
-//            if (args.length > 1) {
-//                int sub = Integer.parseInt(args[1]);
-//                int sub = 4;
-//                param.setSourceSubsampling(sub, sub, 0, 0);
-//            }
-                BufferedImage image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                if (subX > 1 || subY > 1 || roi != null) {
+                    param.setSourceSubsampling(subX, subY, 0, 0);
+                    param.setSourceRegion(roi);
+
+                    image = reader.getImageTypes(0).next().createBufferedImage((reader.getWidth(0) + subX - 1)/ subX, (reader.getHeight(0) + subY - 1) / subY);
+                }
+                else {
+                    image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                }
                 param.setDestination(image);
 
-//                long start = System.currentTimeMillis();
+                long start = DEBUG ? System.currentTimeMillis() : 0;
+
                 try {
                     image = reader.read(0, param);
                 }
@@ -1387,12 +1445,13 @@ public class JPEGImageReader extends ImageReaderBase {
                         continue;
                     }
                 }
-//                System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
-//                System.err.println("image: " + image);
 
+                if (DEBUG) {
+                    System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
+                    System.err.println("image: " + image);
+                }
 
-//            image = new ResampleOp(reader.getWidth(0) / 4, reader.getHeight(0) / 4, ResampleOp.FILTER_LANCZOS).filter(image, null);
-
+                /*
                 int maxW = 1280;
                 int maxH = 800;
                 if (image.getWidth() > maxW || image.getHeight() > maxH) {
@@ -1406,34 +1465,45 @@ public class JPEGImageReader extends ImageReaderBase {
                     }
 //                    System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
                 }
+                */
 
                 showIt(image, String.format("Image: %s [%d x %d]", file.getName(), reader.getWidth(0), reader.getHeight(0)));
 
-                try {
-                    IIOMetadata imageMetadata = reader.getImageMetadata(0);
-                    System.out.println("Metadata for File: " + file.getName());
+                if (metadata) {
+                    try {
+                        IIOMetadata imageMetadata = reader.getImageMetadata(0);
+                        System.out.println("Metadata for File: " + file.getName());
 
-                    if (imageMetadata.getNativeMetadataFormatName() != null) {
-                        System.out.println("Native:");
-                        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+                        if (imageMetadata.getNativeMetadataFormatName() != null) {
+                            System.out.println("Native:");
+                            new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+                        }
+                        if (imageMetadata.isStandardMetadataFormatSupported()) {
+                            System.out.println("Standard:");
+                            new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                        }
+
+                        System.out.println();
                     }
-                    if (imageMetadata.isStandardMetadataFormatSupported()) {
-                        System.out.println("Standard:");
-                        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
-                    }
-
-                    System.out.println();
-
-                    int numThumbnails = reader.getNumThumbnails(0);
-                    for (int i = 0; i < numThumbnails; i++) {
-                        BufferedImage thumbnail = reader.readThumbnail(0, i);
-//                        System.err.println("thumbnail: " + thumbnail);
-                        showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
+                    catch (IIOException e) {
+                        System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
-                catch (IIOException e) {
-                    System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
-                    e.printStackTrace();
+
+                if (thumbnails) {
+                    try {
+                        int numThumbnails = reader.getNumThumbnails(0);
+                        for (int i = 0; i < numThumbnails; i++) {
+                            BufferedImage thumbnail = reader.readThumbnail(0, i);
+                            //                        System.err.println("thumbnail: " + thumbnail);
+                            showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
+                        }
+                    }
+                    catch (IIOException e) {
+                        System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
             catch (Throwable t) {
