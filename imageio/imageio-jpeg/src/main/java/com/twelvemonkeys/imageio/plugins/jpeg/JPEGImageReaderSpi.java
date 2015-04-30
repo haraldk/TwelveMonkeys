@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.Validate;
 
@@ -48,14 +49,14 @@ import java.util.Locale;
  * @version $Id: JPEGImageReaderSpi.java,v 1.0 24.01.11 22.12 haraldk Exp$
  */
 public class JPEGImageReaderSpi extends ImageReaderSpiBase {
-    private ImageReaderSpi delegateProvider;
+    protected ImageReaderSpi delegateProvider;
 
     /**
      * Constructor for use by {@link javax.imageio.spi.IIORegistry} only.
      * The instance created will not work without being properly registered.
      */
     public JPEGImageReaderSpi() {
-        super(new JPEGProviderInfo());
+        this(new JPEGProviderInfo());
     }
 
     /**
@@ -67,6 +68,15 @@ public class JPEGImageReaderSpi extends ImageReaderSpiBase {
         this();
 
         this.delegateProvider = Validate.notNull(delegateProvider);
+    }
+
+    /**
+     * Constructor for subclasses.
+     *
+     * @param info
+     */
+    protected JPEGImageReaderSpi(final ReaderWriterProviderInfo info) {
+        super(info);
     }
 
     static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
@@ -83,7 +93,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpiBase {
         return null;
     }
 
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked", "deprecation"})
     @Override
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {

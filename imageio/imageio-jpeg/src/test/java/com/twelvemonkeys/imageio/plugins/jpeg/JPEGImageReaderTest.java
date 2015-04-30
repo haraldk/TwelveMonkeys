@@ -63,8 +63,7 @@ import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * JPEGImageReaderTest
@@ -75,9 +74,9 @@ import static org.mockito.Mockito.verify;
  */
 public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader> {
 
-    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
+    protected static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
-    private static ImageReaderSpi lookupDelegateProvider() {
+    protected static ImageReaderSpi lookupDelegateProvider() {
         return JPEGImageReaderSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
     }
 
@@ -370,7 +369,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertEquals(1772, image.getWidth());
         assertEquals(8, image.getHeight());
 
-        verify(warningListener).warningOccurred(eq(reader), anyString());
+        verify(warningListener, atLeast(1)).warningOccurred(eq(reader), anyString());
     }
 
     @Test
