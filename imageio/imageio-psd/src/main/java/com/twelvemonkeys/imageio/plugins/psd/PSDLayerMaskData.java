@@ -47,42 +47,90 @@ final class PSDLayerMaskData {
     private int defaultColor;
     private int flags;
 
-    private boolean large;
-    private int realFlags;
-    private int realUserBackground;
-    private int realTop;
-    private int realLeft;
-    private int realBottom;
-    private int realRight;
+    private int maskParams;
+    private int userMaskDensity;
+    private double userMaskFeather;
+    private int vectorMaskDensity;
+    private double vectorMaskFeather;
 
     PSDLayerMaskData(final ImageInputStream pInput, final int pSize) throws IOException {
-        if (pSize != 20 && pSize != 36) {
-            throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expected 20 or 36)");
+        if (pSize < 20 || pSize > 55) {
+            throw new IIOException("Illegal PSD Layer Mask data size: " + pSize + " (expected between 20 and 55)");
         }
 
+        // Rectangle enclosing layer mask: Top, left, bottom, right.
         top = pInput.readInt();
         left = pInput.readInt();
         bottom = pInput.readInt();
         right = pInput.readInt();
 
+        // Default color. 0 or 255
         defaultColor = pInput.readUnsignedByte();
 
+        // Flags.
+        // bit 0 = position relative to layer
+        // bit 1 = layer mask disabled
+        // bit 2 = invert layer mask when blending (Obsolete)
+        // bit 3 = indicates that the user mask actually came from rendering other data
+        // bit 4 = indicates that the user and/or vector masks have parameters applied to them
         flags = pInput.readUnsignedByte();
 
-        if (pSize == 20) {
+        int dataLeft = pSize - 18;
+
+        if ((flags & 0x10) != 0) {
+            // Mask Parameters. Only present if bit 4 of Flags set above.
+            maskParams = pInput.readUnsignedByte();
+            dataLeft--;
+
+            // Mask Parameters bit flags present as follows:
+            // bit 0 = user mask density, 1 byte
+            // bit 1 = user mask feather, 8 byte, double
+            // bit 2 = vector mask density, 1 byte
+            // bit 3 = vector mask feather, 8 bytes, double
+            if ((maskParams & 0x01) != 0) {
+                userMaskDensity = pInput.readByte();
+                dataLeft--;
+            }
+            if ((maskParams & 0x02) != 0) {
+                userMaskFeather = pInput.readDouble();
+                dataLeft -= 8;
+            }
+            if ((maskParams & 0x04) != 0) {
+                vectorMaskDensity = pInput.readByte();
+                dataLeft--;
+            }
+            if ((maskParams & 0x08) != 0) {
+                vectorMaskFeather = pInput.readDouble();
+                dataLeft -= 8;
+            }
+        }
+
+        // Padding. Only present if size = 20. Otherwise the following is present
+        if (pSize == 20 && dataLeft == 2) {
             pInput.readShort(); // Pad
+            dataLeft -= 2;
         }
         else {
-            // TODO: What to make out of this?
-            large = true;
+            if (dataLeft >= 2) {
+                // Real Flags. Same as Flags information above.
+                flags = pInput.readUnsignedByte();
+                dataLeft--;
+                // Real user mask background. 0 or 255.
+                defaultColor = pInput.readUnsignedByte();
+                dataLeft--;
+            }
+            if (dataLeft >= 16) {
+                // Rectangle enclosing layer mask: Top, left, bottom, right.
+                top = pInput.readInt();
+                left = pInput.readInt();
+                bottom = pInput.readInt();
+                right = pInput.readInt();
+                dataLeft -= 16;
+            }
+        }
 
-            realFlags = pInput.readUnsignedByte();
-            realUserBackground = pInput.readUnsignedByte();
-
-            realTop = pInput.readInt();
-            realLeft = pInput.readInt();
-            realBottom = pInput.readInt();
-            realRight = pInput.readInt();
+        if (dataLeft > 0) {
+            pInput.skipBytes(dataLeft);
         }
     }
 
@@ -97,39 +145,53 @@ final class PSDLayerMaskData {
         builder.append(", default color: ").append(defaultColor);
         builder.append(", flags: ").append(Integer.toBinaryString(flags));
 
-        // TODO: Maybe the flag bits have oposite order?
         builder.append(" (");
         if ((flags & 0x01) != 0) {
-            builder.append("Pos. rel. to layer");
+            builder.append("relative");
         }
         else {
-            builder.append("Pos. abs.");
+            builder.append("absolute");
         }
         if ((flags & 0x02) != 0) {
-            builder.append(", Mask disabled");
+            builder.append(", disabled");
         }
         else {
-            builder.append(", Mask enabled");
+            builder.append(", enabled");
         }
         if ((flags & 0x04) != 0) {
-            builder.append(", Invert mask");
+            builder.append(", inverted");
         }
         if ((flags & 0x08) != 0) {
-            builder.append(", Unknown bit 3");
+            builder.append(", from rendered data");
         }
         if ((flags & 0x10) != 0) {
-            builder.append(", Unknown bit 4");
+            builder.append(", has parameters");
         }
         if ((flags & 0x20) != 0) {
-            builder.append(", Unknown bit 5");
+            builder.append(", unknown flag (bit 5)");
         }
         if ((flags & 0x40) != 0) {
-            builder.append(", Unknown bit 6");
+            builder.append(", unknown flag (bit 6)");
         }
         if ((flags & 0x80) != 0) {
-            builder.append(", Unknown bit 7");
+            builder.append(", unknown flag (bit 7)");
         }
         builder.append(")");
+
+        if ((flags & 0x10) != 0) {
+            if ((maskParams & 0x01) != 0) {
+                builder.append(", userMaskDensity: ").append(userMaskDensity);
+            }
+            if ((maskParams & 0x02) != 0) {
+                builder.append(", userMaskFeather: ").append(userMaskFeather);
+            }
+            if ((maskParams & 0x04) != 0) {
+                builder.append(", vectorMaskDensity: ").append(vectorMaskDensity);
+            }
+            if ((maskParams & 0x08) != 0) {
+                builder.append(", vectorMaskFeather: ").append(vectorMaskFeather);
+            }
+        }
 
         builder.append("]");
         return builder.toString();
