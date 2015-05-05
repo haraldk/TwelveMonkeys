@@ -74,7 +74,7 @@ final class PSDLayerInfo {
         long extraDataSize = pInput.readUnsignedInt();
 
         // Layer mask/adjustment layer data
-        int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or 36 bytes...
+        int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or variable (up to 55) bytes...
         if (layerMaskDataSize != 0) {
             layerMaskData = new PSDLayerMaskData(pInput, layerMaskDataSize);
         }
