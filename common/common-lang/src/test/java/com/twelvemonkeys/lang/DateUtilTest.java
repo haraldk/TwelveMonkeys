@@ -150,7 +150,6 @@ public class DateUtilTest {
         assertEquals(0, calendar.get(Calendar.MILLISECOND));
         assertEquals(0, calendar.get(Calendar.SECOND));
         assertEquals(0, calendar.get(Calendar.MINUTE));
-//        assertEquals((TimeZone.getDefault().getOffset(calendar.getTimeInMillis()) / DateUtil.MINUTE) % 60, calendar.get(Calendar.MINUTE));
     }
 
     @Test
@@ -159,7 +158,6 @@ public class DateUtilTest {
 
         assertEquals(0, calendar.get(Calendar.MILLISECOND));
         assertEquals(0, calendar.get(Calendar.SECOND));
-//        assertEquals((TimeZone.getDefault().getOffset(calendar.getTimeInMillis()) / DateUtil.MINUTE) % 60, calendar.get(Calendar.MINUTE));
         assertEquals(0, calendar.get(Calendar.MINUTE));
         assertEquals(0, calendar.get(Calendar.HOUR_OF_DAY));
     }
