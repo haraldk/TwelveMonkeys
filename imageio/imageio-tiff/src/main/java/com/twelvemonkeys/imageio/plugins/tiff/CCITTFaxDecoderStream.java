@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
+ * CCITT Modified Huffman RLE<!--, and hopefully soon: Group 3 (T4) and Group 4 (T6) fax compression-->.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
