@@ -161,6 +161,11 @@ public final class ColorSpaces {
 
             if (cs == null) {
                 cs = new ICC_ColorSpace(profile);
+
+                // Validate the color space, to avoid caching bad color spaces
+                // Will throw IllegalArgumentException or CMMException if the profile is bad
+                cs.fromRGB(new float[] {1f, 0f, 0f});
+
                 cache.put(key, cs);
             }
 
@@ -195,7 +200,7 @@ public final class ColorSpaces {
      * @return {@code true} if known to be offending, {@code false} otherwise
      * @throws IllegalArgumentException if {@code profile} is {@code null}
      */
-    public static boolean isOffendingColorProfile(final ICC_Profile profile) {
+    static boolean isOffendingColorProfile(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
 
         // NOTE:
@@ -211,6 +216,26 @@ public final class ColorSpaces {
         byte[] data = profile.getData(ICC_Profile.icSigHead);
 
         return data[ICC_Profile.icHdrRenderingIntent] != 0;
+    }
+
+    /**
+     * Tests whether an ICC color profile is valid.
+     * Invalid profiles are known to cause problems for {@link java.awt.image.ColorConvertOp}.
+     * <p />
+     * <em>
+     * Note that this method only tests if a color conversion using this profile is known to fail.
+     * There's no guarantee that the color conversion will succeed even if this method returns {@code false}.
+     * </em>
+     *
+     * @param profile the ICC color profile. May not be {@code null}.
+     * @return {@code profile} if valid.
+     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     * @throws java.awt.color.CMMException if {@code profile} is invalid.
+     */
+    public static ICC_Profile validateProfile(final ICC_Profile profile) {
+        createColorSpace(profile); // Creating a color space will fail if the profile is bad
+
+        return profile;
     }
 
     /**
