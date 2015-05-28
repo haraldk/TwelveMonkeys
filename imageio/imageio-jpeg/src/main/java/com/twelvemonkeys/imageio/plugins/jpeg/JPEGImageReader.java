@@ -409,6 +409,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 if (DEBUG) {
                     System.err.println("Converting from " + intendedCS + " to " + (image.getColorModel().getColorSpace().isCS_sRGB() ? "sRGB" : image.getColorModel().getColorSpace()));
                 }
+
                 convert = new ColorConvertOp(intendedCS, image.getColorModel().getColorSpace(), null);
             }
             // Else, pass through with no conversion
@@ -858,7 +859,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 return null;
             }
 
-            return readICCProfileSafe(stream);
+            return readICCProfileSafe(stream, allowBadIndexes);
         }
         else if (!segments.isEmpty()) {
             // NOTE: This is probably over-complicated, as I've never encountered ICC_PROFILE chunks out of order...
@@ -905,15 +906,17 @@ public class JPEGImageReader extends ImageReaderBase {
                 streams[badICC ? i : chunkNumber - 1] = stream;
             }
 
-            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))));
+            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))), allowBadIndexes);
         }
 
         return null;
     }
 
-    private ICC_Profile readICCProfileSafe(final InputStream stream) throws IOException {
+    private ICC_Profile readICCProfileSafe(final InputStream stream, final boolean allowBadProfile) throws IOException {
         try {
-            return ICC_Profile.getInstance(stream);
+            ICC_Profile profile = ICC_Profile.getInstance(stream);
+
+            return allowBadProfile ? profile : ColorSpaces.validateProfile(profile);
         }
         catch (RuntimeException e) {
             // NOTE: Throws either IllegalArgumentException or CMMException, depending on platform.
@@ -1306,6 +1309,8 @@ public class JPEGImageReader extends ImageReaderBase {
 
         int subX = 1;
         int subY = 1;
+        int xOff = 0;
+        int yOff = 0;
         Rectangle roi = null;
         boolean metadata = false;
         boolean thumbnails = false;
@@ -1318,8 +1323,16 @@ public class JPEGImageReader extends ImageReaderBase {
                     String[] sub = args[++argIdx].split(",");
 
                     try {
-                        subX = Integer.parseInt(sub[0]);
-                        subY = sub.length > 1 ? Integer.parseInt(sub[1]) : subX;
+                        if (sub.length >= 4) {
+                            subX = Integer.parseInt(sub[0]);
+                            subY = Integer.parseInt(sub[1]);
+                            xOff = Integer.parseInt(sub[2]);
+                            yOff = Integer.parseInt(sub[3]);
+                        }
+                        else {
+                            subX = Integer.parseInt(sub[0]);
+                            subY = sub.length > 1 ? Integer.parseInt(sub[1]) : subX;
+                        }
                     }
                     catch (NumberFormatException e) {
                         System.err.println("Bad sub sampling (x,y): '" + args[argIdx] + "'");
@@ -1423,7 +1436,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 BufferedImage image;
                 ImageReadParam param = reader.getDefaultReadParam();
                 if (subX > 1 || subY > 1 || roi != null) {
-                    param.setSourceSubsampling(subX, subY, 0, 0);
+                    param.setSourceSubsampling(subX, subY, xOff, yOff);
                     param.setSourceRegion(roi);
 
                     image = reader.getImageTypes(0).next().createBufferedImage((reader.getWidth(0) + subX - 1)/ subX, (reader.getHeight(0) + subY - 1) / subY);

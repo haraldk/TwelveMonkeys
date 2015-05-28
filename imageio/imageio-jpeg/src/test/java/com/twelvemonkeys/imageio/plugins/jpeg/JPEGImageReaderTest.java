@@ -86,6 +86,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
+                new TestData(getClassLoaderResource("/jpeg/corrupted-icc-srgb.jpg"), new Dimension(1024, 685)),
                 new TestData(getClassLoaderResource("/jpeg/gray-sample.jpg"), new Dimension(386, 396)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(160, 227)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804)),
