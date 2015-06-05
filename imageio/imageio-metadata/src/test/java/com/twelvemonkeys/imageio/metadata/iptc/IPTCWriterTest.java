@@ -66,7 +66,6 @@ public class IPTCWriterTest extends MetadataWriterAbstractTest {
         stream.close();
 
         Directory written = createReader().read(new ByteArrayImageInputStream(bytes.toByteArray()));
-        System.err.println("written: " + written);
         assertEquals(iptc, written);
     }
 }

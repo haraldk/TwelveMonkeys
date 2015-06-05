@@ -23,6 +23,9 @@ public final class IPTCWriter extends MetadataWriter {
         notNull(directory, "directory");
         notNull(stream, "stream");
 
+        // TODO: Make sure we always write application record version (2.00)
+        // TODO: Write encoding UTF8?
+
         for (Entry entry : directory) {
             int tag = (Integer) entry.getIdentifier();
             Object value = entry.getValue();
@@ -49,6 +52,11 @@ public final class IPTCWriter extends MetadataWriter {
     private void writeValue(final ImageOutputStream stream, final Object value) throws IOException {
         if (value instanceof String) {
             byte[] data = ((String) value).getBytes(StandardCharsets.UTF_8);
+            stream.writeShort(data.length);
+            stream.write(data);
+        }
+        else if (value instanceof byte[]) {
+            byte[] data = (byte[]) value;
             stream.writeShort(data.length);
             stream.write(data);
         }
