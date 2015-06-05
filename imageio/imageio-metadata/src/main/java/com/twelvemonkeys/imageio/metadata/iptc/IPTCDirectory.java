@@ -42,6 +42,7 @@ import java.util.Collection;
  */
 final class IPTCDirectory extends AbstractDirectory {
     IPTCDirectory(final Collection<? extends Entry> entries) {
+        // TODO: Normalize multiple entries with same key to single entry w/array
         super(entries);
     }
 }

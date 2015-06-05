@@ -29,19 +29,17 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
-import static org.junit.Assert.assertNotNull;
+import java.util.ArrayList;
 
 /**
  * ReaderAbstractTest
@@ -50,7 +48,7 @@ import static org.junit.Assert.assertNotNull;
  * @author last modified by $Author: haraldk$
  * @version $Id: ReaderAbstractTest.java,v 1.0 04.01.12 09:40 haraldk Exp$
  */
-public abstract class MetadataReaderAbstractTest {
+public abstract class MetadataWriterAbstractTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
         ImageIO.setUseCache(false);
@@ -66,42 +64,16 @@ public abstract class MetadataReaderAbstractTest {
 
     protected abstract InputStream getData() throws IOException;
 
-    protected abstract MetadataReader createReader();
+    protected abstract MetadataWriter createWriter();
 
     @Test(expected = IllegalArgumentException.class)
-    public void testReadNull() throws IOException {
-        createReader().read(null);
+    public void testWriteNullDirectory() throws IOException {
+        createWriter().write(null, new MemoryCacheImageOutputStream(new ByteArrayOutputStream()));
     }
 
-    @Test
-    public void testRead() throws IOException {
-        Directory directory = createReader().read(getDataAsIIS());
-        assertNotNull(directory);
-    }
-
-    protected static Matcher<Entry> hasValue(final Object value) {
-        return new EntryHasValue(value);
-    }
-
-    private static class EntryHasValue extends TypeSafeMatcher<Entry> {
-        private final Object value;
-
-        public EntryHasValue(final Object value) {
-            this.value = value;
-        }
-
-        @Override
-        public boolean matchesSafely(final Entry entry) {
-            return entry != null && (value == null ? entry.getValue() == null : valueEquals(value, entry.getValue()));
-        }
-
-        private static boolean valueEquals(final Object expected, final Object actual) {
-            return expected.getClass().isArray() ? AbstractEntry.arrayEquals(expected, actual) : expected.equals(actual);
-        }
-
-        public void describeTo(final Description description) {
-            description.appendText("has value ");
-            description.appendValue(value);
-        }
+    @Test(expected = IllegalArgumentException.class)
+    public void testWriteNullStream() throws IOException {
+        createWriter().write(new AbstractDirectory(new ArrayList<Entry>()) {
+        }, null);
     }
 }

@@ -47,6 +47,30 @@ class IPTCEntry extends AbstractEntry {
         switch ((Integer) getIdentifier()) {
             case IPTC.TAG_RECORD_VERSION:
                 return "RecordVersion";
+            case IPTC.TAG_KEYWORDS:
+                return "Keywords";
+            case IPTC.TAG_SPECIAL_INSTRUCTIONS:
+                return "Instructions";
+            case IPTC.TAG_DIGITAL_CREATION_DATE:
+                return "DigitalCreationDate";
+            case IPTC.TAG_DIGITAL_CREATION_TIME:
+                return "DigitalCreationTime";
+            case IPTC.TAG_DATE_CREATED:
+                return "DateCreated";
+            case IPTC.TAG_TIME_CREATED:
+                return "TimeCreated";
+            case IPTC.TAG_BY_LINE_TITLE:
+                return "ByLineTitle";
+            case IPTC.TAG_CITY:
+                return "City";
+            case IPTC.TAG_SUB_LOCATION:
+                return "SubLocation";
+            case IPTC.TAG_PROVINCE_OR_STATE:
+                return "StateProvince";
+            case IPTC.TAG_COUNTRY_OR_PRIMARY_LOCATION_CODE:
+                return "CountryCode";
+            case IPTC.TAG_COUNTRY_OR_PRIMARY_LOCATION:
+                return "Country";
             case IPTC.TAG_SOURCE:
                 return "Source";
             case IPTC.TAG_CAPTION:

@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio.metadata.exif;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataWriter;
 import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
@@ -48,7 +49,7 @@ import java.util.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: EXIFWriter.java,v 1.0 17.07.13 10:20 haraldk Exp$
  */
-public class EXIFWriter {
+public final class EXIFWriter extends MetadataWriter {
 
     static final int WORD_LENGTH = 2;
     static final int LONGWORD_LENGTH = 4;
@@ -58,6 +59,7 @@ public class EXIFWriter {
         return write(new IFD(entries), stream);
     }
 
+    @Override
     public boolean write(final Directory directory, final ImageOutputStream stream) throws IOException {
         Validate.notNull(directory);
         Validate.notNull(stream);

@@ -28,24 +28,17 @@
 
 package com.twelvemonkeys.imageio.metadata.exif;
 
-import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
-import com.twelvemonkeys.imageio.metadata.AbstractEntry;
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.*;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
-import javax.imageio.spi.IIORegistry;
-import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.ImageOutputStreamImpl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -61,37 +54,25 @@ import static org.junit.Assert.assertNotNull;
  * @author last modified by $Author: haraldk$
  * @version $Id: EXIFWriterTest.java,v 1.0 18.07.13 09:53 haraldk Exp$
  */
-public class EXIFWriterTest {
-    static {
-        IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
-        ImageIO.setUseCache(false);
-    }
+public class EXIFWriterTest extends MetadataWriterAbstractTest {
 
-    protected final URL getResource(final String name) throws IOException {
-        return getClass().getResource(name);
-    }
-
-    protected final ImageInputStream getDataAsIIS() throws IOException {
-        return ImageIO.createImageInputStream(getData());
-    }
-
-    //    @Override
+    @Override
     protected InputStream getData() throws IOException {
         return getResource("/exif/exif-jpeg-segment.bin").openStream();
     }
 
-//    @Override
     protected EXIFReader createReader() {
         return new EXIFReader();
     }
 
+    @Override
     protected EXIFWriter createWriter() {
         return new EXIFWriter();
     }
 
     @Test
     public void testWriteReadSimple() throws IOException {
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Entry> entries = new ArrayList<>();
         entries.add(new EXIFEntry(TIFF.TAG_ORIENTATION, 1, TIFF.TYPE_SHORT));
         entries.add(new EXIFEntry(TIFF.TAG_IMAGE_WIDTH, 1600, TIFF.TYPE_SHORT));
         entries.add(new AbstractEntry(TIFF.TAG_IMAGE_HEIGHT, 900) {});
@@ -139,7 +120,7 @@ public class EXIFWriterTest {
 
     @Test
     public void testWriteMotorola() throws IOException {
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Entry> entries = new ArrayList<>();
         entries.add(new AbstractEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO") {});
         entries.add(new EXIFEntry(TIFF.TAG_IMAGE_WIDTH, Integer.MAX_VALUE, TIFF.TYPE_LONG));
         Directory directory = new AbstractDirectory(entries) {};
@@ -174,7 +155,7 @@ public class EXIFWriterTest {
 
     @Test
     public void testWriteIntel() throws IOException {
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Entry> entries = new ArrayList<>();
         entries.add(new AbstractEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO") {});
         entries.add(new EXIFEntry(TIFF.TAG_IMAGE_WIDTH, Integer.MAX_VALUE, TIFF.TYPE_LONG));
         Directory directory = new AbstractDirectory(entries) {};
@@ -254,7 +235,7 @@ public class EXIFWriterTest {
 
     @Test
     public void testComputeIFDSize() throws IOException {
-        ArrayList<Entry> entries = new ArrayList<Entry>();
+        ArrayList<Entry> entries = new ArrayList<>();
         entries.add(new EXIFEntry(TIFF.TAG_ORIENTATION, 1, TIFF.TYPE_SHORT));
         entries.add(new EXIFEntry(TIFF.TAG_IMAGE_WIDTH, 1600, TIFF.TYPE_SHORT));
         entries.add(new AbstractEntry(TIFF.TAG_IMAGE_HEIGHT, 900) {});

@@ -185,6 +185,18 @@ public interface TIFF {
     int TAG_PHOTOSHOP = 34377;
 
     /**
+     * Photoshop layer and mask information (byte order follows TIFF container).
+     * Layer and mask information found in a typical layered Photoshop file.
+     * Starts with a character string of "Adobe Photoshop Document Data Block"
+     * (or "Adobe Photoshop Document Data V0002" for PSB)
+     * including the null termination character.
+     * @see com.twelvemonkeys.imageio.metadata.psd.PSD
+     */
+    int TAG_PHOTOSHOP_IMAGE_SOURCE_DATA = 37724;
+
+    int TAG_PHOTOSHOP_ANNOTATIONS = 50255;
+
+    /**
      * ICC Color Profile.
      * @see java.awt.color.ICC_Profile
      */

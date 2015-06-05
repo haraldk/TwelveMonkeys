@@ -71,6 +71,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "IPTC";
             case TIFF.TAG_PHOTOSHOP:
                 return "Adobe";
+            case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:
+                return "ImageSourceData";
             case TIFF.TAG_ICC_PROFILE:
                 return "ICCProfile";
 
@@ -189,7 +191,7 @@ final class EXIFEntry extends AbstractEntry {
             case EXIF.TAG_WHITE_BALANCE:
                 return "WhiteBalance";
             case EXIF.TAG_DIGITAL_ZOOM_RATIO:
-                return "DigitalZoomRation";
+                return "DigitalZoomRatio";
             case EXIF.TAG_FOCAL_LENGTH_IN_35_MM_FILM:
                 return "FocalLengthIn35mmFilm";
             case EXIF.TAG_SCENE_CAPTURE_TYPE:
