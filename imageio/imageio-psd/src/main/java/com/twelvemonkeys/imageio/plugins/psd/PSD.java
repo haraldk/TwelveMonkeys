@@ -578,6 +578,94 @@ interface PSD {
      */
     int RES_ALTERNATE_SPOT_COLORS = 0x042B;
 
+    /**
+     * (Photoshop CS2) Layer Selection ID(s).
+     * 2 bytes count, following is repeated for each count: 4 bytes layer ID.
+     */
+    int RES_LAYER_SELECTION_IDS = 0x042D;
+
+    /**
+     * (Photoshop CS2) HDR Toning information
+     */
+    int RES_HDR_TONING_INFO = 0x042E;
+
+    /**
+     * (Photoshop CS2) Print info
+     */
+    int RES_PRINT_INFO = 0x042F;
+
+    /**
+     * (Photoshop CS2) Layer Group(s) Enabled ID.
+     * 1 byte for each layer in the document, repeated by length of the resource.
+     * NOTE: Layer groups have start and end markers.
+     */
+    int RES_LAYER_GROUPS_ENABLED = 0x0430;
+
+    /**
+     * (Photoshop CS3) Color samplers resource.
+     * Also see ID 1038 for old format.
+     * See Color samplers resource format.
+     */
+    int RES_COLOR_SAMPLERS_RESOURCE = 0x0431;
+
+    /**
+     * (Photoshop CS3) Measurement Scale.
+     * 4 bytes (descriptor version = 16), Descriptor (see Descriptor structure)
+     */
+    int RES_MEASUREMENT_SCALE = 0x0432;
+
+    /**
+     * (Photoshop CS3) Timeline Information.
+     * 4 bytes (descriptor version = 16), Descriptor (see Descriptor structure)
+     */
+    int RES_TIMELINE_INFO = 0x0433;
+
+    /**
+     * (Photoshop CS3) Sheet Disclosure.
+     * 4 bytes (descriptor version = 16), Descriptor (see See Descriptor structure)
+     */
+    int RES_SHEET_DISCLOSURE = 0x0434;
+
+    /**
+     * (Photoshop CS3) DisplayInfo structure to support floating point colors.
+     * Also see ID 1007. See Appendix A in Photoshop API Guide.pdf .
+     */
+    int RES_DISPLAY_INFO_FP = 0x0435;
+
+    /**
+     * (Photoshop CS3) Onion Skins.
+     * 4 bytes (descriptor version = 16), Descriptor (see See Descriptor structure)
+     */
+    int RES_ONION_SKINS = 0x0436;
+
+    /**
+     * (Photoshop CS4) Count Information.
+     * 4 bytes (descriptor version = 16), Descriptor (see See Descriptor structure).
+     * Information about the count in the document. See the Count Tool.
+     */
+    int RES_COUNT_INFO = 0x0438;
+
+    /**
+     * (Photoshop CS5) Print Information.
+     * 4 bytes (descriptor version = 16), Descriptor (see See Descriptor structure).
+     * Information about the current print settings in the document. The color management options.
+     */
+    int RES_PRINT_INFO_CMM = 0x043A;
+
+    /**
+     * (Photoshop CS5) Print Style.
+     * 4 bytes (descriptor version = 16), Descriptor (see See Descriptor structure).
+     * Information about the current print style in the document. The printing marks, labels, ornaments, etc.
+     */
+    int RES_PRINT_STYLE = 0x043B;
+
+    /**
+     * (Photoshop CC) Path Selection State.
+     * 4 bytes (descriptor version = 16), Descriptor (see See Descriptor structure).
+     * Information about the current path selection state.
+     */
+    int RES_PATH_SELECTION_STATE = 0x0440;
+
     //    07d0-0bb6
     /* Saved path information */
 
