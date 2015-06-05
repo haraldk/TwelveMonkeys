@@ -20,7 +20,7 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 Mainstream format support
 
-#### MS Windows/IBM OS/2 Device Independent Bitmap (BMP) *3.1*
+#### BMP - MS Windows/IBM OS/2 Device Independent Bitmap
  
 * Read support for all known versions of the DIB/BMP format
   * Indexed color, 1, 4 and 8 bit, including 4 and 8 bit RLE
@@ -67,7 +67,7 @@ without success so far).
 
 Alternatively, if you have or know of a JPEG-2000 implementation in Java with a suitable license, get in touch. :-)
 
-#### NetPBM Portable Any Map (PNM) *3.1*
+#### PNM - NetPBM Portable Any Map
 
 * Read support for the following file types:
   * PBM in 'P1' (ASCII) and 'P4' (binary) formats, 1 bit per pixel
@@ -80,7 +80,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
   * PAM in 'P7' (binary) format
 * Standard metadata support
 
-#### Adobe Photoshop Document (PSD)
+#### PSD - Adobe Photoshop Document
 
 * Read support for the following file types:
   * Monochrome, 1 channel, 1 bit
@@ -100,7 +100,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
 * Support for "Large Document Format" (PSB)
 * Native metadata support
 
-#### Aldus/Adobe Tagged Image File Format (TIFF)
+#### TIFF - Aldus/Adobe Tagged Image File Format
 
 * Read support for the following "Baseline" TIFF file types:
   * Class B (Bi-level), all relevant compression types, 1 bit per sample
@@ -130,7 +130,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
 
 Legacy formats
 
-#### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
+#### IFF - Commodore Amiga/Electronic Arts Interchange File Format
 
 * Legacy format, allows reading popular image format from the Commodore Amiga computer.
 * Read support for the following file types:
@@ -148,7 +148,7 @@ Legacy formats
   * Uncompressed
   * RLE (PackBits)
 
-#### ZSoft Paintbrush Format (PCX) *3.1*
+#### PCX - ZSoft Paintbrush Format
 
 * Read support for the following file types:
   * Indexed color, 1, 2, 4 or 8 bits per pixel, bit planes or interleaved
@@ -160,7 +160,7 @@ Legacy formats
   * RLE compressed
 * Standard metadata support
 
-#### Apple Mac Paint Picture Format (PICT)
+#### PICT - Apple Mac Paint Picture Format
 
 * Legacy format, especially useful for reading OS X clipboard data.
 * Read support for the following file types:
@@ -171,7 +171,7 @@ Legacy formats
 * Write support for RGB pixel data:
   * QuickDraw pixmap
 
-#### Silicon Graphics Image Format (SGI) *3.1*
+#### SGI - Silicon Graphics Image Format
 
 * Read support for the following file types:
   * 1, 2, 3 or 4 channel image data
@@ -181,7 +181,7 @@ Legacy formats
   * RLE compressed
 * Standard metadata support
 
-#### Truevision TGA Image Format (TGA) *3.1*
+#### TGA - Truevision TGA Image Format
 
 * Read support for the following file types:
   * ColorMapped
@@ -194,14 +194,14 @@ Legacy formats
 
 Icon/other formats
 
-#### Apple Icon Image (ICNS)
+#### ICNS - Apple Icon Image
 
 * Read support for the following icon types:
   * All known "native" icon types
   * Large PNG encoded icons
   * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin or fallback to `sips` command line tool)
 
-#### MS Windows Icon and Cursor Formats (ICO & CUR)
+#### ICO & CUR - MS Windows Icon and Cursor Formats
 
 * Read support for the following file types:
   * ICO Indexed color, 1, 4 and 8 bit
@@ -210,17 +210,17 @@ Icon/other formats
   * CUR RGB, 16, 24 and 32 bit
 * *3.1* Note: These formats are now part of the BMP plugin
 
-#### MS Windows Thumbs DB (Thumbs.db)
+#### Thumbs.db - MS Windows Thumbs DB
 
 * Read support
 
 Other formats, using 3rd party libraries
 
-#### Scalable Vector Graphics (SVG)
+#### SVG - Scalable Vector Graphics
 
 * Read-only support using Batik
 
-#### MS Windows MetaFile (WMF)
+#### WMF - MS Windows MetaFile
 
 * Limited read-only support using Batik
 
