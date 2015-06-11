@@ -585,6 +585,7 @@ public class TIFFImageReader extends ImageReaderBase {
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
         WritableRaster rowRaster = rawType.getColorModel().createCompatibleWritableRaster(stripTileWidth, 1);
+        Rectangle clip = new Rectangle(srcRegion);
         int row = 0;
 
         switch (compression) {
@@ -704,7 +705,6 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
 
                         // Clip the stripTile rowRaster to not exceed the srcRegion
-                        Rectangle clip = new Rectangle(srcRegion);
                         clip.width = Math.min((colsInTile + xSub - 1) / xSub, srcRegion.width);
                         Raster clippedRow = clipRowToRect(rowRaster, clip,
                                 param != null ? param.getSourceBands() : null,
@@ -778,11 +778,18 @@ public class TIFFImageReader extends ImageReaderBase {
                             try {
                                 jpegReader.setInput(subStream);
                                 jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
-                                jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
-                                jpegParam.setDestination(destination);
-                                // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
-                                // In the latter case we will have to use readAsRaster and do color conversion ourselves
-                                jpegReader.read(0, jpegParam);
+
+                                if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+                                    jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
+                                    jpegParam.setDestination(destination);
+                                    jpegReader.read(0, jpegParam);
+                                }
+                                else {
+                                    // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
+                                    // We'll have to use readAsRaster and later apply color space conversion ourselves
+                                    Raster raster = jpegReader.readRaster(0, jpegParam);
+                                    destination.getRaster().setDataElements(col - srcRegion.x, row - srcRegion.y, raster);
+                                }
                             }
                             finally {
                                 subStream.close();
@@ -888,10 +895,17 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     try {
                         jpegParam.setSourceRegion(new Rectangle(0, 0, width, height));
-                        jpegParam.setDestination(destination);
-                        // TODO: This works only if Gray/YCbCr/RGB, not CMYK/LAB/etc...
-                        // In the latter case we will have to use readAsRaster and do color conversion ourselves
-                        jpegReader.read(0, jpegParam);
+
+                        if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+                            jpegParam.setDestination(destination);
+                            jpegReader.read(0, jpegParam);
+                        }
+                        else {
+                            // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
+                            // We'll have to use readAsRaster and later apply color space conversion ourselves
+                            Raster raster = jpegReader.readRaster(0, jpegParam);
+                            destination.getRaster().setDataElements(0, 0, raster);
+                        }
                     }
                     finally {
                         stream.close();
@@ -1064,7 +1078,7 @@ public class TIFFImageReader extends ImageReaderBase {
         // If we can't get the standard reader, fall back to the default (first) reader
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
         if (!readers.hasNext()) {
-            throw new IIOException("Could not instantiate JPEGImageReader. ");
+            throw new IIOException("Could not instantiate JPEGImageReader");
         }
 
         return readers.next();
@@ -1181,9 +1195,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         // Subsample horizontal
                         if (xSub != 1) {
                             for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                for (int b = 0; b < numBands; b++) {
-                                    rowDataByte[x + b] = rowDataByte[x * xSub + b];
-                                }
+                                System.arraycopy(rowDataByte, x * xSub, rowDataByte, x, numBands);
                             }
                         }
 
@@ -1212,13 +1224,13 @@ public class TIFFImageReader extends ImageReaderBase {
                         // Subsample horizontal
                         if (xSub != 1) {
                             for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                for (int b = 0; b < numBands; b++) {
-                                    rowDataShort[x + b] = rowDataShort[x * xSub + b];
-                                }
+                                System.arraycopy(rowDataShort, x * xSub, rowDataShort, x, numBands);
                             }
                         }
 
                         raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
+                        // TODO: Possible speedup ~30%!:
+//                        raster.setDataElements(startCol, row - srcRegion.y, colsInTile, 1, rowDataShort);
                     }
                     // Else skip data
                 }
@@ -1240,9 +1252,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         // Subsample horizontal
                         if (xSub != 1) {
                             for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                for (int b = 0; b < numBands; b++) {
-                                    rowDataInt[x + b] = rowDataInt[x * xSub + b];
-                                }
+                                System.arraycopy(rowDataInt, x * xSub, rowDataInt, x, numBands);
                             }
                         }
 
