@@ -145,9 +145,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
         entries.add(new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
         // entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
         entries.add(new TIFFEntry(TIFF.TAG_BITS_PER_SAMPLE, asShortArray(sampleModel.getSampleSize())));
-        // If numComponents > 3, write ExtraSamples
-        if (numComponents > 3) {
-            // TODO: Write per component > 3
+        // If numComponents > numColorComponents, write ExtraSamples
+        if (numComponents > colorModel.getNumColorComponents()) {
+            // TODO: Write per component > numColorComponents
             if (colorModel.hasAlpha()) {
                 entries.add(new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, colorModel.isAlphaPremultiplied() ? TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA : TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA));
             }
@@ -169,6 +169,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             default:
         }
 
+        // TODO: We might want to support CMYK in JPEG as well...
         int photometric = compression == TIFFExtension.COMPRESSION_JPEG ?
                           TIFFExtension.PHOTOMETRIC_YCBCR :
                           getPhotometricInterpretation(colorModel);
@@ -684,7 +685,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
 //        BufferedImage image = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_INT_BGR);
 //        BufferedImage image = new BufferedImage(original.getWidth(), original.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         BufferedImage image;
-        if (type < 0 || type == original.getType()) {
+        if (type <= 0 || type == original.getType()) {
             image = original;
         }
         else if (type == BufferedImage.TYPE_BYTE_INDEXED) {
