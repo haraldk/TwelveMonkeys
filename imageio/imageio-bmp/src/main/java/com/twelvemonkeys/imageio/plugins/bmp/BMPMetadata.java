@@ -28,17 +28,16 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.lang.Validate;
 import org.w3c.dom.Node;
 
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 
 /**
  * BMPMetadata.
  */
-final class BMPMetadata extends IIOMetadata {
+final class BMPMetadata extends AbstractMetadata {
     /** We return metadata in the exact same form as the JRE built-in, to be compatible with the BMPImageWriter. */
     public static final String nativeMetadataFormatName = "javax_imageio_bmp_1.0";
 
@@ -46,46 +45,13 @@ final class BMPMetadata extends IIOMetadata {
     private final int[] colorMap;
 
     BMPMetadata(final DIBHeader header, final int[] colorMap) {
+        super(true, nativeMetadataFormatName, "com.sun.imageio.plugins.bmp.BMPMetadataFormat", null, null);
         this.header = Validate.notNull(header, "header");
         this.colorMap = colorMap == null || colorMap.length == 0 ? null : colorMap;
-
-        standardFormatSupported = true;
-    }
-
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override public Node getAsTree(final String formatName) {
-        if (IIOMetadataFormatImpl.standardMetadataFormatName.equals(formatName)) {
-            return getStandardTree();
-        }
-        else if (nativeMetadataFormatName.equals(formatName)) {
-            return getNativeTree();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported metadata format: " + formatName);
-        }
-    }
-
-    @Override public void mergeTree(final String formatName, final Node root) {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override public void reset() {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
     }
 
     @Override
-    public String getNativeMetadataFormatName() {
-        return nativeMetadataFormatName;
-    }
-
-    private Node getNativeTree() {
+    protected Node getNativeTree() {
         IIOMetadataNode root = new IIOMetadataNode(nativeMetadataFormatName);
 
         addChildNode(root, "BMPVersion", header.getBMPVersion());
@@ -170,7 +136,8 @@ final class BMPMetadata extends IIOMetadata {
         return child;
     }
 
-    @Override protected IIOMetadataNode getStandardChromaNode() {
+    @Override
+    protected IIOMetadataNode getStandardChromaNode() {
         // NOTE: BMP files may contain a color map, even if true color...
         // Not sure if this is a good idea to expose to the meta data,
         // as it might be unexpected... Then again...
@@ -197,7 +164,8 @@ final class BMPMetadata extends IIOMetadata {
         return null;
     }
 
-    @Override protected IIOMetadataNode getStandardCompressionNode() {
+    @Override
+    protected IIOMetadataNode getStandardCompressionNode() {
         IIOMetadataNode compression = new IIOMetadataNode("Compression");
         IIOMetadataNode compressionTypeName = addChildNode(compression, "CompressionTypeName", null);
         compressionTypeName.setAttribute("value", "NONE");
@@ -229,7 +197,8 @@ final class BMPMetadata extends IIOMetadata {
 //        }
     }
 
-    @Override protected IIOMetadataNode getStandardDataNode() {
+    @Override
+    protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode node = new IIOMetadataNode("Data");
 
 //        IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
@@ -294,7 +263,8 @@ final class BMPMetadata extends IIOMetadata {
         return buffer.toString();
     }
 
-    @Override protected IIOMetadataNode getStandardDimensionNode() {
+    @Override
+    protected IIOMetadataNode getStandardDimensionNode() {
         if (header.xPixelsPerMeter > 0 || header.yPixelsPerMeter > 0) {
             IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
@@ -302,16 +272,16 @@ final class BMPMetadata extends IIOMetadata {
             addChildNode(dimension, "HorizontalPhysicalPixelSpacing", null);
             addChildNode(dimension, "VerticalPhysicalPixelSpacing", null);
 
-            //        IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
-            //
-            //        if (header.topDown) {
-            //            imageOrientation.setAttribute("value", "FlipH");
-            //        }
-            //        else {
-            //            imageOrientation.setAttribute("value", "Normal");
-            //        }
-            //
-            //        dimension.appendChild(imageOrientation);
+//        IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
+//
+//        if (header.topDown) {
+//            imageOrientation.setAttribute("value", "FlipH");
+//        }
+//        else {
+//            imageOrientation.setAttribute("value", "Normal");
+//        }
+//
+//        dimension.appendChild(imageOrientation);
 
             return dimension;
         }
@@ -325,7 +295,8 @@ final class BMPMetadata extends IIOMetadata {
 
     // No tiling
 
-    @Override protected IIOMetadataNode getStandardTransparencyNode() {
+    @Override
+    protected IIOMetadataNode getStandardTransparencyNode() {
         return null;
 
 //        IIOMetadataNode transparency = new IIOMetadataNode("Transparency");

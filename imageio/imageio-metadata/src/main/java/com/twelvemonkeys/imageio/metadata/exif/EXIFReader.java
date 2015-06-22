@@ -446,8 +446,8 @@ public final class EXIFReader extends MetadataReader {
     }
 
     static int getValueLength(final int pType, final int pCount) {
-        if (pType > 0 && pType <= TIFF.TYPE_LENGTHS.length) {
-            return TIFF.TYPE_LENGTHS[pType - 1] * pCount;
+        if (pType > 0 && pType < TIFF.TYPE_LENGTHS.length) {
+            return TIFF.TYPE_LENGTHS[pType] * pCount;
         }
 
         return -1;

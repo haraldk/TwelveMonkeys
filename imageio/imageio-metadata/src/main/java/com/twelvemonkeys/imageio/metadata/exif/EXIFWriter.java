@@ -94,11 +94,11 @@ public final class EXIFWriter extends MetadataWriter {
         stream.writeShort(42);
     }
 
-    public long writeIFD(final Collection<Entry> entries, ImageOutputStream stream) throws IOException {
+    public long writeIFD(final Collection<Entry> entries, final ImageOutputStream stream) throws IOException {
         return writeIFD(new IFD(entries), stream, false);
     }
 
-    private long writeIFD(final Directory original, ImageOutputStream stream, boolean isSubIFD) throws IOException {
+    private long writeIFD(final Directory original, final ImageOutputStream stream, final boolean isSubIFD) throws IOException {
         // TIFF spec says tags should be in increasing order, enforce that when writing
         Directory ordered = ensureOrderedDirectory(original);
 
@@ -183,7 +183,7 @@ public final class EXIFWriter extends MetadataWriter {
 
     private Directory ensureOrderedDirectory(final Directory directory) {
         if (!isSorted(directory)) {
-            List<Entry> entries = new ArrayList<Entry>(directory.size());
+            List<Entry> entries = new ArrayList<>(directory.size());
 
             for (Entry entry : directory) {
                 entries.add(entry);
@@ -217,7 +217,7 @@ public final class EXIFWriter extends MetadataWriter {
         return true;
     }
 
-    private long writeValue(Entry entry, long dataOffset, ImageOutputStream stream) throws IOException {
+    private long writeValue(final Entry entry, final long dataOffset, final ImageOutputStream stream) throws IOException {
         short type = getType(entry);
         int valueLength = EXIFReader.getValueLength(type, getCount(entry));
 
@@ -238,14 +238,15 @@ public final class EXIFWriter extends MetadataWriter {
         }
     }
 
-    private int getCount(Entry entry) {
+    private int getCount(final Entry entry) {
         Object value = entry.getValue();
         return value instanceof String ? ((String) value).getBytes(Charset.forName("UTF-8")).length + 1 : entry.valueCount();
     }
 
-    private void writeValueInline(Object value, short type, ImageOutputStream stream) throws IOException {
+    private void writeValueInline(final Object value, final short type, final ImageOutputStream stream) throws IOException {
         if (value.getClass().isArray()) {
             switch (type) {
+                case TIFF.TYPE_UNDEFINED:
                 case TIFF.TYPE_BYTE:
                     stream.write((byte[]) value);
                     break;
@@ -293,7 +294,7 @@ public final class EXIFWriter extends MetadataWriter {
                         }
                     }
                     else {
-                        throw new IllegalArgumentException("Unsupported type for TIFF SHORT: " + value.getClass());
+                        throw new IllegalArgumentException("Unsupported type for TIFF LONG: " + value.getClass());
                     }
 
                     stream.writeInts(ints, 0, ints.length);
@@ -318,6 +319,7 @@ public final class EXIFWriter extends MetadataWriter {
 //        }
         else {
             switch (type) {
+                case TIFF.TYPE_UNDEFINED:
                 case TIFF.TYPE_BYTE:
                     stream.writeByte((Integer) value);
                     break;
@@ -345,7 +347,7 @@ public final class EXIFWriter extends MetadataWriter {
         }
     }
 
-    private void writeValueAt(long dataOffset, Object value, short type, ImageOutputStream stream) throws IOException {
+    private void writeValueAt(final long dataOffset, final Object value, final short type, final ImageOutputStream stream) throws IOException {
         stream.writeInt(assertIntegerOffset(dataOffset));
         long position = stream.getStreamPosition();
         stream.seek(dataOffset);
@@ -353,7 +355,7 @@ public final class EXIFWriter extends MetadataWriter {
         stream.seek(position);
     }
 
-    private short getType(Entry entry) {
+    private short getType(final Entry entry) {
         if (entry instanceof EXIFEntry) {
             EXIFEntry exifEntry = (EXIFEntry) entry;
             return exifEntry.getType();

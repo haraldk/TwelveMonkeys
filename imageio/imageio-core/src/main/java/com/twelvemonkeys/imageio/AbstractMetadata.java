@@ -26,7 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.psd;
+package com.twelvemonkeys.imageio;
 
 import org.w3c.dom.Node;
 
@@ -42,13 +42,15 @@ import java.util.Arrays;
  * @author last modified by $Author: haraldk$
  * @version $Id: AbstractMetadata.java,v 1.0 Nov 13, 2009 1:02:12 AM haraldk Exp$
  */
-abstract class AbstractMetadata extends IIOMetadata implements Cloneable {
-    // TODO: Move to core...
+public abstract class AbstractMetadata extends IIOMetadata implements Cloneable {
+    protected AbstractMetadata(final boolean standardFormatSupported,
+                               final String nativeFormatName, final String nativeFormatClassName,
+                               final String[] extraFormatNames, final String[] extraFormatClassNames) {
+        super(standardFormatSupported, nativeFormatName, nativeFormatClassName, extraFormatNames, extraFormatClassNames);
+    }
 
-    protected AbstractMetadata(final boolean pStandardFormatSupported,
-                               final String pNativeFormatName, final String pNativeFormatClassName,
-                               final String[] pExtraFormatNames, final String[] pExtraFormatClassNames) {
-        super(pStandardFormatSupported, pNativeFormatName, pNativeFormatClassName, pExtraFormatNames, pExtraFormatClassNames);
+    protected AbstractMetadata() {
+        super(true, null, null, null, null);
     }
 
     /**
@@ -63,31 +65,42 @@ abstract class AbstractMetadata extends IIOMetadata implements Cloneable {
     }
 
     @Override
-    public Node getAsTree(final String pFormatName) {
-        validateFormatName(pFormatName);
+    public Node getAsTree(final String formatName) {
+        validateFormatName(formatName);
 
-        if (pFormatName.equals(nativeMetadataFormatName)) {
+        if (formatName.equals(nativeMetadataFormatName)) {
             return getNativeTree();
         }
-        else if (pFormatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
+        else if (formatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
             return getStandardTree();
         }
 
-        // TODO: What about extra formats??
-        throw new AssertionError("Unreachable");
+        // Subclasses that supports extra formats need to check for these formats themselves...
+        return null;
+    }
+
+    /**
+     * Default implementation that throws {@code UnsupportedOperationException}.
+     * Subclasses that supports formats other than standard metadata should override this method.
+     *
+     * @throws UnsupportedOperationException
+     */
+    protected Node getNativeTree() {
+        throw new UnsupportedOperationException("getNativeTree");
     }
 
     @Override
-    public void mergeTree(final String pFormatName, final Node pRoot) throws IIOInvalidTreeException {
+    public void mergeTree(final String formatName, final Node root) throws IIOInvalidTreeException {
         assertMutable();
 
-        validateFormatName(pFormatName);
+        validateFormatName(formatName);
 
-        if (!pRoot.getNodeName().equals(nativeMetadataFormatName)) {
-            throw new IIOInvalidTreeException("Root must be " + nativeMetadataFormatName, pRoot);
+        if (!root.getNodeName().equals(formatName)) {
+            throw new IIOInvalidTreeException("Root must be " + formatName, root);
         }
 
-        Node node = pRoot.getFirstChild();
+        // TODO: Merge both native and standard!
+        Node node = root.getFirstChild();
         while (node != null) {
             // TODO: Merge values from node into this
 
@@ -112,21 +125,19 @@ abstract class AbstractMetadata extends IIOMetadata implements Cloneable {
         }
     }
 
-    protected abstract Node getNativeTree();
-
-    protected final void validateFormatName(final String pFormatName) {
+    protected final void validateFormatName(final String formatName) {
         String[] metadataFormatNames = getMetadataFormatNames();
 
         if (metadataFormatNames != null) {
             for (String metadataFormatName : metadataFormatNames) {
-                if (metadataFormatName.equals(pFormatName)) {
+                if (metadataFormatName.equals(formatName)) {
                     return; // Found, we're ok!
                 }
             }
         }
 
         throw new IllegalArgumentException(
-                String.format("Bad format name: \"%s\". Expected one of %s", pFormatName, Arrays.toString(metadataFormatNames))
+                String.format("Bad format name: \"%s\". Expected one of %s", formatName, Arrays.toString(metadataFormatNames))
         );
     }
 

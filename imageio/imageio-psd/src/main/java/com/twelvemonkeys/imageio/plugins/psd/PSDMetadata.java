@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
@@ -571,9 +572,8 @@ public final class PSDMetadata extends AbstractMetadata {
         compressionNode.appendChild(compressionTypeName);
 
         if (compression != PSD.COMPRESSION_NONE) {
-            IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
-            lossless.setAttribute("value", "true");
-            compressionNode.appendChild(lossless);
+            compressionNode.appendChild(new IIOMetadataNode("Lossless"));
+            // "value" defaults to TRUE, all PSD compressions are lossless
         }
 
         return compressionNode;
@@ -755,7 +755,7 @@ public final class PSDMetadata extends AbstractMetadata {
     }
 
     private void appendTextEntriesFlat(final IIOMetadataNode node, final Directory directory, final FilterIterator.Filter<Entry> filter) {
-        FilterIterator<Entry> entries = new FilterIterator<Entry>(directory.iterator(), filter);
+        FilterIterator<Entry> entries = new FilterIterator<>(directory.iterator(), filter);
 
         while (entries.hasNext()) {
             Entry entry = entries.next();
@@ -807,7 +807,7 @@ public final class PSDMetadata extends AbstractMetadata {
         @SuppressWarnings({"unchecked"})
         Iterator<T> iterator = (Iterator<T>) imageResources.iterator();
 
-        return new FilterIterator<T>(iterator, new FilterIterator.Filter<T>() {
+        return new FilterIterator<>(iterator, new FilterIterator.Filter<T>() {
             public boolean accept(final T pElement) {
                 return resourceType.isInstance(pElement);
             }
@@ -817,7 +817,7 @@ public final class PSDMetadata extends AbstractMetadata {
     Iterator<PSDImageResource> getResources(final int... resourceTypes) {
         Iterator<PSDImageResource> iterator = imageResources.iterator();
 
-        return new FilterIterator<PSDImageResource>(iterator, new FilterIterator.Filter<PSDImageResource>() {
+        return new FilterIterator<>(iterator, new FilterIterator.Filter<PSDImageResource>() {
             public boolean accept(final PSDImageResource pResource) {
                 for (int type : resourceTypes) {
                     if (type == pResource.id) {

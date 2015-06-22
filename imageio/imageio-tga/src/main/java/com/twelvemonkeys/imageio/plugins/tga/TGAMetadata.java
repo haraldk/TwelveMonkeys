@@ -28,50 +28,20 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
-import org.w3c.dom.Node;
+import com.twelvemonkeys.imageio.AbstractMetadata;
 
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.IndexColorModel;
 
-final class TGAMetadata extends IIOMetadata {
-    // TODO: Clean up & extend AbstractMetadata (after moving from PSD -> Core)
-
+final class TGAMetadata extends AbstractMetadata {
     private final TGAHeader header;
 
     TGAMetadata(final TGAHeader header) {
         this.header = header;
-        standardFormatSupported = true;
     }
 
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override public Node getAsTree(final String formatName) {
-        if (IIOMetadataFormatImpl.standardMetadataFormatName.equals(formatName)) {
-            return getStandardTree();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported metadata format: " + formatName);
-        }
-    }
-
-    @Override public void mergeTree(final String formatName, final Node root) {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override public void reset() {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-
-    @Override protected IIOMetadataNode getStandardChromaNode() {
+    @Override
+    protected IIOMetadataNode getStandardChromaNode() {
         IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
         IIOMetadataNode csType = new IIOMetadataNode("ColorSpaceType");
@@ -137,7 +107,8 @@ final class TGAMetadata extends IIOMetadata {
         return chroma;
     }
 
-    @Override protected IIOMetadataNode getStandardCompressionNode() {
+    @Override
+    protected IIOMetadataNode getStandardCompressionNode() {
         switch (header.getImageType()) {
             case TGA.IMAGETYPE_COLORMAPPED_RLE:
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
@@ -147,7 +118,7 @@ final class TGAMetadata extends IIOMetadata {
                 IIOMetadataNode node = new IIOMetadataNode("Compression");
                 IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
                 String value = header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN || header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE
-                                ? "Uknown" : "RLE";
+                               ? "Uknown" : "RLE";
                 compressionTypeName.setAttribute("value", value);
                 node.appendChild(compressionTypeName);
 
@@ -162,7 +133,8 @@ final class TGAMetadata extends IIOMetadata {
         }
     }
 
-    @Override protected IIOMetadataNode getStandardDataNode() {
+    @Override
+    protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode node = new IIOMetadataNode("Data");
 
         IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
@@ -221,7 +193,8 @@ final class TGAMetadata extends IIOMetadata {
         return buffer.toString();
     }
 
-    @Override protected IIOMetadataNode getStandardDimensionNode() {
+    @Override
+    protected IIOMetadataNode getStandardDimensionNode() {
         IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
         IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
@@ -248,7 +221,8 @@ final class TGAMetadata extends IIOMetadata {
 
     // No document node
 
-    @Override protected IIOMetadataNode getStandardTextNode() {
+    @Override
+    protected IIOMetadataNode getStandardTextNode() {
         // TODO: Extra "developer area" and other stuff might go here...
         if (header.getIdentification() != null && !header.getIdentification().isEmpty()) {
             IIOMetadataNode text = new IIOMetadataNode("Text");
@@ -266,7 +240,8 @@ final class TGAMetadata extends IIOMetadata {
 
     // No tiling
 
-    @Override protected IIOMetadataNode getStandardTransparencyNode() {
+    @Override
+    protected IIOMetadataNode getStandardTransparencyNode() {
         IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
 
         IIOMetadataNode alpha = new IIOMetadataNode("Alpha");

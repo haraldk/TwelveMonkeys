@@ -243,6 +243,7 @@ public class TIFFImageReader extends ImageReaderBase {
         int bitsPerSample = getBitsPerSample();
         int dataType = getDataType(sampleFormat, bitsPerSample);
 
+        // TODO: Validate CS using ColorSpaces.validateProfile
         // Read embedded cs
         ICC_Profile profile = getICCProfile();
         ColorSpace cs;
@@ -503,7 +504,7 @@ public class TIFFImageReader extends ImageReaderBase {
         readIFD(imageIndex);
 
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
-        Set<ImageTypeSpecifier> specs = new LinkedHashSet<ImageTypeSpecifier>(5);
+        Set<ImageTypeSpecifier> specs = new LinkedHashSet<>(5);
 
         // TODO: Based on raw type, we can probably convert to most RGB types at least, maybe gray etc
         // TODO: Planar to chunky by default
@@ -1354,6 +1355,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
     private long[] getValueAsLongArray(final int tag, final String tagName, boolean required) throws IIOException {
         Entry entry = currentIFD.getEntryById(tag);
+
         if (entry == null) {
             if (required) {
                 throw new IIOException("Missing TIFF tag " + tagName);
@@ -1412,6 +1414,21 @@ public class TIFFImageReader extends ImageReaderBase {
     // readTileRaster
 
     // TODO: Thumbnail support
+
+    /// Metadata
+
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        readIFD(imageIndex);
+
+        return new TIFFImageMetadata(currentIFD);
+    }
+
+    @Override
+    public IIOMetadata getStreamMetadata() throws IOException {
+        // TODO:
+        return super.getStreamMetadata();
+    }
 
     public static void main(final String[] args) throws IOException {
         ImageIO.setUseCache(false);
@@ -1500,7 +1517,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         if (metadata.getNativeMetadataFormatName() != null) {
                             new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
                         }
-                        else if (metadata.isStandardMetadataFormatSupported()) {
+                        /*else*/ if (metadata.isStandardMetadataFormatSupported()) {
                             new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
                         }
                     }

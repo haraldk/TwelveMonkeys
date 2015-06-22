@@ -83,4 +83,13 @@ interface TIFFExtension {
      * description of the inks to be used.
      */
     int INKSET_NOT_CMYK = 2;
+
+    int ORIENTATION_TOPRIGHT = 2;
+    int ORIENTATION_BOTRIGHT = 3;
+    int ORIENTATION_BOTLEFT = 4;
+    int ORIENTATION_LEFTTOP = 5;
+    int ORIENTATION_RIGHTTOP = 6;
+    int ORIENTATION_RIGHTBOT = 7;
+    int ORIENTATION_LEFTBOT = 8;
+
 }

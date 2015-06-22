@@ -59,4 +59,13 @@ interface TIFFBaseline {
     int RESOLUTION_UNIT_NONE = 1;
     int RESOLUTION_UNIT_DPI = 2; // Default
     int RESOLUTION_UNIT_CENTIMETER = 3;
+
+    int FILL_LEFT_TO_RIGHT = 1; // Default
+
+    // NOTE: These are bit flags that can be ORed together!
+    int FILETYPE_REDUCEDIMAGE = 1;
+    int FILETYPE_PAGE = 2;
+    int FILETYPE_MASK = 4;
+
+    int ORIENTATION_TOPLEFT = 1;
 }
