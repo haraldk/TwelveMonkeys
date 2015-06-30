@@ -604,9 +604,9 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
                 // CCITT modified Huffman
                 // Additionally, the specification defines these values as part of the TIFF extensions:
-//            case TIFFExtension.COMPRESSION_CCITT_T4:
+            case TIFFExtension.COMPRESSION_CCITT_T4:
                 // CCITT Group 3 fax encoding
-//            case TIFFExtension.COMPRESSION_CCITT_T6:
+            case TIFFExtension.COMPRESSION_CCITT_T6:
                 // CCITT Group 4 fax encoding
 
                 int[] yCbCrSubsampling = null;
@@ -1028,10 +1028,6 @@ public class TIFFImageReader extends ImageReaderBase {
                 break;
 
                 // Additionally, the specification defines these values as part of the TIFF extensions:
-            case TIFFExtension.COMPRESSION_CCITT_T4:
-                // CCITT Group 3 fax encoding
-            case TIFFExtension.COMPRESSION_CCITT_T6:
-                // CCITT Group 4 fax encoding
 
                 // Known, but unsupported compression types
             case TIFFCustom.COMPRESSION_NEXT:
@@ -1320,7 +1316,7 @@ public class TIFFImageReader extends ImageReaderBase {
     }
 
     private InputStream createDecompressorStream(final int compression, final int width, final int bands, final InputStream stream) throws IOException {
-        switch (compression) {
+    	switch (compression) {
             case TIFFBaseline.COMPRESSION_NONE:
                 return stream;
             case TIFFBaseline.COMPRESSION_PACKBITS:
@@ -1332,9 +1328,11 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_DEFLATE:
                 return new InflaterInputStream(stream, new Inflater(), 1024);
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+            	return new CCITTFaxDecoderStream(stream, width, compression, getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1),0L);
             case TIFFExtension.COMPRESSION_CCITT_T4:
+            	return new CCITTFaxDecoderStream(stream, width, compression, getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1),getValueAsLongWithDefault(TIFF.TAG_GROUP3OPTIONS, 0L));
             case TIFFExtension.COMPRESSION_CCITT_T6:
-                return new CCITTFaxDecoderStream(stream, width, compression, getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1));
+                return new CCITTFaxDecoderStream(stream, width, compression, getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1),getValueAsLongWithDefault(TIFF.TAG_GROUP4OPTIONS, 0L));
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
         }
