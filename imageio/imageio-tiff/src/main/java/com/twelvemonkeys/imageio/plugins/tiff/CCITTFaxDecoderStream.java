@@ -154,7 +154,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         }
 
         boolean white = true;
-        int index = -1;
+        int index = 0;
         changesCurrentRowCount = 0;
         mode: while (index < columns) {
             // read mode
