@@ -180,6 +180,17 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
+    public void testDecodeType3_2D_REVERSED() throws IOException {
+        InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_2D_lsb2msb), 6,
+                TIFFExtension.COMPRESSION_CCITT_T4, 2, TIFFExtension.GROUP3OPT_2DENCODING);
+
+        byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
+        byte[] bytes = new byte[imageData.length];
+        new DataInputStream(stream).readFully(bytes);
+        assertArrayEquals(imageData, bytes);
+    }
+
+    @Test
     public void testDecodeType4() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4), 6,
                 TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);

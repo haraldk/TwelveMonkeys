@@ -33,6 +33,7 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.lang.Validate;
 
 /**
@@ -345,8 +346,14 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             }
             bufferPos = 0;
         }
-
-        boolean isSet = ((buffer >> (7 - bufferPos)) & 1) == 1;
+        
+        boolean isSet;
+        if(fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT){
+            isSet = ((buffer >> (7 - bufferPos)) & 1) == 1;
+        }else{
+            isSet = ((buffer >> (bufferPos)) & 1) == 1;
+        }
+        
         bufferPos++;
         if (bufferPos > 7)
             bufferPos = -1;
