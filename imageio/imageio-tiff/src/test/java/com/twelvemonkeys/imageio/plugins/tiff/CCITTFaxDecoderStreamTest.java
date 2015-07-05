@@ -116,11 +116,11 @@ public class CCITTFaxDecoderStreamTest {
         image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 6; x++) {
-                image.setRGB(x, y, x == 3 ? 0xff000000 : 0xffffffff);
+                image.setRGB(x, y, x != 3 ? 0xff000000 : 0xffffffff);
             }
         }
 
-        image.setRGB(2, 3, 0xff000000);
+        image.setRGB(2, 3, 0xffffffff);
     }
 
     @Test

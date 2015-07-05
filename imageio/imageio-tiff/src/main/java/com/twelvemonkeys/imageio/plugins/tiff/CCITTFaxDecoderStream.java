@@ -262,13 +262,13 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             int byteIndex = index / 8;
 
             while (index % 8 != 0 && (nextChange - index) > 0) {
-                decodedRow[byteIndex] |= (white ? 1 << (7 - ((index) % 8)) : 0);
+                decodedRow[byteIndex] |= (white ? 0 : 1 << (7 - ((index) % 8)));
                 index++;
             }
 
             if (index % 8 == 0) {
                 byteIndex = index / 8;
-                final byte value = (byte) (white ? 0xff : 0x00);
+                final byte value = (byte) (white ? 0x00 : 0xff);
 
                 while ((nextChange - index) > 7) {
                     decodedRow[byteIndex] = value;
@@ -281,7 +281,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 if (index % 8 == 0) {
                     decodedRow[byteIndex] = 0;
                 }
-                decodedRow[byteIndex] |= (white ? 1 << (7 - ((index) % 8)) : 0);
+                decodedRow[byteIndex] |= (white ? 0 : 1 << (7 - ((index) % 8)));
                 index++;
             }
 
@@ -346,14 +346,14 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             }
             bufferPos = 0;
         }
-        
+
         boolean isSet;
-        if(fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT){
+        if (fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT) {
             isSet = ((buffer >> (7 - bufferPos)) & 1) == 1;
-        }else{
+        } else {
             isSet = ((buffer >> (bufferPos)) & 1) == 1;
         }
-        
+
         bufferPos++;
         if (bufferPos > 7)
             bufferPos = -1;
