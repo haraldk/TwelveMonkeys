@@ -190,7 +190,6 @@ abstract class LZWDecoder implements Decoder {
 
     public static Decoder create(boolean oldBitReversedStream) {
         return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWSpecDecoder();
-//        return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWTreeDecoder();
     }
 
     static final class LZWSpecDecoder extends LZWDecoder {
