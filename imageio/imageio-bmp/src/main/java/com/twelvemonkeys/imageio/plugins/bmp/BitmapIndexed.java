@@ -28,8 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.image.InverseColorMapIndexColorModel;
-
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.IndexColorModel;
@@ -45,8 +43,6 @@ import java.util.Hashtable;
 class BitmapIndexed extends BitmapDescriptor {
     protected final int[] bits;
     protected final int[] colors;
-
-    private BitmapMask mask;
 
     public BitmapIndexed(final DirectoryEntry pEntry, final DIBHeader pHeader) {
         super(pEntry, pHeader);
@@ -65,7 +61,7 @@ class BitmapIndexed extends BitmapDescriptor {
         // This is slightly obscure, and should probably be moved..
         Hashtable<String, Object> properties = null;
         if (entry instanceof DirectoryEntry.CUREntry) {
-            properties = new Hashtable<String, Object>(1);
+            properties = new Hashtable<>(1);
             properties.put("cursor_hotspot", ((DirectoryEntry.CUREntry) this.entry).getHotspot());
         }
 
@@ -89,8 +85,6 @@ class BitmapIndexed extends BitmapDescriptor {
 
         raster.setSamples(0, 0, getWidth(), getHeight(), 0, bits);
 
-        //System.out.println("Image: " + image);
-
         return image;
     }
 
@@ -100,40 +94,40 @@ class BitmapIndexed extends BitmapDescriptor {
     IndexColorModel createColorModel() {
         // NOTE: This is a hack to make room for transparent pixel for mask
         int bits = getBitCount();
-        
+
         int colors = this.colors.length;
-        int trans = -1;
+        int transparent = -1;
 
         // Try to avoid USHORT transfertype, as it results in BufferedImage TYPE_CUSTOM
         // NOTE: This code assumes icons are small, and is NOT optimized for performance...
         if (colors > (1 << getBitCount())) {
-            int index = findTransIndexMaybeRemap(this.colors, this.bits);
+            int index = findTransparentIndexMaybeRemap(this.colors, this.bits);
 
             if (index == -1) {
                 // No duplicate found, increase bitcount
                 bits++;
-                trans = this.colors.length - 1;
+                transparent = this.colors.length - 1;
             }
             else {
-                // Found a duplicate, use it as trans
-                trans = index;
+                // Found a duplicate, use it as transparent
+                transparent = index;
                 colors--;
             }
         }
 
         // NOTE: Setting hasAlpha to true, makes things work on 1.2
-        return new InverseColorMapIndexColorModel(
-                bits, colors, this.colors, 0, true, trans,
+        return new IndexColorModel(
+                bits, colors, this.colors, 0, true, transparent,
                 bits <= 8 ? DataBuffer.TYPE_BYTE : DataBuffer.TYPE_USHORT
         );
     }
 
-    private static int findTransIndexMaybeRemap(final int[] pColors, final int[] pBits) {
+    private static int findTransparentIndexMaybeRemap(final int[] colors, final int[] bits) {
         // Look for unused colors, to use as transparent
-        final boolean[] used = new boolean[pColors.length - 1];
-        for (int pBit : pBits) {
-            if (!used[pBit]) {
-                used[pBit] = true;
+        boolean[] used = new boolean[colors.length - 1];
+        for (int bit : bits) {
+            if (!used[bit]) {
+                used[bit] = true;
             }
         }
 
@@ -144,38 +138,35 @@ class BitmapIndexed extends BitmapDescriptor {
         }
 
         // Try to find duplicates in colormap, and remap
-        int trans = -1;
+        int transparent = -1;
         int duplicate = -1;
-        for (int i = 0; trans == -1 && i < pColors.length - 1; i++) {
-            for (int j = i + 1; j < pColors.length - 1; j++) {
-                if (pColors[i] == pColors[j]) {
-                    trans = j;
+        for (int i = 0; transparent == -1 && i < colors.length - 1; i++) {
+            for (int j = i + 1; j < colors.length - 1; j++) {
+                if (colors[i] == colors[j]) {
+                    transparent = j;
                     duplicate = i;
                     break;
                 }
             }
         }
 
-        if (trans != -1) {
+        if (transparent != -1) {
             // Remap duplicate
-            for (int i = 0; i < pBits.length; i++) {
-                if (pBits[i] == trans) {
-                    pBits[i] = duplicate;
+            for (int i = 0; i < bits.length; i++) {
+                if (bits[i] == transparent) {
+                    bits[i] = duplicate;
                 }
             }
         }
 
-        return trans;
+        return transparent;
     }
 
     public BufferedImage getImage() {
         if (image == null) {
             image = createImageIndexed();
         }
-        return image;
-    }
 
-    public void setMask(final BitmapMask pMask) {
-        mask = pMask;
+        return image;
     }
 }
