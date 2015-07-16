@@ -139,6 +139,9 @@ public interface TIFF {
     // "Old-style" JPEG (still used as EXIF thumbnail)
     int TAG_JPEG_INTERCHANGE_FORMAT = 513;
     int TAG_JPEG_INTERCHANGE_FORMAT_LENGTH = 514;
+    
+    int TAG_GROUP3OPTIONS = 292;
+    int TAG_GROUP4OPTIONS = 293;
 
     /// C. Tags relating to image data characteristics
 
