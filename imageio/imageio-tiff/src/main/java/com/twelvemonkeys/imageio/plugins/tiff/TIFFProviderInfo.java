@@ -41,7 +41,7 @@ final class TIFFProviderInfo extends ReaderWriterProviderInfo {
     protected TIFFProviderInfo() {
         super(
                 TIFFProviderInfo.class,
-                new String[] {"tiff", "TIFF"},
+                new String[] {"tiff", "TIFF", "tif", "TIF"},
                 new String[] {"tif", "tiff"},
                 new String[] {
                         "image/tiff", "image/x-tiff"
