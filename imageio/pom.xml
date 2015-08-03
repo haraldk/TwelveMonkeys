@@ -30,6 +30,7 @@
 
         <!-- Stand-alone readers/writers -->
         <module>imageio-bmp</module>
+        <module>imageio-hdr</module>
         <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>

@@ -52,7 +52,7 @@ import java.util.Properties;
  * <p />
  * Color profiles may be configured by placing a property-file
  * {@code com/twelvemonkeys/imageio/color/icc_profiles.properties}
- * on the classpath, specifying the full path to the profile.
+ * on the classpath, specifying the full path to the profiles.
  * ICC color profiles are probably already present on your system, or
  * can be downloaded from
  * <a href="http://www.color.org/profiles2.xalter">ICC</a>,
@@ -342,7 +342,7 @@ public final class ColorSpaces {
             try {
                 return ICC_Profile.getInstance(profilePath);
             }
-            catch (IOException ignore) {
+            catch (SecurityException | IOException ignore) {
                 if (DEBUG) {
                     ignore.printStackTrace();
                 }

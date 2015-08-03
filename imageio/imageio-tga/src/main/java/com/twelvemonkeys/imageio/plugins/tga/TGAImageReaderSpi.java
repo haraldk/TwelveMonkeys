@@ -45,7 +45,8 @@ public final class TGAImageReaderSpi extends ImageReaderSpiBase {
         super(new TGAProviderInfo());
     }
 
-    @Override public boolean canDecodeInput(final Object source) throws IOException {
+    @Override
+    public boolean canDecodeInput(final Object source) throws IOException {
         if (!(source instanceof ImageInputStream)) {
             return false;
         }
@@ -58,7 +59,7 @@ public final class TGAImageReaderSpi extends ImageReaderSpiBase {
         try {
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
-            // NOTE: The TGA format does not have a magic identifier, so this is guesswork...
+            // NOTE: The original TGA format does not have a magic identifier, so this is guesswork...
             // We'll try to match sane values, and hope no other files contains the same sequence.
 
             stream.readUnsignedByte();
@@ -88,11 +89,11 @@ public final class TGAImageReaderSpi extends ImageReaderSpiBase {
 
             int colorMapStart = stream.readUnsignedShort();
             int colorMapSize = stream.readUnsignedShort();
-            int colorMapDetph = stream.readUnsignedByte();
+            int colorMapDepth = stream.readUnsignedByte();
 
             if (colorMapSize == 0) {
                 // No color map, all 3 fields should be 0
-                if (colorMapStart!= 0 || colorMapDetph != 0) {
+                if (colorMapStart != 0 || colorMapDepth != 0) {
                     return false;
                 }
             }
@@ -106,7 +107,7 @@ public final class TGAImageReaderSpi extends ImageReaderSpiBase {
                 if (colorMapStart >= colorMapSize) {
                     return false;
                 }
-                if (colorMapDetph != 15 && colorMapDetph != 16 && colorMapDetph != 24 && colorMapDetph != 32) {
+                if (colorMapDepth != 15 && colorMapDepth != 16 && colorMapDepth != 24 && colorMapDepth != 32) {
                     return false;
                 }
             }
@@ -134,6 +135,7 @@ public final class TGAImageReaderSpi extends ImageReaderSpiBase {
 
             // We're pretty sure by now, but there can still be false positives...
             // For 2.0 format, we could skip to end, and read "TRUEVISION-XFILE.\0" but it would be too slow
+            // unless we are working with a local file (and the file may still be a valid original TGA without it).
             return true;
         }
         finally {

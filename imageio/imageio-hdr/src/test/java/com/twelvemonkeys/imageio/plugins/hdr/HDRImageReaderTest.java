@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2015, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,57 +26,60 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.bmp;
+package com.twelvemonkeys.imageio.plugins.hdr;
 
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
+import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Describes an RGB/true color bitmap structure (16, 24 and 32 bits per pixel).
+ * TGAImageReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: BitmapRGB.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
+ * @author last modified by $Author: haraldk$
+ * @version $Id: TGAImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
-class BitmapRGB extends BitmapDescriptor {
-
-    public BitmapRGB(final DirectoryEntry pEntry, final DIBHeader pHeader) {
-        super(pEntry, pHeader);
+public class HDRImageReaderTest extends ImageReaderAbstractTest<HDRImageReader> {
+    @Override
+    protected List<TestData> getTestData() {
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/hdr/memorial_o876.hdr"), new Dimension(512, 768))
+        );
     }
 
-    public BufferedImage getImage() {
-        // Test is mask != null rather than hasMask(), as 32 bit (w/alpha)
-        // might still have bitmask, but we don't read or use it.
-        if (mask != null) {
-            image = createMaskedImage();
-            mask = null;
-        }
-
-        return image;
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new HDRImageReaderSpi();
     }
 
-    private BufferedImage createMaskedImage() {
-        BufferedImage masked = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
+    @Override
+    protected Class<HDRImageReader> getReaderClass() {
+        return HDRImageReader.class;
+    }
 
-        Graphics2D graphics = masked.createGraphics();
-        try {
-            graphics.drawImage(image, 0, 0, null);
-        }
-        finally {
-            graphics.dispose();
-        }
+    @Override
+    protected HDRImageReader createReader() {
+        return new HDRImageReader(createProvider());
+    }
 
-        WritableRaster alphaRaster = masked.getAlphaRaster();
+    @Override
+    protected List<String> getFormatNames() {
+        return Arrays.asList("HDR", "hdr", "RGBE", "rgbe");
+    }
 
-        byte[] trans = {0x0};
-        for (int y = 0; y < getHeight(); y++) {
-            for (int x = 0; x < getWidth(); x++) {
-                if (mask.isTransparent(x, y)) {
-                    alphaRaster.setDataElements(x, y, trans);
-                }
-            }
-        }
+    @Override
+    protected List<String> getSuffixes() {
+        return Arrays.asList("hdr", "rgbe", "xyze");
+    }
 
-        return masked;
+    @Override
+    protected List<String> getMIMETypes() {
+        return Collections.singletonList(
+                "image/vnd.radiance"
+        );
     }
 }

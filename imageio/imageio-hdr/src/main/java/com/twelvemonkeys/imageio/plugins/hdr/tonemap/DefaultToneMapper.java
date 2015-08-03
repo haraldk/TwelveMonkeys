@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2015, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,57 +26,38 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.bmp;
-
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
+package com.twelvemonkeys.imageio.plugins.hdr.tonemap;
 
 /**
- * Describes an RGB/true color bitmap structure (16, 24 and 32 bits per pixel).
+ * DefaultToneMapper.
+ * <p/>
+ * Normalizes values to range [0...1] using:
+ *
+ * <p><em>V<sub>out</sub> =  V<sub>in</sub> / (V<sub>in</sub> + C)</em></p>
+ *
+ * Where <em>C</em> is constant.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: BitmapRGB.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
+ * @author last modified by $Author: harald.kuhr$
+ * @version $Id: DefaultToneMapper.java,v 1.0 28/07/15 harald.kuhr Exp$
  */
-class BitmapRGB extends BitmapDescriptor {
+public final class DefaultToneMapper implements ToneMapper {
 
-    public BitmapRGB(final DirectoryEntry pEntry, final DIBHeader pHeader) {
-        super(pEntry, pHeader);
+    private final float constant;
+
+    public DefaultToneMapper() {
+        this(1);
     }
 
-    public BufferedImage getImage() {
-        // Test is mask != null rather than hasMask(), as 32 bit (w/alpha)
-        // might still have bitmask, but we don't read or use it.
-        if (mask != null) {
-            image = createMaskedImage();
-            mask = null;
-        }
-
-        return image;
+    public DefaultToneMapper(final float constant) {
+        this.constant = constant;
     }
 
-    private BufferedImage createMaskedImage() {
-        BufferedImage masked = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
-
-        Graphics2D graphics = masked.createGraphics();
-        try {
-            graphics.drawImage(image, 0, 0, null);
+    @Override
+    public void map(final float[] rgb) {
+        // Default Vo =  Vi / (Vi + 1)
+        for (int i = 0; i < rgb.length; i++) {
+            rgb[i] = rgb[i] / (rgb[i] + constant);
         }
-        finally {
-            graphics.dispose();
-        }
-
-        WritableRaster alphaRaster = masked.getAlphaRaster();
-
-        byte[] trans = {0x0};
-        for (int y = 0; y < getHeight(); y++) {
-            for (int x = 0; x < getWidth(); x++) {
-                if (mask.isTransparent(x, y)) {
-                    alphaRaster.setDataElements(x, y, trans);
-                }
-            }
-        }
-
-        return masked;
     }
 }
