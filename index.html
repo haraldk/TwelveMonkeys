@@ -637,9 +637,9 @@ folder, and issue the command below to build.</p>
 <pre><code>$ mvn package
 </code></pre>
 
-<p>Currently, the only supported JDK for making a build is Oracle JDK 7.x. </p>
+<p>Currently, the recommended JDK for making a build is Oracle JDK 7.x or 8.x. </p>
 
-<p>It's possible to build using OpenJDK, but some tests will fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether. To build using JDK 8, you need to pass <code>-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider</code> to revert to the color manangement system used in Java 7.</p>
+<p>It's possible to build using OpenJDK, but some tests might fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether. 
 
 <p>Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable <code>MAVEN_OPTS</code>
 to give the Java process that runs Maven more memory. I suggest something like <code>-Xmx512m -XX:MaxPermSize=256m</code>.</p>
