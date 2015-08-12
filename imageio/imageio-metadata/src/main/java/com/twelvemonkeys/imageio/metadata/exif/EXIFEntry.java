@@ -38,13 +38,14 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
  * @version $Id: EXIFEntry.java,v 1.0 Nov 13, 2009 5:47:35 PM haraldk Exp$
  */
 final class EXIFEntry extends AbstractEntry {
+    // TODO: Expose as TIFFEntry
     final private short type;
 
     EXIFEntry(final int identifier, final Object value, final short type) {
         super(identifier, value);
 
         if (type < 1 || type >= TIFF.TYPE_NAMES.length) {
-            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
+            throw new IllegalArgumentException(String.format("Illegal TIFF type: %s", type));
         }
 
         // TODO: Validate that type is applicable to value?
@@ -114,6 +115,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "PlanarConfiguration";
             case TIFF.TAG_RESOLUTION_UNIT:
                 return "ResolutionUnit";
+            case TIFF.TAG_PAGE_NAME:
+                return "PageName";
             case TIFF.TAG_PAGE_NUMBER:
                 return "PageNumber";
             case TIFF.TAG_SOFTWARE:
@@ -228,6 +231,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "DateTimeDigitized";
             case EXIF.TAG_IMAGE_NUMBER:
                 return "ImageNumber";
+            case EXIF.TAG_MAKER_NOTE:
+                return "MakerNote";
             case EXIF.TAG_USER_COMMENT:
                 return "UserComment";
 
