@@ -27,20 +27,45 @@ import java.util.*;
  * @author last modified by $Author: harald.kuhr$
  * @version $Id: TIFFImageMetadata.java,v 1.0 17/04/15 harald.kuhr Exp$
  */
-final class TIFFImageMetadata extends AbstractMetadata {
+public final class TIFFImageMetadata extends AbstractMetadata {
 
     static final int RATIONAL_SCALE_FACTOR = 100000;
 
     private final Directory original;
     private Directory ifd;
 
-    TIFFImageMetadata(final Directory ifd) {
+    /**
+     * Creates an empty TIFF metadata object.
+     *
+     * Client code can update or change the metadata using the
+     * {@link #setFromTree(String, Node)}
+     * or {@link #mergeTree(String, Node)} methods.
+     */
+    public TIFFImageMetadata() {
+        this(new TIFFIFD(Collections.<Entry>emptyList()));
+    }
+
+    /**
+     * Creates a TIFF metadata object, using the values from the given IFD.
+     *
+     * Client code can update or change the metadata using the
+     * {@link #setFromTree(String, Node)}
+     * or {@link #mergeTree(String, Node)} methods.
+     */
+    public TIFFImageMetadata(final Directory ifd) {
         super(true, TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, TIFFMedataFormat.class.getName(), null, null);
         this.ifd = Validate.notNull(ifd, "IFD");
         this.original = ifd;
     }
 
-    TIFFImageMetadata(final Collection<Entry> entries) {
+    /**
+     * Creates a TIFF metadata object, using the values from the given entries.
+     *
+     * Client code can update or change the metadata using the
+     * {@link #setFromTree(String, Node)}
+     * or {@link #mergeTree(String, Node)} methods.
+     */
+    public TIFFImageMetadata(final Collection<Entry> entries) {
         this(new TIFFIFD(entries));
     }
 
