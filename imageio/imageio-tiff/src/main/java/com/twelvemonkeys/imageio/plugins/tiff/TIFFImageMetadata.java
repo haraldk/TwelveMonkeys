@@ -1,18 +1,24 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.AbstractMetadata;
+import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.lang.Validate;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.metadata.IIOInvalidTreeException;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.lang.reflect.Array;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
+import java.util.*;
 
 /**
  * TIFFImageMetadata.
@@ -21,18 +27,46 @@ import java.util.Calendar;
  * @author last modified by $Author: harald.kuhr$
  * @version $Id: TIFFImageMetadata.java,v 1.0 17/04/15 harald.kuhr Exp$
  */
-final class TIFFImageMetadata extends AbstractMetadata {
+public final class TIFFImageMetadata extends AbstractMetadata {
 
-    private final Directory ifd;
+    static final int RATIONAL_SCALE_FACTOR = 100000;
 
-    TIFFImageMetadata(final Directory ifd) {
-        super(true, TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, TIFFMedataFormat.class.getName(), null, null);
-        this.ifd = Validate.notNull(ifd, "IFD");
+    private final Directory original;
+    private Directory ifd;
+
+    /**
+     * Creates an empty TIFF metadata object.
+     *
+     * Client code can update or change the metadata using the
+     * {@link #setFromTree(String, Node)}
+     * or {@link #mergeTree(String, Node)} methods.
+     */
+    public TIFFImageMetadata() {
+        this(new TIFFIFD(Collections.<Entry>emptyList()));
     }
 
-    @Override
-    public boolean isReadOnly() {
-        return false;
+    /**
+     * Creates a TIFF metadata object, using the values from the given IFD.
+     *
+     * Client code can update or change the metadata using the
+     * {@link #setFromTree(String, Node)}
+     * or {@link #mergeTree(String, Node)} methods.
+     */
+    public TIFFImageMetadata(final Directory ifd) {
+        super(true, TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, TIFFMedataFormat.class.getName(), null, null);
+        this.ifd = Validate.notNull(ifd, "IFD");
+        this.original = ifd;
+    }
+
+    /**
+     * Creates a TIFF metadata object, using the values from the given entries.
+     *
+     * Client code can update or change the metadata using the
+     * {@link #setFromTree(String, Node)}
+     * or {@link #mergeTree(String, Node)} methods.
+     */
+    public TIFFImageMetadata(final Collection<Entry> entries) {
+        this(new TIFFIFD(entries));
     }
 
     protected IIOMetadataNode getNativeTree() {
@@ -99,7 +133,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
                         IIOMetadataNode elementNode = new IIOMetadataNode(typeName);
                         valueNode.appendChild(elementNode);
 
-                        setValue(value, unsigned, elementNode);
+                        setTIFFNativeValue(value, unsigned, elementNode);
                     }
                     else {
                         for (int i = 0; i < count; i++) {
@@ -107,7 +141,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
                             IIOMetadataNode elementNode = new IIOMetadataNode(typeName);
                             valueNode.appendChild(elementNode);
 
-                            setValue(val, unsigned, elementNode);
+                            setTIFFNativeValue(val, unsigned, elementNode);
                         }
                     }
                 }
@@ -119,7 +153,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         return ifdNode;
     }
 
-    private void setValue(final Object value, final boolean unsigned, final IIOMetadataNode elementNode) {
+    private void setTIFFNativeValue(final Object value, final boolean unsigned, final IIOMetadataNode elementNode) {
         if (unsigned && value instanceof Byte) {
             elementNode.setAttribute("value", String.valueOf((Byte) value & 0xFF));
         }
@@ -289,12 +323,12 @@ final class TIFFImageMetadata extends AbstractMetadata {
 
         // Handle ColorSpaceType (RGB/CMYK/YCbCr etc)...
         Entry photometricTag = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
-        int photometricValue = ((Number) photometricTag.getValue()).intValue(); // No default for this tag!
+        int photometricValue = getValueAsInt(photometricTag); // No default for this tag!
 
         Entry samplesPerPixelTag = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
         Entry bitsPerSampleTag = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
         int numChannelsValue = samplesPerPixelTag != null
-                               ? ((Number) samplesPerPixelTag.getValue()).intValue()
+                               ? getValueAsInt(samplesPerPixelTag)
                                : bitsPerSampleTag.valueCount();
 
         IIOMetadataNode colorSpaceType = new IIOMetadataNode("ColorSpaceType");
@@ -393,7 +427,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         Entry compressionTag = ifd.getEntryById(TIFF.TAG_COMPRESSION);
         int compressionValue = compressionTag == null
                                ? TIFFBaseline.COMPRESSION_NONE
-                               : ((Number) compressionTag.getValue()).intValue();
+                               : getValueAsInt(compressionTag);
 
         // Naming is identical to JAI ImageIO metadata as far as possible
         switch (compressionValue) {
@@ -502,7 +536,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         Entry planarConfigurationTag = ifd.getEntryById(TIFF.TAG_PLANAR_CONFIGURATION);
         int planarConfigurationValue = planarConfigurationTag == null
                                        ? TIFFBaseline.PLANARCONFIG_CHUNKY
-                                       : ((Number) planarConfigurationTag.getValue()).intValue();
+                                       : getValueAsInt(planarConfigurationTag);
 
         switch (planarConfigurationValue) {
             case TIFFBaseline.PLANARCONFIG_CHUNKY:
@@ -519,14 +553,16 @@ final class TIFFImageMetadata extends AbstractMetadata {
         Entry photometricInterpretationTag = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
         int photometricInterpretationValue = photometricInterpretationTag == null
                                              ? TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO
-                                             : ((Number) photometricInterpretationTag.getValue()).intValue();
+                                             : getValueAsInt(photometricInterpretationTag);
 
         Entry samleFormatTag = ifd.getEntryById(TIFF.TAG_SAMPLE_FORMAT);
+        // TODO: Fix for sampleformat 1 1 1 (as int[]) ??!?!?
         int sampleFormatValue = samleFormatTag == null
                                 ? TIFFBaseline.SAMPLEFORMAT_UINT
-                                : ((Number) samleFormatTag.getValue()).intValue();
+                                : getValueAsInt(samleFormatTag);
         IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
         node.appendChild(sampleFormat);
+
         switch (sampleFormatValue) {
             case TIFFBaseline.SAMPLEFORMAT_UINT:
                 if (photometricInterpretationValue == TIFFBaseline.PHOTOMETRIC_PALETTE) {
@@ -562,13 +598,13 @@ final class TIFFImageMetadata extends AbstractMetadata {
 
         Entry samplesPerPixelTag = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
         int numChannelsValue = samplesPerPixelTag != null
-                               ? ((Number) samplesPerPixelTag.getValue()).intValue()
+                               ? getValueAsInt(samplesPerPixelTag)
                                : bitsPerSampleTag.valueCount();
 
         // SampleMSB
         Entry fillOrderTag = ifd.getEntryById(TIFF.TAG_FILL_ORDER);
         int fillOrder = fillOrderTag != null
-                        ? ((Number) fillOrderTag.getValue()).intValue()
+                        ? getValueAsInt(fillOrderTag)
                         : TIFFBaseline.FILL_LEFT_TO_RIGHT;
         IIOMetadataNode sampleMSB = new IIOMetadataNode("SampleMSB");
         node.appendChild(sampleMSB);
@@ -586,6 +622,22 @@ final class TIFFImageMetadata extends AbstractMetadata {
         }
 
         return node;
+    }
+
+    private static int getValueAsInt(final Entry entry) {
+        Object value = entry.getValue();
+
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        else if (value instanceof short[]) {
+            return ((short[]) value)[0];
+        }
+        else if (value instanceof int[]) {
+            return ((int[]) value)[0];
+        }
+
+        throw new IllegalArgumentException("Unsupported type: " + entry);
     }
 
     // TODO: Candidate superclass method!
@@ -620,7 +672,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         // ImageOrientation
         Entry orientationTag = ifd.getEntryById(TIFF.TAG_ORIENTATION);
         if (orientationTag != null) {
-            int orientationValue = ((Number) orientationTag.getValue()).intValue();
+            int orientationValue = getValueAsInt(orientationTag);
 
             String value = null;
             switch (orientationValue) {
@@ -659,7 +711,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         }
 
         Entry resUnitTag = ifd.getEntryById(TIFF.TAG_RESOLUTION_UNIT);
-        int resUnitValue = resUnitTag == null ? TIFFBaseline.RESOLUTION_UNIT_DPI : ((Number) resUnitTag.getValue()).intValue();
+        int resUnitValue = resUnitTag == null ? TIFFBaseline.RESOLUTION_UNIT_DPI : getValueAsInt(resUnitTag);
         if (resUnitValue == TIFFBaseline.RESOLUTION_UNIT_CENTIMETER || resUnitValue == TIFFBaseline.RESOLUTION_UNIT_DPI) {
             // 10 mm in 1 cm or 25.4 mm in 1 inch
             double scale = resUnitValue == TIFFBaseline.RESOLUTION_UNIT_CENTIMETER ? 10 : 25.4;
@@ -703,7 +755,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
 
         if (extraSamplesTag != null) {
             int extraSamplesValue = (extraSamplesTag.getValue() instanceof Number)
-                                    ? ((Number) extraSamplesTag.getValue()).intValue()
+                                    ? getValueAsInt(extraSamplesTag)
                                     : ((Number) Array.get(extraSamplesTag.getValue(), 0)).intValue();
 
             // Other values exists, these are not alpha
@@ -739,7 +791,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         if (subFileTypeTag != null) {
             // NOTE: The JAI metadata is somewhat broken here, as these are bit flags, not values...
             String value = null;
-            int subFileTypeValue = ((Number) subFileTypeTag.getValue()).intValue();
+            int subFileTypeValue = getValueAsInt(subFileTypeTag);
             if ((subFileTypeValue & TIFFBaseline.FILETYPE_MASK) != 0) {
                 value = "TransparencyMask";
             }
@@ -795,6 +847,7 @@ final class TIFFImageMetadata extends AbstractMetadata {
         addTextEntryIfPresent(text, TIFF.TAG_IMAGE_DESCRIPTION);
         addTextEntryIfPresent(text, TIFF.TAG_MAKE);
         addTextEntryIfPresent(text, TIFF.TAG_MODEL);
+        addTextEntryIfPresent(text, TIFF.TAG_PAGE_NAME);
         addTextEntryIfPresent(text, TIFF.TAG_SOFTWARE);
         addTextEntryIfPresent(text, TIFF.TAG_ARTIST);
         addTextEntryIfPresent(text, TIFF.TAG_HOST_COMPUTER);
@@ -820,5 +873,436 @@ final class TIFFImageMetadata extends AbstractMetadata {
         // See http://docs.oracle.com/javase/7/docs/api/javax/imageio/metadata/doc-files/standard_metadata.html
         // See http://stackoverflow.com/questions/30910719/javax-imageio-1-0-standard-plug-in-neutral-metadata-format-tiling-information
         return super.getStandardTileNode();
+    }
+
+    /// Mutation
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
+
+    public void setFromTree(final String formatName, final Node root) throws IIOInvalidTreeException {
+        // Standard validation
+        super.mergeTree(formatName, root);
+
+        // Set by "merging" with empty map
+        LinkedHashMap<Integer, Entry> entries = new LinkedHashMap<>();
+        mergeEntries(formatName, root, entries);
+
+        // TODO: Consistency validation?
+
+        // Finally create a new IFD from merged values
+        ifd = new TIFFIFD(entries.values());
+    }
+
+    @Override
+    public void mergeTree(final String formatName, final Node root) throws IIOInvalidTreeException {
+        // Standard validation
+        super.mergeTree(formatName, root);
+
+        // Clone entries (shallow clone, as entries themselves are immutable)
+        LinkedHashMap<Integer, Entry> entries = new LinkedHashMap<>(ifd.size() + 10);
+
+        for (Entry entry : ifd) {
+            entries.put((Integer) entry.getIdentifier(), entry);
+        }
+
+        mergeEntries(formatName, root, entries);
+
+        // TODO: Consistency validation?
+
+        // Finally create a new IFD from merged values
+        ifd = new TIFFIFD(entries.values());
+    }
+
+    private void mergeEntries(final String formatName, final Node root, final Map<Integer, Entry> entries) throws IIOInvalidTreeException {
+        // Merge from both native and standard trees
+        if (getNativeMetadataFormatName().equals(formatName)) {
+            mergeNativeTree(root, entries);
+        }
+        else if (IIOMetadataFormatImpl.standardMetadataFormatName.equals(formatName)) {
+            mergeStandardTree(root, entries);
+        }
+        else {
+            // Should already be checked for
+            throw new AssertionError();
+        }
+    }
+
+    private void mergeStandardTree(final Node root, final Map<Integer, Entry> entries) throws IIOInvalidTreeException {
+        NodeList nodes = root.getChildNodes();
+
+        // Merge selected values from standard tree
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Node node = nodes.item(i);
+
+            if ("Dimension".equals(node.getNodeName())) {
+                mergeFromStandardDimensionNode(node, entries);
+            }
+            else if ("Document".equals(node.getNodeName())) {
+                mergeFromStandardDocumentNode(node, entries);
+            }
+            else if ("Text".equals(node.getNodeName())) {
+                mergeFromStandardTextNode(node, entries);
+            }
+        }
+    }
+
+    private void mergeFromStandardDimensionNode(final Node dimensionNode, final Map<Integer, Entry> entries) {
+        // Dimension: xRes/yRes
+        //      - If set, set res unit to pixels per cm as this better reflects values?
+        //      - Or, convert to DPI, if we already had values in DPI??
+        //      Also, if we have only aspect, set these values, and use unknown as unit?
+        // TODO: ImageOrientation => Orientation
+        NodeList children = dimensionNode.getChildNodes();
+
+        Float aspect = null;
+        Float xRes = null;
+        Float yRes = null;
+
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            String nodeName = child.getNodeName();
+
+            if ("PixelAspectRatio".equals(nodeName)) {
+                aspect = Float.parseFloat(getAttribute(child, "value"));
+            }
+            else if ("HorizontalPixelSize".equals(nodeName)) {
+                xRes = Float.parseFloat(getAttribute(child, "value"));
+            }
+            else if ("VerticalPixelSize".equals(nodeName)) {
+                yRes = Float.parseFloat(getAttribute(child, "value"));
+            }
+        }
+
+        // If we have one size compute the other
+        if (xRes == null && yRes != null) {
+            xRes = yRes * (aspect != null ? aspect : 1f);
+        }
+        else if (yRes == null && xRes != null) {
+            yRes = xRes / (aspect != null ? aspect : 1f);
+        }
+
+        // If we have resolution
+        if (xRes != null && yRes != null) {
+            // If old unit was DPI, convert values and keep DPI, otherwise use PPCM
+            Entry resUnitEntry = entries.get(TIFF.TAG_RESOLUTION_UNIT);
+            int resUnitValue = resUnitEntry != null && resUnitEntry.getValue() != null
+                                       && ((Number) resUnitEntry.getValue()).intValue() == TIFFBaseline.RESOLUTION_UNIT_DPI
+                               ? TIFFBaseline.RESOLUTION_UNIT_DPI
+                               : TIFFBaseline.RESOLUTION_UNIT_CENTIMETER;
+
+            // Units from standard format are pixels per mm, convert to cm or inches
+            float scale = resUnitValue == TIFFBaseline.RESOLUTION_UNIT_CENTIMETER ? 10 : 25.4f;
+
+            int x = Math.round(xRes * scale * RATIONAL_SCALE_FACTOR);
+            int y = Math.round(yRes * scale * RATIONAL_SCALE_FACTOR);
+
+            entries.put(TIFF.TAG_X_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(x, RATIONAL_SCALE_FACTOR)));
+            entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(y, RATIONAL_SCALE_FACTOR)));
+            entries.put(TIFF.TAG_RESOLUTION_UNIT,
+                    new TIFFImageWriter.TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, resUnitValue));
+        }
+        else if (aspect != null) {
+            if (aspect >= 1) {
+                int v = Math.round(aspect * RATIONAL_SCALE_FACTOR);
+                entries.put(TIFF.TAG_X_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(v, RATIONAL_SCALE_FACTOR)));
+                entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(1)));
+            }
+            else {
+                int v = Math.round(RATIONAL_SCALE_FACTOR / aspect);
+                entries.put(TIFF.TAG_X_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(1)));
+                entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(v, RATIONAL_SCALE_FACTOR)));
+            }
+
+            entries.put(TIFF.TAG_RESOLUTION_UNIT,
+                    new TIFFImageWriter.TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, TIFFBaseline.RESOLUTION_UNIT_NONE));
+        }
+        // Else give up...
+    }
+
+    private void mergeFromStandardDocumentNode(final Node documentNode, final Map<Integer, Entry> entries) {
+        // Document: SubfileType, CreationDate
+        NodeList children = documentNode.getChildNodes();
+
+        for (int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            String nodeName = child.getNodeName();
+
+            if ("SubimageInterpretation".equals(nodeName)) {
+                // TODO: SubFileType
+            }
+            else if ("ImageCreationTime".equals(nodeName)) {
+                // TODO: CreationDate
+            }
+        }
+    }
+
+    private void mergeFromStandardTextNode(final Node textNode, final Map<Integer, Entry> entries) throws IIOInvalidTreeException {
+        NodeList textEntries = textNode.getChildNodes();
+
+        for (int i = 0; i < textEntries.getLength(); i++) {
+            Node textEntry = textEntries.item(i);
+
+            if (!"TextEntry".equals(textEntry.getNodeName())) {
+                throw new IIOInvalidTreeException("Text node should only contain TextEntry nodes", textNode);
+            }
+
+            String keyword = getAttribute(textEntry, "keyword");
+            String value = getAttribute(textEntry, "value");
+
+            // DocumentName, ImageDescription, Make, Model, PageName,
+            // Software, Artist, HostComputer, InkNames, Copyright
+            if (value != null && !value.isEmpty() && keyword != null) {
+                // We do all comparisons in lower case, for compatibility
+                keyword = keyword.toLowerCase();
+
+                TIFFImageWriter.TIFFEntry entry;
+
+                if ("documentname".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_DOCUMENT_NAME, TIFF.TYPE_ASCII, value);
+                }
+                else if ("imagedescription".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_IMAGE_DESCRIPTION, TIFF.TYPE_ASCII, value);
+                }
+                else if ("make".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_MAKE, TIFF.TYPE_ASCII, value);
+                }
+                else if ("model".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_MODEL, TIFF.TYPE_ASCII, value);
+                }
+                else if ("pagename".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_PAGE_NAME, TIFF.TYPE_ASCII, value);
+                }
+                else if ("software".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, value);
+                }
+                else if ("artist".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_ARTIST, TIFF.TYPE_ASCII, value);
+                }
+                else if ("hostcomputer".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_HOST_COMPUTER, TIFF.TYPE_ASCII, value);
+                }
+                else if ("inknames".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_INK_NAMES, TIFF.TYPE_ASCII, value);
+                }
+                else if ("copyright".equals(keyword)) {
+                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_COPYRIGHT, TIFF.TYPE_ASCII, value);
+                }
+                else {
+                    continue;
+                }
+
+                entries.put((Integer) entry.getIdentifier(), entry);
+            }
+        }
+    }
+
+    private void mergeNativeTree(final Node root, final Map<Integer, Entry> entries) throws IIOInvalidTreeException {
+        Directory ifd = toIFD(root.getFirstChild());
+
+        // Merge (overwrite) entries with entries from IFD
+        for (Entry entry : ifd) {
+            entries.put((Integer) entry.getIdentifier(), entry);
+        }
+    }
+
+    private Directory toIFD(final Node ifdNode) throws IIOInvalidTreeException {
+        if (ifdNode == null || !ifdNode.getNodeName().equals("TIFFIFD")) {
+            throw new IIOInvalidTreeException("Expected \"TIFFIFD\" node", ifdNode);
+        }
+
+        List<Entry> entries = new ArrayList<>();
+        NodeList nodes = ifdNode.getChildNodes();
+
+        for (int i = 0; i < nodes.getLength(); i++) {
+            entries.add(toEntry(nodes.item(i)));
+        }
+
+        return new TIFFIFD(entries);
+    }
+
+    private Entry toEntry(final Node node) throws IIOInvalidTreeException {
+        String name = node.getNodeName();
+
+        if (name.equals("TIFFIFD")) {
+            int tag = Integer.parseInt(getAttribute(node, "parentTagNumber"));
+            Directory subIFD = toIFD(node);
+
+            return new TIFFImageWriter.TIFFEntry(tag, TIFF.TYPE_IFD, subIFD);
+        }
+        else if (name.equals("TIFFField")) {
+            int tag = Integer.parseInt(getAttribute(node, "number"));
+            short type = getTIFFType(node);
+            Object value = getValue(node, type);
+
+            return value != null ? new TIFFImageWriter.TIFFEntry(tag, type, value) : null;
+        }
+        else {
+            throw new IIOInvalidTreeException("Expected \"TIFFIFD\" or \"TIFFField\" node: " + name, node);
+        }
+    }
+
+    private short getTIFFType(final Node node) throws IIOInvalidTreeException {
+        Node containerNode = node.getFirstChild();
+        if (containerNode == null) {
+            throw new IIOInvalidTreeException("Missing value wrapper node", node);
+        }
+
+        String nodeName = containerNode.getNodeName();
+        if (!nodeName.startsWith("TIFF")) {
+            throw new IIOInvalidTreeException("Unexpected value wrapper node, expected type", containerNode);
+        }
+
+        String typeName = nodeName.substring(4);
+
+        if (typeName.equals("Undefined")) {
+            return TIFF.TYPE_UNDEFINED;
+        }
+
+        typeName = typeName.substring(0, typeName.length() - 1).toUpperCase();
+
+        for (int i = 1; i < TIFF.TYPE_NAMES.length; i++) {
+            if (typeName.equals(TIFF.TYPE_NAMES[i])) {
+                return (short) i;
+            }
+        }
+
+        throw new IIOInvalidTreeException("Unknown TIFF type: " + typeName, containerNode);
+    }
+
+    private Object getValue(final Node node, final short type) throws IIOInvalidTreeException {
+        Node child = node.getFirstChild();
+
+        if (child != null) {
+            String typeName = child.getNodeName();
+
+            if (type == TIFF.TYPE_UNDEFINED) {
+                String values = getAttribute(child, "value");
+                String[] vals = values.split(",\\s?");
+
+                byte[] bytes = new byte[vals.length];
+                for (int i = 0; i < vals.length; i++) {
+                    bytes[i] = Byte.parseByte(vals[i]);
+                }
+
+                return bytes;
+            }
+            else {
+                NodeList valueNodes = child.getChildNodes();
+
+                // Create array for each type
+                int count = valueNodes.getLength();
+                Object value = createArrayForType(type, count);
+
+                // Parse each value
+                for (int i = 0; i < count; i++) {
+                    Node valueNode = valueNodes.item(i);
+
+                    if (!typeName.startsWith(valueNode.getNodeName())) {
+                        throw new IIOInvalidTreeException("Value node does not match container node", child);
+                    }
+
+                    String stringValue = getAttribute(valueNode, "value");
+
+                    // NOTE: The reason for parsing "wider" type, is to allow for unsigned values
+                    switch (type) {
+                        case TIFF.TYPE_BYTE:
+                        case TIFF.TYPE_SBYTE:
+                            ((byte[]) value)[i] = (byte) Short.parseShort(stringValue);
+                            break;
+                        case TIFF.TYPE_ASCII:
+                            ((String[]) value)[i] = stringValue;
+                            break;
+                        case TIFF.TYPE_SHORT:
+                        case TIFF.TYPE_SSHORT:
+                            ((short[]) value)[i] = (short) Integer.parseInt(stringValue);
+                            break;
+                        case TIFF.TYPE_LONG:
+                        case TIFF.TYPE_SLONG:
+                            ((int[]) value)[i] = (int) Long.parseLong(stringValue);
+                            break;
+                        case TIFF.TYPE_RATIONAL:
+                        case TIFF.TYPE_SRATIONAL:
+                            String[] numDenom = stringValue.split("/");
+                            ((Rational[]) value)[i] = numDenom.length > 1
+                                                      ? new Rational(Long.parseLong(numDenom[0]), Long.parseLong(numDenom[1]))
+                                                      : new Rational(Long.parseLong(numDenom[0]));
+                            break;
+                        case TIFF.TYPE_FLOAT:
+                            ((float[]) value)[i] = Float.parseFloat(stringValue);
+                            break;
+                        case TIFF.TYPE_DOUBLE:
+                            ((double[]) value)[i] = Double.parseDouble(stringValue);
+                            break;
+                        default:
+                            throw new AssertionError("Unsupported TIFF type: " + type);
+                    }
+                }
+
+                // Normalize value
+                if (count == 0) {
+                    return null;
+                }
+                if (count == 1) {
+                    return Array.get(value, 0);
+                }
+
+                return value;
+            }
+        }
+
+        throw new IIOInvalidTreeException("Empty TIFField node", node);
+    }
+
+    private Object createArrayForType(final short type, final int length) {
+        switch (type) {
+            case TIFF.TYPE_ASCII:
+                return new String[length];
+            case TIFF.TYPE_BYTE:
+            case TIFF.TYPE_SBYTE:
+            case TIFF.TYPE_UNDEFINED: // Not used here, but for completeness
+                return new byte[length];
+            case TIFF.TYPE_SHORT:
+            case TIFF.TYPE_SSHORT:
+                return new short[length];
+            case TIFF.TYPE_LONG:
+            case TIFF.TYPE_SLONG:
+                return new int[length];
+            case TIFF.TYPE_IFD:
+                return new long[length];
+            case TIFF.TYPE_RATIONAL:
+            case TIFF.TYPE_SRATIONAL:
+                return new Rational[length];
+            case TIFF.TYPE_FLOAT:
+                return new float[length];
+            case TIFF.TYPE_DOUBLE:
+                return new double[length];
+            default:
+                throw new AssertionError("Unsupported TIFF type: " + type);
+        }
+    }
+
+    private String getAttribute(final Node node, final String attribute) {
+        return node instanceof Element ? ((Element) node).getAttribute(attribute) : null;
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+
+        ifd = original;
+    }
+
+    Directory getIFD() {
+        return ifd;
+    }
+
+    // TODO: Replace with IFD class when moved to new package and made public!
+    private final static class TIFFIFD extends AbstractDirectory {
+        public TIFFIFD(final Collection<Entry> entries) {
+            super(entries);
+        }
     }
 }

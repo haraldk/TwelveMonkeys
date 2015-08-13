@@ -95,6 +95,7 @@ public interface TIFF {
             null, null,
             "LONG8", "SLONG8", "IFD8"
     };
+    /** Length of the corresponding type, in bytes. */
     int[] TYPE_LENGTHS = {
             -1,
             1, 1, 2, 4, 8,
@@ -165,6 +166,7 @@ public interface TIFF {
     int TAG_IMAGE_DESCRIPTION = 270;
     int TAG_MAKE = 271;
     int TAG_MODEL = 272;
+    int TAG_PAGE_NAME = 285;
     int TAG_PAGE_NUMBER = 297;
     int TAG_SOFTWARE = 305;
     int TAG_ARTIST = 315;
