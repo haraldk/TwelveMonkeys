@@ -154,13 +154,6 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         changesCurrentRow = changesReferenceRow;
         changesReferenceRow = tmp;
 
-        if (changesReferenceRowCount == 0) {
-            changesReferenceRowCount = 3;
-            changesReferenceRow[0] = columns;
-            changesReferenceRow[1] = columns;
-            changesReferenceRow[2] = columns;
-        }
-
         boolean white = true;
         int index = 0;
         changesCurrentRowCount = 0;
@@ -179,23 +172,34 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                     switch (n.value) {
                         case VALUE_HMODE:
                             int runLength;
-
                             runLength = decodeRun(white ? whiteRunTree : blackRunTree);
+                            System.out.print(runLength + (white? "W" : "B"));
                             index += runLength;
                             changesCurrentRow[changesCurrentRowCount++] = index;
 
                             runLength = decodeRun(white ? blackRunTree : whiteRunTree);
+                            System.out.print(runLength + (!white? "W" : "B") + ",");
                             index += runLength;
                             changesCurrentRow[changesCurrentRowCount++] = index;
                             break;
 
                         case VALUE_PASSMODE:
-                            index = changesReferenceRow[getNextChangingElement(index, white) + 1];
+                            int pChangingElement = getNextChangingElement(index, white) + 1;
+                            if(pChangingElement >= changesReferenceRowCount || pChangingElement == -1){
+                                index = columns;
+                            }else{
+                                index = changesReferenceRow[pChangingElement];
+                            }
                             break;
 
                         default:
                             // Vertical mode (-3 to 3)
-                            index = changesReferenceRow[getNextChangingElement(index, white)] + n.value;
+                            int vChangingElement = getNextChangingElement(index, white);
+                            if(vChangingElement >= changesReferenceRowCount || vChangingElement == -1){
+                                index = columns + n.value;
+                            }else{
+                                index = changesReferenceRow[vChangingElement]+ n.value;
+                            }
                             changesCurrentRow[changesCurrentRowCount] = index;
                             changesCurrentRowCount++;
                             white = !white;
@@ -212,12 +216,12 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         int start = white ? 0 : 1;
 
         for (int i = start; i < changesReferenceRowCount; i += 2) {
-            if (a0 < changesReferenceRow[i]) {
+            if (a0 < changesReferenceRow[i] || (a0 == 0 && changesReferenceRow[i] == 0)) {
                 return i;
             }
-        }
+        }        
 
-        return 0;
+        return -1;
     }
 
     private void decodeRowType2() throws IOException {
@@ -271,6 +275,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         int index = 0;
         boolean white = true;
 
+        
         for (int i = 0; i <= changesCurrentRowCount; i++) {
             int nextChange = columns;
 
@@ -311,7 +316,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
             white = !white;
         }
-
+        
         if (index != columns) {
             throw new IOException("Sum of run-lengths does not equal scan line width: " + index + " > " + columns);
         }
