@@ -173,12 +173,10 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                         case VALUE_HMODE:
                             int runLength;
                             runLength = decodeRun(white ? whiteRunTree : blackRunTree);
-                            System.out.print(runLength + (white? "W" : "B"));
                             index += runLength;
                             changesCurrentRow[changesCurrentRowCount++] = index;
 
                             runLength = decodeRun(white ? blackRunTree : whiteRunTree);
-                            System.out.print(runLength + (!white? "W" : "B") + ",");
                             index += runLength;
                             changesCurrentRow[changesCurrentRowCount++] = index;
                             break;
