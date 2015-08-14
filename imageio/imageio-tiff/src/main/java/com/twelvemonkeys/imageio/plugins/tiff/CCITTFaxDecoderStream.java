@@ -183,24 +183,31 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
                         case VALUE_PASSMODE:
                             int pChangingElement = getNextChangingElement(index, white) + 1;
-                            if(pChangingElement >= changesReferenceRowCount || pChangingElement == -1){
+
+                            if (pChangingElement >= changesReferenceRowCount || pChangingElement == -1) {
                                 index = columns;
-                            }else{
+                            }
+                            else {
                                 index = changesReferenceRow[pChangingElement];
                             }
+
                             break;
 
                         default:
                             // Vertical mode (-3 to 3)
                             int vChangingElement = getNextChangingElement(index, white);
-                            if(vChangingElement >= changesReferenceRowCount || vChangingElement == -1){
+
+                            if (vChangingElement >= changesReferenceRowCount || vChangingElement == -1) {
                                 index = columns + n.value;
-                            }else{
-                                index = changesReferenceRow[vChangingElement]+ n.value;
                             }
+                            else {
+                                index = changesReferenceRow[vChangingElement] + n.value;
+                            }
+
                             changesCurrentRow[changesCurrentRowCount] = index;
                             changesCurrentRowCount++;
                             white = !white;
+
                             break;
                     }
 

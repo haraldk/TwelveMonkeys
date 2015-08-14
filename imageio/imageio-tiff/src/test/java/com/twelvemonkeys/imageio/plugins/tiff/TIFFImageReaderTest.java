@@ -80,7 +80,15 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/lzw-long-strings-sample.tif"), new Dimension(316, 173)), // RGBA, LZW compressed w/predictor
                 new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg_no_profile.tif"), new Dimension(150, 63)), // CMYK, JPEG compressed, no ICC profile
-                new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)) // CMYK, JPEG compressed, with ICC profile
+                new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
+                // CCITT
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_lsb2msb.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D, LSB
+                new TestData(getClassLoaderResource("/tiff/ccitt/group4.tif"), new Dimension(6, 4)), // B/W, CCITT T6 1D
+                new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)) // B/W, CCITT T4
         );
     }
 
