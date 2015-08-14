@@ -1,6 +1,6 @@
 ## Latest
 
-TwelveMonkeys ImageIO [3.1.2](http://search.maven.org/#search%7Cga%7C2%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.1.2%22) is released (Aug. 14th, 2015).
+TwelveMonkeys ImageIO [3.1.2](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.1.2%22) is released (Aug. 14th, 2015).
 ## About
 
 TwelveMonkeys ImageIO is a collection of plugins and extensions for Java's ImageIO.
