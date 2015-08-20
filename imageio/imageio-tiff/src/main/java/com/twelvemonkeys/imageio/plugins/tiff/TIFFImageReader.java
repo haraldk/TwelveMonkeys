@@ -333,7 +333,8 @@ public class TIFFImageReader extends ImageReaderBase {
                 switch (samplesPerPixel) {
                     case 1:
                         // TIFF 6.0 Spec says: 1, 4 or 8 for baseline (1 for bi-level, 4/8 for gray)
-                        // ImageTypeSpecifier supports 1, 2, 4, 8 or 16 bits, we'll go with that for now
+                        // ImageTypeSpecifier supports 1, 2, 4, 8 or 16 bits per sample, we'll support 32 bits as well.
+                        // (Chunky or planar makes no difference for a single channel).
                         if (profile != null && profile.getColorSpaceType() != ColorSpace.TYPE_GRAY) {
                             processWarningOccurred(String.format("Embedded ICC color profile (type %s), is incompatible with image data (GRAY/type 6). Ignoring profile.", profile.getColorSpaceType()));
                             profile = null;
@@ -347,10 +348,46 @@ public class TIFFImageReader extends ImageReaderBase {
                         else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0}, dataType, false, false);
                         }
-                    default:
-                        // TODO: If ExtraSamples is used, PlanarConfiguration must be taken into account also for gray data
 
-                        throw new IIOException(String.format("Unsupported SamplesPerPixel/BitsPerSample combination for Bi-level/Gray TIFF (expected 1/1, 1/2, 1/4, 1/8 or 1/16): %d/%d", samplesPerPixel, bitsPerSample));
+                        throw new IIOException(String.format("Unsupported BitsPerSample for Bi-level/Gray TIFF (expected 1, 2, 4, 8, 16 or 32): %d", bitsPerSample));
+
+                    case 2:
+                        // Gray + alpha. We'll support:
+                        // * 8, 16 or 32 bits per sample
+                        // * Associated (pre-multiplied) or unassociated (non-pre-multiplied) alpha
+                        // * Chunky (interleaved) or planar (banded) data
+                        if (profile != null && profile.getColorSpaceType() != ColorSpace.TYPE_GRAY) {
+                            processWarningOccurred(String.format("Embedded ICC color profile (type %s), is incompatible with image data (GRAY/type 6). Ignoring profile.", profile.getColorSpaceType()));
+                            profile = null;
+                        }
+
+                        cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
+
+                        // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
+                        long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
+
+                        if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32)) {
+                            switch (planarConfiguration) {
+                                case TIFFBaseline.PLANARCONFIG_CHUNKY:
+                                    return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType, extraSamples[0] == 1);
+                                case TIFFExtension.PLANARCONFIG_PLANAR:
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, dataType, true, extraSamples[0] == 1);
+                            }
+                        }
+                        else if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
+                            switch (planarConfiguration) {
+                                case TIFFBaseline.PLANARCONFIG_CHUNKY:
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1}, dataType, true, extraSamples[0] == 1);
+                                case TIFFExtension.PLANARCONFIG_PLANAR:
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, dataType, true, extraSamples[0] == 1);
+                            }
+                        }
+
+                        throw new IIOException(String.format("Unsupported BitsPerSample for Gray + Alpha TIFF (expected 8, 16 or 32): %d", bitsPerSample));
+                        // TODO: More samples might be ok, if multiple alpha or unknown samples
+
+                    default:
+                        throw new IIOException(String.format("Unsupported SamplesPerPixel/BitsPerSample combination for Bi-level/Gray TIFF (expected 1/1, 1/2, 1/4, 1/8, 1/16 or 1/32, or 2/8, 2/16 or 2/32): %d/%d", samplesPerPixel, bitsPerSample));
                 }
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:

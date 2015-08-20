@@ -81,6 +81,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg_no_profile.tif"), new Dimension(150, 63)), // CMYK, JPEG compressed, no ICC profile
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
+                new TestData(getClassLoaderResource("/tiff/grayscale-alpha.tiff"), new Dimension(248, 351)), // Gray + unassociated alpha
                 // CCITT
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
