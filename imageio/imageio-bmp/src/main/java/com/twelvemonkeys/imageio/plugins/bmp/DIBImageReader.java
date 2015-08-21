@@ -321,8 +321,6 @@ abstract class DIBImageReader extends ImageReaderBase {
             descriptors.put(pEntry, descriptor);
         }
 
-        System.err.println("descriptor: " + descriptor);
-
         return descriptor.getImage();
     }
 
