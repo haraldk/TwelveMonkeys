@@ -531,8 +531,14 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
 
                 throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer (expected 8/16/32): " + bitsPerSample);
+
             case TIFFExtension.SAMPLEFORMAT_FP:
-                throw new IIOException("Unsupported TIFF SampleFormat: 3 (Floating point)");
+                if (bitsPerSample == 32) {
+                    return DataBuffer.TYPE_FLOAT;
+                }
+
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 32): " + bitsPerSample);
+
             case TIFFExtension.SAMPLEFORMAT_UNDEFINED:
                 // Spec says:
                 // A field value of “undefined” is a statement by the writer that it did not know how
@@ -1381,6 +1387,46 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
 
                 break;
+
+            case DataBuffer.TYPE_FLOAT:
+                float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData();
+
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
+                    }
+
+                    readFully(input, rowDataFloat);
+
+                    if (row >= srcRegion.y) {
+//                        normalizeBlack(interpretation, rowDataFloat);
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
+                            }
+                        }
+
+                        raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
+                    }
+                    // Else skip data
+                }
+
+                break;
+        }
+    }
+
+    // TODO: Candidate util method (with off/len + possibly byte order)
+    private void readFully(final DataInput input, final float[] rowDataFloat) throws IOException {
+        if (input instanceof ImageInputStream) {
+            ImageInputStream imageInputStream = (ImageInputStream) input;
+            imageInputStream.readFully(rowDataFloat, 0, rowDataFloat.length);
+        }
+        else {
+            for (int k = 0; k < rowDataFloat.length; k++) {
+                rowDataFloat[k] = input.readFloat();
+            }
         }
     }
 
