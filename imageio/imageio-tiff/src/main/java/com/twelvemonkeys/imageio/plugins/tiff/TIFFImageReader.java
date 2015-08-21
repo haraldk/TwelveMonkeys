@@ -521,10 +521,16 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.SAMPLEFORMAT_UINT:
                 return bitsPerSample <= 8 ? DataBuffer.TYPE_BYTE : bitsPerSample <= 16 ? DataBuffer.TYPE_USHORT : DataBuffer.TYPE_INT;
             case TIFFExtension.SAMPLEFORMAT_INT:
-                if (bitsPerSample == 16) {
-                    return DataBuffer.TYPE_SHORT;
+                switch (bitsPerSample) {
+                    case 8:
+                        return DataBuffer.TYPE_BYTE;
+                    case 16:
+                        return DataBuffer.TYPE_SHORT;
+                    case 32:
+                        return DataBuffer.TYPE_INT;
                 }
-                throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer (expected 16): " + bitsPerSample);
+
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer (expected 8/16/32): " + bitsPerSample);
             case TIFFExtension.SAMPLEFORMAT_FP:
                 throw new IIOException("Unsupported TIFF SampleFormat: 3 (Floating point)");
             case TIFFExtension.SAMPLEFORMAT_UNDEFINED:
