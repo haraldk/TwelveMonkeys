@@ -26,6 +26,7 @@
         <!-- Support -->
         <module>imageio-core</module>
         <module>imageio-metadata</module>
+        <module>imageio-stream</module>
         <module>imageio-clippath</module>
 
         <!-- Stand-alone readers/writers -->
@@ -76,14 +77,14 @@
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-lang</artifactId>
             <version>${project.version}</version>
-            <classifier>tests</classifier>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-io</artifactId>
             <version>${project.version}</version>
-            <classifier>tests</classifier>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
@@ -138,7 +139,7 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
-                <classifier>tests</classifier>
+                <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
         </dependencies>

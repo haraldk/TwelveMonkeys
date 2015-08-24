@@ -32,7 +32,7 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>common-lang</artifactId>
                 <version>${project.version}</version>
-                <classifier>tests</classifier>
+                <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
 
