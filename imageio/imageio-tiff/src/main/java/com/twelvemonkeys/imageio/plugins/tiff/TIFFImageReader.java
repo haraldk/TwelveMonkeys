@@ -61,6 +61,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.color.CMMException;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
@@ -1562,14 +1563,22 @@ public class TIFFImageReader extends ImageReaderBase {
         return value;
     }
 
-    public ICC_Profile getICCProfile() {
+    private ICC_Profile getICCProfile() {
         Entry entry = currentIFD.getEntryById(TIFF.TAG_ICC_PROFILE);
-        if (entry == null) {
-            return null;
+
+        if (entry != null) {
+            byte[] value = (byte[]) entry.getValue();
+            ICC_Profile profile = ICC_Profile.getInstance(value);
+
+            try {
+                return ColorSpaces.validateProfile(profile);
+            }
+            catch (CMMException ignore) {
+                processWarningOccurred("Ignoring broken/incompatible ICC profile: " + ignore.getMessage());
+            }
         }
 
-        byte[] value = (byte[]) entry.getValue();
-        return ICC_Profile.getInstance(value);
+        return null;
     }
 
     // TODO: Tiling support
