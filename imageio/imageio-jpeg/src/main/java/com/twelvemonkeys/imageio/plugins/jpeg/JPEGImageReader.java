@@ -267,10 +267,15 @@ public class JPEGImageReader extends ImageReaderBase {
     @Override
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         // If delegate can determine the spec, we'll just go with that
-        ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
+        try {
+            ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
 
-        if (rawType != null) {
-            return rawType;
+            if (rawType != null) {
+                return rawType;
+            }
+        }
+        catch (NullPointerException ignore) {
+            // Fall through
         }
 
         // Otherwise, consult the image metadata
@@ -312,22 +317,10 @@ public class JPEGImageReader extends ImageReaderBase {
         assertInput();
         checkBounds(imageIndex);
 
-//        CompoundDirectory exif = getExif();
-//        if (exif != null) {
-//            System.err.println("exif: " + exif);
-//            System.err.println("Orientation: " + exif.getEntryById(TIFF.TAG_ORIENTATION));
-//            Entry exifIFDEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
-//
-//            if (exifIFDEntry != null) {
-//                Directory exifIFD = (Directory) exifIFDEntry.getValue();
-//                System.err.println("PixelXDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_X_DIMENSION));
-//                System.err.println("PixelYDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_Y_DIMENSION));
-//            }
-//        }
-
         SOFSegment sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
+        boolean bogusAdobeDCT = false;
 
         if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() != 3 ||
                 adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() != 4)) {
@@ -338,6 +331,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     sof.marker & 0xf, sof.componentsInFrame()
             ));
 
+            bogusAdobeDCT = true;
             adobeDCT = null;
         }
 
@@ -346,11 +340,11 @@ public class JPEGImageReader extends ImageReaderBase {
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
+                bogusAdobeDCT ||
                 sourceCSType == JPEGColorSpace.CMYK ||
                 sourceCSType == JPEGColorSpace.YCCK ||
-                adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile)) ||
-                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null) { // TODO: Issue warning?
+                profile != null && !ColorSpaces.isCS_sRGB(profile) ||
+                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
