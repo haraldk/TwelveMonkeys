@@ -85,6 +85,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/signed-integral-8bit.tif"), new Dimension(439, 167)), // Gray, 8 bit *signed* integral
                 new TestData(getClassLoaderResource("/tiff/floatingpoint-32bit.tif"), new Dimension(300, 100)), // RGB, 32 bit floating point
                 new TestData(getClassLoaderResource("/tiff/general-cmm-error.tif"), new Dimension(1181, 860)), // RGB, LZW compression with broken/incompatible ICC profile
+                new TestData(getClassLoaderResource("/tiff/lzw-rgba-padded-icc.tif"), new Dimension(19, 11)), // RGBA, LZW compression with padded ICC profile
+                new TestData(getClassLoaderResource("/tiff/lzw-rgba-4444.tif"), new Dimension(64, 64)), // RGBA, LZW compression with UINT 4/4/4/4 + gray 2/2
                 // CCITT
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D

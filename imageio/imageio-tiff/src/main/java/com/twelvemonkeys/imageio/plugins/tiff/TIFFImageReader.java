@@ -435,6 +435,11 @@ public class TIFFImageReader extends ImageReaderBase {
                                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
                             }
                         }
+                        else if (bitsPerSample == 4) {
+                            long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
+
+                            return ImageTypeSpecifier.createPacked(cs, 0xF000, 0xF00, 0xF0, 0xF, DataBuffer.TYPE_USHORT, extraSamples[0] == 1);
+                        }
                         // TODO: More samples might be ok, if multiple alpha or unknown samples
                     default:
                         throw new IIOException(String.format("Unsupported SamplesPerPixels/BitsPerSample combination for RGB TIFF (expected 3/8, 4/8, 3/16 or 4/16): %d/%d", samplesPerPixel, bitsPerSample));
@@ -714,7 +719,8 @@ public class TIFFImageReader extends ImageReaderBase {
 
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
-        WritableRaster rowRaster = rawType.getColorModel().createCompatibleWritableRaster(stripTileWidth, 1);
+//        WritableRaster rowRaster = rawType.getColorModel().createCompatibleWritableRaster(stripTileWidth, 1);
+        WritableRaster rowRaster = rawType.createBufferedImage(stripTileWidth, 1).getRaster();
         Rectangle clip = new Rectangle(srcRegion);
         int row = 0;
 
@@ -1563,17 +1569,19 @@ public class TIFFImageReader extends ImageReaderBase {
         return value;
     }
 
-    private ICC_Profile getICCProfile() {
+    private ICC_Profile getICCProfile() throws IOException {
         Entry entry = currentIFD.getEntryById(TIFF.TAG_ICC_PROFILE);
 
         if (entry != null) {
             byte[] value = (byte[]) entry.getValue();
-            ICC_Profile profile = ICC_Profile.getInstance(value);
 
             try {
+                // WEIRDNESS: Reading profile from InputStream is somehow more compatible
+                // than reading from byte array (chops off extra bytes + validates profile).
+                ICC_Profile profile = ICC_Profile.getInstance(new ByteArrayInputStream(value));
                 return ColorSpaces.validateProfile(profile);
             }
-            catch (CMMException ignore) {
+            catch (CMMException | IllegalArgumentException ignore) {
                 processWarningOccurred("Ignoring broken/incompatible ICC profile: " + ignore.getMessage());
             }
         }
