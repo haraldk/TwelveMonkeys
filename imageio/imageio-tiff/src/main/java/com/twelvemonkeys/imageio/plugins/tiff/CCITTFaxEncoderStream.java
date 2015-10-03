@@ -1,11 +1,45 @@
+/*
+ * Copyright (c) 2013, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 
 import com.twelvemonkeys.lang.Validate;
 
+/**
+ * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
+ * 
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author$
+ * @version $Id$
+ */
 public class CCITTFaxEncoderStream extends OutputStream {
 
     private int currentBufferLength = 0;
@@ -65,6 +99,17 @@ public class CCITTFaxEncoderStream extends OutputStream {
         }
     }
 
+    @Override
+    public void flush() throws IOException {
+        stream.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+        fill();
+        stream.close();
+    }
+
     // TODO: when to write end EOLs, half filled buffer bytes etc. on end?
 
     private void encodeRow() throws IOException {
@@ -108,11 +153,14 @@ public class CCITTFaxEncoderStream extends OutputStream {
         if (optionG32D) {
             // TODO decide whether 1d or 2d row, write k, encode
         } else {
-            // TODO encode1d
+            encode1D();
+        }
+        if (optionG3Fill) {
+            fill();
         }
     }
 
-    private void encodeRowType6() {
+    private void encodeRowType6() throws IOException {
         encode2D();
     }
 
@@ -132,10 +180,10 @@ public class CCITTFaxEncoderStream extends OutputStream {
             Code[] codes = white ? WHITE_NONTERMINATING_CODES : BLACK_NONTERMINATING_CODES;
             while (nonterm > 0) {
                 if (nonterm >= codes.length) {
-                    write(codes[codes.length-1].code,codes[codes.length-1].length);
+                    write(codes[codes.length - 1].code, codes[codes.length - 1].length);
                     nonterm -= codes.length - 1;
                 } else {
-                    write(codes[nonterm - 1].code,codes[nonterm - 1].length);
+                    write(codes[nonterm - 1].code, codes[nonterm - 1].length);
                     nonterm = 0;
                 }
             }
@@ -145,8 +193,65 @@ public class CCITTFaxEncoderStream extends OutputStream {
         }
     }
 
-    private void encode2D() {
+    private void encode2D() throws IOException {
+        boolean white = true;
+        int lastChange = -1;
+        for (int i = 0; i < changesCurrentRowLength; i++) { // TODO
+                                                            // columns-Basiert
+                                                            // statt references
+            int nextChange = changesCurrentRow[i];
 
+            int nextRef = getNextRefChange(lastChange);
+
+            int difference = nextRef - nextChange;
+            if (difference < -3) {
+                // next change nearer than nextRef, PMODE
+                write(1, 4);
+                lastChange = nextRef;
+            } else if (difference > 3) {
+                // next change farer than nextRef, hmode
+                write(1, 3);
+                // write runLength(white)
+                // write runLength(!white)
+                // i++;
+                // lastChange = ...
+            } else {
+                // VMODE
+                switch (difference) {
+                case 0:
+                    write(1, 1);
+                    break;
+                case 1:
+                    write(3, 3);
+                    break;
+                case 2:
+                    write(3, 6);
+                    break;
+                case 3:
+                    write(3, 7);
+                    break;
+                case -1:
+                    write(2, 3);
+                    break;
+                case -2:
+                    write(2, 6);
+                    break;
+                case -3:
+                    write(2, 7);
+                    break;
+                }
+                white = !white;
+            }
+        }
+    }
+
+    private int getNextRefChange(int currentRowChange) {
+        for (int i = 0; i < changesReferenceRowLength; i++) {
+            if (changesReferenceRow[i] > currentRowChange) {
+                return changesReferenceRow[i];
+            }
+        }
+        return columns;
     }
 
     private void write(int code, int codeLength) throws IOException {
@@ -188,12 +293,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
         outputBufferBitLength = 0;
     }
 
-    private static class Code {
-        public static Code create(int code, int length) {
-            Code c = new Code(code, length);
-            return c;
-        }
-
+    public static class Code {
         private Code(int code, int length) {
             this.code = code;
             this.length = length;
@@ -203,11 +303,46 @@ public class CCITTFaxEncoderStream extends OutputStream {
         final int length;
     }
 
-    private Code[] WHITE_TERMINATING_CODES = {};
+    public static final Code[] WHITE_TERMINATING_CODES;
 
-    private Code[] WHITE_NONTERMINATING_CODES = {};
+    public static final Code[] WHITE_NONTERMINATING_CODES;
 
-    private Code[] BLACK_TERMINATING_CODES = {};
+    public static final Code[] BLACK_TERMINATING_CODES;
 
-    private Code[] BLACK_NONTERMINATING_CODES = {};
+    public static final Code[] BLACK_NONTERMINATING_CODES;
+
+    static {
+        // Setup HUFFMAN Codes
+        WHITE_TERMINATING_CODES = new Code[64];
+        WHITE_NONTERMINATING_CODES = new Code[40];
+        for (int i = 0; i < CCITTFaxDecoderStream.WHITE_CODES.length; i++) {
+            int bitLength = i + 4;
+            for (int j = 0; j < CCITTFaxDecoderStream.WHITE_CODES[i].length; j++) {
+                int value = CCITTFaxDecoderStream.WHITE_RUN_LENGTHS[i][j];
+                int code = CCITTFaxDecoderStream.WHITE_CODES[i][j];
+
+                if (value < 64) {
+                    WHITE_TERMINATING_CODES[value] = new Code(code, bitLength);
+                } else {
+                    WHITE_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);
+                }
+            }
+        }
+
+        BLACK_TERMINATING_CODES = new Code[64];
+        BLACK_NONTERMINATING_CODES = new Code[40];
+        for (int i = 0; i < CCITTFaxDecoderStream.BLACK_CODES.length; i++) {
+            int bitLength = i + 2;
+            for (int j = 0; j < CCITTFaxDecoderStream.BLACK_CODES[i].length; j++) {
+                int value = CCITTFaxDecoderStream.BLACK_RUN_LENGTHS[i][j];
+                int code = CCITTFaxDecoderStream.BLACK_CODES[i][j];
+
+                if (value < 64) {
+                    BLACK_TERMINATING_CODES[value] = new Code(code, bitLength);
+                } else {
+                    BLACK_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);
+                }
+            }
+        }
+    }
 }
