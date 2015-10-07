@@ -1491,4 +1491,40 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             reader.dispose();
         }
     }
+
+    @Test
+    public void testGetRawImageTypeAdobeAPP14CMYKAnd3channelData() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jfif-app13-app14ycck-3channel.jpg")));
+
+            ImageTypeSpecifier rawType = reader.getRawImageType(0);
+            assertNull(rawType); // But no exception, please...
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadAdobeAPP14CMYKAnd3channelData() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jfif-app13-app14ycck-3channel.jpg")));
+
+            assertEquals(310, reader.getWidth(0));
+            assertEquals(384, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0, null);
+            assertNotNull(image);
+            assertEquals(310, image.getWidth());
+            assertEquals(384, image.getHeight());
+            assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 }

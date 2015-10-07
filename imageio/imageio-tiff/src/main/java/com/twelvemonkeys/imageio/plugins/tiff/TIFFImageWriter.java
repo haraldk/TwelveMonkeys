@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.metadata.AbstractEntry;
+import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFWriter;
 import com.twelvemonkeys.imageio.metadata.exif.Rational;
@@ -39,9 +40,12 @@ import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.*;
+import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
@@ -50,10 +54,9 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.image.*;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
@@ -65,13 +68,16 @@ import java.util.zip.DeflaterOutputStream;
  * @version $Id: TIFFImageWriter.java,v 1.0 18.09.13 12:46 haraldk Exp$
  */
 public final class TIFFImageWriter extends ImageWriterBase {
+    // Short term
+    // TODO: Support more of the ImageIO metadata (ie. compression from metadata, etc)
+
     // Long term
     // TODO: Support tiling
     // TODO: Support thumbnails
-    // TODO: Support ImageIO metadata
     // TODO: Support CCITT Modified Huffman compression (2)
     // TODO: Full "Baseline TIFF" support (pending CCITT compression 2)
     // TODO: CCITT compressions T.4 and T.6
+    // TODO: Support JPEG compression of CMYK data (pending JPEGImageWriter CMYK write support)
     // ----
     // TODO: Support storing multiple images in one stream (multi-page TIFF)
     // TODO: Support use-case: Transcode multi-layer PSD to multi-page TIFF with metadata
@@ -91,6 +97,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // Support LZW compression (5)
     // Support JPEG compression (7) - might need extra input to allow multiple images with single DQT
     // Use sensible defaults for compression based on input? None is sensible... :-)
+    // Support resolution, resolution unit and software tags from ImageIO metadata
 
     public static final Rational STANDARD_DPI = new Rational(72);
 
@@ -98,14 +105,81 @@ public final class TIFFImageWriter extends ImageWriterBase {
         super(provider);
     }
 
+    @Override
+    public void setOutput(final Object output) {
+        super.setOutput(output);
+
+        // TODO: Allow appending/partly overwrite of existing file...
+    }
+
     static final class TIFFEntry extends AbstractEntry {
-        TIFFEntry(Object identifier, Object value) {
+        // TODO: Expose a merge of this and the EXIFEntry class...
+        private final short type;
+
+        private static short guessType(final Object val) {
+            // TODO: This code is duplicated in EXIFWriter.getType, needs refactor!
+            Object value = Validate.notNull(val);
+
+            boolean array = value.getClass().isArray();
+            if (array) {
+                value = Array.get(value, 0);
+            }
+
+            // Note: This "narrowing" is to keep data consistent between read/write.
+            // TODO: Check for negative values and use signed types?
+            if (value instanceof Byte) {
+                return TIFF.TYPE_BYTE;
+            }
+            if (value instanceof Short) {
+                if (!array && (Short) value < Byte.MAX_VALUE) {
+                    return TIFF.TYPE_BYTE;
+                }
+
+                return TIFF.TYPE_SHORT;
+            }
+            if (value instanceof Integer) {
+                if (!array && (Integer) value < Short.MAX_VALUE) {
+                    return TIFF.TYPE_SHORT;
+                }
+
+                return TIFF.TYPE_LONG;
+            }
+            if (value instanceof Long) {
+                if (!array && (Long) value < Integer.MAX_VALUE) {
+                    return TIFF.TYPE_LONG;
+                }
+            }
+
+            if (value instanceof Rational) {
+                return TIFF.TYPE_RATIONAL;
+            }
+
+            if (value instanceof String) {
+                return TIFF.TYPE_ASCII;
+            }
+
+            // TODO: More types
+
+            throw new UnsupportedOperationException(String.format("Method guessType not implemented for value of type %s", value.getClass()));
+        }
+
+        TIFFEntry(final int identifier, final Object value) {
+            this(identifier, guessType(value), value);
+        }
+
+        TIFFEntry(int identifier, short type, Object value) {
             super(identifier, value);
+            this.type = type;
+        }
+
+        @Override
+        public String getTypeName() {
+            return TIFF.TYPE_NAMES[type];
         }
     }
 
     @Override
-    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
+    public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
         // TODO: Validate input
 
         assertOutput();
@@ -119,6 +193,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
         RenderedImage renderedImage = image.getRenderedImage();
         ColorModel colorModel = renderedImage.getColorModel();
         int numComponents = colorModel.getNumComponents();
+
+        TIFFImageMetadata metadata;
+        if (image.getMetadata() != null) {
+            metadata = convertImageMetadata(image.getMetadata(), ImageTypeSpecifier.createFromRenderedImage(renderedImage), param);
+        }
+        else {
+            metadata = initMeta(null, ImageTypeSpecifier.createFromRenderedImage(renderedImage), param);
+        }
 
         SampleModel sampleModel = renderedImage.getSampleModel();
 
@@ -140,7 +222,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
-        List<Entry> entries = new ArrayList<>();
+        Set<Entry> entries = new LinkedHashSet<>();
         entries.add(new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, renderedImage.getWidth()));
         entries.add(new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
         // entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
@@ -157,10 +239,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         // Write compression field from param or metadata
+        // TODO: Support COPY_FROM_METADATA
         int compression = TIFFImageWriteParam.getCompressionType(param);
         entries.add(new TIFFEntry(TIFF.TAG_COMPRESSION, compression));
 
         // TODO: Let param/metadata control predictor
+        // TODO: Depending on param.getCompressionMode(): DISABLED/EXPLICIT/COPY_FROM_METADATA/DEFAULT
         switch (compression) {
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
@@ -169,7 +253,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             default:
         }
 
-        // TODO: We might want to support CMYK in JPEG as well...
+        // TODO: We might want to support CMYK in JPEG as well... Pending JPEG CMYK write support.
         int photometric = compression == TIFFExtension.COMPRESSION_JPEG ?
                           TIFFExtension.PHOTOMETRIC_YCBCR :
                           getPhotometricInterpretation(colorModel);
@@ -189,15 +273,24 @@ public final class TIFFImageWriter extends ImageWriterBase {
             }
         }
 
+        // Default sample format SAMPLEFORMAT_UINT need not be written
         if (sampleModel.getDataType() == DataBuffer.TYPE_SHORT /* TODO: if (isSigned(sampleModel.getDataType) or getSampleFormat(sampleModel) != 0 */) {
             entries.add(new TIFFEntry(TIFF.TAG_SAMPLE_FORMAT, TIFFExtension.SAMPLEFORMAT_INT));
         }
+        // TODO: Float values!
 
-        entries.add(new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer")); // TODO: Get from metadata (optional) + fill in version number
+        // Get Software from metadata, or use default
+        Entry software = metadata.getIFD().getEntryById(TIFF.TAG_SOFTWARE);
+        entries.add(software != null ? software : new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
 
-        entries.add(new TIFFEntry(TIFF.TAG_X_RESOLUTION, STANDARD_DPI));
-        entries.add(new TIFFEntry(TIFF.TAG_Y_RESOLUTION, STANDARD_DPI));
-        entries.add(new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFFBaseline.RESOLUTION_UNIT_DPI));
+        // Get X/YResolution and ResolutionUnit from metadata if set, otherwise use defaults
+        // TODO: Add logic here OR in metadata merging, to make sure these 3 values are consistent.
+        Entry xRes = metadata.getIFD().getEntryById(TIFF.TAG_X_RESOLUTION);
+        entries.add(xRes != null ? xRes : new TIFFEntry(TIFF.TAG_X_RESOLUTION, STANDARD_DPI));
+        Entry yRes = metadata.getIFD().getEntryById(TIFF.TAG_Y_RESOLUTION);
+        entries.add(yRes != null ? yRes : new TIFFEntry(TIFF.TAG_Y_RESOLUTION, STANDARD_DPI));
+        Entry resUnit = metadata.getIFD().getEntryById(TIFF.TAG_RESOLUTION_UNIT);
+        entries.add(resUnit != null ? resUnit : new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFFBaseline.RESOLUTION_UNIT_DPI));
 
         // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
         entries.add(new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, Integer.MAX_VALUE)); // TODO: Allowed but not recommended
@@ -208,7 +301,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
         TIFFEntry dummyStripOffsets = new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, -1);
         entries.add(dummyStripOffsets); // Updated later
 
-        // TODO: If tiled, write tile indexes etc, or always do that?
+        // TODO: If tiled, write tile indexes etc
+        // Depending on param.getTilingMode
 
         EXIFWriter exifWriter = new EXIFWriter();
 
@@ -233,6 +327,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: Create compressor stream per Tile/Strip
         if (compression == TIFFExtension.COMPRESSION_JPEG) {
             Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
+
             if (!writers.hasNext()) {
                 // This can only happen if someone deliberately uninstalled it
                 throw new IIOException("No JPEG ImageWriter found!");
@@ -607,13 +702,75 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // Metadata
 
     @Override
-    public IIOMetadata getDefaultImageMetadata(ImageTypeSpecifier imageType, ImageWriteParam param) {
-        return null;
+    public TIFFImageMetadata getDefaultImageMetadata(final ImageTypeSpecifier imageType, final ImageWriteParam param) {
+        return initMeta(null, imageType, param);
     }
 
     @Override
-    public IIOMetadata convertImageMetadata(IIOMetadata inData, ImageTypeSpecifier imageType, ImageWriteParam param) {
-        return null;
+    public TIFFImageMetadata convertImageMetadata(final IIOMetadata inData,
+                                                  final ImageTypeSpecifier imageType,
+                                                  final ImageWriteParam param) {
+        Validate.notNull(inData, "inData");
+        Validate.notNull(imageType, "imageType");
+
+        Directory ifd;
+
+        if (inData instanceof TIFFImageMetadata) {
+            ifd = ((TIFFImageMetadata) inData).getIFD();
+        }
+        else {
+            TIFFImageMetadata outData = new TIFFImageMetadata(Collections.<Entry>emptySet());
+
+            try {
+                if (Arrays.asList(inData.getMetadataFormatNames()).contains(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME)) {
+                    outData.setFromTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, inData.getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME));
+                }
+                else if (inData.isStandardMetadataFormatSupported()) {
+                    outData.setFromTree(IIOMetadataFormatImpl.standardMetadataFormatName, inData.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName));
+                }
+                else {
+                    // Unknown format, we can't convert it
+                    return null;
+                }
+            }
+            catch (IIOInvalidTreeException e) {
+                // TODO: How to issue warning when warning requires imageIndex??? Use -1?
+            }
+
+            ifd = outData.getIFD();
+        }
+
+        // Overwrite in values with values from imageType and param as needed
+        return initMeta(ifd, imageType, param);
+    }
+
+    private TIFFImageMetadata initMeta(final Directory ifd, final ImageTypeSpecifier imageType, final ImageWriteParam param) {
+        Validate.notNull(imageType, "imageType");
+
+        Map<Integer, Entry> entries = new LinkedHashMap<>(ifd != null ? ifd.size() + 10 : 20);
+
+        if (ifd != null) {
+            for (Entry entry : ifd) {
+                entries.put((Integer) entry.getIdentifier(), entry);
+            }
+        }
+
+        // TODO: Set values from imageType
+        entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, getPhotometricInterpretation(imageType.getColorModel())));
+
+        // TODO: Set values from param if != null + combined values...
+
+        return new TIFFImageMetadata(entries.values());
+    }
+
+    @Override
+    public IIOMetadata getDefaultStreamMetadata(final ImageWriteParam param) {
+        return super.getDefaultStreamMetadata(param);
+    }
+
+    @Override
+    public IIOMetadata convertStreamMetadata(final IIOMetadata inData, final ImageWriteParam param) {
+        return super.convertStreamMetadata(inData, param);
     }
 
     // Param
@@ -762,5 +919,4 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         TIFFImageReader.showIt(read, output.getName());
     }
-
 }

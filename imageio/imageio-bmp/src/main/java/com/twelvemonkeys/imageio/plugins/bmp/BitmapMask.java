@@ -38,19 +38,19 @@ import java.awt.image.BufferedImage;
  * @version $Id: BitmapMask.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
 class BitmapMask extends BitmapDescriptor {
-    protected final BitmapIndexed mask;
+    protected final BitmapIndexed bitMask;
 
     public BitmapMask(final DirectoryEntry pParent, final DIBHeader pHeader) {
         super(pParent, pHeader);
-        mask = new BitmapIndexed(pParent, pHeader);
+        bitMask = new BitmapIndexed(pParent, pHeader);
     }
 
     boolean isTransparent(final int pX, final int pY) {
         // NOTE: 1: Fully transparent, 0: Opaque...
-        return mask.bits[pX + pY * getWidth()] != 0;
+        return bitMask.bits[pX + pY * getWidth()] != 0;
     }
 
     public BufferedImage getImage() {
-        return mask.getImage();
+        return bitMask.getImage();
     }
 }

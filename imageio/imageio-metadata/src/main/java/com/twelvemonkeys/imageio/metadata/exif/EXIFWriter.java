@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -248,9 +249,12 @@ public final class EXIFWriter extends MetadataWriter {
             switch (type) {
                 case TIFF.TYPE_UNDEFINED:
                 case TIFF.TYPE_BYTE:
+                case TIFF.TYPE_SBYTE:
                     stream.write((byte[]) value);
                     break;
+
                 case TIFF.TYPE_SHORT:
+                case TIFF.TYPE_SSHORT:
                     short[] shorts;
 
                     if (value instanceof short[]) {
@@ -279,7 +283,9 @@ public final class EXIFWriter extends MetadataWriter {
 
                     stream.writeShorts(shorts, 0, shorts.length);
                     break;
+
                 case TIFF.TYPE_LONG:
+                case TIFF.TYPE_SLONG:
                     int[] ints;
 
                     if (value instanceof int[]) {
@@ -298,17 +304,45 @@ public final class EXIFWriter extends MetadataWriter {
                     }
 
                     stream.writeInts(ints, 0, ints.length);
-
                     break;
 
                 case TIFF.TYPE_RATIONAL:
+                case TIFF.TYPE_SRATIONAL:
                     Rational[] rationals = (Rational[]) value;
                     for (Rational rational : rationals) {
                         stream.writeInt((int) rational.numerator());
                         stream.writeInt((int) rational.denominator());
                     }
 
-                // TODO: More types
+                    break;
+
+                case TIFF.TYPE_FLOAT:
+                    float[] floats;
+
+                    if (value instanceof float[]) {
+                        floats = (float[]) value;
+                    }
+                    else {
+                        throw new IllegalArgumentException("Unsupported type for TIFF FLOAT: " + value.getClass());
+                    }
+
+                    stream.writeFloats(floats, 0, floats.length);
+
+                    break;
+
+                case TIFF.TYPE_DOUBLE:
+                    double[] doubles;
+
+                    if (value instanceof double[]) {
+                        doubles = (double[]) value;
+                    }
+                    else {
+                        throw new IllegalArgumentException("Unsupported type for TIFF FLOAT: " + value.getClass());
+                    }
+
+                    stream.writeDoubles(doubles, 0, doubles.length);
+
+                    break;
 
                 default:
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
@@ -319,27 +353,36 @@ public final class EXIFWriter extends MetadataWriter {
 //        }
         else {
             switch (type) {
-                case TIFF.TYPE_UNDEFINED:
                 case TIFF.TYPE_BYTE:
-                    stream.writeByte((Integer) value);
+                case TIFF.TYPE_SBYTE:
+                case TIFF.TYPE_UNDEFINED:
+                    stream.writeByte(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_ASCII:
-                    byte[] bytes = ((String) value).getBytes(Charset.forName("UTF-8"));
+                    byte[] bytes = ((String) value).getBytes(StandardCharsets.UTF_8);
                     stream.write(bytes);
                     stream.write(0);
                     break;
                 case TIFF.TYPE_SHORT:
-                    stream.writeShort((Integer) value);
+                case TIFF.TYPE_SSHORT:
+                    stream.writeShort(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_LONG:
+                case TIFF.TYPE_SLONG:
                     stream.writeInt(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_RATIONAL:
+                case TIFF.TYPE_SRATIONAL:
                     Rational rational = (Rational) value;
                     stream.writeInt((int) rational.numerator());
                     stream.writeInt((int) rational.denominator());
                     break;
-                    // TODO: More types
+                case TIFF.TYPE_FLOAT:
+                    stream.writeFloat(((Number) value).floatValue());
+                    break;
+                case TIFF.TYPE_DOUBLE:
+                    stream.writeDouble(((Number) value).doubleValue());
+                    break;
 
                 default:
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
@@ -356,11 +399,26 @@ public final class EXIFWriter extends MetadataWriter {
     }
 
     private short getType(final Entry entry) {
+        // TODO: What a MESS! Rewrite and expose EXIFEntry as TIFFEntry or so...
+
+        // For internal entries use type directly
         if (entry instanceof EXIFEntry) {
             EXIFEntry exifEntry = (EXIFEntry) entry;
             return exifEntry.getType();
         }
 
+        // For other entries, use name if it matches
+        String typeName = entry.getTypeName();
+
+        if (typeName != null) {
+            for (int i = 1; i < TIFF.TYPE_NAMES.length; i++) {
+                if (typeName.equals(TIFF.TYPE_NAMES[i])) {
+                    return (short) i;
+                }
+            }
+        }
+
+        // Otherwise, fall back to the native Java type
         Object value = Validate.notNull(entry.getValue());
 
         boolean array = value.getClass().isArray();

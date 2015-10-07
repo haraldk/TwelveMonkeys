@@ -39,7 +39,9 @@ public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> 
                         new Dimension(16, 16), new Dimension(16, 16), new Dimension(32, 32), new Dimension(32, 32),
                         new Dimension(48, 48), new Dimension(48, 48), new Dimension(256, 256), new Dimension(256, 256),
                         new Dimension(16, 16), new Dimension(32, 32), new Dimension(48, 48), new Dimension(256, 256)
-                )
+                ),
+                // Problematic icon that reports 24 bit in the descriptor, but has separate 1 bit ''mask (height 2 x icon height)!
+                new TestData(getClassLoaderResource("/ico/rgb24bitmask.ico"), new Dimension(32, 32))
         );
     }
 

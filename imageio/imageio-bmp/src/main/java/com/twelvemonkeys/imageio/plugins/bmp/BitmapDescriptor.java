@@ -43,6 +43,7 @@ abstract class BitmapDescriptor {
     protected final DIBHeader header;
 
     protected BufferedImage image;
+    protected BitmapMask mask;
 
     public BitmapDescriptor(final DirectoryEntry pEntry, final DIBHeader pHeader) {
         Validate.notNull(pEntry, "entry");
@@ -68,5 +69,18 @@ abstract class BitmapDescriptor {
 
     protected final int getBitCount() {
         return entry.getBitCount() != 0 ? entry.getBitCount() : header.getBitCount();
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "[" + entry + ", " + header + "]";
+    }
+
+    public final void setMask(final BitmapMask mask) {
+        this.mask = mask;
+    }
+
+    public final boolean hasMask() {
+        return header.getHeight() == getHeight() * 2;
     }
 }

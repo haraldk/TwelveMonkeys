@@ -267,10 +267,15 @@ public class JPEGImageReader extends ImageReaderBase {
     @Override
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         // If delegate can determine the spec, we'll just go with that
-        ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
+        try {
+            ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
 
-        if (rawType != null) {
-            return rawType;
+            if (rawType != null) {
+                return rawType;
+            }
+        }
+        catch (NullPointerException ignore) {
+            // Fall through
         }
 
         // Otherwise, consult the image metadata
@@ -312,22 +317,10 @@ public class JPEGImageReader extends ImageReaderBase {
         assertInput();
         checkBounds(imageIndex);
 
-//        CompoundDirectory exif = getExif();
-//        if (exif != null) {
-//            System.err.println("exif: " + exif);
-//            System.err.println("Orientation: " + exif.getEntryById(TIFF.TAG_ORIENTATION));
-//            Entry exifIFDEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
-//
-//            if (exifIFDEntry != null) {
-//                Directory exifIFD = (Directory) exifIFDEntry.getValue();
-//                System.err.println("PixelXDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_X_DIMENSION));
-//                System.err.println("PixelYDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_Y_DIMENSION));
-//            }
-//        }
-
         SOFSegment sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
+        boolean bogusAdobeDCT = false;
 
         if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() != 3 ||
                 adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() != 4)) {
@@ -338,6 +331,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     sof.marker & 0xf, sof.componentsInFrame()
             ));
 
+            bogusAdobeDCT = true;
             adobeDCT = null;
         }
 
@@ -346,11 +340,11 @@ public class JPEGImageReader extends ImageReaderBase {
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
+                bogusAdobeDCT ||
                 sourceCSType == JPEGColorSpace.CMYK ||
                 sourceCSType == JPEGColorSpace.YCCK ||
-                adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile)) ||
-                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null) { // TODO: Issue warning?
+                profile != null && !ColorSpaces.isCS_sRGB(profile) ||
+                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
@@ -471,12 +465,11 @@ public class JPEGImageReader extends ImageReaderBase {
                 YCbCrConverter.convertYCbCr2RGB(raster);
             }
             else if (csType == JPEGColorSpace.YCCK) {
-                YCbCrConverter.convertYCCK2CMYK(raster);
+                // TODO: Need to rethink this (non-) inversion, see #147
+                // TODO: Allow param to specify inversion, or possibly the PDF decode array
                 // flag0 bit 15, blend = 1 see http://graphicdesign.stackexchange.com/questions/12894/cmyk-jpegs-extracted-from-pdf-appear-inverted
-                if ((getAdobeDCT().flags0 & 0x8000) != 0) {
-                    /// TODO: Better yet would be to not inverting in the first place, add flag to convertYCCK2CMYK
-                    invertCMYK(raster);
-                }
+                boolean invert = true;// || (adobeDCT.flags0 & 0x8000) == 0;
+                YCbCrConverter.convertYCCK2CMYK(raster, invert);
             }
             else if (csType == JPEGColorSpace.CMYK) {
                 invertCMYK(raster);
@@ -949,6 +942,11 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     @Override
+    public ImageReadParam getDefaultReadParam() {
+        return delegate.getDefaultReadParam();
+    }
+
+    @Override
     public boolean readerSupportsThumbnails() {
         return true; // We support EXIF, JFIF and JFXX style thumbnails
     }
@@ -1176,24 +1174,49 @@ public class JPEGImageReader extends ImageReaderBase {
             rgb[offset + 2] = clamp(y + Cb_B_LUT[cb]);
         }
 
-        static void convertYCCK2CMYK(final Raster raster) {
+        static void convertYCCK2CMYK(final Raster raster, final boolean invert) {
             final int height = raster.getHeight();
             final int width = raster.getWidth();
             final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    convertYCCK2CMYK(data, data, (x + y * width) * 4);
+            if (invert) {
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        convertYCCK2CMYKInverted(data, data, (x + y * width) * 4);
+                    }
+                }
+            }
+            else {
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        convertYCCK2CMYK(data, data, (x + y * width) * 4);
+                    }
                 }
             }
         }
 
-        private static void convertYCCK2CMYK(byte[] ycck, byte[] cmyk, int offset) {
+        private static void convertYCCK2CMYKInverted(byte[] ycck, byte[] cmyk, int offset) {
             // Inverted
             int y  = 255 - ycck[offset    ] & 0xff;
             int cb = 255 - ycck[offset + 1] & 0xff;
             int cr = 255 - ycck[offset + 2] & 0xff;
             int k  = 255 - ycck[offset + 3] & 0xff;
+
+            int cmykC = MAXJSAMPLE - (y + Cr_R_LUT[cr]);
+            int cmykM = MAXJSAMPLE - (y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
+            int cmykY = MAXJSAMPLE - (y + Cb_B_LUT[cb]);
+
+            cmyk[offset    ] = clamp(cmykC);
+            cmyk[offset + 1] = clamp(cmykM);
+            cmyk[offset + 2] = clamp(cmykY);
+            cmyk[offset + 3] = (byte) k; // K passes through unchanged
+        }
+
+        private static void convertYCCK2CMYK(byte[] ycck, byte[] cmyk, int offset) {
+            int y  = ycck[offset    ] & 0xff;
+            int cb = ycck[offset + 1] & 0xff;
+            int cr = ycck[offset + 2] & 0xff;
+            int k  = ycck[offset + 3] & 0xff;
 
             int cmykC = MAXJSAMPLE - (y + Cr_R_LUT[cr]);
             int cmykM = MAXJSAMPLE - (y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));

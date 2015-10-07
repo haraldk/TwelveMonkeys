@@ -89,8 +89,8 @@ public final class EXIFReader extends MetadataReader {
 
     // TODO: Consider re-writing so that the linked IFD parsing is done externally to the method
     protected Directory readDirectory(final ImageInputStream pInput, final long pOffset, final boolean readLinked) throws IOException {
-        List<IFD> ifds = new ArrayList<IFD>();
-        List<Entry> entries = new ArrayList<Entry>();
+        List<IFD> ifds = new ArrayList<>();
+        List<Entry> entries = new ArrayList<>();
 
         pInput.seek(pOffset);
         long nextOffset = -1;
@@ -156,7 +156,7 @@ public final class EXIFReader extends MetadataReader {
                 try {
                     if (KNOWN_IFDS.contains(tagId)) {
                         long[] pointerOffsets = getPointerOffsets(entry);
-                        List<IFD> subIFDs = new ArrayList<IFD>(pointerOffsets.length);
+                        List<IFD> subIFDs = new ArrayList<>(pointerOffsets.length);
 
                         for (long pointerOffset : pointerOffsets) {
                             CompoundDirectory subDirectory = (CompoundDirectory) readDirectory(input, pointerOffset, false);
@@ -177,8 +177,11 @@ public final class EXIFReader extends MetadataReader {
                     }
                 }
                 catch (IIOException e) {
-                    // TODO: Issue warning without crashing...?
-                    e.printStackTrace();
+                    if (DEBUG) {
+                        // TODO: Issue warning without crashing...?
+                        System.err.println("Error parsing sub-IFD: " + tagId);
+                        e.printStackTrace();
+                    }
                 }
             }
         }

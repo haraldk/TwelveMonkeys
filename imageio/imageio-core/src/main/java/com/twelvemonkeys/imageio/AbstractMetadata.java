@@ -98,15 +98,6 @@ public abstract class AbstractMetadata extends IIOMetadata implements Cloneable 
         if (!root.getNodeName().equals(formatName)) {
             throw new IIOInvalidTreeException("Root must be " + formatName, root);
         }
-
-        // TODO: Merge both native and standard!
-        Node node = root.getFirstChild();
-        while (node != null) {
-            // TODO: Merge values from node into this
-
-            // Move to the next sibling
-            node = node.getNextSibling();
-        }
     }
 
     @Override

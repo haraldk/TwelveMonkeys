@@ -80,7 +80,22 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/lzw-long-strings-sample.tif"), new Dimension(316, 173)), // RGBA, LZW compressed w/predictor
                 new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg_no_profile.tif"), new Dimension(150, 63)), // CMYK, JPEG compressed, no ICC profile
-                new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)) // CMYK, JPEG compressed, with ICC profile
+                new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
+                new TestData(getClassLoaderResource("/tiff/grayscale-alpha.tiff"), new Dimension(248, 351)), // Gray + unassociated alpha
+                new TestData(getClassLoaderResource("/tiff/signed-integral-8bit.tif"), new Dimension(439, 167)), // Gray, 8 bit *signed* integral
+                new TestData(getClassLoaderResource("/tiff/floatingpoint-32bit.tif"), new Dimension(300, 100)), // RGB, 32 bit floating point
+                new TestData(getClassLoaderResource("/tiff/general-cmm-error.tif"), new Dimension(1181, 860)), // RGB, LZW compression with broken/incompatible ICC profile
+                new TestData(getClassLoaderResource("/tiff/lzw-rgba-padded-icc.tif"), new Dimension(19, 11)), // RGBA, LZW compression with padded ICC profile
+                new TestData(getClassLoaderResource("/tiff/lzw-rgba-4444.tif"), new Dimension(64, 64)), // RGBA, LZW compression with UINT 4/4/4/4 + gray 2/2
+                new TestData(getClassLoaderResource("/tiff/lzw-buffer-overflow.tif"), new Dimension(5, 49)), // RGBA, LZW compression, will throw IOOBE if small buffer
+                // CCITT
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D
+                new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_lsb2msb.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D, LSB
+                new TestData(getClassLoaderResource("/tiff/ccitt/group4.tif"), new Dimension(6, 4)), // B/W, CCITT T6 1D
+                new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)) // B/W, CCITT T4
         );
     }
 
@@ -141,9 +156,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     @Test
     public void testReadOldStyleJPEGGrayscale() throws IOException {
         TestData testData = new TestData(getClassLoaderResource("/tiff/grayscale-old-style-jpeg.tiff"), new Dimension(600, 600));
-        ImageInputStream stream = testData.getInputStream();
 
-        try {
+        try (ImageInputStream stream = testData.getInputStream()) {
             TIFFImageReader reader = createReader();
             reader.setInput(stream);
             BufferedImage image = reader.read(0);
@@ -151,18 +165,13 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
         }
-        finally {
-            stream.close();
-        }
     }
 
     @Test
     public void testReadIncompatibleICCProfileIgnoredWithWarning() throws IOException {
         TestData testData = new TestData(getClassLoaderResource("/tiff/rgb-with-embedded-cmyk-icc.tif"), new Dimension(1500, 1500));
 
-        ImageInputStream stream = testData.getInputStream();
-
-        try {
+        try (ImageInputStream stream = testData.getInputStream()) {
             TIFFImageReader reader = createReader();
             reader.setInput(stream);
 
@@ -175,18 +184,13 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ICC"));
         }
-        finally {
-            stream.close();
-        }
     }
 
     @Test
     public void testColorMap8Bit() throws IOException {
         TestData testData = new TestData(getClassLoaderResource("/tiff/scan-lzw-8bit-colormap.tiff"), new Dimension(2550, 3300));
 
-        ImageInputStream stream = testData.getInputStream();
-
-        try {
+        try (ImageInputStream stream = testData.getInputStream()) {
             TIFFImageReader reader = createReader();
             reader.setInput(stream);
 
@@ -202,8 +206,26 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(0xffffffff, image.getRGB(0, 0)); // The pixel at 0, 0 should be white, not black
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ColorMap"));
         }
-        finally {
-            stream.close();
+    }
+
+    @Test
+    public void testBadICCProfile() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/general-cmm-error.tif"), new Dimension(1181, 864));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(8, 8));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(new Dimension(8, 8), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ICC profile"));
         }
     }
 }
