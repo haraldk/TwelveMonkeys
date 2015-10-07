@@ -28,21 +28,50 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import org.junit.Before;
 import org.junit.Test;
 
 import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxEncoderStream.Code;
 
-import java.io.IOException;
-import static org.junit.Assert.*;
-
 /**
  * CCITTFaxEncoderStreamTest
  *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author <a href="mailto:mail@schmidor.de">Oliver Schmidtmer</a>
  * @author last modified by $Author$
  * @version $Id$
  */
 public class CCITTFaxEncoderStreamTest {
+
+    // Image should be (6 x 4):
+    // 1 1 1 0 1 1 x x
+    // 1 1 1 0 1 1 x x
+    // 1 1 1 0 1 1 x x
+    // 1 1 0 0 1 1 x x
+    BufferedImage image;
+
+    @Before
+    public void init() {
+        image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 6; x++) {
+                image.setRGB(x, y, x != 3 ? 0xff000000 : 0xffffffff);
+            }
+        }
+
+        image.setRGB(2, 3, 0xffffffff);
+    }
 
     @Test
     public void testBuildCodes() throws IOException {
@@ -62,5 +91,47 @@ public class CCITTFaxEncoderStreamTest {
         for (Code code : CCITTFaxEncoderStream.BLACK_NONTERMINATING_CODES) {
             assertNotNull(code);
         }
+    }
+
+    @Test
+    public void testType2() throws IOException {
+        testImage(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L);
+    }
+
+    @Test
+    public void testType4() throws IOException {
+        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1, 0L);
+        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
+        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_2DENCODING);
+        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1,
+                TIFFExtension.GROUP3OPT_FILLBITS | TIFFExtension.GROUP3OPT_2DENCODING);
+    }
+
+    @Test
+    public void testType6() throws IOException {
+        testImage(TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+    }
+
+    @Test
+    public void restReversedFillOrder() throws IOException {
+        testImage(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 2, 0L);
+        testImage(TIFFExtension.COMPRESSION_CCITT_T6, 2, 0L);
+    }
+
+    private void testImage(int type, int fillOrder, long options) throws IOException {
+        byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
+        byte[] redecodedData = new byte[imageData.length];
+        ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
+        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 6, type, fillOrder, options);
+        outputSteam.write(imageData);
+        outputSteam.close();
+        byte[] encodedData = imageOutput.toByteArray();
+
+        CCITTFaxDecoderStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 6, type,
+                fillOrder, options);
+        new DataInputStream(inputStream).readFully(redecodedData);
+        inputStream.close();
+
+        assertArrayEquals(imageData, redecodedData);
     }
 }

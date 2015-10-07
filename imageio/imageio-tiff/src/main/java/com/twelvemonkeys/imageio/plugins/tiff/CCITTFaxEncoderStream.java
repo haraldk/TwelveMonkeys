@@ -36,7 +36,7 @@ import com.twelvemonkeys.lang.Validate;
 /**
  * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
  * 
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author <a href="mailto:mail@schmidor.de">Oliver Schmidtmer</a>
  * @author last modified by $Author$
  * @version $Id$
  */
@@ -96,6 +96,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
 
         if (currentBufferLength == inputBufferLength) {
             encodeRow();
+            currentBufferLength = 0;
         }
     }
 
@@ -106,14 +107,18 @@ public class CCITTFaxEncoderStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        if (type == TIFFExtension.COMPRESSION_CCITT_T6) {
+            writeEOL();
+            writeEOL();
+        }
         fill();
         stream.close();
     }
 
-    // TODO: when to write end EOLs, half filled buffer bytes etc. on end?
-
     private void encodeRow() throws IOException {
+        int[] tmp = changesReferenceRow;
         changesReferenceRow = changesCurrentRow;
+        changesCurrentRow = tmp;
         changesReferenceRowLength = changesCurrentRowLength;
         changesCurrentRowLength = 0;
 
@@ -151,7 +156,15 @@ public class CCITTFaxEncoderStream extends OutputStream {
     private void encodeRowType4() throws IOException {
         writeEOL();
         if (optionG32D) {
-            // TODO decide whether 1d or 2d row, write k, encode
+            // do k=1 only on first line. Detect first line by missing reference
+            // line.
+            if (changesReferenceRowLength == 0) {
+                write(1, 1);
+                encode1D();
+            } else {
+                write(0, 1);
+                encode2D();
+            }
         } else {
             encode1D();
         }
@@ -168,53 +181,66 @@ public class CCITTFaxEncoderStream extends OutputStream {
         int index = 0;
         boolean white = true;
         while (index < columns) {
-            int nextChange = columns;
-            for (int i = 0; i < changesCurrentRowLength; i++) {
-                if (index < changesCurrentRow[i]) {
-                    nextChange = changesCurrentRow[i];
-                }
-            }
-            int runLength = nextChange - index;
-
-            int nonterm = runLength / 64;
-            Code[] codes = white ? WHITE_NONTERMINATING_CODES : BLACK_NONTERMINATING_CODES;
-            while (nonterm > 0) {
-                if (nonterm >= codes.length) {
-                    write(codes[codes.length - 1].code, codes[codes.length - 1].length);
-                    nonterm -= codes.length - 1;
-                } else {
-                    write(codes[nonterm - 1].code, codes[nonterm - 1].length);
-                    nonterm = 0;
-                }
-            }
-
-            Code c = white ? WHITE_TERMINATING_CODES[runLength % 64] : BLACK_TERMINATING_CODES[runLength % 64];
-            write(c.code, c.length);
+            int[] nextChanges = getNextChanges(index);
+            int runLength = nextChanges[0] - index;
+            writeRun(runLength, white);
+            index += runLength;
+            white = !white;
         }
+    }
+
+    private int[] getNextChanges(int pos) {
+        int[] result = new int[] { columns, columns };
+        for (int i = 0; i < changesCurrentRowLength; i++) {
+            if (pos < changesCurrentRow[i]) {
+                result[0] = changesCurrentRow[i];
+                if ((i + 1) < changesCurrentRowLength) {
+                    result[1] = changesCurrentRow[i + 1];
+                }
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    private void writeRun(int runLength, boolean white) throws IOException {
+        int nonterm = runLength / 64;
+        Code[] codes = white ? WHITE_NONTERMINATING_CODES : BLACK_NONTERMINATING_CODES;
+        while (nonterm > 0) {
+            if (nonterm >= codes.length) {
+                write(codes[codes.length - 1].code, codes[codes.length - 1].length);
+                nonterm -= codes.length - 1;
+            } else {
+                write(codes[nonterm - 1].code, codes[nonterm - 1].length);
+                nonterm = 0;
+            }
+        }
+
+        Code c = white ? WHITE_TERMINATING_CODES[runLength % 64] : BLACK_TERMINATING_CODES[runLength % 64];
+        write(c.code, c.length);
     }
 
     private void encode2D() throws IOException {
         boolean white = true;
-        int lastChange = -1;
-        for (int i = 0; i < changesCurrentRowLength; i++) { // TODO
-                                                            // columns-Basiert
-                                                            // statt references
-            int nextChange = changesCurrentRow[i];
+        int index = 0; // a0
+        while (index < columns) {
+            int[] nextChanges = getNextChanges(index); // a1, a2
 
-            int nextRef = getNextRefChange(lastChange);
+            int[] nextRefs = getNextRefChanges(index, white); // b1, b2
 
-            int difference = nextRef - nextChange;
-            if (difference < -3) {
-                // next change nearer than nextRef, PMODE
+            int difference = nextChanges[0] - nextRefs[0];
+            if (nextChanges[0] > nextRefs[1]) {
+                // PMODE
                 write(1, 4);
-                lastChange = nextRef;
-            } else if (difference > 3) {
-                // next change farer than nextRef, hmode
+                index = nextRefs[1];
+            } else if (difference > 3 || difference < -3) {
+                // HMODE
                 write(1, 3);
-                // write runLength(white)
-                // write runLength(!white)
-                // i++;
-                // lastChange = ...
+                writeRun(nextChanges[0] - index, white);
+                writeRun(nextChanges[1] - nextChanges[0], !white);
+                index = nextChanges[1];
+
             } else {
                 // VMODE
                 switch (difference) {
@@ -241,24 +267,29 @@ public class CCITTFaxEncoderStream extends OutputStream {
                     break;
                 }
                 white = !white;
+                index = nextRefs[0] + difference;
             }
         }
     }
 
-    private int getNextRefChange(int currentRowChange) {
-        for (int i = 0; i < changesReferenceRowLength; i++) {
-            if (changesReferenceRow[i] > currentRowChange) {
-                return changesReferenceRow[i];
+    private int[] getNextRefChanges(int a0, boolean white) {
+        int[] result = new int[] { columns, columns };
+        for (int i = (white ? 0 : 1); i < changesReferenceRowLength; i += 2) {
+            if (changesReferenceRow[i] > a0) {
+                result[0] = changesReferenceRow[i];
+                if ((i + 1) < changesReferenceRowLength) {
+                    result[1] = changesReferenceRow[i + 1];
+                }
+                break;
             }
         }
-        return columns;
+        return result;
     }
 
     private void write(int code, int codeLength) throws IOException {
 
         for (int i = 0; i < codeLength; i++) {
-            boolean codeBit = ((code >> (i)) & 1) == 1;
-
+            boolean codeBit = ((code >> (codeLength - i - 1)) & 1) == 1;
             if (fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT) {
                 outputBuffer |= (codeBit ? 1 << (7 - ((outputBufferBitLength) % 8)) : 0);
             } else {
@@ -271,6 +302,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
                 clearOutputBuffer();
             }
         }
+        System.err.println("");
     }
 
     private void writeEOL() throws IOException {
