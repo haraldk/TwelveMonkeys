@@ -28,22 +28,15 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-
+import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxEncoderStream.Code;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxEncoderStream.Code;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.io.*;
+
+import static org.junit.Assert.*;
 
 /**
  * CCITTFaxEncoderStreamTest
@@ -122,7 +115,7 @@ public class CCITTFaxEncoderStreamTest {
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] redecodedData = new byte[imageData.length];
         ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
-        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 6, type, fillOrder, options);
+        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 6, 4, type, fillOrder, options);
         outputSteam.write(imageData);
         outputSteam.close();
         byte[] encodedData = imageOutput.toByteArray();

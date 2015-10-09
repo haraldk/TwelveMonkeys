@@ -28,14 +28,14 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.twelvemonkeys.lang.Validate;
-
 /**
  * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
- * 
+ *
  * @author <a href="mailto:mail@schmidor.de">Oliver Schmidtmer</a>
  * @author last modified by $Author$
  * @version $Id$
@@ -46,9 +46,11 @@ public class CCITTFaxEncoderStream extends OutputStream {
     private final byte[] inputBuffer;
     private final int inputBufferLength;
     private int columns;
+    private int rows;
 
     private int[] changesCurrentRow;
     private int[] changesReferenceRow;
+    private int currentRow = 0;
     private int changesCurrentRowLength = 0;
     private int changesReferenceRowLength = 0;
     private byte outputBuffer = 0;
@@ -60,26 +62,27 @@ public class CCITTFaxEncoderStream extends OutputStream {
     private boolean optionUncompressed;
     private OutputStream stream;
 
-    public CCITTFaxEncoderStream(final OutputStream stream, final int columns, final int type, final int fillOrder,
-            final long options) {
+    public CCITTFaxEncoderStream(final OutputStream stream, final int columns, final int rows, final int type, final int fillOrder,
+                                 final long options) {
 
         this.stream = stream;
         this.type = type;
         this.columns = columns;
+        this.rows = rows;
         this.fillOrder = fillOrder;
 
         this.changesReferenceRow = new int[columns];
         this.changesCurrentRow = new int[columns];
 
         switch (type) {
-        case TIFFExtension.COMPRESSION_CCITT_T4:
-            optionG32D = (options & TIFFExtension.GROUP3OPT_2DENCODING) != 0;
-            optionG3Fill = (options & TIFFExtension.GROUP3OPT_FILLBITS) != 0;
-            optionUncompressed = (options & TIFFExtension.GROUP3OPT_UNCOMPRESSED) != 0;
-            break;
-        case TIFFExtension.COMPRESSION_CCITT_T6:
-            optionUncompressed = (options & TIFFExtension.GROUP4OPT_UNCOMPRESSED) != 0;
-            break;
+            case TIFFExtension.COMPRESSION_CCITT_T4:
+                optionG32D = (options & TIFFExtension.GROUP3OPT_2DENCODING) != 0;
+                optionG3Fill = (options & TIFFExtension.GROUP3OPT_FILLBITS) != 0;
+                optionUncompressed = (options & TIFFExtension.GROUP3OPT_UNCOMPRESSED) != 0;
+                break;
+            case TIFFExtension.COMPRESSION_CCITT_T6:
+                optionUncompressed = (options & TIFFExtension.GROUP4OPT_UNCOMPRESSED) != 0;
+                break;
         }
 
         inputBufferLength = (columns + 7) / 8;
@@ -107,15 +110,11 @@ public class CCITTFaxEncoderStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
-        if (type == TIFFExtension.COMPRESSION_CCITT_T6) {
-            writeEOL();
-            writeEOL();
-        }
-        fill();
         stream.close();
     }
 
     private void encodeRow() throws IOException {
+        currentRow++;
         int[] tmp = changesReferenceRow;
         changesReferenceRow = changesCurrentRow;
         changesCurrentRow = tmp;
@@ -127,7 +126,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
         while (index < columns) {
             int byteIndex = index / 8;
             int bit = index % 8;
-            if ((((inputBuffer[byteIndex] >> (7 - bit)) & 1) == 1) != (!white)) {
+            if ((((inputBuffer[byteIndex] >> (7 - bit)) & 1) == 1) == (white)) {
                 changesCurrentRow[changesCurrentRowLength] = index;
                 changesCurrentRowLength++;
                 white = !white;
@@ -136,15 +135,23 @@ public class CCITTFaxEncoderStream extends OutputStream {
         }
 
         switch (type) {
-        case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
-            encodeRowType2();
-            break;
-        case TIFFExtension.COMPRESSION_CCITT_T4:
-            encodeRowType4();
-            break;
-        case TIFFExtension.COMPRESSION_CCITT_T6:
-            encodeRowType6();
-            break;
+            case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+                encodeRowType2();
+                break;
+            case TIFFExtension.COMPRESSION_CCITT_T4:
+                encodeRowType4();
+                break;
+            case TIFFExtension.COMPRESSION_CCITT_T6:
+                encodeRowType6();
+                break;
+        }
+
+        if (currentRow == rows) {
+            if (type == TIFFExtension.COMPRESSION_CCITT_T6) {
+                writeEOL();
+                writeEOL();
+            }
+            fill();
         }
     }
 
@@ -161,11 +168,13 @@ public class CCITTFaxEncoderStream extends OutputStream {
             if (changesReferenceRowLength == 0) {
                 write(1, 1);
                 encode1D();
-            } else {
+            }
+            else {
                 write(0, 1);
                 encode2D();
             }
-        } else {
+        }
+        else {
             encode1D();
         }
         if (optionG3Fill) {
@@ -190,7 +199,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
     }
 
     private int[] getNextChanges(int pos) {
-        int[] result = new int[] { columns, columns };
+        int[] result = new int[] {columns, columns};
         for (int i = 0; i < changesCurrentRowLength; i++) {
             if (pos < changesCurrentRow[i]) {
                 result[0] = changesCurrentRow[i];
@@ -211,7 +220,8 @@ public class CCITTFaxEncoderStream extends OutputStream {
             if (nonterm >= codes.length) {
                 write(codes[codes.length - 1].code, codes[codes.length - 1].length);
                 nonterm -= codes.length - 1;
-            } else {
+            }
+            else {
                 write(codes[nonterm - 1].code, codes[nonterm - 1].length);
                 nonterm = 0;
             }
@@ -234,37 +244,39 @@ public class CCITTFaxEncoderStream extends OutputStream {
                 // PMODE
                 write(1, 4);
                 index = nextRefs[1];
-            } else if (difference > 3 || difference < -3) {
+            }
+            else if (difference > 3 || difference < -3) {
                 // HMODE
                 write(1, 3);
                 writeRun(nextChanges[0] - index, white);
                 writeRun(nextChanges[1] - nextChanges[0], !white);
                 index = nextChanges[1];
 
-            } else {
+            }
+            else {
                 // VMODE
                 switch (difference) {
-                case 0:
-                    write(1, 1);
-                    break;
-                case 1:
-                    write(3, 3);
-                    break;
-                case 2:
-                    write(3, 6);
-                    break;
-                case 3:
-                    write(3, 7);
-                    break;
-                case -1:
-                    write(2, 3);
-                    break;
-                case -2:
-                    write(2, 6);
-                    break;
-                case -3:
-                    write(2, 7);
-                    break;
+                    case 0:
+                        write(1, 1);
+                        break;
+                    case 1:
+                        write(3, 3);
+                        break;
+                    case 2:
+                        write(3, 6);
+                        break;
+                    case 3:
+                        write(3, 7);
+                        break;
+                    case -1:
+                        write(2, 3);
+                        break;
+                    case -2:
+                        write(2, 6);
+                        break;
+                    case -3:
+                        write(2, 7);
+                        break;
                 }
                 white = !white;
                 index = nextRefs[0] + difference;
@@ -273,7 +285,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
     }
 
     private int[] getNextRefChanges(int a0, boolean white) {
-        int[] result = new int[] { columns, columns };
+        int[] result = new int[] {columns, columns};
         for (int i = (white ? 0 : 1); i < changesReferenceRowLength; i += 2) {
             if (changesReferenceRow[i] > a0) {
                 result[0] = changesReferenceRow[i];
@@ -292,7 +304,8 @@ public class CCITTFaxEncoderStream extends OutputStream {
             boolean codeBit = ((code >> (codeLength - i - 1)) & 1) == 1;
             if (fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT) {
                 outputBuffer |= (codeBit ? 1 << (7 - ((outputBufferBitLength) % 8)) : 0);
-            } else {
+            }
+            else {
                 outputBuffer |= (codeBit ? 1 << (((outputBufferBitLength) % 8)) : 0);
             }
             outputBufferBitLength++;
@@ -355,7 +368,8 @@ public class CCITTFaxEncoderStream extends OutputStream {
 
                 if (value < 64) {
                     WHITE_TERMINATING_CODES[value] = new Code(code, bitLength);
-                } else {
+                }
+                else {
                     WHITE_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);
                 }
             }
@@ -371,7 +385,8 @@ public class CCITTFaxEncoderStream extends OutputStream {
 
                 if (value < 64) {
                     BLACK_TERMINATING_CODES[value] = new Code(code, bitLength);
-                } else {
+                }
+                else {
                     BLACK_NONTERMINATING_CODES[(value / 64) - 1] = new Code(code, bitLength);
                 }
             }
