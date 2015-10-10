@@ -65,7 +65,7 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
         // See: http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/TIFFImageWriteParam.html
         compressionTypes = new String[] {
                 "None",
-                null, null, null,/* "CCITT RLE", "CCITT T.4", "CCITT T.6", */
+                "CCITT RLE", "CCITT T.4", "CCITT T.6",
                 "LZW", "JPEG", "ZLib", "PackBits", "Deflate",
                 null/* "EXIF JPEG" */ // A well-defined form of "Old-style JPEG", no tables/process, only 513 (offset) and 514 (length)
         };
@@ -110,6 +110,15 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
         }
         else if (param.getCompressionType().equals("JPEG")) {
             return TIFFExtension.COMPRESSION_JPEG;
+        }
+        else if (param.getCompressionType().equals("CCITT RLE")) {
+            return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+        }
+        else if (param.getCompressionType().equals("CCITT T.4")) {
+            return TIFFExtension.COMPRESSION_CCITT_T4;
+        }
+        else if (param.getCompressionType().equals("CCITT T.6")) {
+            return TIFFExtension.COMPRESSION_CCITT_T6;
         }
 //        else if (param.getCompressionType().equals("EXIF JPEG")) {
 //            return TIFFExtension.COMPRESSION_OLD_JPEG;
