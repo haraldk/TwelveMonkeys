@@ -288,6 +288,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
             entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, 1));
         }
         else {
+            if (colorModel.getPixelSize() == 1) {
+                numComponents = 1;
+            }
+
             entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numComponents));
 
             // Note: Assuming sRGB to be the default RGB interpretation
@@ -298,7 +302,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         // Default sample format SAMPLEFORMAT_UINT need not be written
-        if (sampleModel.getDataType() == DataBuffer.TYPE_SHORT/* TODO: if isSigned(sampleModel.getDataType) or getSampleFormat(sampleModel) != 0 */) { 
+        if (sampleModel.getDataType() == DataBuffer.TYPE_SHORT/* TODO: if isSigned(sampleModel.getDataType) or getSampleFormat(sampleModel) != 0 */) {
             entries.put(TIFF.TAG_SAMPLE_FORMAT, new TIFFEntry(TIFF.TAG_SAMPLE_FORMAT, TIFFExtension.SAMPLEFORMAT_INT));
         }
         // TODO: Float values!
@@ -523,12 +527,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
     }
 
     private int getPhotometricInterpretation(final ColorModel colorModel) {
-        if (colorModel.getNumComponents() == 1 && colorModel.getComponentSize(0) == 1) {
+        if (colorModel.getPixelSize() == 1) {
             if (colorModel instanceof IndexColorModel) {
-                if (colorModel.getRGB(0) == 0xFFFFFF && colorModel.getRGB(1) == 0x000000) {
+                if (colorModel.getRGB(0) == 0xFFFFFFFF && colorModel.getRGB(1) == 0xFF000000) {
                     return TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO;
                 }
-                else if (colorModel.getRGB(0) != 0x000000 || colorModel.getRGB(1) != 0xFFFFFF) {
+                else if (colorModel.getRGB(0) != 0xFF000000 || colorModel.getRGB(1) != 0xFFFFFFFF) {
                     return TIFFBaseline.PHOTOMETRIC_PALETTE;
                 }
                 // Else, fall through to default, BLACK_IS_ZERO
@@ -561,9 +565,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         for (int i = 0; i < colorModel.getMapSize(); i++) {
             int color = colorModel.getRGB(i);
-            colorMap[i                          ] = (short) upScale((color >> 16) & 0xff);
-            colorMap[i +     colorMap.length / 3] = (short) upScale((color >>  8) & 0xff);
-            colorMap[i + 2 * colorMap.length / 3] = (short) upScale((color      ) & 0xff);
+            colorMap[i] = (short) upScale((color >> 16) & 0xff);
+            colorMap[i + colorMap.length / 3] = (short) upScale((color >> 8) & 0xff);
+            colorMap[i + 2 * colorMap.length / 3] = (short) upScale((color) & 0xff);
         }
 
         return colorMap;
@@ -617,7 +621,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 final Raster tile = renderedImage.getTile(xTile, yTile);
                 final DataBuffer dataBuffer = tile.getDataBuffer();
                 final int numBands = tile.getNumBands();
-//                final SampleModel sampleModel = tile.getSampleModel();
 
                 switch (dataBuffer.getDataType()) {
                     case DataBuffer.TYPE_BYTE:
@@ -632,7 +635,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     final int xOff = yOff + x * numBands;
 
                                     for (int s = 0; s < numBands; s++) {
-                                        buffer.put(normalizeBlack(photometric,(byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff)));
+                                        buffer.put(normalizeBlack(photometric, (byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff)));
                                     }
                                 }
 
@@ -744,9 +747,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         processImageComplete();
     }
-    
+
     private byte normalizeBlack(int photometricInterpretation, byte data) {
-        if (photometricInterpretation == TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO) {
+        if (photometricInterpretation == TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO) {
             // Inverse values
             return (byte) (0xff - data & 0xff);
         }
@@ -848,7 +851,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         int argIdx = 0;
 
         // TODO: Proper argument parsing: -t <type> -c <compression>
-        int type = args.length > argIdx + 1  ? Integer.parseInt(args[argIdx++]) : -1;
+        int type = args.length > argIdx + 1 ? Integer.parseInt(args[argIdx++]) : -1;
         int compression = args.length > argIdx + 1 ? Integer.parseInt(args[argIdx++]) : 0;
 
         if (args.length <= argIdx) {
@@ -972,7 +975,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
 //            stream.close();
 //        }
 //        writer.dispose();
-
 
         image = null;
 
