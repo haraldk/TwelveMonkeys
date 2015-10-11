@@ -29,12 +29,20 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxEncoderStream.Code;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
+import java.net.URL;
 
 import static org.junit.Assert.*;
 
@@ -88,30 +96,40 @@ public class CCITTFaxEncoderStreamTest {
 
     @Test
     public void testType2() throws IOException {
-        testImage(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L);
+        testStreamEncodeDecode(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L);
     }
 
     @Test
     public void testType4() throws IOException {
-        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1, 0L);
-        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
-        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_2DENCODING);
-        testImage(TIFFExtension.COMPRESSION_CCITT_T4, 1,
+        testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1, 0L);
+        testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
+        testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_2DENCODING);
+        testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1,
                 TIFFExtension.GROUP3OPT_FILLBITS | TIFFExtension.GROUP3OPT_2DENCODING);
     }
 
     @Test
     public void testType6() throws IOException {
-        testImage(TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
     }
 
     @Test
-    public void restReversedFillOrder() throws IOException {
-        testImage(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 2, 0L);
-        testImage(TIFFExtension.COMPRESSION_CCITT_T6, 2, 0L);
+    public void testReversedFillOrder() throws IOException {
+        testStreamEncodeDecode(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 2, 0L);
+        testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T6, 2, 0L);
     }
 
-    private void testImage(int type, int fillOrder, long options) throws IOException {
+    @Test
+    public void testReencodeImages() throws IOException {
+        testImage(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"));
+        //     testImage(getClassLoaderResource("/tiff/test-single-gray-compression-type-2.tiff"));
+    }
+
+    protected URL getClassLoaderResource(final String pName) {
+        return getClass().getResource(pName);
+    }
+
+    private void testStreamEncodeDecode(int type, int fillOrder, long options) throws IOException {
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] redecodedData = new byte[imageData.length];
         ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
@@ -126,5 +144,34 @@ public class CCITTFaxEncoderStreamTest {
         inputStream.close();
 
         assertArrayEquals(imageData, redecodedData);
+    }
+
+    private void testImage(URL imageUrl) throws IOException {
+        ImageInputStream iis = ImageIO.createImageInputStream(imageUrl.openStream());
+        ImageReader reader = ImageIO.getImageReadersByFormatName("TIFF").next();
+        reader.setInput(iis, true);
+
+        ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
+        ImageWriter writer = ImageIO.getImageWritersByFormatName("TIFF").next();
+        ImageOutputStream output = ImageIO.createImageOutputStream(outputBuffer);
+        writer.setOutput(output);
+        BufferedImage originalImage = reader.read(0);
+
+        IIOImage outputImage = new IIOImage(originalImage, null, reader.getImageMetadata(0));
+        writer.write(outputImage);
+
+        FileOutputStream stream = new FileOutputStream("H:\\tmp\\test.tif");
+        try {
+            stream.write(outputBuffer.toByteArray());
+        }
+        finally {
+            stream.close();
+        }
+
+        BufferedImage reencodedImage = ImageIO.read(new ByteArrayInputStream(outputBuffer.toByteArray()));
+        byte[] reencodedData = ((DataBufferByte) reencodedImage.getData().getDataBuffer()).getData();
+
+        Assert.assertArrayEquals(((DataBufferByte) originalImage.getData().getDataBuffer()).getData(),
+                reencodedData);
     }
 }

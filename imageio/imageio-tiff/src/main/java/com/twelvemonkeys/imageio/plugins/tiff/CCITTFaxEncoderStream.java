@@ -190,7 +190,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
         int index = 0;
         boolean white = true;
         while (index < columns) {
-            int[] nextChanges = getNextChanges(index);
+            int[] nextChanges = getNextChanges(index, white);
             int runLength = nextChanges[0] - index;
             writeRun(runLength, white);
             index += runLength;
@@ -198,10 +198,10 @@ public class CCITTFaxEncoderStream extends OutputStream {
         }
     }
 
-    private int[] getNextChanges(int pos) {
+    private int[] getNextChanges(int pos, boolean white) {
         int[] result = new int[] {columns, columns};
         for (int i = 0; i < changesCurrentRowLength; i++) {
-            if (pos < changesCurrentRow[i]) {
+            if (pos < changesCurrentRow[i] || (pos == 0 && white)) {
                 result[0] = changesCurrentRow[i];
                 if ((i + 1) < changesCurrentRowLength) {
                     result[1] = changesCurrentRow[i + 1];
@@ -235,7 +235,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
         boolean white = true;
         int index = 0; // a0
         while (index < columns) {
-            int[] nextChanges = getNextChanges(index); // a1, a2
+            int[] nextChanges = getNextChanges(index, white); // a1, a2
 
             int[] nextRefs = getNextRefChanges(index, white); // b1, b2
 
@@ -287,7 +287,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
     private int[] getNextRefChanges(int a0, boolean white) {
         int[] result = new int[] {columns, columns};
         for (int i = (white ? 0 : 1); i < changesReferenceRowLength; i += 2) {
-            if (changesReferenceRow[i] > a0) {
+            if (changesReferenceRow[i] > a0 || (a0 == 0 && i == 0)) {
                 result[0] = changesReferenceRow[i];
                 if ((i + 1) < changesReferenceRowLength) {
                     result[1] = changesReferenceRow[i + 1];
