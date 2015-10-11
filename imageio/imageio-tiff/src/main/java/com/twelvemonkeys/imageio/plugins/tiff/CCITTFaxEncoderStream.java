@@ -315,7 +315,6 @@ public class CCITTFaxEncoderStream extends OutputStream {
                 clearOutputBuffer();
             }
         }
-        System.err.println("");
     }
 
     private void writeEOL() throws IOException {
@@ -329,7 +328,9 @@ public class CCITTFaxEncoderStream extends OutputStream {
     }
 
     private void fill() throws IOException {
-        stream.write(outputBuffer);
+        if (outputBufferBitLength != 0) {
+            stream.write(outputBuffer);
+        }
         clearOutputBuffer();
     }
 
