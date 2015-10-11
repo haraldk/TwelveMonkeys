@@ -373,7 +373,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         else {
             // Write image data
             writeImageData(createCompressorStream(renderedImage, param, entries), renderedImage, numComponents, bandOffsets,
-                    bitOffsets);
+                    bitOffsets, photometric);
         }
 
         // Update IFD0-pointer, and write IFD
@@ -583,7 +583,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         return shorts;
     }
 
-    private void writeImageData(DataOutput stream, RenderedImage renderedImage, int numComponents, int[] bandOffsets, int[] bitOffsets) throws IOException {
+    private void writeImageData(DataOutput stream, RenderedImage renderedImage, int numComponents, int[] bandOffsets, int[] bitOffsets, int photometric) throws IOException {
         // Store 3BYTE, 4BYTE as is (possibly need to re-arrange to RGB order)
         // Store INT_RGB as 3BYTE, INT_ARGB as 4BYTE?, INT_ABGR must be re-arranged
         // Store IndexColorModel as is
@@ -632,7 +632,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     final int xOff = yOff + x * numBands;
 
                                     for (int s = 0; s < numBands; s++) {
-                                        buffer.put((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+                                        buffer.put(normalizeBlack(photometric,(byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff)));
                                     }
                                 }
 
@@ -743,6 +743,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         processImageComplete();
+    }
+    
+    private byte normalizeBlack(int photometricInterpretation, byte data) {
+        if (photometricInterpretation == TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO) {
+            // Inverse values
+            return (byte) (0xff - data & 0xff);
+        }
+        return data;
     }
 
     // TODO: Would be better to solve this on stream level... But writers would then have to explicitly flush the buffer before done.
