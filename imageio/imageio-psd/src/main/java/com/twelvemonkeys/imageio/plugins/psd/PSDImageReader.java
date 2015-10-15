@@ -54,11 +54,11 @@ import java.util.List;
 /**
  * ImageReader for Adobe Photoshop Document (PSD) format.
  *
- * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/">Adobe Photoshop File Formats Specification<a>
- * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageReader.java,v 1.0 Apr 29, 2008 4:45:52 PM haraldk Exp$
+ * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/">Adobe Photoshop File Formats Specification<a>
+ * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
  */
 // TODO: Implement ImageIO meta data interface
 // TODO: Figure out of we should assume Adobe RGB (1998) color model, if no embedded profile?
@@ -224,22 +224,22 @@ public final class PSDImageReader extends ImageReaderBase {
                     cs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
                 }
 
-                if (header.channels == 4 &&  header.bits == 8) {
+                if (header.channels == 4 && header.bits == 8) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_BYTE, false, false);
                 }
-                else if (header.channels == 5 &&  header.bits == 8) {
+                else if (header.channels == 5 && header.bits == 8) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_BYTE, true, false);
                 }
-                else if (header.channels == 4 &&  header.bits == 16) {
+                else if (header.channels == 4 && header.bits == 16) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_USHORT, false, false);
                 }
-                else if (header.channels == 5 &&  header.bits == 16) {
+                else if (header.channels == 5 && header.bits == 16) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_USHORT, true, false);
                 }
-                else if (header.channels == 4 &&  header.bits == 32) {
+                else if (header.channels == 4 && header.bits == 32) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, false, false);
                 }
-                else if (header.channels == 5 &&  header.bits == 32) {
+                else if (header.channels == 5 && header.bits == 32) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false);
                 }
 
@@ -250,6 +250,7 @@ public final class PSDImageReader extends ImageReaderBase {
             case PSD.COLOR_MODE_LAB:
                 // TODO: Implement
                 // TODO: If there's a color profile embedded, it should be easy, otherwise we're out of luck...
+                // TODO: See the LAB color handling in TIFF
             default:
                 throw new IIOException(String.format("Unsupported PSD MODE: %s (%d channels/%d bits)", header.mode, header.channels, header.bits));
         }
@@ -263,7 +264,7 @@ public final class PSDImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawType = getRawImageTypeInternal(imageIndex);
 
         ColorSpace cs = rawType.getColorModel().getColorSpace();
-        List<ImageTypeSpecifier> types = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> types = new ArrayList<>();
 
         switch (header.mode) {
             case PSD.COLOR_MODE_RGB:
@@ -308,7 +309,7 @@ public final class PSDImageReader extends ImageReaderBase {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                 }
                 else if (rawType.getNumBands() == 4 && rawType.getBitsPerBand(0) == 16) {
-                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[]{3, 2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
+                    types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_USHORT, false, false));
                 }
                 else if (rawType.getNumBands() == 5 && rawType.getBitsPerBand(0) == 16) {
                     types.add(ImageTypeSpecifiers.createInterleaved(cs, new int[] {4, 3, 2, 1, 0}, DataBuffer.TYPE_USHORT, true, false));
@@ -361,25 +362,6 @@ public final class PSDImageReader extends ImageReaderBase {
         final Rectangle source = new Rectangle();
         final Rectangle dest = new Rectangle();
         computeRegions(param, header.width, header.height, image, source, dest);
-
-        /*
-        NOTE: It seems safe to just leave this out for now. The only thing we need is to support sub sampling.
-        Sun's readers does not support arbitrary destination formats.
-
-        // TODO: Create temp raster in native format w * 1
-        // Read (sub-sampled) row into temp raster (skip other rows)
-        // Copy pixels from temp raster
-        // If possible, leave the destination image "untouched" (accelerated)
-        // See Jim Grahams comments:
-        // http://forums.java.net/jive/message.jspa?messageID=295758#295758
-
-        // TODO: Banding...
-
-        ImageTypeSpecifier spec = getRawImageType(imageIndex);
-        BufferedImage temp = spec.createBufferedImage(getWidth(imageIndex), 1);
-        temp.getRaster();
-
-        */
 
         final int xSub;
         final int ySub;
@@ -449,20 +431,19 @@ public final class PSDImageReader extends ImageReaderBase {
         return layersStart;
     }
 
-    private void readImageData(final BufferedImage pImage,
+    private void readImageData(final BufferedImage destination,
                                final ColorModel pSourceCM, final Rectangle pSource, final Rectangle pDest,
                                final int pXSub, final int pYSub,
                                final int[] pByteCounts, final int pCompression) throws IOException {
 
-        final WritableRaster raster = pImage.getRaster();
-        final ColorModel destCM = pImage.getColorModel();
+        WritableRaster destRaster = destination.getRaster();
+        ColorModel destCM = destination.getColorModel();
 
-        // TODO: This raster is 3-5 times longer than needed, depending on number of channels...
-        final WritableRaster rowRaster = pSourceCM.createCompatibleWritableRaster(header.width, 1);
-
-        final int channels = rowRaster.getNumBands();
-        final boolean banded = raster.getDataBuffer().getNumBanks() > 1;
-        final int interleavedBands = banded ? 1 : raster.getNumBands();
+        int channels = pSourceCM.createCompatibleSampleModel(1, 1).getNumBands();
+        ImageTypeSpecifier singleBandRowSpec = ImageTypeSpecifiers.createGrayscale(header.bits, pSourceCM.getTransferType());
+        WritableRaster rowRaster = singleBandRowSpec.createBufferedImage(header.width, 1).getRaster();
+        boolean banded = destRaster.getDataBuffer().getNumBanks() > 1;
+        int interleavedBands = banded ? 1 : destRaster.getNumBands();
 
         for (int c = 0; c < channels; c++) {
             int bandOffset = banded ? 0 : interleavedBands - 1 - c;
@@ -470,19 +451,19 @@ public final class PSDImageReader extends ImageReaderBase {
             switch (header.bits) {
                 case 1:
                     byte[] row1 = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                    read1bitChannel(c, header.channels, raster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row1, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, pCompression == PSD.COMPRESSION_RLE);
+                    read1bitChannel(c, header.channels, destRaster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row1, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, pCompression == PSD.COMPRESSION_RLE);
                     break;
                 case 8:
                     byte[] row8 = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                    read8bitChannel(c, header.channels, raster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row8, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, c * header.height, pCompression == PSD.COMPRESSION_RLE);
+                    read8bitChannel(c, header.channels, destRaster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row8, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, c * header.height, pCompression == PSD.COMPRESSION_RLE);
                     break;
                 case 16:
                     short[] row16 = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
-                    read16bitChannel(c, header.channels, raster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row16, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, c * header.height, pCompression == PSD.COMPRESSION_RLE);
+                    read16bitChannel(c, header.channels, destRaster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row16, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, c * header.height, pCompression == PSD.COMPRESSION_RLE);
                     break;
                 case 32:
                     int[] row32 = ((DataBufferInt) rowRaster.getDataBuffer()).getData();
-                    read32bitChannel(c, header.channels, raster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row32, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, c * header.height, pCompression == PSD.COMPRESSION_RLE);
+                    read32bitChannel(c, header.channels, destRaster.getDataBuffer(), interleavedBands, bandOffset, pSourceCM, row32, pSource, pDest, pXSub, pYSub, header.width, header.height, pByteCounts, c * header.height, pCompression == PSD.COMPRESSION_RLE);
                     break;
                 default:
                     throw new IIOException(String.format("Unsupported PSD bit depth: %s", header.bits));
@@ -495,12 +476,12 @@ public final class PSDImageReader extends ImageReaderBase {
 
         if (header.bits == 8) {
             // Compose out the background of the semi-transparent pixels, as PS somehow has the background composed in
-            decomposeAlpha(destCM, raster.getDataBuffer(), pDest.width, pDest.height, raster.getNumBands());
+            decomposeAlpha(destCM, destRaster.getDataBuffer(), pDest.width, pDest.height, destRaster.getNumBands());
         }
 
         // NOTE: ColorSpace uses Object.equals(), so we rely on using same instances!
-        if (!pSourceCM.getColorSpace().equals(pImage.getColorModel().getColorSpace())) {
-            convertToDestinationCS(pSourceCM, pImage.getColorModel(), raster);
+        if (!pSourceCM.getColorSpace().equals(destination.getColorModel().getColorSpace())) {
+            convertToDestinationCS(pSourceCM, destination.getColorModel(), destRaster);
         }
     }
 
@@ -546,27 +527,23 @@ public final class PSDImageReader extends ImageReaderBase {
                                   final int[] pRowByteCounts, final int pRowOffset,
                                   final boolean pRLECompressed) throws IOException {
 
-        final boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
-        final int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+        boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
+        int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+        final boolean invert = isCMYK && pChannel < colorComponents;
         final boolean banded = pData.getNumBanks() > 1;
 
         for (int y = 0; y < pChannelHeight; y++) {
-            // NOTE: Length is in *16 bit values* (shorts)
-            int length = 2 * (pRLECompressed ? pRowByteCounts[pRowOffset + y] : pChannelWidth);
+            int length = (pRLECompressed ? pRowByteCounts[pRowOffset + y] : 4 * pChannelWidth);
 
             // TODO: Sometimes need to read the line y == source.y + source.height...
             // Read entire line, if within source region and sampling
             if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
                 if (pRLECompressed) {
-                    DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length);
 
-                    try {
+                    try (DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length)) {
                         for (int x = 0; x < pChannelWidth; x++) {
                             pRow[x] = input.readInt();
                         }
-                    }
-                    finally {
-                        input.close();
                     }
                 }
                 else {
@@ -580,7 +557,7 @@ public final class PSDImageReader extends ImageReaderBase {
                     int value = pRow[pSource.x + x * pXSub];
 
                     // CMYK values are stored inverted, but alpha is not
-                    if (isCMYK && pChannel < colorComponents) {
+                    if (invert) {
                         value = 0xffffffff - value;
                     }
 
@@ -609,26 +586,22 @@ public final class PSDImageReader extends ImageReaderBase {
                                   final int[] pRowByteCounts, final int pRowOffset,
                                   final boolean pRLECompressed) throws IOException {
 
-        final boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
-        final int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+        boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
+        int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+        final boolean invert = isCMYK && pChannel < colorComponents;
         final boolean banded = pData.getNumBanks() > 1;
 
         for (int y = 0; y < pChannelHeight; y++) {
-            // NOTE: Length is in *16 bit values* (shorts)
-            int length = 2 * (pRLECompressed ? pRowByteCounts[pRowOffset + y] : pChannelWidth);
+            int length = (pRLECompressed ? pRowByteCounts[pRowOffset + y] : 2 * pChannelWidth);
 
             // TODO: Sometimes need to read the line y == source.y + source.height...
             // Read entire line, if within source region and sampling
             if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
                 if (pRLECompressed) {
-                    DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length);
-                    try {
+                    try (DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length)) {
                         for (int x = 0; x < pChannelWidth; x++) {
                             pRow[x] = input.readShort();
                         }
-                    }
-                    finally {
-                        input.close();
                     }
                 }
                 else {
@@ -642,8 +615,8 @@ public final class PSDImageReader extends ImageReaderBase {
                     short value = pRow[pSource.x + x * pXSub];
 
                     // CMYK values are stored inverted, but alpha is not
-                    if (isCMYK && pChannel < colorComponents) {
-                        value = (short) (65535 - value & 0xffff);
+                    if (invert) {
+                        value = (short) (0xffff - value & 0xffff);
                     }
 
                     pData.setElem(banded ? pChannel : 0, offset + x * pBands, value);
@@ -671,8 +644,9 @@ public final class PSDImageReader extends ImageReaderBase {
                                  final int[] pRowByteCounts, final int pRowOffset,
                                  final boolean pRLECompressed) throws IOException {
 
-        final boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
-        final int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+        boolean isCMYK = pSourceColorModel.getColorSpace().getType() == ColorSpace.TYPE_CMYK;
+        int colorComponents = pSourceColorModel.getColorSpace().getNumComponents();
+        final boolean invert = isCMYK && pChannel < colorComponents;
         final boolean banded = pData.getNumBanks() > 1;
 
         for (int y = 0; y < pChannelHeight; y++) {
@@ -682,12 +656,8 @@ public final class PSDImageReader extends ImageReaderBase {
             // Read entire line, if within source region and sampling
             if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
                 if (pRLECompressed) {
-                    DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length);
-                    try {
+                    try (DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length)) {
                         input.readFully(pRow, 0, pChannelWidth);
-                    }
-                    finally {
-                        input.close();
                     }
                 }
                 else {
@@ -701,8 +671,8 @@ public final class PSDImageReader extends ImageReaderBase {
                     byte value = pRow[pSource.x + x * pXSub];
 
                     // CMYK values are stored inverted, but alpha is not
-                    if (isCMYK && pChannel < colorComponents) {
-                        value = (byte) (255 - value & 0xff);
+                    if (invert) {
+                        value = (byte) (0xff - value & 0xff);
                     }
 
                     pData.setElem(banded ? pChannel : 0, offset + x * pBands, value);
@@ -741,12 +711,8 @@ public final class PSDImageReader extends ImageReaderBase {
             // Read entire line, if within source region and sampling
             if (y >= pSource.y && y < pSource.y + pSource.height && y % pYSub == 0) {
                 if (pRLECompressed) {
-                    DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length);
-                    try {
+                    try (DataInputStream input = PSDUtil.createPackBitsStream(imageInput, length)) {
                         input.readFully(pRow, 0, pRow.length);
-                    }
-                    finally {
-                        input.close();
                     }
                 }
                 else {
@@ -868,8 +834,8 @@ public final class PSDImageReader extends ImageReaderBase {
 
             if (!header.hasValidDimensions()) {
                 processWarningOccurred(String.format("Dimensions exceed maximum allowed for %s: %dx%d (max %dx%d)",
-                                                     header.largeFormat ? "PSB" : "PSD",
-                                                     header.width, header.height, header.getMaxSize(), header.getMaxSize()));
+                        header.largeFormat ? "PSB" : "PSD",
+                        header.width, header.height, header.getMaxSize(), header.getMaxSize()));
             }
 
             metadata = new PSDMetadata();
@@ -898,6 +864,10 @@ public final class PSDImageReader extends ImageReaderBase {
 
             // Don't need the header again
             imageInput.flushBefore(imageInput.getStreamPosition());
+
+            if (DEBUG) {
+                System.out.println("header: " + header);
+            }
         }
     }
 
@@ -913,12 +883,16 @@ public final class PSDImageReader extends ImageReaderBase {
 
             if (pParseData && imageResourcesLength > 0) {
                 if (metadata.imageResources == null) {
-                    metadata.imageResources = new ArrayList<PSDImageResource>();
+                    metadata.imageResources = new ArrayList<>();
                     long expectedEnd = imageInput.getStreamPosition() + imageResourcesLength;
 
                     while (imageInput.getStreamPosition() < expectedEnd) {
                         PSDImageResource resource = PSDImageResource.read(imageInput);
                         metadata.imageResources.add(resource);
+                    }
+
+                    if (DEBUG) {
+                        System.out.println("imageResources: " + metadata.imageResources);
                     }
 
                     if (imageInput.getStreamPosition() != expectedEnd) {
@@ -970,10 +944,13 @@ public final class PSDImageReader extends ImageReaderBase {
 
                         long read = imageInput.getStreamPosition() - pos;
 
-                        long diff = layerInfoLength - (read - (header.largeFormat ? 8 : 4)); // - 4 for the layerInfoLength field itself
+                        long diff = layerInfoLength - (read - (header.largeFormat
+                                                               ? 8
+                                                               : 4)); // - 4 for the layerInfoLength field itself
 
                         imageInput.skipBytes(diff);
-                    } else {
+                    }
+                    else {
                         metadata.layerInfo = Collections.emptyList();
                     }
 
@@ -990,6 +967,10 @@ public final class PSDImageReader extends ImageReaderBase {
                     // TODO: We should now be able to flush input
 //                    imageInput.seek(metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4));
 //                    imageInput.flushBefore(metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4));
+
+                    if (DEBUG) {
+                        System.out.println("layerInfo: " + metadata.layerInfo);
+                    }
                 }
             }
 
@@ -1001,20 +982,18 @@ public final class PSDImageReader extends ImageReaderBase {
         final int width = getLayerWidth(layerIndex);
         final int height = getLayerHeight(layerIndex);
 
+        // TODO: This behaviour must be documented!
+        // If layer has no pixel data, return null
+        if (width <= 0 || height <= 0) {
+            return null;
+        }
+
         PSDLayerInfo layerInfo = metadata.layerInfo.get(layerIndex);
 //        final int width = layerInfo.right - layerInfo.left;
 //        final int height = layerInfo.bottom - layerInfo.top;
 
         // Even if raw/imageType has no alpha, the layers may still have alpha...
         ImageTypeSpecifier imageType = getRawImageTypeForLayer(layerIndex);
-
-        // TODO: Find a better way of handling layers of size 0
-        // - Return null? Return a BufferedImage subclass that has no data (0 x 0)?
-        // Create image (or dummy, if h/w are <= 0)
-//        BufferedImage layer = imageType.createBufferedImage(Math.max(1, width), Math.max(1, height));
-        if (width <= 0 || height <= 0) {
-            return null;
-        }
         BufferedImage layer = getDestination(param, getImageTypes(layerIndex + 1), Math.max(1, width), Math.max(1, height));
 
         imageInput.seek(findLayerStartPos(layerIndex));
@@ -1028,9 +1007,8 @@ public final class PSDImageReader extends ImageReaderBase {
         final WritableRaster raster = layer.getRaster();
         final ColorModel destCM = layer.getColorModel();
 
-        // TODO: This raster is 3-5 times longer than needed, depending on number of channels...
         ColorModel sourceCM = imageType.getColorModel();
-        final WritableRaster rowRaster = width > 0 ? sourceCM.createCompatibleWritableRaster(width, 1) : null;
+        final WritableRaster rowRaster = sourceCM.createCompatibleWritableRaster((int) Math.ceil(width / (double) sourceCM.getNumComponents()), 1);
 
         final boolean banded = raster.getDataBuffer().getNumBanks() > 1;
         final int interleavedBands = banded ? 1 : raster.getNumBands();
@@ -1134,7 +1112,6 @@ public final class PSDImageReader extends ImageReaderBase {
                 }
             }
 
-
             // If there really is more channels, then create new imageTypeSpec
             if (newBandNum > compositeType.getNumBands()) {
                 int[] indices = new int[newBandNum];
@@ -1228,7 +1205,7 @@ public final class PSDImageReader extends ImageReaderBase {
         for (PSDImageResource resource : metadata.imageResources) {
             if (resource instanceof PSDThumbnail) {
                 if (thumbnails == null) {
-                    thumbnails = new ArrayList<PSDThumbnail>();
+                    thumbnails = new ArrayList<>();
                 }
 
                 thumbnails.add((PSDThumbnail) resource);
@@ -1386,7 +1363,7 @@ public final class PSDImageReader extends ImageReaderBase {
             System.out.println("read time: " + (System.currentTimeMillis() - start));
             System.out.println("image: " + image);
 
-            if (image.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_CMYK) {
+            if (image.getType() == BufferedImage.TYPE_CUSTOM) {
                 try {
                     ColorConvertOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_sRGB), null);
                     GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
@@ -1407,8 +1384,24 @@ public final class PSDImageReader extends ImageReaderBase {
                 for (int i = 1; i < images; i++) {
                     start = System.currentTimeMillis();
                     BufferedImage layer = imageReader.read(i);
+
                     System.out.println("layer read time: " + (System.currentTimeMillis() - start));
                     System.err.println("layer: " + layer);
+
+                    if (layer != null && layer.getType() == BufferedImage.TYPE_CUSTOM) {
+                        try {
+                            ColorConvertOp op = new ColorConvertOp(ColorSpace.getInstance(ColorSpace.CS_sRGB), null);
+                            GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+                            layer = op.filter(layer, gc.createCompatibleImage(layer.getWidth(), layer.getHeight(), layer.getTransparency()));
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                            layer = ImageUtil.accelerate(layer);
+                        }
+                        System.out.println("layer conversion time: " + (System.currentTimeMillis() - start));
+                        System.out.println("layer: " + layer);
+                    }
+
                     showIt(layer, "layer " + i);
                 }
             }
