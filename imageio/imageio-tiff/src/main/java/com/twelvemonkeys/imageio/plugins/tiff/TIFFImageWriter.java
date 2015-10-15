@@ -72,6 +72,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // TODO: Support more of the ImageIO metadata (ie. compression from metadata, etc)
 
     // Long term
+    // TODO: Support writing multipage TIFFs using canWriteSequence/prepareWriteSequence/writeToSequence/endWriteSequence
     // TODO: Support tiling
     // TODO: Support thumbnails
     // TODO: Support CCITT Modified Huffman compression (2)
@@ -244,7 +245,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // Write compression field from param or metadata
         int compression;
         if ((param == null || param.getCompressionMode() == TIFFImageWriteParam.MODE_COPY_FROM_METADATA)
-                && image.getMetadata() != null) {
+                && image.getMetadata() != null && metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION) != null) {
             compression = (int) metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION).getValue();
         }
         else {
