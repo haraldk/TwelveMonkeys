@@ -193,6 +193,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "Flash";
             case EXIF.TAG_FOCAL_LENGTH:
                 return "FocalLength";
+            case EXIF.TAG_SENSING_METHOD:
+                return "SensingMethod";
             case EXIF.TAG_FILE_SOURCE:
                 return "FileSource";
             case EXIF.TAG_SCENE_TYPE:
@@ -219,6 +221,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "Saturation";
             case EXIF.TAG_SHARPNESS:
                 return "Sharpness";
+            case EXIF.TAG_IMAGE_UNIQUE_ID:
+                return "ImageUniqueID";
 
             case EXIF.TAG_FLASHPIX_VERSION:
                 return "FlashpixVersion";

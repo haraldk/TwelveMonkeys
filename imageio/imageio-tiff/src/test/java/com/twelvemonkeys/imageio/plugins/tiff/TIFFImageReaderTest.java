@@ -95,8 +95,33 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_lsb2msb.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D, LSB
                 new TestData(getClassLoaderResource("/tiff/ccitt/group4.tif"), new Dimension(6, 4)), // B/W, CCITT T6 1D
-                new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)) // B/W, CCITT T4
-        );
+                new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)), // B/W, CCITT T4
+                // Gray
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-02.tif"), new Dimension(73, 43)), // Gray 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-04.tif"), new Dimension(73, 43)), // Gray 4 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-08.tif"), new Dimension(73, 43)), // Gray 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-16.tif"), new Dimension(73, 43)), // Gray 16 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-32.tif"), new Dimension(73, 43)), // Gray 32 bit/sample
+                // Palette
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-02.tif"), new Dimension(73, 43)), // Palette 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-04.tif"), new Dimension(73, 43)), // Palette 4 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-08.tif"), new Dimension(73, 43)), // Palette 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-16.tif"), new Dimension(73, 43)), // Palette 16 bit/sample
+                // RGB Interleaved (PlanarConfiguration: 1)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-16.tif"), new Dimension(73, 43)), // RGB 16 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-32.tif"), new Dimension(73, 43)), // RGB 32 bit/sample
+                // RGB Planar (PlanarConfiguration: 2)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-16.tif"), new Dimension(73, 43)), // RGB 16 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-32.tif"), new Dimension(73, 43)),  // RGB 32 bit FP samples!
+                // Separated (CMYK) Interleaved (PlanarConfiguration: 1)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-16.tif"), new Dimension(73, 43)), // CMYK 16 bit/sample
+                // Separated (CMYK) Planar (PlanarConfiguration: 2)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43)) // CMYK 16 bit/sample
+            );
     }
 
     @Override
@@ -228,4 +253,77 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ICC profile"));
         }
     }
+
+    @Test
+    public void testPlanarEqualInterleavedRGB() throws IOException {
+        TestData expectedData = new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"), new Dimension(73, 43));
+        TestData testData = new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-08.tif"), new Dimension(73, 43));
+
+        try (ImageInputStream expectedStream = expectedData.getInputStream(); ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+
+            reader.setInput(expectedStream);
+            BufferedImage expected = reader.read(0, null);
+
+            reader.setInput(stream);
+            BufferedImage actual = reader.read(0, null);
+
+            assertImageDataEquals("", expected, actual);
+        }
+    }
+
+    @Test
+    public void testPlanarEqualInterleavedRGB16() throws IOException {
+        TestData expectedData = new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-16.tif"), new Dimension(73, 43));
+        TestData testData = new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-16.tif"), new Dimension(73, 43));
+
+        try (ImageInputStream expectedStream = expectedData.getInputStream(); ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+
+            reader.setInput(expectedStream);
+            BufferedImage expected = reader.read(0, null);
+
+            reader.setInput(stream);
+            BufferedImage actual = reader.read(0, null);
+
+            assertImageDataEquals("", expected, actual);
+        }
+    }
+
+    @Test
+    public void testPlanarEqualInterleavedSeparated() throws IOException {
+        TestData expectedData = new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-08.tif"), new Dimension(73, 43));
+        TestData testData = new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-08.tif"), new Dimension(73, 43));
+
+        try (ImageInputStream expectedStream = expectedData.getInputStream(); ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+
+            reader.setInput(expectedStream);
+            BufferedImage expected = reader.read(0, null);
+
+            reader.setInput(stream);
+            BufferedImage actual = reader.read(0, null);
+
+            assertImageDataEquals("", expected, actual);
+        }
+    }
+
+    @Test
+    public void testPlanarEqualInterleavedSeparated16() throws IOException {
+        TestData expectedData = new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-16.tif"), new Dimension(73, 43));
+        TestData testData = new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43));
+
+        try (ImageInputStream expectedStream = expectedData.getInputStream(); ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+
+            reader.setInput(expectedStream);
+            BufferedImage expected = reader.read(0, null);
+
+            reader.setInput(stream);
+            BufferedImage actual = reader.read(0, null);
+
+            assertImageDataEquals("", expected, actual);
+        }
+    }
+
 }

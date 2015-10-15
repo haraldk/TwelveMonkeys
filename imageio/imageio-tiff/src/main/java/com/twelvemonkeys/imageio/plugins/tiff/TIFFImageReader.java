@@ -115,7 +115,6 @@ import java.util.zip.InflaterInputStream;
 public class TIFFImageReader extends ImageReaderBase {
     // TODOs ImageIO basic functionality:
     // TODO: Thumbnail support
-    // TODO: TIFFImageWriter + Spi
 
     // TODOs Full BaseLine support:
     // TODO: Support ExtraSamples (an array, if multiple extra samples!)
@@ -129,10 +128,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
 
     // TODOs Extension support
-    // TODO: Support PlanarConfiguration 2, look at PCXImageReader
     // TODO: Auto-rotate based on Orientation
-    // TODO: Support ICCProfile (fully)
-    // TODO: Support Compression 3 & 4 (CCITT T.4 & T.6)
     // TODO: Support Compression 34712 (JPEG2000)? Depends on JPEG2000 ImageReader
     // TODO: Support Compression 34661 (JBIG)? Depends on JBIG ImageReader
 
@@ -143,6 +139,9 @@ public class TIFFImageReader extends ImageReaderBase {
     // Source region
     // Subsampling
     // IIOMetadata (stay close to Sun's TIFF metadata)
+    // Support ICCProfile
+    // Support PlanarConfiguration 2
+    // Support Compression 3 & 4 (CCITT T.4 & T.6)
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
@@ -317,7 +316,23 @@ public class TIFFImageReader extends ImageReaderBase {
         int bitsPerSample = getBitsPerSample();
         int dataType = getDataType(sampleFormat, bitsPerSample);
 
-        // TODO: Validate CS using ColorSpaces.validateProfile
+        int opaqueSamplesPerPixel = getOpaqueSamplesPerPixel(interpretation);
+
+        // Spec says ExtraSamples are mandatory of extra samples, however known encoders
+        // (ie. SeaShore) writes ARGB TIFFs without ExtraSamples.
+        long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", false);
+        if (extraSamples == null && samplesPerPixel > opaqueSamplesPerPixel) {
+            // TODO: Log warning!
+            // First extra is alpha, rest is "unspecified"
+            extraSamples = new long[samplesPerPixel - opaqueSamplesPerPixel];
+            extraSamples[0] = TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA;
+        }
+
+        // Determine alpha
+        boolean hasAlpha = extraSamples != null;
+        boolean isAlphaPremultiplied = hasAlpha && extraSamples[0] == TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA;
+        int significantSamples = opaqueSamplesPerPixel + (hasAlpha ? 1 : 0);
+
         // Read embedded cs
         ICC_Profile profile = getICCProfile();
         ColorSpace cs;
@@ -327,11 +342,10 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // WhiteIsZero
                 // NOTE: We handle this by inverting the values when reading, as Java has no ColorModel that easily supports this.
-                // TODO: Consider returning null?
             case TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO:
                 // BlackIsZero
                 // Gray scale or B/W
-                switch (samplesPerPixel) {
+                switch (significantSamples) {
                     case 1:
                         // TIFF 6.0 Spec says: 1, 4 or 8 for baseline (1 for bi-level, 4/8 for gray)
                         // ImageTypeSpecifier supports 1, 2, 4, 8 or 16 bits per sample, we'll support 32 bits as well.
@@ -347,6 +361,7 @@ public class TIFFImageReader extends ImageReaderBase {
                             return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType);
                         }
                         else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
+                            // TODO: Should use packed format for 1/2/4
                             return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0}, dataType, false, false);
                         }
 
@@ -364,28 +379,26 @@ public class TIFFImageReader extends ImageReaderBase {
 
                         cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
 
-                        // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
-                        long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
-
                         if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32)) {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType, isAlphaPremultiplied);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, dataType, true, isAlphaPremultiplied);
                             }
                         }
-                        else if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
+                        else if (/*bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 ||*/ bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
+                            // TODO: Should use packed format for 1/2/4 chunky.
+                            // TODO: For 1/2/4 bit planar, we might need to fix while reading... Look at IFFImageReader?
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1}, dataType, true, isAlphaPremultiplied);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, dataType, true, isAlphaPremultiplied);
                             }
                         }
 
                         throw new IIOException(String.format("Unsupported BitsPerSample for Gray + Alpha TIFF (expected 8, 16 or 32): %d", bitsPerSample));
-                        // TODO: More samples might be ok, if multiple alpha or unknown samples
 
                     default:
                         throw new IIOException(String.format("Unsupported SamplesPerPixel/BitsPerSample combination for Bi-level/Gray TIFF (expected 1/1, 1/2, 1/4, 1/8, 1/16 or 1/32, or 2/8, 2/16 or 2/32): %d/%d", samplesPerPixel, bitsPerSample));
@@ -403,15 +416,12 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_sRGB) : ColorSpaces.createColorSpace(profile);
 
-                switch (samplesPerPixel) {
+                switch (significantSamples) {
                     case 3:
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    if (bitsPerSample == 8 && cs.isCS_sRGB()) {
-                                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
-                                    }
-
+                                    // "TYPE_3_BYTE_RGB" if cs.isCS_sRGB()
                                     return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2}, dataType, false, false);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
@@ -420,27 +430,18 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
                     case 4:
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
-                            long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
-
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    if (bitsPerSample == 8 && cs.isCS_sRGB()) {
-                                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
-                                    }
-
-                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[]{ 0, 1, 2, 3}, dataType, true, extraSamples[0] == 1);
+                                    // "TYPE_4_BYTE_RGBA" if cs.isCS_sRGB()
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, isAlphaPremultiplied);
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, isAlphaPremultiplied);
                             }
                         }
                         else if (bitsPerSample == 4) {
-                            long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
-
-                            return ImageTypeSpecifier.createPacked(cs, 0xF000, 0xF00, 0xF0, 0xF, DataBuffer.TYPE_USHORT, extraSamples[0] == 1);
+                            return ImageTypeSpecifiers.createPacked(cs, 0xF000, 0xF00, 0xF0, 0xF, DataBuffer.TYPE_USHORT, isAlphaPremultiplied);
                         }
-                        // TODO: More samples might be ok, if multiple alpha or unknown samples
                     default:
                         throw new IIOException(String.format("Unsupported SamplesPerPixels/BitsPerSample combination for RGB TIFF (expected 3/8, 4/8, 3/16 or 4/16): %d/%d", samplesPerPixel, bitsPerSample));
                 }
@@ -452,8 +453,8 @@ public class TIFFImageReader extends ImageReaderBase {
                 else if (bitsPerSample <= 0 || bitsPerSample > 16) {
                     throw new IIOException("Bad BitsPerSample value for Palette TIFF (expected <= 16): " + bitsPerSample);
                 }
-                // NOTE: If ExtraSamples is used, PlanarConfiguration must be taken into account also for pixel data
 
+                // NOTE: If ExtraSamples is used, PlanarConfiguration must be taken into account also for pixel data
                 Entry colorMap = currentIFD.getEntryById(TIFF.TAG_COLOR_MAP);
                 if (colorMap == null) {
                     throw new IIOException("Missing ColorMap for Palette TIFF");
@@ -483,7 +484,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 cs = profile == null ? ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK) : ColorSpaces.createColorSpace(profile);
 
-                switch (samplesPerPixel) {
+                switch (significantSamples) {
                     case 4:
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
                             switch (planarConfiguration) {
@@ -495,18 +496,13 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
                     case 5:
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
-                            // ExtraSamples 0=unspecified, 1=associated (pre-multiplied), 2=unassociated (TODO: Support unspecified, not alpha)
-                            long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", true);
-
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3, 4}, dataType, true, isAlphaPremultiplied);
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
-                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, extraSamples[0] == 1);
+                                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, dataType, true, isAlphaPremultiplied);
                             }
                         }
-
-                        // TODO: More samples might be ok, if multiple alpha or unknown samples, consult ExtraSamples
 
                     default:
                         throw new IIOException(
@@ -515,10 +511,39 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
             case TIFFBaseline.PHOTOMETRIC_MASK:
                 // Transparency mask
-
+            case TIFFExtension.PHOTOMETRIC_CIELAB:
+            case TIFFExtension.PHOTOMETRIC_ICCLAB:
+            case TIFFExtension.PHOTOMETRIC_ITULAB:
+                // L*a*b* color. Handled using conversion to linear RGB
+            case TIFFCustom.PHOTOMETRIC_LOGL:
+            case TIFFCustom.PHOTOMETRIC_LOGLUV:
+                // Log
+            case TIFFCustom.PHOTOMETRIC_CFA:
+            case TIFFCustom.PHOTOMETRIC_LINEAR_RAW:
+                // RAW (DNG)
                 throw new IIOException("Unsupported TIFF PhotometricInterpretation value: " + interpretation);
             default:
                 throw new IIOException("Unknown TIFF PhotometricInterpretation value: " + interpretation);
+        }
+    }
+
+    private int getOpaqueSamplesPerPixel(final int photometricInterpretation) throws IIOException {
+        switch (photometricInterpretation) {
+            case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
+            case TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO:
+            case TIFFBaseline.PHOTOMETRIC_PALETTE:
+            case TIFFBaseline.PHOTOMETRIC_MASK:
+                return 1;
+            case TIFFBaseline.PHOTOMETRIC_RGB:
+            case TIFFExtension.PHOTOMETRIC_YCBCR:
+            case TIFFExtension.PHOTOMETRIC_CIELAB:
+            case TIFFExtension.PHOTOMETRIC_ICCLAB:
+            case TIFFExtension.PHOTOMETRIC_ITULAB:
+                return 3;
+            case TIFFExtension.PHOTOMETRIC_SEPARATED:
+                return getValueAsIntWithDefault(TIFF.TAG_NUMBER_OF_INKS, 4);
+            default:
+                throw new IIOException("Unknown TIFF PhotometricInterpretation value: " + photometricInterpretation);
         }
     }
 
@@ -623,9 +648,14 @@ public class TIFFImageReader extends ImageReaderBase {
         else {
             int bitsPerSample = (int) value[0];
 
-            for (int i = 1; i < value.length; i++) {
-                if (value[i] != bitsPerSample) {
-                    throw new IIOException("Variable BitsPerSample not supported: " + Arrays.toString(value));
+            if (value.length == 3 && (value[0] == 5 && value[1] == 6 && value[2] == 5)) {
+                // Special case for UINT_565. We're good.
+            }
+            else {
+                for (int i = 1; i < value.length; i++) {
+                    if (value[i] != bitsPerSample) {
+                        throw new IIOException("Variable BitsPerSample not supported: " + Arrays.toString(value));
+                    }
                 }
             }
 
@@ -719,7 +749,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
-//        WritableRaster rowRaster = rawType.getColorModel().createCompatibleWritableRaster(stripTileWidth, 1);
+        // TODO: If extrasamples, we might need to create a raster with more samples...
         WritableRaster rowRaster = rawType.createBufferedImage(stripTileWidth, 1).getRaster();
         Rectangle clip = new Rectangle(srcRegion);
         int row = 0;
@@ -1310,117 +1340,166 @@ public class TIFFImageReader extends ImageReaderBase {
                                    final int colsInTile, final int rowsInTile, final DataInput input)
             throws IOException {
 
+        DataBuffer dataBuffer = tileRowRaster.getDataBuffer();
+        int bands = dataBuffer.getNumBanks();
+        boolean banded = bands > 1;
+
         switch (tileRowRaster.getTransferType()) {
             case DataBuffer.TYPE_BYTE:
-                byte[] rowDataByte = ((DataBufferByte) tileRowRaster.getDataBuffer()).getData();
 
-                for (int row = startRow; row < startRow + rowsInTile; row++) {
-                    if (row >= srcRegion.y + srcRegion.height) {
-                        break; // We're done with this tile
-                    }
+                for (int band = 0; band < bands; band++) {
+                    byte[] rowDataByte = ((DataBufferByte) dataBuffer).getData(band);
+                    WritableRaster destChannel = banded
+                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                                 : raster;
+                    Raster srcChannel = banded
+                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                        : tileRowRaster;
 
-                    input.readFully(rowDataByte);
-
-                    if (row % ySub == 0 && row >= srcRegion.y) {
-                        normalizeBlack(interpretation, rowDataByte);
-
-                        // Subsample horizontal
-                        if (xSub != 1) {
-                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                System.arraycopy(rowDataByte, x * xSub, rowDataByte, x, numBands);
-                            }
+                    for (int row = startRow; row < startRow + rowsInTile; row++) {
+                        if (row >= srcRegion.y + srcRegion.height) {
+                            break; // We're done with this tile
                         }
 
-                        raster.setDataElements(startCol, (row - srcRegion.y) / ySub, tileRowRaster);
+                        input.readFully(rowDataByte);
+
+                        if (row % ySub == 0 && row >= srcRegion.y) {
+                            normalizeBlack(interpretation, rowDataByte);
+
+                            // Subsample horizontal
+                            if (xSub != 1) {
+                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                    System.arraycopy(rowDataByte, x * xSub, rowDataByte, x, numBands);
+                                }
+                            }
+
+                            destChannel.setDataElements(startCol, (row - srcRegion.y) / ySub, srcChannel);
+                        }
+                        // Else skip data
                     }
-                    // Else skip data
                 }
 
                 break;
             case DataBuffer.TYPE_USHORT:
             case DataBuffer.TYPE_SHORT:
-                short[] rowDataShort = tileRowRaster.getTransferType() == DataBuffer.TYPE_USHORT
-                                       ? ((DataBufferUShort) tileRowRaster.getDataBuffer()).getData()
-                                       : ((DataBufferShort) tileRowRaster.getDataBuffer()).getData();
+                for (int band = 0; band < bands; band++) {
+                    short[] rowDataShort = dataBuffer.getDataType() == DataBuffer.TYPE_USHORT
+                                           ? ((DataBufferUShort) dataBuffer).getData(band)
+                                           : ((DataBufferShort) dataBuffer).getData(band);
 
-                for (int row = startRow; row < startRow + rowsInTile; row++) {
-                    if (row >= srcRegion.y + srcRegion.height) {
-                        break; // We're done with this tile
-                    }
+                    WritableRaster destChannel = banded
+                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                                 : raster;
+                    Raster srcChannel = banded
+                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                        : tileRowRaster;
 
-                    readFully(input, rowDataShort);
-
-                    if (row >= srcRegion.y) {
-                        normalizeBlack(interpretation, rowDataShort);
-
-                        // Subsample horizontal
-                        if (xSub != 1) {
-                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                System.arraycopy(rowDataShort, x * xSub, rowDataShort, x, numBands);
-                            }
+                    for (int row = startRow; row < startRow + rowsInTile; row++) {
+                        if (row >= srcRegion.y + srcRegion.height) {
+                            break; // We're done with this tile
                         }
 
-                        raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
-                        // TODO: Possible speedup ~30%!:
+                        readFully(input, rowDataShort);
+
+                        if (row >= srcRegion.y) {
+                            normalizeBlack(interpretation, rowDataShort);
+
+                            // Subsample horizontal
+                            if (xSub != 1) {
+                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                    System.arraycopy(rowDataShort, x * xSub, rowDataShort, x, numBands);
+                                }
+                            }
+
+                            destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                            // TODO: Possible speedup ~30%!:
 //                        raster.setDataElements(startCol, row - srcRegion.y, colsInTile, 1, rowDataShort);
+                        }
+                        // Else skip data
                     }
-                    // Else skip data
                 }
 
                 break;
             case DataBuffer.TYPE_INT:
-                int[] rowDataInt = ((DataBufferInt) tileRowRaster.getDataBuffer()).getData();
+                for (int band = 0; band < bands; band++) {
+                    int[] rowDataInt = ((DataBufferInt) dataBuffer).getData(band);
 
-                for (int row = startRow; row < startRow + rowsInTile; row++) {
-                    if (row >= srcRegion.y + srcRegion.height) {
-                        break; // We're done with this tile
-                    }
+                    WritableRaster destChannel = banded
+                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                                 : raster;
+                    Raster srcChannel = banded
+                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                        : tileRowRaster;
 
-                    readFully(input, rowDataInt);
-
-                    if (row >= srcRegion.y) {
-                        normalizeBlack(interpretation, rowDataInt);
-
-                        // Subsample horizontal
-                        if (xSub != 1) {
-                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                System.arraycopy(rowDataInt, x * xSub, rowDataInt, x, numBands);
-                            }
+                    for (int row = startRow; row < startRow + rowsInTile; row++) {
+                        if (row >= srcRegion.y + srcRegion.height) {
+                            break; // We're done with this tile
                         }
 
-                        raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
+                        readFully(input, rowDataInt);
+
+                        if (row >= srcRegion.y) {
+                            normalizeBlack(interpretation, rowDataInt);
+
+                            // Subsample horizontal
+                            if (xSub != 1) {
+                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                    System.arraycopy(rowDataInt, x * xSub, rowDataInt, x, numBands);
+                                }
+                            }
+
+                            destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                        }
+                        // Else skip data
                     }
-                    // Else skip data
                 }
 
                 break;
 
             case DataBuffer.TYPE_FLOAT:
-                float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData();
+                for (int band = 0; band < bands; band++) {
+                    float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData(band);
 
-                for (int row = startRow; row < startRow + rowsInTile; row++) {
-                    if (row >= srcRegion.y + srcRegion.height) {
-                        break; // We're done with this tile
-                    }
+                    WritableRaster destChannel = banded
+                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                                 : raster;
+                    Raster srcChannel = banded
+                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                        : tileRowRaster;
 
-                    readFully(input, rowDataFloat);
-
-                    if (row >= srcRegion.y) {
-//                        normalizeBlack(interpretation, rowDataFloat);
-
-                        // Subsample horizontal
-                        if (xSub != 1) {
-                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
-                            }
+                    for (int row = startRow; row < startRow + rowsInTile; row++) {
+                        if (row >= srcRegion.y + srcRegion.height) {
+                            break; // We're done with this tile
                         }
 
-                        raster.setDataElements(startCol, row - srcRegion.y, tileRowRaster);
+                        readFully(input, rowDataFloat);
+
+                        if (row >= srcRegion.y) {
+                            // TODO: Allow param to decide tone mapping strategy, like in the HDRImageReader
+                            clamp(rowDataFloat);
+
+                            // Subsample horizontal
+                            if (xSub != 1) {
+                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                    System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
+                                }
+                            }
+
+                            destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                        }
+                        // Else skip data
                     }
-                    // Else skip data
                 }
 
                 break;
+        }
+    }
+
+    private void clamp(float[] rowDataFloat) {
+        for (int i = 0; i < rowDataFloat.length; i++) {
+            if (rowDataFloat[i] > 1) {
+                rowDataFloat[i] = 1;
+            }
         }
     }
 
