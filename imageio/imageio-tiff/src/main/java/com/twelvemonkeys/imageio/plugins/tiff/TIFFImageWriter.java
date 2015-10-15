@@ -224,7 +224,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
-        HashMap<Integer, Entry> entries = new LinkedHashMap<>();
+        Map<Integer, Entry> entries = new LinkedHashMap<>();
         entries.put(TIFF.TAG_IMAGE_WIDTH, new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, renderedImage.getWidth()));
         entries.put(TIFF.TAG_IMAGE_HEIGHT, new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
         // entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
@@ -402,7 +402,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
     }
 
-    private DataOutput createCompressorStream(RenderedImage image, ImageWriteParam param, HashMap<Integer, Entry> entries) {
+    private DataOutput createCompressorStream(RenderedImage image, ImageWriteParam param, Map<Integer, Entry> entries) {
         /*
         36 MB test data:
 
