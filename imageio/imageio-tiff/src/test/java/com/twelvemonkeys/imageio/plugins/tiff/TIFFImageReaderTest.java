@@ -96,6 +96,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_lsb2msb.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D, LSB
                 new TestData(getClassLoaderResource("/tiff/ccitt/group4.tif"), new Dimension(6, 4)), // B/W, CCITT T6 1D
                 new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)), // B/W, CCITT T4
+                // CIELab
+                new TestData(getClassLoaderResource("/tiff/ColorCheckerCalculator.tif"), new Dimension(798, 546)), // CIELab 8 bit/sample
                 // Gray
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-02.tif"), new Dimension(73, 43)), // Gray 2 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-04.tif"), new Dimension(73, 43)), // Gray 4 bit/sample
@@ -120,8 +122,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-16.tif"), new Dimension(73, 43)), // CMYK 16 bit/sample
                 // Separated (CMYK) Planar (PlanarConfiguration: 2)
                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
-                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43)) // CMYK 16 bit/sample
-            );
+                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43))  // CMYK 16 bit/sample
+        );
     }
 
     @Override

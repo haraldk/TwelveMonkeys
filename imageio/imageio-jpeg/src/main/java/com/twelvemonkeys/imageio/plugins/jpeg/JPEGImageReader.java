@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
@@ -462,14 +463,13 @@ public class JPEGImageReader extends ImageReaderBase {
 
             // Apply source color conversion from implicit color space
             if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.YCbCrA) {
-                YCbCrConverter.convertYCbCr2RGB(raster);
+                convertYCbCr2RGB(raster);
             }
             else if (csType == JPEGColorSpace.YCCK) {
                 // TODO: Need to rethink this (non-) inversion, see #147
                 // TODO: Allow param to specify inversion, or possibly the PDF decode array
                 // flag0 bit 15, blend = 1 see http://graphicdesign.stackexchange.com/questions/12894/cmyk-jpegs-extracted-from-pdf-appear-inverted
-                boolean invert = true;// || (adobeDCT.flags0 & 0x8000) == 0;
-                YCbCrConverter.convertYCCK2CMYK(raster, invert);
+                convertYCCK2CMYK(raster);
             }
             else if (csType == JPEGColorSpace.CMYK) {
                 invertCMYK(raster);
@@ -1107,129 +1107,31 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    /**
-     * Static inner class for lazy-loading of conversion tables.
-     *
-     * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
-     * @author Original code by Werner Randelshofer
-     */
-    static final class YCbCrConverter {
-        /** Define tables for YCC->RGB color space conversion. */
-        private final static int SCALEBITS = 16;
-        private final static int MAXJSAMPLE = 255;
-        private final static int CENTERJSAMPLE = 128;
-        private final static int ONE_HALF = 1 << (SCALEBITS - 1);
+    public static void convertYCbCr2RGB(final Raster raster) {
+        final int height = raster.getHeight();
+        final int width = raster.getWidth();
+        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
-        private final static int[] Cr_R_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cb_B_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cr_G_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cb_G_LUT = new int[MAXJSAMPLE + 1];
-
-        /**
-         * Initializes tables for YCC->RGB color space conversion.
-         */
-        private static void buildYCCtoRGBtable() {
-            if (DEBUG) {
-                System.err.println("Building YCC conversion table");
-            }
-
-            for (int i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
-                // i is the actual input pixel value, in the range 0..MAXJSAMPLE
-                // The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE
-                // Cr=>R value is nearest int to 1.40200 * x
-                Cr_R_LUT[i] = (int) ((1.40200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-                // Cb=>B value is nearest int to 1.77200 * x
-                Cb_B_LUT[i] = (int) ((1.77200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-                // Cr=>G value is scaled-up -0.71414 * x
-                Cr_G_LUT[i] = -(int) (0.71414 * (1 << SCALEBITS) + 0.5) * x;
-                // Cb=>G value is scaled-up -0.34414 * x
-                // We also add in ONE_HALF so that need not do it in inner loop
-                Cb_G_LUT[i] = -(int) ((0.34414) * (1 << SCALEBITS) + 0.5) * x + ONE_HALF;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                YCbCrConverter.convertYCbCr2RGB(data, data, (x + y * width) * 3);
             }
         }
+    }
 
-        static {
-            buildYCCtoRGBtable();
-        }
+    public static void convertYCCK2CMYK(final Raster raster) {
+        final int height = raster.getHeight();
+        final int width = raster.getWidth();
+        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
-        static void convertYCbCr2RGB(final Raster raster) {
-            final int height = raster.getHeight();
-            final int width = raster.getWidth();
-            final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    convertYCbCr2RGB(data, data, (x + y * width) * 3);
-                }
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int offset = (x + y * width) * 4;
+                // YCC -> CMY
+                YCbCrConverter.convertYCbCr2RGB(data, data, offset);
+                // Inverse K
+                data[offset + 3] = (byte) (0xff - data[offset + 3] & 0xff);
             }
-        }
-
-        static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
-            int y  = yCbCr[offset    ] & 0xff;
-            int cr = yCbCr[offset + 2] & 0xff;
-            int cb = yCbCr[offset + 1] & 0xff;
-
-            rgb[offset    ] = clamp(y + Cr_R_LUT[cr]);
-            rgb[offset + 1] = clamp(y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            rgb[offset + 2] = clamp(y + Cb_B_LUT[cb]);
-        }
-
-        static void convertYCCK2CMYK(final Raster raster, final boolean invert) {
-            final int height = raster.getHeight();
-            final int width = raster.getWidth();
-            final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            if (invert) {
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        convertYCCK2CMYKInverted(data, data, (x + y * width) * 4);
-                    }
-                }
-            }
-            else {
-                for (int y = 0; y < height; y++) {
-                    for (int x = 0; x < width; x++) {
-                        convertYCCK2CMYK(data, data, (x + y * width) * 4);
-                    }
-                }
-            }
-        }
-
-        private static void convertYCCK2CMYKInverted(byte[] ycck, byte[] cmyk, int offset) {
-            // Inverted
-            int y  = 255 - ycck[offset    ] & 0xff;
-            int cb = 255 - ycck[offset + 1] & 0xff;
-            int cr = 255 - ycck[offset + 2] & 0xff;
-            int k  = 255 - ycck[offset + 3] & 0xff;
-
-            int cmykC = MAXJSAMPLE - (y + Cr_R_LUT[cr]);
-            int cmykM = MAXJSAMPLE - (y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            int cmykY = MAXJSAMPLE - (y + Cb_B_LUT[cb]);
-
-            cmyk[offset    ] = clamp(cmykC);
-            cmyk[offset + 1] = clamp(cmykM);
-            cmyk[offset + 2] = clamp(cmykY);
-            cmyk[offset + 3] = (byte) k; // K passes through unchanged
-        }
-
-        private static void convertYCCK2CMYK(byte[] ycck, byte[] cmyk, int offset) {
-            int y  = ycck[offset    ] & 0xff;
-            int cb = ycck[offset + 1] & 0xff;
-            int cr = ycck[offset + 2] & 0xff;
-            int k  = ycck[offset + 3] & 0xff;
-
-            int cmykC = MAXJSAMPLE - (y + Cr_R_LUT[cr]);
-            int cmykM = MAXJSAMPLE - (y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            int cmykY = MAXJSAMPLE - (y + Cb_B_LUT[cb]);
-
-            cmyk[offset    ] = clamp(cmykC);
-            cmyk[offset + 1] = clamp(cmykM);
-            cmyk[offset + 2] = clamp(cmykY);
-            cmyk[offset + 3] = (byte) k; // K passes through unchanged
-        }
-
-        private static byte clamp(int val) {
-            return (byte) Math.max(0, Math.min(255, val));
         }
     }
 

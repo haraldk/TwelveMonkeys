@@ -100,7 +100,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
   * JPEG
   * RAW (RGB)
 * Support for "Large Document Format" (PSB)
-* Native metadata support
+* Native and Standard metadata support
 
 #### TIFF - Aldus/Adobe Tagged Image File Format
 
@@ -111,24 +111,27 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
   * Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer
 * Read support for the following TIFF extensions:
   * Tiling
+  * Class F (Facsimile), CCITT Modified Huffman RLE, T4 and T6 (type 2, 3 and 4) compressions.
   * LZW Compression (type 5)
   * "Old-style" JPEG Compression (type 6), as a best effort, as the spec is not well-defined
   * JPEG Compression (type 7)
   * ZLib (aka Adobe-style Deflate) Compression (type 8)
   * Deflate Compression (type 32946)
   * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate and PackBits compression
-  * Alpha channel (ExtraSamples type 1/Associated Alpha)
+  * Alpha channel (ExtraSamples type 1/Associated Alpha and type 2/Unassociated Alpha)
   * CMYK data (PhotometricInterpretation type 5/Separated)
   * YCbCr data (PhotometricInterpretation type 6/YCbCr) for JPEG
+  * CIELab data (PhotometricInterpretation type 9, 10 and 11)
   * Planar data (PlanarConfiguration type 2/Planar)
   * ICC profiles (ICCProfile)
   * BitsPerSample values up to 16 for most PhotometricInterpretations
   * Multiple images (pages) in one file
 * Write support for most "Baseline" TIFF options
   * Uncompressed, PackBits, ZLib and Deflate 
-  * Currently missing the CCITT fax encodings
+  * Additional support for CCITT T4 and and T6 compressions.
   * Additional support for LZW and JPEG (type 7) compressions
   * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate
+* Native and Standard metadata support
 
 Legacy formats
 

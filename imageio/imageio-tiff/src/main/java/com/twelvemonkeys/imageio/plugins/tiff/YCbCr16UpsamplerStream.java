@@ -37,21 +37,17 @@ import java.io.InputStream;
 import java.nio.ByteOrder;
 
 /**
- * Input stream that provides on-the-fly conversion and upsampling of TIFF subsampled YCbCr 16 bit samples
- * to (raw) RGB 16 bit samples.
+ * Input stream that provides on-the-fly upsampling of TIFF subsampled YCbCr 16 bit samples.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: YCbCrUpsamplerStream.java,v 1.0 31.01.13 09:25 haraldk Exp$
  */
 final class YCbCr16UpsamplerStream extends FilterInputStream {
-    // TODO: As we deal with short/16 bit samples, we need to take byte order into account
     private final int horizChromaSub;
     private final int vertChromaSub;
     private final int yCbCrPos;
     private final int columns;
-    private final double[] coefficients;
-    private final ByteOrder byteOrder;
 
     private final int units;
     private final int unitSize;
@@ -65,7 +61,7 @@ final class YCbCr16UpsamplerStream extends FilterInputStream {
     int bufferLength;
     int bufferPos;
 
-    public YCbCr16UpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns, final double[] coefficients, final ByteOrder byteOrder) {
+    public YCbCr16UpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns, final ByteOrder byteOrder) {
         super(Validate.notNull(stream, "stream"));
 
         Validate.notNull(chromaSub, "chromaSub");
@@ -76,8 +72,6 @@ final class YCbCr16UpsamplerStream extends FilterInputStream {
         this.vertChromaSub = chromaSub[1];
         this.yCbCrPos = yCbCrPos;
         this.columns = columns;
-        this.coefficients = coefficients == null ? YCbCrUpsamplerStream.CCIR_601_1_COEFFICIENTS : coefficients;
-        this.byteOrder = byteOrder;
 
         // In TIFF, subsampled streams are stored in "units" of horiz * vert pixels.
         // For a 4:2 subsampled stream like this:
@@ -150,7 +144,7 @@ final class YCbCr16UpsamplerStream extends FilterInputStream {
                     decodedRows[pixelOff + 5] = cr2;
 
                     // Convert to RGB
-                    convertYCbCr2RGB(decodedRows, decodedRows, coefficients, pixelOff);
+//                    convertYCbCr2RGB(decodedRows, decodedRows, coefficients, pixelOff);
                 }
             }
 
@@ -227,57 +221,5 @@ final class YCbCr16UpsamplerStream extends FilterInputStream {
     @Override
     public synchronized void reset() throws IOException {
         throw new IOException("mark/reset not supported");
-    }
-
-    private void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, final int offset) {
-        int y;
-        int cb;
-        int cr;
-
-        // Short values, depends on byte order!
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            y  = ((yCbCr[offset     ] & 0xff) << 8) | (yCbCr[offset + 1] & 0xff);
-            cb = (((yCbCr[offset + 2] & 0xff) << 8) | (yCbCr[offset + 3] & 0xff)) - 32768;
-            cr = (((yCbCr[offset + 4] & 0xff) << 8) | (yCbCr[offset + 5] & 0xff)) - 32768;
-        }
-        else {
-            y  = ((yCbCr[offset  + 1] & 0xff) << 8) | (yCbCr[offset    ] & 0xff);
-            cb = (((yCbCr[offset + 3] & 0xff) << 8) | (yCbCr[offset + 2] & 0xff)) - 32768;
-            cr = (((yCbCr[offset + 5] & 0xff) << 8) | (yCbCr[offset + 4] & 0xff)) - 32768;
-        }
-
-        double lumaRed   = coefficients[0];
-        double lumaGreen = coefficients[1];
-        double lumaBlue  = coefficients[2];
-
-        int red = (int) Math.round(cr * (2 - 2 * lumaRed) + y);
-        int blue = (int) Math.round(cb * (2 - 2 * lumaBlue) + y);
-        int green = (int) Math.round((y - lumaRed * (red) - lumaBlue * (blue)) / lumaGreen);
-
-        short r = clampShort(red);
-        short g = clampShort(green);
-        short b = clampShort(blue);
-
-        // Short values, depends on byte order!
-        if (byteOrder == ByteOrder.BIG_ENDIAN) {
-            rgb[offset    ] = (byte) ((r >>> 8) & 0xff);
-            rgb[offset + 1] = (byte) (r & 0xff);
-            rgb[offset + 2] = (byte) ((g >>> 8) & 0xff);
-            rgb[offset + 3] = (byte) (g & 0xff);
-            rgb[offset + 4] = (byte) ((b >>> 8) & 0xff);
-            rgb[offset + 5] = (byte) (b & 0xff);
-        }
-        else {
-            rgb[offset    ] = (byte) (r & 0xff);
-            rgb[offset + 1] = (byte) ((r >>> 8) & 0xff);
-            rgb[offset + 2] = (byte) (g & 0xff);
-            rgb[offset + 3] = (byte) ((g >>> 8) & 0xff);
-            rgb[offset + 4] = (byte) (b & 0xff);
-            rgb[offset + 5] = (byte) ((b >>> 8) & 0xff);
-        }
-    }
-
-    private short clampShort(int val) {
-        return (short) Math.max(0, Math.min(0xffff, val));
     }
 }
