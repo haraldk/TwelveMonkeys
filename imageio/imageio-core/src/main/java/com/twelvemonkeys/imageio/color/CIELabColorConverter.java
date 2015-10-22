@@ -8,7 +8,6 @@ import com.twelvemonkeys.lang.Validate;
 // Code adapted from ImageJ's Color_Space_Converter.java (Public Domain):
 // http://rsb.info.nih.gov/ij/plugins/download/Color_Space_Converter.java
 public final class CIELabColorConverter {
-    // TODO: Add tests
     // TODO: Create interface in the color package?
     // TODO: Make YCbCr/YCCK -> RGB/CMYK implement same interface?
 
