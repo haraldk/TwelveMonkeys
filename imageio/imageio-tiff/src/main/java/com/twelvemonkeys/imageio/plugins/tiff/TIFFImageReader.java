@@ -1585,8 +1585,9 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.PHOTOMETRIC_CIELAB:
             case TIFFExtension.PHOTOMETRIC_ICCLAB:
             case TIFFExtension.PHOTOMETRIC_ITULAB:
+                // TODO: Whitepoint may be encoded in separate tag
                 CIELabColorConverter converter = new CIELabColorConverter(
-                        photometricInterpretation != TIFFExtension.PHOTOMETRIC_ITULAB
+                        photometricInterpretation == TIFFExtension.PHOTOMETRIC_CIELAB
                         ? Illuminant.D65
                         : Illuminant.D50
                 );
@@ -1653,8 +1654,9 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.PHOTOMETRIC_CIELAB:
             case TIFFExtension.PHOTOMETRIC_ICCLAB:
             case TIFFExtension.PHOTOMETRIC_ITULAB:
+                // TODO: Whitepoint may be encoded in separate tag
                 CIELabColorConverter converter = new CIELabColorConverter(
-                        photometricInterpretation != TIFFExtension.PHOTOMETRIC_ITULAB
+                        photometricInterpretation == TIFFExtension.PHOTOMETRIC_ITULAB
                         ? Illuminant.D65
                         : Illuminant.D50
                 );
