@@ -122,7 +122,6 @@ public class CCITTFaxEncoderStreamTest {
     @Test
     public void testReencodeImages() throws IOException {
         testImage(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"));
-        //     testImage(getClassLoaderResource("/tiff/test-single-gray-compression-type-2.tiff"));
     }
 
     protected URL getClassLoaderResource(final String pName) {
@@ -160,18 +159,9 @@ public class CCITTFaxEncoderStreamTest {
         IIOImage outputImage = new IIOImage(originalImage, null, reader.getImageMetadata(0));
         writer.write(outputImage);
 
-        FileOutputStream stream = new FileOutputStream("H:\\tmp\\test.tif");
-        try {
-            stream.write(outputBuffer.toByteArray());
-        }
-        finally {
-            stream.close();
-        }
-
         BufferedImage reencodedImage = ImageIO.read(new ByteArrayInputStream(outputBuffer.toByteArray()));
         byte[] reencodedData = ((DataBufferByte) reencodedImage.getData().getDataBuffer()).getData();
 
-        Assert.assertArrayEquals(((DataBufferByte) originalImage.getData().getDataBuffer()).getData(),
-                reencodedData);
+        Assert.assertArrayEquals(((DataBufferByte) originalImage.getData().getDataBuffer()).getData(), reencodedData);
     }
 }
