@@ -125,7 +125,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Tiling support (readTile, readTileRaster)
     // TODO: Implement readAsRenderedImage to allow tiled RenderedImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
-    // TODO: Implement readAsRaster directly
+    // TODO: Implement readAsRaster directly (100% correctly)
     // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
 
     // TODOs Extension support
@@ -134,7 +134,7 @@ public class TIFFImageReader extends ImageReaderBase {
     // TODO: Support Compression 34661 (JBIG)? Depends on JBIG ImageReader
 
     // DONE:
-    // Handle SampleFormat (and give up if not == 1)
+    // Handle SampleFormat
     // Support Compression 6 ('Old-style' JPEG)
     // Support Compression 2 (CCITT Modified Huffman RLE) for bi-level images
     // Source region
