@@ -43,7 +43,7 @@
         <h2>
 <a id="latest" class="anchor" href="#latest" aria-hidden="true"><span class="octicon octicon-link"></span></a>Latest</h2>
 
-<p>TwelveMonkeys ImageIO <a href="http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.1.2%22">3.1.2</a> is released (Aug. 14th, 2015).</p>
+<p>TwelveMonkeys ImageIO <a href="http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.2%22">3.2</a> is released (Nov. 1st, 2015).</p>
 
 <h2>
 <a id="about" class="anchor" href="#about" aria-hidden="true"><span class="octicon octicon-link"></span></a>About</h2>
@@ -60,14 +60,11 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 <hr>
 
-<h2>
-<a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h2>
+<h2><a id="user-content-features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h2>
 
 <p>Mainstream format support</p>
 
-<h4>
-<a id="ms-windowsibm-os2-device-independent-bitmap-bmp" class="anchor" href="#ms-windowsibm-os2-device-independent-bitmap-bmp" aria-hidden="true"><span class="octicon octicon-link"></span></a>BMP - MS Windows/IBM OS/2 Device Independent Bitmap <em>3.1</em>
-</h4>
+<h4><a id="user-content-bmp---ms-windowsibm-os2-device-independent-bitmap" class="anchor" href="#bmp---ms-windowsibm-os2-device-independent-bitmap" aria-hidden="true"><span class="octicon octicon-link"></span></a>BMP - MS Windows/IBM OS/2 Device Independent Bitmap</h4>
 
 <ul>
 <li>Read support for all known versions of the DIB/BMP format
@@ -77,18 +74,18 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 <li>RGB, 16, 24 and 32 bit</li>
 <li>Embedded PNG and JPEG data</li>
 <li>Windows and OS/2 versions</li>
-</ul>
-</li>
+</ul></li>
 <li>Native and standard metadata format</li>
 </ul>
 
-<h4>
-<a id="jpeg" class="anchor" href="#jpeg" aria-hidden="true"><span class="octicon octicon-link"></span></a>JPEG</h4>
+<h4><a id="user-content-jpeg" class="anchor" href="#jpeg" aria-hidden="true"><span class="octicon octicon-link"></span></a>JPEG</h4>
 
 <ul>
 <li>Read support for the following JPEG "flavors":
 
 <ul>
+<li>All JFIF compliant JPEGs</li>
+<li>All Exif compliant JPEGs</li>
 <li>YCbCr JPEGs without JFIF segment (converted to RGB, using embedded ICC profile)</li>
 <li>CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)</li>
 <li>Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)</li>
@@ -99,37 +96,31 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 <li>8 bit JPEGs with 16 bit DQT segments</li>
 <li>Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image 
 data can still be read in a reasonable way</li>
-</ul>
-</li>
+</ul></li>
 <li>Thumbnail support:
 
 <ul>
 <li>JFIF thumbnails (even if stream contains "inconsistent metadata")</li>
 <li>JFXX thumbnails (JPEG, Indexed and RGB)</li>
 <li>EXIF thumbnails (JPEG, RGB and YCbCr)</li>
-</ul>
-</li>
+</ul></li>
 <li>Metadata support:
 
 <ul>
 <li>JPEG metadata in both standard and native formats (even if stream contains "inconsistent metadata")</li>
-<li>
-<code>javax_imageio_jpeg_image_1.0</code> format (currently as native format, may change in the future)</li>
+<li><code>javax_imageio_jpeg_image_1.0</code> format (currently as native format, may change in the future)</li>
 <li>Non-conforming combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
 "MarkerSequence" tag for the unsupported segments (for <code>javax_imageio_jpeg_image_1.0</code> format)</li>
-</ul>
-</li>
+</ul></li>
 <li>Extended write support in progress:
 
 <ul>
 <li>CMYK JPEGs</li>
 <li>YCCK JPEGs</li>
-</ul>
-</li>
+</ul></li>
 </ul>
 
-<h4>
-<a id="jpeg-2000" class="anchor" href="#jpeg-2000" aria-hidden="true"><span class="octicon octicon-link"></span></a>JPEG-2000</h4>
+<h4><a id="user-content-jpeg-2000" class="anchor" href="#jpeg-2000" aria-hidden="true"><span class="octicon octicon-link"></span></a>JPEG-2000</h4>
 
 <ul>
 <li>Possibly coming in the future, pending some license issues.</li>
@@ -141,9 +132,7 @@ without success so far).</p>
 
 <p>Alternatively, if you have or know of a JPEG-2000 implementation in Java with a suitable license, get in touch. :-)</p>
 
-<h4>
-<a id="netpbm-portable-any-map-pnm" class="anchor" href="#netpbm-portable-any-map-pnm" aria-hidden="true"><span class="octicon octicon-link"></span></a>PNM - NetPBM Portable Any Map <em>3.1</em>
-</h4>
+<h4><a id="user-content-pnm---netpbm-portable-any-map" class="anchor" href="#pnm---netpbm-portable-any-map" aria-hidden="true"><span class="octicon octicon-link"></span></a>PNM - NetPBM Portable Any Map</h4>
 
 <ul>
 <li>Read support for the following file types:
@@ -154,20 +143,17 @@ without success so far).</p>
 <li>PPM in 'P3' (ASCII) and 'P6' (binary) formats, up to 16/32 bits per pixel component</li>
 <li>PAM in 'P7' (binary) format up to 32 bits per pixel component</li>
 <li>Limited support for PFM in 'Pf' (gray) and 'PF' (RGB) formats, 32 bits floating point</li>
-</ul>
-</li>
+</ul></li>
 <li>Write support for the following formats:
 
 <ul>
 <li>PPM in 'P6' (binary) format</li>
 <li>PAM in 'P7' (binary) format</li>
-</ul>
-</li>
+</ul></li>
 <li>Standard metadata support</li>
 </ul>
 
-<h4>
-<a id="adobe-photoshop-document-psd" class="anchor" href="#adobe-photoshop-document-psd" aria-hidden="true"><span class="octicon octicon-link"></span></a>PSD - Adobe Photoshop Document</h4>
+<h4><a id="user-content-psd---adobe-photoshop-document" class="anchor" href="#psd---adobe-photoshop-document" aria-hidden="true"><span class="octicon octicon-link"></span></a>PSD - Adobe Photoshop Document</h4>
 
 <ul>
 <li>Read support for the following file types:
@@ -179,34 +165,29 @@ without success so far).</p>
 <li>Duotone, 1 channel, 8, 16 and 32 bit</li>
 <li>RGB, 3-4 channels, 8, 16 and 32 bit</li>
 <li>CMYK, 4-5 channels, 8, 16 and 32 bit</li>
-</ul>
-</li>
+</ul></li>
 <li>Read support for the following compression types:
 
 <ul>
 <li>Uncompressed</li>
 <li>RLE (PackBits)</li>
-</ul>
-</li>
+</ul></li>
 <li>Layer support
 
 <ul>
 <li>Image layers only, in all of the above types</li>
-</ul>
-</li>
+</ul></li>
 <li>Thumbnail support
 
 <ul>
 <li>JPEG</li>
 <li>RAW (RGB)</li>
-</ul>
-</li>
+</ul></li>
 <li>Support for "Large Document Format" (PSB)</li>
-<li>Native metadata support</li>
+<li>Native and Standard metadata support</li>
 </ul>
 
-<h4>
-<a id="aldusadobe-tagged-image-file-format-tiff" class="anchor" href="#aldusadobe-tagged-image-file-format-tiff" aria-hidden="true"><span class="octicon octicon-link"></span></a>TIFF - Aldus/Adobe Tagged Image File Format</h4>
+<h4><a id="user-content-tiff---aldusadobe-tagged-image-file-format" class="anchor" href="#tiff---aldusadobe-tagged-image-file-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>TIFF - Aldus/Adobe Tagged Image File Format</h4>
 
 <ul>
 <li>Read support for the following "Baseline" TIFF file types:
@@ -216,42 +197,55 @@ without success so far).</p>
 <li>Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer</li>
 <li>Class P (Palette/indexed color), all relevant compression types, 1, 2, 4, 8 or 16 bits per sample, unsigned integer</li>
 <li>Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer</li>
-</ul>
-</li>
+</ul></li>
 <li>Read support for the following TIFF extensions:
 
 <ul>
 <li>Tiling</li>
+<li>Class F (Facsimile), CCITT Modified Huffman RLE, T4 and T6 (type 2, 3 and 4) compressions.</li>
 <li>LZW Compression (type 5)</li>
 <li>"Old-style" JPEG Compression (type 6), as a best effort, as the spec is not well-defined</li>
 <li>JPEG Compression (type 7)</li>
 <li>ZLib (aka Adobe-style Deflate) Compression (type 8)</li>
 <li>Deflate Compression (type 32946)</li>
 <li>Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate and PackBits compression</li>
-<li>Alpha channel (ExtraSamples type 1/Associated Alpha)</li>
+<li>Alpha channel (ExtraSamples type 1/Associated Alpha and type 2/Unassociated Alpha)</li>
 <li>CMYK data (PhotometricInterpretation type 5/Separated)</li>
 <li>YCbCr data (PhotometricInterpretation type 6/YCbCr) for JPEG</li>
+<li>CIELab data in TIFF, ITU and ICC variants (PhotometricInterpretation type 9, 10 and 11)</li>
 <li>Planar data (PlanarConfiguration type 2/Planar)</li>
 <li>ICC profiles (ICCProfile)</li>
 <li>BitsPerSample values up to 16 for most PhotometricInterpretations</li>
 <li>Multiple images (pages) in one file</li>
-</ul>
-</li>
+</ul></li>
 <li>Write support for most "Baseline" TIFF options
 
 <ul>
 <li>Uncompressed, PackBits, ZLib and Deflate </li>
-<li>Currently missing the CCITT fax encodings</li>
+<li>Additional support for CCITT T4 and and T6 compressions.</li>
 <li>Additional support for LZW and JPEG (type 7) compressions</li>
 <li>Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate</li>
-</ul>
-</li>
+</ul></li>
+<li>Native and Standard metadata support</li>
 </ul>
 
 <p>Legacy formats</p>
 
-<h4>
-<a id="commodore-amigaelectronic-arts-interchange-file-format-iff" class="anchor" href="#commodore-amigaelectronic-arts-interchange-file-format-iff" aria-hidden="true"><span class="octicon octicon-link"></span></a>IFF - Commodore Amiga/Electronic Arts Interchange File Format</h4>
+<h4><a id="user-content-hdr---radiance-high-dynamic-range-rgbe-format" class="anchor" href="#hdr---radiance-high-dynamic-range-rgbe-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>HDR - Radiance High Dynamic Range RGBE Format</h4>
+
+<ul>
+<li>Read support for the most common RGBE (.hdr) format</li>
+<li>Samples are converted to 32 bit floating point (<code>float</code>) and normalized using a global tone mapper by default.
+
+<ul>
+<li>Support for custom global tone mappers</li>
+<li>Alternatively, use a "null-tone mapper", for unnormalized data (allows local tone mapping)</li>
+</ul></li>
+<li>Unconverted RGBE samples accessible using <code>readRaster</code></li>
+<li>Standard metadata support</li>
+</ul>
+
+<h4><a id="user-content-iff---commodore-amigaelectronic-arts-interchange-file-format" class="anchor" href="#iff---commodore-amigaelectronic-arts-interchange-file-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>IFF - Commodore Amiga/Electronic Arts Interchange File Format</h4>
 
 <ul>
 <li>Legacy format, allows reading popular image format from the Commodore Amiga computer.</li>
@@ -266,26 +260,21 @@ without success so far).</p>
 <li>PBM Gray, 8 bit</li>
 <li>PBM RGB, 24 and 32 bit</li>
 <li>PBM HAM6 and HAM8</li>
-</ul>
-</li>
+</ul></li>
 <li>Write support
 
 <ul>
 <li>ILBM Indexed color, 1-8 bits per sample, 8 bit gray, 24 and 32 bit true color.</li>
-</ul>
-</li>
+</ul></li>
 <li>Support for the following compression types (read/write):
 
 <ul>
 <li>Uncompressed</li>
 <li>RLE (PackBits)</li>
-</ul>
-</li>
+</ul></li>
 </ul>
 
-<h4>
-<a id="zsoft-paintbrush-format-pcx" class="anchor" href="#zsoft-paintbrush-format-pcx" aria-hidden="true"><span class="octicon octicon-link"></span></a>PCX - ZSoft Paintbrush Format <em>3.1</em>
-</h4>
+<h4><a id="user-content-pcx---zsoft-paintbrush-format" class="anchor" href="#pcx---zsoft-paintbrush-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>PCX - ZSoft Paintbrush Format</h4>
 
 <ul>
 <li>Read support for the following file types:
@@ -294,21 +283,18 @@ without success so far).</p>
 <li>Indexed color, 1, 2, 4 or 8 bits per pixel, bit planes or interleaved</li>
 <li>Grayscale, 8 bits per pixel</li>
 <li>Color (RGB), 8 bits per pixel component</li>
-</ul>
-</li>
+</ul></li>
 <li>Read support for DCX (multi-page) fax format, containing any of the above types</li>
 <li>Support for the following compression types:
 
 <ul>
 <li>Uncompressed (experimental)</li>
 <li>RLE compressed</li>
-</ul>
-</li>
+</ul></li>
 <li>Standard metadata support</li>
 </ul>
 
-<h4>
-<a id="apple-mac-paint-picture-format-pict" class="anchor" href="#apple-mac-paint-picture-format-pict" aria-hidden="true"><span class="octicon octicon-link"></span></a>PICT - Apple Mac Paint Picture Format</h4>
+<h4><a id="user-content-pict---apple-mac-paint-picture-format" class="anchor" href="#pict---apple-mac-paint-picture-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>PICT - Apple Mac Paint Picture Format</h4>
 
 <ul>
 <li>Legacy format, especially useful for reading OS X clipboard data.</li>
@@ -319,19 +305,15 @@ without success so far).</p>
 <li>QuickDraw bitmap</li>
 <li>QuickDraw pixmap</li>
 <li>QuickTime stills</li>
-</ul>
-</li>
+</ul></li>
 <li>Write support for RGB pixel data:
 
 <ul>
 <li>QuickDraw pixmap</li>
-</ul>
-</li>
+</ul></li>
 </ul>
 
-<h4>
-<a id="silicon-graphics-image-format-sgi" class="anchor" href="#silicon-graphics-image-format-sgi" aria-hidden="true"><span class="octicon octicon-link"></span></a>SGI - Silicon Graphics Image Format <em>3.1</em>
-</h4>
+<h4><a id="user-content-sgi---silicon-graphics-image-format" class="anchor" href="#sgi---silicon-graphics-image-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>SGI - Silicon Graphics Image Format</h4>
 
 <ul>
 <li>Read support for the following file types:
@@ -339,21 +321,17 @@ without success so far).</p>
 <ul>
 <li>1, 2, 3 or 4 channel image data</li>
 <li>8 or 16 bits per pixel component</li>
-</ul>
-</li>
+</ul></li>
 <li>Support for the following compression types:
 
 <ul>
 <li>Uncompressed</li>
 <li>RLE compressed</li>
-</ul>
-</li>
+</ul></li>
 <li>Standard metadata support</li>
 </ul>
 
-<h4>
-<a id="truevision-tga-image-format-tga" class="anchor" href="#truevision-tga-image-format-tga" aria-hidden="true"><span class="octicon octicon-link"></span></a>TGA - Truevision TGA Image Format <em>3.1</em>
-</h4>
+<h4><a id="user-content-tga---truevision-tga-image-format" class="anchor" href="#tga---truevision-tga-image-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>TGA - Truevision TGA Image Format</h4>
 
 <ul>
 <li>Read support for the following file types:
@@ -362,22 +340,19 @@ without success so far).</p>
 <li>ColorMapped</li>
 <li>Monochrome</li>
 <li>TrueColor</li>
-</ul>
-</li>
+</ul></li>
 <li>Support for the following compression types:
 
 <ul>
 <li>Uncompressed</li>
 <li>RLE compressed</li>
-</ul>
-</li>
+</ul></li>
 <li>Standard metadata support</li>
 </ul>
 
 <p>Icon/other formats</p>
 
-<h4>
-<a id="apple-icon-image-icns" class="anchor" href="#apple-icon-image-icns" aria-hidden="true"><span class="octicon octicon-link"></span></a>ICNS - Apple Icon Image</h4>
+<h4><a id="user-content-icns---apple-icon-image" class="anchor" href="#icns---apple-icon-image" aria-hidden="true"><span class="octicon octicon-link"></span></a>ICNS - Apple Icon Image</h4>
 
 <ul>
 <li>Read support for the following icon types:
@@ -386,12 +361,10 @@ without success so far).</p>
 <li>All known "native" icon types</li>
 <li>Large PNG encoded icons</li>
 <li>Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin or fallback to <code>sips</code> command line tool)</li>
-</ul>
-</li>
+</ul></li>
 </ul>
 
-<h4>
-<a id="ms-windows-icon-and-cursor-formats-ico--cur" class="anchor" href="#ms-windows-icon-and-cursor-formats-ico--cur" aria-hidden="true"><span class="octicon octicon-link"></span></a>ICO &amp; CUR - MS Windows Icon and Cursor Formats</h4>
+<h4><a id="user-content-ico--cur---ms-windows-icon-and-cursor-formats" class="anchor" href="#ico--cur---ms-windows-icon-and-cursor-formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>ICO &amp; CUR - MS Windows Icon and Cursor Formats</h4>
 
 <ul>
 <li>Read support for the following file types:
@@ -401,13 +374,11 @@ without success so far).</p>
 <li>ICO RGB, 16, 24 and 32 bit</li>
 <li>CUR Indexed color, 1, 4 and 8 bit</li>
 <li>CUR RGB, 16, 24 and 32 bit</li>
-</ul>
-</li>
+</ul></li>
 <li><em>3.1</em> Note: These formats are now part of the BMP plugin</li>
 </ul>
 
-<h4>
-<a id="ms-windows-thumbs-db-thumbsdb" class="anchor" href="#ms-windows-thumbs-db-thumbsdb" aria-hidden="true"><span class="octicon octicon-link"></span></a>Thumbs.db - MS Windows Thumbs DB</h4>
+<h4><a id="user-content-thumbsdb---ms-windows-thumbs-db" class="anchor" href="#thumbsdb---ms-windows-thumbs-db" aria-hidden="true"><span class="octicon octicon-link"></span></a>Thumbs.db - MS Windows Thumbs DB</h4>
 
 <ul>
 <li>Read support</li>
@@ -415,22 +386,19 @@ without success so far).</p>
 
 <p>Other formats, using 3rd party libraries</p>
 
-<h4>
-<a id="scalable-vector-graphics-svg" class="anchor" href="#scalable-vector-graphics-svg" aria-hidden="true"><span class="octicon octicon-link"></span></a>SVG - Scalable Vector Graphics</h4>
+<h4><a id="user-content-svg---scalable-vector-graphics" class="anchor" href="#svg---scalable-vector-graphics" aria-hidden="true"><span class="octicon octicon-link"></span></a>SVG - Scalable Vector Graphics</h4>
 
 <ul>
 <li>Read-only support using Batik</li>
 </ul>
 
-<h4>
-<a id="ms-windows-metafile-wmf" class="anchor" href="#ms-windows-metafile-wmf" aria-hidden="true"><span class="octicon octicon-link"></span></a>WMF - MS Windows MetaFile</h4>
+<h4><a id="user-content-wmf---ms-windows-metafile" class="anchor" href="#wmf---ms-windows-metafile" aria-hidden="true"><span class="octicon octicon-link"></span></a>WMF - MS Windows MetaFile</h4>
 
 <ul>
 <li>Limited read-only support using Batik</li>
 </ul>
 
-<h2>
-<a id="basic-usage" class="anchor" href="#basic-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basic usage</h2>
+<h2><a id="user-content-basic-usage" class="anchor" href="#basic-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basic usage</h2>
 
 <p>Most of the time, all you need to do is simply include the plugins in your project and write:</p>
 
@@ -450,8 +418,7 @@ without success so far).</p>
 
 <p>The plugins are discovered automatically at run time. See the <a href="#faq">FAQ</a> for more info on how this mechanism works.</p>
 
-<h2>
-<a id="advanced-usage" class="anchor" href="#advanced-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Advanced usage</h2>
+<h2><a id="user-content-advanced-usage" class="anchor" href="#advanced-usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Advanced usage</h2>
 
 <p>If you need more control of read parameters and the reading process, the common idiom for reading is something like:</p>
 
@@ -549,8 +516,7 @@ finally {
 <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html">Java Image I/O API Guide</a>
 from Oracle.</p>
 
-<h4>
-<a id="deploying-the-plugins-in-a-web-app" class="anchor" href="#deploying-the-plugins-in-a-web-app" aria-hidden="true"><span class="octicon octicon-link"></span></a>Deploying the plugins in a web app</h4>
+<h4><a id="user-content-deploying-the-plugins-in-a-web-app" class="anchor" href="#deploying-the-plugins-in-a-web-app" aria-hidden="true"><span class="octicon octicon-link"></span></a>Deploying the plugins in a web app</h4>
 
 <p>Because the <code>ImageIO</code> plugin registry (the <code>IIORegistry</code>) is "VM global", it doesn't by default work well with
 servlet contexts. This is especially evident if you load plugins from the <code>WEB-INF/lib</code> or <code>classes</code> folder.
@@ -588,8 +554,7 @@ or other ImageIO plugins as well.</p>
 
 <p>Another safe option, is to place the JAR files in the application server's shared or common lib folder. </p>
 
-<h4>
-<a id="using-the-resampleop" class="anchor" href="#using-the-resampleop" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the ResampleOp</h4>
+<h4><a id="user-content-using-the-resampleop" class="anchor" href="#using-the-resampleop" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the ResampleOp</h4>
 
 <p>The library comes with a resampling (image resizing) operation, that contains many different algorithms
 to provide excellent results at reasonable speed.</p>
@@ -605,8 +570,7 @@ BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANC
 BufferedImage output = resampler.filter(input, null);
 </code></pre>
 
-<h4>
-<a id="using-the-diffusiondither" class="anchor" href="#using-the-diffusiondither" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the DiffusionDither</h4>
+<h4><a id="user-content-using-the-diffusiondither" class="anchor" href="#using-the-diffusiondither" aria-hidden="true"><span class="octicon octicon-link"></span></a>Using the DiffusionDither</h4>
 
 <p>The library comes with a dithering operation, that can be used to convert <code>BufferedImage</code>s to <code>IndexColorModel</code> using
 Floyd-Steinberg error-diffusion dither.</p>
@@ -621,8 +585,7 @@ BufferedImageOp ditherer = new DiffusionDither();
 BufferedImage output = ditherer.filter(input, null);
 </code></pre>
 
-<h2>
-<a id="building" class="anchor" href="#building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building</h2>
+<h2><a id="user-content-building" class="anchor" href="#building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building</h2>
 
 <p>Download the project (using <a href="http://git-scm.com/downloads">Git</a>):</p>
 
@@ -639,7 +602,7 @@ folder, and issue the command below to build.</p>
 
 <p>Currently, the recommended JDK for making a build is Oracle JDK 7.x or 8.x. </p>
 
-<p>It's possible to build using OpenJDK, but some tests might fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether. 
+<p>It's possible to build using OpenJDK, but some tests might fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether.</p>
 
 <p>Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable <code>MAVEN_OPTS</code>
 to give the Java process that runs Maven more memory. I suggest something like <code>-Xmx512m -XX:MaxPermSize=256m</code>.</p>
@@ -649,8 +612,7 @@ to give the Java process that runs Maven more memory. I suggest something like <
 <pre><code>$ mvn install
 </code></pre>
 
-<h2>
-<a id="installing" class="anchor" href="#installing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing</h2>
+<h2><a id="user-content-installing" class="anchor" href="#installing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installing</h2>
 
 <p>To install the plug-ins,
 either use Maven and add the necessary dependencies to your project,
@@ -671,8 +633,7 @@ while (readers.hasNext()) {
 <pre><code>reader: com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader@somehash
 </code></pre>
 
-<h4>
-<a id="maven-dependency-example" class="anchor" href="#maven-dependency-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Maven dependency example</h4>
+<h4><a id="user-content-maven-dependency-example" class="anchor" href="#maven-dependency-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Maven dependency example</h4>
 
 <p>To depend on the JPEG and TIFF plugin using Maven, add the following to your POM:</p>
 
@@ -682,90 +643,87 @@ while (readers.hasNext()) {
     &lt;dependency&gt;
         &lt;groupId&gt;com.twelvemonkeys.imageio&lt;/groupId&gt;
         &lt;artifactId&gt;imageio-jpeg&lt;/artifactId&gt;
-        &lt;version&gt;3.1.2&lt;/version&gt; &lt;!-- Alternatively, build your own version --&gt;
+        &lt;version&gt;3.2&lt;/version&gt; &lt;!-- Alternatively, build your own version --&gt;
     &lt;/dependency&gt;
     &lt;dependency&gt;
         &lt;groupId&gt;com.twelvemonkeys.imageio&lt;/groupId&gt;
         &lt;artifactId&gt;imageio-tiff&lt;/artifactId&gt;
-        &lt;version&gt;3.1.2&lt;/version&gt; &lt;!-- Alternatively, build your own version --&gt;
+        &lt;version&gt;3.2&lt;/version&gt; &lt;!-- Alternatively, build your own version --&gt;
     &lt;/dependency&gt;
 &lt;/dependencies&gt;
 </code></pre>
 
-<h4>
-<a id="manual-dependency-example" class="anchor" href="#manual-dependency-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Manual dependency example</h4>
+<h4><a id="user-content-manual-dependency-example" class="anchor" href="#manual-dependency-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Manual dependency example</h4>
 
 <p>To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:</p>
 
-<pre><code>twelvemonkeys-common-lang-3.1.2.jar
-twelvemonkeys-common-io-3.1.2.jar
-twelvemonkeys-common-image-3.1.2.jar
-twelvemonkeys-imageio-core-3.1.2.jar
-twelvemonkeys-imageio-metadata-3.1.2.jar
-twelvemonkeys-imageio-jpeg-3.1.2.jar
-twelvemonkeys-imageio-tiff-3.1.2.jar
+<pre><code>twelvemonkeys-common-lang-3.2.jar
+twelvemonkeys-common-io-3.2.jar
+twelvemonkeys-common-image-3.2.jar
+twelvemonkeys-imageio-core-3.2.jar
+twelvemonkeys-imageio-metadata-3.2.jar
+twelvemonkeys-imageio-jpeg-3.2.jar
+twelvemonkeys-imageio-tiff-3.2.jar
 </code></pre>
 
-<h3>
-<a id="links-to-prebuilt-binaries" class="anchor" href="#links-to-prebuilt-binaries" aria-hidden="true"><span class="octicon octicon-link"></span></a>Links to prebuilt binaries</h3>
+<h3><a id="user-content-links-to-prebuilt-binaries" class="anchor" href="#links-to-prebuilt-binaries" aria-hidden="true"><span class="octicon octicon-link"></span></a>Links to prebuilt binaries</h3>
 
-<h5>
-<a id="user-content-latest-version-31x" class="anchor" href="#latest-version-31x" aria-hidden="true"><span class="octicon octicon-link"></span></a>Latest version (3.1.x)</h5>
+<h5><a id="user-content-latest-version-31x" class="anchor" href="#latest-version-31x" aria-hidden="true"><span class="octicon octicon-link"></span></a>Latest version (3.1.x)</h5>
 
 <p>Requires Java 7 or later.</p>
 
 <p>Common dependencies</p>
 
 <ul>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.1.2/common-lang-3.1.2.jar">common-lang-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.1.2/common-io-3.1.2.jar">common-io-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.1.2/common-image-3.1.2.jar">common-image-3.1.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.2/common-lang-3.2.jar">common-lang-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.2/common-io-3.2.jar">common-io-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.2/common-image-3.2.jar">common-image-3.2.jar</a></li>
 </ul>
 
 <p>ImageIO dependencies</p>
 
 <ul>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.1.2/imageio-core-3.1.2.jar">imageio-core-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.1.2/imageio-metadata-3.1.2.jar">imageio-metadata-3.1.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.2/imageio-core-3.2.jar">imageio-core-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.2/imageio-metadata-3.2.jar">imageio-metadata-3.2.jar</a></li>
 </ul>
 
 <p>ImageIO plugins</p>
 
 <ul>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.1.2/imageio-bmp-3.1.2.jar">imageio-bmp-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.1.2/imageio-jpeg-3.1.2.jar">imageio-jpeg-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.1.2/imageio-tiff-3.1.2.jar">imageio-tiff-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.1.2/imageio-pnm-3.1.2.jar">imageio-pnm-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.1.2/imageio-psd-3.1.2.jar">imageio-psd-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.1.2/imageio-iff-3.1.2.jar">imageio-iff-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.1.2/imageio-pcx-3.1.2.jar">imageio-pcx-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.1.2/imageio-pict-3.1.2.jar">imageio-pict-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.1.2/imageio-sgi-3.1.2.jar">imageio-sgi-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.1.2/imageio-tga-3.1.2.jar">imageio-tga-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.1.2/imageio-icns-3.1.2.jar">imageio-icns-3.1.2.jar</a></li>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.1.2/imageio-thumbsdb-3.1.2.jar">imageio-thumbsdb-3.1.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.2/imageio-bmp-3.2.jar">imageio-bmp-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.2/imageio-jpeg-3.2.jar">imageio-jpeg-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.2/imageio-tiff-3.2.jar">imageio-tiff-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.2/imageio-pnm-3.2.jar">imageio-pnm-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.2/imageio-psd-3.2.jar">imageio-psd-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.2/imageio-hdr-3.2.jar">imageio-hdr-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.2/imageio-iff-3.2.jar">imageio-iff-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.2/imageio-pcx-3.2.jar">imageio-pcx-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.2/imageio-pict-3.2.jar">imageio-pict-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.2/imageio-sgi-3.2.jar">imageio-sgi-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.2/imageio-tga-3.2.jar">imageio-tga-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.2/imageio-icns-3.2.jar">imageio-icns-3.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.2/imageio-thumbsdb-3.2.jar">imageio-thumbsdb-3.2.jar</a></li>
 </ul>
 
 <p>ImageIO plugins requiring 3rd party libs</p>
 
 <ul>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.1.2/imageio-batik-3.1.2.jar">imageio-batik-3.1.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.2/imageio-batik-3.2.jar">imageio-batik-3.2.jar</a></li>
 </ul>
 
 <p>Photoshop Path support for ImageIO</p>
 
 <ul>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.1.2/imageio-clippath-3.1.2.jar">imageio-clippath-3.1.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.2/imageio-clippath-3.2.jar">imageio-clippath-3.2.jar</a></li>
 </ul>
 
 <p>Servlet support</p>
 
 <ul>
-<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.1.2/servlet-3.1.2.jar">servlet-3.1.2.jar</a></li>
+<li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.2/servlet-3.2.jar">servlet-3.2.jar</a></li>
 </ul>
 
-<h5>
-<a id="user-content-old-version-30x" class="anchor" href="#old-version-30x" aria-hidden="true"><span class="octicon octicon-link"></span></a>Old version (3.0.x)</h5>
+<h5><a id="user-content-old-version-30x" class="anchor" href="#old-version-30x" aria-hidden="true"><span class="octicon octicon-link"></span></a>Old version (3.0.x)</h5>
 
 <p>Use this version for projects that requires Java 6 or need the JMagick support. <em>Does not support Java 8</em>. </p>
 
@@ -810,8 +768,7 @@ twelvemonkeys-imageio-tiff-3.1.2.jar
 <li><a href="http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0.2/servlet-3.0.2.jar">servlet-3.0.2.jar</a></li>
 </ul>
 
-<h2>
-<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
+<h2><a id="user-content-license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
 
 <p>The project is distributed under the OSI approved <a href="http://opensource.org/licenses/BSD-3-Clause">BSD license</a>:</p>
 
@@ -845,8 +802,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 </code></pre>
 
-<h2>
-<a id="faq" class="anchor" href="#faq" aria-hidden="true"><span class="octicon octicon-link"></span></a>FAQ</h2>
+<h2><a id="user-content-faq" class="anchor" href="#faq" aria-hidden="true"><span class="octicon octicon-link"></span></a>FAQ</h2>
 
 <p>q: How do I use it?</p>
 
