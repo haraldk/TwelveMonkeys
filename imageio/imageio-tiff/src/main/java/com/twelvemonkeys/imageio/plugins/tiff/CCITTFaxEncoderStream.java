@@ -219,7 +219,7 @@ public class CCITTFaxEncoderStream extends OutputStream {
         while (nonterm > 0) {
             if (nonterm >= codes.length) {
                 write(codes[codes.length - 1].code, codes[codes.length - 1].length);
-                nonterm -= codes.length - 1;
+                nonterm -= codes.length;
             }
             else {
                 write(codes[nonterm - 1].code, codes[nonterm - 1].length);
