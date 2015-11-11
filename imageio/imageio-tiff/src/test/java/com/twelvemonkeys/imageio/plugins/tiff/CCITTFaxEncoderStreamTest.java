@@ -43,6 +43,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
 import java.net.URL;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -123,6 +124,32 @@ public class CCITTFaxEncoderStreamTest {
     public void testReencodeImages() throws IOException {
         testImage(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"));
         //     testImage(getClassLoaderResource("/tiff/test-single-gray-compression-type-2.tiff"));
+    }
+
+    /**
+     * Test for "Fixed an issue with long runlengths in CCITTFax writing #188"
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testRunlengthIssue() throws IOException {
+        byte[] data = new byte[400];
+        Arrays.fill(data, (byte) 0xFF);
+        data[0] = 0;
+        data[399] = 0;
+
+        ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
+        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 3200, 1, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        outputSteam.write(data);
+        outputSteam.close();
+        byte[] encodedData = imageOutput.toByteArray();
+
+        byte[] decodedData = new byte[data.length];
+        CCITTFaxDecoderStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 3200, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        new DataInputStream(inputStream).readFully(decodedData);
+        inputStream.close();
+
+        assertArrayEquals(data, decodedData);
     }
 
     protected URL getClassLoaderResource(final String pName) {
