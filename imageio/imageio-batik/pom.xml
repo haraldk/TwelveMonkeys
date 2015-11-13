@@ -27,23 +27,50 @@
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-rasterizer-ext</artifactId>
-            <version>1.6-1</version>
+            <version>1.8</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.xmlgraphics</groupId>
+                    <artifactId>batik-extensions</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-extension</artifactId>
+            <version>1.8</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>xmlgraphics-commons</artifactId>
+            <version>2.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-anim</artifactId>
+            <version>1.8</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-svggen</artifactId>
-            <version>1.6-1</version>
+            <version>1.8</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
-            <version>1.6-1</version>
+            <version>1.8</version>
             <scope>provided</scope>
 
             <!--
