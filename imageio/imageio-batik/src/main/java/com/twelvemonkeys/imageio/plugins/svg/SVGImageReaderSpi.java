@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.util.IIOUtil;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -61,8 +62,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     private static boolean canDecode(final ImageInputStream pInput) throws IOException {
         // NOTE: This test is quite quick as it does not involve any parsing,
-        // however it requires the doctype to be "svg", which may not be correct
-        // in all cases...
+        // however it may not recognize all kinds of SVG documents.
         try {
             pInput.mark();
 
@@ -74,51 +74,76 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                 // Skip over leading WS
             }
 
-            if (!((b == '<') && (pInput.read() == '?') && (pInput.read() == 'x') && (pInput.read() == 'm')
-                    && (pInput.read() == 'l'))) {
+            // If it's not a tag, this can't be valid XML
+            if (b != '<') {
                 return false;
             }
 
-            // Okay, we have XML. But, is it really SVG?
-            boolean docTypeFound = false;
-            while (!docTypeFound) {
-                while (pInput.read() != '<') {
-                    // Skip over, until begin tag
-                }
+            // Algorithm for detecting SVG:
+            //  - Skip until begin tag '<' and read 4 bytes
+            //  - if next is "?" skip until "?>" and start over
+            //  - else if next is "!--" skip until  "-->" and start over
+            //  - else if next is  "!DOCTYPE " skip any whitespace
+            //      - compare next 3 bytes against "svg", return result
+            //  - else
+            //      - compare next 3 bytes against "svg", return result
 
-                if ((b = pInput.read()) != '!') {
-                    if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g'
-                            && (Character.isWhitespace((char) (b = pInput.read())) || b == ':')) {
+            byte[] buffer = new byte[4];
+            while (true) {
+                pInput.readFully(buffer);
+
+                if (buffer[0] == '?') {
+                    // This is the XML declaration or a processing instruction
+                    while (!(pInput.read() == '?' && pInput.read() == '>')) {
+                        // Skip until end of XML declaration or processing instruction
+                    }
+                }
+                else if (buffer[0] == '!') {
+                    if (buffer[1] == '-' && buffer[2] == '-') {
+                        // This is a comment
+                        while (!(pInput.read() == '-' && pInput.read() == '-' && pInput.read() == '>')) {
+                            // Skip until end of comment
+                        }
+                    }
+                    else if (buffer[1] == 'D' && buffer[2] == 'O' && buffer[3] == 'C'
+                            && pInput.read() == 'T' && pInput.read() == 'Y'
+                            && pInput.read() == 'P' && pInput.read() == 'E') {
+                        // This is the DOCTYPE declaration
+                        while (Character.isWhitespace((char) (b = pInput.read()))) {
+                            // Skip over WS
+                        }
+
+                        if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g') {
+                            // It's SVG, identified by DOCTYPE
+                            return true;
+                        }
+
+                        // DOCTYPE found, but not SVG
+                        return false;
+                    }
+
+                    // Something else, we'll skip
+                }
+                else {
+                    // This is a normal tag
+                    if (buffer[0] == 's' && buffer[1] == 'v' && buffer[2] == 'g'
+                            && (Character.isWhitespace((char) buffer[3]) || buffer[3] == ':')) {
+                        // It's SVG, identified by root tag
                         // TODO: Support svg with prefix + recognize namespace (http://www.w3.org/2000/svg)!
                         return true;
                     }
 
-                    // If this is not a comment, or the DOCTYPE declaration, the doc has no DOCTYPE and it can't be svg
+                    // If the tag is not "svg", this isn't SVG
                     return false;
                 }
 
-                // There might be comments before the doctype, unfortunately...
-                // If next is "--", this is a comment
-                if ((b = pInput.read()) == '-' && pInput.read() == '-') {
-                    while (!(pInput.read() == '-' && pInput.read() == '-' && pInput.read() == '>')) {
-                        // Skip until end of comment
-                    }
-                }
-
-                // If we are lucky, this is DOCTYPE declaration
-                if (b == 'D' && pInput.read() == 'O' && pInput.read() == 'C' && pInput.read() == 'T'
-                        && pInput.read() == 'Y' && pInput.read() == 'P' && pInput.read() == 'E') {
-                    docTypeFound = true;
-                    while (Character.isWhitespace((char) (b = pInput.read()))) {
-                        // Skip over WS
-                    }
-
-                    if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g') {
-                        return true;
-                    }
+                while (pInput.read() != '<') {
+                    // Skip over, until next begin tag
                 }
             }
-
+        }
+        catch (EOFException ignore) {
+            // Possible for small files...
             return false;
         }
         finally {
