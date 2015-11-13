@@ -93,7 +93,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
   * CMYK, 4-5 channels, 8, 16 and 32 bit
 * Read support for the following compression types:
   * Uncompressed
-  * RLE (PackBits)
+  * RLE (PackBits)<
 * Layer support
   * Image layers only, in all of the above types
 * Thumbnail support
@@ -237,6 +237,9 @@ Other formats, using 3rd party libraries
 #### WMF - MS Windows MetaFile
 
 * Limited read-only support using Batik
+
+**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
+either version 1.6.1, 1.7.1 or 1.8+.*
 
 
 ## Basic usage
