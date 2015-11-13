@@ -51,8 +51,7 @@ public class WMFImageReaderTest extends ImageReaderAbstractTest<WMFImageReader> 
 
     protected List<TestData> getTestData() {
         return Collections.singletonList(
-                // TODO: Dimensions does not look right...
-                new TestData(getClassLoaderResource("/wmf/test.wmf"), new Dimension(841, 673))
+                new TestData(getClassLoaderResource("/wmf/test.wmf"), new Dimension(133, 106))
         );
     }
 
