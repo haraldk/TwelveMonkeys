@@ -113,7 +113,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: Allow appending/partly overwrite of existing file...
     }
 
-    static final class TIFFEntry extends AbstractEntry {
+    public static final class TIFFEntry extends AbstractEntry {
         // TODO: Expose a merge of this and the EXIFEntry class...
         private final short type;
 
@@ -164,7 +164,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new UnsupportedOperationException(String.format("Method guessType not implemented for value of type %s", value.getClass()));
         }
 
-        TIFFEntry(final int identifier, final Object value) {
+        public TIFFEntry(final int identifier, final Object value) {
             this(identifier, guessType(value), value);
         }
 

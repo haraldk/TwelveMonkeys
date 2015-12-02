@@ -35,7 +35,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFExtension.java,v 1.0 08.05.12 16:45 haraldk Exp$
  */
-interface TIFFExtension {
+public interface TIFFExtension {
     /** CCITT T.4/Group 3 Fax compression. */
     int COMPRESSION_CCITT_T4 = 3;
     /** CCITT T.6/Group 4 Fax compression. */
