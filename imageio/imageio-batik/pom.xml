@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.2</version>
+        <version>3.2.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-batik</artifactId>
     <name>TwelveMonkeys :: ImageIO :: Batik Plugin</name>
@@ -26,24 +26,40 @@
             <type>test-jar</type>
         </dependency>
 
+        <!-- Batik 1.6 contains a mysterious xml-apis:xml-apis:1.1.2 that doesn't exist, override with never version -->
         <dependency>
-            <groupId>batik</groupId>
-            <artifactId>batik-rasterizer-ext</artifactId>
-            <version>1.6-1</version>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+            <version>1.3.04</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Nothing works without Xerces. Not sure why neither 1.6 or 1.8 versions needed this... -->
+        <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <version>2.4.0</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-rasterizer</artifactId>
+            <version>1.6.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-svggen</artifactId>
-            <version>1.6-1</version>
+            <version>1.6.1</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
-            <version>1.6-1</version>
+            <version>1.6.1</version>
             <scope>provided</scope>
 
             <!--
