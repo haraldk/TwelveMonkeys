@@ -31,9 +31,9 @@ package com.twelvemonkeys.imageio.plugins.svg;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import org.apache.batik.anim.dom.SVGDOMImplementation;
+import org.apache.batik.anim.dom.SVGOMDocument;
 import org.apache.batik.bridge.*;
-import org.apache.batik.dom.svg.SVGDOMImplementation;
-import org.apache.batik.dom.svg.SVGOMDocument;
 import org.apache.batik.dom.util.DOMUtilities;
 import org.apache.batik.ext.awt.image.GraphicsUtil;
 import org.apache.batik.gvt.CanvasGraphicsNode;
@@ -392,7 +392,7 @@ public class SVGImageReader extends ImageReaderBase {
             String ref = new ParsedURL(uri).getRef();
 
             try {
-                Px = ViewBox.getViewTransform(ref, root, width, height);
+                Px = ViewBox.getViewTransform(ref, root, width, height, null);
 
             }
             catch (BridgeException ex) {

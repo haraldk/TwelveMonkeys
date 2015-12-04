@@ -1465,7 +1465,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
             for (int i = 0; i < dstHeight; i++) {
                 //contribY[i].n = 0;
-                contribY[i].p = new Contributor[(int) (width * 2.0 + 1)];
+                contribY[i].p = new Contributor[(int) (width * 2.0 + 1 + 0.5)];
 
                 double center = (double) i / yscale;
                 int left = (int) Math.ceil(center - width);
@@ -1516,7 +1516,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         else {
             for (int i = 0; i < dstHeight; ++i) {
                 //contribY[i].n = 0;
-                contribY[i].p = new Contributor[(int) (fwidth * 2 + 1)];
+                contribY[i].p = new Contributor[(int) (fwidth * 2 + 1 + 0.5)];
 
                 double center = (double) i / yscale;
                 double left = Math.ceil(center - fwidth);
