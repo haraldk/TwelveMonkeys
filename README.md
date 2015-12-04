@@ -502,7 +502,7 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 
 ### Links to prebuilt binaries
 
-##### Latest version (3.1.x) 
+##### Latest version (3.2.x)
 
 Requires Java 7 or later.
  
