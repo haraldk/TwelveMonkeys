@@ -306,11 +306,23 @@ public class ResampleOpTestCase {
 
     // https://github.com/haraldk/TwelveMonkeys/issues/195
     @Test
-    public void testAIOOBE() {
+    public void testAIOOBEHeight() {
         BufferedImage myImage = new BufferedImage(100, 354, BufferedImage.TYPE_INT_ARGB);
 
         for (int i = 19; i > 0; i--) {
             ResampleOp resampler = new ResampleOp(100, i, ResampleOp.FILTER_LANCZOS);
+            BufferedImage resizedImage = resampler.filter(myImage, null);
+            assertNotNull(resizedImage);
+        }
+    }
+
+    // https://github.com/haraldk/TwelveMonkeys/issues/195
+    @Test
+    public void testAIOOBEWidth() {
+        BufferedImage myImage = new BufferedImage(2832, 2832, BufferedImage.TYPE_INT_ARGB);
+
+        for (int i = 145; i > 143; i--) {
+            ResampleOp resampler = new ResampleOp(144, i, ResampleOp.FILTER_LANCZOS);
             BufferedImage resizedImage = resampler.filter(myImage, null);
             assertNotNull(resizedImage);
         }

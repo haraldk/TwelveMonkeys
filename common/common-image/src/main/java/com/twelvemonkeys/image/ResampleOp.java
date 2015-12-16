@@ -1336,7 +1336,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
             }
 
             //contribX.n = 0;
-            contribX.p = new Contributor[(int) (width * 2.0 + 1.0)];
+            contribX.p = new Contributor[(int) (width * 2.0 + 1.0 + 0.5)];
 
             center = (double) i / xscale;
             int left = (int) Math.ceil(center - width);// Note: Assumes width <= .5
@@ -1387,7 +1387,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         else {
             /* Expanding image */
             //contribX.n = 0;
-            contribX.p = new Contributor[(int) (fwidth * 2.0 + 1.0)];
+            contribX.p = new Contributor[(int) (fwidth * 2.0 + 1.0 + 0.5)];
 
             center = (double) i / xscale;
             int left = (int) Math.ceil(center - fwidth);
