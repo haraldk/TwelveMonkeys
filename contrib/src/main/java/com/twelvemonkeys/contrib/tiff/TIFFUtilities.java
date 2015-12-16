@@ -243,57 +243,73 @@ public class TIFFUtilities {
     }
 
     public static BufferedImage applyOrientation(BufferedImage input, int orientation) {
-        //TODO: Translations are currently off for non quadratic images
-
         boolean flipExtends = false;
-        AffineTransform transform = AffineTransform.getTranslateInstance(input.getWidth() / 2, input.getHeight() / 2);
+        int w = input.getWidth();
+        int h = input.getHeight();
+        double cW = w / 2.0;
+        double cH = h / 2.0;
+
+        AffineTransform orientationTransform = new AffineTransform();
         switch (orientation) {
             case TIFFBaseline.ORIENTATION_TOPLEFT:
                 // normal
                 return input;
             case TIFFExtension.ORIENTATION_TOPRIGHT:
                 // flipped vertically
-                transform.scale(-1, 1);
+                orientationTransform.translate(cW, cH);
+                orientationTransform.scale(-1, 1);
+                orientationTransform.translate(-cW, -cH);
                 break;
             case TIFFExtension.ORIENTATION_BOTRIGHT:
                 // rotated 180�
-                transform.quadrantRotate(2);
+                orientationTransform.quadrantRotate(2, cW, cH);
                 break;
             case TIFFExtension.ORIENTATION_BOTLEFT:
                 // flipped horizontally
-                transform.scale(1, -1);
+                orientationTransform.translate(cW, cH);
+                orientationTransform.scale(1, -1);
+                orientationTransform.translate(-cW, -cH);
                 break;
             case TIFFExtension.ORIENTATION_LEFTTOP:
-                transform.scale(1, -1);
-                transform.quadrantRotate(1);
+                orientationTransform.translate(cW, cH);
+                orientationTransform.scale(-1, 1);
+                orientationTransform.quadrantRotate(1);
+                orientationTransform.translate(-cW, -cH);
                 flipExtends = true;
                 break;
             case TIFFExtension.ORIENTATION_RIGHTTOP:
                 // rotated 90�
-                transform.quadrantRotate(1);
+                orientationTransform.quadrantRotate(1, cW, cH);
                 flipExtends = true;
                 break;
             case TIFFExtension.ORIENTATION_RIGHTBOT:
-                transform.scale(-1, 1);
-                transform.quadrantRotate(1);
+                orientationTransform.translate(cW, cH);
+                orientationTransform.scale(1, -1);
+                orientationTransform.quadrantRotate(1);
+                orientationTransform.translate(-cW, -cH);
                 flipExtends = true;
                 break;
             case TIFFExtension.ORIENTATION_LEFTBOT:
                 // rotated 270�
-                transform.quadrantRotate(3);
+                orientationTransform.quadrantRotate(3, cW, cH);
                 flipExtends = true;
                 break;
         }
 
-        int w = input.getWidth();
-        int h = input.getHeight();
+        int newW, newH;
         if (flipExtends) {
-            w = input.getHeight();
-            h = input.getWidth();
+            newW = h;
+            newH = w;
+        }
+        else {
+            newW = w;
+            newH = h;
         }
 
-        BufferedImage output = new BufferedImage(w, h, input.getType());
-        transform.translate(-h / 2, -w / 2);
+        AffineTransform transform = AffineTransform.getTranslateInstance((newW - w) / 2.0, (newH - h) / 2.0);
+        transform.concatenate(orientationTransform);
+
+        BufferedImage output = new BufferedImage(newW, newH, input.getType());
         ((Graphics2D) output.getGraphics()).drawImage(input, transform, null);
 
         return output;
