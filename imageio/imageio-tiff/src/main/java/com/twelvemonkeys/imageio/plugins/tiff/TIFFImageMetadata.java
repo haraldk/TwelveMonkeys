@@ -1299,6 +1299,17 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         return ifd;
     }
 
+    /**
+     * Returns an Entry which contains the data of the requested TIFF field.
+     *
+     * @param tagNumber Tag number of the TIFF field.
+     *
+     * @return the TIFF field, or null.
+     */
+    public Entry getTIFFField(final int tagNumber) {
+        return ifd.getEntryById(tagNumber);
+    }
+
     // TODO: Replace with IFD class when moved to new package and made public!
     private final static class TIFFIFD extends AbstractDirectory {
         public TIFFIFD(final Collection<Entry> entries) {
