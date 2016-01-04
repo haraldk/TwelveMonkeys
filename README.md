@@ -2,7 +2,7 @@
 
 Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
 
-TwelveMonkeys ImageIO [3.2.1](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.2.1%22) is released (Nov. 1st, 2015).
+TwelveMonkeys ImageIO [3.2.1](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.2.1%22) is released (Dec. 11th, 2015).
 
 ## About
 
