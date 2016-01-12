@@ -46,7 +46,9 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -261,7 +263,7 @@ public class TIFFUtilities {
                 orientationTransform.translate(-cW, -cH);
                 break;
             case TIFFExtension.ORIENTATION_BOTRIGHT:
-                // rotated 180�
+                // rotated 180
                 orientationTransform.quadrantRotate(2, cW, cH);
                 break;
             case TIFFExtension.ORIENTATION_BOTLEFT:
@@ -278,7 +280,7 @@ public class TIFFUtilities {
                 flipExtends = true;
                 break;
             case TIFFExtension.ORIENTATION_RIGHTTOP:
-                // rotated 90�
+                // rotated 90
                 orientationTransform.quadrantRotate(1, cW, cH);
                 flipExtends = true;
                 break;
@@ -290,7 +292,7 @@ public class TIFFUtilities {
                 flipExtends = true;
                 break;
             case TIFFExtension.ORIENTATION_LEFTBOT:
-                // rotated 270�
+                // rotated 270
                 orientationTransform.quadrantRotate(3, cW, cH);
                 flipExtends = true;
                 break;
@@ -307,12 +309,9 @@ public class TIFFUtilities {
         }
 
         AffineTransform transform = AffineTransform.getTranslateInstance((newW - w) / 2.0, (newH - h) / 2.0);
-        transform.concatenate(orientationTransform);
-
-        BufferedImage output = new BufferedImage(newW, newH, input.getType());
-        ((Graphics2D) output.getGraphics()).drawImage(input, transform, null);
-
-        return output;
+        transform.concatenate(orientationTransform);        
+        AffineTransformOp transformOp = new AffineTransformOp(transform, null);
+        return transformOp.filter(input, null);
     }
 
     public static class TIFFPage {
