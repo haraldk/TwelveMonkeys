@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.contrib.tiff;
 
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFExtension;
+import com.twelvemonkeys.contrib.tiff.TIFFUtilities.TIFFExtension;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFMedataFormat;
 import com.twelvemonkeys.io.FileUtil;
 import org.junit.Assert;

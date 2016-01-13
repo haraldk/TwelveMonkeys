@@ -29,28 +29,25 @@
 package com.twelvemonkeys.contrib.tiff;
 
 import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
+import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFWriter;
+import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFBaseline;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFExtension;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriter;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriter.TIFFEntry;
 import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -65,8 +62,6 @@ import java.util.List;
 public class TIFFUtilities {
     private TIFFUtilities() {
     }
-
-    ;
 
     /**
      * Merges all pages from the input TIFF files into one TIFF file at the
@@ -309,7 +304,7 @@ public class TIFFUtilities {
         }
 
         AffineTransform transform = AffineTransform.getTranslateInstance((newW - w) / 2.0, (newH - h) / 2.0);
-        transform.concatenate(orientationTransform);        
+        transform.concatenate(orientationTransform);
         AffineTransformOp transformOp = new AffineTransformOp(transform, null);
         return transformOp.filter(input, null);
     }
@@ -422,9 +417,98 @@ public class TIFFUtilities {
                         break;
                 }
             }
-            newIDFData.add(new TIFFImageWriter.TIFFEntry(TIFF.TAG_ORIENTATION, (short) orientation));
+            newIDFData.add(new TIFFEntry(TIFF.TAG_ORIENTATION, (short) orientation));
             IFD = new AbstractDirectory(newIDFData) {
             };
         }
+    }
+
+    /**
+     * TODO: Temporary clone, to be removed after TMI204 has been closed
+     */
+    public static final class TIFFEntry extends AbstractEntry {
+        // TODO: Expose a merge of this and the EXIFEntry class...
+        private final short type;
+
+        private static short guessType(final Object val) {
+            // TODO: This code is duplicated in EXIFWriter.getType, needs refactor!
+            Object value = Validate.notNull(val);
+
+            boolean array = value.getClass().isArray();
+            if (array) {
+                value = Array.get(value, 0);
+            }
+
+            // Note: This "narrowing" is to keep data consistent between read/write.
+            // TODO: Check for negative values and use signed types?
+            if (value instanceof Byte) {
+                return TIFF.TYPE_BYTE;
+            }
+            if (value instanceof Short) {
+                if (!array && (Short) value < Byte.MAX_VALUE) {
+                    return TIFF.TYPE_BYTE;
+                }
+
+                return TIFF.TYPE_SHORT;
+            }
+            if (value instanceof Integer) {
+                if (!array && (Integer) value < Short.MAX_VALUE) {
+                    return TIFF.TYPE_SHORT;
+                }
+
+                return TIFF.TYPE_LONG;
+            }
+            if (value instanceof Long) {
+                if (!array && (Long) value < Integer.MAX_VALUE) {
+                    return TIFF.TYPE_LONG;
+                }
+            }
+
+            if (value instanceof Rational) {
+                return TIFF.TYPE_RATIONAL;
+            }
+
+            if (value instanceof String) {
+                return TIFF.TYPE_ASCII;
+            }
+
+            // TODO: More types
+
+            throw new UnsupportedOperationException(String.format("Method guessType not implemented for value of type %s", value.getClass()));
+        }
+
+        public TIFFEntry(final int identifier, final Object value) {
+            this(identifier, guessType(value), value);
+        }
+
+        TIFFEntry(int identifier, short type, Object value) {
+            super(identifier, value);
+            this.type = type;
+        }
+
+        @Override
+        public String getTypeName() {
+            return TIFF.TYPE_NAMES[type];
+        }
+    }
+
+    /**
+     * TODO: Temporary clone, to be removed after TMI204 has been closed
+     */
+    public interface TIFFExtension {
+        int ORIENTATION_TOPRIGHT = 2;
+        int ORIENTATION_BOTRIGHT = 3;
+        int ORIENTATION_BOTLEFT = 4;
+        int ORIENTATION_LEFTTOP = 5;
+        int ORIENTATION_RIGHTTOP = 6;
+        int ORIENTATION_RIGHTBOT = 7;
+        int ORIENTATION_LEFTBOT = 8;
+    }
+
+    /**
+     * TODO: Temporary clone, to be removed after TMI204 has been closed
+     */
+    public interface TIFFBaseline {
+        int ORIENTATION_TOPLEFT = 1;
     }
 }

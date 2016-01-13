@@ -35,7 +35,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFBaseline.java,v 1.0 08.05.12 16:43 haraldk Exp$
  */
-public interface TIFFBaseline {
+interface TIFFBaseline {
     int COMPRESSION_NONE = 1;
     int COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE = 2;
     int COMPRESSION_PACKBITS = 32773;

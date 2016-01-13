@@ -45,8 +45,14 @@
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-metadata</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
