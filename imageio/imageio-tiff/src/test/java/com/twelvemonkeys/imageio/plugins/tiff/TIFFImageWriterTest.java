@@ -37,17 +37,17 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import org.junit.Test;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -276,5 +276,43 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         Entry software = ifds.getEntryById(TIFF.TAG_SOFTWARE);
         assertNotNull(software);
         assertEquals(softwareString, software.getValueAsString());
+    }
+
+    @Test
+    public void testSequenceWriter() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
+        writer.setOutput(stream);
+
+        RenderedImage image = getTestData(0);
+
+        ImageWriteParam params = writer.getDefaultWriteParam();
+        params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+
+        assertTrue("", writer.canWriteSequence());
+
+        try {
+            writer.prepareWriteSequence(null);
+
+            params.setCompressionType("None");
+            writer.writeToSequence(new IIOImage(image, null, null), params);
+            writer.writeToSequence(new IIOImage(image, null, null), params);
+            params.setCompressionType("JPEG");
+            writer.writeToSequence(new IIOImage(image, null, null), params);
+
+            writer.endWriteSequence();
+        }
+        catch (IOException e) {
+            fail(e.getMessage());
+        }
+        finally {
+            stream.close(); // Force data to be written
+        }
+
+        ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()));
+        ImageReader reader = ImageIO.getImageReaders(input).next();
+        reader.setInput(input);
+        assertEquals("wrong image count", 3, reader.getNumImages(true));
     }
 }
