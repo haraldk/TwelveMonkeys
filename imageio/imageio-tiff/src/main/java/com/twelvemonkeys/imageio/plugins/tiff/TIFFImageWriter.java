@@ -361,9 +361,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: If tiled, write tile indexes etc
         // Depending on param.getTilingMode
         long nextIFDPointer = -1;
+        long stripOffset = -1;
+        long stripByteCount = 0;
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
             // This implementation, allows semi-streaming-compatible uncompressed TIFFs
-            long streamOffset = exifWriter.computeIFDSize(entries.values()) + 12; // 12 == 4 byte magic, 4 byte IDD 0 pointer, 4 byte EOF
+            long streamOffset = imageOutput.getStreamPosition() + exifWriter.computeIFDSize(entries.values()) + 4; // IFD + 4 byte EOF, (header, ifd0 + n images already written)
 
             entries.remove(dummyStripByteCounts);
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS,
@@ -373,16 +375,15 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
             long idfOffset = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
             nextIFDPointer = imageOutput.getStreamPosition();
-            imageOutput.writeInt(0); // Next IFD (none)
-            long streamPosition = imageOutput.getStreamPosition();
-
             // Update IFD0 pointer
             imageOutput.seek(lastIFDPointer);
             imageOutput.writeInt((int) idfOffset);
-            imageOutput.seek(streamPosition);
-            imageOutput.flushBefore(nextIFDPointer);
+            imageOutput.seek(nextIFDPointer);
+            imageOutput.flush();
+            imageOutput.writeInt(0); // EOF
         }
 
+        stripOffset = imageOutput.getStreamPosition();
         // TODO: Create compressor stream per Tile/Strip
         if (compression == TIFFExtension.COMPRESSION_JPEG) {
             Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
@@ -406,26 +407,23 @@ public final class TIFFImageWriter extends ImageWriterBase {
             writeImageData(createCompressorStream(renderedImage, param, entries), renderedImage, numComponents, bandOffsets,
                     bitOffsets);
         }
+        stripByteCount = imageOutput.getStreamPosition() - stripOffset;
 
         // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            long thisIFD = imageOutput.getStreamPosition();
-
             entries.remove(dummyStripOffsets);
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, 8));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
             entries.remove(dummyStripByteCounts);
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, thisIFD - 8));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
 
             long idfOffset = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
             nextIFDPointer = imageOutput.getStreamPosition();
-            imageOutput.writeInt(0); // Next IFD (none)
-            long streamPosition = imageOutput.getStreamPosition();
-
             // Update IFD0 pointer
             imageOutput.seek(lastIFDPointer);
             imageOutput.writeInt((int) idfOffset);
-            imageOutput.seek(streamPosition);
-            imageOutput.flushBefore(nextIFDPointer);
+            imageOutput.seek(nextIFDPointer);
+            imageOutput.flush();
+            imageOutput.writeInt(0); // EOF
         }
 
         return nextIFDPointer;
@@ -892,7 +890,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
         if (!isWritingSequence) {
             throw new IllegalStateException("prepareWriteSequence() must be called before writeToSequence()!");
         }
-
         sequenceLastIFDPos = writePage(image, param, sequenceExifWriter, sequenceLastIFDPos);
     }
 
