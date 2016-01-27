@@ -209,9 +209,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
         EXIFWriter exifWriter = new EXIFWriter();
         exifWriter.writeTIFFHeader(imageOutput);
         long IFD0Pos = imageOutput.getStreamPosition();
-        imageOutput.writeInt(0); // IFD0 pointer, will be updated later
-
         writePage(image, param, exifWriter, IFD0Pos);
+        imageOutput.writeInt(0); // EOF
         imageOutput.flush();
     }
 
@@ -363,24 +362,15 @@ public final class TIFFImageWriter extends ImageWriterBase {
         long nextIFDPointer = -1;
         long stripOffset = -1;
         long stripByteCount = 0;
+
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
-            // This implementation, allows semi-streaming-compatible uncompressed TIFFs
-            long streamOffset = imageOutput.getStreamPosition() + exifWriter.computeIFDSize(entries.values()) + 4; // IFD + 4 byte EOF, (header, ifd0 + n images already written)
-
-            entries.remove(dummyStripByteCounts);
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS,
-                    renderedImage.getWidth() * renderedImage.getHeight() * numComponents));
-            entries.remove(dummyStripOffsets);
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, streamOffset));
-
-            long idfOffset = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
-            nextIFDPointer = imageOutput.getStreamPosition();
-            // Update IFD0 pointer
-            imageOutput.seek(lastIFDPointer);
-            imageOutput.writeInt((int) idfOffset);
-            imageOutput.seek(nextIFDPointer);
-            imageOutput.flush();
-            imageOutput.writeInt(0); // EOF
+            long ifdOffset = exifWriter.computeIFDOffsetSize(entries.values());
+            long dataLength = renderedImage.getWidth() * renderedImage.getHeight() * numComponents;
+            long pointerPos = imageOutput.getStreamPosition() + dataLength + 4 + ifdOffset;
+            imageOutput.writeInt((int) pointerPos);
+        }
+        else {
+            imageOutput.writeInt(0); // Update IFD Pointer later
         }
 
         stripOffset = imageOutput.getStreamPosition();
@@ -418,12 +408,20 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
             long idfOffset = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
             nextIFDPointer = imageOutput.getStreamPosition();
-            // Update IFD0 pointer
             imageOutput.seek(lastIFDPointer);
             imageOutput.writeInt((int) idfOffset);
             imageOutput.seek(nextIFDPointer);
             imageOutput.flush();
-            imageOutput.writeInt(0); // EOF
+        }
+        else {
+            entries.remove(dummyStripOffsets);
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
+            entries.remove(dummyStripByteCounts);
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+
+            exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
+            nextIFDPointer = imageOutput.getStreamPosition();
+            imageOutput.flush();
         }
 
         return nextIFDPointer;
@@ -882,7 +880,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
         sequenceExifWriter = new EXIFWriter();
         sequenceExifWriter.writeTIFFHeader(imageOutput);
         sequenceLastIFDPos = imageOutput.getStreamPosition();
-        imageOutput.writeInt(0); // IFD0
     }
 
     @Override
@@ -898,7 +895,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         if (!isWritingSequence) {
             throw new IllegalStateException("prepareWriteSequence() must be called before endWriteSequence()!");
         }
-
+        imageOutput.writeInt(0); // EOF
         isWritingSequence = false;
         sequenceExifWriter = null;
         sequenceLastIFDPos = -1;

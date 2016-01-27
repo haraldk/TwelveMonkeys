@@ -158,6 +158,10 @@ public final class EXIFWriter extends MetadataWriter {
         return WORD_LENGTH + computeDataSize(new IFD(directory)) + directory.size() * ENTRY_LENGTH;
     }
 
+    public long computeIFDOffsetSize(final Collection<Entry> directory) {
+        return computeDataSize(new IFD(directory)) + LONGWORD_LENGTH;
+    }
+
     private long computeDataSize(final Directory directory) {
         long dataSize = 0;
 
