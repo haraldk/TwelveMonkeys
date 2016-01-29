@@ -51,6 +51,20 @@
                 <role>maven-guru</role>
             </roles>
         </contributor>
+        <contributor>
+            <name>Oliver Schmidtmer</name>
+            <email>mail@trek7891.de</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Jason Palmer</name>
+            <email>jpalmer@itemmaster.com</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
     </contributors>
 
     <issueManagement>
