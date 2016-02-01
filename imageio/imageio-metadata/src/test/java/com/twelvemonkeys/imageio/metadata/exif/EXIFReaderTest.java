@@ -276,4 +276,11 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(interop);
         assertEquals(0, interop.size());
     }
+
+    @Test
+    public void testReadExifWithMissingEOFMarker() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/noeof.tif"));
+        createReader().read(stream);
+        stream.close();
+    }
 }
