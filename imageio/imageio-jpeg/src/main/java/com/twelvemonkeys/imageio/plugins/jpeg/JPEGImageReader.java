@@ -39,6 +39,8 @@ import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.plugins.jpeg.lossless.DataStream;
+import com.twelvemonkeys.imageio.plugins.jpeg.lossless.JPEGLosslessDecoderWrapper;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
@@ -338,9 +340,38 @@ public class JPEGImageReader extends ImageReaderBase {
 
         JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
 
+        //try to read an JPEG Lossless image
+        if(sof.marker == JPEG.SOF3){
+        	JPEGLosslessDecoderWrapper decoder = new JPEGLosslessDecoderWrapper();
+        	ImageInputStream inputStream = (ImageInputStream) this.getInput();
+        	
+        	/* try to read the input stream as once. If length is not supported
+        	 * the image is read blockwise
+        	 */
+        	byte[] rawByteData;
+        	long byteLength = inputStream.length();
+        	if(byteLength > 0 && byteLength < Integer.MAX_VALUE){
+        		rawByteData = new byte[(int)byteLength];
+        		inputStream.read(rawByteData);
+        	} else {
+        		ByteArrayOutputStream bytes = new ByteArrayOutputStream(1024 * 1024 /* Provide a size close to what is likely the case for better performance*/);
+
+        		byte[] buffer = new byte[1024];
+        		int count;
+        		while ((count = inputStream.read(buffer)) > 0) {
+        		    bytes.write(buffer, 0, count);
+        		}
+
+        		rawByteData = bytes.toByteArray();
+        	}
+        	
+        	//try do read the image, IOException can be thrown
+        	return decoder.readImage(rawByteData);
+        }
+        
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
-        if (delegate.canReadRaster() && (
+        else if (delegate.canReadRaster() && (
                 bogusAdobeDCT ||
                 sourceCSType == JPEGColorSpace.CMYK ||
                 sourceCSType == JPEGColorSpace.YCCK ||
