@@ -71,7 +71,7 @@ public final class EXIFReader extends MetadataReader {
         else if (bom[0] == 'M' && bom[1] == 'M') {
             input.setByteOrder(ByteOrder.BIG_ENDIAN);
         }
-        else  {
+        else {
             throw new IIOException(String.format("Invalid TIFF byte order mark '%s', expected: 'II' or 'MM'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
         }
 
@@ -79,7 +79,7 @@ public final class EXIFReader extends MetadataReader {
         // http://www.awaresystems.be/imaging/tiff/bigtiff.html
         int magic = input.readUnsignedShort();
         if (magic != TIFF.TIFF_MAGIC) {
-            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic,  TIFF.TIFF_MAGIC));
+            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic, TIFF.TIFF_MAGIC));
         }
 
         long directoryOffset = input.readUnsignedInt();
@@ -107,14 +107,9 @@ public final class EXIFReader extends MetadataReader {
         for (int i = 0; i < entryCount; i++) {
             EXIFEntry entry = readEntry(pInput);
 
-            if (entry == null) {
-//                System.err.println("Expected: " + entryCount + " values, found only " + i);
-                // TODO: Log warning?
-                nextOffset = 0;
-                break;
+            if (entry != null) {
+                entries.add(entry);
             }
-
-            entries.add(entry);
         }
 
         if (readLinked) {
@@ -138,7 +133,7 @@ public final class EXIFReader extends MetadataReader {
         );
 
         ifds.add(0, new IFD(entries));
-        
+
         return new EXIFDirectory(ifds);
     }
 
@@ -170,7 +165,7 @@ public final class EXIFReader extends MetadataReader {
                             // Replace the entry with parsed data
                             entries.set(i, new EXIFEntry(tagId, subIFDs.get(0), entry.getType()));
                         }
-                        else  {
+                        else {
                             // Replace the entry with parsed data
                             entries.set(i, new EXIFEntry(tagId, subIFDs.toArray(new IFD[subIFDs.size()]), entry.getType()));
                         }
@@ -207,7 +202,9 @@ public final class EXIFReader extends MetadataReader {
             offsets = (long[]) value;
         }
         else {
-            throw new IIOException(String.format("Unknown pointer type: %s", (value != null ? value.getClass() : null)));
+            throw new IIOException(String.format("Unknown pointer type: %s", (value != null
+                                                                              ? value.getClass()
+                                                                              : null)));
         }
 
         return offsets;
@@ -218,11 +215,6 @@ public final class EXIFReader extends MetadataReader {
         int tagId = pInput.readUnsignedShort();
         short type = pInput.readShort();
 
-        // This isn't really an entry, and the directory entry count was wrong OR bad data...
-        if (tagId == 0 && type == 0) {
-            return null;
-        }
-
         int count = pInput.readInt(); // Number of values
 
         // It's probably a spec violation to have count 0, but we'll be lenient about it
@@ -231,32 +223,33 @@ public final class EXIFReader extends MetadataReader {
         }
 
         if (type <= 0 || type > 13) {
+            pInput.skipBytes(4); // read Value
+
             // Invalid tag, this is just for debugging
-            long offset = pInput.getStreamPosition() - 8l;
+            long offset = pInput.getStreamPosition() - 12l;
 
             if (DEBUG) {
                 System.err.printf("Bad EXIF data @%08x\n", pInput.getStreamPosition());
                 System.err.println("tagId: " + tagId + (tagId <= 0 ? " (INVALID)" : ""));
                 System.err.println("type: " + type + " (INVALID)");
                 System.err.println("count: " + count);
-            }
 
-            pInput.mark();
-            pInput.seek(offset);
+                pInput.mark();
+                pInput.seek(offset);
 
-            try {
-                byte[] bytes = new byte[8 + Math.min(120, Math.max(24, count))];
-                int len = pInput.read(bytes);
+                try {
+                    byte[] bytes = new byte[8 + Math.min(120, Math.max(24, count))];
+                    int len = pInput.read(bytes);
 
-                if (DEBUG) {
-                    System.err.print(HexDump.dump(offset, bytes, 0, len));
-                    System.err.println(len < count ? "[...]" : "");
+                    if (DEBUG) {
+                        System.err.print(HexDump.dump(offset, bytes, 0, len));
+                        System.err.println(len < count ? "[...]" : "");
+                    }
+                }
+                finally {
+                    pInput.reset();
                 }
             }
-            finally {
-                pInput.reset();
-            }
-
             return null;
         }
 
@@ -504,7 +497,8 @@ public final class EXIFReader extends MetadataReader {
     //////////////////////
     // TODO: Stream based hex dump util?
     public static class HexDump {
-        private HexDump() {}
+        private HexDump() {
+        }
 
         private static final int WIDTH = 32;
 
@@ -518,7 +512,7 @@ public final class EXIFReader extends MetadataReader {
             int i;
             for (i = 0; i < len; i++) {
                 if (i % WIDTH == 0) {
-                    if (i > 0 ) {
+                    if (i > 0) {
                         builder.append("\n");
                     }
                     builder.append(String.format("%08x: ", i + off + offset));

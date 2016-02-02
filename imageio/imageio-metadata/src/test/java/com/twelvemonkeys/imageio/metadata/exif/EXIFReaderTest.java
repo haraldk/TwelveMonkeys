@@ -276,4 +276,12 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(interop);
         assertEquals(0, interop.size());
     }
+
+    @Test
+    public void testReadExifWithEmptyTag() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/emptyexiftag.tif"));
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+        assertEquals(3, directory.directoryCount());
+        stream.close();
+    }
 }
