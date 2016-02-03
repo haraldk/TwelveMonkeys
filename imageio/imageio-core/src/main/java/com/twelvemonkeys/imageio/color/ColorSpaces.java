@@ -100,7 +100,8 @@ public final class ColorSpaces {
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return an ICC color space
-     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     * @throws IllegalArgumentException if {@code profile} is {@code null}.
+     * @throws java.awt.color.CMMException if {@code profile} is invalid.
      */
     public static ICC_ColorSpace createColorSpace(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
