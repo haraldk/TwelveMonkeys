@@ -51,6 +51,7 @@ interface PSD {
 
     /** PSD Resource type identifier "8BIM" */
     int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
+    int RESOURCE_TYPE_LONG = ('8' << 24) + ('B' << 16) + ('6' << 8) + '4';;
 
     // Blending modes
     /** Pass through blending mode "pass"*/
@@ -689,4 +690,22 @@ interface PSD {
 
     /** Plug-In resource(s). Resources added by a plug-in. See the plug-in API found in the SDK documentation */
     int RES_PLUGIN_MAX = 0x1387;
+
+    // TODO: Better naming of these.. It's a kind of resource blocks as well..
+    // "Additional Layer Information"
+    int LMsk = 'L' << 24 | 'M' << 16 | 's' << 8 | 'k';
+    int Lr16 = 'L' << 24 | 'r' << 16 | '1' << 8 | '6';
+    int Lr32 = 'L' << 24 | 'r' << 16 | '3' << 8 | '2';
+    int Layr = 'L' << 24 | 'a' << 16 | 'y' << 8 | 'r';
+    int Mt16 = 'M' << 24 | 't' << 16 | '1' << 8 | '6';
+    int Mt32 = 'M' << 24 | 't' << 16 | '3' << 8 | '2';
+    int Mtrn = 'M' << 24 | 't' << 16 | 'r' << 8 | 'n';
+    int Alph = 'A' << 24 | 'l' << 16 | 'p' << 8 | 'h';
+    int FMsk = 'F' << 24 | 'M' << 16 | 's' << 8 | 'k';
+    int lnk2 = 'l' << 24 | 'n' << 16 | 'k' << 8 | '2';
+    int FEid = 'F' << 24 | 'E' << 16 | 'i' << 8 | 'd';
+    int FXid = 'F' << 24 | 'X' << 16 | 'i' << 8 | 'd';
+    int PxSD = 'P' << 24 | 'x' << 16 | 'S' << 8 | 'D';
+    int luni = 'l' << 24 | 'u' << 16 | 'n' << 8 | 'i';
+    int lyid = 'l' << 24 | 'y' << 16 | 'i' << 8 | 'd';
 }
