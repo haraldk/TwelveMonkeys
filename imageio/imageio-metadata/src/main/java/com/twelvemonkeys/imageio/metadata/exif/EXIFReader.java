@@ -105,16 +105,27 @@ public final class EXIFReader extends MetadataReader {
         }
 
         for (int i = 0; i < entryCount; i++) {
-            EXIFEntry entry = readEntry(pInput);
+            try {
+                EXIFEntry entry = readEntry(pInput);
 
-            if (entry != null) {
-                entries.add(entry);
+                if (entry != null) {
+                    entries.add(entry);
+                }
+            }
+            catch (IIOException e) {
+                break;
             }
         }
 
         if (readLinked) {
             if (nextOffset == -1) {
-                nextOffset = pInput.readUnsignedInt();
+                try {
+                    nextOffset = pInput.readUnsignedInt();
+                }
+                catch (EOFException e) {
+                    // catch EOF here as missing EOF marker
+                    nextOffset = 0;
+                }
             }
 
             // Read linked IFDs
