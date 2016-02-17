@@ -34,6 +34,7 @@ import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 /**
  * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
@@ -403,14 +404,14 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     @Override
     public int read() throws IOException {
         if (decodedLength < 0) {
-            return -1;
+            return 0xFF;
         }
 
         if (decodedPos >= decodedLength) {
             fetch();
 
             if (decodedLength < 0) {
-                return -1;
+                return 0xFF;
             }
         }
 
@@ -420,14 +421,16 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (decodedLength < 0) {
-            return -1;
+            Arrays.fill(b, off, len, (byte)0xFF);
+            return len;
         }
 
         if (decodedPos >= decodedLength) {
             fetch();
 
             if (decodedLength < 0) {
-                return -1;
+                Arrays.fill(b, off, len, (byte)0xFF);
+                return len;
             }
         }
 
