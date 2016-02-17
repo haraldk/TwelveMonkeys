@@ -375,7 +375,7 @@ public final class PSDMetadata extends AbstractMetadata {
         for (PSDLayerInfo psdLayerInfo : layerInfo) {
             // TODO: Group in layer and use sub node for blend mode?
             node = new IIOMetadataNode("LayerInfo");
-            node.setAttribute("name", psdLayerInfo.layerName);
+            node.setAttribute("name", psdLayerInfo.getLayerName());
             node.setAttribute("top", String.valueOf(psdLayerInfo.top));
             node.setAttribute("left", String.valueOf(psdLayerInfo.left));
             node.setAttribute("bottom", String.valueOf(psdLayerInfo.bottom));

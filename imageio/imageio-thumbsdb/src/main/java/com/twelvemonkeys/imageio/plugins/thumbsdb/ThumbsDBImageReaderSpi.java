@@ -47,7 +47,7 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ThumbsDBImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
+public final class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
     private ImageReaderSpi jpegProvider;
 
     /**
@@ -61,7 +61,7 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
         return source instanceof ImageInputStream && canDecode((ImageInputStream) source);
     }
 
-    public boolean canDecode(final ImageInputStream pInput) throws IOException {
+    boolean canDecode(final ImageInputStream pInput) throws IOException {
         maybeInitJPEGProvider();
         // If this is a OLE 2 CompoundDocument, we could try...
         // TODO: How do we know it's thumbs.db format (structure), without reading quite a lot?

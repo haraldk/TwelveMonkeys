@@ -31,11 +31,16 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import org.junit.Test;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -383,6 +388,22 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
                 assertSame(destination, image);
             }
+        }
+    }
+
+    @Test
+    public void testReadUnicodeLayerName() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/long-layer-names.psd"))) {
+            imageReader.setInput(stream);
+
+            IIOMetadata metadata = imageReader.getImageMetadata(0);
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(PSDMetadata.NATIVE_METADATA_FORMAT_NAME);
+            NodeList layerInfo = root.getElementsByTagName("LayerInfo");
+
+            assertEquals(1, layerInfo.getLength()); // Sanity
+            assertEquals("If_The_Layer_Name_Is_Really_Long_Oh_No_What_Do_I_Do", ((IIOMetadataNode) layerInfo.item(0)).getAttribute("name"));
         }
     }
 }
