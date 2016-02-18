@@ -358,8 +358,9 @@ public final class ImageUtil {
     }
 
     /**
-     * Creates a copy of the given image. The image will have the same
-     * color model and raster type, but will not share image (pixel) data.
+     * Creates a deep copy of the given image. The image will have the same
+     * color model and raster type, but will not share image (pixel) data
+     * with the input image.
      *
      * @param pImage the image to clone.
      *
@@ -378,7 +379,7 @@ public final class ImageUtil {
                                               cm.createCompatibleWritableRaster(pImage.getWidth(), pImage.getHeight()),
                                               cm.isAlphaPremultiplied(), null);
 
-        drawOnto(pImage, img);
+        drawOnto(img, pImage);
 
         return img;
     }
