@@ -44,4 +44,8 @@ final class IFD extends AbstractDirectory {
     protected IFD(final Collection<? extends Entry> pEntries) {
         super(pEntries);
     }
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
 }
