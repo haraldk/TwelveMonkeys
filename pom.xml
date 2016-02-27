@@ -65,6 +65,13 @@
                 <role>contributor</role>
             </roles>
         </contributor>
+        <contributor>
+            <name>Hermann Kroll</name>
+            <email>dev.hkroll@gmail.com</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
     </contributors>
 
     <issueManagement>
