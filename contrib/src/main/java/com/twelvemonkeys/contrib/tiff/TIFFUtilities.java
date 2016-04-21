@@ -28,17 +28,14 @@
 
 package com.twelvemonkeys.contrib.tiff;
 
-import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
-import com.twelvemonkeys.imageio.metadata.AbstractEntry;
-import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.*;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFWriter;
 import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.lang.Validate;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
@@ -49,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -319,24 +317,84 @@ public class TIFFUtilities {
         }
 
         private long write(ImageOutputStream outputStream, EXIFWriter exifWriter) throws IOException {
-            Entry stipOffsetsEntry = IFD.getEntryById(TIFF.TAG_STRIP_OFFSETS);
-            long[] offsets;
-            if (stipOffsetsEntry.valueCount() == 1) {
-                offsets = new long[] {(long) stipOffsetsEntry.getValue()};
+            List<Entry> newIFD = writeDirectoryData(IFD, outputStream);
+            return exifWriter.writeIFD(newIFD, outputStream);
+        }
+
+        private List<Entry> writeDirectoryData(Directory IFD, ImageOutputStream outputStream) throws IOException {
+            ArrayList<Entry> newIFD = new ArrayList<Entry>();
+            Iterator<Entry> it = IFD.iterator();
+            while (it.hasNext()) {
+                Entry e = it.next();
+                if (e.getValue() instanceof Directory) {
+                    List<Entry> subIFD = writeDirectoryData((Directory) e.getValue(), outputStream);
+                    new TIFFEntry((Integer) e.getIdentifier(), new AbstractDirectory(subIFD) {
+                    });
+                }
+
+                newIFD.add(e);
             }
-            else {
-                offsets = (long[]) stipOffsetsEntry.getValue();
-            }
+
+            Entry stripOffsetsEntry = IFD.getEntryById(TIFF.TAG_STRIP_OFFSETS);
+            long[] offsets = getValueAsLongArray(stripOffsetsEntry);
 
             Entry stipByteCountsEntry = IFD.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
-            long[] byteCounts;
-            if (stipOffsetsEntry.valueCount() == 1) {
-                byteCounts = new long[] {(long) stipByteCountsEntry.getValue()};
-            }
-            else {
-                byteCounts = (long[]) stipByteCountsEntry.getValue();
+            long[] byteCounts = getValueAsLongArray(stipByteCountsEntry);
+
+            int[] newOffsets = writeData(offsets, byteCounts, outputStream);
+
+            newIFD.remove(stripOffsetsEntry);
+            newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+
+            Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+            Entry oldJpegDataLength = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+            if (oldJpegData != null && oldJpegData.valueCount() > 0 && oldJpegDataLength != null && oldJpegDataLength.valueCount() > 0) {
+                if (!Arrays.equals(getValueAsLongArray(oldJpegData), offsets) || !Arrays.equals(getValueAsLongArray(oldJpegDataLength), byteCounts)) {
+                    offsets = getValueAsLongArray(oldJpegData);
+                    byteCounts = getValueAsLongArray(oldJpegDataLength);
+                    newOffsets = writeData(offsets, byteCounts, outputStream);
+                }
+                newIFD.remove(oldJpegData);
+                newIFD.add(new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, newOffsets));
             }
 
+            Entry oldJpegTable;
+            long[] tableOffsets;
+
+            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES);
+            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
+                tableOffsets = getValueAsLongArray(oldJpegTable);
+                byteCounts = new long[tableOffsets.length];
+                Arrays.fill(byteCounts, 64);
+                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
+                newIFD.remove(oldJpegTable);
+                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_AC_TABLES, newOffsets));
+            }
+
+            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES);
+            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
+                tableOffsets = getValueAsLongArray(oldJpegTable);
+                byteCounts = new long[tableOffsets.length];
+                Arrays.fill(byteCounts, 64);
+                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
+                newIFD.remove(oldJpegTable);
+                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_Q_TABLES, newOffsets));
+            }
+
+            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES);
+            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
+                tableOffsets = getValueAsLongArray(oldJpegTable);
+                byteCounts = new long[tableOffsets.length];
+                Arrays.fill(byteCounts, 64);
+                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
+                newIFD.remove(oldJpegTable);
+                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_DC_TABLES, newOffsets));
+            }
+
+            return newIFD;
+        }
+
+        private int[] writeData(long[] offsets, long[] byteCounts, ImageOutputStream outputStream) throws IOException {
             int[] newOffsets = new int[offsets.length];
             for (int i = 0; i < offsets.length; i++) {
                 newOffsets[i] = (int) outputStream.getStreamPosition();
@@ -346,16 +404,41 @@ public class TIFFUtilities {
                 stream.readFully(buffer);
                 outputStream.write(buffer);
             }
+            return newOffsets;
+        }
 
-            ArrayList<Entry> newIFD = new ArrayList<Entry>();
-            Iterator<Entry> it = IFD.iterator();
-            while (it.hasNext()) {
-                newIFD.add(it.next());
+        private long[] getValueAsLongArray(Entry entry) throws IIOException {
+            //TODO: code duplication from TIFFReader, should be extracted to metadata api
+            long[] value;
+
+            if (entry.valueCount() == 1) {
+                // For single entries, this will be a boxed type
+                value = new long[] {((Number) entry.getValue()).longValue()};
+            }
+            else if (entry.getValue() instanceof short[]) {
+                short[] shorts = (short[]) entry.getValue();
+                value = new long[shorts.length];
+
+                for (int i = 0, length = value.length; i < length; i++) {
+                    value[i] = shorts[i];
+                }
+            }
+            else if (entry.getValue() instanceof int[]) {
+                int[] ints = (int[]) entry.getValue();
+                value = new long[ints.length];
+
+                for (int i = 0, length = value.length; i < length; i++) {
+                    value[i] = ints[i];
+                }
+            }
+            else if (entry.getValue() instanceof long[]) {
+                value = (long[]) entry.getValue();
+            }
+            else {
+                throw new IIOException(String.format("Unsupported %s type: %s (%s)", entry.getFieldName(), entry.getTypeName(), entry.getValue().getClass()));
             }
 
-            newIFD.remove(stipOffsetsEntry);
-            newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
-            return exifWriter.writeIFD(newIFD, outputStream);
+            return value;
         }
 
         /**
