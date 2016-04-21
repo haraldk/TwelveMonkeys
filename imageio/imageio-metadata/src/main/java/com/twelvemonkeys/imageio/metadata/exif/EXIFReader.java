@@ -119,7 +119,13 @@ public final class EXIFReader extends MetadataReader {
 
         if (readLinked) {
             if (nextOffset == -1) {
-                nextOffset = pInput.readUnsignedInt();
+                try {
+                    nextOffset = pInput.readUnsignedInt();
+                }
+                catch (EOFException e) {
+                    // catch EOF here as missing EOF marker
+                    nextOffset = 0;
+                }
             }
 
             // Read linked IFDs
