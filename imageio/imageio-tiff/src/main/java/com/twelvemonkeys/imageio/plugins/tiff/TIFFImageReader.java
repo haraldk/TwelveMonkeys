@@ -1079,7 +1079,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     try (ImageInputStream stream = new SubImageInputStream(imageInput, length)) {
                         jpegReader.setInput(stream);
-                        jpegParam.setSourceRegion(new Rectangle(0, 0, width, height));
+                        jpegParam.setSourceRegion(srcRegion);
 
                         if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || interpretation == TIFFBaseline.PHOTOMETRIC_RGB) {
                             jpegParam.setDestination(destination);
