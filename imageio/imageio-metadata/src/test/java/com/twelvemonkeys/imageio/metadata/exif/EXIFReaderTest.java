@@ -279,10 +279,17 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
 
     @Test
     public void testReadExifWithMissingEOFMarker() throws IOException {
-        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/noeof.tif"));
-        CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
-        assertEquals(15, directory.size());
-        assertEquals(1, directory.directoryCount());
-        stream.close();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/noeof.tif"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(15, directory.size());
+            assertEquals(1, directory.directoryCount());
+        }
+    }
+
+    public void testReadExifWithEmptyTag() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/emptyexiftag.tif"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(3, directory.directoryCount());
+        }
     }
 }
