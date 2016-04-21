@@ -37,18 +37,16 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import org.junit.Test;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -276,5 +274,65 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         Entry software = ifds.getEntryById(TIFF.TAG_SOFTWARE);
         assertNotNull(software);
         assertEquals(softwareString, software.getValueAsString());
+    }
+
+    @Test
+    public void testSequenceWriter() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
+        writer.setOutput(stream);
+
+        Graphics2D g2d = null;
+        BufferedImage image[] = new BufferedImage[] {
+                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB)
+        };
+        g2d = image[0].createGraphics();
+        g2d.setColor(Color.red);
+        g2d.fillRect(0,0,100,100);
+        g2d.dispose();
+        g2d = image[1].createGraphics();
+        g2d.setColor(Color.green);
+        g2d.fillRect(0,0,100,100);
+        g2d.dispose();
+        g2d = image[2].createGraphics();
+        g2d.setColor(Color.blue);
+        g2d.fillRect(0,0,100,100);
+        g2d.dispose();
+
+
+        ImageWriteParam params = writer.getDefaultWriteParam();
+        params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+
+        assertTrue("", writer.canWriteSequence());
+
+        try {
+            writer.prepareWriteSequence(null);
+
+            params.setCompressionType("JPEG");
+            writer.writeToSequence(new IIOImage(image[0], null, null), params);
+            params.setCompressionType("None");
+            writer.writeToSequence(new IIOImage(image[1], null, null), params);
+            params.setCompressionType("JPEG");
+            writer.writeToSequence(new IIOImage(image[2], null, null), params);
+            g2d.dispose();
+            writer.endWriteSequence();
+        }
+        catch (IOException e) {
+            fail(e.getMessage());
+        }
+        finally {
+            stream.close(); // Force data to be written
+        }
+
+        ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()));
+        ImageReader reader = ImageIO.getImageReaders(input).next();
+        reader.setInput(input);
+        assertEquals("wrong image count", 3, reader.getNumImages(true));
+        for(int i = 0; i < reader.getNumImages(true); i++){
+           reader.read(i);
+        }
     }
 }
