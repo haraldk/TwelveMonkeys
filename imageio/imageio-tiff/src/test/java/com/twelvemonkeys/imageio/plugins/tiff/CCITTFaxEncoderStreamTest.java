@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxEncoderStream.Code;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -122,16 +121,34 @@ public class CCITTFaxEncoderStreamTest {
 
     @Test
     public void testReencodeImages() throws IOException {
-        testImage(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"));
+        try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif").openStream())) {
+            ImageReader reader = ImageIO.getImageReaders(iis).next();
+            reader.setInput(iis, true);
+
+            ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
+            ImageWriter writer = ImageIO.getImageWritersByFormatName("TIFF").next();
+            BufferedImage originalImage;
+
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(outputBuffer)) {
+                writer.setOutput(output);
+                originalImage = reader.read(0);
+
+                IIOImage outputImage = new IIOImage(originalImage, null, reader.getImageMetadata(0));
+                writer.write(outputImage);
+            }
+
+            byte[] originalData = ((DataBufferByte) originalImage.getData().getDataBuffer()).getData();
+
+            BufferedImage reencodedImage = ImageIO.read(new ByteArrayInputStream(outputBuffer.toByteArray()));
+            byte[] reencodedData = ((DataBufferByte) reencodedImage.getData().getDataBuffer()).getData();
+
+            assertArrayEquals(originalData, reencodedData);
+        }
     }
 
-    /**
-     * Test for "Fixed an issue with long runlengths in CCITTFax writing #188"
-     *
-     * @throws IOException
-     */
     @Test
     public void testRunlengthIssue() throws IOException {
+        // Test for "Fixed an issue with long runlengths in CCITTFax writing #188"
         byte[] data = new byte[400];
         Arrays.fill(data, (byte) 0xFF);
         data[0] = 0;
@@ -158,37 +175,19 @@ public class CCITTFaxEncoderStreamTest {
     private void testStreamEncodeDecode(int type, int fillOrder, long options) throws IOException {
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] redecodedData = new byte[imageData.length];
+
         ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
         OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 6, 4, type, fillOrder, options);
         outputSteam.write(imageData);
         outputSteam.close();
         byte[] encodedData = imageOutput.toByteArray();
 
-        CCITTFaxDecoderStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 6, type,
-                fillOrder, options);
-        new DataInputStream(inputStream).readFully(redecodedData);
-        inputStream.close();
+        try (CCITTFaxDecoderStream inputStream =
+                     new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 6, type, fillOrder, options)) {
+            new DataInputStream(inputStream).readFully(redecodedData);
+        }
 
         assertArrayEquals(imageData, redecodedData);
     }
 
-    private void testImage(URL imageUrl) throws IOException {
-        ImageInputStream iis = ImageIO.createImageInputStream(imageUrl.openStream());
-        ImageReader reader = ImageIO.getImageReadersByFormatName("TIFF").next();
-        reader.setInput(iis, true);
-
-        ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
-        ImageWriter writer = ImageIO.getImageWritersByFormatName("TIFF").next();
-        ImageOutputStream output = ImageIO.createImageOutputStream(outputBuffer);
-        writer.setOutput(output);
-        BufferedImage originalImage = reader.read(0);
-
-        IIOImage outputImage = new IIOImage(originalImage, null, reader.getImageMetadata(0));
-        writer.write(outputImage);
-
-        BufferedImage reencodedImage = ImageIO.read(new ByteArrayInputStream(outputBuffer.toByteArray()));
-        byte[] reencodedData = ((DataBufferByte) reencodedImage.getData().getDataBuffer()).getData();
-
-        Assert.assertArrayEquals(((DataBufferByte) originalImage.getData().getDataBuffer()).getData(), reencodedData);
-    }
 }

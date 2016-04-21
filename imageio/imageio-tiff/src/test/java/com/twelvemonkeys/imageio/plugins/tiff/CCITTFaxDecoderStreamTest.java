@@ -37,8 +37,9 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * CCITTFaxDecoderStreamTest
@@ -109,11 +110,11 @@ public class CCITTFaxDecoderStreamTest {
     // 1 1 1 0 1 1 x x
     // 1 1 1 0 1 1 x x
     // 1 1 0 0 1 1 x x
-    BufferedImage image;
+    final BufferedImage image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);;
 
     @Before
     public void init() {
-        image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
+
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 6; x++) {
                 image.setRGB(x, y, x != 3 ? 0xff000000 : 0xffffffff);
@@ -199,5 +200,33 @@ public class CCITTFaxDecoderStreamTest {
         byte[] bytes = new byte[imageData.length];
         new DataInputStream(stream).readFully(bytes);
         assertArrayEquals(imageData, bytes);
+    }
+
+    @Test
+    public void testDecodeMissingRows() throws IOException {
+        // See https://github.com/haraldk/TwelveMonkeys/pull/225 and https://github.com/haraldk/TwelveMonkeys/issues/232
+        InputStream inputStream = getClass().getResourceAsStream("/tiff/ccitt_tolessrows.tif");
+
+        // Skip until StripOffsets: 8
+        for (int i = 0; i < 8; i++) {
+            inputStream.read();
+        }
+
+        // Read until StripByteCounts: 7
+        byte[] data = new byte[7];
+        new DataInputStream(inputStream).readFully(data);
+
+        InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(data),
+                6, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+
+        byte[] bytes = new byte[6]; // 6 x 6 pixel, 1 bpp => 6 bytes
+        new DataInputStream(stream).readFully(bytes);
+
+        // Pad image data with 0s
+        byte[] imageData = Arrays.copyOf(((DataBufferByte) image.getData().getDataBuffer()).getData(), 6);
+        assertArrayEquals(imageData, bytes);
+
+        // Ideally, we should have no more data now, but the stream don't know that...
+        // assertEquals("Should contain no more data", -1, stream.read());
     }
 }

@@ -40,7 +40,7 @@ import java.io.OutputStream;
  * @author last modified by $Author$
  * @version $Id$
  */
-public class CCITTFaxEncoderStream extends OutputStream {
+final class CCITTFaxEncoderStream extends OutputStream {
 
     private int currentBufferLength = 0;
     private final byte[] inputBuffer;
