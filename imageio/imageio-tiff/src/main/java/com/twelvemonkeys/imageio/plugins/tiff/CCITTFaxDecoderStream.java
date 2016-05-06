@@ -86,8 +86,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 fillOrder, "Expected fill order 1  or 2: %s"
         );
 
-        this.changesReferenceRow = new int[columns];
-        this.changesCurrentRow = new int[columns];
+        this.changesReferenceRow = new int[columns + 1];
+        this.changesCurrentRow = new int[columns + 1];
 
         switch (type) {
             case TIFFExtension.COMPRESSION_CCITT_T4:
