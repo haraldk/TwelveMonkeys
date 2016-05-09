@@ -33,13 +33,11 @@ import org.junit.Test;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * CCITTFaxDecoderStreamTest
@@ -228,5 +226,21 @@ public class CCITTFaxDecoderStreamTest {
 
         // Ideally, we should have no more data now, but the stream don't know that...
         // assertEquals("Should contain no more data", -1, stream.read());
+    }
+
+    @Test
+    public void testMoreChangesThanColumns() throws IOException {
+        // Produces an CCITT Stream with 9 changes on 8 columns.
+        byte[] data = new byte[] {(byte) 0b10101010};
+        ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
+        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 8, 1, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        outputSteam.write(data);
+        outputSteam.close();
+
+        byte[] encoded = imageOutput.toByteArray();
+        InputStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encoded), 8,
+                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        byte decoded = (byte) inputStream.read();
+        assertEquals(data[0], decoded);
     }
 }
