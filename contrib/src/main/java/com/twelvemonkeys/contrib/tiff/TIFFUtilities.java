@@ -328,28 +328,34 @@ public class TIFFUtilities {
                 Entry e = it.next();
                 if (e.getValue() instanceof Directory) {
                     List<Entry> subIFD = writeDirectoryData((Directory) e.getValue(), outputStream);
-                    new TIFFEntry((Integer) e.getIdentifier(), new AbstractDirectory(subIFD) {
+                    new TIFFEntry((Integer) e.getIdentifier(), TIFF.TYPE_IFD, new AbstractDirectory(subIFD) {
                     });
                 }
 
                 newIFD.add(e);
             }
 
+            long[] offsets = new long[0];
+            long[] byteCounts = new long[0];
+            int[] newOffsets = new int[0];
+
             Entry stripOffsetsEntry = IFD.getEntryById(TIFF.TAG_STRIP_OFFSETS);
-            long[] offsets = getValueAsLongArray(stripOffsetsEntry);
+            Entry stripByteCountsEntry = IFD.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
+            if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
+                offsets = getValueAsLongArray(stripOffsetsEntry);
+                byteCounts = getValueAsLongArray(stripByteCountsEntry);
 
-            Entry stipByteCountsEntry = IFD.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
-            long[] byteCounts = getValueAsLongArray(stipByteCountsEntry);
+                newOffsets = writeData(offsets, byteCounts, outputStream);
 
-            int[] newOffsets = writeData(offsets, byteCounts, outputStream);
-
-            newIFD.remove(stripOffsetsEntry);
-            newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                newIFD.remove(stripOffsetsEntry);
+                newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+            }
 
             Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
             Entry oldJpegDataLength = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
             if (oldJpegData != null && oldJpegData.valueCount() > 0 && oldJpegDataLength != null && oldJpegDataLength.valueCount() > 0) {
                 if (!Arrays.equals(getValueAsLongArray(oldJpegData), offsets) || !Arrays.equals(getValueAsLongArray(oldJpegDataLength), byteCounts)) {
+                    // data already written from TIFF.TAG_STRIP_OFFSETS
                     offsets = getValueAsLongArray(oldJpegData);
                     byteCounts = getValueAsLongArray(oldJpegDataLength);
                     newOffsets = writeData(offsets, byteCounts, outputStream);
