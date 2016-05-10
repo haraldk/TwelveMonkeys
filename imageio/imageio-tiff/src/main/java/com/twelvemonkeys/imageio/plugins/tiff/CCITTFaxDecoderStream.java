@@ -62,6 +62,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     private int changesReferenceRowCount;
     private int changesCurrentRowCount;
 
+    private int lastChangingElement = 0;
+
     private boolean optionG32D = false;
 
     @SuppressWarnings("unused") // Leading zeros for aligning EOL
@@ -185,7 +187,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                         case VALUE_PASSMODE:
                             int pChangingElement = getNextChangingElement(index, white) + 1;
 
-                            if (pChangingElement >= changesReferenceRowCount || pChangingElement == -1) {
+                            if (pChangingElement >= changesReferenceRowCount) {
                                 index = columns;
                             }
                             else {
@@ -218,11 +220,15 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         }
     }
 
-    private int getNextChangingElement(final int a0, final boolean white) {
-        int start = white ? 0 : 1;
+    private int getNextChangingElement(final int a0, final boolean white) throws IOException {
+        int start = (lastChangingElement & 0xFFFF_FFFC) + (white ? 0 : 1);
+        if (a0 == 0) {
+            return start;
+        }
 
         for (int i = start; i < changesReferenceRowCount; i += 2) {
-            if (a0 < changesReferenceRow[i] || (a0 == 0 && changesReferenceRow[i] == 0)) {
+            if (a0 < changesReferenceRow[i]) {
+                lastChangingElement = i;
                 return i;
             }
         }
@@ -281,6 +287,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         int index = 0;
         boolean white = true;
 
+        lastChangingElement = 0;
         for (int i = 0; i <= changesCurrentRowCount; i++) {
             int nextChange = columns;
 
