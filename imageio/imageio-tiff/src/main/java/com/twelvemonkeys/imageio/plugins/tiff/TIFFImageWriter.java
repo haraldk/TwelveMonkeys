@@ -364,8 +364,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
         long stripByteCount = 0;
 
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
+            int[] sampleSizes = renderedImage.getSampleModel().getSampleSize();
+            int pixelSize = 0;
+            for (int i = 0; i < sampleSizes.length; i++) {
+                pixelSize += sampleSizes[i];
+            }
+
             long ifdOffset = exifWriter.computeIFDOffsetSize(entries.values());
-            long dataLength = renderedImage.getWidth() * renderedImage.getHeight() * numComponents;
+            long dataLength = ((long) Math.ceil(renderedImage.getWidth() * pixelSize / 8.0)) * renderedImage.getHeight();
             long pointerPos = imageOutput.getStreamPosition() + dataLength + 4 + ifdOffset;
             imageOutput.writeInt((int) pointerPos);
         }
