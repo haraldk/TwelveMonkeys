@@ -171,13 +171,13 @@ public final class PSDImageReader extends ImageReaderBase {
                 }
 
                 if (header.channels == 1 && header.bits == 8) {
-                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0}, new int[] {0}, DataBuffer.TYPE_BYTE, false, false);
                 }
                 else if (header.channels == 2 && header.bits == 8) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_BYTE, true, false);
                 }
                 else if (header.channels == 1 && header.bits == 16) {
-                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_GRAY);
+                    return ImageTypeSpecifiers.createBanded(cs, new int[] {0}, new int[] {0}, DataBuffer.TYPE_USHORT, false, false);
                 }
                 else if (header.channels == 2 && header.bits == 16) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1}, new int[] {0, 0}, DataBuffer.TYPE_USHORT, true, false);
