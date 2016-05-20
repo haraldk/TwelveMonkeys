@@ -29,7 +29,9 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -39,9 +41,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -329,4 +331,39 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         }
     }
 
+    @Test
+    public void testPhotometricInterpretationFallback() throws IOException {
+        String[] files = {
+                "/tiff/guessPhotometric/group4.tif",
+                "/tiff/guessPhotometric/flower-rgb-contig-08.tif",
+                "/tiff/guessPhotometric/flower-separated-planar-08.tif"
+        };
+
+        final int[] results = {
+                TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO,
+                TIFFBaseline.PHOTOMETRIC_RGB,
+                TIFFExtension.PHOTOMETRIC_SEPARATED
+        };
+
+        for (int i = 0; i < files.length; i++) {
+            final AtomicBoolean foundWarning = new AtomicBoolean(false);
+            final int expectedResult = results[i];
+
+            try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource(files[i]))) {
+                TIFFImageReader reader = createReader();
+
+                reader.setInput(iis);
+                reader.addIIOReadWarningListener(new IIOReadWarningListener() {
+                    @Override
+                    public void warningOccurred(ImageReader source, String warning) {
+                        if (warning.equals("Missing PhotometricInterpretation, determining fallback: " + expectedResult)) {
+                            foundWarning.set(true);
+                        }
+                    }
+                });
+                reader.read(0);
+            }
+            assertTrue("no correct guess for PhotometricInterpretation: " + results[i], foundWarning.get());
+        }
+    }
 }

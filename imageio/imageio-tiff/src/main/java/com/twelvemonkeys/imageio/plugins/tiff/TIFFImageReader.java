@@ -315,7 +315,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
         int sampleFormat = getSampleFormat();
         int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFBaseline.PLANARCONFIG_CHUNKY);
-        int interpretation = getValueAsInt(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation");
+        int interpretation = getPhotometricInterpretationWithFallback();
         int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXEL, 1);
         int bitsPerSample = getBitsPerSample();
         int dataType = getDataType(sampleFormat, bitsPerSample);
@@ -545,6 +545,37 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
+    private int getPhotometricInterpretationWithFallback() throws IIOException {
+        // PhotometricInterpretation is a required TAG, but as it can be guessed this does a fallback that is equal to JAI ImageIO.
+        int interpretation = getValueAsIntWithDefault(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation", -1);
+        if (interpretation == -1) {
+            int compression = getValueAsIntWithDefault(TIFF.TAG_COMPRESSION, TIFFBaseline.COMPRESSION_NONE);
+            int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXEL, 1);
+            Entry extraSamplesEntry = currentIFD.getEntryById(TIFF.TAG_EXTRA_SAMPLES);
+            int extraSamples = extraSamplesEntry == null ? 0 : extraSamplesEntry.valueCount();
+
+            if (compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE
+                    || compression == TIFFExtension.COMPRESSION_CCITT_T4
+                    || compression == TIFFExtension.COMPRESSION_CCITT_T6) {
+                interpretation = TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO;
+            }
+            else if (currentIFD.getEntryById(TIFF.TAG_COLOR_MAP) != null) {
+                interpretation = TIFFBaseline.PHOTOMETRIC_PALETTE;
+            }
+            else if ((samplesPerPixel - extraSamples) == 3) {
+                interpretation = TIFFBaseline.PHOTOMETRIC_RGB;
+            }
+            else if ((samplesPerPixel - extraSamples) == 4) {
+                interpretation = TIFFExtension.PHOTOMETRIC_SEPARATED;
+            }
+            else {
+                interpretation = TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO;
+            }
+            processWarningOccurred("Missing PhotometricInterpretation, determining fallback: " + interpretation);
+        }
+        return interpretation;
+    }
+
     private int getOpaqueSamplesPerPixel(final int photometricInterpretation) throws IIOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
@@ -730,7 +761,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
         WritableRaster destRaster = clipToRect(destination.getRaster(), dstRegion, param != null ? param.getDestinationBands() : null);
 
-        final int interpretation = getValueAsInt(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation");
+        final int interpretation = getPhotometricInterpretationWithFallback();
         final int compression = getValueAsIntWithDefault(TIFF.TAG_COMPRESSION, TIFFBaseline.COMPRESSION_NONE);
         final int predictor = getValueAsIntWithDefault(TIFF.TAG_PREDICTOR, 1);
         final int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFBaseline.PLANARCONFIG_CHUNKY);
