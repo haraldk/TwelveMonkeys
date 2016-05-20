@@ -29,7 +29,7 @@
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-rasterizer-ext</artifactId>
-            <version>1.8</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>
@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-extension</artifactId>
-            <version>1.8</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -56,21 +56,21 @@
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-anim</artifactId>
-            <version>1.8</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-svggen</artifactId>
-            <version>1.8</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
-            <version>1.8</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
 
             <!--
@@ -86,4 +86,8 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <properties>
+        <batik.version>1.8</batik.version>
+    </properties>
 </project>
