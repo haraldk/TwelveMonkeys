@@ -324,12 +324,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         // Handle ColorSpaceType (RGB/CMYK/YCbCr etc)...
         Entry photometricTag = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
         int photometricValue = getValueAsInt(photometricTag); // No default for this tag!
-
-        Entry samplesPerPixelTag = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
-        Entry bitsPerSampleTag = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
-        int numChannelsValue = samplesPerPixelTag != null
-                               ? getValueAsInt(samplesPerPixelTag)
-                               : bitsPerSampleTag.valueCount();
+        int numChannelsValue = getSamplesPerPixelWithFallback();
 
         IIOMetadataNode colorSpaceType = new IIOMetadataNode("ColorSpaceType");
         chroma.appendChild(colorSpaceType);
@@ -417,6 +412,16 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         }
 
         return chroma;
+    }
+
+    private int getSamplesPerPixelWithFallback() {
+        // SamplePerPixel defaults to 1, but we'll check BitsPerSample to be sure
+        Entry samplesPerPixelTag = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
+        Entry bitsPerSampleTag = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
+
+        return samplesPerPixelTag != null
+                               ? getValueAsInt(samplesPerPixelTag)
+                               : bitsPerSampleTag != null ? bitsPerSampleTag.valueCount() : 1;
     }
 
     @Override
@@ -586,9 +591,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         // TODO: See TIFFImageReader.getBitsPerSample + fix the metadata to have getAsXxxArray methods.
         // BitsPerSample (not required field for Class B/Bilevel, defaults to 1)
         Entry bitsPerSampleTag = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
-        String bitsPerSampleValue = bitsPerSampleTag == null &&
-                                            (photometricInterpretationValue == TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO ||
-                                                    photometricInterpretationValue == TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO)
+        String bitsPerSampleValue = bitsPerSampleTag == null
                                     ? "1"
                                     : bitsPerSampleTag.getValueAsString().replaceAll("\\[?\\]?,?", "");
 
@@ -596,10 +599,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         node.appendChild(bitsPerSample);
         bitsPerSample.setAttribute("value", bitsPerSampleValue);
 
-        Entry samplesPerPixelTag = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
-        int numChannelsValue = samplesPerPixelTag != null
-                               ? getValueAsInt(samplesPerPixelTag)
-                               : bitsPerSampleTag.valueCount();
+        int numChannelsValue = getSamplesPerPixelWithFallback();
 
         // SampleMSB
         Entry fillOrderTag = ifd.getEntryById(TIFF.TAG_FILL_ORDER);
