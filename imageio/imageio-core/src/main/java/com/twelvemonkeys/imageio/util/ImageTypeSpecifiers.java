@@ -30,12 +30,15 @@ package com.twelvemonkeys.imageio.util;
 
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
+import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
+import java.awt.image.DirectColorModel;
 import java.awt.image.IndexColorModel;
 
 /**
  * Factory class for creating {@code ImageTypeSpecifier}s.
- * In most cases, this class will delegate to the corresponding methods in {@link ImageTypeSpecifier}.
+ * Fixes some subtle bugs in {@code ImageTypeSpecifier}'s factory methods, but
+ * in most cases, this class will delegate to the corresponding methods in {@link ImageTypeSpecifier}.
  *
  * @see javax.imageio.ImageTypeSpecifier
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -54,6 +57,28 @@ public final class ImageTypeSpecifiers {
                                                   final int redMask, final int greenMask,
                                                   final int blueMask, final int alphaMask,
                                                   final int transferType, boolean isAlphaPremultiplied) {
+        if (transferType == DataBuffer.TYPE_BYTE || transferType == DataBuffer.TYPE_USHORT) {
+            // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for BYTE/USHORT types
+            if (colorSpace == null) {
+                throw new IllegalArgumentException("colorSpace == null!");
+            }
+
+            if (colorSpace.getType() != ColorSpace.TYPE_RGB) {
+                throw new IllegalArgumentException("colorSpace is not of type TYPE_RGB!");
+            }
+
+            if (redMask == 0 && greenMask == 0 && blueMask == 0 && alphaMask == 0) {
+                throw new IllegalArgumentException("No mask has at least 1 bit set!");
+            }
+
+            int bits = transferType == DataBuffer.TYPE_BYTE ? 8 : 16;
+
+            ColorModel colorModel = new DirectColorModel(colorSpace, bits, redMask, greenMask, blueMask, alphaMask,
+                    isAlphaPremultiplied, transferType);
+
+            return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+        }
+
         return ImageTypeSpecifier.createPacked(colorSpace, redMask, greenMask, blueMask, alphaMask, transferType, isAlphaPremultiplied);
     }
 
@@ -79,7 +104,11 @@ public final class ImageTypeSpecifiers {
     }
 
     public static ImageTypeSpecifier createGrayscale(final int bits, final int dataType) {
-        if (bits == 32 && dataType == DataBuffer.TYPE_INT) {
+        if (bits == 16 && dataType == DataBuffer.TYPE_SHORT) {
+            // As the ComponentColorModel is broken for 16 bit signed int, we'll use our own version
+            return new Int16ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0}, false, false);
+        }
+        else if (bits == 32 && dataType == DataBuffer.TYPE_INT) {
             // As the ComponentColorModel is broken for 32 bit unsigned int, we'll use our own version
             return new UInt32ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0}, false, false);
         }
@@ -89,7 +118,11 @@ public final class ImageTypeSpecifiers {
     }
 
     public static ImageTypeSpecifier createGrayscale(final int bits, final int dataType, final boolean isAlphaPremultiplied) {
-        if (bits == 32 && dataType == DataBuffer.TYPE_INT) {
+        if (bits == 16 && dataType == DataBuffer.TYPE_SHORT) {
+            // As the ComponentColorModel is broken for 16 bit signed int, we'll use our own version
+            return new Int16ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0, 1}, true, isAlphaPremultiplied);
+        }
+        else if (bits == 32 && dataType == DataBuffer.TYPE_INT) {
             // As the ComponentColorModel is broken for 32 bit unsigned int, we'll use our own version
             return new UInt32ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0, 1}, true, isAlphaPremultiplied);
         }

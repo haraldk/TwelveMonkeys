@@ -1,12 +1,11 @@
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.lang.Validate;
 import org.junit.Test;
 
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -40,7 +39,7 @@ public class ImageTypeSpecifiersTest {
     }
 
     @Test
-    public void testCreatePacked() {
+    public void testCreatePacked32() {
         // TYPE_INT_RGB
         assertEquals(
                 ImageTypeSpecifier.createPacked(sRGB, DCM_RED_MASK, DCM_GREEN_MASK, DCM_BLUE_MASK, 0, DataBuffer.TYPE_INT, false),
@@ -61,31 +60,70 @@ public class ImageTypeSpecifiersTest {
                 ImageTypeSpecifier.createPacked(sRGB, DCM_BGR_RED_MASK, DCM_BGR_GRN_MASK, DCM_BGR_BLU_MASK, 0, DataBuffer.TYPE_INT, false),
                 ImageTypeSpecifiers.createPacked(sRGB, DCM_BGR_RED_MASK, DCM_BGR_GRN_MASK, DCM_BGR_BLU_MASK, 0, DataBuffer.TYPE_INT, false)
         );
+    }
+
+    @Test
+    public void testCreatePacked16() {
         // TYPE_USHORT_555_RGB
         assertEquals(
-                ImageTypeSpecifier.createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false),
+                createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false),
                 ImageTypeSpecifiers.createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false)
         );
-        // "SHORT 555 RGB" (impossible for some reason)
-//        assertEquals(
-//                ImageTypeSpecifier.createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_SHORT, false),
-//                ImageTypeSpecifiers.createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_SHORT, false)
-//        );
+        // "SHORT 555 RGB" (impossible, only BYTE, USHORT, INT supported)
+
         // TYPE_USHORT_565_RGB
         assertEquals(
-                ImageTypeSpecifier.createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false),
+                createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false),
                 ImageTypeSpecifiers.createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false)
         );
         // "USHORT 4444 ARGB"
         assertEquals(
-                ImageTypeSpecifier.createPacked(sRGB, 0xf00, 0xf0, 0xf, 0xf000, DataBuffer.TYPE_USHORT, false),
+                createPacked(sRGB, 0xf00, 0xf0, 0xf, 0xf000, DataBuffer.TYPE_USHORT, false),
                 ImageTypeSpecifiers.createPacked(sRGB, 0xf00, 0xf0, 0xf, 0xf000, DataBuffer.TYPE_USHORT, false)
         );
         // "USHORT 4444 ARGB PRE"
         assertEquals(
-                ImageTypeSpecifier.createPacked(sRGB, 0xf00, 0xf0, 0xf, 0xf000, DataBuffer.TYPE_USHORT, true),
+                createPacked(sRGB, 0xf00, 0xf0, 0xf, 0xf000, DataBuffer.TYPE_USHORT, true),
                 ImageTypeSpecifiers.createPacked(sRGB, 0xf00, 0xf0, 0xf, 0xf000, DataBuffer.TYPE_USHORT, true)
         );
+
+        // Extra: Make sure color models bits is actually 16 (ImageTypeSpecifier equivalent returns 32)
+        assertEquals(16, ImageTypeSpecifiers.createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false).getColorModel().getPixelSize());
+   }
+
+    @Test
+    public void testCreatePacked8() {
+        // "BYTE 332 RGB"
+        assertEquals(
+                createPacked(sRGB, 0xe0, 0x1c, 0x03, 0x0, DataBuffer.TYPE_BYTE, false),
+                ImageTypeSpecifiers.createPacked(sRGB, 0xe0, 0x1c, 0x3, 0x0, DataBuffer.TYPE_BYTE, false)
+        );
+        // "BYTE 2222 ARGB"
+        assertEquals(
+                createPacked(sRGB, 0xc0, 0x30, 0x0c, 0x03, DataBuffer.TYPE_BYTE, false),
+                ImageTypeSpecifiers.createPacked(sRGB, 0xc0, 0x30, 0x0c, 0x03, DataBuffer.TYPE_BYTE, false)
+        );
+        // "BYTE 2222 ARGB PRE"
+        assertEquals(
+                createPacked(sRGB, 0xc0, 0x30, 0x0c, 0x03, DataBuffer.TYPE_BYTE, true),
+                ImageTypeSpecifiers.createPacked(sRGB, 0xc0, 0x30, 0x0c, 0x03, DataBuffer.TYPE_BYTE, true)
+        );
+
+        // Extra: Make sure color models bits is actually 8 (ImageTypeSpecifiers equivalent returns 32)
+        assertEquals(8, ImageTypeSpecifiers.createPacked(sRGB, 0xc0, 0x30, 0x0c, 0x03, DataBuffer.TYPE_BYTE, false).getColorModel().getPixelSize());
+    }
+
+    private ImageTypeSpecifier createPacked(final ColorSpace colorSpace,
+                                            final int redMask, final int greenMask, final int blueMask, final int alphaMask,
+                                            final int transferType, final boolean isAlphaPremultiplied) {
+        Validate.isTrue(transferType == DataBuffer.TYPE_BYTE || transferType == DataBuffer.TYPE_USHORT, transferType, "transferType: %s");
+
+        int bits = transferType == DataBuffer.TYPE_BYTE ? 8 : 16;
+
+        ColorModel colorModel =
+                new DirectColorModel(colorSpace, bits, redMask, greenMask, blueMask, alphaMask, isAlphaPremultiplied, transferType);
+
+        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
     }
 
     @Test
@@ -337,11 +375,7 @@ public class ImageTypeSpecifiersTest {
         );
 
         assertEquals(
-                ImageTypeSpecifier.createGrayscale(16, DataBuffer.TYPE_SHORT, false), // NOTE: Unsigned TYPE_SHORT makes no sense...
-                ImageTypeSpecifiers.createGrayscale(16, DataBuffer.TYPE_SHORT)
-        );
-        assertEquals(
-                ImageTypeSpecifier.createGrayscale(16, DataBuffer.TYPE_SHORT, true),
+                new Int16ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0}, false, false),
                 ImageTypeSpecifiers.createGrayscale(16, DataBuffer.TYPE_SHORT)
         );
     }
@@ -400,19 +434,11 @@ public class ImageTypeSpecifiersTest {
         );
 
         assertEquals(
-                ImageTypeSpecifier.createGrayscale(16, DataBuffer.TYPE_SHORT, false, false),
+                new Int16ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0, 1}, true, false),
                 ImageTypeSpecifiers.createGrayscale(16, DataBuffer.TYPE_SHORT, false)
         );
         assertEquals(
-                ImageTypeSpecifier.createGrayscale(16, DataBuffer.TYPE_SHORT, false, true),
-                ImageTypeSpecifiers.createGrayscale(16, DataBuffer.TYPE_SHORT, true)
-        );
-        assertEquals(
-                ImageTypeSpecifier.createGrayscale(16, DataBuffer.TYPE_SHORT, true, false),
-                ImageTypeSpecifiers.createGrayscale(16, DataBuffer.TYPE_SHORT, false)
-        );
-        assertEquals(
-                ImageTypeSpecifier.createGrayscale(16, DataBuffer.TYPE_SHORT, true, true),
+                new Int16ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0, 1}, true, true),
                 ImageTypeSpecifiers.createGrayscale(16, DataBuffer.TYPE_SHORT, true)
         );
     }
@@ -561,7 +587,6 @@ public class ImageTypeSpecifiersTest {
         );
 
     }
-
 
     private static byte[] createByteLut(final int count) {
         byte[] lut = new byte[count];
