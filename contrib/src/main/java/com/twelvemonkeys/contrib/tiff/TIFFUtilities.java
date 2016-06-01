@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.contrib.tiff;
 
+import com.twelvemonkeys.image.AffineTransformOp;
 import com.twelvemonkeys.imageio.metadata.*;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.EXIFWriter;
@@ -40,7 +41,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
