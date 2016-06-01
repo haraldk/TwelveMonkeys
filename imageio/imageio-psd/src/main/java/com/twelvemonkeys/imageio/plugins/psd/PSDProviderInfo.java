@@ -50,10 +50,10 @@ final class PSDProviderInfo extends ReaderWriterProviderInfo {
                         "application/x-photoshop",
                         "image/x-photoshop"
                 },
-                "com.twelvemkonkeys.imageio.plugins.psd.PSDImageReader",
+                "com.twelvemonkeys.imageio.plugins.psd.PSDImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.psd.PSDImageReaderSpi"},
                 null,
-                null, // new String[] {"com.twelvemkonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
+                null, // new String[] {"com.twelvemonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
                 false, null, null, null, null,
                 true, PSDMetadata.NATIVE_METADATA_FORMAT_NAME, PSDMetadata.NATIVE_METADATA_FORMAT_CLASS_NAME, null, null
         );

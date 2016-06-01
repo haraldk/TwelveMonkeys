@@ -51,8 +51,8 @@ final class PCXProviderInfo extends ReaderWriterProviderInfo {
                         "image/pcx",
                         "image/x-pcx",
                 },
-                "com.twelvemkonkeys.imageio.plugins.pcx.PCXImageReader",
-                new String[] {"com.twelvemkonkeys.imageio.plugins.pcx.PCXImageReaderSpi"},
+                "com.twelvemonkeys.imageio.plugins.pcx.PCXImageReader",
+                new String[] {"com.twelvemonkeys.imageio.plugins.pcx.PCXImageReaderSpi"},
                 null, null,
                 false, null, null, null, null,
                 true, null, null, null, null

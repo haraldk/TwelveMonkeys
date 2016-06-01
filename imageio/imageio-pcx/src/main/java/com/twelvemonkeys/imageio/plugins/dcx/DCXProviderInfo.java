@@ -51,8 +51,8 @@ final class DCXProviderInfo extends ReaderWriterProviderInfo {
                         "image/dcx",
                         "image/x-dcx",
                 },
-                "com.twelvemkonkeys.imageio.plugins.dcx.DCXImageReader",
-                new String[] {"com.twelvemkonkeys.imageio.plugins.dcx.DCXImageReaderSpi"},
+                "com.twelvemonkeys.imageio.plugins.dcx.DCXImageReader",
+                new String[] {"com.twelvemonkeys.imageio.plugins.dcx.DCXImageReaderSpi"},
                 null, null,
                 false, null, null, null, null,
                 true, null, null, null, null

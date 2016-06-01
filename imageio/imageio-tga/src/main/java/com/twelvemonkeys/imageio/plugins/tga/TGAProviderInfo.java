@@ -51,7 +51,7 @@ final class TGAProviderInfo extends ReaderWriterProviderInfo {
                         "image/tga", "image/x-tga",
                         "image/targa", "image/x-targa",
                 },
-                "com.twelvemkonkeys.imageio.plugins.tga.TGAImageReader",
+                "com.twelvemonkeys.imageio.plugins.tga.TGAImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.tga.TGAImageReaderSpi"},
                 null,
                 null,

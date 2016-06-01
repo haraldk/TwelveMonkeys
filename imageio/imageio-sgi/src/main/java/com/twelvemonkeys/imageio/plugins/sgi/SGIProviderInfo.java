@@ -51,7 +51,7 @@ final class SGIProviderInfo extends ReaderWriterProviderInfo {
                         "image/sgi",
                         "image/x-sgi",
                 },
-                "com.twelvemkonkeys.imageio.plugins.sgi.SGIImageReader",
+                "com.twelvemonkeys.imageio.plugins.sgi.SGIImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.sgi.SGIImageReaderSpi"},
                 null,
                 null,

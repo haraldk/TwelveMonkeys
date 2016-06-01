@@ -44,10 +44,10 @@ final class PICTProviderInfo extends ReaderWriterProviderInfo {
                 new String[] {"pct", "PCT", "pict", "PICT"},
                 new String[] {"pct", "pict"},
                 new String[] {"image/pict", "image/x-pict"},
-                "com.twelvemkonkeys.imageio.plugins.pict.PICTImageReader",
+                "com.twelvemonkeys.imageio.plugins.pict.PICTImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi"},
                 "com.twelvemonkeys.imageio.plugins.pict.PICTImageWriter",
-                new String[] {"com.twelvemkonkeys.imageio.plugins.pict.PICTImageWriterSpi"},
+                new String[] {"com.twelvemonkeys.imageio.plugins.pict.PICTImageWriterSpi"},
                 false, null, null, null, null,
                 true, null, null, null, null
         );
