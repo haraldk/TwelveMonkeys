@@ -338,6 +338,27 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                        ? software
                                        : new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
 
+        // Copy metadata to output
+        int[] copyTags = {
+                TIFF.TAG_ORIENTATION,
+                TIFF.TAG_DATE_TIME,
+                TIFF.TAG_DOCUMENT_NAME,
+                TIFF.TAG_IMAGE_DESCRIPTION,
+                TIFF.TAG_MAKE,
+                TIFF.TAG_MODEL,
+                TIFF.TAG_PAGE_NAME,
+                TIFF.TAG_PAGE_NUMBER,
+                TIFF.TAG_ARTIST,
+                TIFF.TAG_HOST_COMPUTER,
+                TIFF.TAG_COPYRIGHT
+        };
+        for (int tagID : copyTags) {
+            Entry entry = metadata.getIFD().getEntryById(tagID);
+            if (entry != null) {
+                entries.put(tagID, entry);
+            }
+        }
+
         // Get X/YResolution and ResolutionUnit from metadata if set, otherwise use defaults
         // TODO: Add logic here OR in metadata merging, to make sure these 3 values are consistent.
         Entry xRes = metadata.getIFD().getEntryById(TIFF.TAG_X_RESOLUTION);
