@@ -48,10 +48,12 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
  */
 public final class TIFFStreamMetadata extends IIOMetadata {
 
+    public static final String SUN_NATIVE_STREAM_METADATA_FORMAT_NAME = "com_sun_media_imageio_plugins_tiff_stream_1.0";
+
     ByteOrder byteOrder = BIG_ENDIAN;
 
     public TIFFStreamMetadata() {
-        super(false, TIFFMedataFormat.SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, null, null, null);
+        super(false, SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, null, null, null);
     }
 
 
