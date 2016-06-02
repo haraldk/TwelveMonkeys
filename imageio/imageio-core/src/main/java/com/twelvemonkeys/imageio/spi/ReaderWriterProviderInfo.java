@@ -52,7 +52,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
     private final String[] writerSpiClassNames;
     private final Class[] outputTypes = new Class[] {ImageOutputStream.class};
     private final boolean supportsStandardStreamMetadata;
-    private final String nativeStreameMetadataFormatName;
+    private final String nativeStreamMetadataFormatName;
     private final String nativeStreamMetadataFormatClassName;
     private final String[] extraStreamMetadataFormatNames;
     private final String[] extraStreamMetadataFormatClassNames;
@@ -97,7 +97,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
         this.writerClassName = writerClassName;
         this.writerSpiClassNames = writerSpiClassNames;
         this.supportsStandardStreamMetadata = supportsStandardStreamMetadata;
-        this.nativeStreameMetadataFormatName = nativeStreameMetadataFormatName;
+        this.nativeStreamMetadataFormatName = nativeStreameMetadataFormatName;
         this.nativeStreamMetadataFormatClassName = nativeStreamMetadataFormatClassName;
         this.extraStreamMetadataFormatNames = extraStreamMetadataFormatNames;
         this.extraStreamMetadataFormatClassNames = extraStreamMetadataFormatClassNames;
@@ -149,7 +149,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
     }
 
     public String nativeStreamMetadataFormatName() {
-        return nativeStreameMetadataFormatName;
+        return nativeStreamMetadataFormatName;
     }
 
     public String nativeStreamMetadataFormatClassName() {

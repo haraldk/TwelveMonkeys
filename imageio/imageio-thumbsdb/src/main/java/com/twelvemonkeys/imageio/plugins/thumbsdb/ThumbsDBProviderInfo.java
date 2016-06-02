@@ -41,9 +41,9 @@ final class ThumbsDBProviderInfo extends ReaderWriterProviderInfo {
     protected ThumbsDBProviderInfo() {
         super(
                 ThumbsDBProviderInfo.class,
-                new String[]{"thumbs", "THUMBS", "Thumbs DB"},
-                new String[]{"db"},
-                new String[]{"image/x-thumbs-db", "application/octet-stream"}, // TODO: Check IANA et al...
+                new String[] {"thumbs", "THUMBS", "Thumbs DB"},
+                new String[] {"db"},
+                new String[] {"image/x-thumbs-db", "application/octet-stream"}, // TODO: Check IANA et al...
                 "com.twelvemonkeys.imageio.plugins.thumbsdb.ThumbsDBImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.thumbsdb.ThumbsDBImageReaderSpi"},
                 null,

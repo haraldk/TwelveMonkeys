@@ -47,7 +47,7 @@ final class ICNSProviderInfo extends ReaderWriterProviderInfo {
                         "image/x-apple-icons",               // Common extension MIME
                 },
                 "com.twelvemonkeys.imageio.plugins.icns.ICNSImageReader",
-                new String[] {"com.twelvemonkeys.imageio.plugins.ics.ICNImageReaderSpi"},
+                new String[] {"com.twelvemonkeys.imageio.plugins.icns.ICNSImageReaderSpi"},
                 null, null,
                 false, null, null, null, null,
                 true, null, null, null, null
