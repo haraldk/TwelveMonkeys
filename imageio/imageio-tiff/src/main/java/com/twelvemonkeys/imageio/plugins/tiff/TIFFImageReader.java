@@ -1047,23 +1047,20 @@ public class TIFFImageReader extends ImageReaderBase {
                         throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + mode);
                 }
 
-                // May use normal tiling??
-
                 jpegReader = createJPEGDelegate();
                 jpegParam = (JPEGImageReadParam) jpegReader.getDefaultReadParam();
 
-                // 513/JPEGInterchangeFormat (may be absent...)
+                // 513/JPEGInterchangeFormat (may be absent or 0)
                 int jpegOffset = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, -1);
-                // 514/JPEGInterchangeFormatLength (may be absent...)
-                int jpegLenght = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
+                // 514/JPEGInterchangeFormatLength (may be absent)
+                int jpegLength = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
                 // TODO: 515/JPEGRestartInterval (may be absent)
 
                 // Currently ignored (for lossless only)
                 // 517/JPEGLosslessPredictors
                 // 518/JPEGPointTransforms
 
-
-                if (jpegOffset != -1) {
+                if (jpegOffset > 0) {
                     // Straight forward case: We're good to go! We'll disregard tiling and any tables tags
                     if (currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES) != null
                             || currentIFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES) != null
@@ -1100,13 +1097,34 @@ public class TIFFImageReader extends ImageReaderBase {
                         }
                     }
 
-                    imageInput.seek(realJPEGOffset);
-
+                    // Determine correct JPEG stream length
+                    int length;
+                    if (jpegLength == -1) {
+                        // If have no length, we'll just try to decode, as long as we can
+                        length = Integer.MAX_VALUE;
+                        processWarningOccurred("Missing JPEGInterchangeFormatLength tag");
+                    }
+                    else if (stripTileOffsets != null && stripTileOffsets.length == 1 && stripTileOffsets[0] >= jpegOffset + jpegLength) {
+                        // NOTE: Some known TIFF encoder writes obviously bogus JPEGInterchangeFormatLength value,
+                        // but the real stream length can be determined from the StripByteCounts (may include padding).
+                        if (stripTileByteCounts != null && stripTileByteCounts.length == 1 && stripTileByteCounts[0] > jpegLength) {
+                            length = (int) (jpegLength + stripTileByteCounts[0]);
+                            processWarningOccurred("Incorrect JPEGInterchangeFormatLength tag encountered, using StripByteCounts instead");
+                        }
+                        else {
+                            // No StripByteCounts, we'll just try tro decode as much as we can
+                            length = Integer.MAX_VALUE;
+                            processWarningOccurred("Incorrect JPEGInterchangeFormatLength tag encountered, ignoring tag value");
+                        }
+                    }
+                    else {
+                        // Ok! We'll go with JPEGInterchangeFormatLength
+                        length = jpegLength;
+                    }
 
                     // Read data
                     processImageStarted(imageIndex); // Better yet, would be to delegate read progress here...
-
-                    int length = jpegLenght != -1 ? jpegLenght : Integer.MAX_VALUE;
+                    imageInput.seek(realJPEGOffset);
 
                     try (ImageInputStream stream = new SubImageInputStream(imageInput, length)) {
                         jpegReader.setInput(stream);
@@ -1199,7 +1217,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                                 try (ImageInputStream stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
                                         Arrays.asList(
-                                                createJFIFStream(destRaster, stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
+                                                createJFIFStream(destRaster.getNumBands(), stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
                                                 IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null
                                                                                         ? (int) stripTileByteCounts[i]
                                                                                         : Short.MAX_VALUE),
@@ -1298,26 +1316,26 @@ public class TIFFImageReader extends ImageReaderBase {
         return readers.next();
     }
 
-    private static InputStream createJFIFStream(WritableRaster raster, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
+    private static InputStream createJFIFStream(int bands, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
         FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
-                2 + 2 + 2 + 6 + 3 * raster.getNumBands() +
+                2 + 2 + 2 + 6 + 3 * bands +
                         5 * qTables.length + qTables.length * qTables[0].length +
                         5 * dcTables.length + dcTables.length * dcTables[0].length +
                         5 * acTables.length + acTables.length * acTables[0].length +
-                        8 + 2 * raster.getNumBands()
+                        8 + 2 * bands
         );
 
         DataOutputStream out = new DataOutputStream(stream);
 
         out.writeShort(JPEG.SOI);
         out.writeShort(JPEG.SOF0);
-        out.writeShort(2 + 6 + 3 * raster.getNumBands()); // SOF0 len
-        out.writeByte(8); // bits TODO: Consult raster/transfer type or BitsPerSample for 12/16 bits support
+        out.writeShort(2 + 6 + 3 * bands); // SOF0 len
+        out.writeByte(8); // bits TODO: Consult bands/transfer type or BitsPerSample for 12/16 bits support
         out.writeShort(stripTileHeight); // height
         out.writeShort(stripTileWidth); // width
-        out.writeByte(raster.getNumBands()); // Number of components
+        out.writeByte(bands); // Number of components
 
-        for (int comp = 0; comp < raster.getNumBands(); comp++) {
+        for (int comp = 0; comp < bands; comp++) {
             out.writeByte(comp); // Component id
             out.writeByte(comp == 0 ? 0x22 : 0x11); // h/v subsampling TODO: FixMe, consult YCbCrSubsampling
             out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
@@ -1351,10 +1369,10 @@ public class TIFFImageReader extends ImageReaderBase {
         }
 
         out.writeShort(JPEG.SOS);
-        out.writeShort(6 + 2 * raster.getNumBands()); // SOS length
-        out.writeByte(raster.getNumBands()); // Num comp
+        out.writeShort(6 + 2 * bands); // SOS length
+        out.writeByte(bands); // Num comp
 
-        for (int component = 0; component < raster.getNumBands(); component++) {
+        for (int component = 0; component < bands; component++) {
             out.writeByte(component); // Comp id
             out.writeByte(component == 0 ? component : 0x10 + (component & 0xf)); // dc/ac selector
         }

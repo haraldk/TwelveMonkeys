@@ -199,6 +199,20 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadOldStyleJPEGIncorrectJPEGInterchangeFormatLength() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/old-style-jpeg-bogus-jpeginterchangeformatlength.tif"), new Dimension(1632, 2328));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+        }
+    }
+
+    @Test
     public void testReadIncompatibleICCProfileIgnoredWithWarning() throws IOException {
         TestData testData = new TestData(getClassLoaderResource("/tiff/rgb-with-embedded-cmyk-icc.tif"), new Dimension(1500, 1500));
 
