@@ -28,12 +28,14 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.lang.Validate;
+
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
-import java.awt.image.ColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.DirectColorModel;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
+
+import static com.twelvemonkeys.lang.Validate.isTrue;
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * Factory class for creating {@code ImageTypeSpecifier}s.
@@ -59,17 +61,9 @@ public final class ImageTypeSpecifiers {
                                                   final int transferType, boolean isAlphaPremultiplied) {
         if (transferType == DataBuffer.TYPE_BYTE || transferType == DataBuffer.TYPE_USHORT) {
             // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for BYTE/USHORT types
-            if (colorSpace == null) {
-                throw new IllegalArgumentException("colorSpace == null!");
-            }
-
-            if (colorSpace.getType() != ColorSpace.TYPE_RGB) {
-                throw new IllegalArgumentException("colorSpace is not of type TYPE_RGB!");
-            }
-
-            if (redMask == 0 && greenMask == 0 && blueMask == 0 && alphaMask == 0) {
-                throw new IllegalArgumentException("No mask has at least 1 bit set!");
-            }
+            notNull(colorSpace, "colorSpace");
+            isTrue(colorSpace.getType() == ColorSpace.TYPE_RGB, colorSpace, "ColorSpace must be TYPE_RGB");
+            isTrue(redMask != 0 || greenMask != 0 || blueMask != 0 || alphaMask != 0, "No mask has at least 1 bit set");
 
             int bits = transferType == DataBuffer.TYPE_BYTE ? 8 : 16;
 
@@ -129,6 +123,34 @@ public final class ImageTypeSpecifiers {
 
         // NOTE: The isSigned boolean is stored but *not used for anything* in the Grayscale ImageTypeSpecifier...
         return ImageTypeSpecifier.createGrayscale(bits, dataType, false, isAlphaPremultiplied);
+    }
+
+    public static ImageTypeSpecifier createPackedGrayscale(final ColorSpace colorSpace, final int bits, final int dataType) {
+        notNull(colorSpace, "colorSpace");
+        isTrue(colorSpace.getType() == ColorSpace.TYPE_GRAY, colorSpace, "ColorSpace must be TYPE_GRAY");
+        isTrue(bits == 1 || bits == 2 || bits == 4, bits, "bits must be 1, 2, or 4: %s");
+        isTrue(dataType == DataBuffer.TYPE_BYTE, dataType, "dataType must be TYPE_BYTE: %s");
+
+        int numEntries = 1 << bits;
+
+        byte[] arr = new byte[numEntries];
+        byte[] arg = new byte[numEntries];
+        byte[] arb = new byte[numEntries];
+
+        // Scale array values according to color profile..
+        for (int i = 0; i < numEntries; i++) {
+            float[] gray = new float[]{i / (float) (numEntries - 1)};
+            float[] rgb = colorSpace.toRGB(gray);
+
+            arr[i] = (byte) (rgb[0] * 255);
+            arg[i] = (byte) (rgb[1] * 255);
+            arb[i] = (byte) (rgb[2]* 255);
+        }
+
+        ColorModel colorModel = new IndexColorModel(bits, numEntries, arr, arg, arb);
+        SampleModel sampleModel = new MultiPixelPackedSampleModel(dataType, 1, 1, bits);
+
+        return new ImageTypeSpecifier(colorModel, sampleModel);
     }
 
     public static ImageTypeSpecifier createIndexed(final byte[] redLUT, final byte[] greenLUT,

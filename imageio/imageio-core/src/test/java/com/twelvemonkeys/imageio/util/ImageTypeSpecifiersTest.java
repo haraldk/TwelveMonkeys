@@ -464,6 +464,30 @@ public class ImageTypeSpecifiersTest {
     }
 
     @Test
+    public void testCreatePackedGrayscale1() {
+        assertEquals(
+                ImageTypeSpecifier.createGrayscale(1, DataBuffer.TYPE_BYTE, false),
+                ImageTypeSpecifiers.createPackedGrayscale(GRAY, 1, DataBuffer.TYPE_BYTE)
+        );
+    }
+
+    @Test
+    public void testCreatePackedGrayscale2() {
+        assertEquals(
+                ImageTypeSpecifier.createGrayscale(2, DataBuffer.TYPE_BYTE, false),
+                ImageTypeSpecifiers.createPackedGrayscale(GRAY, 2, DataBuffer.TYPE_BYTE)
+        );
+    }
+
+    @Test
+    public void testCreatePackedGrayscale4() {
+        assertEquals(
+                ImageTypeSpecifier.createGrayscale(4, DataBuffer.TYPE_BYTE, false),
+                ImageTypeSpecifiers.createPackedGrayscale(GRAY, 4, DataBuffer.TYPE_BYTE)
+        );
+    }
+
+    @Test
     public void testCreateIndexedByteArrays1to8() {
         for (int bits = 1; bits <= 8; bits <<= 1) {
             byte[] lut = createByteLut(1 << bits);

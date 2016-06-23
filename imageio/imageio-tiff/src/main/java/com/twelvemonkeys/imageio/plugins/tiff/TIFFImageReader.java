@@ -364,8 +364,11 @@ public class TIFFImageReader extends ImageReaderBase {
                         if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32)) {
                             return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType);
                         }
-                        else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            // TODO: Should use packed format for 1/2/4
+                        else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 ) {
+                            // Use packed format for 1/2/4 bits
+                            return ImageTypeSpecifiers.createPackedGrayscale(cs, bitsPerSample, dataType);
+                        }
+                        else if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0}, dataType, false, false);
                         }
 
