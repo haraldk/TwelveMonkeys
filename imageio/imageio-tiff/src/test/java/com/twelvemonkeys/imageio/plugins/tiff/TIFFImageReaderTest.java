@@ -27,6 +27,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
  */
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -234,6 +235,59 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("ICC"));
+        }
+    }
+
+    @Test
+    public void testReadYCbCrJPEGAssumedRGB() throws IOException {
+        // Problematic test data, which is YCbCr encoded (as correctly specified by the PhotometricInterpretation tag,
+        // but the JPEGImageReader will detect the data as RGB due to non-subsampled data and SOF ids.
+        TestData testData = new TestData(getClassLoaderResource("/tiff/xerox-jpeg-ycbcr-weird-coefficients.tif"), new Dimension(2482, 3520));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            // TODO: There's a bug in reading with source region for the raster case...
+//            param.setSourceRegion(new Rectangle(8, 8));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+//            assertEquals(new Dimension(8, 8), new Dimension(image.getWidth(), image.getHeight()));
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+
+            // The pixel at 0, 0 should be white(-ish), not red!
+            // NOTE: The image contains some weird custom YCbCr coefficients, which are roughly
+            // 0.299, 0.587, 0.144, instead of the standard 0.299, 0.587, 0.114 (the last/blue coefficient differs)
+            // this will make the background bright purple, rather than pure white as it would have been
+            // with standard coefficients. Could be a typo/bug in the encoder or intentional.
+            // Some/most software ignores the custom coefficients, and decodes the image as white background...
+            int argb = image.getRGB(0, 0);
+            assertEquals("Alpha", 0xff, (argb >>> 24) & 0xff);
+            assertEquals("Red", 0xff, (argb >> 16) & 0xff);
+            assertEquals("Green", 0xf2, (argb >> 8) & 0xff);
+            assertEquals("Blue", 0xff, argb & 0xff);
+        }
+    }
+
+    @Ignore("Known issue")
+    @Test
+    public void testReadJPEGRasterCaseWithSrcRegion() throws IOException {
+        // Problematic test data, which is YCbCr encoded (as correctly specified by the PhotometricInterpretation tag,
+        // but the JPEGImageReader will detect the data as RGB due to non-subsampled data and SOF ids.
+        TestData testData = new TestData(getClassLoaderResource("/tiff/xerox-jpeg-ycbcr-weird-coefficients.tif"), new Dimension(2482, 3520));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(8, 8));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(new Dimension(8, 8), new Dimension(image.getWidth(), image.getHeight()));
         }
     }
 

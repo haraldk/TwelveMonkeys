@@ -47,17 +47,30 @@ public final class YCbCrConverter {
         buildYCCtoRGBtable();
     }
 
-    public static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, final int offset) {
-        double y = (yCbCr[offset] & 0xff);
-        double cb = (yCbCr[offset + 1] & 0xff) - 128;
-        double cr = (yCbCr[offset + 2] & 0xff) - 128;
+    public static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, double[] referenceBW, final int offset) {
+        double y;
+        double cb;
+        double cr;
+
+        if (referenceBW == null) {
+            // Default case
+            y = (yCbCr[offset] & 0xff);
+            cb = (yCbCr[offset + 1] & 0xff) - 128;
+            cr = (yCbCr[offset + 2] & 0xff) - 128;
+        }
+        else {
+            // Custom values
+            y = ((yCbCr[offset] & 0xff) - referenceBW[0]) * 255.0 / (referenceBW[1] - referenceBW[0]);
+            cb = ((yCbCr[offset + 1] & 0xff) - referenceBW[2]) * 127.0 / (referenceBW[3] - referenceBW[2]);
+            cr = ((yCbCr[offset + 2] & 0xff) - referenceBW[4]) * 127.0 / (referenceBW[5] - referenceBW[4]);
+        }
 
         double lumaRed = coefficients[0];
         double lumaGreen = coefficients[1];
         double lumaBlue = coefficients[2];
 
-        int red = (int) Math.round(cr * (2 - 2 * lumaRed) + y);
-        int blue = (int) Math.round(cb * (2 - 2 * lumaBlue) + y);
+        int red = (int) Math.round(cr * (2.0 - 2.0 * lumaRed) + y);
+        int blue = (int) Math.round(cb * (2.0 - 2.0 * lumaBlue) + y);
         int green = (int) Math.round((y - lumaRed * red - lumaBlue * blue) / lumaGreen);
 
         rgb[offset] = clamp(red);

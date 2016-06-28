@@ -52,10 +52,13 @@ import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
@@ -65,6 +68,7 @@ import java.awt.*;
 import java.awt.color.CMMException;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -148,6 +152,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
     // NOTE: DO NOT MODIFY OR EXPOSE THIS ARRAY OUTSIDE PACKAGE!
     static final double[] CCIR_601_1_COEFFICIENTS = new double[] {299.0 / 1000.0, 587.0 / 1000.0, 114.0 / 1000.0};
+    static final double[] REFERENCE_BLACK_WHITE_YCC_DEFAULT = new double[] {0, 255, 128, 255, 128, 255};
 
     private CompoundDirectory IFDs;
     private Directory currentIFD;
@@ -807,6 +812,7 @@ public class TIFFImageReader extends ImageReaderBase {
         WritableRaster rowRaster = rawType.createBufferedImage(stripTileWidth, 1).getRaster();
         Rectangle clip = new Rectangle(srcRegion);
         int row = 0;
+        Boolean needsCSConversion = null;
 
         switch (compression) {
             // TIFF Baseline
@@ -830,7 +836,7 @@ public class TIFFImageReader extends ImageReaderBase {
 
                 int[] yCbCrSubsampling = null;
                 int yCbCrPos = 1;
-//                double[] yCbCrCoefficients = null;
+
                 if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
                     // getRawImageType does the lookup/conversion for these
                     if (rowRaster.getNumBands() != 3) {
@@ -868,16 +874,6 @@ public class TIFFImageReader extends ImageReaderBase {
                     else {
                         yCbCrSubsampling = new int[] {2, 2};
                     }
-
-//                    Entry coefficients = currentIFD.getEntryById(TIFF.TAG_YCBCR_COEFFICIENTS);
-//                    if (coefficients != null) {
-//                        Rational[] value = (Rational[]) coefficients.getValue();
-//                        yCbCrCoefficients = new double[] {value[0].doubleValue(), value[1].doubleValue(), value[2].doubleValue()};
-//                    }
-//                    else {
-//                        // Default to y CCIR Recommendation 601-1 values
-//                        yCbCrCoefficients = YCbCrUpsamplerStream.CCIR_601_1_COEFFICIENTS;
-//                    }
                 }
 
                 // Read data
@@ -974,8 +970,8 @@ public class TIFFImageReader extends ImageReaderBase {
                     // http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
                     jpegReader.getStreamMetadata();
                 }
-                else {
-                    processWarningOccurred("Missing JPEGTables for TIFF with compression: 7 (JPEG)");
+                else if (tilesDown * tilesAcross > 1) {
+                    processWarningOccurred("Missing JPEGTables for tiled/striped TIFF with compression: 7 (JPEG)");
                     // ...and the JPEG reader will probably choke on missing tables...
                 }
 
@@ -991,7 +987,8 @@ public class TIFFImageReader extends ImageReaderBase {
                         int colsInTile = Math.min(stripTileWidth, width - col);
 
                         // Read only tiles that lies within region
-                        if (new Rectangle(col, row, colsInTile, rowsInTile).intersects(srcRegion)) {
+                        Rectangle tileRect = new Rectangle(col, row, colsInTile, rowsInTile);
+                        if (tileRect.intersects(srcRegion)) {
                             imageInput.seek(stripTileOffsets[i]);
 
                             int length = stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE;
@@ -1000,7 +997,13 @@ public class TIFFImageReader extends ImageReaderBase {
                                 jpegReader.setInput(subStream);
                                 jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
 
-                                if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || interpretation == TIFFBaseline.PHOTOMETRIC_RGB) {
+                                // TODO: If we have non-standard reference B/W or yCbCr coefficients,
+                                // we might still have to do extra color space conversion...
+                                if (needsCSConversion == null) {
+                                    needsCSConversion = needsCSConversion(interpretation, jpegReader.getImageMetadata(0));
+                                }
+
+                                if (!needsCSConversion) {
                                     jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
                                     jpegParam.setDestination(destination);
                                     jpegReader.read(0, jpegParam);
@@ -1013,7 +1016,6 @@ public class TIFFImageReader extends ImageReaderBase {
                                     destination.getRaster().setDataElements(col - srcRegion.x, row - srcRegion.y, raster);
                                 }
                             }
-
                         }
 
                         if (abortRequested()) {
@@ -1127,13 +1129,18 @@ public class TIFFImageReader extends ImageReaderBase {
 
                     // Read data
                     processImageStarted(imageIndex); // Better yet, would be to delegate read progress here...
+
                     imageInput.seek(realJPEGOffset);
 
                     try (ImageInputStream stream = new SubImageInputStream(imageInput, length)) {
                         jpegReader.setInput(stream);
                         jpegParam.setSourceRegion(srcRegion);
 
-                        if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || interpretation == TIFFBaseline.PHOTOMETRIC_RGB) {
+                        if (needsCSConversion == null) {
+                            needsCSConversion = needsCSConversion(interpretation, jpegReader.getImageMetadata(0));
+                        }
+
+                        if (!needsCSConversion) {
                             jpegParam.setDestination(destination);
                             jpegReader.read(0, jpegParam);
                         }
@@ -1141,6 +1148,7 @@ public class TIFFImageReader extends ImageReaderBase {
                             // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                             // We'll have to use readAsRaster and later apply color space conversion ourselves
                             Raster raster = jpegReader.readRaster(0, jpegParam);
+                            normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
                             destination.getRaster().setDataElements(0, 0, raster);
                         }
                     }
@@ -1232,7 +1240,11 @@ public class TIFFImageReader extends ImageReaderBase {
                                     jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
                                     jpegParam.setDestination(destination);
 
-                                    if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || interpretation == TIFFBaseline.PHOTOMETRIC_RGB) {
+                                    if (needsCSConversion == null) {
+                                        needsCSConversion = needsCSConversion(interpretation, jpegReader.getImageMetadata(0));
+                                    }
+
+                                    if (!needsCSConversion) {
                                         jpegParam.setDestination(destination);
                                         jpegReader.read(0, jpegParam);
                                     }
@@ -1240,6 +1252,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
+                                        normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
                                         destination.getRaster().setDataElements(0, 0, raster);
                                     }
                                 }
@@ -1293,6 +1306,40 @@ public class TIFFImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    private boolean needsCSConversion(final int photometricInterpretation, final IIOMetadata imageMetadata) throws IOException {
+        if (imageMetadata == null) {
+            // Assume we're ok
+            return false;
+        }
+
+        IIOMetadataNode stdTree = (IIOMetadataNode) imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+        NodeList csTypes = stdTree.getElementsByTagName("ColorSpaceType");
+
+        if (csTypes != null && csTypes.getLength() > 0) {
+            IIOMetadataNode csType = (IIOMetadataNode) csTypes.item(0);
+            String csName = csType.getAttribute("name");
+
+            if ("YCbCr".equals(csName) && photometricInterpretation == TIFFExtension.PHOTOMETRIC_YCBCR
+                    || "RGB".equals(csName) && photometricInterpretation == TIFFBaseline.PHOTOMETRIC_RGB
+                    || "GRAY".equals(csName) && photometricInterpretation == TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO) {
+                return false;
+            }
+            else {
+                // CMYK, or may happen because the JPEG stream is not subsampled,
+                // fooling the JPEGImageReader to believe the data is RGB, while it is YCbCr
+                if (DEBUG) {
+                    System.out.println("Incompatible JPEG CS/PhotometricInterpretation: " + csName + "/" + photometricInterpretation);
+                }
+
+                return true;
+            }
+        }
+
+        // We don't really know, assume it's ok...
+        return false;
     }
 
     private ImageReader createJPEGDelegate() throws IIOException {
@@ -1624,7 +1671,7 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, byte[] data) {
+    private void normalizeColor(int photometricInterpretation, byte[] data) throws IIOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // Inverse values
@@ -1637,7 +1684,7 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.PHOTOMETRIC_CIELAB:
             case TIFFExtension.PHOTOMETRIC_ICCLAB:
             case TIFFExtension.PHOTOMETRIC_ITULAB:
-                // TODO: Whitepoint may be encoded in separate tag
+                // TODO: White point may be encoded in separate tag
                 CIELabColorConverter converter = new CIELabColorConverter(
                         photometricInterpretation == TIFFExtension.PHOTOMETRIC_CIELAB
                         ? Illuminant.D65
@@ -1673,19 +1720,31 @@ public class TIFFImageReader extends ImageReaderBase {
                 break;
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:
-                Entry coefficients = currentIFD.getEntryById(TIFF.TAG_YCBCR_COEFFICIENTS);
+                // Default:  CCIR Recommendation 601-1: 299/1000, 587/1000 and 114/1000
+                double[] coefficients = getValueAsDoubleArray(TIFF.TAG_YCBCR_COEFFICIENTS, "YCbCrCoefficients", false, 3);
 
-                if (coefficients == null) {
+                // "Default" [0, 255, 128, 255, 128, 255] for YCbCr (real default is [0, 255, 0, 255, 0, 255] for RGB)
+                double[] referenceBW = getValueAsDoubleArray(TIFF.TAG_REFERENCE_BLACK_WHITE, "ReferenceBlackWhite", false, 6);
+
+                if ((coefficients == null || Arrays.equals(coefficients, CCIR_601_1_COEFFICIENTS))
+                        && (referenceBW == null || Arrays.equals(referenceBW, REFERENCE_BLACK_WHITE_YCC_DEFAULT))) {
+                    // Fast, default conversion
                     for (int i = 0; i < data.length; i += 3) {
                         YCbCrConverter.convertYCbCr2RGB(data, data, i);
                     }
                 }
                 else {
-                    Rational[] value = (Rational[]) coefficients.getValue();
-                    double[] yCbCrCoefficients = new double[] {value[0].doubleValue(), value[1].doubleValue(), value[2].doubleValue()};
+                    // If one of the values are null, we'll need the other here...
+                    if (coefficients == null) {
+                        coefficients = CCIR_601_1_COEFFICIENTS;
+                    }
+
+                    if (referenceBW != null && Arrays.equals(referenceBW, REFERENCE_BLACK_WHITE_YCC_DEFAULT)) {
+                        referenceBW = null;
+                    }
 
                     for (int i = 0; i < data.length; i += 3) {
-                        YCbCrConverter.convertYCbCr2RGB(data, data, yCbCrCoefficients, i);
+                        YCbCrConverter.convertYCbCr2RGB(data, data, coefficients, referenceBW, i);
                     }
                 }
 
@@ -1693,7 +1752,7 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, short[] data) {
+    private void normalizeColor(int photometricInterpretation, short[] data) throws IIOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // Inverse values
@@ -1706,7 +1765,7 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.PHOTOMETRIC_CIELAB:
             case TIFFExtension.PHOTOMETRIC_ICCLAB:
             case TIFFExtension.PHOTOMETRIC_ITULAB:
-                // TODO: Whitepoint may be encoded in separate tag
+                // TODO: White point may be encoded in separate tag
                 CIELabColorConverter converter = new CIELabColorConverter(
                         photometricInterpretation == TIFFExtension.PHOTOMETRIC_ITULAB
                         ? Illuminant.D65
@@ -1744,23 +1803,26 @@ public class TIFFImageReader extends ImageReaderBase {
                 break;
 
             case TIFFExtension.PHOTOMETRIC_YCBCR:
-                double[] coefficients;
+                // Default:  CCIR Recommendation 601-1: 299/1000, 587/1000 and 114/1000
+                double[] coefficients = getValueAsDoubleArray(TIFF.TAG_YCBCR_COEFFICIENTS, "YCbCrCoefficients", false, 3);
 
-                Entry coefficientsTag = currentIFD.getEntryById(TIFF.TAG_YCBCR_COEFFICIENTS);
-                if (coefficientsTag != null) {
-                    Rational[] value = (Rational[]) coefficientsTag.getValue();
-                    coefficients = new double[] {value[0].doubleValue(), value[1].doubleValue(), value[2].doubleValue()};
-                }
-                else {
+                // "Default" [0, 255, 128, 255, 128, 255] for YCbCr (real default is [0, 255, 0, 255, 0, 255] for RGB)
+                double[] referenceBW = getValueAsDoubleArray(TIFF.TAG_REFERENCE_BLACK_WHITE, "ReferenceBlackWhite", false, 6);
+
+                // If one of the values are null, we'll need the other here...
+                if (coefficients == null) {
                     coefficients = CCIR_601_1_COEFFICIENTS;
                 }
 
+                if (referenceBW != null && Arrays.equals(referenceBW, REFERENCE_BLACK_WHITE_YCC_DEFAULT)) {
+                    referenceBW = null;
+                }
+
                 for (int i = 0; i < data.length; i += 3) {
-                    convertYCbCr2RGB(data, data, coefficients, i);
+                    convertYCbCr2RGB(data, data, coefficients, referenceBW, i);
                 }
         }
     }
-
     private void normalizeColor(int photometricInterpretation, int[] data) {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
@@ -1792,21 +1854,30 @@ public class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void convertYCbCr2RGB(final short[] yCbCr, final short[] rgb, final double[] coefficients, final int offset) {
-        int y;
-        int cb;
-        int cr;
+    private void convertYCbCr2RGB(final short[] yCbCr, final short[] rgb, final double[] coefficients, final double[] referenceBW, final int offset) {
+        double y;
+        double cb;
+        double cr;
 
-        y = (yCbCr[offset + 0] & 0xffff);
-        cb = (yCbCr[offset + 1] & 0xffff) - 32768;
-        cr = (yCbCr[offset + 2] & 0xffff) - 32768;
+        if (referenceBW == null) {
+            // Default case
+            y = (yCbCr[offset] & 0xffff);
+            cb = (yCbCr[offset + 1] & 0xffff) - 32768;
+            cr = (yCbCr[offset + 2] & 0xffff) - 32768;
+        }
+        else {
+            // Custom values
+            y = ((yCbCr[offset] & 0xffff) - referenceBW[0]) * (65535.0) / (referenceBW[1] - referenceBW[0]);
+            cb = ((yCbCr[offset + 1] & 0xffff) - referenceBW[2]) * 32767.0 / (referenceBW[3] - referenceBW[2]);
+            cr = ((yCbCr[offset + 2] & 0xffff) - referenceBW[4]) * 32767.0 / (referenceBW[5] - referenceBW[4]);
+        }
 
         double lumaRed = coefficients[0];
         double lumaGreen = coefficients[1];
         double lumaBlue = coefficients[2];
 
-        int red = (int) Math.round(cr * (2 - 2 * lumaRed) + y);
-        int blue = (int) Math.round(cb * (2 - 2 * lumaBlue) + y);
+        int red = (int) Math.round(cr * (2.0 - 2.0 * lumaRed) + y);
+        int blue = (int) Math.round(cb * (2.0 - 2.0 * lumaBlue) + y);
         int green = (int) Math.round((y - lumaRed * (red) - lumaBlue * (blue)) / lumaGreen);
 
         short r = clampShort(red);
@@ -1894,6 +1965,57 @@ public class TIFFImageReader extends ImageReaderBase {
         }
         else if (entry.getValue() instanceof long[]) {
             value = (long[]) entry.getValue();
+        }
+        else {
+            throw new IIOException(String.format("Unsupported %s type: %s (%s)", tagName, entry.getTypeName(), entry.getValue().getClass()));
+        }
+
+        return value;
+    }
+
+    private double[] getValueAsDoubleArray(final int tag, final String tagName, final boolean required, final int expectedLength) throws IIOException {
+        Entry entry = currentIFD.getEntryById(tag);
+
+        if (entry == null) {
+            if (required) {
+                throw new IIOException("Missing TIFF tag " + tagName);
+            }
+
+            return null;
+        }
+
+        if (expectedLength > 0 && entry.valueCount() != expectedLength) {
+            if (required) {
+                throw new IIOException(String.format("Unexpected value count for %s: %d (expected %d values)", tagName, entry.valueCount(), expectedLength));
+            }
+
+            return null;
+        }
+
+        double[] value;
+
+        if (entry.valueCount() == 1) {
+            // For single entries, this will be a boxed type
+            value = new double[] {((Number) entry.getValue()).doubleValue()};
+        }
+        else if (entry.getValue() instanceof float[]) {
+            float[] floats = (float[]) entry.getValue();
+            value = new double[floats.length];
+
+            for (int i = 0, length = value.length; i < length; i++) {
+                value[i] = floats[i];
+            }
+        }
+        else if (entry.getValue() instanceof double[]) {
+            value = (double[]) entry.getValue();
+        }
+        else if (entry.getValue() instanceof Rational[]) {
+            Rational[] rationals = (Rational[]) entry.getValue();
+            value = new double[rationals.length];
+
+            for (int i = 0, length = value.length; i < length; i++) {
+                value[i] = rationals[i].doubleValue();
+            }
         }
         else {
             throw new IIOException(String.format("Unsupported %s type: %s (%s)", tagName, entry.getTypeName(), entry.getValue().getClass()));
