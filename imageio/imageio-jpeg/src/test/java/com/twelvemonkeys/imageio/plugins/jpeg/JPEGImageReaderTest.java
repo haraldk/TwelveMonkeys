@@ -900,7 +900,12 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         // Make sure CMYK images can be read and still contain their original (embedded) color profile
         JPEGImageReader reader = createReader();
 
-        List<TestData> cmykData = getCMYKData();
+        // NOTE: Data without ICC profile won't work in this test, as we might end up
+        // using the non-ICC color conversion case and fail miserably on the CI server.
+        List<TestData> cmykData = Arrays.asList(
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/jpeg/cmyk-sample-custom-icc-bright.jpg"), new Dimension(100, 100))
+        );
 
         for (TestData data : cmykData) {
             reader.setInput(data.getInputStream());
