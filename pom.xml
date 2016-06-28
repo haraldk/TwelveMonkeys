@@ -1,13 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>9</version>
+    </parent>
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys</artifactId>
-    <version>3.0-ece-1</version>
+    <version>3.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Twelvemonkeys</name>
+
+    <licenses>
+        <license>
+            <name>The BSD License</name>
+            <url>https://github.com/haraldk/TwelveMonkeys#license</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <modules>
         <module>common</module>
@@ -15,6 +26,8 @@
         <module>imageio</module>
         <!--<module>swing</module>-->
         <!--<module>sandbox</module>-->
+        <module>contrib</module>
+        <module>bom</module>
     </modules>
 
     <developers>
@@ -38,7 +51,37 @@
                 <role>maven-guru</role>
             </roles>
         </contributor>
+        <contributor>
+            <name>Oliver Schmidtmer</name>
+            <email>mail@trek7891.de</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Jason Palmer</name>
+            <email>jpalmer@itemmaster.com</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
     </contributors>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/haraldk/TwelveMonkeys/issues</url>
+    </issueManagement>
+
+    <scm>
+        <connection>scm:git:https://github.com/haraldk/TwelveMonkeys</connection>
+        <developerConnection>scm:git:https://github.com/haraldk/TwelveMonkeys</developerConnection>
+        <url>https://github.com/haraldk/TwelveMonkeys</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
     <build>
         <finalName>twelvemonkeys-${project.artifactId}-${project.version}</finalName>
@@ -52,11 +95,27 @@
                             <Implementation-Title>twelvemonkeys-${project.artifactId}</Implementation-Title>
                             <Implementation-Vendor>TwelveMonkeys</Implementation-Vendor>
                             <Implementation-Version>${project.version}</Implementation-Version>
-                            <Implementation-URL>http://github.com/haraldk/TwelveMonkeys</Implementation-URL>
+                            <Implementation-URL>${project.scm.url}</Implementation-URL>
                         </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <inherited>true</inherited>
+                <executions>
+                     <execution>
+                         <phase>package</phase>
+                         <id>attach-sources</id>
+                         <goals>
+                             <goal>jar</goal>
+                             <goal>test-jar</goal>
+                         </goals>
+                     </execution>
+                 </executions>
+             </plugin>
         </plugins>
 
         <pluginManagement>
@@ -64,6 +123,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.7</version>
                     <configuration>
                         <encoding>UTF-8</encoding>
                     </configuration>
@@ -71,7 +131,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.2</version>
+                    <version>2.6</version>
                     <inherited>true</inherited>
                     <executions>
                         <execution>
@@ -85,28 +145,24 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>2.10.3</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <inherited>true</inherited>
-                    <!-- THIS DOES NOT WORK..?! -->
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar</goal>
-                                <goal>test-jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <version>2.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.3</version>
                     <inherited>true</inherited>
                     <configuration>
-                        <source>1.5</source>
-                        <target>1.5</target>
-                        <showDeprecation>true</showDeprecation>
+                        <source>1.7</source>
+                        <target>1.7</target>
+                        <showDeprecation>false</showDeprecation>
+                        <debuglevel>source,lines</debuglevel>
                         <compilerArguments>
                             <encoding>iso-8859-1</encoding>
                         </compilerArguments>
@@ -116,6 +172,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.18.1</version>
                     <configuration>
                         <systemProperties>
                             <property>
@@ -128,26 +185,19 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-idea-plugin</artifactId>
-                    <inherited>true</inherited>
-                    <version>2.2</version>
-                    <configuration>
-                        <jdkName>1.5</jdkName>
-                        <jdkLevel>1.5</jdkLevel>
-                        <downloadSources>true</downloadSources>
-                    </configuration>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.2</version>
+                    <dependencies>
+                      <dependency>
+                        <groupId>org.apache.maven.scm</groupId>
+                        <artifactId>maven-scm-provider-gitexe</artifactId>
+                        <version>1.9</version>
+                      </dependency>
+                    </dependencies>
                 </plugin>
             </plugins>
 
         </pluginManagement>
-
-        <extensions>
-            <extension>
-                <groupId>org.jvnet.wagon-svn</groupId>
-                <artifactId>wagon-svn</artifactId>
-                <version>1.9</version>
-            </extension>
-        </extensions>
 
     </build>
 
@@ -156,43 +206,39 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.3</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>2.18.1</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.7</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.4</version>
                 <configuration>
-                    <targetJdk>1.5</targetJdk>
+                    <targetJdk>1.7</targetJdk>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.15</version>
             </plugin>
         </plugins>
     </reporting>
 
-    <repositories>
-        <repository>
-            <id>maven2-repository.dev.java.net</id>
-            <name>Java.net Repository for Maven</name>
-            <url>http://download.java.net/maven/2/</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
-
     <distributionManagement>
-        <repository>
-            <id>central</id>
-            <url>http://repo.dev.escenic.com/content/repositories/thirdparty</url>
-        </repository>
+      <snapshotRepository>
+        <id>central</id>
+        <url>http://repo.dev.escenic.com/content/repositories/thirdparty-snapshots</url>
+        <uniqueVersion>false</uniqueVersion>
+      </snapshotRepository>
     </distributionManagement>
-
 </project>

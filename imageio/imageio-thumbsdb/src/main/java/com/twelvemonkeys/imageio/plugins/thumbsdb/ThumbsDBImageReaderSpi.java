@@ -28,8 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 
 import javax.imageio.ImageReader;
@@ -48,36 +47,21 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ThumbsDBImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
+public final class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
     private ImageReaderSpi jpegProvider;
 
     /**
      * Creates a {@code ThumbsDBImageReaderSpi}.
      */
     public ThumbsDBImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(ThumbsDBImageReaderSpi.class));
-    }
-
-    private ThumbsDBImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"thumbs", "THUMBS", "Thumbs DB"},
-                new String[]{"db"},
-                new String[]{"image/x-thumbs-db", "application/octet-stream"}, // TODO: Check IANA et al...
-                ThumbsDBImageReader.class.getName(),
-                STANDARD_INPUT_TYPE,
-                null,
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new ThumbsDBProviderInfo());
     }
 
     public boolean canDecodeInput(Object source) throws IOException {
         return source instanceof ImageInputStream && canDecode((ImageInputStream) source);
     }
 
-    public boolean canDecode(ImageInputStream pInput) throws IOException {
+    boolean canDecode(final ImageInputStream pInput) throws IOException {
         maybeInitJPEGProvider();
         // If this is a OLE 2 CompoundDocument, we could try...
         // TODO: How do we know it's thumbs.db format (structure), without reading quite a lot?

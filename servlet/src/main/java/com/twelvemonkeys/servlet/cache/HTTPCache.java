@@ -32,7 +32,7 @@ import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.net.MIMEUtil;
-import com.twelvemonkeys.net.NetUtil;
+import com.twelvemonkeys.net.HTTPUtil;
 import com.twelvemonkeys.util.LRUHashMap;
 import com.twelvemonkeys.util.NullMap;
 
@@ -972,7 +972,7 @@ public class HTTPCache {
                 File cached = getCachedFile(pCacheURI, pRequest);
                 if (cached != null && cached.exists()) {
                     lastModified = cached.lastModified();
-                    //// System.out.println(" ## HTTPCache ## Last-Modified is " + NetUtil.formatHTTPDate(lastModified) + ", using cachedFile.lastModified()");
+                    //// System.out.println(" ## HTTPCache ## Last-Modified is " + HTTPUtil.formatHTTPDate(lastModified) + ", using cachedFile.lastModified()");
                 }
             }
             */
@@ -981,11 +981,11 @@ public class HTTPCache {
             int maxAge = getIntHeader(response, HEADER_CACHE_CONTROL, "max-age");
             if (maxAge == -1) {
                 expires = lastModified + defaultExpiryTime;
-                //// System.out.println(" ## HTTPCache ## Expires is " + NetUtil.formatHTTPDate(expires) + ", using lastModified + defaultExpiry");
+                //// System.out.println(" ## HTTPCache ## Expires is " + HTTPUtil.formatHTTPDate(expires) + ", using lastModified + defaultExpiry");
             }
             else {
                 expires = lastModified + (maxAge * 1000L); // max-age is seconds
-                //// System.out.println(" ## HTTPCache ## Expires is " + NetUtil.formatHTTPDate(expires) + ", using lastModified + maxAge");
+                //// System.out.println(" ## HTTPCache ## Expires is " + HTTPUtil.formatHTTPDate(expires) + ", using lastModified + maxAge");
             }
         }
         /*
@@ -997,7 +997,7 @@ public class HTTPCache {
         // Expired?
         if (expires < now) {
             // System.out.println(" ## HTTPCache ## Content is stale (content expired: "
-            //        + NetUtil.formatHTTPDate(expires) + " before " + NetUtil.formatHTTPDate(now) + ").");
+            //        + HTTPUtil.formatHTTPDate(expires) + " before " + HTTPUtil.formatHTTPDate(now) + ").");
             return true;
         }
 
@@ -1008,7 +1008,7 @@ public class HTTPCache {
             File cached = getCachedFile(pCacheURI, pRequest);
             if (cached != null && cached.exists()) {
                 lastModified = cached.lastModified();
-                //// System.out.println(" ## HTTPCache ## Last-Modified is " + NetUtil.formatHTTPDate(lastModified) + ", using cachedFile.lastModified()");
+                //// System.out.println(" ## HTTPCache ## Last-Modified is " + HTTPUtil.formatHTTPDate(lastModified) + ", using cachedFile.lastModified()");
             }
         }
         */
@@ -1018,7 +1018,7 @@ public class HTTPCache {
         //noinspection RedundantIfStatement
         if (real != null && real.exists() && real.lastModified() > lastModified) {
             // System.out.println(" ## HTTPCache ## Content is stale (new content"
-            //        + NetUtil.formatHTTPDate(lastModified) + " before " + NetUtil.formatHTTPDate(real.lastModified()) + ").");
+            //        + HTTPUtil.formatHTTPDate(lastModified) + " before " + HTTPUtil.formatHTTPDate(real.lastModified()) + ").");
             return true;
         }
 
@@ -1082,20 +1082,20 @@ public class HTTPCache {
     static long getDateHeader(final String pHeaderValue) {
         long date = -1L;
         if (pHeaderValue != null) {
-            date = NetUtil.parseHTTPDate(pHeaderValue);
+            date = HTTPUtil.parseHTTPDate(pHeaderValue);
         }
         return date;
     }
 
     // TODO: Extract and make public?
     final static class SizedLRUMap<K, V> extends LRUHashMap<K, V> {
-        int mSize;
-        int mMaxSize;
+        int currentSize;
+        int maxSize;
 
         public SizedLRUMap(int pMaxSize) {
             //super(true);
-            super(); // Note: super.mMaxSize doesn't count...
-            mMaxSize = pMaxSize;
+            super(); // Note: super.maxSize doesn't count...
+            maxSize = pMaxSize;
         }
 
 
@@ -1113,11 +1113,11 @@ public class HTTPCache {
 
         @Override
         public V put(K pKey, V pValue) {
-            mSize += sizeOf(pValue);
+            currentSize += sizeOf(pValue);
 
             V old = super.put(pKey, pValue);
             if (old != null) {
-                mSize -= sizeOf(old);
+                currentSize -= sizeOf(old);
             }
             return old;
         }
@@ -1126,14 +1126,14 @@ public class HTTPCache {
         public V remove(Object pKey) {
             V old = super.remove(pKey);
             if (old != null) {
-                mSize -= sizeOf(old);
+                currentSize -= sizeOf(old);
             }
             return old;
         }
 
         @Override
         protected boolean removeEldestEntry(Map.Entry<K, V> pEldest) {
-            if (mMaxSize <= mSize) { // NOTE: mMaxSize here is mem size
+            if (maxSize <= currentSize) { // NOTE: maxSize here is mem size
                 removeLRU();
             }
             return false;
@@ -1141,7 +1141,7 @@ public class HTTPCache {
 
         @Override
         public void removeLRU() {
-            while (mMaxSize <= mSize) { // NOTE: mMaxSize here is mem size
+            while (maxSize <= currentSize) { // NOTE: maxSize here is mem size
                 super.removeLRU();
             }
         }

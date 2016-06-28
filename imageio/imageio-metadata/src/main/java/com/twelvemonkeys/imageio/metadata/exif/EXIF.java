@@ -35,6 +35,7 @@ package com.twelvemonkeys.imageio.metadata.exif;
  * @author last modified by $Author: haraldk$
  * @version $Id: EXIF.java,v 1.0 Nov 11, 2009 5:36:04 PM haraldk Exp$
  */
+@SuppressWarnings("UnusedDeclaration")
 public interface EXIF {
     // See http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html
     int TAG_EXPOSURE_TIME = 33434;

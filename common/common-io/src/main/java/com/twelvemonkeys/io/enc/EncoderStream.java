@@ -29,8 +29,9 @@
 package com.twelvemonkeys.io.enc;
 
 import java.io.FilterOutputStream;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
  * An {@code OutputStream} that provides on-the-fly encoding to an underlying
@@ -43,12 +44,12 @@ import java.io.IOException;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/EncoderStream.java#2 $
  */
 public final class EncoderStream extends FilterOutputStream {
+    // TODO: This class need a test case ASAP!!!
 
     protected final Encoder encoder;
     private final boolean flushOnWrite;
 
-    protected int bufferPos;
-    protected final byte[] buffer;
+    protected final ByteBuffer buffer;
 
     /**
      * Creates an output stream filter built on top of the specified
@@ -76,8 +77,8 @@ public final class EncoderStream extends FilterOutputStream {
         encoder = pEncoder;
         flushOnWrite = pFlushOnWrite;
 
-        buffer = new byte[1024];
-        bufferPos = 0;
+        buffer = ByteBuffer.allocate(1024);
+        buffer.flip();
     }
 
     public void close() throws IOException {
@@ -91,12 +92,14 @@ public final class EncoderStream extends FilterOutputStream {
     }
 
     private void encodeBuffer() throws IOException {
-        if (bufferPos != 0) {
+        if (buffer.position() != 0) {
+            buffer.flip();
+
             // Make sure all remaining data in buffer is written to the stream
-            encoder.encode(out, buffer, 0, bufferPos);
+            encoder.encode(out, buffer);
 
             // Reset buffer
-            bufferPos = 0;
+            buffer.clear();
         }
     }
 
@@ -109,25 +112,24 @@ public final class EncoderStream extends FilterOutputStream {
     // that the encoder can't buffer. In that case, the encoder should probably
     // tell the EncoderStream how large buffer it prefers... 
     public void write(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        if (!flushOnWrite && bufferPos + pLength < buffer.length) {
+        if (!flushOnWrite && pLength < buffer.remaining()) {
             // Buffer data
-            System.arraycopy(pBytes, pOffset, buffer, bufferPos, pLength);
-            bufferPos += pLength;
+            buffer.put(pBytes, pOffset, pLength);
         }
         else {
             // Encode data already in the buffer
             encodeBuffer();
 
             // Encode rest without buffering
-            encoder.encode(out, pBytes, pOffset, pLength);
+            encoder.encode(out, ByteBuffer.wrap(pBytes, pOffset, pLength));
         }
     }
 
     public void write(final int pByte) throws IOException {
-        if (bufferPos >= buffer.length - 1) {
+        if (!buffer.hasRemaining()) {
             encodeBuffer(); // Resets bufferPos to 0
         }
 
-        buffer[bufferPos++] = (byte) pByte;
+        buffer.put((byte) pByte);
     }
 }

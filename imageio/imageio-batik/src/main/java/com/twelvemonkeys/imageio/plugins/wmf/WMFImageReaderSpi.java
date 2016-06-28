@@ -28,64 +28,38 @@
 
 package com.twelvemonkeys.imageio.plugins.wmf;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.lang.SystemUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
 
+import static com.twelvemonkeys.imageio.plugins.wmf.WMFProviderInfo.WMF_READER_AVAILABLE;
+
 /**
  * WMFImageReaderSpi
  * <p/>
- * 
+ *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: WMFImageReaderSpi.java,v 1.1 2003/12/02 16:45:00 wmhakur Exp $
  */
-public class WMFImageReaderSpi extends ImageReaderSpi {
-
-    // This is correct, as we rely on the SVG reader
-    private final static boolean WMF_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
+public final class WMFImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code WMFImageReaderSpi}.
      */
     public WMFImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(WMFImageReaderSpi.class));
+        super(new WMFProviderInfo());
     }
 
-    private WMFImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(), // Vendor name
-                pProviderInfo.getVersion(), // Version
-                WMF_READER_AVAILABLE ? new String[]{"wmf", "WMF"} : new String[]{""}, // Names
-                WMF_READER_AVAILABLE ? new String[]{"wmf", "emf"} : null, // Suffixes
-                WMF_READER_AVAILABLE ? new String[]{"application/x-msmetafile", "image/x-wmf"} : null, // Mime-types
-                WMFImageReader.class.getName(), // Reader class name..?
-                ImageReaderSpi.STANDARD_INPUT_TYPE, // Output types
-                null, // Writer SPI names
-                true, // Supports standard stream metadata format
-                null, // Native stream metadata format name
-                null, // Native stream metadata format class name
-                null, // Extra stream metadata format names
-                null, // Extra stream metadata format class names
-                true, // Supports standard image metadata format
-                null, // Native image metadata format name
-                null, // Native image metadata format class name
-                null, // Extra image metadata format names
-                null  // Extra image metadata format class names
-        );
-    }
-
-    public boolean canDecodeInput(Object source) throws IOException {
+    public boolean canDecodeInput(final Object source) throws IOException {
         return source instanceof ImageInputStream && WMF_READER_AVAILABLE && canDecode((ImageInputStream) source);
     }
 
-    public static boolean canDecode(ImageInputStream pInput) throws IOException {
+    public static boolean canDecode(final ImageInputStream pInput) throws IOException {
         if (pInput == null) {
             throw new IllegalArgumentException("input == null");
         }
@@ -96,7 +70,6 @@ public class WMFImageReaderSpi extends ImageReaderSpi {
             for (byte header : WMF.HEADER) {
                 int read = (byte) pInput.read();
                 if (header != read) {
-                    // System.out.println("--> " + i + ": " + read + " (expected " + header + ")");
                     return false;
                 }
             }
@@ -108,18 +81,17 @@ public class WMFImageReaderSpi extends ImageReaderSpi {
         }
     }
 
-
-    public ImageReader createReaderInstance(Object extension) throws IOException {
+    public ImageReader createReaderInstance(final Object extension) throws IOException {
         return new WMFImageReader(this);
     }
 
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return "Windows Meta File (WMF) image reader";
     }
 
     @SuppressWarnings({"deprecation"})
     @Override
-    public void onRegistration(ServiceRegistry registry, Class<?> category) {
+    public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (!WMF_READER_AVAILABLE) {
             IIOUtil.deregisterProvider(registry, this, category);
         }

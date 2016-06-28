@@ -28,14 +28,12 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
 import java.io.EOFException;
+import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -45,28 +43,13 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class PICTImageReaderSpi extends ImageReaderSpi {
+public class PICTImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code PICTImageReaderSpi}.
      */
     public PICTImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(PICTImageReaderSpi.class));
-    }
-
-    private PICTImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"pct", "PCT", "pict", "PICT"},
-                new String[]{"pct", "pict"},
-                new String[]{"image/pict", "image/x-pict"},
-                "com.twelvemkonkeys.imageio.plugins.pict.PICTImageReader",
-                STANDARD_INPUT_TYPE,
-                new String[]{"com.twelvemkonkeys.imageio.plugins.pict.PICTImageWriterSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new PICTProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
@@ -85,7 +68,7 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
             else {
                 // Skip header 512 bytes for file-based streams
                 stream.reset();
-                PICTImageReader.skipNullHeader(stream);
+                skipNullHeader(stream);
             }
 
             return isPICT(stream);
@@ -96,6 +79,12 @@ public class PICTImageReaderSpi extends ImageReaderSpi {
         finally {
             stream.reset();
         }
+    }
+
+    static void skipNullHeader(final ImageInputStream pStream) throws IOException {
+        // NOTE: Only skip if FILE FORMAT, not needed for Mac OS DnD
+        // Spec says "platofrm dependent", may not be all nulls..
+        pStream.skipBytes(PICT.PICT_NULL_HEADER_SIZE);
     }
 
     private boolean isPICT(final ImageInputStream pStream) throws IOException {

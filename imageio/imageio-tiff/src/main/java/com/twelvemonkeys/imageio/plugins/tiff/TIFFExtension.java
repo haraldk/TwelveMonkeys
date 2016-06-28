@@ -42,7 +42,7 @@ interface TIFFExtension {
     int COMPRESSION_CCITT_T6 = 4;
     /** LZW Compression. Was baseline, but moved to extension due to license issues in the LZW algorithm. */
     int COMPRESSION_LZW = 5;
-    /** Deprecated. For backwards compatibility only. */
+    /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
     int COMPRESSION_OLD_JPEG = 6;
     /** JPEG Compression (lossy). */
     int COMPRESSION_JPEG = 7;
@@ -62,7 +62,40 @@ interface TIFFExtension {
     int PREDICTOR_HORIZONTAL_DIFFERENCING = 2;
     int PREDICTOR_HORIZONTAL_FLOATINGPOINT = 3;
 
+    int FILL_RIGHT_TO_LEFT = 2;
+
     int SAMPLEFORMAT_INT = 2;
     int SAMPLEFORMAT_FP = 3;
     int SAMPLEFORMAT_UNDEFINED = 4;
+
+    int YCBCR_POSITIONING_CENTERED = 1;
+    int YCBCR_POSITIONING_COSITED = 2;
+
+    /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
+    int JPEG_PROC_BASELINE = 1;
+    /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
+    int JPEG_PROC_LOSSLESS = 14;
+
+    /** For use with Photometric: 5 (Separated), when image data is in CMYK color space. */
+    int INKSET_CMYK = 1;
+
+    /**
+     * For use with Photometric: 5 (Separated), when image data is in a color space other than CMYK.
+     * See {@link com.twelvemonkeys.imageio.metadata.exif.TIFF#TAG_INK_NAMES InkNames} field for a
+     * description of the inks to be used.
+     */
+    int INKSET_NOT_CMYK = 2;
+
+    int ORIENTATION_TOPRIGHT = 2;
+    int ORIENTATION_BOTRIGHT = 3;
+    int ORIENTATION_BOTLEFT = 4;
+    int ORIENTATION_LEFTTOP = 5;
+    int ORIENTATION_RIGHTTOP = 6;
+    int ORIENTATION_RIGHTBOT = 7;
+    int ORIENTATION_LEFTBOT = 8;
+
+    int GROUP3OPT_2DENCODING = 1;
+    int GROUP3OPT_UNCOMPRESSED = 2;
+    int GROUP3OPT_FILLBITS = 4;
+    int GROUP4OPT_UNCOMPRESSED = 2;
 }

@@ -1,0 +1,3 @@
+com.twelvemonkeys.imageio.plugins.bmp.BMPImageReaderSpi
+com.twelvemonkeys.imageio.plugins.bmp.CURImageReaderSpi
+com.twelvemonkeys.imageio.plugins.bmp.ICOImageReaderSpi

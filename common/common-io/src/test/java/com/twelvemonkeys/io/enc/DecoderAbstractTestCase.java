@@ -5,6 +5,7 @@ import com.twelvemonkeys.lang.ObjectAbstractTestCase;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
 
@@ -39,7 +40,7 @@ public abstract class DecoderAbstractTestCase extends ObjectAbstractTestCase {
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[0]);
 
         try {
-            int count = decoder.decode(bytes, new byte[128]);
+            int count = decoder.decode(bytes, ByteBuffer.allocate(128));
             assertEquals("Should not be able to read any bytes", 0, count);
         }
         catch (EOFException allowed) {

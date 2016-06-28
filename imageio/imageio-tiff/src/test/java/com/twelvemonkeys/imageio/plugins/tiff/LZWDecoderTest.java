@@ -26,6 +26,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderAbstractTestCase;
 import com.twelvemonkeys.io.enc.DecoderStream;
@@ -36,6 +37,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
 
@@ -47,6 +49,8 @@ import static org.junit.Assert.*;
  * @version $Id: LZWDecoderTest.java,v 1.0 08.05.12 23:44 haraldk Exp$
  */
 public class LZWDecoderTest extends DecoderAbstractTestCase {
+
+    public static final int SPEED_TEST_ITERATIONS = 1024;
 
     @Test
     public void testIsOldBitReversedStreamTrue() throws IOException {
@@ -60,24 +64,15 @@ public class LZWDecoderTest extends DecoderAbstractTestCase {
 
     @Test
     public void testShortBitReversedStream() throws IOException {
-        InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-short.bin"), new LZWDecoder(true), 128);
+        InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-short.bin"), LZWDecoder.create(true), 128);
         InputStream unpacked = new ByteArrayInputStream(new byte[512 * 3 * 5]); // Should be all 0's
-
-        assertSameStreamContents(unpacked, stream);
-    }
-
-    @Ignore("Known issue")
-    @Test
-    public void testShortBitReversedStreamLine45To49() throws IOException {
-        InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-short-45-49.bin"), new LZWDecoder(true), 128);
-        InputStream unpacked = getClass().getResourceAsStream("/lzw/unpacked-short-45-49.bin");
 
         assertSameStreamContents(unpacked, stream);
     }
 
     @Test
     public void testLongStream() throws IOException {
-        InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-long.bin"), new LZWDecoder(), 1024);
+        InputStream stream = new DecoderStream(getClass().getResourceAsStream("/lzw/lzw-long.bin"), LZWDecoder.create(false), 1024);
         InputStream unpacked = getClass().getResourceAsStream("/lzw/unpacked-long.bin");
 
         assertSameStreamContents(unpacked, stream);
@@ -88,13 +83,6 @@ public class LZWDecoderTest extends DecoderAbstractTestCase {
         int data;
 
         try {
-//            long toSkip = 3800;
-//            while ((toSkip -= expected.skip(toSkip)) > 0) {
-//            }
-//            toSkip = 3800;
-//            while ((toSkip -= actual.skip(toSkip)) > 0) {
-//            }
-
             while ((data = actual.read()) !=  -1) {
                 count++;
 
@@ -111,12 +99,33 @@ public class LZWDecoderTest extends DecoderAbstractTestCase {
 
     @Override
     public Decoder createDecoder() {
-        return new LZWDecoder();
+        return LZWDecoder.create(false);
     }
 
     @Override
     public Encoder createCompatibleEncoder() {
-        // Don't have an encoder yet
+        // TODO: Need to know length of data to compress in advance...
         return null;
+    }
+
+    @Ignore
+    @Test(timeout = 3000)
+    public void testSpeed() throws IOException {
+        byte[] bytes = FileUtil.read(getClass().getResourceAsStream("/lzw/lzw-long.bin"));
+
+
+        for (int i = 0; i < SPEED_TEST_ITERATIONS; i++) {
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
+            ByteArrayInputStream input = new ByteArrayInputStream(bytes);
+            LZWDecoder decoder = new LZWDecoder.LZWSpecDecoder();
+
+            int read, total = 0;
+            while((read = decoder.decode(input, buffer)) > 0) {
+                buffer.clear();
+                total += read;
+            }
+
+            assertEquals(49152, total);
+        }
     }
 }

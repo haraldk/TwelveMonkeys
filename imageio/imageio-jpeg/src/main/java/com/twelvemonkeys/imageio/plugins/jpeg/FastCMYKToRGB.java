@@ -131,11 +131,12 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
         return dest;
     }
 
-    @SuppressWarnings({"PointlessArithmeticExpression"})
     private void convertCMYKToRGB(byte[] cmyk, byte[] rgb) {
-        rgb[0] = (byte) (((255 - cmyk[0] & 0xFF) * (255 - cmyk[3] & 0xFF)) / 255);
-        rgb[1] = (byte) (((255 - cmyk[1] & 0xFF) * (255 - cmyk[3] & 0xFF)) / 255);
-        rgb[2] = (byte) (((255 - cmyk[2] & 0xFF) * (255 - cmyk[3] & 0xFF)) / 255);
+        // Adapted from http://www.easyrgb.com/index.php?X=MATH
+        final int k = cmyk[3] & 0xFF;
+        rgb[0] = (byte) (255 - (((cmyk[0] & 0xFF) * (255 - k) / 255) + k));
+        rgb[1] = (byte) (255 - (((cmyk[1] & 0xFF) * (255 - k) / 255) + k));
+        rgb[2] = (byte) (255 - (((cmyk[2] & 0xFF) * (255 - k) / 255) + k));
     }
 
     public Rectangle2D getBounds2D(Raster src) {
@@ -143,34 +144,15 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
     }
 
     public WritableRaster createCompatibleDestRaster(final Raster src) {
-        return src.createChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[]{0, 1, 2}).createCompatibleWritableRaster();
+        // WHAT?? This code no longer work for JRE 7u45+... JRE bug?!
+//        Raster child = src.createChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0, 1, 2});
+//        return child.createCompatibleWritableRaster(); // Throws an exception complaining about the scanline stride from the verify() method
+
+        // This is a workaround for the above code that no longer works.
+        // It wil use 25% more memory, but it seems to work...
+        WritableRaster raster = src.createCompatibleWritableRaster();
+        return raster.createWritableChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0, 1, 2});
     }
-
-    /*
-    public BufferedImage filter(BufferedImage src, BufferedImage dest) {
-        Validate.notNull(src, "src may not be null");
-//        Validate.isTrue(src != dest, "src and dest image may not be same");
-
-        if (dest == null) {
-            dest = createCompatibleDestImage(src, ColorModel.getRGBdefault());
-        }
-
-        filter(src.getRaster(), dest.getRaster());
-
-        return dest;
-    }
-
-    public Rectangle2D getBounds2D(BufferedImage src) {
-        return getBounds2D(src.getRaster());
-    }
-
-    public BufferedImage createCompatibleDestImage(BufferedImage src, ColorModel destCM) {
-        // TODO: dest color model depends on bands...
-        return destCM == null ?
-                new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_3BYTE_BGR) :
-                new BufferedImage(destCM, destCM.createCompatibleWritableRaster(src.getWidth(), src.getHeight()), destCM.isAlphaPremultiplied(), null);
-    }
-    */
 
     public Point2D getPoint2D(Point2D srcPt, Point2D dstPt) {
         if (dstPt == null) {

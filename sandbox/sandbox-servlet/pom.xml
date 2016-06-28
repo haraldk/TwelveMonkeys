@@ -34,7 +34,7 @@
     <parent>
         <groupId>com.twelvemonkeys.sandbox</groupId>
         <artifactId>sandbox</artifactId>
-        <version>3.0-ece-1</version>
+        <version>3.1-SNAPSHOT</version>
     </parent>
     <artifactId>sandbox-servlet</artifactId>
     <packaging>jar</packaging>

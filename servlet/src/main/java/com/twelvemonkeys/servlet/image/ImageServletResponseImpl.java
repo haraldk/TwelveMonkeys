@@ -65,17 +65,15 @@ import java.util.Iterator;
  * The response also automatically handles writing the image back to the underlying response stream
  * in the preferred format, when the response is flushed.
  * <p>
- *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ImageServletResponseImpl.java#10 $
- *
  */
 // TODO: Refactor out HTTP specifics (if possible).
 // TODO: Is it a good ide to throw IIOException?
 // TODO: This implementation has a problem if two filters does scaling, as the second will overwrite the SIZE attribute
 // TODO: Allow different scaling algorithm based on input image (use case: IndexColorModel does not scale well using default, smooth may be slow for large images)
+// TODO: Support pluggable pre- and post-processing steps
 class ImageServletResponseImpl extends HttpServletResponseWrapper implements ImageServletResponse {
-
     private ServletRequest originalRequest;
     private final ServletContext context;
     private final ServletResponseStreamDelegate streamDelegate;
@@ -225,6 +223,9 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
                         // The default JPEG quality is not good enough, so always adjust compression/quality
                         if ((requestQuality != null || "jpeg".equalsIgnoreCase(getFormatNameSafe(writer))) && param.canWriteCompressed()) {
+                            // TODO: See http://blog.apokalyptik.com/2009/09/16/quality-time-with-your-jpegs/ for better adjusting the (default) JPEG quality
+                            // OR: Use the metadata of the original image
+
                             param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 
                             // WORKAROUND: Known bug in GIFImageWriter in certain JDK versions, compression type is not set by default
@@ -236,10 +237,13 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
                         }
 
                         if ("gif".equalsIgnoreCase(getFormatNameSafe(writer)) && !(image.getColorModel() instanceof IndexColorModel) 
-                                && image.getColorModel().getTransparency() != Transparency.OPAQUE) {
+                                /*&& image.getColorModel().getTransparency() != Transparency.OPAQUE*/) {
                             // WORKAROUND: Bug in GIFImageWriter may throw NPE if transparent pixels
                             // See: http://bugs.sun.com/view_bug.do?bug_id=6287936
-                            image = ImageUtil.createIndexed(ImageUtil.toBuffered(image), 256, null, ImageUtil.TRANSPARENCY_BITMASK | ImageUtil.DITHER_DIFFUSION_ALTSCANS);
+                            image = ImageUtil.createIndexed(
+                                    ImageUtil.toBuffered(image), 256, null,
+                                    (image.getColorModel().getTransparency() == Transparency.OPAQUE ? ImageUtil.TRANSPARENCY_OPAQUE : ImageUtil.TRANSPARENCY_BITMASK) | ImageUtil.DITHER_DIFFUSION_ALTSCANS
+                            );
                         }
     //////////////////
                         ImageOutputStream stream = ImageIO.createImageOutputStream(out);
@@ -427,18 +431,29 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         if (image != null && size != null && (image.getWidth() != size.width || image.getHeight() != size.height)) {
             int resampleAlgorithm = getResampleAlgorithmFromRequest();
 
+            // TODO: One possibility is to NOT handle index color here, and only handle it later, IF NEEDED (read: GIF,
+            // possibly also for PNG) when we know the output format (flush method).
+            // This will make the filter faster (and better quality, possibly at the expense of more bytes being sent
+            // over the wire) in the general case. Who uses GIF nowadays anyway?
+            // Also, this means we could either keep the original IndexColorModel in the filter, or go through the
+            // expensive operation of re-calculating the optimal palette for the new image (the latter might improve quality).
+
             // NOTE: Only use createScaled if IndexColorModel, as it's more expensive due to color conversion
-            if (image.getColorModel() instanceof IndexColorModel) {
-                return ImageUtil.createScaled(image, size.width, size.height, resampleAlgorithm);
+/*            if (image.getColorModel() instanceof IndexColorModel) {
+//                return ImageUtil.createScaled(image, size.width, size.height, resampleAlgorithm);
+                BufferedImage resampled = ImageUtil.createResampled(image, size.width, size.height, resampleAlgorithm);
+                return ImageUtil.createIndexed(resampled, (IndexColorModel) image.getColorModel(), null, ImageUtil.DITHER_NONE | ImageUtil.TRANSPARENCY_BITMASK);
+//                return ImageUtil.createIndexed(resampled, 256, null, ImageUtil.COLOR_SELECTION_QUALITY | ImageUtil.DITHER_NONE | ImageUtil.TRANSPARENCY_BITMASK);
             }
             else {
+            */
                 return ImageUtil.createResampled(image, size.width, size.height, resampleAlgorithm);
-            }
+//            }
         }
         return image;
     }
 
-    private int getResampleAlgorithmFromRequest() {
+    int getResampleAlgorithmFromRequest() {
         Object algorithm = originalRequest.getAttribute(ATTRIB_IMAGE_RESAMPLE_ALGORITHM);
         if (algorithm instanceof Integer && ((Integer) algorithm == Image.SCALE_SMOOTH || (Integer) algorithm == Image.SCALE_FAST || (Integer) algorithm == Image.SCALE_DEFAULT)) {
             return (Integer) algorithm;
@@ -447,6 +462,7 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
             if (algorithm != null) {
                 context.log("WARN: Illegal image resampling algorithm: " + algorithm);
             }
+
             return BufferedImage.SCALE_DEFAULT;
         }
     }
@@ -697,5 +713,93 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
 
         // Create new Dimension object and return
         return new Dimension(pWidth, pHeight);
+    }
+
+    static Rectangle getAOI(int pOriginalWidth, int pOriginalHeight,
+                                      int pX, int pY, int pWidth, int pHeight,
+                                      boolean pPercent, boolean pMaximizeToAspect) {
+        // Algorithm:
+        // Try to get x and y (default 0,0).
+        // Try to get width and height (default width-x, height-y)
+        //
+        // If percent, get ratio
+        //
+        // If uniform
+        //
+
+        float ratio;
+
+        if (pPercent) {
+            if (pWidth >= 0 && pHeight >= 0) {
+                // Non-uniform
+                pWidth = Math.round((float) pOriginalWidth * (float) pWidth / 100f);
+                pHeight = Math.round((float) pOriginalHeight * (float) pHeight / 100f);
+            }
+            else if (pWidth >= 0) {
+                // Find ratio from pWidth
+                ratio = (float) pWidth / 100f;
+                pWidth = Math.round((float) pOriginalWidth * ratio);
+                pHeight = Math.round((float) pOriginalHeight * ratio);
+            }
+            else if (pHeight >= 0) {
+                // Find ratio from pHeight
+                ratio = (float) pHeight / 100f;
+                pWidth = Math.round((float) pOriginalWidth * ratio);
+                pHeight = Math.round((float) pOriginalHeight * ratio);
+            }
+            // Else: No crop
+        }
+        else {
+            // Uniform
+            if (pMaximizeToAspect) {
+                if (pWidth >= 0 && pHeight >= 0) {
+                    // Compute both ratios
+                    ratio = (float) pWidth / (float) pHeight;
+                    float originalRatio = (float) pOriginalWidth / (float) pOriginalHeight;
+                    if (ratio > originalRatio) {
+                        pWidth = pOriginalWidth;
+                        pHeight = Math.round((float) pOriginalWidth / ratio);
+                    }
+                    else {
+                        pHeight = pOriginalHeight;
+                        pWidth = Math.round((float) pOriginalHeight * ratio);
+                    }
+                }
+                else if (pWidth >= 0) {
+                    // Find ratio from pWidth
+                    ratio = (float) pWidth / (float) pOriginalWidth;
+                    pHeight = Math.round((float) pOriginalHeight * ratio);
+                }
+                else if (pHeight >= 0) {
+                    // Find ratio from pHeight
+                    ratio = (float) pHeight / (float) pOriginalHeight;
+                    pWidth = Math.round((float) pOriginalWidth * ratio);
+                }
+                // Else: No crop
+            }
+        }
+
+        // Not specified, or outside bounds: Use original dimensions
+        if (pWidth < 0 || (pX < 0 && pWidth > pOriginalWidth)
+                || (pX >= 0 && (pX + pWidth) > pOriginalWidth)) {
+            pWidth = (pX >= 0 ? pOriginalWidth - pX : pOriginalWidth);
+        }
+        if (pHeight < 0 || (pY < 0 && pHeight > pOriginalHeight)
+                || (pY >= 0 && (pY + pHeight) > pOriginalHeight)) {
+            pHeight = (pY >= 0 ? pOriginalHeight - pY : pOriginalHeight);
+        }
+
+        // Center
+        if (pX < 0) {
+            pX = (pOriginalWidth - pWidth) / 2;
+        }
+        if (pY < 0) {
+            pY = (pOriginalHeight - pHeight) / 2;
+        }
+
+//        System.out.println("x: " + pX + " y: " + pY
+//                           + " w: " + pWidth + " h " + pHeight);
+
+        return new Rectangle(pX, pY, pWidth, pHeight);
     }
 }

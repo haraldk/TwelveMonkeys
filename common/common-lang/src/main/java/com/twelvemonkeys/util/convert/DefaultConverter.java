@@ -67,9 +67,9 @@ public final class DefaultConverter implements PropertyConverter {
      *
      * @throws ConversionException if the type is null, or if the string cannot
      * be converted into the given type, using a string constructor or static
-     * {@code valueof} method.
+     * {@code valueOf} method.
      */
-    public Object toObject(String pString, final Class pType, String pFormat) throws ConversionException {
+    public Object toObject(final String pString, final Class pType, final String pFormat) throws ConversionException {
         if (pString == null) {
             return null;
         }
@@ -87,13 +87,7 @@ public final class DefaultConverter implements PropertyConverter {
         // But what about generic type?! It's erased...
 
         // Primitive -> wrapper
-        Class type;
-        if (pType == Boolean.TYPE) {
-            type = Boolean.class;
-        }
-        else {
-            type = pType;
-        }
+        Class type = unBoxType(pType);
 
         try {
             // Try to create instance from <Constructor>(String)
@@ -101,13 +95,15 @@ public final class DefaultConverter implements PropertyConverter {
 	    
             if (value == null) {
                 // createInstance failed for some reason
-		
-                // Try to invoke the static method valueof(String)
+                // Try to invoke the static method valueOf(String)
                 value = BeanUtil.invokeStaticMethod(type, "valueOf", pString);
 		
                 if (value == null) {
                     // If the value is still null, well, then I cannot help...
-                    throw new ConversionException("Could not convert String to " + pType.getName() + ": No constructor " + type.getName() + "(String) or static " + type.getName() + ".valueof(String) method found!");
+                    throw new ConversionException(String.format(
+                            "Could not convert String to %1$s: No constructor %1$s(String) or static %1$s.valueOf(String) method found!",
+                            type.getName()
+                    ));
                 }
             }
 
@@ -116,12 +112,15 @@ public final class DefaultConverter implements PropertyConverter {
         catch (InvocationTargetException ite) {
             throw new ConversionException(ite.getTargetException());
         }
+        catch (ConversionException ce) {
+            throw ce;
+        }
         catch (RuntimeException rte) {
             throw new ConversionException(rte);
         }
     }
 
-    private Object toArray(String pString, Class pType, String pFormat) {
+    private Object toArray(final String pString, final Class pType, final String pFormat) {
         String[] strings = StringUtil.toStringArray(pString, pFormat != null ? pFormat : StringUtil.DELIMITER_STRING);
         Class type = pType.getComponentType();
         if (type == String.class) {
@@ -152,10 +151,9 @@ public final class DefaultConverter implements PropertyConverter {
      * @param pObject the object to convert.
      * @param pFormat ignored.
      *
-     * @return the string representation of the object, or {@code null} if
-     *         {@code pObject == null}
+     * @return the string representation of the object, or {@code null} if {@code pObject == null}
      */
-    public String toString(Object pObject, String pFormat)
+    public String toString(final Object pObject, final String pFormat)
         throws ConversionException {
 
         try {
@@ -170,7 +168,7 @@ public final class DefaultConverter implements PropertyConverter {
         return pFormat == null ? StringUtil.toCSVString(pArray) : StringUtil.toCSVString(pArray, pFormat);
     }
 
-    private Object[] toObjectArray(Object pObject) {
+    private Object[] toObjectArray(final Object pObject) {
         // TODO: Extract util method for wrapping/unwrapping native arrays?
         Object[] array;
         Class<?> componentType = pObject.getClass().getComponentType();
@@ -231,5 +229,38 @@ public final class DefaultConverter implements PropertyConverter {
             array = (Object[]) pObject;
         }
         return array;
+    }
+
+    private Class<?> unBoxType(final Class<?> pType) {
+        if (pType.isPrimitive()) {
+            if (pType == boolean.class) {
+                return Boolean.class;
+            }
+            if (pType == byte.class) {
+                return Byte.class;
+            }
+            if (pType == char.class) {
+                return Character.class;
+            }
+            if (pType == short.class) {
+                return Short.class;
+            }
+            if (pType == int.class) {
+                return Integer.class;
+            }
+            if (pType == float.class) {
+                return Float.class;
+            }
+            if (pType == long.class) {
+                return Long.class;
+            }
+            if (pType == double.class) {
+                return Double.class;
+            }
+
+            throw new IllegalArgumentException("Unknown type: " + pType);
+        }
+
+        return pType;
     }
 }

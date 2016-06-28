@@ -52,7 +52,7 @@ import java.util.Properties;
  * <p />
  * Color profiles may be configured by placing a property-file
  * {@code com/twelvemonkeys/imageio/color/icc_profiles.properties}
- * on the classpath, specifying the full path to the profile.
+ * on the classpath, specifying the full path to the profiles.
  * ICC color profiles are probably already present on your system, or
  * can be downloaded from
  * <a href="http://www.color.org/profiles2.xalter">ICC</a>,
@@ -70,11 +70,10 @@ import java.util.Properties;
  * @version $Id: ColorSpaces.java,v 1.0 24.01.11 17.51 haraldk Exp$
  */
 public final class ColorSpaces {
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
 
-    private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
-
-    // JDK 7 seems to handle non-perceptual rendering intents gracefully, so we don't need to fiddle with the profiles
-    private final static boolean JDK_HANDLES_RENDERING_INTENTS = SystemUtil.isClassAvailable("java.lang.invoke.CallSite");
+    /** We need special ICC profile handling for KCMS vs LCMS. Delegate to specific strategy. */
+    private final static ICCProfileSanitizer profileCleaner = ICCProfileSanitizer.Factory.get();
 
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
@@ -85,11 +84,11 @@ public final class ColorSpaces {
     public static final int CS_GENERIC_CMYK = 5001;
 
     // Weak references to hold the color spaces while cached
-    private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<ICC_Profile>(null);
-    private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<ICC_Profile>(null);
+    private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<>(null);
+    private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<>(null);
 
     // Cache for the latest used color spaces
-    private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<Key, ICC_ColorSpace>(10);
+    private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<>(10);
 
     private ColorSpaces() {}
 
@@ -101,7 +100,8 @@ public final class ColorSpaces {
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return an ICC color space
-     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     * @throws IllegalArgumentException if {@code profile} is {@code null}.
+     * @throws java.awt.color.CMMException if {@code profile} is invalid.
      */
     public static ICC_ColorSpace createColorSpace(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
@@ -124,13 +124,11 @@ public final class ColorSpaces {
                 return cs;
             }
 
-            // NOTE: The intent change breaks JDK7: Seems to be a bug in ICC_Profile.getData/setData,
-            // as calling it with unchanged header data, still breaks when creating new ICC_ColorSpace...
-            // However, we simply skip that, as JDK7 handles the rendering intents already.
-            if (!JDK_HANDLES_RENDERING_INTENTS) {
-                // Fix profile before lookup/create
-                profile.setData(ICC_Profile.icSigHead, profileHeader);
-            }
+            // Fix profile before lookup/create
+            profileCleaner.fixProfile(profile, profileHeader);
+        }
+        else {
+            profileCleaner.fixProfile(profile, null);
         }
 
         return getCachedOrCreateCS(profile, profileHeader);
@@ -164,11 +162,31 @@ public final class ColorSpaces {
 
             if (cs == null) {
                 cs = new ICC_ColorSpace(profile);
+
+                // Validate the color space, to avoid caching bad color spaces
+                // Will throw IllegalArgumentException or CMMException if the profile is bad
+                cs.fromRGB(new float[] {1f, 0f, 0f});
+
                 cache.put(key, cs);
             }
 
             return cs;
         }
+    }
+
+    /**
+     * Tests whether an ICC color profile is equal to the default sRGB profile.
+     *
+     * @param profile the ICC profile to test. May not be {@code null}.
+     * @return {@code true} if {@code profile} is equal to the default sRGB profile.
+     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     *
+     * @see java.awt.color.ColorSpace#isCS_sRGB()
+     */
+    public static boolean isCS_sRGB(final ICC_Profile profile) {
+        Validate.notNull(profile, "profile");
+
+        return profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profile.getData(ICC_Profile.icSigHead), sRGB.header);
     }
 
     /**
@@ -183,7 +201,7 @@ public final class ColorSpaces {
      * @return {@code true} if known to be offending, {@code false} otherwise
      * @throws IllegalArgumentException if {@code profile} is {@code null}
      */
-    public static boolean isOffendingColorProfile(final ICC_Profile profile) {
+    static boolean isOffendingColorProfile(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
 
         // NOTE:
@@ -192,12 +210,33 @@ public final class ColorSpaces {
         // being 1 (01000000) - "Media Relative Colormetric" in the offending profiles,
         // and 0 (00000000) - "Perceptual" in the good profiles
         // (that is 1 single bit of difference right there.. ;-)
+        // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=7064516
 
         // This is particularly annoying, as the byte copying isn't really necessary,
         // except the getRenderingIntent method is package protected in java.awt.color
         byte[] data = profile.getData(ICC_Profile.icSigHead);
 
         return data[ICC_Profile.icHdrRenderingIntent] != 0;
+    }
+
+    /**
+     * Tests whether an ICC color profile is valid.
+     * Invalid profiles are known to cause problems for {@link java.awt.image.ColorConvertOp}.
+     * <p />
+     * <em>
+     * Note that this method only tests if a color conversion using this profile is known to fail.
+     * There's no guarantee that the color conversion will succeed even if this method returns {@code false}.
+     * </em>
+     *
+     * @param profile the ICC color profile. May not be {@code null}.
+     * @return {@code profile} if valid.
+     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     * @throws java.awt.color.CMMException if {@code profile} is invalid.
+     */
+    public static ICC_Profile validateProfile(final ICC_Profile profile) {
+        createColorSpace(profile); // Creating a color space will fail if the profile is bad
+
+        return profile;
     }
 
     /**
@@ -227,7 +266,7 @@ public final class ColorSpaces {
 
                         if (profile == null) {
                             // Fall back to the bundled ClayRGB1998 public domain Adobe RGB 1998 compatible profile,
-                            // identical for all practical purposes
+                            // which is identical for all practical purposes
                             profile = readProfileFromClasspathResource("/profiles/ClayRGB1998.icc");
 
                             if (profile == null) {
@@ -236,7 +275,7 @@ public final class ColorSpaces {
                             }
                         }
 
-                        adobeRGB1998 = new WeakReference<ICC_Profile>(profile);
+                        adobeRGB1998 = new WeakReference<>(profile);
                     }
                 }
 
@@ -259,7 +298,7 @@ public final class ColorSpaces {
                             return CMYKColorSpace.getInstance();
                         }
 
-                        genericCMYK = new WeakReference<ICC_Profile>(profile);
+                        genericCMYK = new WeakReference<>(profile);
                     }
                 }
 
@@ -280,7 +319,6 @@ public final class ColorSpaces {
             }
 
             try {
-
                 return ICC_Profile.getInstance(stream);
             }
             catch (IOException ignore) {
@@ -305,7 +343,7 @@ public final class ColorSpaces {
             try {
                 return ICC_Profile.getInstance(profilePath);
             }
-            catch (IOException ignore) {
+            catch (SecurityException | IOException ignore) {
                 if (DEBUG) {
                     ignore.printStackTrace();
                 }
@@ -337,29 +375,45 @@ public final class ColorSpaces {
     private static class sRGB {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData(ICC_Profile.icSigHead);
     }
+
     private static class CIEXYZ {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ).getData(ICC_Profile.icSigHead);
     }
+
     private static class PYCC {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_PYCC).getData(ICC_Profile.icSigHead);
     }
+
     private static class GRAY {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_GRAY).getData(ICC_Profile.icSigHead);
     }
+
     private static class LINEAR_RGB {
         private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB).getData(ICC_Profile.icSigHead);
     }
 
     private static class Profiles {
-        private static final Properties PROFILES = loadProfiles(Platform.os());
+        private static final Properties PROFILES = loadProfiles();
 
-        private static Properties loadProfiles(final Platform.OperatingSystem os) {
+        private static Properties loadProfiles() {
             Properties systemDefaults;
+
             try {
-                systemDefaults = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles_" + os.id());
+                systemDefaults = SystemUtil.loadProperties(
+                        ColorSpaces.class,
+                        "com/twelvemonkeys/imageio/color/icc_profiles_" + Platform.os().id()
+                );
             }
-            catch (IOException ignore) {
-                ignore.printStackTrace();
+            catch (SecurityException | IOException ignore) {
+                System.err.printf(
+                        "Warning: Could not load system default ICC profile locations from %s, will use bundled fallback profiles.\n",
+                        ignore.getMessage()
+                );
+
+                if (DEBUG) {
+                    ignore.printStackTrace();
+                }
+
                 systemDefaults = null;
             }
 
@@ -367,10 +421,14 @@ public final class ColorSpaces {
             Properties profiles = new Properties(systemDefaults);
 
             try {
-                Properties userOverrides = SystemUtil.loadProperties(ColorSpaces.class, "com/twelvemonkeys/imageio/color/icc_profiles");
+                Properties userOverrides = SystemUtil.loadProperties(
+                        ColorSpaces.class,
+                        "com/twelvemonkeys/imageio/color/icc_profiles"
+                );
                 profiles.putAll(userOverrides);
             }
-            catch (IOException ignore) {
+            catch (SecurityException | IOException ignore) {
+                // Most likely, this file won't be there
             }
 
             if (DEBUG) {

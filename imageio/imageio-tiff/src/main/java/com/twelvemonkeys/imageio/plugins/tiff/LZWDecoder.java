@@ -33,16 +33,19 @@ import com.twelvemonkeys.io.enc.Decoder;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 
 /**
- * LZWDecoder
+ * Lempel–Ziv–Welch (LZW) decompression.
+ * LZW is a universal loss-less data compression algorithm created by Abraham Lempel, Jacob Ziv, and Terry Welch.
+ * Inspired by libTiff's LZW decompression.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: LZWDecoder.java,v 1.0 08.05.12 21:11 haraldk Exp$
+ * @see <a href="http://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">LZW (Wikipedia)</a>
  */
-final class LZWDecoder implements Decoder {
+abstract class LZWDecoder implements Decoder {
     /** Clear: Re-initialize tables. */
     static final int CLEAR_CODE = 256;
     /** End of Information. */
@@ -51,51 +54,49 @@ final class LZWDecoder implements Decoder {
     private static final int MIN_BITS = 9;
     private static final int MAX_BITS = 12;
 
-    private final boolean reverseBitOrder;
+    private static final int TABLE_SIZE = 1 << MAX_BITS;
 
-    private int currentByte = -1;
-    private int bitPos;
-
-    // TODO: Consider speeding things up with a "string" type (instead of the inner byte[]),
-    // that uses variable size/dynamic allocation, to avoid the excessive array copying?
-//    private final byte[][] table = new byte[4096][0]; // libTiff adds another 1024 "for compatibility"...
-    private final byte[][] table = new byte[4096 + 1024][0]; // libTiff adds another 1024 "for compatibility"...
+    private final LZWString[] table;
     private int tableLength;
-    private int bitsPerCode;
+    int bitsPerCode;
     private int oldCode = CLEAR_CODE;
     private int maxCode;
+    int bitMask;
     private int maxString;
-    private boolean eofReached;
+    boolean eofReached;
+    int nextData;
+    int nextBits;
 
-    LZWDecoder(final boolean reverseBitOrder) {
-        this.reverseBitOrder = reverseBitOrder;
+    protected LZWDecoder(int tableSize) {
+        table = new LZWString[tableSize];
 
+        // First 258 entries of table is always fixed
         for (int i = 0; i < 256; i++) {
-            table[i] = new byte[] {(byte) i};
+            table[i] = new LZWString((byte) i);
         }
 
         init();
     }
 
-    LZWDecoder() {
-        this(false);
-    }
-
-    private int maxCodeFor(final int bits) {
-        return reverseBitOrder ? (1 << bits) - 2 : (1 << bits) - 1;
+    private static int bitmaskFor(final int bits) {
+        return (1 << bits) - 1;
     }
 
     private void init() {
         tableLength = 258;
         bitsPerCode = MIN_BITS;
-        maxCode = maxCodeFor(bitsPerCode);
+        bitMask = bitmaskFor(bitsPerCode);
+        maxCode = maxCode();
         maxString = 1;
     }
 
-    public int decode(final InputStream stream, final byte[] buffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
+        if (buffer == null) {
+            throw new NullPointerException("buffer == null"); // As per contract
+        }
+
         // Adapted from the pseudo-code example found in the TIFF 6.0 Specification, 1992.
         // See Section 13: "LZW Compression"/"LZW Decoding", page 61+
-        int bufferPos = 0;
         int code;
 
         while ((code = getNextCode(stream)) != EOI_CODE) {
@@ -107,63 +108,57 @@ final class LZWDecoder implements Decoder {
                     break;
                 }
 
-                bufferPos += writeString(table[code], buffer, bufferPos);
+                if (table[code] == null) {
+                    throw new DecodeException(String.format("Corrupted TIFF LZW: code %d (table size: %d)", code, tableLength));
+                }
+
+                table[code].writeTo(buffer);
             }
             else {
-                if (code > tableLength + 1 || oldCode >= tableLength) {
-                    // TODO: FixMe for old, borked streams
-                    System.err.println("code: " + code);
-                    System.err.println("oldCode: " + oldCode);
-                    System.err.println("tableLength: " + tableLength);
-                    throw new DecodeException("Corrupted LZW table");
+                if (table[oldCode] == null) {
+                    throw new DecodeException(String.format("Corrupted TIFF LZW: code %d (table size: %d)", oldCode, tableLength));
                 }
 
                 if (isInTable(code)) {
-                    bufferPos += writeString(table[code], buffer, bufferPos);
-                    addStringToTable(concatenate(table[oldCode], table[code][0]));
+                    table[code].writeTo(buffer);
+                    addStringToTable(table[oldCode].concatenate(table[code].firstChar));
                 }
                 else {
-                    byte[] outString = concatenate(table[oldCode], table[oldCode][0]);
+                    LZWString outString = table[oldCode].concatenate(table[oldCode].firstChar);
 
-                    bufferPos += writeString(outString, buffer, bufferPos);
+                    outString.writeTo(buffer);
                     addStringToTable(outString);
                 }
             }
 
             oldCode = code;
 
-            if (bufferPos >= buffer.length - maxString - 1) {
-                // Buffer full, stop decoding for now
+            if (buffer.remaining() < maxString + 1) {
+                // Buffer (almost) full, stop decoding for now
                 break;
             }
         }
 
-        return bufferPos;
+        return buffer.position();
     }
 
-    private static byte[] concatenate(final byte[] string, final byte firstChar) {
-        byte[] result = Arrays.copyOf(string, string.length + 1);
-        result[string.length] = firstChar;
+    private void addStringToTable(final LZWString string) throws IOException {
+        if (tableLength > table.length) {
+            throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
+        }
 
-        return result;
-    }
-
-    private void addStringToTable(final byte[] string) throws IOException {
         table[tableLength++] = string;
 
-        if (tableLength >= maxCode) {
+        if (tableLength > maxCode) {
             bitsPerCode++;
 
             if (bitsPerCode > MAX_BITS) {
-                if (reverseBitOrder) {
-                    bitsPerCode--;
-                }
-                else {
-                    throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
-                }
+                // Continue reading MAX_BITS (12 bit) length codes
+                bitsPerCode = MAX_BITS;
             }
 
-            maxCode = maxCodeFor(bitsPerCode);
+            bitMask = bitmaskFor(bitsPerCode);
+            maxCode = maxCode();
         }
 
         if (string.length > maxString) {
@@ -171,92 +166,17 @@ final class LZWDecoder implements Decoder {
         }
     }
 
-    private static int writeString(final byte[] string, final byte[] buffer, final int bufferPos) {
-        if (string.length == 0) {
-            return 0;
-        }
-        else if (string.length == 1) {
-            buffer[bufferPos] = string[0];
-
-            return 1;
-        }
-        else {
-            System.arraycopy(string, 0, buffer, bufferPos, string.length);
-
-            return string.length;
-        }
-    }
+    protected abstract int maxCode();
 
     private boolean isInTable(int code) {
         return code < tableLength;
     }
 
-    private int getNextCode(final InputStream stream) throws IOException {
-        if (eofReached) {
-            return EOI_CODE;
-        }
-
-        int bitsToFill = bitsPerCode;
-        int value = 0;
-
-        while (bitsToFill > 0) {
-            int nextBits;
-            if (bitPos == 0) {
-                nextBits = stream.read();
-
-                if (nextBits == -1) {
-                    // This is really a bad stream, but should be safe to handle this way, rather than throwing an EOFException.
-                    // An EOFException will be thrown by the decoder stream later, if further reading is attempted.
-                    eofReached = true;
-                    return EOI_CODE;
-                }
-            }
-            else {
-                nextBits = currentByte;
-            }
-
-            int bitsFromHere = 8 - bitPos;
-            if (bitsFromHere > bitsToFill) {
-                bitsFromHere = bitsToFill;
-            }
-
-            if (reverseBitOrder) {
-                // NOTE: This is a spec violation. However, libTiff reads such files.
-                // TIFF 6.0 Specification, Section 13: "LZW Compression"/"The Algorithm", page 61, says:
-                // "LZW compression codes are stored into bytes in high-to-low-order fashion, i.e., FillOrder
-                // is assumed to be 1. The compressed codes are written as bytes (not words) so that the
-                // compressed data will be identical whether it is an ‘II’ or ‘MM’ file."
-
-                // Fill bytes from right-to-left
-                for (int i = 0; i < bitsFromHere; i++) {
-                    int destBitPos = bitsPerCode - bitsToFill + i;
-                    int srcBitPos = bitPos + i;
-                    value |= ((nextBits & (1 << srcBitPos)) >> srcBitPos) << destBitPos;
-                }
-            }
-            else {
-                value |= (nextBits >> 8 - bitPos - bitsFromHere & 0xff >> 8 - bitsFromHere) << bitsToFill - bitsFromHere;
-            }
-
-            bitsToFill -= bitsFromHere;
-            bitPos += bitsFromHere;
-
-            if (bitPos >= 8) {
-                bitPos = 0;
-            }
-
-            currentByte = nextBits;
-        }
-
-        if (value == EOI_CODE) {
-            eofReached = true;
-        }
-
-        return value;
-    }
+    protected abstract int getNextCode(final InputStream stream) throws IOException;
 
     static boolean isOldBitReversedStream(final InputStream stream) throws IOException {
         stream.mark(2);
+
         try {
             int one = stream.read();
             int two = stream.read();
@@ -265,6 +185,223 @@ final class LZWDecoder implements Decoder {
         }
         finally {
             stream.reset();
+        }
+    }
+
+    public static Decoder create(boolean oldBitReversedStream) {
+        return oldBitReversedStream ? new LZWCompatibilityDecoder() : new LZWSpecDecoder();
+    }
+
+    static final class LZWSpecDecoder extends LZWDecoder {
+
+        protected LZWSpecDecoder() {
+            super(TABLE_SIZE);
+        }
+
+        @Override
+        protected int maxCode() {
+            return bitMask - 1;
+        }
+
+        protected final int getNextCode(final InputStream stream) throws IOException {
+            if (eofReached) {
+                return EOI_CODE;
+            }
+
+            int code;
+            int read = stream.read();
+            if (read < 0) {
+                eofReached = true;
+                return EOI_CODE;
+            }
+
+            nextData = (nextData << 8) | read;
+            nextBits += 8;
+
+            if (nextBits < bitsPerCode) {
+                read = stream.read();
+                if (read < 0) {
+                    eofReached = true;
+                    return EOI_CODE;
+                }
+
+                nextData = (nextData << 8) | read;
+                nextBits += 8;
+            }
+
+            code = ((nextData >> (nextBits - bitsPerCode)) & bitMask);
+            nextBits -= bitsPerCode;
+
+            return code;
+        }
+    }
+
+    private static final class LZWCompatibilityDecoder extends LZWDecoder {
+        // NOTE: This is a spec violation. However, libTiff reads such files.
+        // TIFF 6.0 Specification, Section 13: "LZW Compression"/"The Algorithm", page 61, says:
+        // "LZW compression codes are stored into bytes in high-to-low-order fashion, i.e., FillOrder
+        // is assumed to be 1. The compressed codes are written as bytes (not words) so that the
+        // compressed data will be identical whether it is an ‘II’ or ‘MM’ file."
+
+        protected LZWCompatibilityDecoder() {
+            super(TABLE_SIZE + 1024); // libTiff adds 1024 "for compatibility", this value seems to work fine...
+        }
+
+        @Override
+        protected int maxCode() {
+            return bitMask;
+        }
+
+        protected final int getNextCode(final InputStream stream) throws IOException {
+            if (eofReached) {
+                return EOI_CODE;
+            }
+
+            int code;
+            int read = stream.read();
+            if (read < 0) {
+                eofReached = true;
+                return EOI_CODE;
+            }
+
+            nextData |= read << nextBits;
+            nextBits += 8;
+
+            if (nextBits < bitsPerCode) {
+                read = stream.read();
+                if (read < 0) {
+                    eofReached = true;
+                    return EOI_CODE;
+                }
+
+                nextData |= read << nextBits;
+                nextBits += 8;
+            }
+
+            code = (nextData & bitMask);
+            nextData >>= bitsPerCode;
+            nextBits -= bitsPerCode;
+
+            return code;
+        }
+    }
+
+    static final class LZWString implements Comparable<LZWString> {
+        static final LZWString EMPTY = new LZWString((byte) 0, (byte) 0, 0, null);
+
+        final LZWString previous;
+
+        final int length;
+        final byte value;
+        final byte firstChar; // Copied forward for fast access
+
+        public LZWString(final byte code) {
+            this(code, code, 1, null);
+        }
+
+        private LZWString(final byte value, final byte firstChar, final int length, final LZWString previous) {
+            this.value = value;
+            this.firstChar = firstChar;
+            this.length = length;
+            this.previous = previous;
+        }
+
+        public final LZWString concatenate(final byte value) {
+            if (this == EMPTY) {
+                return new LZWString(value);
+            }
+
+            return new LZWString(value, this.firstChar, length + 1, this);
+        }
+
+        public final void writeTo(final ByteBuffer buffer) {
+            if (length == 0) {
+                return;
+            }
+
+            if (length == 1) {
+                buffer.put(value);
+            }
+            else {
+                LZWString e = this;
+                final int offset = buffer.position();
+
+                for (int i = length - 1; i >= 0; i--) {
+                    buffer.put(offset + i, e.value);
+                    e = e.previous;
+                }
+
+                buffer.position(offset + length);
+            }
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder("ZLWString[");
+            int offset = builder.length();
+            LZWString e = this;
+            for (int i = length - 1; i >= 0; i--) {
+                builder.insert(offset, String.format("%2x", e.value));
+                e = e.previous;
+            }
+            builder.append("]");
+            return builder.toString();
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+
+            LZWString string = (LZWString) other;
+
+            return firstChar == string.firstChar &&
+                    length == string.length &&
+                    value == string.value &&
+//                    !(previous != null ? !previous.equals(string.previous) : string.previous != null);
+                    previous == string.previous;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = previous != null ? previous.hashCode() : 0;
+            result = 31 * result + length;
+            result = 31 * result + (int) value;
+            result = 31 * result + (int) firstChar;
+            return result;
+        }
+
+        @Override
+        public int compareTo(final LZWString other) {
+            if (other == this) {
+                return 0;
+            }
+
+            if (length != other.length) {
+                return other.length - length;
+            }
+
+            if (firstChar != other.firstChar) {
+                return other.firstChar - firstChar;
+            }
+
+            LZWString t = this;
+            LZWString o = other;
+
+            for (int i = length - 1; i > 0; i--) {
+                if (t.value != o.value) {
+                    return o.value - t.value;
+                }
+
+                t = t.previous;
+                o = o.previous;
+            }
+
+            return 0;
         }
     }
 }

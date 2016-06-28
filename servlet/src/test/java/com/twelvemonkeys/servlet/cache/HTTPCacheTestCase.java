@@ -1,6 +1,6 @@
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.net.NetUtil;
+import com.twelvemonkeys.net.HTTPUtil;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -644,7 +644,7 @@ public class HTTPCacheTestCase {
                 CacheResponse res = (CacheResponse) invocation.getArguments()[1];
 
                 res.setStatus(HttpServletResponse.SC_OK);
-                res.setHeader("Date", NetUtil.formatHTTPDate(System.currentTimeMillis()));
+                res.setHeader("Date", HTTPUtil.formatHTTPDate(System.currentTimeMillis()));
                 res.setHeader("Cache-Control", "public");
                 res.addHeader("X-Custom", "FOO");
                 res.addHeader("X-Custom", "BAR");
@@ -1126,7 +1126,7 @@ public class HTTPCacheTestCase {
             CacheResponse res = (CacheResponse) invocation.getArguments()[1];
 
             res.setStatus(status);
-            res.setHeader("Date", NetUtil.formatHTTPDate(System.currentTimeMillis()));
+            res.setHeader("Date", HTTPUtil.formatHTTPDate(System.currentTimeMillis()));
 
             for (Map.Entry<String, List<String>> header : headers.entrySet()) {
                 for (String value : header.getValue()) {

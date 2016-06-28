@@ -49,14 +49,15 @@ interface TIFFCustom {
     int COMPRESSION_JBIG = 34661;
     int COMPRESSION_SGILOG = 34676;
     int COMPRESSION_SGILOG24 = 34677;
-    int COMPRESSION_JP2000 = 34712;
+    int COMPRESSION_JPEG2000 = 34712;
+    // TODO: Aperio SVS JPEG2000: 33003 (YCbCr) and 33005 (RGB), see http://openslide.org/formats/aperio/
 
     int PHOTOMETRIC_LOGL = 32844;
     int PHOTOMETRIC_LOGLUV = 32845;
 
-    /** DNG: CFA (Color Filter Array)*/
+    /** DNG: CFA (Color Filter Array). */
     int PHOTOMETRIC_CFA = 32803;
-    /** DNG: LinearRaw*/
+    /** DNG: LinearRaw. */
     int PHOTOMETRIC_LINEAR_RAW = 34892;
 
     int SAMPLEFORMAT_COMPLEX_INT = 5;

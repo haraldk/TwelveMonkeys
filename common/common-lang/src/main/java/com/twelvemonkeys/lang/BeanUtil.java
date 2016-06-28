@@ -41,8 +41,7 @@ import java.util.Arrays;
 /**
  * A utility class with some useful bean-related functions.
  * <p/>
- * <em>NOTE: This class is not considered part of the public API and may be
- * changed without notice</em>
+ * <em>NOTE: This class is not considered part of the public API and may be changed without notice</em>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -60,10 +59,10 @@ public final class BeanUtil {
      * Now supports getting values from properties of properties
      * (recursive).
      *
-     * @param pObject      The object to get the property from
+     * @param pObject The object to get the property from
      * @param pProperty The name of the property
      *
-     * @return A string containing the value of the given property, or null
+     * @return A string containing the value of the given property, or {@code null}
      *         if it can not be found.
      * @todo Remove System.err's... Create new Exception? Hmm..
      */
@@ -77,7 +76,7 @@ public final class BeanUtil {
             return null;
         }
 
-        Class objClass = pObject.getClass();
+        Class<?> objClass = pObject.getClass();
 
         Object result = pObject;
 
@@ -154,9 +153,8 @@ public final class BeanUtil {
             catch (NoSuchMethodException e) {
                 System.err.print("No method named \"" + methodName + "()\"");
                 // The array might be of size 0...
-                if (paramClass != null && paramClass.length > 0) {
-                    System.err.print(" with the parameter "
-                            + paramClass[0].getName());
+                if (paramClass.length > 0 && paramClass[0] != null) {
+                    System.err.print(" with the parameter " + paramClass[0].getName());
                 }
 
                 System.err.println(" in class " + objClass.getName() + "!");
@@ -177,8 +175,7 @@ public final class BeanUtil {
                 result = method.invoke(result, param);
             }
             catch (InvocationTargetException e) {
-                System.err.println("property=" + pProperty + " & result="
-                        + result + " & param=" + Arrays.toString(param));
+                System.err.println("property=" + pProperty + " & result=" + result + " & param=" + Arrays.toString(param));
                 e.getTargetException().printStackTrace();
                 e.printStackTrace();
                 return null;
@@ -188,8 +185,7 @@ public final class BeanUtil {
                 return null;
             }
             catch (NullPointerException e) {
-                System.err.println(objClass.getName() + "." + method.getName()
-                        + "(" + ((paramClass != null && paramClass.length > 0) ? paramClass[0].getName() : "") + ")");
+                System.err.println(objClass.getName() + "." + method.getName() + "(" + ((paramClass.length > 0 && paramClass[0] != null) ? paramClass[0].getName() : "") + ")");
                 e.printStackTrace();
                 return null;
             }
@@ -221,10 +217,8 @@ public final class BeanUtil {
      * @throws IllegalAccessException if the caller class has no access to the
      *         write method
      */
-    public static void setPropertyValue(Object pObject, String pProperty,
-                                        Object pValue)
-            throws NoSuchMethodException, InvocationTargetException,
-            IllegalAccessException {
+    public static void setPropertyValue(Object pObject, String pProperty, Object pValue)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
 
         //
         // TODO: Support set(Object, Object)/put(Object, Object) methods
@@ -255,7 +249,8 @@ public final class BeanUtil {
         method.invoke(obj, params);
     }
 
-    private static Method getMethodMayModifyParams(Object pObject, String pName, Class[] pParams, Object[] pValues) throws NoSuchMethodException {
+    private static Method getMethodMayModifyParams(Object pObject, String pName, Class[] pParams, Object[] pValues)
+            throws NoSuchMethodException {
         // NOTE: This method assumes pParams.length == 1 && pValues.length == 1
 
         Method method = null;
@@ -307,10 +302,8 @@ public final class BeanUtil {
             if (method == null) {
                 Method[] methods = pObject.getClass().getMethods();
                 for (Method candidate : methods) {
-                    if (Modifier.isPublic(candidate.getModifiers())
-                            && candidate.getName().equals(pName)
-                            && candidate.getReturnType() == Void.TYPE
-                            && candidate.getParameterTypes().length == 1) {
+                    if (Modifier.isPublic(candidate.getModifiers()) && candidate.getName().equals(pName)
+                            && candidate.getReturnType() == Void.TYPE && candidate.getParameterTypes().length == 1) {
                         // NOTE: Assumes paramTypes.length == 1
 
                         Class type = candidate.getParameterTypes()[0];
@@ -337,7 +330,7 @@ public final class BeanUtil {
         return method;
     }
 
-    private static Object convertValueToType(Object pValue, Class pType) throws ConversionException {
+    private static Object convertValueToType(Object pValue, Class<?> pType) throws ConversionException {
         if (pType.isPrimitive()) {
             if (pType == Boolean.TYPE && pValue instanceof Boolean) {
                 return pValue;
@@ -395,7 +388,7 @@ public final class BeanUtil {
      * @throws InvocationTargetException if the constructor failed
      */
     // TODO: Move to ReflectUtil
-    public static Object createInstance(Class pClass, Object pParam)
+    public static <T> T createInstance(Class<T> pClass, Object pParam)
             throws InvocationTargetException {
         return createInstance(pClass, new Object[] {pParam});
     }
@@ -414,9 +407,9 @@ public final class BeanUtil {
      * @throws InvocationTargetException if the constructor failed
      */
     // TODO: Move to ReflectUtil
-    public static Object createInstance(Class pClass, Object... pParams)
+    public static <T> T createInstance(Class<T> pClass, Object... pParams)
             throws InvocationTargetException {
-        Object value;
+        T value;
 
         try {
             // Create param and argument arrays
@@ -429,8 +422,7 @@ public final class BeanUtil {
             }
 
             // Get constructor
-            //Constructor constructor = pClass.getDeclaredConstructor(paramTypes);
-            Constructor constructor = pClass.getConstructor(paramTypes);
+            Constructor<T> constructor = pClass.getConstructor(paramTypes);
 
             // Invoke and create instance
             value = constructor.newInstance(pParams);
@@ -468,12 +460,11 @@ public final class BeanUtil {
      *         If the return type of the method is void, null is returned.
      *         If the method could not be invoked for any reason, null is returned.
      *
-     * @throws InvocationTargetException if the invocaton failed
+     * @throws InvocationTargetException if the invocation failed
      */
     // TODO: Move to ReflectUtil
     // TODO: Rename to invokeStatic?
-    public static Object invokeStaticMethod(Class pClass, String pMethod,
-                                            Object pParam)
+    public static Object invokeStaticMethod(Class<?> pClass, String pMethod, Object pParam)
             throws InvocationTargetException {
 
         return invokeStaticMethod(pClass, pMethod, new Object[] {pParam});
@@ -492,12 +483,11 @@ public final class BeanUtil {
      *         If the return type of the method is void, null is returned.
      *         If the method could not be invoked for any reason, null is returned.
      *
-     * @throws InvocationTargetException if the invocaton failed
+     * @throws InvocationTargetException if the invocation failed
      */
     // TODO: Move to ReflectUtil
     // TODO: Rename to invokeStatic?
-    public static Object invokeStaticMethod(Class pClass, String pMethod,
-                                            Object[] pParams)
+    public static Object invokeStaticMethod(Class<?> pClass, String pMethod, Object... pParams)
             throws InvocationTargetException {
 
         Object value = null;
@@ -518,8 +508,7 @@ public final class BeanUtil {
             Method method = pClass.getMethod(pMethod, paramTypes);
 
             // Invoke public static method
-            if (Modifier.isPublic(method.getModifiers())
-                    && Modifier.isStatic(method.getModifiers())) {
+            if (Modifier.isPublic(method.getModifiers()) && Modifier.isStatic(method.getModifiers())) {
                 value = method.invoke(null, pParams);
             }
 

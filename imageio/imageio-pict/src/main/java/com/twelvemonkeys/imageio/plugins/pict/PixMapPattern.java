@@ -48,7 +48,12 @@ final class PixMapPattern extends Pattern {
     /**
      * @return the fallback B/W pattern
      */
-    public Pattern getPattern() {
+    public Pattern getFallbackPattern() {
         return fallback;
+    }
+
+    @Override
+    public Pattern derive(final Color foreground, final Color background) {
+        return getFallbackPattern().derive(foreground, background);
     }
 }

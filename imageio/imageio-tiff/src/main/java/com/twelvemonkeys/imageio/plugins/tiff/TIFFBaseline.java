@@ -37,7 +37,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
  */
 interface TIFFBaseline {
     int COMPRESSION_NONE = 1;
-    int COMPRESSION_CCITT_HUFFMAN = 2;
+    int COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE = 2;
     int COMPRESSION_PACKBITS = 32773;
 
     int PHOTOMETRIC_WHITE_IS_ZERO = 0;
@@ -55,4 +55,17 @@ interface TIFFBaseline {
     int EXTRASAMPLE_UNASSOCIATED_ALPHA = 2;
 
     int PREDICTOR_NONE = 1;
+
+    int RESOLUTION_UNIT_NONE = 1;
+    int RESOLUTION_UNIT_DPI = 2; // Default
+    int RESOLUTION_UNIT_CENTIMETER = 3;
+
+    int FILL_LEFT_TO_RIGHT = 1; // Default
+
+    // NOTE: These are bit flags that can be ORed together!
+    int FILETYPE_REDUCEDIMAGE = 1;
+    int FILETYPE_PAGE = 2;
+    int FILETYPE_MASK = 4;
+
+    int ORIENTATION_TOPLEFT = 1;
 }

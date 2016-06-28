@@ -29,10 +29,10 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -45,35 +45,29 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageReaderSpi.java,v 1.0 08.05.12 15:14 haraldk Exp$
  */
-public class TIFFImageReaderSpi extends ImageReaderSpi {
-    // TODO: Should we make sure we register (order) before the com.sun.imageio thing (that isn't what is says) provided by Apple?
+public class TIFFImageReaderSpi extends ImageReaderSpiBase {
     /**
      * Creates a {@code TIFFImageReaderSpi}.
      */
     public TIFFImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(TIFFImageReaderSpi.class));
+        super(new TIFFProviderInfo());
     }
 
-    private TIFFImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{"tiff", "TIFF"},
-                new String[]{"tif", "tiff"},
-                new String[]{
-                        "image/tiff", "image/x-tiff"
-                },
-                "com.twelvemkonkeys.imageio.plugins.tiff.TIFFImageReader",
-                STANDARD_INPUT_TYPE,
-//                new String[]{"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
-                null,
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
+    @SuppressWarnings("unchecked")
+    @Override
+    public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
+        // Make sure we're ordered before the Apple-provided TIFF reader on OS X
+        try {
+            Class<ImageReaderSpi> providerClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.tiff.TIFFImageReaderSpi");
+            ImageReaderSpi appleSpi = registry.getServiceProviderByClass(providerClass);
+
+            if (appleSpi != null && appleSpi.getVendorName() != null && appleSpi.getVendorName().startsWith("Apple")) {
+                registry.setOrdering((Class<ImageReaderSpi>) category, this, appleSpi);
+            }
+        }
+        catch (ClassNotFoundException ignore) {
+            // This is actually OK, now we don't have to do anything
+        }
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {

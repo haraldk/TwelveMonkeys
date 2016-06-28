@@ -205,6 +205,7 @@ public class LRUHashMap<K, V> extends LinkedHashMap<K, V> implements ExpiringMap
      */
     public void removeLRU() {
         int removeCount = (int) Math.max((size() * trimFactor), 1);
+
         Iterator<Map.Entry<K, V>> entries = entrySet().iterator();
         while ((removeCount--) > 0 && entries.hasNext()) {
             entries.next();

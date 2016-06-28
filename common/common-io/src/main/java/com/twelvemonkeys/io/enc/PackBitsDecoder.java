@@ -31,6 +31,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * Decoder implementation for Apple PackBits run-length encoding.
@@ -65,7 +66,8 @@ import java.io.InputStream;
 public final class PackBitsDecoder implements Decoder {
     // TODO: Look at ICNSImageReader#unpackbits... What is this weirdness?
 
-    private final boolean disableNoop;
+    private final boolean disableNoOp;
+    private final byte[] sample;
 
     private int leftOfRun;
     private boolean splitRun;
@@ -73,7 +75,7 @@ public final class PackBitsDecoder implements Decoder {
 
     /** Creates a {@code PackBitsDecoder}. */
     public PackBitsDecoder() {
-        this(false);
+        this(1, false);
     }
 
     /**
@@ -83,31 +85,42 @@ public final class PackBitsDecoder implements Decoder {
      * a compressed run, instead of a no-op, it's possible to disable no-ops for compatibility.
      * Should be used with caution, even though, most known encoders never write no-ops in the compressed streams.
      *
-     * @param pDisableNoop {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
+     * @param disableNoOp {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
      */
-    public PackBitsDecoder(final boolean pDisableNoop) {
-        disableNoop = pDisableNoop;
+    public PackBitsDecoder(final boolean disableNoOp) {
+        this(1, disableNoOp);
+    }
+
+    /**
+     * Creates a {@code PackBitsDecoder}, with optional compatibility mode.
+     * <p/>
+     * As some implementations of PackBits-like encoders treat {@code -128} as length of
+     * a compressed run, instead of a no-op, it's possible to disable no-ops for compatibility.
+     * Should be used with caution, even though, most known encoders never write no-ops in the compressed streams.
+     *
+     * @param disableNoOp {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
+     */
+    public PackBitsDecoder(int sampleSize, final boolean disableNoOp) {
+        this.sample = new byte[sampleSize];
+        this.disableNoOp = disableNoOp;
     }
 
     /**
      * Decodes bytes from the given input stream, to the given buffer.
      *
-     * @param pStream the stream to decode from
-     * @param pBuffer a byte array, minimum 128 (or 129 if no-op is disabled) bytes long
+     * @param stream the stream to decode from
+     * @param buffer a byte array, minimum 128 (or 129 if no-op is disabled) bytes long
      * @return The number of bytes decoded
      *
      * @throws java.io.IOException
      */
-    public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         if (reachedEOF) {
             return -1;
         }
 
-        int read = 0;
-        final int max = pBuffer.length;
-
         // TODO: Don't decode more than single runs, because some writers add pad bytes inside the stream...
-        while (read < max) {
+        while (buffer.hasRemaining()) {
             int n;
             
             if (splitRun) {
@@ -117,7 +130,7 @@ public final class PackBitsDecoder implements Decoder {
             }
             else {
                 // Start new run
-                int b = pStream.read();
+                int b = stream.read();
                 if (b < 0) {
                     reachedEOF = true;
                     break;
@@ -126,12 +139,12 @@ public final class PackBitsDecoder implements Decoder {
             }
 
             // Split run at or before max
-            if (n >= 0 && n + 1 + read > max) {
+            if (n >= 0 && n + 1 > buffer.remaining()) {
                 leftOfRun = n;
                 splitRun = true;
                 break;
             }
-            else if (n < 0 && -n + 1 + read > max) {
+            else if (n < 0 && -n + 1 > buffer.remaining()) {
                 leftOfRun = n;
                 splitRun = true;
                 break;
@@ -140,17 +153,17 @@ public final class PackBitsDecoder implements Decoder {
             try {
                 if (n >= 0) {
                     // Copy next n + 1 bytes literally
-                    readFully(pStream, pBuffer, read, n + 1);
-
-                    read += n + 1;
+                    readFully(stream, buffer, sample.length * (n + 1));
                 }
                 // Allow -128 for compatibility, see above
-                else if (disableNoop || n != -128) {
+                else if (disableNoOp || n != -128) {
                     // Replicate the next byte -n + 1 times
-                    byte value = readByte(pStream);
+                    for (int s = 0; s < sample.length; s++) {
+                        sample[s] = readByte(stream);
+                    }
 
                     for (int i = -n + 1; i > 0; i--) {
-                        pBuffer[read++] = value;
+                        buffer.put(sample);
                     }
                 }
                 // else NOOP (-128)
@@ -160,7 +173,7 @@ public final class PackBitsDecoder implements Decoder {
             }
         }
 
-        return read;
+        return buffer.position();
     }
 
     static byte readByte(final InputStream pStream) throws IOException {
@@ -173,7 +186,7 @@ public final class PackBitsDecoder implements Decoder {
         return (byte) read;
     }
 
-    static void readFully(final InputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
+    static void readFully(final InputStream pStream, final ByteBuffer pBuffer, final int pLength) throws IOException {
         if (pLength < 0) {
             throw new IndexOutOfBoundsException(String.format("Negative length: %d", pLength));
         }
@@ -181,7 +194,7 @@ public final class PackBitsDecoder implements Decoder {
         int total = 0;
 
         while (total < pLength) {
-            int count = pStream.read(pBuffer, pOffset + total, pLength - total);
+            int count = pStream.read(pBuffer.array(), pBuffer.arrayOffset() + pBuffer.position() + total, pLength - total);
 
             if (count < 0) {
                 throw new EOFException("Unexpected end of PackBits stream");
@@ -189,5 +202,7 @@ public final class PackBitsDecoder implements Decoder {
 
             total += count;
         }
+
+        pBuffer.position(pBuffer.position() + total);
     }
 }

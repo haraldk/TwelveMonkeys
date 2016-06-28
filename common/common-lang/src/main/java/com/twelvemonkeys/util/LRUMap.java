@@ -45,7 +45,7 @@ import java.util.Map;
  * </ul>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/LRUMap.java#1 $
+ * @version $Id: com/twelvemonkeys/util/LRUMap.java#1 $
  */
 public class LRUMap<K, V> extends LinkedMap<K, V> implements ExpiringMap<K, V> {
 
@@ -222,8 +222,9 @@ public class LRUMap<K, V> extends LinkedMap<K, V> implements ExpiringMap<K, V> {
      */
     public void removeLRU() {
         int removeCount = (int) Math.max((size() * trimFactor), 1);
+
         while ((removeCount--) > 0) {
-            removeEntry(head.mNext);
+            removeEntry(head.next);
         }
     }
 }

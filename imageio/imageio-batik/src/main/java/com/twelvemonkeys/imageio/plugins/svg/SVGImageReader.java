@@ -31,9 +31,9 @@ package com.twelvemonkeys.imageio.plugins.svg;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import org.apache.batik.anim.dom.SVGDOMImplementation;
+import org.apache.batik.anim.dom.SVGOMDocument;
 import org.apache.batik.bridge.*;
-import org.apache.batik.dom.svg.SVGDOMImplementation;
-import org.apache.batik.dom.svg.SVGOMDocument;
 import org.apache.batik.dom.util.DOMUtilities;
 import org.apache.batik.ext.awt.image.GraphicsUtil;
 import org.apache.batik.gvt.CanvasGraphicsNode;
@@ -74,18 +74,19 @@ import java.util.Map;
  * @see <A href="http://www.mail-archive.com/batik-dev@xml.apache.org/msg00992.html">batik-dev</A>
  */
 public class SVGImageReader extends ImageReaderBase {
-    private Rasterizer rasterizer = new Rasterizer();
+    private Rasterizer rasterizer;
 
     /**
      * Creates an {@code SVGImageReader}.
      *
      * @param pProvider the provider
      */
-    public SVGImageReader(ImageReaderSpi pProvider) {
+    public SVGImageReader(final ImageReaderSpi pProvider) {
         super(pProvider);
     }
 
     protected void resetMembers() {
+        rasterizer = new Rasterizer();
     }
 
     @Override
@@ -134,7 +135,7 @@ public class SVGImageReader extends ImageReaderBase {
         try {
             processImageStarted(pIndex);
 
-            rasterizer.mTranscoderInput.setURI(baseURI);
+            rasterizer.transcoderInput.setURI(baseURI);
             BufferedImage image = rasterizer.getImage();
 
             Graphics2D g = destination.createGraphics();
@@ -252,31 +253,29 @@ public class SVGImageReader extends ImageReaderBase {
      */
     private class Rasterizer extends SVGAbstractTranscoder /*ImageTranscoder*/ {
 
-        BufferedImage mImage = null;
-        private TranscoderInput mTranscoderInput;
-        private float mDefaultWidth;
-        private float mDefaultHeight;
-        private boolean mInit = false;
-        private SVGOMDocument mDocument;
-        private String mURI;
-        private GraphicsNode mGVTRoot;
-        private TranscoderException mException;
-        private BridgeContext mContext;
+        BufferedImage image = null;
+        private TranscoderInput transcoderInput;
+        private float defaultWidth;
+        private float defaultHeight;
+        private boolean initialized = false;
+        private SVGOMDocument document;
+        private String uri;
+        private GraphicsNode gvtRoot;
+        private TranscoderException exception;
+        private BridgeContext context;
 
-        public BufferedImage createImage(int w, int h) {
-            return ImageUtil.createTransparent(w, h);//, BufferedImage.TYPE_INT_ARGB);
+        public BufferedImage createImage(final int width, final int height) {
+            return ImageUtil.createTransparent(width, height);//, BufferedImage.TYPE_INT_ARGB);
         }
 
         //  This is cheating... We don't fully transcode after all
-        protected void transcode(Document document, String uri, TranscoderOutput output) throws TranscoderException {
+        protected void transcode(Document document, final String uri, final TranscoderOutput output) throws TranscoderException {
             // Sets up root, curTxf & curAoi
             // ----
-            if ((document != null) &&
-                    !(document.getImplementation() instanceof SVGDOMImplementation)) {
-                DOMImplementation impl;
-                impl = (DOMImplementation) hints.get(KEY_DOM_IMPLEMENTATION);
-                // impl = ExtensibleSVGDOMImplementation.getDOMImplementation();
+            if ((document != null) && !(document.getImplementation() instanceof SVGDOMImplementation)) {
+                DOMImplementation impl = (DOMImplementation) hints.get(KEY_DOM_IMPLEMENTATION);
                 document = DOMUtilities.deepCloneDocument(document, impl);
+
                 if (uri != null) {
                     try {
                         URL url = new URL(uri);
@@ -289,7 +288,6 @@ public class SVGImageReader extends ImageReaderBase {
 
             ctx = createBridgeContext();
             SVGOMDocument svgDoc = (SVGOMDocument) document;
-            //SVGSVGElement root = svgDoc.getRootElement();
 
             // build the GVT tree
             builder = new GVTBuilder();
@@ -297,7 +295,7 @@ public class SVGImageReader extends ImageReaderBase {
             boolean isDynamic =
                     (hints.containsKey(KEY_EXECUTE_ONLOAD) &&
                             (Boolean) hints.get(KEY_EXECUTE_ONLOAD) &&
-                    BaseScriptingEnvironment.isDynamicDocument(ctx, svgDoc));
+                            BaseScriptingEnvironment.isDynamicDocument(ctx, svgDoc));
 
             if (isDynamic) {
                 ctx.setDynamicState(BridgeContext.DYNAMIC);
@@ -311,8 +309,7 @@ public class SVGImageReader extends ImageReaderBase {
             catch (BridgeException ex) {
                 // Note: This might fail, but we STILL have the dimensions we need
                 // However, we need to reparse later...
-                //throw new TranscoderException(ex);
-                mException = new TranscoderException(ex);
+                exception = new TranscoderException(ex);
             }
 
             // ----
@@ -320,24 +317,23 @@ public class SVGImageReader extends ImageReaderBase {
             // get the 'width' and 'height' attributes of the SVG document
             Dimension2D docSize = ctx.getDocumentSize();
             if (docSize != null)  {
-                mDefaultWidth = (float) docSize.getWidth();
-                mDefaultHeight = (float) docSize.getHeight();
+                defaultWidth = (float) docSize.getWidth();
+                defaultHeight = (float) docSize.getHeight();
             }
             else {
-                mDefaultWidth = 200;
-                mDefaultHeight = 200;
+                defaultWidth = 200;
+                defaultHeight = 200;
             }
 
             // Hack to work around exception above
             if (root != null) {
-                mGVTRoot = root;
+                gvtRoot = root;
             }
-            mDocument = svgDoc;
-            mURI = uri;
+            this.document = svgDoc;
+            this.uri = uri;
 
-            //ctx.dispose();
             // Hack to avoid the transcode method wacking my context...
-            mContext = ctx;
+            context = ctx;
             ctx = null;
         }
 
@@ -352,24 +348,24 @@ public class SVGImageReader extends ImageReaderBase {
 
 
             // Hacky workaround below...
-            if (mGVTRoot == null) {
+            if (gvtRoot == null) {
                 // Try to reparse, if we had no URI last time...
-                if (mURI != mTranscoderInput.getURI()) {
+                if (uri != transcoderInput.getURI()) {
                     try {
-                        mContext.dispose();
-                        mDocument.setURLObject(new URL(mTranscoderInput.getURI()));
-                        transcode(mDocument, mTranscoderInput.getURI(), null);
+                        context.dispose();
+                        document.setURLObject(new URL(transcoderInput.getURI()));
+                        transcode(document, transcoderInput.getURI(), null);
                     }
                     catch (MalformedURLException ignore) {
                         // Ignored
                     }
                 }
 
-                if (mGVTRoot == null) {
-                    throw mException;
+                if (gvtRoot == null) {
+                    throw exception;
                 }
             }
-            ctx = mContext;
+            ctx = context;
             // /Hacky
             if (abortRequested()) {
                 processReadAborted();
@@ -377,13 +373,13 @@ public class SVGImageReader extends ImageReaderBase {
             }
             processImageProgress(20f);
 
-            // -- --
-            SVGSVGElement root = mDocument.getRootElement();
+            // ----
+            SVGSVGElement root = document.getRootElement();
             // ----
 
 
             // ----
-            setImageSize(mDefaultWidth, mDefaultHeight);
+            setImageSize(defaultWidth, defaultHeight);
 
             if (abortRequested()) {
                 processReadAborted();
@@ -393,22 +389,22 @@ public class SVGImageReader extends ImageReaderBase {
 
             // compute the preserveAspectRatio matrix
             AffineTransform Px;
-            String ref = new ParsedURL(mURI).getRef();
+            String ref = new ParsedURL(uri).getRef();
 
             try {
-                Px = ViewBox.getViewTransform(ref, root, width, height);
+                Px = ViewBox.getViewTransform(ref, root, width, height, null);
 
             }
             catch (BridgeException ex) {
                 throw new TranscoderException(ex);
             }
 
-            if (Px.isIdentity() && (width != mDefaultWidth || height != mDefaultHeight)) {
+            if (Px.isIdentity() && (width != defaultWidth || height != defaultHeight)) {
                 // The document has no viewBox, we need to resize it by hand.
                 // we want to keep the document size ratio
                 float xscale, yscale;
-                xscale = width / mDefaultWidth;
-                yscale = height / mDefaultHeight;
+                xscale = width / defaultWidth;
+                yscale = height / defaultHeight;
                 float scale = Math.min(xscale, yscale);
                 Px = AffineTransform.getScaleInstance(scale, scale);
             }
@@ -439,7 +435,7 @@ public class SVGImageReader extends ImageReaderBase {
             }
             processImageProgress(50f);
 
-            CanvasGraphicsNode cgn = getCanvasGraphicsNode(mGVTRoot);
+            CanvasGraphicsNode cgn = getCanvasGraphicsNode(gvtRoot);
             if (cgn != null) {
                 cgn.setViewingTransform(Px);
                 curTxf = new AffineTransform();
@@ -461,7 +457,7 @@ public class SVGImageReader extends ImageReaderBase {
                 throw new TranscoderException(ex);
             }
 
-            this.root = mGVTRoot;
+            this.root = gvtRoot;
             // ----
 
             // NOTE: The code below is copied and pasted from the Batik
@@ -509,6 +505,7 @@ public class SVGImageReader extends ImageReaderBase {
                         g2d.setPaint(bgcolor);
                         g2d.fillRect(0, 0, w, h);
                     }
+
                     if (rend != null) { // might be null if the svg document is empty
                         g2d.drawRenderedImage(rend, new AffineTransform());
                     }
@@ -526,49 +523,51 @@ public class SVGImageReader extends ImageReaderBase {
                 processImageProgress(99f);
 
                 return dest;
-                //writeImage(dest, output);
             }
             catch (Exception ex) {
-                throw new TranscoderException(ex.getMessage(), ex);
+                TranscoderException exception = new TranscoderException(ex.getMessage());
+                exception.initCause(ex);
+                throw exception;
             }
             finally {
-                if (mContext != null) {
-                    mContext.dispose();
+                if (context != null) {
+                    context.dispose();
                 }
             }
         }
 
         private synchronized void init() throws TranscoderException {
-            if (!mInit) {
-                if (mTranscoderInput == null) {
+            if (!initialized) {
+                if (transcoderInput == null) {
                     throw new IllegalStateException("input == null");
                 }
 
-                mInit = true;
+                initialized = true;
 
-                super.transcode(mTranscoderInput, null);
+                super.transcode(transcoderInput, null);
             }
         }
 
         private BufferedImage getImage() throws TranscoderException {
-            if (mImage == null) {
-                mImage = readImage();
+            if (image == null) {
+                image = readImage();
             }
-            return mImage;
+
+            return image;
         }
 
         protected int getDefaultWidth() throws TranscoderException {
             init();
-            return (int) (mDefaultWidth + 0.5);
+            return (int) (defaultWidth + 0.5);
         }
 
         protected int getDefaultHeight() throws TranscoderException {
             init();
-            return (int) (mDefaultHeight + 0.5);
+            return (int) (defaultHeight + 0.5);
         }
 
-        public void setInput(TranscoderInput pInput) {
-            mTranscoderInput = pInput;
+        public void setInput(final TranscoderInput pInput) {
+            transcoderInput = pInput;
         }
     }
 }

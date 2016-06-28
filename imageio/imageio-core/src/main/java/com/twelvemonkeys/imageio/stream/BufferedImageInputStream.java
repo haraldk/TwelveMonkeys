@@ -1,10 +1,11 @@
 package com.twelvemonkeys.imageio.stream;
 
-import com.twelvemonkeys.lang.Validate;
-
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * A buffered {@code ImageInputStream}.
@@ -20,61 +21,67 @@ import java.io.IOException;
 // TODO: Create a provider for this (wrapping the FileIIS and FileCacheIIS classes), and disable the Sun built-in spis?
 // TODO: Test on other platforms, might be just an OS X issue
 public final class BufferedImageInputStream extends ImageInputStreamImpl implements ImageInputStream {
-
    static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private ImageInputStream stream;
 
-    private byte[] buffer;
-    private long bufferStart = 0;
-    private int bufferPos = 0;
-    private int bufferLength = 0;
+    private ByteBuffer buffer;
 
     public BufferedImageInputStream(final ImageInputStream pStream) throws IOException {
         this(pStream, DEFAULT_BUFFER_SIZE);
     }
 
     private BufferedImageInputStream(final ImageInputStream pStream, final int pBufferSize) throws IOException {
-        Validate.notNull(pStream, "stream");
-
-        stream = pStream;
+        stream = notNull(pStream, "stream");
         streamPos = pStream.getStreamPosition();
-        buffer = new byte[pBufferSize];
+        buffer = ByteBuffer.allocate(pBufferSize);
+        buffer.limit(0);
     }
 
     private void fillBuffer() throws IOException {
-        bufferStart = streamPos;
-        bufferLength = stream.read(buffer, 0, buffer.length);
-        bufferPos = 0;
+        buffer.clear();
+
+        int length = stream.read(buffer.array(), 0, buffer.capacity());
+
+        if (length >= 0) {
+            try {
+                buffer.position(length);
+            }
+            catch (IllegalArgumentException e) {
+                System.err.println("length: " + length);
+                throw e;
+            }
+            buffer.flip();
+        }
+        else {
+            buffer.limit(0);
+        }
     }
 
-    private boolean isBufferValid() throws IOException {
-        return bufferPos < bufferLength && bufferStart == stream.getStreamPosition() - bufferLength;
-    }
 
     @Override
     public int read() throws IOException {
-        if (!isBufferValid()) {
+        if (!buffer.hasRemaining()) {
             fillBuffer();
         }
 
-        if (bufferLength <= 0) {
+        if (!buffer.hasRemaining()) {
             return -1;
         }
 
         bitOffset = 0;
         streamPos++;
 
-        return buffer[bufferPos++] & 0xff;
+        return buffer.get() & 0xff;
     }
 
     @Override
     public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
         bitOffset = 0;
 
-        if (!isBufferValid()) {
+        if (!buffer.hasRemaining()) {
             // Bypass cache if cache is empty for reads longer than buffer
-            if (pLength >= buffer.length) {
+            if (pLength >= buffer.capacity()) {
                 return readDirect(pBuffer, pOffset, pLength);
             }
             else {
@@ -87,30 +94,29 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     private int readDirect(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
         // TODO: Figure out why reading more than the buffer length causes alignment issues...
-        int read = stream.read(pBuffer, pOffset, Math.min(buffer.length, pLength));
+        int read = stream.read(pBuffer, pOffset, Math.min(buffer.capacity(), pLength));
 
         if (read > 0) {
             streamPos += read;
         }
-
-        bufferStart = stream.getStreamPosition();
-        bufferLength = 0;
 
         return read;
     }
 
 
     private int readBuffered(final byte[] pBuffer, final int pOffset, final int pLength) {
-        if (bufferLength <= 0) {
+        if (!buffer.hasRemaining()) {
             return -1;
         }
 
         // Read as much as possible from buffer
-        int length = Math.min(bufferLength - bufferPos, pLength);
+        int length = Math.min(buffer.remaining(), pLength);
 
         if (length > 0) {
-            System.arraycopy(buffer, bufferPos, pBuffer, pOffset, length);
-            bufferPos += length;
+            int position = buffer.position();
+            System.arraycopy(buffer.array(), position, pBuffer, pOffset, length);
+            buffer.position(position + length);
+
         }
 
         streamPos += length;
@@ -122,7 +128,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     public void seek(long pPosition) throws IOException {
         // TODO: Could probably be optimized to not invalidate buffer if new position is within current buffer
         stream.seek(pPosition);
-        bufferLength = 0; // Will invalidate buffer
+        buffer.limit(0); // Will invalidate buffer
         streamPos = stream.getStreamPosition();
     }
 
@@ -158,6 +164,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
             stream = null;
             buffer = null;
         }
+
         super.close();
     }
 

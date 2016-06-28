@@ -1,8 +1,7 @@
 - Rename to imageio-common?
-- Separate modules for more for more plugins
-  - The BMP reader supports some special formats not supported by Sun reader
-  - PNM package is pretty complete, but useless, as it's provided by Sun? License?
-  - WBMP?
-  - XBM?
+- Add stream support for NIO and NIO2 stuff? Path, ByteChannel
+- Faster RAF support (need to buffer the slow readShort/readInt/readLong/readUnsignedShort/readUnsignedInt)
+- See if it's possible to use FileImageInputStream for FileChannels and FileInputStream to avoid the caching
+- And the above for output streams too...
 DONE:
 - Split up into separate plugins (modules), to allow easier configuration

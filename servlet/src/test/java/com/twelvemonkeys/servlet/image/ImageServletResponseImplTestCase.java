@@ -1,20 +1,25 @@
 package com.twelvemonkeys.servlet.image;
 
+import com.twelvemonkeys.image.BufferedImageIcon;
 import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.servlet.OutputStreamAdapter;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import javax.imageio.ImageIO;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -27,7 +32,7 @@ import static org.mockito.Mockito.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/image/ImageServletResponseImplTestCase.java#6 $
+ * @version $Id: twelvemonkeys-servlet/src/test/java/com/twelvemonkeys/servlet/image/ImageServletResponseImplTestCase.java#6 $
  */
 public class ImageServletResponseImplTestCase {
     private static final String CONTENT_TYPE_BMP = "image/bmp";
@@ -39,9 +44,13 @@ public class ImageServletResponseImplTestCase {
 
     private static final String IMAGE_NAME_PNG = "12monkeys-splash.png";
     private static final String IMAGE_NAME_GIF = "tux.gif";
+    private static final String IMAGE_NAME_PNG_INDEXED = "star.png";
 
     private static final Dimension IMAGE_DIMENSION_PNG = new Dimension(300, 410);
     private static final Dimension IMAGE_DIMENSION_GIF = new Dimension(250, 250);
+    private static final Dimension IMAGE_DIMENSION_PNG_INDEXED = new Dimension(199, 192);
+
+    private static final int STREAM_DEFAULT_SIZE = 2000;
 
     private HttpServletRequest request;
     private ServletContext context;
@@ -55,12 +64,19 @@ public class ImageServletResponseImplTestCase {
         context = mock(ServletContext.class);
         when(context.getResource("/" + IMAGE_NAME_PNG)).thenReturn(getClass().getResource(IMAGE_NAME_PNG));
         when(context.getResource("/" + IMAGE_NAME_GIF)).thenReturn(getClass().getResource(IMAGE_NAME_GIF));
+        when(context.getResource("/" + IMAGE_NAME_PNG_INDEXED)).thenReturn(getClass().getResource(IMAGE_NAME_PNG_INDEXED));
         when(context.getMimeType("file.bmp")).thenReturn(CONTENT_TYPE_BMP);
         when(context.getMimeType("file.foo")).thenReturn(CONTENT_TYPE_FOO);
         when(context.getMimeType("file.gif")).thenReturn(CONTENT_TYPE_GIF);
         when(context.getMimeType("file.jpeg")).thenReturn(CONTENT_TYPE_JPEG);
         when(context.getMimeType("file.png")).thenReturn(CONTENT_TYPE_PNG);
         when(context.getMimeType("file.txt")).thenReturn(CONTENT_TYPE_TEXT);
+
+        MockLogger mockLogger = new MockLogger();
+        doAnswer(mockLogger).when(context).log(anyString());
+        doAnswer(mockLogger).when(context).log(anyString(), any(Throwable.class));
+        //noinspection deprecation
+        doAnswer(mockLogger).when(context).log(any(Exception.class), anyString());
     }
 
     private void fakeResponse(HttpServletRequest pRequest, ImageServletResponseImpl pImageResponse) throws IOException {
@@ -95,7 +111,7 @@ public class ImageServletResponseImplTestCase {
 
     @Test
     public void testBasicResponse() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
@@ -115,7 +131,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -130,7 +146,7 @@ public class ImageServletResponseImplTestCase {
 
     @Test
     public void testNoOpResponse() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
@@ -154,7 +170,7 @@ public class ImageServletResponseImplTestCase {
     // Transcode original PNG to JPEG with no other changes
     @Test
     public void testTranscodeResponsePNGToJPEG() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
@@ -170,6 +186,12 @@ public class ImageServletResponseImplTestCase {
 
         assertTrue("Content has no data", out.size() > 0);
 
+        // Assert JPEG
+        ByteArrayInputStream input = out.createInputStream();
+        assertEquals(0xFF, input.read());
+        assertEquals(0xD8, input.read());
+        assertEquals(0xFF, input.read());
+
         // Test that image data is still readable
         /*
         File tempFile = File.createTempFile("imageservlet-test-", ".jpeg");
@@ -179,7 +201,7 @@ public class ImageServletResponseImplTestCase {
         System.err.println("open " + tempFile);
         */
 
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(IMAGE_DIMENSION_PNG.width, outImage.getWidth());
         assertEquals(IMAGE_DIMENSION_PNG.height, outImage.getHeight());
@@ -205,43 +227,53 @@ public class ImageServletResponseImplTestCase {
     // (even if there's only one possible compression mode/type combo; MODE_EXPLICIT/"LZW")
    @Test
     public void testTranscodeResponsePNGToGIFWithQuality() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+       FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
 
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
-        when(request.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY)).thenReturn(.5f); // Force quality setting in param
+       HttpServletResponse response = mock(HttpServletResponse.class);
+       when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
+       when(request.getAttribute(ImageServletResponse.ATTRIB_OUTPUT_QUALITY)).thenReturn(.5f); // Force quality setting in param
 
-        ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
-        fakeResponse(request, imageResponse);
+       ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
+       fakeResponse(request, imageResponse);
 
-        // Force transcode to GIF
-        imageResponse.setOutputContentType("image/gif");
+       // Force transcode to GIF
+       imageResponse.setOutputContentType("image/gif");
 
-        // Flush image to wrapped response
-        imageResponse.flush();
+       // Flush image to wrapped response
+       imageResponse.flush();
 
-        assertTrue("Content has no data", out.size() > 0);
+       assertTrue("Content has no data", out.size() > 0);
 
-        // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
-        assertNotNull(outImage);
-        assertEquals(IMAGE_DIMENSION_PNG.width, outImage.getWidth());
-        assertEquals(IMAGE_DIMENSION_PNG.height, outImage.getHeight());
+       // Assert GIF
+       ByteArrayInputStream stream = out.createInputStream();
+       assertEquals('G', stream.read());
+       assertEquals('I', stream.read());
+       assertEquals('F', stream.read());
+       assertEquals('8', stream.read());
+       assertEquals('9', stream.read());
+       assertEquals('a', stream.read());
 
-        BufferedImage image = ImageIO.read(context.getResource("/" + IMAGE_NAME_PNG));
+       // Test that image data is still readable
+       BufferedImage outImage = ImageIO.read(out.createInputStream());
+       assertNotNull(outImage);
+       assertEquals(IMAGE_DIMENSION_PNG.width, outImage.getWidth());
+       assertEquals(IMAGE_DIMENSION_PNG.height, outImage.getHeight());
 
-        // Should keep transparency, but is now binary
-        assertSimilarImageTransparent(image, outImage, 120f);
+       BufferedImage image = ImageIO.read(context.getResource("/" + IMAGE_NAME_PNG));
 
-        verify(response).setContentType(CONTENT_TYPE_GIF);
-        verify(response).getOutputStream();
-    }
+       // Should keep transparency, but is now binary
+//       showIt(image, outImage, null);
+       assertSimilarImageTransparent(image, outImage, 50f);
+
+       verify(response).setContentType(CONTENT_TYPE_GIF);
+       verify(response).getOutputStream();
+   }
 
     // WORKAROUND: Bug in GIFImageWriter may throw NPE if transparent pixels
     // See: http://bugs.sun.com/view_bug.do?bug_id=6287936
     @Test
     public void testTranscodeResponsePNGToGIF() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -257,7 +289,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(IMAGE_DIMENSION_PNG.width, outImage.getWidth());
         assertEquals(IMAGE_DIMENSION_PNG.height, outImage.getHeight());
@@ -265,20 +297,21 @@ public class ImageServletResponseImplTestCase {
         BufferedImage image = ImageIO.read(context.getResource("/" + IMAGE_NAME_PNG));
 
         // Should keep transparency, but is now binary
-        assertSimilarImageTransparent(image, outImage, 120f);
+//        showIt(image, outImage, null);
+        assertSimilarImageTransparent(image, outImage, 50f);
 
         verify(response).setContentType(CONTENT_TYPE_GIF);
         verify(response).getOutputStream();
     }
 
     @Test
-    public void testTranscodeResponseIndexedCM() throws IOException {
+    public void testTranscodeResponseIndexColorModelGIFToJPEG() throws IOException {
         // Custom setup
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_GIF);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -293,8 +326,14 @@ public class ImageServletResponseImplTestCase {
 
         assertTrue("Content has no data", out.size() > 0);
 
+        // Assert JPEG
+        ByteArrayInputStream stream = out.createInputStream();
+        assertEquals(0xFF, stream.read());
+        assertEquals(0xD8, stream.read());
+        assertEquals(0xFF, stream.read());
+
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(IMAGE_DIMENSION_GIF.width, outImage.getWidth());
         assertEquals(IMAGE_DIMENSION_GIF.height, outImage.getHeight());
@@ -302,6 +341,59 @@ public class ImageServletResponseImplTestCase {
         BufferedImage image = flatten(ImageIO.read(context.getResource("/" + IMAGE_NAME_GIF)), Color.WHITE);
 
         assertSimilarImage(image, outImage, 96f);
+    }
+
+    @Test
+    // TODO: Insert bug id/reference here for regression tracking
+    public void testIndexedColorModelResizePNG() throws IOException {
+        // Results differ with algorithm, so we test each algorithm by itself
+        int[] algorithms = new int[] {Image.SCALE_DEFAULT, Image.SCALE_FAST, Image.SCALE_SMOOTH, Image.SCALE_REPLICATE, Image.SCALE_AREA_AVERAGING, 77};
+
+        for (int algorithm : algorithms) {
+            Dimension size = new Dimension(100, 100);
+
+            // Custom setup
+            HttpServletRequest request = mock(HttpServletRequest.class);
+            when(request.getAttribute(ImageServletResponse.ATTRIB_SIZE)).thenReturn(size);
+            when(request.getAttribute(ImageServletResponse.ATTRIB_SIZE_UNIFORM)).thenReturn(false);
+            when(request.getAttribute(ImageServletResponse.ATTRIB_IMAGE_RESAMPLE_ALGORITHM)).thenReturn(algorithm);
+            when(request.getContextPath()).thenReturn("/ape");
+            when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG_INDEXED);
+
+            FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
+            HttpServletResponse response = mock(HttpServletResponse.class);
+            when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
+
+            ImageServletResponseImpl imageResponse = new ImageServletResponseImpl(request, response, context);
+            fakeResponse(request, imageResponse);
+
+            imageResponse.getImage();
+
+            // Flush image to wrapped response
+            imageResponse.flush();
+
+            assertTrue("Content has no data", out.size() > 0);
+
+            // Assert format is still PNG
+            ByteArrayInputStream inputStream = out.createInputStream();
+            assertEquals(0x89, inputStream.read());
+            assertEquals('P', inputStream.read());
+            assertEquals('N', inputStream.read());
+            assertEquals('G', inputStream.read());
+
+            // Test that image data is still readable
+            BufferedImage outImage = ImageIO.read(out.createInputStream());
+            assertNotNull(outImage);
+            assertEquals(size.width, outImage.getWidth());
+            assertEquals(size.height, outImage.getHeight());
+
+            BufferedImage read = ImageIO.read(context.getResource("/" + IMAGE_NAME_PNG_INDEXED));
+            BufferedImage image = ImageUtil.createResampled(read, size.width, size.height, imageResponse.getResampleAlgorithmFromRequest());
+
+//            showIt(image, outImage, null);
+
+            assertSimilarImageTransparent(image, outImage, 10f);
+        }
     }
 
     private static BufferedImage flatten(final BufferedImage pImage, final Color pBackgroundColor) {
@@ -344,32 +436,64 @@ public class ImageServletResponseImplTestCase {
     }
 
     private void assertSimilarImageTransparent(final BufferedImage pExpected, final BufferedImage pActual, final float pArtifactThreshold) {
+        IndexColorModel icm = pActual.getColorModel() instanceof IndexColorModel ? (IndexColorModel) pActual.getColorModel() : null;
+        Object pixel = null;
+
         for (int y = 0; y < pExpected.getHeight(); y++) {
             for (int x = 0; x < pExpected.getWidth(); x++) {
                 int expected = pExpected.getRGB(x, y);
                 int actual = pActual.getRGB(x, y);
 
-                int alpha = (expected >> 24) & 0xff;
+                if (icm != null) {
+                    // Look up, using ICM
 
-                boolean transparent = alpha < 0x40;
+                    int alpha = (expected >> 24) & 0xff;
+                    boolean transparent = alpha < 0x40;
 
-                // Multiply out alpha for each component
-                int expectedR = (int) ((((expected >> 16) & 0xff) * alpha) / 255f);
-                int expectedG = (int) ((((expected >> 8 ) & 0xff) * alpha) / 255f);
-                int expectedB = (int) ((( expected        & 0xff) * alpha) / 255f);
+                    if (transparent) {
+                        int expectedLookedUp = icm.getRGB(icm.getTransparentPixel());
+                        assertRGBEquals(x, y, expectedLookedUp & 0xff000000, actual & 0xff000000, 0);
+                    }
+                    else {
+                        pixel = icm.getDataElements(expected, pixel);
+                        int expectedLookedUp = icm.getRGB(pixel);
+                        assertRGBEquals(x, y, expectedLookedUp & 0xffffff, actual & 0xffffff, pArtifactThreshold);
+                    }
+                }
+                else {
+                    // Multiply out alpha for each component if pre-multiplied
+//                    int expectedR = (int) ((((expected >> 16) & 0xff) * alpha) / 255f);
+//                    int expectedG = (int) ((((expected >> 8) & 0xff) * alpha) / 255f);
+//                    int expectedB = (int) (((expected & 0xff) * alpha) / 255f);
 
-
-                assertEquals("a(" + x + "," + y + ")", transparent ? 0 : 0xff, (actual >> 24) & 0xff);
-                assertEquals("R(" + x + "," + y + ")", expectedR, (actual >> 16) & 0xff, pArtifactThreshold);
-                assertEquals("G(" + x + "," + y + ")", expectedG, (actual >>  8) & 0xff, pArtifactThreshold);
-                assertEquals("B(" + x + "," + y + ")", expectedB,  actual        & 0xff, pArtifactThreshold);
+                    assertRGBEquals(x, y, expected, actual, pArtifactThreshold);
+                }
             }
+        }
+    }
+
+    private void assertRGBEquals(int x, int y, int expected, int actual, float pArtifactThreshold) {
+        int expectedA = (expected >> 24) & 0xff;
+        int expectedR = (expected >> 16) & 0xff;
+        int expectedG = (expected >>  8) & 0xff;
+        int expectedB =  expected        & 0xff;
+
+        try {
+            assertEquals("Alpha", expectedA, (actual >> 24) & 0xff, pArtifactThreshold);
+            assertEquals("RGB", 0, (Math.abs(expectedR - ((actual >> 16) & 0xff)) +
+                    Math.abs(expectedG - ((actual >> 8) & 0xff)) +
+                    Math.abs(expectedB - ((actual) & 0xff))) / 3.0, pArtifactThreshold);
+        }
+        catch (AssertionError e) {
+            AssertionError assertionError = new AssertionError(String.format("@[%d,%d] expected: 0x%08x but was: 0x%08x", x, y, expected, actual));
+            assertionError.initCause(e);
+            throw assertionError;
         }
     }
 
     @Test
     public void testReplaceResponse() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -393,7 +517,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -502,7 +626,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -521,7 +645,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -539,7 +663,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
@@ -559,7 +683,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -580,7 +704,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -620,7 +744,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -641,7 +765,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -704,7 +828,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -723,7 +847,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -752,7 +876,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -771,7 +895,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -790,7 +914,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -811,7 +935,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -840,7 +964,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -861,7 +985,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -880,7 +1004,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -902,7 +1026,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -939,7 +1063,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -961,7 +1085,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -1002,7 +1126,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -1024,7 +1148,7 @@ public class ImageServletResponseImplTestCase {
         when(request.getContextPath()).thenReturn("/ape");
         when(request.getRequestURI()).thenReturn("/ape/" + IMAGE_NAME_PNG);
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(STREAM_DEFAULT_SIZE);
         HttpServletResponse response = mock(HttpServletResponse.class);
         when(response.getOutputStream()).thenReturn(new OutputStreamAdapter(out));
 
@@ -1045,7 +1169,7 @@ public class ImageServletResponseImplTestCase {
         assertTrue("Content has no data", out.size() > 0);
 
         // Test that image data is still readable
-        BufferedImage outImage = ImageIO.read(new ByteArrayInputStream(out.toByteArray()));
+        BufferedImage outImage = ImageIO.read(out.createInputStream());
         assertNotNull(outImage);
         assertEquals(image.getWidth(), outImage.getWidth());
         assertEquals(image.getHeight(), outImage.getHeight());
@@ -1053,4 +1177,406 @@ public class ImageServletResponseImplTestCase {
         verify(response).getOutputStream();
         verify(response).setContentType(CONTENT_TYPE_PNG);
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Absolute AOI
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Test
+    public void testGetAOIAbsolute() {
+        assertEquals(new Rectangle(10, 10, 100, 100), ImageServletResponseImpl.getAOI(200, 200, 10, 10, 100, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOIAbsoluteOverflowX() {
+        assertEquals(new Rectangle(10, 10, 90, 100), ImageServletResponseImpl.getAOI(100, 200, 10, 10, 100, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOIAbsoluteOverflowW() {
+        assertEquals(new Rectangle(0, 10, 100, 100), ImageServletResponseImpl.getAOI(100, 200, 0, 10, 110, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOIAbsoluteOverflowY() {
+        assertEquals(new Rectangle(10, 10, 100, 90), ImageServletResponseImpl.getAOI(200, 100, 10, 10, 100, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOIAbsoluteOverflowH() {
+        assertEquals(new Rectangle(10, 0, 100, 100), ImageServletResponseImpl.getAOI(200, 100, 10, 0, 100, 110, false, false));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Uniform AOI centered
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Test
+    public void testGetAOIUniformCenteredS2SUp() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 333, 333, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredS2SDown() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 33, 33, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredS2SNormalized() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 100, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredS2W() {
+        assertEquals(new Rectangle(0, 25, 100, 50), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 200, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredS2WNormalized() {
+        assertEquals(new Rectangle(0, 25, 100, 50), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 100, 50, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredS2N() {
+        assertEquals(new Rectangle(25, 0, 50, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 100, 200, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredS2NNormalized() {
+        assertEquals(new Rectangle(25, 0, 50, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 50, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2S() {
+        assertEquals(new Rectangle(50, 0, 100, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 333, 333, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2SNormalized() {
+        assertEquals(new Rectangle(50, 0, 100, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 100, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2W() {
+        assertEquals(new Rectangle(0, 0, 200, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 100, 50, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2WW() {
+        assertEquals(new Rectangle(0, 25, 200, 50), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 200, 50, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2WN() {
+        assertEquals(new Rectangle(25, 0, 150, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 75, 50, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2WNNormalized() {
+        assertEquals(new Rectangle(25, 0, 150, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 150, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2WNormalized() {
+        assertEquals(new Rectangle(0, 0, 200, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 200, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2N() {
+        assertEquals(new Rectangle(75, 0, 50, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 100, 200, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredW2NNormalized() {
+        assertEquals(new Rectangle(75, 0, 50, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 50, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2S() {
+        assertEquals(new Rectangle(0, 50, 100, 100), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 333, 333, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2SNormalized() {
+        assertEquals(new Rectangle(0, 50, 100, 100), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2W() {
+        assertEquals(new Rectangle(0, 75, 100, 50), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 200, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2WNormalized() {
+        assertEquals(new Rectangle(0, 75, 100, 50), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 50, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2N() {
+        assertEquals(new Rectangle(0, 0, 100, 200), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 50, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2NN() {
+        assertEquals(new Rectangle(25, 0, 50, 200), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 25, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2NW() {
+        assertEquals(new Rectangle(0, 33, 100, 133), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 75, 100, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2NWNormalized() {
+        assertEquals(new Rectangle(0, 37, 100, 125), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 125, false, true));
+    }
+
+    @Test
+    public void testGetAOIUniformCenteredN2NNormalized() {
+        assertEquals(new Rectangle(0, 0, 100, 200), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 200, false, true));
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Absolute AOI centered
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Test
+    public void testGetAOICenteredS2SUp() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 333, 333, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2SDown() {
+        assertEquals(new Rectangle(33, 33, 33, 33), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 33, 33, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2SSame() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 100, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2WOverflow() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 200, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2W() {
+        assertEquals(new Rectangle(40, 45, 20, 10), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 20, 10, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2WMax() {
+        assertEquals(new Rectangle(0, 25, 100, 50), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 100, 50, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2NOverflow() {
+        assertEquals(new Rectangle(0, 0, 100, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 100, 200, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2N() {
+        assertEquals(new Rectangle(45, 40, 10, 20), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 10, 20, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredS2NMax() {
+        assertEquals(new Rectangle(25, 0, 50, 100), ImageServletResponseImpl.getAOI(100, 100, -1, -1, 50, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2SOverflow() {
+        assertEquals(new Rectangle(0, 0, 200, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 333, 333, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2S() {
+        assertEquals(new Rectangle(75, 25, 50, 50), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 50, 50, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2SMax() {
+        assertEquals(new Rectangle(50, 0, 100, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 100, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2WOverflow() {
+        assertEquals(new Rectangle(0, 0, 200, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 300, 200, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2W() {
+        assertEquals(new Rectangle(50, 25, 100, 50), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 100, 50, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2WW() {
+        assertEquals(new Rectangle(10, 40, 180, 20), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 180, 20, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2WN() {
+        assertEquals(new Rectangle(62, 25, 75, 50), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 75, 50, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2WSame() {
+        assertEquals(new Rectangle(0, 0, 200, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 200, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2NOverflow() {
+        assertEquals(new Rectangle(50, 0, 100, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 100, 200, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2N() {
+        assertEquals(new Rectangle(83, 25, 33, 50), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 33, 50, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredW2NMax() {
+        assertEquals(new Rectangle(75, 0, 50, 100), ImageServletResponseImpl.getAOI(200, 100, -1, -1, 50, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2S() {
+        assertEquals(new Rectangle(33, 83, 33, 33), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 33, 33, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2SMax() {
+        assertEquals(new Rectangle(0, 50, 100, 100), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2WOverflow() {
+        assertEquals(new Rectangle(0, 50, 100, 100), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 200, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2W() {
+        assertEquals(new Rectangle(40, 95, 20, 10), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 20, 10, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2WMax() {
+        assertEquals(new Rectangle(0, 75, 100, 50), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 50, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2N() {
+        assertEquals(new Rectangle(45, 90, 10, 20), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 10, 20, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2NSame() {
+        assertEquals(new Rectangle(0, 0, 100, 200), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 200, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2NN() {
+        assertEquals(new Rectangle(37, 50, 25, 100), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 25, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2NW() {
+        assertEquals(new Rectangle(12, 50, 75, 100), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 75, 100, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2NWMax() {
+        assertEquals(new Rectangle(0, 37, 100, 125), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 125, false, false));
+    }
+
+    @Test
+    public void testGetAOICenteredN2NMax() {
+        assertEquals(new Rectangle(0, 0, 100, 200), ImageServletResponseImpl.getAOI(100, 200, -1, -1, 100, 200, false, false));
+    }
+
+    // TODO: Test percent
+
+    // TODO: Test getSize()...
+
+    private static class BlackLabel extends JLabel {
+        private final Paint checkeredBG;
+        private boolean opaque = true;
+
+        public BlackLabel(final String text, final BufferedImage outImage) {
+            super(text, new BufferedImageIcon(outImage), JLabel.CENTER);
+            setOpaque(true);
+            setBackground(Color.BLACK);
+            setForeground(Color.WHITE);
+            setVerticalAlignment(JLabel.CENTER);
+            setVerticalTextPosition(JLabel.BOTTOM);
+            setHorizontalTextPosition(JLabel.CENTER);
+
+            checkeredBG = createTexture();
+        }
+
+        @Override
+        public boolean isOpaque() {
+            return opaque && super.isOpaque();
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+            Graphics2D g = (Graphics2D) graphics;
+
+            int iconHeight = getIcon() == null ? 0 : getIcon().getIconHeight() + getIconTextGap();
+
+            // Paint checkered bg behind icon
+            g.setPaint(checkeredBG);
+            g.fillRect(0, 0, getWidth(), getHeight());
+
+            // Paint black bg behind text
+            g.setColor(getBackground());
+            g.fillRect(0, iconHeight, getWidth(), getHeight() - iconHeight);
+
+            try {
+                opaque = false;
+                super.paintComponent(g);
+            }
+            finally {
+                opaque = true;
+            }
+        }
+
+        private static Paint createTexture() {
+            GraphicsConfiguration graphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+            BufferedImage pattern = graphicsConfiguration.createCompatibleImage(20, 20);
+            Graphics2D g = pattern.createGraphics();
+            try {
+                g.setColor(Color.LIGHT_GRAY);
+                g.fillRect(0, 0, pattern.getWidth(), pattern.getHeight());
+                g.setColor(Color.GRAY);
+                g.fillRect(0, 0, pattern.getWidth() / 2, pattern.getHeight() / 2);
+                g.fillRect(pattern.getWidth() / 2, pattern.getHeight() / 2, pattern.getWidth() / 2, pattern.getHeight() / 2);
+            }
+            finally {
+                g.dispose();
+            }
+
+            return new TexturePaint(pattern, new Rectangle(pattern.getWidth(), pattern.getHeight()));
+        }
+    }
+
+    private static class MockLogger implements Answer<Void> {
+        public Void answer(InvocationOnMock invocation) throws Throwable {
+            // either log(String), log(String, Throwable) or log(Exception, String)
+            Object[] arguments = invocation.getArguments();
+
+            String msg = (String) (arguments[0] instanceof String ? arguments[0] : arguments[1]);
+            Throwable t = (Throwable) (arguments[0] instanceof Exception ? arguments[0] : arguments.length > 1 ? arguments[1] : null);
+
+            System.out.println("mock-context: " + msg);
+            if (t != null) {
+                t.printStackTrace(System.out);
+            }
+
+            return null;
+        }
+    }
+
 }

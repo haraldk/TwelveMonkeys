@@ -30,6 +30,7 @@ package com.twelvemonkeys.io.enc;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 
 /**
@@ -50,7 +51,6 @@ final class DeflateEncoder implements Encoder {
     private final byte[] buffer = new byte[1024];
 
     public DeflateEncoder() {
-//        this(new Deflater());
         this(new Deflater(Deflater.DEFAULT_COMPRESSION, true)); // TODO: Should we use "no wrap"?
     }
 
@@ -62,12 +62,12 @@ final class DeflateEncoder implements Encoder {
         deflater = pDeflater;
     }
 
-    public void encode(final OutputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength)
+    public void encode(final OutputStream stream, ByteBuffer buffer)
             throws IOException
     {
         System.out.println("DeflateEncoder.encode");
-        deflater.setInput(pBuffer, pOffset, pLength);
-        flushInputToStream(pStream);
+        deflater.setInput(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        flushInputToStream(stream);
     }
 
     private void flushInputToStream(final OutputStream pStream) throws IOException {

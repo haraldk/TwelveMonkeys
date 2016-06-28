@@ -53,11 +53,15 @@ public class BufferedImageIcon implements Icon {
     }
 
     public BufferedImageIcon(BufferedImage pImage, int pWidth, int pHeight) {
+        this(pImage, pWidth, pHeight, pImage.getWidth() == pWidth && pImage.getHeight() == pHeight);
+    }
+
+    public BufferedImageIcon(BufferedImage pImage, int pWidth, int pHeight, boolean useFastRendering) {
         image = Validate.notNull(pImage, "image");
         width = Validate.isTrue(pWidth > 0, pWidth, "width must be positive: %d");
         height = Validate.isTrue(pHeight > 0, pHeight, "height must be positive: %d");
 
-        fast = image.getWidth() == width && image.getHeight() == height;
+        fast = useFastRendering;
     }
 
     public int getIconHeight() {

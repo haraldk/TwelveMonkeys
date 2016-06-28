@@ -28,13 +28,17 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -51,14 +55,16 @@ import java.util.Arrays;
  * @version $Id: EXIFThumbnail.java,v 1.0 18.04.12 12:19 haraldk Exp$
  */
 final class EXIFThumbnailReader extends ThumbnailReader {
+    private final ImageReader reader;
     private final Directory ifd;
     private final ImageInputStream stream;
     private final int compression;
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    public EXIFThumbnailReader(ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, Directory ifd, ImageInputStream stream) {
+    public EXIFThumbnailReader(ThumbnailReadProgressListener progressListener, ImageReader jpegReader, int imageIndex, int thumbnailIndex, Directory ifd, ImageInputStream stream) {
         super(progressListener, imageIndex, thumbnailIndex);
+        this.reader = Validate.notNull(jpegReader);
         this.ifd = ifd;
         this.stream = stream;
 
@@ -97,7 +103,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             thumbnail = readJPEG();
         }
 
-        cachedThumbnail = pixelsExposed ? null : new SoftReference<BufferedImage>(thumbnail);
+        cachedThumbnail = pixelsExposed ? null : new SoftReference<>(thumbnail);
 
         return thumbnail;
     }
@@ -125,8 +131,12 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             };
 
             input = new SequenceInputStream(new ByteArrayInputStream(fakeEmptyExif), input);
+
             try {
-                return readJPEGThumbnail(input);
+
+                try (MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(input)) {
+                    return readJPEGThumbnail(reader, stream);
+                }
             }
             finally {
                 input.close();
@@ -147,7 +157,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
         }
 
         Entry bitsPerSample = ifd.getEntryById(TIFF.TAG_BITS_PER_SAMPLE);
-        Entry samplesPerPixel = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXELS);
+        Entry samplesPerPixel = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
         Entry photometricInterpretation = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
 
         // Required
@@ -182,15 +192,15 @@ final class EXIFThumbnailReader extends ThumbnailReader {
                     break;
                 case 6:
                     // YCbCr
-                    for (int i = 0, thumbDataLength = thumbData.length; i < thumbDataLength; i += 3) {
-                        JPEGImageReader.YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
+                    for (int i = 0; i < thumbSize; i += 3) {
+                        YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
                     }
                     break;
                 default:
                     throw new IIOException("Unknown PhotometricInterpretation value for uncompressed EXIF thumbnail (expected 2 or 6): " + interpretation);
             }
 
-            return ThumbnailReader.readRawThumbnail(thumbData, thumbData.length, 0, w, h);
+            return ThumbnailReader.readRawThumbnail(thumbData, thumbSize, 0, w, h);
         }
 
         throw new IIOException("Missing StripOffsets tag for uncompressed EXIF thumbnail");
@@ -202,7 +212,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             Entry width = ifd.getEntryById(TIFF.TAG_IMAGE_WIDTH);
 
             if (width == null) {
-                throw new IIOException("Missing dimensions for unknown EXIF thumbnail");
+                throw new IIOException("Missing dimensions for uncompressed EXIF thumbnail");
             }
 
             return ((Number) width.getValue()).intValue();
@@ -221,7 +231,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             Entry height = ifd.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
 
             if (height == null) {
-                throw new IIOException("Missing dimensions for unknown EXIF thumbnail");
+                throw new IIOException("Missing dimensions for uncompressed EXIF thumbnail");
             }
 
             return ((Number) height.getValue()).intValue();

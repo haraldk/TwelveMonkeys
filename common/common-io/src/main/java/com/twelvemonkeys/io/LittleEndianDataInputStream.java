@@ -65,7 +65,8 @@ import java.io.*;
  * @see java.io.DataOutput
  *
  * @author Elliotte Rusty Harold
- * @version 1.0.3, 28 December 2002
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version 2
  */
 public class LittleEndianDataInputStream extends FilterInputStream implements DataInput {
     // TODO: Optimize by reading into a fixed size (8 bytes) buffer instead of individual read operations?
@@ -158,7 +159,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
             throw new EOFException();
         }
 
-        return (short) (((byte2 << 24) >>> 16) + (byte1 << 24) >>> 24);
+        return (short) (((byte2 << 24) >>> 16) | (byte1 << 24) >>> 24);
     }
 
     /**
@@ -198,7 +199,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
             throw new EOFException();
         }
 
-        return (char) (((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24));
+        return (char) (((byte2 << 24) >>> 16) | ((byte1 << 24) >>> 24));
     }
 
 
@@ -221,8 +222,8 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
             throw new EOFException();
         }
 
-        return (byte4 << 24) + ((byte3 << 24) >>> 8)
-                + ((byte2 << 24) >>> 16) + ((byte1 << 24) >>> 24);
+        return (byte4 << 24) | ((byte3 << 24) >>> 8)
+                | ((byte2 << 24) >>> 16) | ((byte1 << 24) >>> 24);
     }
 
     /**
@@ -248,10 +249,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
             throw new EOFException();
         }
 
-        return (byte8 << 56) + ((byte7 << 56) >>> 8)
-                + ((byte6 << 56) >>> 16) + ((byte5 << 56) >>> 24)
-                + ((byte4 << 56) >>> 32) + ((byte3 << 56) >>> 40)
-                + ((byte2 << 56) >>> 48) + ((byte1 << 56) >>> 56);
+        return (byte8 << 56) | ((byte7 << 56) >>> 8)
+                | ((byte6 << 56) >>> 16) | ((byte5 << 56) >>> 24)
+                | ((byte4 << 56) >>> 32) | ((byte3 << 56) >>> 40)
+                | ((byte2 << 56) >>> 48) | ((byte1 << 56) >>> 56);
     }
 
     /**

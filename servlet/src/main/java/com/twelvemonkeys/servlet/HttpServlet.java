@@ -39,7 +39,7 @@ import java.lang.reflect.InvocationTargetException;
  * <p/>
  * {@code HttpServlet} has an auto-init system, that automatically invokes
  * the method matching the signature {@code void setX(&lt;Type&gt;)},
- * for every init-parameter {@code x}. Both camelCase and lisp-style paramter
+ * for every init-parameter {@code x}. Both camelCase and lisp-style parameter
  * naming is supported, lisp-style names will be converted to camelCase.
  * Parameter values are automatically converted from string representation to
  * most basic types, if necessary.
@@ -50,6 +50,7 @@ import java.lang.reflect.InvocationTargetException;
  * @version $Id: HttpServlet.java#1 $
  */
 public abstract class HttpServlet extends javax.servlet.http.HttpServlet {
+    // TODO: Rewrite to use ServletConfigurator instead of BeanUtil
 
     /**
      * Called by the web container to indicate to a servlet that it is being

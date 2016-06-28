@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio;
 
 import com.twelvemonkeys.image.BufferedImageIcon;
+import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.*;
@@ -37,6 +38,9 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -179,8 +183,10 @@ public abstract class ImageReaderBase extends ImageReader {
         if (index < getMinIndex()) {
             throw new IndexOutOfBoundsException("index < minIndex");
         }
-        else if (getNumImages(false) != -1 && index >= getNumImages(false)) {
-            throw new IndexOutOfBoundsException("index >= numImages (" + index + " >= " + getNumImages(false) + ")");
+
+        int numImages = getNumImages(false);
+        if (numImages != -1 && index >= numImages) {
+            throw new IndexOutOfBoundsException("index >= numImages (" + index + " >= " + numImages + ")");
         }
     }
 
@@ -235,7 +241,7 @@ public abstract class ImageReaderBase extends ImageReader {
 
         // If param is non-null, use it
         if (param != null) {
-            // Try to get the explicit destinaton image
+            // Try to get the explicit destination image
             BufferedImage dest = param.getDestination();
 
             if (dest != null) {
@@ -418,6 +424,12 @@ public abstract class ImageReaderBase extends ImageReader {
     }
 
     private static class ImageLabel extends JLabel {
+        static final String ZOOM_IN = "zoom-in";
+        static final String ZOOM_OUT = "zoom-out";
+        static final String ZOOM_ACTUAL = "zoom-actual";
+
+        private BufferedImage image;
+
         Paint backgroundPaint;
 
         final Paint checkeredBG;
@@ -428,6 +440,7 @@ public abstract class ImageReaderBase extends ImageReader {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 
+            image = pImage;
             checkeredBG = createTexture();
 
             // For indexed color, default to the color of the transparent pixel, if any 
@@ -435,9 +448,8 @@ public abstract class ImageReaderBase extends ImageReader {
 
             backgroundPaint = defaultBG != null ? defaultBG : checkeredBG;
 
-            JPopupMenu popup = createBackgroundPopup();
-
-            setComponentPopupMenu(popup);
+            setupActions();
+            setComponentPopupMenu(createPopupMenu());
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -446,26 +458,97 @@ public abstract class ImageReaderBase extends ImageReader {
                     }
                 }
             });
+
+            setTransferHandler(new TransferHandler() {
+                @Override
+                public int getSourceActions(JComponent c) {
+                    return COPY;
+                }
+
+                @Override
+                protected Transferable createTransferable(JComponent c) {
+                    return new ImageTransferable(image);
+                }
+
+                @Override
+                public boolean importData(JComponent comp, Transferable t) {
+                    if (canImport(comp, t.getTransferDataFlavors())) {
+                        try {
+                            Image transferData = (Image) t.getTransferData(DataFlavor.imageFlavor);
+                            image = ImageUtil.toBuffered(transferData);
+                            setIcon(new BufferedImageIcon(image));
+
+                            return true;
+                        }
+                        catch (UnsupportedFlavorException | IOException ignore) {
+                        }
+                    }
+
+                    return false;
+                }
+
+                @Override
+                public boolean canImport(JComponent comp, DataFlavor[] transferFlavors) {
+                    for (DataFlavor flavor : transferFlavors) {
+                        if (flavor.equals(DataFlavor.imageFlavor)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            });
         }
 
-        private JPopupMenu createBackgroundPopup() {
+        private void setupActions() {
+            // Mac weirdness... VK_MINUS/VK_PLUS seems to map to english key map always...
+            bindAction(new ZoomAction("Zoom in", 2), ZOOM_IN, KeyStroke.getKeyStroke('+'), KeyStroke.getKeyStroke(KeyEvent.VK_ADD, 0));
+            bindAction(new ZoomAction("Zoom out", .5), ZOOM_OUT, KeyStroke.getKeyStroke('-'), KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, 0));
+            bindAction(new ZoomAction("Zoom actual"), ZOOM_ACTUAL, KeyStroke.getKeyStroke('0'), KeyStroke.getKeyStroke(KeyEvent.VK_0, 0));
+
+            bindAction(TransferHandler.getCopyAction(), (String) TransferHandler.getCopyAction().getValue(Action.NAME), KeyStroke.getKeyStroke(KeyEvent.VK_C, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+            bindAction(TransferHandler.getPasteAction(), (String) TransferHandler.getPasteAction().getValue(Action.NAME), KeyStroke.getKeyStroke(KeyEvent.VK_V, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        }
+
+        private void bindAction(final Action action, final String key, final KeyStroke... keyStrokes) {
+            for (KeyStroke keyStroke : keyStrokes) {
+                getInputMap(WHEN_IN_FOCUSED_WINDOW).put(keyStroke, key);
+            }
+
+            getActionMap().put(key, action);
+        }
+
+        private JPopupMenu createPopupMenu() {
             JPopupMenu popup = new JPopupMenu();
+
+            popup.add(getActionMap().get(ZOOM_ACTUAL));
+            popup.add(getActionMap().get(ZOOM_IN));
+            popup.add(getActionMap().get(ZOOM_OUT));
+            popup.addSeparator();
+
             ButtonGroup group = new ButtonGroup();
 
-            addCheckBoxItem(new ChangeBackgroundAction("Checkered", checkeredBG), popup, group);
-            popup.addSeparator();
-            addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Gray", Color.GRAY), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), popup, group);
-            addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), popup, group);
-            popup.addSeparator();
-            addCheckBoxItem(new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE), popup, group);
+            JMenu background = new JMenu("Background");
+            popup.add(background);
+
+            ChangeBackgroundAction checkered = new ChangeBackgroundAction("Checkered", checkeredBG);
+            checkered.putValue(Action.SELECTED_KEY, backgroundPaint == checkeredBG);
+            addCheckBoxItem(checkered, background, group);
+            background.addSeparator();
+            addCheckBoxItem(new ChangeBackgroundAction("White", Color.WHITE), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Light", Color.LIGHT_GRAY), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Gray", Color.GRAY), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), background, group);
+            addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), background, group);
+            background.addSeparator();
+            ChooseBackgroundAction chooseBackgroundAction = new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE);
+            chooseBackgroundAction.putValue(Action.SELECTED_KEY, backgroundPaint == defaultBG);
+            addCheckBoxItem(chooseBackgroundAction, background, group);
 
             return popup;
         }
 
-        private void addCheckBoxItem(final Action pAction, final JPopupMenu pPopup, final ButtonGroup pGroup) {
+        private void addCheckBoxItem(final Action pAction, final JMenu pPopup, final ButtonGroup pGroup) {
             JCheckBoxMenuItem item = new JCheckBoxMenuItem(pAction);
             pGroup.add(item);
             pPopup.add(item);
@@ -551,6 +634,59 @@ public abstract class ImageReaderBase extends ImageReader {
                     paint = selected;
                     super.actionPerformed(e);
                 }
+            }
+        }
+
+        private class ZoomAction extends AbstractAction {
+            private final double zoomFactor;
+
+            public ZoomAction(final String name, final double zoomFactor) {
+                super(name);
+                this.zoomFactor = zoomFactor;
+            }
+
+            public ZoomAction(final String name) {
+                this(name, 0);
+            }
+
+            public void actionPerformed(final ActionEvent e) {
+                if (zoomFactor <= 0) {
+                    setIcon(new BufferedImageIcon(image));
+                }
+                else {
+                    Icon current = getIcon();
+                    int w = (int) Math.max(Math.min(current.getIconWidth() * zoomFactor, image.getWidth() * 16), image.getWidth() / 16);
+                    int h = (int) Math.max(Math.min(current.getIconHeight() * zoomFactor, image.getHeight() * 16), image.getHeight() / 16);
+
+                    setIcon(new BufferedImageIcon(image, Math.max(w, 2), Math.max(h, 2), w > image.getWidth() || h > image.getHeight()));
+                }
+            }
+        }
+
+        private static class ImageTransferable implements Transferable {
+            private final BufferedImage image;
+
+            public ImageTransferable(final BufferedImage image) {
+                this.image = image;
+            }
+
+            @Override
+            public DataFlavor[] getTransferDataFlavors() {
+                return new DataFlavor[] {DataFlavor.imageFlavor};
+            }
+
+            @Override
+            public boolean isDataFlavorSupported(final DataFlavor flavor) {
+                return DataFlavor.imageFlavor.equals(flavor);
+            }
+
+            @Override
+            public Object getTransferData(final DataFlavor flavor) throws UnsupportedFlavorException, IOException {
+                if (isDataFlavorSupported(flavor)) {
+                    return image;
+                }
+
+                throw new UnsupportedFlavorException(flavor);
             }
         }
     }

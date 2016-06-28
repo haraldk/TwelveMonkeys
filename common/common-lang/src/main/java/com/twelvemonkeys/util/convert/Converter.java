@@ -36,7 +36,7 @@ import java.util.Map;
 
 /**
  * The converter (singleton). Converts strings to objects and back. 
- * This is the entrypoint to the converter framework.
+ * This is the entry point to the converter framework.
  * <p/>
  * By default, converters for {@link com.twelvemonkeys.util.Time}, {@link Date}
  * and {@link Object}
@@ -53,17 +53,17 @@ import java.util.Map;
  */
 // TODO: Get rid of singleton stuff
 // Can probably be a pure static class, but is that a good idea?
-// Maybe have BeanUtil act as a "proxy", and hide this class alltogheter?
+// Maybe have BeanUtil act as a "proxy", and hide this class all together?
 // TODO: ServiceRegistry for registering 3rd party converters
 // TODO: URI scheme, for implicit typing? Is that a good idea?
 // TODO: Array converters?
 public abstract class Converter implements PropertyConverter {
 
     /** Our singleton instance */
-    protected static Converter sInstance = new ConverterImpl(); // Thread safe & EASY
+    protected static final Converter sInstance = new ConverterImpl(); // Thread safe & EASY
 
-    /** The conveters Map */
-    protected Map converters = new Hashtable();
+    /** The converters Map */
+    protected final Map<Class, PropertyConverter> converters = new Hashtable<Class, PropertyConverter>();
 
     // Register our predefined converters
     static {
@@ -115,20 +115,21 @@ public abstract class Converter implements PropertyConverter {
      *
      * @see #unregisterConverter(Class)
      */
-    public static void registerConverter(Class pType, PropertyConverter pConverter) {
+    public static void registerConverter(final Class<?> pType, final PropertyConverter pConverter) {
         getInstance().converters.put(pType, pConverter);
     }
 
     /**
-     * Unregisters a converter for a given type. That is, making it unavailable
+     * Un-registers a converter for a given type. That is, making it unavailable
      * for the converter framework, and making it (potentially) available for
-     * garbabe collection.
+     * garbage collection.
      *
      * @param pType the (super) type to remove converter for
      *
      * @see #registerConverter(Class,PropertyConverter)
      */
-    public static void unregisterConverter(Class pType) {
+    @SuppressWarnings("UnusedDeclaration")
+    public static void unregisterConverter(final Class<?> pType) {
         getInstance().converters.remove(pType);
     }
     
@@ -143,8 +144,7 @@ public abstract class Converter implements PropertyConverter {
      * @throws ConversionException if the string cannot be converted for any 
      *         reason.
      */
-    public Object toObject(String pString, Class pType)
-        throws ConversionException {
+    public Object toObject(final String pString, final Class pType) throws ConversionException {
         return toObject(pString, pType, null);
     }
 
@@ -174,7 +174,7 @@ public abstract class Converter implements PropertyConverter {
      * @throws ConversionException if the object cannot be converted to a 
      *         string for any reason.
      */
-    public String toString(Object pObject) throws ConversionException {
+    public String toString(final Object pObject) throws ConversionException {
         return toString(pObject, null);
     }
 

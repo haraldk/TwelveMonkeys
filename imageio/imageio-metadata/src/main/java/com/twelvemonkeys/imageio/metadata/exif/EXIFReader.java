@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.metadata.exif;
 
-import com.twelvemonkeys.imageio.metadata.AbstractCompoundDirectory;
+import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReader;
@@ -38,6 +38,7 @@ import com.twelvemonkeys.lang.Validate;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -52,7 +53,10 @@ import java.util.*;
  * @version $Id: EXIFReader.java,v 1.0 Nov 13, 2009 5:42:51 PM haraldk Exp$
  */
 public final class EXIFReader extends MetadataReader {
-    static final Collection<Integer> KNOWN_IFDS = Collections.unmodifiableCollection(Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD));
+
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.metadata.exif.debug"));
+
+    static final Collection<Integer> KNOWN_IFDS = Collections.unmodifiableCollection(Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD, TIFF.TAG_SUB_IFD));
 
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
@@ -67,7 +71,7 @@ public final class EXIFReader extends MetadataReader {
         else if (bom[0] == 'M' && bom[1] == 'M') {
             input.setByteOrder(ByteOrder.BIG_ENDIAN);
         }
-        else  {
+        else {
             throw new IIOException(String.format("Invalid TIFF byte order mark '%s', expected: 'II' or 'MM'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
         }
 
@@ -75,71 +79,78 @@ public final class EXIFReader extends MetadataReader {
         // http://www.awaresystems.be/imaging/tiff/bigtiff.html
         int magic = input.readUnsignedShort();
         if (magic != TIFF.TIFF_MAGIC) {
-            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic,  TIFF.TIFF_MAGIC));
+            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic, TIFF.TIFF_MAGIC));
         }
 
         long directoryOffset = input.readUnsignedInt();
 
-        return readDirectory(input, directoryOffset);
+        return readDirectory(input, directoryOffset, true);
     }
 
-    private Directory readDirectory(final ImageInputStream pInput, final long pOffset) throws IOException {
-        List<IFD> ifds = new ArrayList<IFD>();
-        List<Entry> entries = new ArrayList<Entry>();
+    // TODO: Consider re-writing so that the linked IFD parsing is done externally to the method
+    protected Directory readDirectory(final ImageInputStream pInput, final long pOffset, final boolean readLinked) throws IOException {
+        List<IFD> ifds = new ArrayList<>();
+        List<Entry> entries = new ArrayList<>();
 
         pInput.seek(pOffset);
         long nextOffset = -1;
-        int entryCount = pInput.readUnsignedShort();
+
+        int entryCount;
+        try {
+            entryCount = pInput.readUnsignedShort();
+        }
+        catch (EOFException e) {
+            // Treat EOF here as empty Sub-IFD
+            entryCount = 0;
+        }
 
         for (int i = 0; i < entryCount; i++) {
-            EXIFEntry entry = readEntry(pInput);
+            try {
+                EXIFEntry entry = readEntry(pInput);
 
-            if (entry == null) {
-//                System.err.println("Expected: " + entryCount + " values, found only " + i);
-                // TODO: Log warning?
-                nextOffset = 0;
+                if (entry != null) {
+                    entries.add(entry);
+                }
+            }
+            catch (IIOException e) {
                 break;
             }
-
-            entries.add(entry);
         }
 
-        if (nextOffset == -1) {
-            nextOffset = pInput.readUnsignedInt();
-        }
+        if (readLinked) {
+            if (nextOffset == -1) {
+                try {
+                    nextOffset = pInput.readUnsignedInt();
+                }
+                catch (EOFException e) {
+                    // catch EOF here as missing EOF marker
+                    nextOffset = 0;
+                }
+            }
 
-        // Read linked IFDs
-        if (nextOffset != 0) {
-            // TODO: This is probably not okay anymore.. Replace recursion with while loop
-            AbstractCompoundDirectory next = (AbstractCompoundDirectory) readDirectory(pInput, nextOffset);
-            for (int i = 0; i < next.directoryCount(); i++) {
-                ifds.add((IFD) next.getDirectory(i));
+            // Read linked IFDs
+            if (nextOffset != 0) {
+                CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset, true);
+
+                for (int i = 0; i < next.directoryCount(); i++) {
+                    ifds.add((IFD) next.getDirectory(i));
+                }
             }
         }
 
-        // TODO: Make what sub-IFDs to parse optional? Or leave this to client code? At least skip the non-TIFF data?
-        // TODO: Put it in the constructor?
+        // TODO: Consider leaving to client code what sub-IFDs to parse (but always parse TAG_SUB_IFD).
         readSubdirectories(pInput, entries,
-                Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD
-//                        , TIFF.TAG_IPTC, TIFF.TAG_XMP
-//                        , TIFF.TAG_ICC_PROFILE
-//                        , TIFF.TAG_PHOTOSHOP
-//                        ,TIFF.TAG_MODI_OLE_PROPERTY_SET
-                )
+                Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD, TIFF.TAG_SUB_IFD)
         );
 
         ifds.add(0, new IFD(entries));
-        
+
         return new EXIFDirectory(ifds);
     }
 
-//    private Directory readForeignMetadata(final MetadataReader reader, final byte[] bytes) throws IOException {
-//        return reader.read(ImageIO.createImageInputStream(new ByteArrayInputStream(bytes)));
-//    }
-
     // TODO: Might be better to leave this for client code, as it's tempting go really overboard and support any possible embedded format..
-    private void readSubdirectories(ImageInputStream input, List<Entry> entries, List<Integer> subIFDs) throws IOException {
-        if (subIFDs == null || subIFDs.isEmpty()) {
+    private void readSubdirectories(ImageInputStream input, List<Entry> entries, List<Integer> subIFDIds) throws IOException {
+        if (subIFDIds == null || subIFDIds.isEmpty()) {
             return;
         }
 
@@ -147,86 +158,73 @@ public final class EXIFReader extends MetadataReader {
             EXIFEntry entry = (EXIFEntry) entries.get(i);
             int tagId = (Integer) entry.getIdentifier();
 
-            if (subIFDs.contains(tagId)) {
+            if (subIFDIds.contains(tagId)) {
                 try {
-                    Object directory;
+                    if (KNOWN_IFDS.contains(tagId)) {
+                        long[] pointerOffsets = getPointerOffsets(entry);
+                        List<IFD> subIFDs = new ArrayList<>(pointerOffsets.length);
 
-                    /*
-                    if (tagId == TIFF.TAG_IPTC) {
-                        directory = readForeignMetadata(new IPTCReader(), (byte[]) entry.getValue());
-                    }
-                    else if (tagId == TIFF.TAG_XMP) {
-                        directory = readForeignMetadata(new XMPReader(), (byte[]) entry.getValue());
-                    }
-                    else if (tagId == TIFF.TAG_PHOTOSHOP) {
-                        // TODO: This is waaay too fragile.. Might need registry-based meta data parsers?
-                        try {
-                            Class cl = Class.forName("com.twelvemonkeys.imageio.plugins.psd.PSDImageResource");
-                            Method method = cl.getMethod("read", ImageInputStream.class);
-                            method.setAccessible(true);
-                            directory = method.invoke(null, ImageIO.createImageInputStream(new ByteArrayInputStream((byte[]) entry.getValue())));
-                        }
-                        catch (Exception ignore) {
-                            continue;
-                        }
-                    }
-                    else if (tagId == TIFF.TAG_ICC_PROFILE) {
-                        directory = ICC_Profile.getInstance((byte[]) entry.getValue());
-                    }
-                    else if (tagId == TIFF.TAG_MODI_OLE_PROPERTY_SET) {
-                        // TODO: Encapsulate in something more useful?
-                        directory = new CompoundDocument(new ByteArrayInputStream((byte[]) entry.getValue())).getRootEntry();
-                    }
-                    else*/ if (KNOWN_IFDS.contains(tagId)) {
-                        directory = ((AbstractCompoundDirectory) readDirectory(input, getPointerOffset(entry))).getDirectory(0);
-                    }
-                    else {
-                        continue;
-                    }
+                        for (long pointerOffset : pointerOffsets) {
+                            CompoundDirectory subDirectory = (CompoundDirectory) readDirectory(input, pointerOffset, false);
 
-                    // Replace the entry with parsed data
-                    entries.set(i, new EXIFEntry(tagId, directory, entry.getType()));
+                            for (int j = 0; j < subDirectory.directoryCount(); j++) {
+                                subIFDs.add((IFD) subDirectory.getDirectory(j));
+                            }
+                        }
+
+                        if (subIFDs.size() == 1) {
+                            // Replace the entry with parsed data
+                            entries.set(i, new EXIFEntry(tagId, subIFDs.get(0), entry.getType()));
+                        }
+                        else {
+                            // Replace the entry with parsed data
+                            entries.set(i, new EXIFEntry(tagId, subIFDs.toArray(new IFD[subIFDs.size()]), entry.getType()));
+                        }
+                    }
                 }
                 catch (IIOException e) {
-                    // TODO: Issue warning without crashing...?
-                    e.printStackTrace();
+                    if (DEBUG) {
+                        // TODO: Issue warning without crashing...?
+                        System.err.println("Error parsing sub-IFD: " + tagId);
+                        e.printStackTrace();
+                    }
                 }
             }
         }
     }
 
-    private long getPointerOffset(final Entry entry) throws IIOException {
-        long offset;
+    private long[] getPointerOffsets(final Entry entry) throws IIOException {
+        long[] offsets;
         Object value = entry.getValue();
 
         if (value instanceof Byte) {
-            offset = (Byte) value & 0xff;
+            offsets = new long[] {(Byte) value & 0xff};
         }
         else if (value instanceof Short) {
-            offset = (Short) value & 0xffff;
+            offsets = new long[] {(Short) value & 0xffff};
         }
         else if (value instanceof Integer) {
-            offset = (Integer) value & 0xffffffffL;
+            offsets = new long[] {(Integer) value & 0xffffffffL};
         }
         else if (value instanceof Long) {
-            offset = (Long) value;
+            offsets = new long[] {(Long) value};
+        }
+        else if (value instanceof long[]) {
+            offsets = (long[]) value;
         }
         else {
-            throw new IIOException(String.format("Unknown pointer type: %s", (value != null ? value.getClass() : null)));
+            throw new IIOException(String.format("Unknown pointer type: %s", (value != null
+                                                                              ? value.getClass()
+                                                                              : null)));
         }
 
-        return offset;
+        return offsets;
     }
 
     private EXIFEntry readEntry(final ImageInputStream pInput) throws IOException {
         // TODO: BigTiff entries are different
         int tagId = pInput.readUnsignedShort();
         short type = pInput.readShort();
-
-        // This isn't really an entry, and the directory entry count was wrong OR bad data...
-        if (tagId == 0 && type == 0) {
-            return null;
-        }
 
         int count = pInput.readInt(); // Number of values
 
@@ -236,28 +234,33 @@ public final class EXIFReader extends MetadataReader {
         }
 
         if (type <= 0 || type > 13) {
+            pInput.skipBytes(4); // read Value
+
             // Invalid tag, this is just for debugging
-            long offset = pInput.getStreamPosition() - 8l;
+            long offset = pInput.getStreamPosition() - 12l;
 
-            System.err.printf("Bad EXIF");
-            System.err.println("tagId: " + tagId + (tagId <= 0 ? " (INVALID)" : ""));
-            System.err.println("type: " + type + " (INVALID)");
-            System.err.println("count: " + count);
+            if (DEBUG) {
+                System.err.printf("Bad EXIF data @%08x\n", pInput.getStreamPosition());
+                System.err.println("tagId: " + tagId + (tagId <= 0 ? " (INVALID)" : ""));
+                System.err.println("type: " + type + " (INVALID)");
+                System.err.println("count: " + count);
 
-            pInput.mark();
-            pInput.seek(offset);
+                pInput.mark();
+                pInput.seek(offset);
 
-            try {
-                byte[] bytes = new byte[8 + Math.max(20, count)];
-                int len = pInput.read(bytes);
+                try {
+                    byte[] bytes = new byte[8 + Math.min(120, Math.max(24, count))];
+                    int len = pInput.read(bytes);
 
-                System.err.print(HexDump.dump(offset, bytes, 0, len));
-                System.err.println(len < count ? "[...]" : "");
+                    if (DEBUG) {
+                        System.err.print(HexDump.dump(offset, bytes, 0, len));
+                        System.err.println(len < count ? "[...]" : "");
+                    }
+                }
+                finally {
+                    pInput.reset();
+                }
             }
-            finally {
-                pInput.reset();
-            }
-
             return null;
         }
 
@@ -294,11 +297,13 @@ public final class EXIFReader extends MetadataReader {
 
     private static Object readValue(final ImageInputStream pInput, final short pType, final int pCount) throws IOException {
         // TODO: Review value "widening" for the unsigned types. Right now it's inconsistent. Should we leave it to client code?
+        // TODO: New strategy: Leave data as is, instead perform the widening in EXIFEntry.getValue.
+        // TODO: Add getValueByte/getValueUnsignedByte/getValueShort/getValueUnsignedShort/getValueInt/etc... in API.
 
         long pos = pInput.getStreamPosition();
 
         switch (pType) {
-            case 2: // ASCII
+            case TIFF.TYPE_ASCII:
                 // TODO: This might be UTF-8 or ISO-8859-x, even though spec says NULL-terminated 7 bit ASCII
                 // TODO: Fail if unknown chars, try parsing with ISO-8859-1 or file.encoding
                 if (pCount == 0) {
@@ -308,29 +313,29 @@ public final class EXIFReader extends MetadataReader {
                 pInput.readFully(ascii);
                 int len = ascii[ascii.length - 1] == 0 ? ascii.length - 1 : ascii.length;
                 return StringUtil.decode(ascii, 0, len, "UTF-8"); // UTF-8 is ASCII compatible
-            case 1: // BYTE
+            case TIFF.TYPE_BYTE:
                 if (pCount == 1) {
                     return pInput.readUnsignedByte();
                 }
                 // else fall through
-            case 6: // SBYTE
+            case TIFF.TYPE_SBYTE:
                 if (pCount == 1) {
                     return pInput.readByte();
                 }
                 // else fall through
-            case 7: // UNDEFINED
+            case TIFF.TYPE_UNDEFINED:
                 byte[] bytes = new byte[pCount];
                 pInput.readFully(bytes);
 
                 // NOTE: We don't change (unsigned) BYTE array wider Java type, as most often BYTE array means
-                // binary data and we want to keep that as a byte array for clients to parse futher
+                // binary data and we want to keep that as a byte array for clients to parse further
 
                 return bytes;
-            case 3: // SHORT
+            case TIFF.TYPE_SHORT:
                 if (pCount == 1) {
                     return pInput.readUnsignedShort();
                 }
-            case 8: // SSHORT
+            case TIFF.TYPE_SSHORT:
                 if (pCount == 1) {
                     return pInput.readShort();
                 }
@@ -338,21 +343,22 @@ public final class EXIFReader extends MetadataReader {
                 short[] shorts = new short[pCount];
                 pInput.readFully(shorts, 0, shorts.length);
 
-                if (pType == 3) {
+                if (pType == TIFF.TYPE_SHORT) {
                     int[] ints = new int[pCount];
                     for (int i = 0; i < pCount; i++) {
                         ints[i] = shorts[i] & 0xffff;
                     }
+
                     return ints;
                 }
 
                 return shorts;
-            case 13: // IFD
-            case 4: // LONG
+            case TIFF.TYPE_IFD:
+            case TIFF.TYPE_LONG:
                 if (pCount == 1) {
                     return pInput.readUnsignedInt();
                 }
-            case 9: // SLONG
+            case TIFF.TYPE_SLONG:
                 if (pCount == 1) {
                     return pInput.readInt();
                 }
@@ -360,16 +366,17 @@ public final class EXIFReader extends MetadataReader {
                 int[] ints = new int[pCount];
                 pInput.readFully(ints, 0, ints.length);
 
-                if (pType == 4 || pType == 13) {
+                if (pType == TIFF.TYPE_LONG || pType == TIFF.TYPE_IFD) {
                     long[] longs = new long[pCount];
                     for (int i = 0; i < pCount; i++) {
                         longs[i] = ints[i] & 0xffffffffL;
                     }
+
                     return longs;
                 }
 
                 return ints;
-            case 11: // FLOAT
+            case TIFF.TYPE_FLOAT:
                 if (pCount == 1) {
                     return pInput.readFloat();
                 }
@@ -377,7 +384,7 @@ public final class EXIFReader extends MetadataReader {
                 float[] floats = new float[pCount];
                 pInput.readFully(floats, 0, floats.length);
                 return floats;
-            case 12: // DOUBLE
+            case TIFF.TYPE_DOUBLE:
                 if (pCount == 1) {
                     return pInput.readDouble();
                 }
@@ -386,7 +393,7 @@ public final class EXIFReader extends MetadataReader {
                 pInput.readFully(doubles, 0, doubles.length);
                 return doubles;
 
-            case 5: // RATIONAL
+            case TIFF.TYPE_RATIONAL:
                 if (pCount == 1) {
                     return createSafeRational(pInput.readUnsignedInt(), pInput.readUnsignedInt());
                 }
@@ -397,7 +404,7 @@ public final class EXIFReader extends MetadataReader {
                 }
 
                 return rationals;
-            case 10: // SRATIONAL
+            case TIFF.TYPE_SRATIONAL:
                 if (pCount == 1) {
                     return createSafeRational(pInput.readInt(), pInput.readInt());
                 }
@@ -445,9 +452,9 @@ public final class EXIFReader extends MetadataReader {
         return new Rational(numerator, denominator);
     }
 
-    private int getValueLength(final int pType, final int pCount) {
-        if (pType > 0 && pType <= TIFF.TYPE_LENGTHS.length) {
-            return TIFF.TYPE_LENGTHS[pType - 1] * pCount;
+    static int getValueLength(final int pType, final int pCount) {
+        if (pType > 0 && pType < TIFF.TYPE_LENGTHS.length) {
+            return TIFF.TYPE_LENGTHS[pType] * pCount;
         }
 
         return -1;
@@ -477,7 +484,7 @@ public final class EXIFReader extends MetadataReader {
             Directory directory;
 
             if (args.length > 1) {
-                directory = reader.readDirectory(stream, pos);
+                directory = reader.readDirectory(stream, pos, false);
             }
             else {
                 directory = reader.read(stream);
@@ -501,7 +508,8 @@ public final class EXIFReader extends MetadataReader {
     //////////////////////
     // TODO: Stream based hex dump util?
     public static class HexDump {
-        private HexDump() {}
+        private HexDump() {
+        }
 
         private static final int WIDTH = 32;
 
@@ -515,7 +523,7 @@ public final class EXIFReader extends MetadataReader {
             int i;
             for (i = 0; i < len; i++) {
                 if (i % WIDTH == 0) {
-                    if (i > 0 ) {
+                    if (i > 0) {
                         builder.append("\n");
                     }
                     builder.append(String.format("%08x: ", i + off + offset));

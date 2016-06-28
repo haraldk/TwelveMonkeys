@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,7 +40,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDAlphaChannelInfo.java,v 1.0 May 2, 2008 5:33:40 PM haraldk Exp$
  */
-class PSDAlphaChannelInfo extends PSDImageResource {
+final class PSDAlphaChannelInfo extends PSDImageResource {
     List<String> names;
 
     public PSDAlphaChannelInfo(short pId, final ImageInputStream pInput) throws IOException {

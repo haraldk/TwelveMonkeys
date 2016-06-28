@@ -46,7 +46,7 @@ public abstract class AbstractTokenIterator implements TokenIterator {
     public void remove() {
         // TODO: This is not difficult:
         // - Convert String to StringBuilder in constructor
-        // - delete(pos, mNext.lenght())
+        // - delete(pos, next.lenght())
         // - Add toString() method
         // BUT: Would it ever be useful? :-)
 

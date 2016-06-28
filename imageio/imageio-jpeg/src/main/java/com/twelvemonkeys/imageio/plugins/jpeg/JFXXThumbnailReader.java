@@ -29,10 +29,14 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.image.InverseColorMapIndexColorModel;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.*;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.ref.SoftReference;
 
@@ -45,12 +49,14 @@ import java.lang.ref.SoftReference;
  */
 final class JFXXThumbnailReader extends ThumbnailReader {
 
+    private final ImageReader reader;
     private final JFXXSegment segment;
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    protected JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex, final JFXXSegment segment) {
+    protected JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final JFXXSegment segment) {
         super(progressListener, imageIndex, thumbnailIndex);
+        this.reader = Validate.notNull(jpegReader);
         this.segment = segment;
     }
 
@@ -79,11 +85,30 @@ final class JFXXThumbnailReader extends ThumbnailReader {
         return thumbnail;
     }
 
+    public IIOMetadata readMetadata() throws IOException {
+        ImageInputStream input = new ByteArrayImageInputStream(segment.thumbnail);
+
+        try {
+            reader.setInput(input);
+
+            return reader.getImageMetadata(0);
+        }
+        finally {
+            input.close();
+        }
+    }
+
     private BufferedImage readJPEGCached(boolean pixelsExposed) throws IOException {
         BufferedImage thumbnail = cachedThumbnail != null ? cachedThumbnail.get() : null;
 
         if (thumbnail == null) {
-            thumbnail = readJPEGThumbnail(new ByteArrayInputStream(segment.thumbnail));
+            ImageInputStream stream = new ByteArrayImageInputStream(segment.thumbnail);
+            try {
+                thumbnail = readJPEGThumbnail(reader, stream);
+            }
+            finally {
+                stream.close();
+            }
         }
 
         cachedThumbnail = pixelsExposed ? null : new SoftReference<BufferedImage>(thumbnail);

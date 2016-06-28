@@ -31,6 +31,8 @@ package com.twelvemonkeys.imageio.metadata.psd;
 import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 import com.twelvemonkeys.lang.StringUtil;
 
+import java.lang.reflect.Field;
+
 /**
  * PhotoshopEntry
  *
@@ -53,6 +55,40 @@ class PSDEntry extends AbstractEntry {
 
     @Override
     public String getFieldName() {
+        Class[] classes = new Class[] {getPSDClass()};
+
+        for (Class cl : classes) {
+            Field[] fields = cl.getDeclaredFields();
+
+            for (Field field : fields) {
+                try {
+                    if (field.getType() == Integer.TYPE && field.getName().startsWith("RES_")) {
+                        field.setAccessible(true);
+
+                        if (field.get(null).equals(getIdentifier())) {
+                            String fieldName = StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(), true);
+                            return name != null ? fieldName + ": " + name : fieldName;
+                        }
+                    }
+                }
+                catch (IllegalAccessException e) {
+                    // Should never happen, but in case, abort
+                    break;
+                }
+            }
+        }
+
         return name;
+    }
+
+    private Class<?> getPSDClass() {
+        // TODO: Instead, move members to metadata module PSD class!
+        try {
+            return Class.forName("com.twelvemonkeys.imageio.plugins.psd.PSD");
+        }
+        catch (ClassNotFoundException ignore) {
+        }
+        
+        return PSD.class;
     }
 }

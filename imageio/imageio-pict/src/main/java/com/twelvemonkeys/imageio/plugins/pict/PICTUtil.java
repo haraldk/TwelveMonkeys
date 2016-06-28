@@ -34,7 +34,8 @@ import java.awt.image.DataBuffer;
 import java.awt.image.IndexColorModel;
 import java.io.DataInput;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 
 /**
  * PICTUtil
@@ -47,15 +48,14 @@ final class PICTUtil {
 
     private static final String ENC_MAC_ROMAN = "MacRoman";
 
-    public static final String ENCODING = initEncoding();
+    public static final Charset ENCODING = initEncoding();
 
-    private static String initEncoding() {
+    private static Charset initEncoding() {
         try {
-            new String("\uF8FF".getBytes(), ENC_MAC_ROMAN);
-            return ENC_MAC_ROMAN;
+            return Charset.forName(ENC_MAC_ROMAN);
         }
-        catch (UnsupportedEncodingException e) {
-            return "ISO-8859-1";
+        catch (UnsupportedCharsetException e) {
+            return Charset.forName("ISO-8859-1");
         }
     }
 
@@ -86,9 +86,9 @@ final class PICTUtil {
      * @throws java.io.IOException if an I/O error occurs during read
      */
     public static Dimension readDimension(final DataInput pStream) throws IOException {
-	final int h = pStream.readShort() ;
-	final int v = pStream.readShort() ;
-	return new Dimension(h,v);
+        int h = pStream.readShort();
+        int v = pStream.readShort();
+        return new Dimension(h, v);
     }
 
     /**
@@ -102,8 +102,8 @@ final class PICTUtil {
      * @throws IOException if an I/O exception occurs during reading
      */
     public static String readStr31(final DataInput pStream) throws IOException {
-	String text = readPascalString(pStream);
-	int length = 31 - text.length();
+        String text = readPascalString(pStream);
+        int length = 31 - text.length();
         if (length < 0) {
             throw new IOException("String length exceeds maximum (31): " + text.length());
         }
@@ -112,7 +112,7 @@ final class PICTUtil {
     }
 
     /**
-     * Reads a Pascal String from the given strean.
+     * Reads a Pascal String from the given stream.
      * The input stream must be positioned at the length byte of the text,
      * which can thus be a maximum of 255 characters long.
      *
@@ -144,6 +144,14 @@ final class PICTUtil {
         byte[] data = new byte[8];
         pStream.readFully(data);
         return new BitMapPattern(data);
+    }
+
+    // TODO: Refactor, don't need both readPattern methods
+    public static Pattern readPattern(final DataInput pStream, final Color fg, final Color bg) throws IOException {
+        // Get the data (8 bytes)
+        byte[] data = new byte[8];
+        pStream.readFully(data);
+        return new BitMapPattern(data, fg, bg);
     }
 
     /**
@@ -221,7 +229,7 @@ final class PICTUtil {
     /**
      * Reads a {@code ColorTable} data structure from the given stream.
      *
-     * @param pStream the input stream
+     * @param pStream    the input stream
      * @param pPixelSize the pixel size
      * @return the indexed color model created from the {@code ColorSpec} records read.
      *
@@ -252,7 +260,7 @@ final class PICTUtil {
 
         int[] colors = new int[size];
 
-        for (int i = 0; i < size ; i++) {
+        for (int i = 0; i < size; i++) {
             // Read ColorSpec records
             int index = pStream.readUnsignedShort();
             Color color = readRGBColor(pStream);

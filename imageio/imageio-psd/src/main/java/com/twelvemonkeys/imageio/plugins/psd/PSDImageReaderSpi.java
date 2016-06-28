@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -44,36 +42,13 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageReaderSpi.java,v 1.0 Apr 29, 2008 4:49:03 PM haraldk Exp$
  */
-public class PSDImageReaderSpi extends ImageReaderSpi {
+final public class PSDImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code PSDImageReaderSpi}.
      */
     public PSDImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(PSDImageReaderSpi.class));
-    }
-
-    private PSDImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{"psd", "PSD"},
-                new String[]{"psd"},
-                new String[]{
-                        "application/vnd.adobe.photoshop", // This one seems official, used in XMP
-                        "image/x-psd", "application/x-photoshop", "image/x-photoshop"
-                },
-                "com.twelvemkonkeys.imageio.plugins.psd.PSDImageReader",
-                STANDARD_INPUT_TYPE,
-//                new String[]{"com.twelvemkonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
-                null,
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                PSDMetadata.NATIVE_METADATA_FORMAT_NAME, PSDMetadata.NATIVE_METADATA_FORMAT_CLASS_NAME,
-                null, null // extra image metadata formats
-        );
+        super(new PSDProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
@@ -84,9 +59,23 @@ public class PSDImageReaderSpi extends ImageReaderSpi {
         ImageInputStream stream = (ImageInputStream) pSource;
 
         stream.mark();
+
         try {
-            return stream.readInt() == PSD.SIGNATURE_8BPS;
-            // TODO: Test more of the header, see PSDImageReader#readHeader
+            if (stream.readInt() == PSD.SIGNATURE_8BPS) {
+                int version = stream.readUnsignedShort();
+
+                switch (version) {
+                    case PSD.VERSION_PSD:
+                    case PSD.VERSION_PSB:
+                        break;
+                    default:
+                        return false;
+                }
+
+                return true;
+            }
+
+            return false;
         }
         finally {
             stream.reset();

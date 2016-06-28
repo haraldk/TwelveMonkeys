@@ -1,9 +1,10 @@
 package com.twelvemonkeys.imageio.stream;
 
-import com.twelvemonkeys.lang.Validate;
-
 import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.IOException;
+
+import static com.twelvemonkeys.lang.Validate.isTrue;
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * Experimental
@@ -22,13 +23,13 @@ public final class ByteArrayImageInputStream extends ImageInputStreamImpl {
     }
 
     public ByteArrayImageInputStream(final byte[] pData, int offset, int length) {
-        Validate.notNull(pData, "data");
-        Validate.isTrue(offset >= 0 && offset <= pData.length, offset, "offset out of range: %d");
-        Validate.isTrue(length >= 0 && length <= pData.length - offset, length, "length out of range: %d");
+        data = notNull(pData, "data");
+        dataOffset = isBetween(0, pData.length, offset, "offset");
+        dataLength = isBetween(0, pData.length - offset, length, "length");
+    }
 
-        data = pData;
-        dataOffset = offset;
-        dataLength = length;
+    private static int isBetween(final int low, final int high, final int value, final String name) {
+        return isTrue(value >= low && value <= high, value, String.format("%s out of range [%d, %d]: %d", name, low, high, value));
     }
 
     public int read() throws IOException {

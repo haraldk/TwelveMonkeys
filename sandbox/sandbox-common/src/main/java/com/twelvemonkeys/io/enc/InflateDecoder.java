@@ -31,6 +31,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -75,17 +76,17 @@ final class InflateDecoder implements Decoder {
         buffer = new byte[1024];
     }
 
-    public int decode(final InputStream pStream, final byte[] pBuffer) throws IOException {
+    public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         try {
             int decoded;
 
-            while ((decoded = inflater.inflate(pBuffer, 0, pBuffer.length)) == 0) {
+            while ((decoded = inflater.inflate(buffer.array(), buffer.arrayOffset(), buffer.capacity())) == 0) {
                 if (inflater.finished() || inflater.needsDictionary()) {
                     return 0;
                 }
 
                 if (inflater.needsInput()) {
-                    fill(pStream);
+                    fill(stream);
                 }
             }
 

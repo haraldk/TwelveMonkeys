@@ -28,11 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -44,34 +42,13 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: IFFImageWriterSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class IFFImageReaderSpi extends ImageReaderSpi {
-
-    static IFFImageReaderSpi mSharedInstance;
+public class IFFImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates an {@code IFFImageReaderSpi}.
      */
     public IFFImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(IFFImageReaderSpi.class));
-    }
-
-    private IFFImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"iff", "IFF"},
-                new String[]{"iff", "lbm", "ham", "ham8", "ilbm"},
-                new String[]{"image/iff", "image/x-iff"},
-                "com.twelvemonkeys.imageio.plugins.iff.IFFImageReader",
-                STANDARD_INPUT_TYPE,
-                new String[]{"com.twelvemonkeys.imageio.plugins.iff.IFFImageWriterSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
-
-        if (mSharedInstance == null) {
-            mSharedInstance = this;
-        }
+        super(new IFFProviderInfo());
     }
 
     public boolean canDecodeInput(Object pSource) throws IOException {
@@ -102,20 +79,11 @@ public class IFFImageReaderSpi extends ImageReaderSpi {
         return false;
     }
 
-
     public ImageReader createReaderInstance(Object pExtension) throws IOException {
         return new IFFImageReader(this);
     }
 
     public String getDescription(Locale pLocale) {
-        return "Amiga (Electronic Arts) Image Interchange Format (IFF) image reader";
-    }
-
-    public static ImageReaderSpi sharedProvider() {
-        if (mSharedInstance == null) {
-            new IFFImageReaderSpi();
-        }
-
-        return mSharedInstance;
+        return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image reader";
     }
 }

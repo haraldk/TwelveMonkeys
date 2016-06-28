@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -35,12 +36,14 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteProgressListener;
+import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -55,6 +58,13 @@ import static org.mockito.Mockito.*;
  * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 18.nov.2004 17:38:33 haku Exp $
  */
 public abstract class ImageWriterAbstractTestCase {
+
+    // TODO: Move static block + getClassLoaderResource to common superclass for reader/writer test cases or delegate.
+
+    static {
+        IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
+    }
 
     protected abstract ImageWriter createImageWriter();
 
@@ -85,6 +95,10 @@ public abstract class ImageWriterAbstractTestCase {
         return getTestData().get(index);
     }
 
+    protected URL getClassLoaderResource(final String pName) {
+        return getClass().getResource(pName);
+    }
+
     @Test
     public void testSetOutput() throws IOException {
         // Should just pass with no exceptions
@@ -107,23 +121,20 @@ public abstract class ImageWriterAbstractTestCase {
 
         for (RenderedImage testData : getTestData()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
-            writer.setOutput(stream);
 
-            try {
+            try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+                writer.setOutput(stream);
                 writer.write(drawSomething((BufferedImage) testData));
             }
             catch (IOException e) {
                 fail(e.getMessage());
-            }
-            finally {
-                stream.close(); // Force data to be written
             }
 
             assertTrue("No image data written", buffer.size() > 0);
         }
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testWriteNull() throws IOException {
         ImageWriter writer = createImageWriter();

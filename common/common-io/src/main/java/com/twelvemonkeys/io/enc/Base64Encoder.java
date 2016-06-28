@@ -30,6 +30,7 @@ package com.twelvemonkeys.io.enc;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * {@code Encoder} implementation for standard base64 encoding.
@@ -44,15 +45,9 @@ import java.io.IOException;
  */
 public class Base64Encoder implements Encoder {
 
-    public void encode(final OutputStream pStream, final byte[] pBuffer, final int pOffset, final int pLength) 
+    public void encode(final OutputStream stream, final ByteBuffer buffer)
             throws IOException
     {
-        if (pOffset < 0 || pOffset > pLength || pOffset > pBuffer.length) {
-            throw new IndexOutOfBoundsException("offset outside [0...length]");
-        }
-        else if (pLength > pBuffer.length) {
-            throw new IndexOutOfBoundsException("length > buffer length");
-        }
 
         // TODO: Implement
         // NOTE: This is impossible, given the current spec, as we need to either:
@@ -61,48 +56,47 @@ public class Base64Encoder implements Encoder {
         // to ensure proper end of stream handling
 
         int length;
-        int offset = pOffset;
 
         // TODO: Temp impl, will only work for single writes
-        while ((pBuffer.length - offset) > 0) {
+        while (buffer.hasRemaining()) {
             byte a, b, c;
 
-            if ((pBuffer.length - offset) > 2) {
-                length = 3;
-            }
-            else {
-                length = pBuffer.length - offset;
-            }
+//            if ((buffer.remaining()) > 2) {
+//                length = 3;
+//            }
+//            else {
+//                length = buffer.remaining();
+//            }
+            length = Math.min(3, buffer.remaining());
 
             switch (length) {
                 case 1:
-                    a = pBuffer[offset];
+                    a = buffer.get();
                     b = 0;
-                    pStream.write(Base64Decoder.PEM_ARRAY[(a >>> 2) & 0x3F]);
-                    pStream.write(Base64Decoder.PEM_ARRAY[((a << 4) & 0x30) + ((b >>> 4) & 0xf)]);
-                    pStream.write('=');
-                    pStream.write('=');
-                    offset++;
+                    stream.write(Base64Decoder.PEM_ARRAY[(a >>> 2) & 0x3F]);
+                    stream.write(Base64Decoder.PEM_ARRAY[((a << 4) & 0x30) + ((b >>> 4) & 0xf)]);
+                    stream.write('=');
+                    stream.write('=');
                     break;
+
                 case 2:
-                    a = pBuffer[offset];
-                    b = pBuffer[offset + 1];
+                    a = buffer.get();
+                    b = buffer.get();
                     c = 0;
-                    pStream.write(Base64Decoder.PEM_ARRAY[(a >>> 2) & 0x3F]);
-                    pStream.write(Base64Decoder.PEM_ARRAY[((a << 4) & 0x30) + ((b >>> 4) & 0xf)]);
-                    pStream.write(Base64Decoder.PEM_ARRAY[((b << 2) & 0x3c) + ((c >>> 6) & 0x3)]);
-                    pStream.write('=');
-                    offset += offset + 2; // ???
+                    stream.write(Base64Decoder.PEM_ARRAY[(a >>> 2) & 0x3F]);
+                    stream.write(Base64Decoder.PEM_ARRAY[((a << 4) & 0x30) + ((b >>> 4) & 0xf)]);
+                    stream.write(Base64Decoder.PEM_ARRAY[((b << 2) & 0x3c) + ((c >>> 6) & 0x3)]);
+                    stream.write('=');
                     break;
+
                 default:
-                    a = pBuffer[offset];
-                    b = pBuffer[offset + 1];
-                    c = pBuffer[offset + 2];
-                    pStream.write(Base64Decoder.PEM_ARRAY[(a >>> 2) & 0x3F]);
-                    pStream.write(Base64Decoder.PEM_ARRAY[((a << 4) & 0x30) + ((b >>> 4) & 0xf)]);
-                    pStream.write(Base64Decoder.PEM_ARRAY[((b << 2) & 0x3c) + ((c >>> 6) & 0x3)]);
-                    pStream.write(Base64Decoder.PEM_ARRAY[c & 0x3F]);
-                    offset = offset + 3;
+                    a = buffer.get();
+                    b = buffer.get();
+                    c = buffer.get();
+                    stream.write(Base64Decoder.PEM_ARRAY[(a >>> 2) & 0x3F]);
+                    stream.write(Base64Decoder.PEM_ARRAY[((a << 4) & 0x30) + ((b >>> 4) & 0xf)]);
+                    stream.write(Base64Decoder.PEM_ARRAY[((b << 2) & 0x3c) + ((c >>> 6) & 0x3)]);
+                    stream.write(Base64Decoder.PEM_ARRAY[c & 0x3F]);
                     break;
             }
         }

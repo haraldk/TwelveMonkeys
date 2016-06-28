@@ -54,12 +54,16 @@ final class SipsJP2Reader {
 
     private static final File SIPS_COMMAND = new File("/usr/bin/sips");
     private static final boolean SIPS_EXISTS_AND_EXECUTES = existsAndExecutes(SIPS_COMMAND);
+    private static final boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.icns.debug"));
 
     private static boolean existsAndExecutes(final File cmd) {
         try {
             return cmd.exists() && cmd.canExecute();
         }
         catch (SecurityException ignore) {
+            if (DEBUG) {
+                ignore.printStackTrace();
+            }
         }
 
         return false;

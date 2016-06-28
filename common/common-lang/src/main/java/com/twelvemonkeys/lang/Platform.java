@@ -204,7 +204,7 @@ public final class Platform {
      * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
      * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/Platform.java#1 $
      */
-    public static enum Architecture {
+    public enum Architecture {
         X86("x86"),
         I386("i386"),
         I686("i686"),
@@ -215,7 +215,7 @@ public final class Platform {
 
         final String name;// for debug only
 
-        private Architecture(String pName) {
+        Architecture(String pName) {
             name = pName;
         }
 
@@ -233,7 +233,7 @@ public final class Platform {
      * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
      * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/Platform.java#1 $
      */
-    public static enum OperatingSystem {
+    public enum OperatingSystem {
         Windows("Windows", "win"),
         Linux("Linux", "lnx"),
         Solaris("Solaris", "sun"),
@@ -244,7 +244,7 @@ public final class Platform {
         final String id;
         final String name;// for debug only
 
-        private OperatingSystem(String pName, String pId) {
+        OperatingSystem(String pName, String pId) {
             name = pName;
             id = pId != null ? pId : pName.toLowerCase();
         }

@@ -30,6 +30,7 @@
 package com.twelvemonkeys.image;
 
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import java.awt.*;
 import java.awt.image.DataBuffer;
@@ -37,7 +38,7 @@ import java.awt.image.IndexColorModel;
 
 /**
  * A faster implementation of {@code IndexColorModel}, that is backed by an
- * inverse color-map, for fast lookups.
+ * inverse color-map, for fast look-ups.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author $Author: haku $
@@ -60,19 +61,17 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
      * Creates an {@code InverseColorMapIndexColorModel} from an existing
      * {@code IndexColorModel}.
      *
-     * @param pColorModel the colormodel to create from
+     * @param pColorModel the color model to create from.
+     * @throws IllegalArgumentException if {@code pColorModel} is {@code null}
      */
-    public InverseColorMapIndexColorModel(IndexColorModel pColorModel) {
-        this(pColorModel, getRGBs(pColorModel));
+    public InverseColorMapIndexColorModel(final IndexColorModel pColorModel) {
+        this(Validate.notNull(pColorModel, "color model"), getRGBs(pColorModel));
     }
 
     // NOTE: The pRGBs parameter is used to get around invoking getRGBs two
     // times. What is wrong with protected?!
     private InverseColorMapIndexColorModel(IndexColorModel pColorModel, int[] pRGBs) {
-        super(pColorModel.getComponentSize()[0], pColorModel.getMapSize(),
-              pRGBs, 0,
-              ImageUtil.getTransferType(pColorModel),
-              pColorModel.getValidPixels());
+        super(pColorModel.getComponentSize()[0], pColorModel.getMapSize(), pRGBs, 0, pColorModel.getTransferType(), pColorModel.getValidPixels());
 
         rgbs = pRGBs;
         mapSize = rgbs.length;
@@ -82,11 +81,11 @@ public class InverseColorMapIndexColorModel extends IndexColorModel {
     }
 
     /**
-     * Creates a defensive copy of the RGB colormap in the given
+     * Creates a defensive copy of the RGB color map in the given
      * {@code IndexColorModel}.
      *
-     * @param pColorModel the indec colormodel to get RGB values from
-     * @return the RGB colormap
+     * @param pColorModel the indexed color model to get RGB values from
+     * @return the RGB color map
      */
     private static int[] getRGBs(IndexColorModel pColorModel) {
         int[] rgb = new int[pColorModel.getMapSize()];

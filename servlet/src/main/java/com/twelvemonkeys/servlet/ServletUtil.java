@@ -50,7 +50,7 @@ import java.util.Map;
 /**
  * Various servlet related helper methods.
  *
- * @author Harald Kuhr
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author Eirik Torske
  * @author last modified by $Author: haku $
  * @version $Id: ServletUtil.java#3 $
@@ -544,7 +544,7 @@ public final class ServletUtil {
     /**
      * Returns a {@code URL} containing the real path for a given virtual
      * path, on URL form.
-     * Note that this mehtod will return {@code null} for all the same reasons
+     * Note that this method will return {@code null} for all the same reasons
      * as {@code ServletContext.getRealPath(java.lang.String)} does.
      *
      * @param pContext the servlet context
@@ -566,7 +566,7 @@ public final class ServletUtil {
     }
 
     /**
-     * Gets the temp directory for the given {@code ServletContext} (webapp).
+     * Gets the temp directory for the given {@code ServletContext} (web app).
      *
      * @param pContext the servlet context
      * @return the temp directory
@@ -634,13 +634,30 @@ public final class ServletUtil {
         return new ServletConfigMapAdapter(pContext);
     }
 
-    // TODO?
-//    public static Map<String, ?> attributesAsMap(final ServletContext pContext) {
-//    }
-//
-//    public static Map<String, ?> attributesAsMap(final ServletRequest pRequest) {
-//    }
-//
+    /**
+     * Creates an <em>modifiable</em> {@code Map} view of the given
+     * {@code ServletContext}s attributes.
+     *
+     * @param pContext the servlet context
+     * @return a {@code Map} view of the attributes
+     * @throws IllegalArgumentException if {@code pContext} is {@code null}
+     */
+    public static Map<String, Object> attributesAsMap(final ServletContext pContext) {
+        return new ServletAttributesMapAdapter(pContext);
+    }
+
+    /**
+     * Creates an <em>modifiable</em> {@code Map} view of the given
+     * {@code ServletRequest}s attributes.
+     *
+     * @param pRequest the servlet request
+     * @return a {@code Map} view of the attributes
+     * @throws IllegalArgumentException if {@code pContext} is {@code null}
+     */
+    public static Map<String, Object> attributesAsMap(final ServletRequest pRequest) {
+        return new ServletAttributesMapAdapter(pRequest);
+    }
+
     /**
      * Creates an unmodifiable {@code Map} view of the given
      * {@code HttpServletRequest}s request parameters.
@@ -649,7 +666,7 @@ public final class ServletUtil {
      * @return a {@code Map} view of the request parameters
      * @throws IllegalArgumentException if {@code pRequest} is {@code null}
      */
-    public static Map<String, List<String>> parametersAsMap(final HttpServletRequest pRequest) {
+    public static Map<String, List<String>> parametersAsMap(final ServletRequest pRequest) {
         return new ServletParametersMapAdapter(pRequest);
     }
 

@@ -56,6 +56,7 @@ import static org.junit.Assert.*;
 public class JPEGSegmentImageInputStreamTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected URL getClassLoaderResource(final String pName) {
@@ -73,11 +74,29 @@ public class JPEGSegmentImageInputStreamTest {
         stream.read();
     }
 
+    @Test(expected = IIOException.class)
+    public void testStreamNonJPEGArray() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[] {42, 42, 0, 0, 77, 99})));
+        stream.readFully(new byte[1]);
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamEmpty() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
+        stream.read();
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamEmptyArray() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
+        stream.readFully(new byte[1]);
+    }
+
     @Test
     public void testStreamRealData() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-internal-kodak-srgb-jfif.jpg")));
         assertEquals(JPEG.SOI, stream.readUnsignedShort());
-        assertEquals(JPEG.APP0, stream.readUnsignedShort());
+        assertEquals(JPEG.DQT, stream.readUnsignedShort());
     }
 
     @Test
@@ -88,7 +107,7 @@ public class JPEGSegmentImageInputStreamTest {
         // NOTE: read(byte[], int, int) must always read len bytes (or until EOF), due to known bug in Sun code
         assertEquals(20, stream.read(bytes, 0, 20));
 
-        assertArrayEquals(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0x0, 0x10, 'J', 'F', 'I', 'F', 0x0, 0x1, 0x1, 0x1, 0x1, (byte) 0xCC, 0x1, (byte) 0xCC, 0, 0}, bytes);
+        assertArrayEquals(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xDB, 0x0, 0x43, 0x0, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1}, bytes);
     }
 
     @Test
@@ -102,7 +121,7 @@ public class JPEGSegmentImageInputStreamTest {
 
         assertThat(length, new LessOrEqual<Long>(10203l)); // In no case should length increase
 
-        assertEquals(9625l, length); // May change, if more chunks are passed to reader...
+        assertEquals(9607L, length); // May change, if more chunks are passed to reader...
     }
 
     @Test
@@ -110,18 +129,15 @@ public class JPEGSegmentImageInputStreamTest {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/no-image-types-rgb-us-web-coated-v2-ms-photogallery-exif.jpg")));
         List<JPEGSegment> appSegments = JPEGSegmentUtil.readSegments(stream, JPEGSegmentUtil.APP_SEGMENTS);
 
-        assertEquals(3, appSegments.size());
+        assertEquals(2, appSegments.size());
 
-        assertEquals(JPEG.APP0, appSegments.get(0).marker());
-        assertEquals("JFIF", appSegments.get(0).identifier());
+        assertEquals(JPEG.APP1, appSegments.get(0).marker());
+        assertEquals("Exif", appSegments.get(0).identifier());
 
-        assertEquals(JPEG.APP1, appSegments.get(1).marker());
-        assertEquals("Exif", appSegments.get(1).identifier());
+        assertEquals(JPEG.APP14, appSegments.get(1).marker());
+        assertEquals("Adobe", appSegments.get(1).identifier());
 
-        assertEquals(JPEG.APP14, appSegments.get(2).marker());
-        assertEquals("Adobe", appSegments.get(2).identifier());
-
-        // And thus, no XMP, no ICC_PROFILE or other segments
+        // And thus, no JFIF, no XMP, no ICC_PROFILE or other segments
     }
 
     @Test
@@ -133,6 +149,50 @@ public class JPEGSegmentImageInputStreamTest {
             length++;
         }
 
-        assertEquals(9299l, length); // Sanity check: same as file size
+        assertEquals(9281L, length); // Sanity check: same as file size
+    }
+
+    @Test
+    public void testReadPaddedSegmentsBug() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-padded-segments.jpg")));
+
+        List<JPEGSegment> appSegments = JPEGSegmentUtil.readSegments(stream, JPEGSegmentUtil.APP_SEGMENTS);
+        assertEquals(1, appSegments.size());
+
+        assertEquals(JPEG.APP1, appSegments.get(0).marker());
+        assertEquals("Exif", appSegments.get(0).identifier());
+
+        stream.seek(0l);
+
+        long length = 0;
+        while (stream.read() != -1) {
+            length++;
+        }
+
+        assertEquals(1061L, length); // Sanity check: same as file size, except padding and the filtered ICC_PROFILE segment
+    }
+
+    @Test
+    public void testEOFExceptionInSegmentParsingShouldNotCreateBadState() throws IOException {
+        ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg")));
+
+        byte[] buffer = new byte[4096];
+
+        // NOTE: This is a simulation of how the native parts of com.sun...JPEGImageReader would read the image...
+        assertEquals(2, iis.read(buffer, 0, buffer.length));
+        assertEquals(2, iis.getStreamPosition());
+
+        iis.seek(0x2012); // bad segment length, should have been 0x0012, not 0x2012
+        assertEquals(0x2012, iis.getStreamPosition());
+
+        // So far, so good (but stream position is now really beyond EOF)...
+
+        // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(0x2012, iis.getStreamPosition());
+
+        // Again, should just continue returning -1 for ever
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(0x2012, iis.getStreamPosition());
     }
 }

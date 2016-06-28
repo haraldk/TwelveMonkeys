@@ -60,13 +60,15 @@ import java.awt.image.RGBImageFilter;
 
 public class BrightnessContrastFilter extends RGBImageFilter {
 
+    // TODO: Replace with RescaleOp?
+
     // This filter can filter IndexColorModel, as it is does not depend on
     // the pixels' location
     {
         canFilterIndexColorModel = true;
     }
 
-    // Use a precalculated lookup table for performace
+    // Use a pre-calculated lookup table for performance
     private final int[] LUT;
 
     /**
@@ -149,7 +151,6 @@ public class BrightnessContrastFilter extends RGBImageFilter {
      *
      * @return the filtered pixel value in the default color space
      */
-
     public int filterRGB(int pX, int pY, int pARGB) {
         // Get color components
         int r = pARGB >> 16 & 0xFF;

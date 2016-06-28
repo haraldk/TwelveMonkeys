@@ -30,6 +30,7 @@ package com.twelvemonkeys.io.enc;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Encoder implementation for Apple PackBits run-length encoding.
@@ -71,7 +72,12 @@ public final class PackBitsEncoder implements Encoder {
     public PackBitsEncoder() {
     }
 
-    public void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException {
+    public void encode(final OutputStream stream, final ByteBuffer buffer) throws IOException {
+        encode(stream, buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        buffer.position(buffer.remaining());
+    }
+
+    private void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException {
         // NOTE: It's best to encode a 2 byte repeat
         // run as a replicate run except when preceded and followed by a
         // literal run, in which case it's best to merge the three into one
@@ -86,7 +92,7 @@ public final class PackBitsEncoder implements Encoder {
             // Compressed run
             int run = 1;
             byte replicate = pBuffer[offset];
-            while(run < 127 && offset < max && pBuffer[offset] == pBuffer[offset + 1]) {
+            while (run < 127 && offset < max && pBuffer[offset] == pBuffer[offset + 1]) {
                 offset++;
                 run++;
             }

@@ -69,12 +69,15 @@ public class XMLSerializer {
         context = new SerializationContext();
     }
 
-    public final void setIndentation(String pIndent) {
+    public final XMLSerializer indentation(String pIndent) {
+        // TODO: Verify that indent value is only whitespace?
         context.indent = pIndent != null ? pIndent : "\t";
+        return this;
     }
 
-    public final void setStripComments(boolean pStrip) {
+    public final XMLSerializer stripComments(boolean pStrip) {
         context.stripComments = pStrip;
+        return this;
     }
 
     /**
@@ -452,6 +455,16 @@ public class XMLSerializer {
                 indentToLevel(pOut, pContext);
             }
 
+            pOut.print("</");
+            pOut.print(pNode.getTagName());
+            pOut.println(">");
+        }
+        else if (pNode.getNodeValue() != null) {
+            // NOTE: This is NOT AS SPECIFIED, but we do this to support
+            // the weirdness that is the javax.imageio.metadata.IIOMetadataNode.
+            // According to the spec, the nodeValue of an Element is null.
+            pOut.print(">");
+            pOut.print(pNode.getNodeValue());
             pOut.print("</");
             pOut.print(pNode.getTagName());
             pOut.println(">");

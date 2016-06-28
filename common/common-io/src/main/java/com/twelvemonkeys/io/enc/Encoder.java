@@ -30,11 +30,12 @@ package com.twelvemonkeys.io.enc;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 
 /**
- * Interface for endcoders.
+ * Interface for encoders.
  * An {@code Encoder} may be used with an {@code EncoderStream}, to perform
- * on-the-fly enoding to an {@code OutputStream}.
+ * on-the-fly encoding to an {@code OutputStream}.
  * <p/>
  * Important note: Encoder implementations are typically not synchronized.
  *
@@ -47,17 +48,15 @@ import java.io.OutputStream;
 public interface Encoder {
     
     /**
-     * Encodes up to {@code pBuffer.length} bytes into the given input stream,
+     * Encodes up to {@code buffer.remaining()} bytes into the given input stream,
      * from the given buffer.
      *
-     * @param pStream the outputstream to encode data to
-     * @param pBuffer buffer to read data from
-     * @param pOffset offset into the buffer array
-     * @param pLength length of data in the buffer
+     * @param stream the output stream to encode data to
+     * @param buffer buffer to read data from
      *
      * @throws java.io.IOException if an I/O error occurs
      */
-    void encode(OutputStream pStream, byte[] pBuffer, int pOffset, int pLength) throws IOException;
+    void encode(OutputStream stream, ByteBuffer buffer) throws IOException;
 
     //TODO: int requiredBufferSize(): -1 == any, otherwise, use this buffer size
     // void flush()?

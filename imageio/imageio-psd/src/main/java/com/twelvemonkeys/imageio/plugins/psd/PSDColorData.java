@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2014, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.image.InverseColorMapIndexColorModel;
-
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.DataBuffer;
@@ -43,7 +41,7 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDColorData.java,v 1.0 Apr 29, 2008 5:33:01 PM haraldk Exp$
  */
-class PSDColorData {
+final class PSDColorData {
     final byte[] colors;
     private IndexColorModel colorModel;
 
@@ -66,7 +64,7 @@ class PSDColorData {
     IndexColorModel getIndexColorModel() {
         if (colorModel == null) {
             int[] rgb = toInterleavedRGB(colors);
-            colorModel = new InverseColorMapIndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
+            colorModel = new IndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
         }
 
         return colorModel;
