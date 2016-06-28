@@ -28,48 +28,19 @@
 
 package com.twelvemonkeys.imageio.plugins.sgi;
 
-import org.w3c.dom.Node;
+import com.twelvemonkeys.imageio.AbstractMetadata;
 
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 
-final class SGIMetadata extends IIOMetadata {
-    // TODO: Clean up & extend AbstractMetadata (after moving from PSD -> Core)
-
+final class SGIMetadata extends AbstractMetadata {
     private final SGIHeader header;
 
     SGIMetadata(final SGIHeader header) {
         this.header = header;
-        standardFormatSupported = true;
     }
 
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override public Node getAsTree(final String formatName) {
-        if (IIOMetadataFormatImpl.standardMetadataFormatName.equals(formatName)) {
-            return getStandardTree();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported metadata format: " + formatName);
-        }
-    }
-
-    @Override public void mergeTree(final String formatName, final Node root) {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override public void reset() {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override protected IIOMetadataNode getStandardChromaNode() {
+    @Override
+    protected IIOMetadataNode getStandardChromaNode() {
         IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
         // NOTE: There doesn't seem to be any god way to determine color space, other than by convention
@@ -117,12 +88,15 @@ final class SGIMetadata extends IIOMetadata {
 
     // No compression
 
-    @Override protected IIOMetadataNode getStandardCompressionNode() {
+    @Override
+    protected IIOMetadataNode getStandardCompressionNode() {
         if (header.getCompression() != SGI.COMPRESSION_NONE) {
             IIOMetadataNode node = new IIOMetadataNode("Compression");
 
             IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
-            compressionTypeName.setAttribute("value", header.getCompression() == SGI.COMPRESSION_RLE ? "RLE" : "Uknown");
+            compressionTypeName.setAttribute("value", header.getCompression() == SGI.COMPRESSION_RLE
+                                                      ? "RLE"
+                                                      : "Uknown");
             node.appendChild(compressionTypeName);
 
             IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
@@ -135,7 +109,8 @@ final class SGIMetadata extends IIOMetadata {
         return null;
     }
 
-    @Override protected IIOMetadataNode getStandardDataNode() {
+    @Override
+    protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode node = new IIOMetadataNode("Data");
 
         IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
@@ -183,7 +158,8 @@ final class SGIMetadata extends IIOMetadata {
         return buffer.toString();
     }
 
-    @Override protected IIOMetadataNode getStandardDimensionNode() {
+    @Override
+    protected IIOMetadataNode getStandardDimensionNode() {
         IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
         IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
@@ -195,7 +171,8 @@ final class SGIMetadata extends IIOMetadata {
 
     // No document node
 
-    @Override protected IIOMetadataNode getStandardTextNode() {
+    @Override
+    protected IIOMetadataNode getStandardTextNode() {
         if (!header.getName().isEmpty()) {
             IIOMetadataNode text = new IIOMetadataNode("Text");
 
@@ -212,14 +189,17 @@ final class SGIMetadata extends IIOMetadata {
 
     // No tiling
 
-    @Override protected IIOMetadataNode getStandardTransparencyNode() {
+    @Override
+    protected IIOMetadataNode getStandardTransparencyNode() {
         // NOTE: There doesn't seem to be any god way to determine transparency, other than by convention
         // 1 channel: Gray, 2 channel: Gray + Alpha, 3 channel: RGB, 4 channel: RGBA (hopefully never CMYK...)
 
         IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
 
         IIOMetadataNode alpha = new IIOMetadataNode("Alpha");
-        alpha.setAttribute("value", header.getChannels() == 1 || header.getChannels() == 3 ? "none" : "nonpremultiplied");
+        alpha.setAttribute("value", header.getChannels() == 1 || header.getChannels() == 3
+                                    ? "none"
+                                    : "nonpremultiplied");
         transparency.appendChild(alpha);
 
         return transparency;

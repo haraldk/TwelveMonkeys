@@ -1,6 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -21,7 +22,7 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: CURImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class CURImageReaderTest extends ImageReaderAbstractTestCase<CURImageReader> {
+public class CURImageReaderTest extends ImageReaderAbstractTest<CURImageReader> {
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/cur/hand.cur"), new Dimension(32, 32)),
@@ -43,11 +44,11 @@ public class CURImageReaderTest extends ImageReaderAbstractTestCase<CURImageRead
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("cur");
+        return Collections.singletonList("cur");
     }
 
     protected List<String> getSuffixes() {
-        return Arrays.asList("cur");
+        return Collections.singletonList("cur");
     }
 
     protected List<String> getMIMETypes() {

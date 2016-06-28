@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2015, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,21 +33,22 @@ import com.twelvemonkeys.io.enc.Encoder;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.TreeMap;
-
-import static com.twelvemonkeys.imageio.plugins.tiff.LZWDecoder.LZWString;
+import java.util.Arrays;
 
 /**
  * LZWEncoder
+ * <p/>
+ * Inspired by LZWTreeEncoder by <a href="mailto:yuwen_66@yahoo.com">Wen Yu</a> and the
+ * <a href="http://gingko.homeip.net/docs/file_formats/lzwgif.html#bob">algorithm described by Bob Montgomery</a>
+ * which
+ * "[...] uses a tree method to search if a new string is already in the table,
+ * which is much simpler, faster, and easier to understand than hashing."
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: LZWEncoder.java,v 1.0 02.12.13 14:13 haraldk Exp$
  */
 final class LZWEncoder implements Encoder {
-    // TODO: Consider extracting LZWStringTable from LZWDecoder
-
     /** Clear: Re-initialize tables. */
     static final int CLEAR_CODE = 256;
     /** End of Information. */
@@ -58,159 +59,136 @@ final class LZWEncoder implements Encoder {
 
     private static final int TABLE_SIZE = 1 << MAX_BITS;
 
-    private int remaining;
+    // A child is made up of a parent (or prefix) code plus a suffix byte
+    // and siblings are strings with a common parent(or prefix) and different
+    // suffix bytes
+    private final short[] CHILDREN = new short[TABLE_SIZE];
+    private final short[] SIBLINGS = new short[TABLE_SIZE];
+    private final short[] SUFFIXES = new short[TABLE_SIZE];
 
-    private final LZWString[] table = new LZWString[TABLE_SIZE];
-//    private final Map<LZWString, Integer> reverseTable = new HashMap<>(TABLE_SIZE - 256); // This is foobar
-    private final Map<LZWString, Integer> reverseTable = new TreeMap<>(); // This is foobar
-    private int tableLength;
-    LZWString omega = LZWString.EMPTY;
+    // Initial setup
+    private int parent = -1;
+    private int bitsPerCode = MIN_BITS;
+    private int nextValidCode = EOI_CODE + 1;
+    private int maxCode = maxValue(bitsPerCode);
 
-    int bitsPerCode;
-    private int oldCode = CLEAR_CODE;
-    private int maxCode;
-    int bitMask;
+    // Buffer for partial codes
+    private int bits = 0;
+    private int bitPos = 0;
 
-    int bits;
-    int bitPos;
+    // Keep track of how many bytes we will write, to make sure we write EOI at correct position
+    private long remaining;
 
-    protected LZWEncoder(final int length) {
-        this.remaining = length;
-
-        // First 258 entries of table is always fixed
-        for (int i = 0; i < 256; i++) {
-            table[i] = new LZWString((byte) i);
-        }
-
-        init();
+    LZWEncoder(final long length) {
+        remaining = length;
     }
 
-    private static int bitmaskFor(final int bits) {
-        return (1 << bits) - 1;
-    }
-
-    private void init() {
-        tableLength = 258;
-        bitsPerCode = MIN_BITS;
-        bitMask = bitmaskFor(bitsPerCode);
-        maxCode = maxCode();
-//        omega = LZWString.EMPTY;
-        reverseTable.clear();
-    }
-
-    protected int maxCode() {
-        return bitMask;
-    }
-
+    @Override
     public void encode(final OutputStream stream, final ByteBuffer buffer) throws IOException {
-//        InitializeStringTable();
-//        WriteCode(ClearCode);
-//        Ω = the empty string;
-//        for each character in the strip {
-//            K = GetNextCharacter();
-//            if Ω+K is in the string table {
-//                Ω = Ω+K;/* string concatenation */
-//            }
-//            else{
-//                WriteCode (CodeFromString(    Ω));
-//                AddTableEntry(Ω+K);
-//                Ω=K;
-//            } }/*end of for loop*/
-//        WriteCode (CodeFromString(Ω));
-//        WriteCode (EndOfInformation);
+        encodeBytes(stream, buffer);
 
-        if (remaining < 0) {
-            throw new IOException("Write past end of stream");
-        }
-
-        // TODO: Write 9 bit clear code ONLY first time!
-        if (oldCode == CLEAR_CODE) {
-            writeCode(stream, CLEAR_CODE);
-        }
-
-        int len = buffer.remaining();
-
-        while (buffer.hasRemaining()) {
-            byte k = buffer.get();
-
-            LZWString string = omega.concatenate(k);
-
-            int tableIndex = isInTable(string);
-            if (tableIndex >= 0) {
-                omega = string;
-                oldCode = tableIndex;
-            }
-            else {
-                writeCode(stream, oldCode);
-                addStringToTable(string);
-                oldCode = k & 0xff;
-                omega = table[k & 0xff];
-
-                // Handle table (almost) full
-                if (tableLength >= TABLE_SIZE - 2) {
-                    writeCode(stream, CLEAR_CODE);
-                    init();
-                }
-            }
-        }
-
-        remaining -= len;
-
-        // Write EOI when er are done (the API isn't very supportive of this)
         if (remaining <= 0) {
-            writeCode(stream, oldCode);
+            // Write EOI when er are done (the API isn't very supportive of this at the moment)
+            writeCode(stream, parent);
             writeCode(stream, EOI_CODE);
+
+            // Flush partial codes by writing 0 pad
             if (bitPos > 0) {
                 writeCode(stream, 0);
             }
         }
     }
 
-    private int isInTable(final LZWString string) {
-        if (string.length == 1) {
-            return string.value & 0xff;
+    void encodeBytes(final OutputStream stream, final ByteBuffer buffer) throws IOException {
+        int length = buffer.remaining();
+
+        if (length == 0) {
+            return;
         }
 
-        Integer index = reverseTable.get(string);
-        return index != null ? index : -1;
+        if (parent == -1) {
+            // Init stream
+            writeCode(stream, CLEAR_CODE);
+            parent = buffer.get() & 0xff;
+        }
 
-        // TODO: Needs optimization :-)
-//        for (int i = 258; i < tableLength; i++) {
-//            if (table[i].equals(string)) {
-//                return i;
-//            }
-//        }
+        while (buffer.hasRemaining()) {
+            int value = buffer.get() & 0xff;
+            int child = CHILDREN[parent];
 
-//        return -1;
+            if (child > 0) {
+                if (SUFFIXES[child] == value) {
+                    parent = child;
+                }
+                else {
+                    int sibling = child;
+
+                    while (true) {
+                        if (SIBLINGS[sibling] > 0) {
+                            sibling = SIBLINGS[sibling];
+
+                            if (SUFFIXES[sibling] == value) {
+                                parent = sibling;
+                                break;
+                            }
+                        }
+                        else {
+                            SIBLINGS[sibling] = (short) nextValidCode;
+                            SUFFIXES[nextValidCode] = (short) value;
+                            writeCode(stream, parent);
+                            parent = value;
+                            nextValidCode++;
+
+                            increaseCodeSizeOrResetIfNeeded(stream);
+
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                CHILDREN[parent] = (short) nextValidCode;
+                SUFFIXES[nextValidCode] = (short) value;
+                writeCode(stream, parent);
+                parent = value;
+                nextValidCode++;
+
+                increaseCodeSizeOrResetIfNeeded(stream);
+            }
+        }
+
+        remaining -= length;
     }
 
-    private int addStringToTable(final LZWString string) {
-//        System.err.println("LZWEncoder.addStringToTable: " + string);
-        final int index = tableLength++;
-        table[index] = string;
-        reverseTable.put(string, index);
+    private void increaseCodeSizeOrResetIfNeeded(final OutputStream stream) throws IOException {
+        if (nextValidCode > maxCode) {
+            if (bitsPerCode == MAX_BITS) {
+                // Reset stream by writing Clear code
+                writeCode(stream, CLEAR_CODE);
 
-        if (tableLength > maxCode) {
-            bitsPerCode++;
-
-            if (bitsPerCode > MAX_BITS) {
-                throw new IllegalStateException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
+                // Reset tables
+                resetTables();
             }
-
-            bitMask = bitmaskFor(bitsPerCode);
-            maxCode = maxCode();
+            else {
+                // Increase code size
+                bitsPerCode++;
+                maxCode = maxValue(bitsPerCode);
+            }
         }
+    }
 
-//        if (string.length > maxString) {
-//            maxString = string.length;
-//        }
+    private void resetTables() {
+        Arrays.fill(CHILDREN, (short) 0);
+        Arrays.fill(SIBLINGS, (short) 0);
 
-        return index;
+        bitsPerCode = MIN_BITS;
+        maxCode = maxValue(bitsPerCode);
+        nextValidCode = EOI_CODE + 1;
     }
 
     private void writeCode(final OutputStream stream, final int code) throws IOException {
 //        System.err.printf("LZWEncoder.writeCode: 0x%04x\n", code);
-        bits = (bits << bitsPerCode) | (code & bitMask);
+        bits = (bits << bitsPerCode) | (code & maxCode);
         bitPos += bitsPerCode;
 
         while (bitPos >= 8) {
@@ -221,5 +199,13 @@ final class LZWEncoder implements Encoder {
         }
 
         bits &= bitmaskFor(bitPos);
+    }
+
+    private static int maxValue(final int codeLen) {
+        return (1 << codeLen) - 1;
+    }
+
+    private static int bitmaskFor(final int bits) {
+        return maxValue(bits);
     }
 }

@@ -51,7 +51,7 @@ final class PSDUtil {
     static String intToStr(int value) {
         return new String(
                 new byte[]{
-                        (byte) ((value & 0xff000000) >> 24),
+                        (byte) ((value & 0xff000000) >>> 24),
                         (byte) ((value & 0x00ff0000) >> 16),
                         (byte) ((value & 0x0000ff00) >> 8),
                         (byte) ((value & 0x000000ff))

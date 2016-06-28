@@ -1,6 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.w3c.dom.Node;
@@ -19,10 +19,12 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -34,7 +36,7 @@ import static org.mockito.Mockito.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: BMPImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageReader> {
+public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> {
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // BMP Suite "Good"
@@ -90,7 +92,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
                 new TestData(getClassLoaderResource("/os2/money-256-(os2).bmp"), new Dimension(455, 341)),
                 new TestData(getClassLoaderResource("/os2/money-24bit-os2.bmp"), new Dimension(455, 341)),
 
-                // Vaious other samples
+                // Various other samples
                 new TestData(getClassLoaderResource("/bmp/Blue Lace 16.bmp"), new Dimension(48, 48)),
                 new TestData(getClassLoaderResource("/bmp/blauesglas_mono.bmp"), new Dimension(301, 331)),
                 new TestData(getClassLoaderResource("/bmp/blauesglas_4.bmp"), new Dimension(301, 331)),
@@ -124,7 +126,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("bmp");
+        return Collections.singletonList("bmp");
     }
 
     protected List<String> getSuffixes() {
@@ -132,7 +134,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
     }
 
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/bmp");
+        return Collections.singletonList("image/bmp");
     }
 
     @Override
@@ -234,7 +236,6 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
 
     @Test
     public void testMetadataEqualsJRE() throws IOException, URISyntaxException {
-        // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
         ImageReader jreReader;
         try {
             @SuppressWarnings("unchecked")
@@ -243,8 +244,9 @@ public class BMPImageReaderTest extends ImageReaderAbstractTestCase<BMPImageRead
             jreReader = constructor.newInstance(new Object[] {null});
         }
         catch (Exception e) {
-            System.err.println("WARNING: Skipping metadata tests: " + e);
             e.printStackTrace();
+            // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
+            assumeNoException(e);
             return;
         }
 

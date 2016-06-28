@@ -547,7 +547,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
         // TODO: What if output != null and wrong size? Create new? Render on only a part? Document?
 
-        // If filter type != POINT or BOX an input has IndexColorModel, convert
+        // If filter type != POINT or BOX and input has IndexColorModel, convert
         // to true color, with alpha reflecting that of the original color model.
         BufferedImage temp;
         ColorModel cm;
@@ -590,7 +590,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     /*
     // TODO: This idea from Chet and Romain is actually not too bad..
     // It reuses the image/raster/graphics...
-    // However, they forget to end with a halve operation..
+    // However, they don't end with a halve operation..
     private static BufferedImage getFasterScaledInstance(BufferedImage img,
             int targetWidth, int targetHeight, Object hint,
             boolean progressiveBilinear) {
@@ -895,7 +895,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     *	filter function definitions
     */
 
-    static interface InterpolationFilter {
+    interface InterpolationFilter {
         double filter(double t);
 
         double support();
@@ -1336,7 +1336,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
             }
 
             //contribX.n = 0;
-            contribX.p = new Contributor[(int) (width * 2.0 + 1.0)];
+            contribX.p = new Contributor[(int) (width * 2.0 + 1.0 + 0.5)];
 
             center = (double) i / xscale;
             int left = (int) Math.ceil(center - width);// Note: Assumes width <= .5
@@ -1387,7 +1387,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         else {
             /* Expanding image */
             //contribX.n = 0;
-            contribX.p = new Contributor[(int) (fwidth * 2.0 + 1.0)];
+            contribX.p = new Contributor[(int) (fwidth * 2.0 + 1.0 + 0.5)];
 
             center = (double) i / xscale;
             int left = (int) Math.ceil(center - fwidth);
@@ -1465,7 +1465,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
             for (int i = 0; i < dstHeight; i++) {
                 //contribY[i].n = 0;
-                contribY[i].p = new Contributor[(int) (width * 2.0 + 1)];
+                contribY[i].p = new Contributor[(int) (width * 2.0 + 1 + 0.5)];
 
                 double center = (double) i / yscale;
                 int left = (int) Math.ceil(center - width);
@@ -1516,7 +1516,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         else {
             for (int i = 0; i < dstHeight; ++i) {
                 //contribY[i].n = 0;
-                contribY[i].p = new Contributor[(int) (fwidth * 2 + 1)];
+                contribY[i].p = new Contributor[(int) (fwidth * 2 + 1 + 0.5)];
 
                 double center = (double) i / yscale;
                 double left = Math.ceil(center - fwidth);

@@ -64,4 +64,8 @@ public interface Entry {
 
     // For arrays only
     int valueCount();
+
+    // TODO: getValueAsInt, UnsignedInt, Short, UnsignedShort, Byte, UnsignedByte etc
+    // TODO: getValueAsIntArray, ShortArray, ByteArray, StringArray etc (also for non-arrays, to return a single element array)
+
 }

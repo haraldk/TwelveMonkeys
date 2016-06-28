@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.1-SNAPSHOT</version>
+        <version>3.3-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-batik</artifactId>
     <name>TwelveMonkeys :: ImageIO :: Batik Plugin</name>
@@ -23,27 +23,54 @@
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
-            <classifier>tests</classifier>
+            <type>test-jar</type>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-rasterizer-ext</artifactId>
-            <version>1.6-1</version>
+            <version>${batik.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.xmlgraphics</groupId>
+                    <artifactId>batik-extensions</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-extension</artifactId>
+            <version>${batik.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>xmlgraphics-commons</artifactId>
+            <version>2.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-anim</artifactId>
+            <version>${batik.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-svggen</artifactId>
-            <version>1.6-1</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>batik</groupId>
+            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-transcoder</artifactId>
-            <version>1.6-1</version>
+            <version>${batik.version}</version>
             <scope>provided</scope>
 
             <!--
@@ -59,4 +86,8 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+    <properties>
+        <batik.version>1.8</batik.version>
+    </properties>
 </project>

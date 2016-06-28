@@ -60,11 +60,11 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
                         "image/x-portable-anymap",
                         "image/x-portable-arbitrarymap" // PAM
                 },
-                "com.twelvemkonkeys.imageio.plugins.pnm.PNMImageReader",
+                "com.twelvemonkeys.imageio.plugins.pnm.PNMImageReader",
                 new Class[] {ImageInputStream.class},
                 new String[] {
-                        "com.twelvemkonkeys.imageio.plugins.pnm.PNMImageWriterSpi",
-                        "com.twelvemkonkeys.imageio.plugins.pnm.PAMImageWriterSpi"
+                        "com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriterSpi",
+                        "com.twelvemonkeys.imageio.plugins.pnm.PAMImageWriterSpi"
                 },
                 true, // supports standard stream metadata
                 null, null, // native stream format name and class

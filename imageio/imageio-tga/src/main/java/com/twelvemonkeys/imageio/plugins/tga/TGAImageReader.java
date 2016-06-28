@@ -33,6 +33,7 @@ import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.xml.XMLSerializer;
 
 import javax.imageio.IIOException;
@@ -51,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -59,6 +61,7 @@ public final class TGAImageReader extends ImageReaderBase {
     // http://www.gamers.org/dEngine/quake3/TGA.txt
 
     private TGAHeader header;
+    private TGAExtensions extensions;
 
     protected TGAImageReader(final ImageReaderSpi provider) {
         super(provider);
@@ -67,6 +70,7 @@ public final class TGAImageReader extends ImageReaderBase {
     @Override
     protected void resetMembers() {
         header = null;
+        extensions = null;
     }
 
     @Override
@@ -89,7 +93,7 @@ public final class TGAImageReader extends ImageReaderBase {
     public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
-        List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> specifiers = new ArrayList<>();
 
         // TODO: Implement
         specifiers.add(rawType);
@@ -110,19 +114,29 @@ public final class TGAImageReader extends ImageReaderBase {
                 return ImageTypeSpecifiers.createFromIndexColorModel(header.getColorMap());
             case TGA.IMAGETYPE_MONOCHROME:
             case TGA.IMAGETYPE_MONOCHROME_RLE:
-                return ImageTypeSpecifiers.createGrayscale(1, DataBuffer.TYPE_BYTE);
+                return ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
             case TGA.IMAGETYPE_TRUECOLOR:
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
 
+                boolean hasAlpha = header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha();
+                boolean isAlphaPremultiplied = extensions != null && extensions.isAlphaPremultiplied();
+
                 switch (header.getPixelDepth()) {
                     case 16:
+                        if (hasAlpha) {
+                            // USHORT_1555_ARGB...
+                            return ImageTypeSpecifiers.createPacked(sRGB, 0x7C00, 0x03E0, 0x001F, 0x8000, DataBuffer.TYPE_USHORT, isAlphaPremultiplied);
+                        }
+                        // Default mask out alpha
                         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
                     case 24:
                         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
                     case 32:
-                        // 4BYTE_BGRA...
-                        return ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, false);
+                        // 4BYTE_BGRX...
+                        // Can't mask out alpha (efficiently) for 4BYTE, so we'll ignore it while reading instead,
+                        // if hasAlpha is false
+                        return ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, isAlphaPremultiplied);
                     default:
                         throw new IIOException("Unknown pixel depth for truecolor: " + header.getPixelDepth());
                 }
@@ -166,31 +180,32 @@ public final class TGAImageReader extends ImageReaderBase {
         DataInput input;
         if (imageType == TGA.IMAGETYPE_COLORMAPPED_RLE || imageType == TGA.IMAGETYPE_TRUECOLOR_RLE || imageType == TGA.IMAGETYPE_MONOCHROME_RLE) {
             input = new LittleEndianDataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput), new RLEDecoder(header.getPixelDepth())));
-        } else {
+        }
+        else {
             input = imageInput;
         }
 
         for (int y = 0; y < height; y++) {
             switch (header.getPixelDepth()) {
-                    case 8:
-                    case 24:
-                    case 32:
-                        byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                        readRowByte(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataByte, destRaster, clippedRow, y);
-                        break;
-                    case 16:
-                        short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
-                        readRowUShort(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataUShort, destRaster, clippedRow, y);
-                        break;
-                    default:
-                        throw new AssertionError("Unsupported pixel depth: " + header.getPixelDepth());
-                }
-
-                processImageProgress(100f * y / height);
-
-                if (height - 1 - y < srcRegion.y) {
+                case 8:
+                case 24:
+                case 32:
+                    byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                    readRowByte(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataByte, destRaster, clippedRow, y);
                     break;
-                }
+                case 16:
+                    short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
+                    readRowUShort(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataUShort, destRaster, clippedRow, y);
+                    break;
+                default:
+                    throw new AssertionError("Unsupported pixel depth: " + header.getPixelDepth());
+            }
+
+            processImageProgress(100f * y / height);
+
+            if (height - 1 - y < srcRegion.y) {
+                break;
+            }
 
             if (abortRequested()) {
                 processReadAborted();
@@ -212,11 +227,11 @@ public final class TGAImageReader extends ImageReaderBase {
             return;
         }
 
-
         input.readFully(rowDataByte, 0, rowDataByte.length);
 
-        if (srcChannel.getNumBands() == 4) {
-            invertAlpha(rowDataByte);
+        if (srcChannel.getNumBands() == 4 && (header.getAttributeBits() == 0 || extensions != null && !extensions.hasAlpha())) {
+            // Remove the alpha channel (make pixels opaque) if there are no "attribute bits" (alpha bits)
+            removeAlpha32(rowDataByte);
         }
 
         // Subsample horizontal
@@ -240,9 +255,9 @@ public final class TGAImageReader extends ImageReaderBase {
         }
     }
 
-    private void invertAlpha(final byte[] rowDataByte) {
-        for (int i = 3; i < rowDataByte.length; i += 4) {
-            rowDataByte[i] = (byte) (0xFF - rowDataByte[i]);
+    private void removeAlpha32(final byte[] rowData) {
+        for (int i = 3; i < rowData.length; i += 4) {
+            rowData[i] = (byte) 0xFF;
         }
     }
 
@@ -313,21 +328,154 @@ public final class TGAImageReader extends ImageReaderBase {
     private void readHeader() throws IOException {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+
+            // Read header
             header = TGAHeader.read(imageInput);
 
 //            System.err.println("header: " + header);
 
             imageInput.flushBefore(imageInput.getStreamPosition());
+
+            // Read footer, if 2.0 format (ends with TRUEVISION-XFILE\0)
+            skipToEnd(imageInput);
+            imageInput.seek(imageInput.getStreamPosition() - 26);
+
+            long extOffset = imageInput.readInt();
+            /*long devOffset = */imageInput.readInt(); // Ignored for now
+
+            byte[] magic = new byte[18];
+            imageInput.readFully(magic);
+
+            if (Arrays.equals(magic, TGA.MAGIC)) {
+                if (extOffset > 0) {
+                    imageInput.seek(extOffset);
+                    extensions = TGAExtensions.read(imageInput);
+                }
+            }
         }
 
         imageInput.seek(imageInput.getFlushedPosition());
     }
 
-    @Override public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+    // TODO: Candidate util method
+    private static void skipToEnd(final ImageInputStream stream) throws IOException {
+        if (stream.length() > 0) {
+            // Seek to end of file
+            stream.seek(stream.length());
+        }
+        else {
+            // Skip to end
+            long lastGood = stream.getStreamPosition();
+
+            while (stream.read() != -1) {
+                lastGood = stream.getStreamPosition();
+                stream.skipBytes(1024);
+            }
+
+            stream.seek(lastGood);
+
+            while (true) {
+                if (stream.read() == -1) {
+                    break;
+                }
+                // Just continue reading to EOF...
+            }
+        }
+    }
+
+    // Thumbnail support
+
+    @Override
+    public boolean readerSupportsThumbnails() {
+        return true;
+    }
+
+    @Override
+    public boolean hasThumbnails(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
-        return new TGAMetadata(header);
+        return extensions != null && extensions.getThumbnailOffset() > 0;
+    }
+
+    @Override
+    public int getNumThumbnails(final int imageIndex) throws IOException {
+        return hasThumbnails(imageIndex) ? 1 : 0;
+    }
+
+    @Override
+    public int getThumbnailWidth(final int imageIndex, final int thumbnailIndex) throws IOException {
+        checkBounds(imageIndex);
+        Validate.isTrue(thumbnailIndex >= 0 && thumbnailIndex < getNumThumbnails(imageIndex), "thumbnailIndex >= numThumbnails");
+
+        imageInput.seek(extensions.getThumbnailOffset());
+
+        return imageInput.readUnsignedByte();
+    }
+
+    @Override
+    public int getThumbnailHeight(final int imageIndex, final int thumbnailIndex) throws IOException {
+        getThumbnailWidth(imageIndex, thumbnailIndex); // Laziness...
+
+        return imageInput.readUnsignedByte();
+    }
+
+    @Override
+    public BufferedImage readThumbnail(final int imageIndex, final int thumbnailIndex) throws IOException {
+        Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
+        ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+
+        int width = getThumbnailWidth(imageIndex, thumbnailIndex);
+        int height = getThumbnailHeight(imageIndex, thumbnailIndex);
+
+        // For thumbnail, always read entire image
+        Rectangle srcRegion = new Rectangle(width, height);
+
+        BufferedImage destination = getDestination(null, imageTypes, width, height);
+        WritableRaster destRaster = destination.getRaster();
+        WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
+
+        processThumbnailStarted(imageIndex, thumbnailIndex);
+
+        // Thumbnail is always stored non-compressed, no need for RLE support
+        imageInput.seek(extensions.getThumbnailOffset() + 2);
+
+        for (int y = 0; y < height; y++) {
+            switch (header.getPixelDepth()) {
+                case 8:
+                case 24:
+                case 32:
+                    byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                    readRowByte(imageInput, height, srcRegion, header.getOrigin(), 1, 1, rowDataByte, destRaster, rowRaster, y);
+                    break;
+                case 16:
+                    short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
+                    readRowUShort(imageInput, height, srcRegion, header.getOrigin(), 1, 1, rowDataUShort, destRaster, rowRaster, y);
+                    break;
+                default:
+                    throw new AssertionError("Unsupported pixel depth: " + header.getPixelDepth());
+            }
+
+            processThumbnailProgress(100f * y / height);
+
+            if (height - 1 - y < srcRegion.y) {
+                break;
+            }
+        }
+
+        processThumbnailComplete();
+
+        return destination;
+    }
+
+    // Metadata support
+
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+        readHeader();
+
+        return new TGAMetadata(header, extensions);
     }
 
     public static void main(String[] args) throws IOException {

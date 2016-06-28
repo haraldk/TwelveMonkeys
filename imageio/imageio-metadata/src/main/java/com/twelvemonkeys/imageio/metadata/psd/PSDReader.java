@@ -59,7 +59,7 @@ public final class PSDReader extends MetadataReader {
     public Directory read(final ImageInputStream input) throws IOException {
         Validate.notNull(input, "input");
 
-        List<PSDEntry> entries = new ArrayList<PSDEntry>();
+        List<PSDEntry> entries = new ArrayList<>();
 
         while (true) {
             try {

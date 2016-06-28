@@ -50,7 +50,10 @@ final class PSDLayerInfo {
     final PSDLayerBlendMode blendMode;
     final PSDLayerMaskData layerMaskData;
     final PSDChannelSourceDestinationRange[] ranges;
-    final String layerName;
+    private final String layerName;
+
+    private String unicodeLayerName;
+    private int layerId;
 
     PSDLayerInfo(final boolean largeFormat, final ImageInputStream pInput) throws IOException {
         top = pInput.readInt();
@@ -70,11 +73,11 @@ final class PSDLayerInfo {
 
         blendMode = new PSDLayerBlendMode(pInput);
 
-        // Length of layer mask data
+        // Length of layer extra data
         long extraDataSize = pInput.readUnsignedInt();
 
         // Layer mask/adjustment layer data
-        int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or 36 bytes...
+        int layerMaskDataSize = pInput.readInt(); // May be 0, 20 or variable (up to 55) bytes...
         if (layerMaskDataSize != 0) {
             layerMaskData = new PSDLayerMaskData(pInput, layerMaskDataSize);
         }
@@ -92,19 +95,78 @@ final class PSDLayerInfo {
             ranges[i] = new PSDChannelSourceDestinationRange(pInput, (i == 0 ? "Gray" : "Channel " + (i - 1)));
         }
 
+        // Layer name
         layerName = PSDUtil.readPascalString(pInput);
-
         int layerNameSize = layerName.length() + 1;
 
         // Skip pad bytes for long word alignment
         if (layerNameSize % 4 != 0) {
-            int skip = layerNameSize % 4;
+            int skip = 4 - (layerNameSize % 4);
             pInput.skipBytes(skip);
             layerNameSize += skip;
         }
 
-        // TODO: Consider reading this: Adjustment layer info etc...
-        pInput.skipBytes(extraDataSize - layerMaskDataSize - 4 - layerBlendingDataSize - 4 - layerNameSize);
+        // Parse "Additional layer data"
+        long additionalLayerInfoStart = pInput.getStreamPosition();
+        long expectedEnd = additionalLayerInfoStart + extraDataSize - layerMaskDataSize - 4 - layerBlendingDataSize - 4 - layerNameSize;
+        while (pInput.getStreamPosition() < expectedEnd) {
+            // 8BIM or 8B64
+            int resourceSignature = pInput.readInt();
+
+            if (resourceSignature != PSD.RESOURCE_TYPE && resourceSignature != PSD.RESOURCE_TYPE_LONG) {
+                // Could be a corrupt document, or some new resource (type) we don't know about,
+                // we'll just leave it and carry on, as this is all secondary information for the reader.
+                break;
+            }
+
+            int resourceKey = pInput.readInt();
+
+            // NOTE: Only SOME resources have long length fields...
+            boolean largeResource = resourceSignature != PSD.RESOURCE_TYPE;
+            long resourceLength = largeResource ? pInput.readLong() : pInput.readUnsignedInt();
+            long resourceStart = pInput.getStreamPosition();
+
+//            System.out.printf("signature: %s 0x%08x\n", PSDUtil.intToStr(resourceSignature), resourceSignature);
+//            System.out.println("key: " + PSDUtil.intToStr(resourceKey));
+//            System.out.println("length: " + resourceLength);
+
+            switch (resourceKey) {
+                case PSD.luni:
+                    unicodeLayerName = PSDUtil.readUnicodeString(pInput);
+                    // There's usually a 0-pad here, but it is skipped in the general re-aligning code below
+                    break;
+
+                case PSD.lyid:
+                    if (resourceLength != 4) {
+                        throw new IIOException(String.format("Expected layerId length == 4: %d", resourceLength));
+                    }
+                    layerId = pInput.readInt();
+                    break;
+
+                default:
+                    // TODO: Parse more data...
+                    pInput.skipBytes(resourceLength);
+                    break;
+            }
+
+            // Re-align in case we got the length incorrect
+            if (pInput.getStreamPosition() != resourceStart + resourceLength) {
+                pInput.seek(resourceStart + resourceLength);
+            }
+        }
+
+        // Re-align in case we got the length incorrect
+        if (pInput.getStreamPosition() != expectedEnd) {
+            pInput.seek(expectedEnd);
+        }
+    }
+
+    String getLayerName() {
+        return unicodeLayerName != null ? unicodeLayerName : layerName;
+    }
+
+    int getLayerId() {
+        return layerId;
     }
 
     @Override
@@ -122,7 +184,7 @@ final class PSDLayerInfo {
             builder.append(", layer mask data: ").append(layerMaskData);
         }
         builder.append(", ranges: ").append(Arrays.toString(ranges));
-        builder.append(", layer name: \"").append(layerName).append("\"");
+        builder.append(", layer name: \"").append(getLayerName()).append("\"");
 
         builder.append("]");
         return builder.toString();

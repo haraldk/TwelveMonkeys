@@ -73,7 +73,7 @@ public class ProviderInfo {
         return name.startsWith("com.twelvemonkeys") ? "TwelveMonkeys" : name;
     }
 
-    private String fakeVersion(Package pPackage) {
+    private String fakeVersion(final Package pPackage) {
         String name = pPackage.getName();
         return name.startsWith("com.twelvemonkeys") ? "DEV" : "Unspecified";
     }

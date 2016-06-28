@@ -28,7 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 
 /**
  * Describes an RGB/true color bitmap structure (16, 24 and 32 bits per pixel).
@@ -43,6 +45,38 @@ class BitmapRGB extends BitmapDescriptor {
     }
 
     public BufferedImage getImage() {
+        // Test is mask != null rather than hasMask(), as 32 bit (w/alpha)
+        // might still have bitmask, but we don't read or use it.
+        if (mask != null) {
+            image = createMaskedImage();
+            mask = null;
+        }
+
         return image;
+    }
+
+    private BufferedImage createMaskedImage() {
+        BufferedImage masked = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
+
+        Graphics2D graphics = masked.createGraphics();
+        try {
+            graphics.drawImage(image, 0, 0, null);
+        }
+        finally {
+            graphics.dispose();
+        }
+
+        WritableRaster alphaRaster = masked.getAlphaRaster();
+
+        byte[] trans = {0x0};
+        for (int y = 0; y < getHeight(); y++) {
+            for (int x = 0; x < getWidth(); x++) {
+                if (mask.isTransparent(x, y)) {
+                    alphaRaster.setDataElements(x, y, trans);
+                }
+            }
+        }
+
+        return masked;
     }
 }

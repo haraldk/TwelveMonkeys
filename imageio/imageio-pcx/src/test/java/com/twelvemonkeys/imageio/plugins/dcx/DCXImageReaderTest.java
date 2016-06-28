@@ -28,15 +28,13 @@
 
 package com.twelvemonkeys.imageio.plugins.dcx;
 
-import java.awt.*;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.spi.ImageReaderSpi;
-
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
-import org.junit.Test;
+import java.awt.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * DCXImageReaderTest
@@ -45,10 +43,10 @@ import org.junit.Test;
  * @author last modified by $Author: haraldk$
  * @version $Id: DCXImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
-public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageReader> {
+public class DCXImageReaderTest extends ImageReaderAbstractTest<DCXImageReader> {
     @Override
     protected List<TestData> getTestData() {
-        return Arrays.asList(
+        return Collections.singletonList(
                 new TestData(getClassLoaderResource("/dcx/input.dcx"), new Dimension(70, 46)) // RLE encoded RGB (the only sample I've found)
         );
     }
@@ -75,7 +73,7 @@ public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageRead
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList("dcx");
+        return Collections.singletonList("dcx");
     }
 
     @Override

@@ -88,13 +88,16 @@ public interface TIFF {
     Should probably all map to Java long (and fail if high bit is set for the unsigned types???)
      */
     String[] TYPE_NAMES = {
+            null,
             "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL",
             "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL", "FLOAT", "DOUBLE",
             "IFD",
             null, null,
             "LONG8", "SLONG8", "IFD8"
     };
+    /** Length of the corresponding type, in bytes. */
     int[] TYPE_LENGTHS = {
+            -1,
             1, 1, 2, 4, 8,
             1, 1, 2, 4, 8, 4, 8,
             4,
@@ -124,6 +127,8 @@ public interface TIFF {
     int TAG_YCBCR_POSITIONING = 531;
     int TAG_X_RESOLUTION = 282;
     int TAG_Y_RESOLUTION = 283;
+    int TAG_X_POSITION = 286;
+    int TAG_Y_POSITION = 287;
     int TAG_RESOLUTION_UNIT = 296;
 
     /// B. Tags relating to recording offset
@@ -131,9 +136,13 @@ public interface TIFF {
     int TAG_STRIP_OFFSETS = 273;
     int TAG_ROWS_PER_STRIP = 278;
     int TAG_STRIP_BYTE_COUNTS = 279;
+    int TAG_FREE_OFFSETS = 288; // "Not recommended for general interchange."
     // "Old-style" JPEG (still used as EXIF thumbnail)
     int TAG_JPEG_INTERCHANGE_FORMAT = 513;
     int TAG_JPEG_INTERCHANGE_FORMAT_LENGTH = 514;
+    
+    int TAG_GROUP3OPTIONS = 292;
+    int TAG_GROUP4OPTIONS = 293;
 
     /// C. Tags relating to image data characteristics
 
@@ -153,9 +162,11 @@ public interface TIFF {
     /// D. Other tags
 
     int TAG_DATE_TIME = 306;
+    int TAG_DOCUMENT_NAME = 269;
     int TAG_IMAGE_DESCRIPTION = 270;
     int TAG_MAKE = 271;
     int TAG_MODEL = 272;
+    int TAG_PAGE_NAME = 285;
     int TAG_PAGE_NUMBER = 297;
     int TAG_SOFTWARE = 305;
     int TAG_ARTIST = 315;
@@ -183,6 +194,18 @@ public interface TIFF {
      * @see com.twelvemonkeys.imageio.metadata.psd.PSD
      */
     int TAG_PHOTOSHOP = 34377;
+
+    /**
+     * Photoshop layer and mask information (byte order follows TIFF container).
+     * Layer and mask information found in a typical layered Photoshop file.
+     * Starts with a character string of "Adobe Photoshop Document Data Block"
+     * (or "Adobe Photoshop Document Data V0002" for PSB)
+     * including the null termination character.
+     * @see com.twelvemonkeys.imageio.metadata.psd.PSD
+     */
+    int TAG_PHOTOSHOP_IMAGE_SOURCE_DATA = 37724;
+
+    int TAG_PHOTOSHOP_ANNOTATIONS = 50255;
 
     /**
      * ICC Color Profile.

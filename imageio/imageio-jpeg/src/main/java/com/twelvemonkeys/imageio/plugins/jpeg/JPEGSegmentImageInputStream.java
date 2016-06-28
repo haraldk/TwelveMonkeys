@@ -240,15 +240,20 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     private void streamInit() throws IOException {
         stream.seek(0);
 
-        int soi = stream.readUnsignedShort();
-        if (soi != JPEG.SOI) {
-            throw new IIOException(String.format("Not a JPEG stream (starts with: 0x%04x, expected SOI: 0x%04x)", soi, JPEG.SOI));
-        }
-        else {
+        try {
+            int soi = stream.readUnsignedShort();
+
+            if (soi != JPEG.SOI) {
+                throw new IIOException(String.format("Not a JPEG stream (starts with: 0x%04x, expected SOI: 0x%04x)", soi, JPEG.SOI));
+            }
+
             segment = new Segment(soi, 0, 0, 2);
 
             segments.add(segment);
             currentSegment = segments.size() - 1; // 0
+        }
+        catch (EOFException eof) {
+            throw new IIOException(String.format("Not a JPEG stream (short stream. expected SOI: 0x%04x)", JPEG.SOI), eof);
         }
     }
 

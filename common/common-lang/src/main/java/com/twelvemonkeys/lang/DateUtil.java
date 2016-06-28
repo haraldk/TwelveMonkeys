@@ -142,7 +142,7 @@ public final class DateUtil {
      * @param pTime time
      * @return the time rounded to the closest second.
      */
-    public static long roundToSecond(long pTime) {
+    public static long roundToSecond(final long pTime) {
         return (pTime / SECOND) * SECOND;
     }
 
@@ -152,7 +152,7 @@ public final class DateUtil {
      * @param pTime time
      * @return the time rounded to the closest minute.
      */
-    public static long roundToMinute(long pTime) {
+    public static long roundToMinute(final long pTime) {
         return (pTime / MINUTE) * MINUTE;
     }
 
@@ -162,9 +162,20 @@ public final class DateUtil {
      * @param pTime time
      * @return the time rounded to the closest hour.
      */
-    public static long roundToHour(long pTime) {
-        // TODO: What if timezone offset is sub hour? Are there any? I think so...
-        return ((pTime / HOUR) * HOUR);
+    public static long roundToHour(final long pTime) {
+        return roundToHour(pTime, TimeZone.getDefault());
+    }
+
+    /**
+     * Rounds the given time down to the closest hour, using the given timezone.
+     *
+     * @param pTime time
+     * @param pTimeZone the timezone to use when rounding
+     * @return the time rounded to the closest hour.
+     */
+    public static long roundToHour(final long pTime, final TimeZone pTimeZone) {
+        int offset = pTimeZone.getOffset(pTime);
+        return ((pTime / HOUR) * HOUR) - offset;
     }
 
     /**
@@ -173,7 +184,7 @@ public final class DateUtil {
      * @param pTime time
      * @return the time rounded to the closest day.
      */
-    public static long roundToDay(long pTime) {
+    public static long roundToDay(final long pTime) {
         return roundToDay(pTime, TimeZone.getDefault());
     }
 
@@ -184,7 +195,7 @@ public final class DateUtil {
      * @param pTimeZone the timezone to use when rounding
      * @return the time rounded to the closest day.
      */
-    public static long roundToDay(long pTime, TimeZone pTimeZone) {
+    public static long roundToDay(final long pTime, final TimeZone pTimeZone) {
         int offset = pTimeZone.getOffset(pTime);
         return (((pTime  + offset) / DAY) * DAY) - offset;
     }

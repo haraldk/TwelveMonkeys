@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -59,10 +59,11 @@ import java.util.*;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeNotNull;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * JPEGImageReaderTest
@@ -71,11 +72,11 @@ import static org.mockito.Mockito.verify;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageReaderTest.java,v 1.0 24.01.11 22.04 haraldk Exp$
  */
-public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageReader> {
+public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader> {
 
-    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
+    protected static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
-    private static ImageReaderSpi lookupDelegateProvider() {
+    protected static ImageReaderSpi lookupDelegateProvider() {
         return JPEGImageReaderSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
     }
 
@@ -85,6 +86,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
+                new TestData(getClassLoaderResource("/jpeg/corrupted-icc-srgb.jpg"), new Dimension(1024, 685)),
                 new TestData(getClassLoaderResource("/jpeg/gray-sample.jpg"), new Dimension(386, 396)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(160, 227)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804)),
@@ -149,7 +151,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
 
     @Override
     protected List<String> getMIMETypes() {
-        return Arrays.asList("image/jpeg");
+        return Collections.singletonList("image/jpeg");
     }
 
     // TODO: Test that subsampling is actually reading something
@@ -368,7 +370,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         assertEquals(1772, image.getWidth());
         assertEquals(8, image.getHeight());
 
-        verify(warningListener).warningOccurred(eq(reader), anyString());
+        verify(warningListener, atLeast(1)).warningOccurred(eq(reader), anyString());
     }
 
     @Test
@@ -1098,7 +1100,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
                     assertTrue(markerSequences.getLength() == 1 || markerSequences.getLength() == 2); // In case of JPEG encoded thumbnail, there will be 2
                     IIOMetadataNode markerSequence = (IIOMetadataNode) markerSequences.item(0);
                     assertNotNull(markerSequence);
-                    assertThat(markerSequence.getChildNodes().getLength(), new GreaterThan<Integer>(0));
+                    assertThat(markerSequence.getChildNodes().getLength(), new GreaterThan<>(0));
 
                     NodeList unknowns = markerSequence.getElementsByTagName("unknown");
                     for (int j = 0; j < unknowns.getLength(); j++) {
@@ -1157,10 +1159,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         JPEGImageReader reader = createReader();
         ImageReader referenceReader = createReferenceReader();
 
-        if (referenceReader == null) {
-            return;
-        }
-
         for (TestData testData : getTestData()) {
             reader.setInput(testData.getInputStream());
             referenceReader.setInput(testData.getInputStream());
@@ -1201,13 +1199,15 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             Class<ImageReaderSpi> spiClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
             ImageReaderSpi provider = spiClass.newInstance();
 
-            return provider.createReaderInstance();
+            ImageReader reader = provider.createReaderInstance();
+            assumeNotNull(reader);
+            return reader;
         }
         catch (Throwable t) {
-            System.err.println("WARNING: Could not create ImageReader for reference (missing dependency): " + t.getMessage());
-
-            return null;
+            assumeNoException(t);
         }
+
+        return null;
     }
 
     private void assertTreesEquals(String message, Node expectedTree, Node actualTree) {
@@ -1290,7 +1290,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
     }
 
     private List<IIOMetadataNode> sortNodes(final NodeList nodes) {
-        ArrayList<IIOMetadataNode> sortedNodes = new ArrayList<IIOMetadataNode>(new AbstractList<IIOMetadataNode>() {
+        ArrayList<IIOMetadataNode> sortedNodes = new ArrayList<>(new AbstractList<IIOMetadataNode>() {
             @Override
             public IIOMetadataNode get(int index) {
                 return (IIOMetadataNode) nodes.item(index);
@@ -1438,7 +1438,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
         // TODO: Report bug!
 
         ImageReader reader = createReader();
-//        ImageReader reader = createReferenceReader();
 
         try {
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/progressive-adobe-sof-bands-dont-match-sos-band-count.jpg")));
@@ -1489,6 +1488,42 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTestCase<JPEGImageRe
             Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
             assertNotNull(tree);
             assertThat(tree, new IsInstanceOf(IIOMetadataNode.class));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testGetRawImageTypeAdobeAPP14CMYKAnd3channelData() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jfif-app13-app14ycck-3channel.jpg")));
+
+            ImageTypeSpecifier rawType = reader.getRawImageType(0);
+            assertNull(rawType); // But no exception, please...
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadAdobeAPP14CMYKAnd3channelData() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jfif-app13-app14ycck-3channel.jpg")));
+
+            assertEquals(310, reader.getWidth(0));
+            assertEquals(384, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0, null);
+            assertNotNull(image);
+            assertEquals(310, image.getWidth());
+            assertEquals(384, image.getHeight());
+            assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
         }
         finally {
             reader.dispose();

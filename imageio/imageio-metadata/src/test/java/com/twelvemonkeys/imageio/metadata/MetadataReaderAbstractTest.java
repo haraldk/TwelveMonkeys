@@ -79,7 +79,7 @@ public abstract class MetadataReaderAbstractTest {
         assertNotNull(directory);
     }
 
-    protected final Matcher<Entry> hasValue(final Object value) {
+    protected static Matcher<Entry> hasValue(final Object value) {
         return new EntryHasValue(value);
     }
 

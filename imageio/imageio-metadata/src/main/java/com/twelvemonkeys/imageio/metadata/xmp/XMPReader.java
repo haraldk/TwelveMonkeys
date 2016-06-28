@@ -71,6 +71,7 @@ public final class XMPReader extends MetadataReader {
             // TODO: Consider parsing using SAX?
             // TODO: Determine encoding and parse using a Reader...
             // TODO: Refactor scanner to return inputstream?
+            // TODO: Be smarter about ASCII-NULL termination/padding (the SAXParser aka Xerces DOMParser doesn't like it)...
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document document = builder.parse(new InputSource(IIOUtil.createStreamAdapter(input)));
 

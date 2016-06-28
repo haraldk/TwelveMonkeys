@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio.metadata.exif;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataWriter;
 import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOException;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -48,7 +50,7 @@ import java.util.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: EXIFWriter.java,v 1.0 17.07.13 10:20 haraldk Exp$
  */
-public class EXIFWriter {
+public final class EXIFWriter extends MetadataWriter {
 
     static final int WORD_LENGTH = 2;
     static final int LONGWORD_LENGTH = 4;
@@ -58,6 +60,7 @@ public class EXIFWriter {
         return write(new IFD(entries), stream);
     }
 
+    @Override
     public boolean write(final Directory directory, final ImageOutputStream stream) throws IOException {
         Validate.notNull(directory);
         Validate.notNull(stream);
@@ -92,11 +95,11 @@ public class EXIFWriter {
         stream.writeShort(42);
     }
 
-    public long writeIFD(final Collection<Entry> entries, ImageOutputStream stream) throws IOException {
+    public long writeIFD(final Collection<Entry> entries, final ImageOutputStream stream) throws IOException {
         return writeIFD(new IFD(entries), stream, false);
     }
 
-    private long writeIFD(final Directory original, ImageOutputStream stream, boolean isSubIFD) throws IOException {
+    private long writeIFD(final Directory original, final ImageOutputStream stream, final boolean isSubIFD) throws IOException {
         // TIFF spec says tags should be in increasing order, enforce that when writing
         Directory ordered = ensureOrderedDirectory(original);
 
@@ -155,6 +158,10 @@ public class EXIFWriter {
         return WORD_LENGTH + computeDataSize(new IFD(directory)) + directory.size() * ENTRY_LENGTH;
     }
 
+    public long computeIFDOffsetSize(final Collection<Entry> directory) {
+        return computeDataSize(new IFD(directory)) + LONGWORD_LENGTH;
+    }
+
     private long computeDataSize(final Directory directory) {
         long dataSize = 0;
 
@@ -181,7 +188,7 @@ public class EXIFWriter {
 
     private Directory ensureOrderedDirectory(final Directory directory) {
         if (!isSorted(directory)) {
-            List<Entry> entries = new ArrayList<Entry>(directory.size());
+            List<Entry> entries = new ArrayList<>(directory.size());
 
             for (Entry entry : directory) {
                 entries.add(entry);
@@ -215,7 +222,7 @@ public class EXIFWriter {
         return true;
     }
 
-    private long writeValue(Entry entry, long dataOffset, ImageOutputStream stream) throws IOException {
+    private long writeValue(final Entry entry, final long dataOffset, final ImageOutputStream stream) throws IOException {
         short type = getType(entry);
         int valueLength = EXIFReader.getValueLength(type, getCount(entry));
 
@@ -236,18 +243,22 @@ public class EXIFWriter {
         }
     }
 
-    private int getCount(Entry entry) {
+    private int getCount(final Entry entry) {
         Object value = entry.getValue();
         return value instanceof String ? ((String) value).getBytes(Charset.forName("UTF-8")).length + 1 : entry.valueCount();
     }
 
-    private void writeValueInline(Object value, short type, ImageOutputStream stream) throws IOException {
+    private void writeValueInline(final Object value, final short type, final ImageOutputStream stream) throws IOException {
         if (value.getClass().isArray()) {
             switch (type) {
+                case TIFF.TYPE_UNDEFINED:
                 case TIFF.TYPE_BYTE:
+                case TIFF.TYPE_SBYTE:
                     stream.write((byte[]) value);
                     break;
+
                 case TIFF.TYPE_SHORT:
+                case TIFF.TYPE_SSHORT:
                     short[] shorts;
 
                     if (value instanceof short[]) {
@@ -276,7 +287,9 @@ public class EXIFWriter {
 
                     stream.writeShorts(shorts, 0, shorts.length);
                     break;
+
                 case TIFF.TYPE_LONG:
+                case TIFF.TYPE_SLONG:
                     int[] ints;
 
                     if (value instanceof int[]) {
@@ -291,21 +304,49 @@ public class EXIFWriter {
                         }
                     }
                     else {
-                        throw new IllegalArgumentException("Unsupported type for TIFF SHORT: " + value.getClass());
+                        throw new IllegalArgumentException("Unsupported type for TIFF LONG: " + value.getClass());
                     }
 
                     stream.writeInts(ints, 0, ints.length);
-
                     break;
 
                 case TIFF.TYPE_RATIONAL:
+                case TIFF.TYPE_SRATIONAL:
                     Rational[] rationals = (Rational[]) value;
                     for (Rational rational : rationals) {
                         stream.writeInt((int) rational.numerator());
                         stream.writeInt((int) rational.denominator());
                     }
 
-                // TODO: More types
+                    break;
+
+                case TIFF.TYPE_FLOAT:
+                    float[] floats;
+
+                    if (value instanceof float[]) {
+                        floats = (float[]) value;
+                    }
+                    else {
+                        throw new IllegalArgumentException("Unsupported type for TIFF FLOAT: " + value.getClass());
+                    }
+
+                    stream.writeFloats(floats, 0, floats.length);
+
+                    break;
+
+                case TIFF.TYPE_DOUBLE:
+                    double[] doubles;
+
+                    if (value instanceof double[]) {
+                        doubles = (double[]) value;
+                    }
+                    else {
+                        throw new IllegalArgumentException("Unsupported type for TIFF FLOAT: " + value.getClass());
+                    }
+
+                    stream.writeDoubles(doubles, 0, doubles.length);
+
+                    break;
 
                 default:
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
@@ -317,25 +358,35 @@ public class EXIFWriter {
         else {
             switch (type) {
                 case TIFF.TYPE_BYTE:
-                    stream.writeByte((Integer) value);
+                case TIFF.TYPE_SBYTE:
+                case TIFF.TYPE_UNDEFINED:
+                    stream.writeByte(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_ASCII:
-                    byte[] bytes = ((String) value).getBytes(Charset.forName("UTF-8"));
+                    byte[] bytes = ((String) value).getBytes(StandardCharsets.UTF_8);
                     stream.write(bytes);
                     stream.write(0);
                     break;
                 case TIFF.TYPE_SHORT:
-                    stream.writeShort((Integer) value);
+                case TIFF.TYPE_SSHORT:
+                    stream.writeShort(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_LONG:
+                case TIFF.TYPE_SLONG:
                     stream.writeInt(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_RATIONAL:
+                case TIFF.TYPE_SRATIONAL:
                     Rational rational = (Rational) value;
                     stream.writeInt((int) rational.numerator());
                     stream.writeInt((int) rational.denominator());
                     break;
-                    // TODO: More types
+                case TIFF.TYPE_FLOAT:
+                    stream.writeFloat(((Number) value).floatValue());
+                    break;
+                case TIFF.TYPE_DOUBLE:
+                    stream.writeDouble(((Number) value).doubleValue());
+                    break;
 
                 default:
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
@@ -343,7 +394,7 @@ public class EXIFWriter {
         }
     }
 
-    private void writeValueAt(long dataOffset, Object value, short type, ImageOutputStream stream) throws IOException {
+    private void writeValueAt(final long dataOffset, final Object value, final short type, final ImageOutputStream stream) throws IOException {
         stream.writeInt(assertIntegerOffset(dataOffset));
         long position = stream.getStreamPosition();
         stream.seek(dataOffset);
@@ -351,12 +402,27 @@ public class EXIFWriter {
         stream.seek(position);
     }
 
-    private short getType(Entry entry) {
+    private short getType(final Entry entry) {
+        // TODO: What a MESS! Rewrite and expose EXIFEntry as TIFFEntry or so...
+
+        // For internal entries use type directly
         if (entry instanceof EXIFEntry) {
             EXIFEntry exifEntry = (EXIFEntry) entry;
             return exifEntry.getType();
         }
 
+        // For other entries, use name if it matches
+        String typeName = entry.getTypeName();
+
+        if (typeName != null) {
+            for (int i = 1; i < TIFF.TYPE_NAMES.length; i++) {
+                if (typeName.equals(TIFF.TYPE_NAMES[i])) {
+                    return (short) i;
+                }
+            }
+        }
+
+        // Otherwise, fall back to the native Java type
         Object value = Validate.notNull(entry.getValue());
 
         boolean array = value.getClass().isArray();

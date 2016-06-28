@@ -62,6 +62,8 @@ interface TIFFExtension {
     int PREDICTOR_HORIZONTAL_DIFFERENCING = 2;
     int PREDICTOR_HORIZONTAL_FLOATINGPOINT = 3;
 
+    int FILL_RIGHT_TO_LEFT = 2;
+
     int SAMPLEFORMAT_INT = 2;
     int SAMPLEFORMAT_FP = 3;
     int SAMPLEFORMAT_UNDEFINED = 4;
@@ -83,4 +85,17 @@ interface TIFFExtension {
      * description of the inks to be used.
      */
     int INKSET_NOT_CMYK = 2;
+
+    int ORIENTATION_TOPRIGHT = 2;
+    int ORIENTATION_BOTRIGHT = 3;
+    int ORIENTATION_BOTLEFT = 4;
+    int ORIENTATION_LEFTTOP = 5;
+    int ORIENTATION_RIGHTTOP = 6;
+    int ORIENTATION_RIGHTBOT = 7;
+    int ORIENTATION_LEFTBOT = 8;
+
+    int GROUP3OPT_2DENCODING = 1;
+    int GROUP3OPT_UNCOMPRESSED = 2;
+    int GROUP3OPT_FILLBITS = 4;
+    int GROUP4OPT_UNCOMPRESSED = 2;
 }

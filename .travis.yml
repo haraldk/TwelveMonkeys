@@ -1,0 +1,6 @@
+language: java
+jdk:
+  - oraclejdk8
+  - oraclejdk7
+# Some JPEGImageReader tests fail on OpenJDK, need to investigate/fix before enabling
+#  - openjdk7

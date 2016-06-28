@@ -34,7 +34,9 @@ import org.w3c.dom.Document;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -45,8 +47,6 @@ import java.util.List;
  * @version $Id: PSDMetadataFormat.java,v 1.0 Nov 4, 2009 5:27:53 PM haraldk Exp$
  */
 public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
-
-    private static final PSDMetadataFormat instance = new PSDMetadataFormat();
 
     static final List<String> PSD_BLEND_MODES = Arrays.asList(
             PSDUtil.intToStr(PSD.BLEND_PASS), PSDUtil.intToStr(PSD.BLEND_NORM), PSDUtil.intToStr(PSD.BLEND_DISS),
@@ -60,6 +60,8 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
             PSDUtil.intToStr(PSD.BLEND_HUE), PSDUtil.intToStr(PSD.BLEND_SAT), PSDUtil.intToStr(PSD.BLEND_COLR),
             PSDUtil.intToStr(PSD.BLEND_LUM)
     );
+
+    private static final PSDMetadataFormat instance = new PSDMetadataFormat();
 
     /**
      * Private constructor.
@@ -79,7 +81,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addElement("Header", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
 
         addAttribute("Header", "type", DATATYPE_STRING, false, "PSD", Arrays.asList("PSD", "PSB"));
-        addAttribute("Header", "version", DATATYPE_INTEGER, false, "1", Arrays.asList("1"));
+        addAttribute("Header", "version", DATATYPE_INTEGER, false, "1", Collections.singletonList("1"));
 
         addAttribute("Header", "channels", DATATYPE_INTEGER, true, null, "1", "24", true, true);
         // rows?
@@ -87,7 +89,8 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // columns?
         addAttribute("Header", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
         addAttribute("Header", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
-        addAttribute("Header", "mode", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
+
+        addAttribute("Header", "mode", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.COLOR_MODES));
 
         /*
         Contains the required data to define the color mode.
@@ -133,7 +136,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addElement("DisplayInfo", "ImageResources", CHILD_POLICY_EMPTY);
         // TODO: Consider using human readable strings
         // TODO: Limit values (0-8, 10, 11, 3000)
-        addAttribute("DisplayInfo", "colorSpace", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DISPLAY_INFO_CS));
+        addAttribute("DisplayInfo", "colorSpace", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.DISPLAY_INFO_CS));
         addAttribute("DisplayInfo", "colors", DATATYPE_INTEGER, true, 4, 4);
         addAttribute("DisplayInfo", "opacity", DATATYPE_INTEGER, true, null, "0", "100", true, true);
         // TODO: Consider using human readable strings
@@ -196,16 +199,15 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // root -> ImageResources -> ResolutionInfo
         addElement("ResolutionInfo", "ImageResources", CHILD_POLICY_EMPTY);
         addAttribute("ResolutionInfo", "hRes", DATATYPE_FLOAT, true, null);
-        addAttribute("ResolutionInfo", "hResUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.RESOLUTION_UNITS));
-        addAttribute("ResolutionInfo", "widthUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DIMENSION_UNITS));
+        addAttribute("ResolutionInfo", "hResUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.RESOLUTION_UNITS));
+        addAttribute("ResolutionInfo", "widthUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.DIMENSION_UNITS));
         addAttribute("ResolutionInfo", "vRes", DATATYPE_FLOAT, true, null);
-        addAttribute("ResolutionInfo", "vResUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.RESOLUTION_UNITS));
-        addAttribute("ResolutionInfo", "heightUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DIMENSION_UNITS));
+        addAttribute("ResolutionInfo", "vResUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.RESOLUTION_UNITS));
+        addAttribute("ResolutionInfo", "heightUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.DIMENSION_UNITS));
 
         // root -> ImageResources -> UnicodeAlphaNames
         addElement("UnicodeAlphaNames", "ImageResources", 0, Integer.MAX_VALUE);
         addChildElement("UnicodeAlphaNames", "Name"); // TODO: Does this really work?
-
 
         // root -> ImageResources -> VersionInfo
         addElement("VersionInfo", "ImageResources", CHILD_POLICY_EMPTY);
@@ -229,10 +231,10 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addObjectValue("XMP", Document.class, true, null);
 
         // root -> Layers
-        addElement("Layers", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_REPEAT);
+        addElement("Layers", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, 0, Short.MAX_VALUE);
 
         // root -> Layers -> LayerInfo
-        addElement("LayerInfo", "Layers", CHILD_POLICY_REPEAT);
+        addElement("LayerInfo", "Layers", CHILD_POLICY_EMPTY);
         addAttribute("LayerInfo", "name", DATATYPE_STRING, false, "");
         addAttribute("LayerInfo", "top", DATATYPE_INTEGER, false, "0");
         addAttribute("LayerInfo", "left", DATATYPE_INTEGER, false, "0");
@@ -256,6 +258,18 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addAttribute("GlobalLayerMask", "colors", DATATYPE_INTEGER, false, 4, 4);
         addAttribute("GlobalLayerMask", "opacity", DATATYPE_INTEGER, false, "0");
         addAttribute("GlobalLayerMask", "kind", DATATYPE_STRING, false, "layer", Arrays.asList("selected", "protected", "layer"));
+    }
+
+    private static <T> List<T> asListNoNulls(final T[] values) {
+        List<T> list = new ArrayList<>(values.length);
+
+        for (T value : values) {
+            if (value != null) {
+                list.add(value);
+            }
+        }
+
+        return list;
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
 import javax.imageio.spi.IIORegistry;
@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertFalse;
@@ -22,7 +23,7 @@ import static org.junit.Assert.assertFalse;
  * @author last modified by $Author: haraldk$
  * @version $Id: ICOImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class PICTImageReaderTest extends ImageReaderAbstractTestCase<PICTImageReader> {
+public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader> {
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new ByteArrayImageInputStreamSpi());
@@ -71,7 +72,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTestCase<PICTImageRe
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("pict");
+        return Collections.singletonList("pict");
     }
 
     protected List<String> getSuffixes() {

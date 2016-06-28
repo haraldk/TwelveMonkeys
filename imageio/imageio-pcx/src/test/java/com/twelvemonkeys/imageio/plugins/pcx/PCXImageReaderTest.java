@@ -28,13 +28,14 @@
 
 package com.twelvemonkeys.imageio.plugins.pcx;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,7 +45,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: PCXImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
-public class PCXImageReaderTest extends ImageReaderAbstractTestCase<PCXImageReader> {
+public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -91,7 +92,7 @@ public class PCXImageReaderTest extends ImageReaderAbstractTestCase<PCXImageRead
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList("pcx");
+        return Collections.singletonList("pcx");
     }
 
     @Override

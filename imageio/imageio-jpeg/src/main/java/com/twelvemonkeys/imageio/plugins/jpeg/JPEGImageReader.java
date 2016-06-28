@@ -28,9 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
@@ -112,7 +112,7 @@ public class JPEGImageReader extends ImageReaderBase {
     private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
 
     private static Map<Integer, List<String>> createSegmentIds() {
-        Map<Integer, List<String>> map = new LinkedHashMap<Integer, List<String>>();
+        Map<Integer, List<String>> map = new LinkedHashMap<>();
 
         // Need all APP markers to be able to re-generate proper metadata later
         for (int appMarker = JPEG.APP0; appMarker <= JPEG.APP15; appMarker++) {
@@ -152,10 +152,10 @@ public class JPEGImageReader extends ImageReaderBase {
     /** Cached list of JPEG segments we filter from the underlying stream */
     private List<JPEGSegment> segments;
 
-    JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
+    protected JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
-        this.delegate = Validate.notNull(delegate);
 
+        this.delegate = Validate.notNull(delegate);
         progressDelegator = new ProgressDelegator();
     }
 
@@ -224,7 +224,7 @@ public class JPEGImageReader extends ImageReaderBase {
         JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
         if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<ImageTypeSpecifier>();
+            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
             // Add the standard types, we can always convert to these
             typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
             typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
@@ -268,10 +268,15 @@ public class JPEGImageReader extends ImageReaderBase {
     @Override
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         // If delegate can determine the spec, we'll just go with that
-        ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
+        try {
+            ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
 
-        if (rawType != null) {
-            return rawType;
+            if (rawType != null) {
+                return rawType;
+            }
+        }
+        catch (NullPointerException ignore) {
+            // Fall through
         }
 
         // Otherwise, consult the image metadata
@@ -298,7 +303,9 @@ public class JPEGImageReader extends ImageReaderBase {
         super.setInput(input, seekForwardOnly, ignoreMetadata);
 
         // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
-        delegate.setInput(imageInput != null ? new JPEGSegmentImageInputStream(imageInput) : null, seekForwardOnly, ignoreMetadata);
+        delegate.setInput(imageInput != null
+                          ? new JPEGSegmentImageInputStream(imageInput)
+                          : null, seekForwardOnly, ignoreMetadata);
     }
 
     @Override
@@ -311,22 +318,10 @@ public class JPEGImageReader extends ImageReaderBase {
         assertInput();
         checkBounds(imageIndex);
 
-//        CompoundDirectory exif = getExif();
-//        if (exif != null) {
-//            System.err.println("exif: " + exif);
-//            System.err.println("Orientation: " + exif.getEntryById(TIFF.TAG_ORIENTATION));
-//            Entry exifIFDEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
-//
-//            if (exifIFDEntry != null) {
-//                Directory exifIFD = (Directory) exifIFDEntry.getValue();
-//                System.err.println("PixelXDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_X_DIMENSION));
-//                System.err.println("PixelYDimension: " + exifIFD.getEntryById(EXIF.TAG_PIXEL_Y_DIMENSION));
-//            }
-//        }
-
         SOFSegment sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
         AdobeDCTSegment adobeDCT = getAdobeDCT();
+        boolean bogusAdobeDCT = false;
 
         if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() != 3 ||
                 adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() != 4)) {
@@ -337,6 +332,7 @@ public class JPEGImageReader extends ImageReaderBase {
                     sof.marker & 0xf, sof.componentsInFrame()
             ));
 
+            bogusAdobeDCT = true;
             adobeDCT = null;
         }
 
@@ -345,11 +341,11 @@ public class JPEGImageReader extends ImageReaderBase {
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         if (delegate.canReadRaster() && (
+                bogusAdobeDCT ||
                 sourceCSType == JPEGColorSpace.CMYK ||
                 sourceCSType == JPEGColorSpace.YCCK ||
-                adobeDCT != null && adobeDCT.getTransform() == AdobeDCTSegment.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile)) ||
-                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null) { // TODO: Issue warning?
+                profile != null && !ColorSpaces.isCS_sRGB(profile) ||
+                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
@@ -371,6 +367,10 @@ public class JPEGImageReader extends ImageReaderBase {
         int origHeight = getHeight(imageIndex);
 
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
+        // TODO: Avoid creating destination here, if possible (as it saves time and memory)
+        // If YCbCr or RGB, we could instead create a BufferedImage around the converted raster directly.
+        // If YCCK or CMYK, we could instead create a BufferedImage around the converted raster,
+        // leaving the fourth band as alpha (or pretend it's not there, by creating a child raster).
         BufferedImage image = getDestination(param, imageTypes, origWidth, origHeight);
         WritableRaster destination = image.getRaster();
 
@@ -404,6 +404,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 if (DEBUG) {
                     System.err.println("Converting from " + intendedCS + " to " + (image.getColorModel().getColorSpace().isCS_sRGB() ? "sRGB" : image.getColorModel().getColorSpace()));
                 }
+
                 convert = new ColorConvertOp(intendedCS, image.getColorModel().getColorSpace(), null);
             }
             // Else, pass through with no conversion
@@ -462,10 +463,13 @@ public class JPEGImageReader extends ImageReaderBase {
 
             // Apply source color conversion from implicit color space
             if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.YCbCrA) {
-                YCbCrConverter.convertYCbCr2RGB(raster);
+                convertYCbCr2RGB(raster);
             }
             else if (csType == JPEGColorSpace.YCCK) {
-                YCbCrConverter.convertYCCK2CMYK(raster);
+                // TODO: Need to rethink this (non-) inversion, see #147
+                // TODO: Allow param to specify inversion, or possibly the PDF decode array
+                // flag0 bit 15, blend = 1 see http://graphicdesign.stackexchange.com/questions/12894/cmyk-jpegs-extracted-from-pdf-appear-inverted
+                convertYCCK2CMYK(raster);
             }
             else if (csType == JPEGColorSpace.CMYK) {
                 invertCMYK(raster);
@@ -620,7 +624,7 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
+    protected ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
         // NOTE: This is probably not the right way to do it... :-P
         // TODO: Consider moving method to ColorSpaces class or new class in imageio.color package
 
@@ -670,14 +674,9 @@ public class JPEGImageReader extends ImageReaderBase {
 
             segments = JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
         }
-        catch (IIOException ignore) {
+        catch (IIOException | IllegalArgumentException ignore) {
             if (DEBUG) {
                 ignore.printStackTrace();
-            }
-        }
-        catch (IllegalArgumentException foo) {
-            if (DEBUG) {
-                foo.printStackTrace();
             }
         }
         finally {
@@ -699,7 +698,7 @@ public class JPEGImageReader extends ImageReaderBase {
             if ((marker == ALL_APP_MARKERS && segment.marker() >= JPEG.APP0 && segment.marker() <= JPEG.APP15 || segment.marker() == marker)
                     && (identifier == null || identifier.equals(segment.identifier()))) {
                 if (appSegments == Collections.EMPTY_LIST) {
-                    appSegments = new ArrayList<JPEGSegment>(segments.size());
+                    appSegments = new ArrayList<>(segments.size());
                 }
 
                 appSegments.add(segment);
@@ -831,7 +830,7 @@ public class JPEGImageReader extends ImageReaderBase {
         return data;
     }
 
-    ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
+    protected ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
@@ -853,7 +852,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 return null;
             }
 
-            return readICCProfileSafe(stream);
+            return readICCProfileSafe(stream, allowBadIndexes);
         }
         else if (!segments.isEmpty()) {
             // NOTE: This is probably over-complicated, as I've never encountered ICC_PROFILE chunks out of order...
@@ -900,15 +899,17 @@ public class JPEGImageReader extends ImageReaderBase {
                 streams[badICC ? i : chunkNumber - 1] = stream;
             }
 
-            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))));
+            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))), allowBadIndexes);
         }
 
         return null;
     }
 
-    private ICC_Profile readICCProfileSafe(final InputStream stream) throws IOException {
+    private ICC_Profile readICCProfileSafe(final InputStream stream, final boolean allowBadProfile) throws IOException {
         try {
-            return ICC_Profile.getInstance(stream);
+            ICC_Profile profile = ICC_Profile.getInstance(stream);
+
+            return allowBadProfile ? profile : ColorSpaces.validateProfile(profile);
         }
         catch (RuntimeException e) {
             // NOTE: Throws either IllegalArgumentException or CMMException, depending on platform.
@@ -941,6 +942,11 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     @Override
+    public ImageReadParam getDefaultReadParam() {
+        return delegate.getDefaultReadParam();
+    }
+
+    @Override
     public boolean readerSupportsThumbnails() {
         return true; // We support EXIF, JFIF and JFXX style thumbnails
     }
@@ -949,7 +955,7 @@ public class JPEGImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
 
         if (thumbnails == null) {
-            thumbnails = new ArrayList<ThumbnailReader>();
+            thumbnails = new ArrayList<>();
             ThumbnailReadProgressListener thumbnailProgressDelegator = new ThumbnailProgressDelegate();
 
             // Read JFIF thumbnails if present
@@ -1101,104 +1107,31 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    /**
-     * Static inner class for lazy-loading of conversion tables.
-     *
-     * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
-     * @author Original code by Werner Randelshofer
-     */
-    static final class YCbCrConverter {
-        /** Define tables for YCC->RGB color space conversion. */
-        private final static int SCALEBITS = 16;
-        private final static int MAXJSAMPLE = 255;
-        private final static int CENTERJSAMPLE = 128;
-        private final static int ONE_HALF = 1 << (SCALEBITS - 1);
+    public static void convertYCbCr2RGB(final Raster raster) {
+        final int height = raster.getHeight();
+        final int width = raster.getWidth();
+        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
-        private final static int[] Cr_R_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cb_B_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cr_G_LUT = new int[MAXJSAMPLE + 1];
-        private final static int[] Cb_G_LUT = new int[MAXJSAMPLE + 1];
-
-        /**
-         * Initializes tables for YCC->RGB color space conversion.
-         */
-        private static void buildYCCtoRGBtable() {
-            if (DEBUG) {
-                System.err.println("Building YCC conversion table");
-            }
-
-            for (int i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
-                // i is the actual input pixel value, in the range 0..MAXJSAMPLE
-                // The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE
-                // Cr=>R value is nearest int to 1.40200 * x
-                Cr_R_LUT[i] = (int) ((1.40200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-                // Cb=>B value is nearest int to 1.77200 * x
-                Cb_B_LUT[i] = (int) ((1.77200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-                // Cr=>G value is scaled-up -0.71414 * x
-                Cr_G_LUT[i] = -(int) (0.71414 * (1 << SCALEBITS) + 0.5) * x;
-                // Cb=>G value is scaled-up -0.34414 * x
-                // We also add in ONE_HALF so that need not do it in inner loop
-                Cb_G_LUT[i] = -(int) ((0.34414) * (1 << SCALEBITS) + 0.5) * x + ONE_HALF;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                YCbCrConverter.convertYCbCr2RGB(data, data, (x + y * width) * 3);
             }
         }
+    }
 
-        static {
-            buildYCCtoRGBtable();
-        }
+    public static void convertYCCK2CMYK(final Raster raster) {
+        final int height = raster.getHeight();
+        final int width = raster.getWidth();
+        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
-        static void convertYCbCr2RGB(final Raster raster) {
-            final int height = raster.getHeight();
-            final int width = raster.getWidth();
-            final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    convertYCbCr2RGB(data, data, (x + y * width) * 3);
-                }
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int offset = (x + y * width) * 4;
+                // YCC -> CMY
+                YCbCrConverter.convertYCbCr2RGB(data, data, offset);
+                // Inverse K
+                data[offset + 3] = (byte) (0xff - data[offset + 3] & 0xff);
             }
-        }
-
-        static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
-            int y  = yCbCr[offset    ] & 0xff;
-            int cr = yCbCr[offset + 2] & 0xff;
-            int cb = yCbCr[offset + 1] & 0xff;
-
-            rgb[offset    ] = clamp(y + Cr_R_LUT[cr]);
-            rgb[offset + 1] = clamp(y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            rgb[offset + 2] = clamp(y + Cb_B_LUT[cb]);
-        }
-
-        static void convertYCCK2CMYK(final Raster raster) {
-            final int height = raster.getHeight();
-            final int width = raster.getWidth();
-            final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    convertYCCK2CMYK(data, data, (x + y * width) * 4);
-                }
-            }
-        }
-
-        private static void convertYCCK2CMYK(byte[] ycck, byte[] cmyk, int offset) {
-            // Inverted
-            int y  = 255 - ycck[offset    ] & 0xff;
-            int cb = 255 - ycck[offset + 1] & 0xff;
-            int cr = 255 - ycck[offset + 2] & 0xff;
-            int k  = 255 - ycck[offset + 3] & 0xff;
-
-            int cmykC = MAXJSAMPLE - (y + Cr_R_LUT[cr]);
-            int cmykM = MAXJSAMPLE - (y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-            int cmykY = MAXJSAMPLE - (y + Cb_B_LUT[cb]);
-
-            cmyk[offset    ] = clamp(cmykC);
-            cmyk[offset + 1] = clamp(cmykM);
-            cmyk[offset + 2] = clamp(cmykY);
-            cmyk[offset + 3] = (byte) k; // K passes through unchanged
-        }
-
-        private static byte clamp(int val) {
-            return (byte) Math.max(0, Math.min(255, val));
         }
     }
 
@@ -1297,7 +1230,68 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     public static void main(final String[] args) throws IOException {
-        for (final String arg : args) {
+        ImageIO.setUseCache(false);
+
+        int subX = 1;
+        int subY = 1;
+        int xOff = 0;
+        int yOff = 0;
+        Rectangle roi = null;
+        boolean metadata = false;
+        boolean thumbnails = false;
+
+        for (int argIdx = 0; argIdx < args.length; argIdx++) {
+            final String arg = args[argIdx];
+
+            if (arg.charAt(0) == '-') {
+                if (arg.equals("-s") || arg.equals("--subsample") && args.length > argIdx) {
+                    String[] sub = args[++argIdx].split(",");
+
+                    try {
+                        if (sub.length >= 4) {
+                            subX = Integer.parseInt(sub[0]);
+                            subY = Integer.parseInt(sub[1]);
+                            xOff = Integer.parseInt(sub[2]);
+                            yOff = Integer.parseInt(sub[3]);
+                        }
+                        else {
+                            subX = Integer.parseInt(sub[0]);
+                            subY = sub.length > 1 ? Integer.parseInt(sub[1]) : subX;
+                        }
+                    }
+                    catch (NumberFormatException e) {
+                        System.err.println("Bad sub sampling (x,y): '" + args[argIdx] + "'");
+                    }
+                }
+                else if (arg.equals("-r") || arg.equals("--roi") && args.length > argIdx) {
+                    String[] region = args[++argIdx].split(",");
+
+                    try {
+                        if (region.length >= 4) {
+                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[2]), Integer.parseInt(region[2]), Integer.parseInt(region[3]));
+                        }
+                        else {
+                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[2]));
+                        }
+                    }
+                    catch (IndexOutOfBoundsException | NumberFormatException e) {
+                        System.err.println("Bad source region ([x,y,]w, h): '" + args[argIdx] + "'");
+                    }
+                }
+                else if (arg.equals("-m") || arg.equals("--metadata")) {
+                    metadata = true;
+                }
+                else if (arg.equals("-t") || arg.equals("--thumbnails")) {
+                    thumbnails = true;
+                }
+                else {
+                    System.err.println("Unknown argument: '" + arg + "'");
+                    System.exit(-1);
+                }
+
+                continue;
+            }
+
             File file = new File(arg);
 
             ImageInputStream input = ImageIO.createImageInputStream(file);
@@ -1313,15 +1307,15 @@ public class JPEGImageReader extends ImageReaderBase {
                 continue;
             }
 
-            ImageReader reader = readers.next();
-//            System.err.println("Reading using: " + reader);
+            final ImageReader reader = readers.next();
+            System.err.println("Reading using: " + reader);
 
             reader.addIIOReadWarningListener(new IIOReadWarningListener() {
                 public void warningOccurred(ImageReader source, String warning) {
                     System.err.println("Warning: " + arg + ": " + warning);
                 }
             });
-            reader.addIIOReadProgressListener(new ProgressListenerBase() {
+            final ProgressListenerBase listener = new ProgressListenerBase() {
                 private static final int MAX_W = 78;
                 int lastProgress = 0;
 
@@ -1350,29 +1344,35 @@ public class JPEGImageReader extends ImageReaderBase {
 
                     System.out.println("]");
                 }
-            });
+            };
+            reader.addIIOReadProgressListener(listener);
 
             reader.setInput(input);
 
-            // For a tables-only image, we can't read image, but we should get metadata.
-            if (reader.getNumImages(true) == 0) {
-                IIOMetadata streamMetadata = reader.getStreamMetadata();
-                IIOMetadataNode streamNativeTree = (IIOMetadataNode) streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName());
-                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(streamNativeTree, false);
-                continue;
-            }
-
             try {
+                // For a tables-only image, we can't read image, but we should get metadata.
+                if (reader.getNumImages(true) == 0) {
+                    IIOMetadata streamMetadata = reader.getStreamMetadata();
+                    IIOMetadataNode streamNativeTree = (IIOMetadataNode) streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName());
+                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(streamNativeTree, false);
+                    continue;
+                }
+
+                BufferedImage image;
                 ImageReadParam param = reader.getDefaultReadParam();
-//            if (args.length > 1) {
-//                int sub = Integer.parseInt(args[1]);
-//                int sub = 4;
-//                param.setSourceSubsampling(sub, sub, 0, 0);
-//            }
-                BufferedImage image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                if (subX > 1 || subY > 1 || roi != null) {
+                    param.setSourceSubsampling(subX, subY, xOff, yOff);
+                    param.setSourceRegion(roi);
+
+                    image = reader.getImageTypes(0).next().createBufferedImage((reader.getWidth(0) + subX - 1)/ subX, (reader.getHeight(0) + subY - 1) / subY);
+                }
+                else {
+                    image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                }
                 param.setDestination(image);
 
-//                long start = System.currentTimeMillis();
+                long start = DEBUG ? System.currentTimeMillis() : 0;
+
                 try {
                     image = reader.read(0, param);
                 }
@@ -1383,12 +1383,13 @@ public class JPEGImageReader extends ImageReaderBase {
                         continue;
                     }
                 }
-//                System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
-//                System.err.println("image: " + image);
 
+                if (DEBUG) {
+                    System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
+                    System.err.println("image: " + image);
+                }
 
-//            image = new ResampleOp(reader.getWidth(0) / 4, reader.getHeight(0) / 4, ResampleOp.FILTER_LANCZOS).filter(image, null);
-
+                /*
                 int maxW = 1280;
                 int maxH = 800;
                 if (image.getWidth() > maxW || image.getHeight() > maxH) {
@@ -1402,28 +1403,45 @@ public class JPEGImageReader extends ImageReaderBase {
                     }
 //                    System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
                 }
+                */
 
                 showIt(image, String.format("Image: %s [%d x %d]", file.getName(), reader.getWidth(0), reader.getHeight(0)));
 
-                try {
-                    IIOMetadata imageMetadata = reader.getImageMetadata(0);
-                    System.out.println("Metadata for File: " + file.getName());
-                    System.out.println("Native:");
-                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
-                    System.out.println("Standard:");
-                    new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
-                    System.out.println();
+                if (metadata) {
+                    try {
+                        IIOMetadata imageMetadata = reader.getImageMetadata(0);
+                        System.out.println("Metadata for File: " + file.getName());
 
-                    int numThumbnails = reader.getNumThumbnails(0);
-                    for (int i = 0; i < numThumbnails; i++) {
-                        BufferedImage thumbnail = reader.readThumbnail(0, i);
-//                        System.err.println("thumbnail: " + thumbnail);
-                        showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
+                        if (imageMetadata.getNativeMetadataFormatName() != null) {
+                            System.out.println("Native:");
+                            new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+                        }
+                        if (imageMetadata.isStandardMetadataFormatSupported()) {
+                            System.out.println("Standard:");
+                            new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                        }
+
+                        System.out.println();
+                    }
+                    catch (IIOException e) {
+                        System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
-                catch (IIOException e) {
-                    System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
-                    e.printStackTrace();
+
+                if (thumbnails) {
+                    try {
+                        int numThumbnails = reader.getNumThumbnails(0);
+                        for (int i = 0; i < numThumbnails; i++) {
+                            BufferedImage thumbnail = reader.readThumbnail(0, i);
+                            //                        System.err.println("thumbnail: " + thumbnail);
+                            showIt(thumbnail, String.format("Thumbnail: %s [%d x %d]", file.getName(), thumbnail.getWidth(), thumbnail.getHeight()));
+                        }
+                    }
+                    catch (IIOException e) {
+                        System.err.println("Could not read thumbnails: " + arg + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
                 }
             }
             catch (Throwable t) {

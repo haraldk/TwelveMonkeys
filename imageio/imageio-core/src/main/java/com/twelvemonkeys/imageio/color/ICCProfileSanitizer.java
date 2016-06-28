@@ -14,7 +14,7 @@ import java.awt.color.ICC_Profile;
 interface ICCProfileSanitizer {
     void fixProfile(ICC_Profile profile, byte[] profileHeader);
 
-    static class Factory {
+    class Factory {
         static ICCProfileSanitizer get() {
             // Strategy pattern:
             //  - KCMSSanitizerStrategy - Current behaviour, default for Java 1.6 and Oracle JRE 1.7

@@ -38,13 +38,14 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
  * @version $Id: EXIFEntry.java,v 1.0 Nov 13, 2009 5:47:35 PM haraldk Exp$
  */
 final class EXIFEntry extends AbstractEntry {
+    // TODO: Expose as TIFFEntry
     final private short type;
 
     EXIFEntry(final int identifier, final Object value, final short type) {
         super(identifier, value);
 
-        if (type < 1 || type > TIFF.TYPE_NAMES.length) {
-            throw new IllegalArgumentException(String.format("Illegal EXIF type: %s", type));
+        if (type < 1 || type >= TIFF.TYPE_NAMES.length) {
+            throw new IllegalArgumentException(String.format("Illegal TIFF type: %s", type));
         }
 
         // TODO: Validate that type is applicable to value?
@@ -71,6 +72,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "IPTC";
             case TIFF.TAG_PHOTOSHOP:
                 return "Adobe";
+            case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:
+                return "ImageSourceData";
             case TIFF.TAG_ICC_PROFILE:
                 return "ICCProfile";
 
@@ -84,8 +87,16 @@ final class EXIFEntry extends AbstractEntry {
                 return "Compression";
             case TIFF.TAG_PHOTOMETRIC_INTERPRETATION:
                 return "PhotometricInterpretation";
+            case TIFF.TAG_FILL_ORDER:
+                return "FillOrder";
+            case TIFF.TAG_DOCUMENT_NAME:
+                return "DocumentName";
             case TIFF.TAG_IMAGE_DESCRIPTION:
                 return "ImageDescription";
+            case TIFF.TAG_MAKE:
+                return "Make";
+            case TIFF.TAG_MODEL:
+                return "Model";
             case TIFF.TAG_STRIP_OFFSETS:
                 return "StripOffsets";
             case TIFF.TAG_ORIENTATION:
@@ -104,14 +115,10 @@ final class EXIFEntry extends AbstractEntry {
                 return "PlanarConfiguration";
             case TIFF.TAG_RESOLUTION_UNIT:
                 return "ResolutionUnit";
-            case TIFF.TAG_JPEG_INTERCHANGE_FORMAT:
-                return "JPEGInterchangeFormat";
-            case TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH:
-                return "JPEGInterchangeFormatLength";
-            case TIFF.TAG_MAKE:
-                return "Make";
-            case TIFF.TAG_MODEL:
-                return "Model";
+            case TIFF.TAG_PAGE_NAME:
+                return "PageName";
+            case TIFF.TAG_PAGE_NUMBER:
+                return "PageNumber";
             case TIFF.TAG_SOFTWARE:
                 return "Software";
             case TIFF.TAG_DATE_TIME:
@@ -138,10 +145,20 @@ final class EXIFEntry extends AbstractEntry {
                 return "YCbCrPositioning";
             case TIFF.TAG_COLOR_MAP:
                 return "ColorMap";
+            case TIFF.TAG_INK_SET:
+                return "InkSet";
+            case TIFF.TAG_INK_NAMES:
+                return "InkNames";
             case TIFF.TAG_EXTRA_SAMPLES:
                 return "ExtraSamples";
             case TIFF.TAG_SAMPLE_FORMAT:
                 return "SampleFormat";
+            case TIFF.TAG_JPEG_TABLES:
+                return "JPEGTables";
+            case TIFF.TAG_JPEG_INTERCHANGE_FORMAT:
+                return "JPEGInterchangeFormat";
+            case TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH:
+                return "JPEGInterchangeFormatLength";
 
             case TIFF.TAG_SUB_IFD:
                 return "SubIFD";
@@ -176,6 +193,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "Flash";
             case EXIF.TAG_FOCAL_LENGTH:
                 return "FocalLength";
+            case EXIF.TAG_SENSING_METHOD:
+                return "SensingMethod";
             case EXIF.TAG_FILE_SOURCE:
                 return "FileSource";
             case EXIF.TAG_SCENE_TYPE:
@@ -189,7 +208,7 @@ final class EXIFEntry extends AbstractEntry {
             case EXIF.TAG_WHITE_BALANCE:
                 return "WhiteBalance";
             case EXIF.TAG_DIGITAL_ZOOM_RATIO:
-                return "DigitalZoomRation";
+                return "DigitalZoomRatio";
             case EXIF.TAG_FOCAL_LENGTH_IN_35_MM_FILM:
                 return "FocalLengthIn35mmFilm";
             case EXIF.TAG_SCENE_CAPTURE_TYPE:
@@ -202,6 +221,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "Saturation";
             case EXIF.TAG_SHARPNESS:
                 return "Sharpness";
+            case EXIF.TAG_IMAGE_UNIQUE_ID:
+                return "ImageUniqueID";
 
             case EXIF.TAG_FLASHPIX_VERSION:
                 return "FlashpixVersion";
@@ -214,6 +235,8 @@ final class EXIFEntry extends AbstractEntry {
                 return "DateTimeDigitized";
             case EXIF.TAG_IMAGE_NUMBER:
                 return "ImageNumber";
+            case EXIF.TAG_MAKER_NOTE:
+                return "MakerNote";
             case EXIF.TAG_USER_COMMENT:
                 return "UserComment";
 
@@ -259,6 +282,6 @@ final class EXIFEntry extends AbstractEntry {
 
     @Override
     public String getTypeName() {
-        return TIFF.TYPE_NAMES[type - 1];
+        return TIFF.TYPE_NAMES[type];
     }
 }

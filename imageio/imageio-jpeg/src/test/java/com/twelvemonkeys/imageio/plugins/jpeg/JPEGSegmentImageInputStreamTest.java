@@ -74,6 +74,24 @@ public class JPEGSegmentImageInputStreamTest {
         stream.read();
     }
 
+    @Test(expected = IIOException.class)
+    public void testStreamNonJPEGArray() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[] {42, 42, 0, 0, 77, 99})));
+        stream.readFully(new byte[1]);
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamEmpty() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
+        stream.read();
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamEmptyArray() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
+        stream.readFully(new byte[1]);
+    }
+
     @Test
     public void testStreamRealData() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-internal-kodak-srgb-jfif.jpg")));

@@ -66,7 +66,8 @@ class PSDEntry extends AbstractEntry {
                         field.setAccessible(true);
 
                         if (field.get(null).equals(getIdentifier())) {
-                            return StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(), true);
+                            String fieldName = StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(), true);
+                            return name != null ? fieldName + ": " + name : fieldName;
                         }
                     }
                 }

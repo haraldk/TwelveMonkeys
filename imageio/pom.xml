@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.twelvemonkeys</groupId>
         <artifactId>twelvemonkeys</artifactId>
-        <version>3.1-SNAPSHOT</version>
+        <version>3.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
@@ -26,10 +26,12 @@
         <!-- Support -->
         <module>imageio-core</module>
         <module>imageio-metadata</module>
+        <!--<module>imageio-stream</module>-->
         <module>imageio-clippath</module>
 
         <!-- Stand-alone readers/writers -->
         <module>imageio-bmp</module>
+        <module>imageio-hdr</module>
         <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>
@@ -75,14 +77,14 @@
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-lang</artifactId>
             <version>${project.version}</version>
-            <classifier>tests</classifier>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
             <artifactId>common-io</artifactId>
             <version>${project.version}</version>
-            <classifier>tests</classifier>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
 
@@ -137,7 +139,7 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
-                <classifier>tests</classifier>
+                <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
         </dependencies>
