@@ -352,7 +352,7 @@ public class JPEGImageReader extends ImageReaderBase {
             }
 
             // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMYK and other good types?
-            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, ensureDisplayProfile(profile));
+            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, profile);
         }
 
         if (DEBUG) {
@@ -418,7 +418,10 @@ public class JPEGImageReader extends ImageReaderBase {
                                 "Colors may look incorrect."
                 );
 
-                convert = new ColorConvertOp(cmykCS, image.getColorModel().getColorSpace(), null);
+                // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
+                if (cmykCS != image.getColorModel().getColorSpace()) {
+                    convert = new ColorConvertOp(cmykCS, image.getColorModel().getColorSpace(), null);
+                }
             }
             else {
                 // ColorConvertOp using non-ICC CS is deadly slow, fall back to fast conversion instead
@@ -909,7 +912,8 @@ public class JPEGImageReader extends ImageReaderBase {
         try {
             ICC_Profile profile = ICC_Profile.getInstance(stream);
 
-            return allowBadProfile ? profile : ColorSpaces.validateProfile(profile);
+            // NOTE: Need to ensure we have a display profile *before* validating, for the caching to work
+            return allowBadProfile ? profile : ColorSpaces.validateProfile(ensureDisplayProfile(profile));
         }
         catch (RuntimeException e) {
             // NOTE: Throws either IllegalArgumentException or CMMException, depending on platform.

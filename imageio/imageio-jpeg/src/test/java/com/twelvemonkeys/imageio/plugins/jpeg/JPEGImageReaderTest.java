@@ -896,6 +896,71 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
+    public void testReadCMYKAsCMYKSameRGBasRGB() throws IOException {
+        // Make sure CMYK images can be read and still contain their original (embedded) color profile
+        JPEGImageReader reader = createReader();
+
+        List<TestData> cmykData = getCMYKData();
+
+        for (TestData data : cmykData) {
+            reader.setInput(data.getInputStream());
+            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+
+            assertTrue(data + " has no image types", types.hasNext());
+
+            ImageTypeSpecifier cmykType = null;
+            ImageTypeSpecifier rgbType = null;
+
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+
+                int csType = type.getColorModel().getColorSpace().getType();
+                if (rgbType == null && csType == ColorSpace.TYPE_RGB) {
+                    rgbType = type;
+                }
+                else if (cmykType == null && csType == ColorSpace.TYPE_CMYK) {
+                    cmykType = type;
+                }
+
+                if (rgbType != null && cmykType != null) {
+                    break;
+                }
+            }
+
+            assertNotNull("No RGB types for " + data, rgbType);
+            assertNotNull("No CMYK types for " + data, cmykType);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(reader.getWidth(0), 8)); // We don't really need to read it all
+
+            param.setDestinationType(cmykType);
+            BufferedImage imageCMYK = reader.read(0, param);
+
+            param.setDestinationType(rgbType);
+            BufferedImage imageRGB = reader.read(0, param);
+
+            assertNotNull(imageCMYK);
+            assertEquals(ColorSpace.TYPE_CMYK, imageCMYK.getColorModel().getColorSpace().getType());
+
+            assertNotNull(imageRGB);
+            assertEquals(ColorSpace.TYPE_RGB, imageRGB.getColorModel().getColorSpace().getType());
+
+            for (int y = 0; y < imageCMYK.getHeight(); y++) {
+                for (int x = 0; x < imageCMYK.getWidth(); x++) {
+                    int cmykAsRGB = imageCMYK.getRGB(x, y);
+                    int rgb = imageRGB.getRGB(x, y);
+
+                    if (rgb != cmykAsRGB) {
+                        assertRGBEquals(String.format("Diff at [%d, %d]: %s != %s", x, y, String.format("#%04x", cmykAsRGB), String.format("#%04x", rgb)), rgb, cmykAsRGB, 2);
+                    }
+                }
+            }
+        }
+
+        reader.dispose();
+    }
+
+    @Test
     public void testReadNoJFIFYCbCr() throws IOException {
         // Basically the same issue as http://stackoverflow.com/questions/9340569/jpeg-image-with-wrong-colors
         JPEGImageReader reader = createReader();
@@ -929,9 +994,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
      * Slightly fuzzy RGB equals method. Tolerance +/-5 steps.
      */
     private void assertRGBEquals(int expectedRGB, int actualRGB) {
-        assertEquals((expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
-        assertEquals((expectedRGB >>  8) & 0xff, (actualRGB >>  8) & 0xff, 5);
-        assertEquals((expectedRGB      ) & 0xff, (actualRGB      ) & 0xff, 5);
+        assertRGBEquals("RGB values differ", expectedRGB, actualRGB, 5);
+    }
+
+    private void assertRGBEquals(String message, int expectedRGB, int actualRGB, int tolerance) {
+        assertEquals(message, (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, tolerance);
+        assertEquals(message, (expectedRGB >>  8) & 0xff, (actualRGB >>  8) & 0xff, tolerance);
+        assertEquals(message, (expectedRGB      ) & 0xff, (actualRGB      ) & 0xff, tolerance);
     }
 
     // Regression: Test subsampling offset within  of bounds
