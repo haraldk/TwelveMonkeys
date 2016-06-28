@@ -206,10 +206,15 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         try (ImageInputStream stream = testData.getInputStream()) {
             TIFFImageReader reader = createReader();
             reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
             BufferedImage image = reader.read(0);
 
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("JPEGInterchangeFormatLength"));
         }
     }
 
