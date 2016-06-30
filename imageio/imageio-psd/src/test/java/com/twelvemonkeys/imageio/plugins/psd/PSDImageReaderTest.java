@@ -138,15 +138,17 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testThumbnailReading() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(0).getInputStream());
+        try (ImageInputStream stream = getTestData().get(0).getInputStream()) {
+            imageReader.setInput(stream);
 
-        assertEquals(1, imageReader.getNumThumbnails(0));
+            assertEquals(1, imageReader.getNumThumbnails(0));
 
-        BufferedImage thumbnail = imageReader.readThumbnail(0, 0);
-        assertNotNull(thumbnail);
+            BufferedImage thumbnail = imageReader.readThumbnail(0, 0);
+            assertNotNull(thumbnail);
 
-        assertEquals(128, thumbnail.getWidth());
-        assertEquals(96, thumbnail.getHeight());
+            assertEquals(128, thumbnail.getWidth());
+            assertEquals(96, thumbnail.getHeight());
+        }
     }
 
     @Test
@@ -190,41 +192,43 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testThumbnailReadingOutOfBounds() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(0).getInputStream());
+        try (ImageInputStream stream = getTestData().get(0).getInputStream()) {
+            imageReader.setInput(stream);
 
-        int numImages = imageReader.getNumImages(true);
+            int numImages = imageReader.getNumImages(true);
 
-        try {
-            imageReader.getNumThumbnails(numImages + 1);
-            fail("Expected IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException expected) {
-            assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
-        }
+            try {
+                imageReader.getNumThumbnails(numImages + 1);
+                fail("Expected IndexOutOfBoundsException");
+            }
+            catch (IndexOutOfBoundsException expected) {
+                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+            }
 
-        try {
-            imageReader.getThumbnailWidth(-1, 0);
-            fail("Expected IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException expected) {
-            assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
-        }
+            try {
+                imageReader.getThumbnailWidth(-1, 0);
+                fail("Expected IndexOutOfBoundsException");
+            }
+            catch (IndexOutOfBoundsException expected) {
+                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+            }
 
-        try {
-            imageReader.getThumbnailHeight(0, -2);
-            fail("Expected IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException expected) {
-            // Sloppy...
-            assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("-2"));
-        }
+            try {
+                imageReader.getThumbnailHeight(0, -2);
+                fail("Expected IndexOutOfBoundsException");
+            }
+            catch (IndexOutOfBoundsException expected) {
+                // Sloppy...
+                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("-2"));
+            }
 
-        try {
-            imageReader.readThumbnail(numImages + 99, 42);
-            fail("Expected IndexOutOfBoundsException");
-        }
-        catch (IndexOutOfBoundsException expected) {
-            assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+            try {
+                imageReader.readThumbnail(numImages + 99, 42);
+                fail("Expected IndexOutOfBoundsException");
+            }
+            catch (IndexOutOfBoundsException expected) {
+                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+            }
         }
     }
 
@@ -232,67 +236,73 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testThumbnailDimensions() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(0).getInputStream());
+        try (ImageInputStream stream = getTestData().get(0).getInputStream()) {
+            imageReader.setInput(stream);
 
-        assertEquals(1, imageReader.getNumThumbnails(0));
+            assertEquals(1, imageReader.getNumThumbnails(0));
 
-        assertEquals(128, imageReader.getThumbnailWidth(0, 0));
-        assertEquals(96, imageReader.getThumbnailHeight(0, 0));
+            assertEquals(128, imageReader.getThumbnailWidth(0, 0));
+            assertEquals(96, imageReader.getThumbnailHeight(0, 0));
+        }
     }
 
     @Test
     public void testThumbnailReadListeners() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(0).getInputStream());
+        try (ImageInputStream stream = getTestData().get(0).getInputStream()) {
+            imageReader.setInput(stream);
 
-        final List<Object> sequnce = new ArrayList<>();
-        imageReader.addIIOReadProgressListener(new ProgressListenerBase() {
-            private float mLastPercentageDone = 0;
+            final List<Object> seqeunce = new ArrayList<>();
+            imageReader.addIIOReadProgressListener(new ProgressListenerBase() {
+                private float mLastPercentageDone = 0;
 
-            @Override
-            public void thumbnailStarted(final ImageReader pSource, final int pImageIndex, final int pThumbnailIndex) {
-                sequnce.add("started");
-            }
+                @Override
+                public void thumbnailStarted(final ImageReader pSource, final int pImageIndex, final int pThumbnailIndex) {
+                    seqeunce.add("started");
+                }
 
-            @Override
-            public void thumbnailComplete(final ImageReader pSource) {
-                sequnce.add("complete");
-            }
+                @Override
+                public void thumbnailComplete(final ImageReader pSource) {
+                    seqeunce.add("complete");
+                }
 
-            @Override
-            public void thumbnailProgress(final ImageReader pSource, final float pPercentageDone) {
-                // Optional
-                assertTrue("Listener invoked out of sequence", sequnce.size() == 1);
-                assertTrue(pPercentageDone >= mLastPercentageDone);
-            }
-        });
+                @Override
+                public void thumbnailProgress(final ImageReader pSource, final float pPercentageDone) {
+                    // Optional
+                    assertTrue("Listener invoked out of sequence", seqeunce.size() == 1);
+                    assertTrue(pPercentageDone >= mLastPercentageDone);
+                }
+            });
 
-        BufferedImage thumbnail = imageReader.readThumbnail(0, 0);
-        assertNotNull(thumbnail);
+            BufferedImage thumbnail = imageReader.readThumbnail(0, 0);
+            assertNotNull(thumbnail);
 
-        assertEquals("Listeners not invoked", 2, sequnce.size());
-        assertEquals("started", sequnce.get(0));
-        assertEquals("complete", sequnce.get(1));
+            assertEquals("Listeners not invoked", 2, seqeunce.size());
+            assertEquals("started", seqeunce.get(0));
+            assertEquals("complete", seqeunce.get(1));
+        }
     }
 
     @Test
     public void testReadLayers() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(3).getInputStream());
+        try (ImageInputStream stream = getTestData().get(3).getInputStream()) {
+            imageReader.setInput(stream);
 
-        int numImages = imageReader.getNumImages(true);
+            int numImages = imageReader.getNumImages(true);
 
-        assertEquals(3, numImages);
+            assertEquals(3, numImages);
 
-        for (int i = 0; i < numImages; i++) {
-            BufferedImage image = imageReader.read(i);
-            assertNotNull(image);
+            for (int i = 0; i < numImages; i++) {
+                BufferedImage image = imageReader.read(i);
+                assertNotNull(image);
 
-            // Make sure layers are correct size
-            assertEquals(image.getWidth(), imageReader.getWidth(i));
-            assertEquals(image.getHeight(), imageReader.getHeight(i));
+                // Make sure layers are correct size
+                assertEquals(image.getWidth(), imageReader.getWidth(i));
+                assertEquals(image.getHeight(), imageReader.getHeight(i));
+            }
         }
     }
 
@@ -300,31 +310,31 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testImageTypesLayers() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(3).getInputStream());
+        try (ImageInputStream stream = getTestData().get(3).getInputStream()) {
+            imageReader.setInput(stream);
 
-        int numImages = imageReader.getNumImages(true);
-        for (int i = 0; i < numImages; i++) {
-            ImageTypeSpecifier rawType = imageReader.getRawImageType(i);
-//            System.err.println("rawType: " + rawType);
-            assertNotNull(rawType);
+            int numImages = imageReader.getNumImages(true);
+            for (int i = 0; i < numImages; i++) {
+                ImageTypeSpecifier rawType = imageReader.getRawImageType(i);
+                assertNotNull(rawType);
 
-            Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
+                Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
 
-            assertNotNull(types);
-            assertTrue(types.hasNext());
+                assertNotNull(types);
+                assertTrue(types.hasNext());
 
-            boolean found = false;
+                boolean found = false;
 
-            while (types.hasNext()) {
-                ImageTypeSpecifier type = types.next();
-//                System.err.println("type: " + type);
+                while (types.hasNext()) {
+                    ImageTypeSpecifier type = types.next();
 
-                if (!found && (rawType == type || rawType.equals(type))) {
-                    found = true;
+                    if (!found && (rawType == type || rawType.equals(type))) {
+                        found = true;
+                    }
                 }
-            }
 
-            assertTrue("RAW image type not in type iterator", found);
+                assertTrue("RAW image type not in type iterator", found);
+            }
         }
     }
 
@@ -332,34 +342,36 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testReadLayersExplicitType() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(3).getInputStream());
+        try (ImageInputStream stream = getTestData().get(3).getInputStream()) {
+            imageReader.setInput(stream);
 
-        int numImages = imageReader.getNumImages(true);
-        for (int i = 0; i < numImages; i++) {
-            Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
+            int numImages = imageReader.getNumImages(true);
+            for (int i = 0; i < numImages; i++) {
+                Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
 
-            while (types.hasNext()) {
-                ImageTypeSpecifier type = types.next();
-                ImageReadParam param = imageReader.getDefaultReadParam();
-                param.setDestinationType(type);
-                BufferedImage image = imageReader.read(i, param);
+                while (types.hasNext()) {
+                    ImageTypeSpecifier type = types.next();
+                    ImageReadParam param = imageReader.getDefaultReadParam();
+                    param.setDestinationType(type);
+                    BufferedImage image = imageReader.read(i, param);
 
-                assertEquals(type.getBufferedImageType(), image.getType());
+                    assertEquals(type.getBufferedImageType(), image.getType());
 
-                if (type.getBufferedImageType() == 0) {
-                    // TODO: If type.getBIT == 0, test more
-                    // Compatible color model
-                    assertEquals(type.getNumComponents(), image.getColorModel().getNumComponents());
+                    if (type.getBufferedImageType() == 0) {
+                        // TODO: If type.getBIT == 0, test more
+                        // Compatible color model
+                        assertEquals(type.getNumComponents(), image.getColorModel().getNumComponents());
 
-                    // Same color space
-                    assertEquals(type.getColorModel().getColorSpace(), image.getColorModel().getColorSpace());
+                        // Same color space
+                        assertEquals(type.getColorModel().getColorSpace(), image.getColorModel().getColorSpace());
 
-                    // Same number of samples
-                    assertEquals(type.getNumBands(), image.getSampleModel().getNumBands());
+                        // Same number of samples
+                        assertEquals(type.getNumBands(), image.getSampleModel().getNumBands());
 
-                    // Same number of bits/sample
-                    for (int j = 0; j < type.getNumBands(); j++) {
-                        assertEquals(type.getBitsPerBand(j), image.getSampleModel().getSampleSize(j));
+                        // Same number of bits/sample
+                        for (int j = 0; j < type.getNumBands(); j++) {
+                            assertEquals(type.getBitsPerBand(j), image.getSampleModel().getSampleSize(j));
+                        }
                     }
                 }
             }
@@ -370,23 +382,73 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testReadLayersExplicitDestination() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        imageReader.setInput(getTestData().get(3).getInputStream());
+        try (ImageInputStream stream = getTestData().get(3).getInputStream()) {
+            imageReader.setInput(stream);
 
-        int numImages = imageReader.getNumImages(true);
-        for (int i = 0; i < numImages; i++) {
-            Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
-            int width = imageReader.getWidth(i);
-            int height = imageReader.getHeight(i);
+            int numImages = imageReader.getNumImages(true);
+            for (int i = 0; i < numImages; i++) {
+                Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
+                int width = imageReader.getWidth(i);
+                int height = imageReader.getHeight(i);
 
-            while (types.hasNext()) {
-                ImageTypeSpecifier type = types.next();
-                ImageReadParam param = imageReader.getDefaultReadParam();
-                BufferedImage destination = type.createBufferedImage(width, height);
-                param.setDestination(destination);
+                while (types.hasNext()) {
+                    ImageTypeSpecifier type = types.next();
+                    ImageReadParam param = imageReader.getDefaultReadParam();
+                    BufferedImage destination = type.createBufferedImage(width, height);
+                    param.setDestination(destination);
 
-                BufferedImage image = imageReader.read(i, param);
+                    BufferedImage image = imageReader.read(i, param);
 
-                assertSame(destination, image);
+                    assertSame(destination, image);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testGrayAlphaLayers() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        // The expected colors for each layer
+        int[] colors = new int[] {
+                -1, // Don't care
+                0xff000000,
+                0xffffffff,
+                0xff737373,
+                0xff3c3c3c,
+                0xff656565,
+                0xffc9c9c9,
+                0xff979797,
+                0xff5a5a5a
+        };
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/test_grayscale_boxes.psd"))) {
+            imageReader.setInput(stream);
+
+            int numImages = imageReader.getNumImages(true);
+            assertEquals(colors.length, numImages);
+
+            // Skip reading the merged composite image
+            for (int i = 1; i < numImages; i++) {
+                Iterator<ImageTypeSpecifier> types = imageReader.getImageTypes(i);
+                int width = imageReader.getWidth(i);
+                int height = imageReader.getHeight(i);
+
+                while (types.hasNext()) {
+                    ImageTypeSpecifier type = types.next();
+
+                    ImageReadParam param = imageReader.getDefaultReadParam();
+                    BufferedImage destination = type.createBufferedImage(width, height);
+                    param.setDestination(destination);
+
+                    BufferedImage image = imageReader.read(i, param);
+
+                    assertSame(destination, image);
+
+                    // NOTE: Allow some slack, as Java 1.7 and 1.8 color management differs slightly
+                    int rgb = image.getRGB(0, 0);
+                    assertRGBEquals(String.format("#%04x != #%04x", colors[i], rgb), colors[i], rgb, 1);
+                }
             }
         }
     }
