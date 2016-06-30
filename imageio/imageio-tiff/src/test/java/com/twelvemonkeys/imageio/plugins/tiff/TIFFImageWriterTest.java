@@ -47,6 +47,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -333,6 +335,56 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         assertEquals("wrong image count", 3, reader.getNumImages(true));
         for(int i = 0; i < reader.getNumImages(true); i++){
            reader.read(i);
+        }
+    }
+
+    @Test
+    public void testWriteCropped() throws IOException, URISyntaxException {
+        // TODO: Test 2, 4, 8 bit palette data + gray + ushort + float types?
+        List<URL> testData = Arrays.asList(
+                getClass().getResource("/tiff/quad-lzw.tif"),
+                getClass().getResource("/tiff/ccitt/group3_1d.tif")
+        );
+
+        for (URL resource : testData) {
+            // Read it
+            BufferedImage original = ImageIO.read(resource);
+
+            // Crop it
+            BufferedImage subimage = original.getSubimage(original.getWidth() / 4, original.getHeight() / 4, original.getWidth() / 2, original.getHeight() / 2);
+
+            // Store cropped
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+                ImageWriter imageWriter = createImageWriter();
+                imageWriter.setOutput(output);
+                imageWriter.write(subimage);
+            }
+
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(new FileOutputStream("C:\\temp\\test.tif"))) {
+                ImageWriter imageWriter = createImageWriter();
+                imageWriter.setOutput(output);
+                imageWriter.write(subimage);
+            }
+
+            // Re-read cropped
+            BufferedImage cropped = ImageIO.read(new ByteArrayImageInputStream(bytes.toByteArray()));
+
+            // Compare
+            assertImageEquals(String.format("Error comparing cropped to output: %s", new File(resource.toURI()).getName()), subimage, cropped);
+        }
+    }
+
+    private void assertImageEquals(final String message, final BufferedImage expected, final BufferedImage actual) {
+        assertNotNull(message, expected);
+        assertNotNull(message, actual);
+        assertEquals(message + ", widths differ", expected.getWidth(), actual.getWidth());
+        assertEquals(message + ", heights differ", expected.getHeight(), actual.getHeight());
+
+        for (int y = 0; y < expected.getHeight(); y++) {
+            for (int x = 0; x < expected.getWidth(); x++) {
+                assertEquals(String.format("%s, ARGB differs at (%s,%s)", message, x, y), expected.getRGB(x, y), actual.getRGB(x, y));
+            }
         }
     }
 }

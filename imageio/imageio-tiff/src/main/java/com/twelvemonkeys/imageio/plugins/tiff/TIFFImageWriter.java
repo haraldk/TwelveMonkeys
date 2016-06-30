@@ -385,8 +385,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
         long stripByteCount = 0;
 
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
+            int[] sampleSizes = renderedImage.getSampleModel().getSampleSize();
+            int pixelSize = 0;
+            for (int i = 0; i < sampleSizes.length; i++) {
+                pixelSize += sampleSizes[i];
+            }
+
             long ifdOffset = exifWriter.computeIFDOffsetSize(entries.values());
-            long dataLength = renderedImage.getWidth() * renderedImage.getHeight() * numComponents;
+            long dataLength = ((long) Math.ceil(renderedImage.getWidth() * pixelSize / 8.0)) * renderedImage.getHeight();
             long pointerPos = imageOutput.getStreamPosition() + dataLength + 4 + ifdOffset;
             imageOutput.writeInt((int) pointerPos);
         }
@@ -653,127 +659,120 @@ public final class TIFFImageWriter extends ImageWriterBase {
         final int tileWidth = renderedImage.getTileWidth();
 
         // TODO: SampleSize may differ between bands/banks
-        int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
-        final ByteBuffer buffer;
-        if (sampleSize == 1) {
-            buffer = ByteBuffer.allocate((tileWidth + 7) / 8);
+        SampleModel sampleModel = renderedImage.getSampleModel();
+
+        int[] sampleSizes = sampleModel.getSampleSize();
+        int pixelSize = 0;
+        int sampleSize = sampleSizes[0];
+        for (int i = 0; i < sampleSizes.length; i++) {
+            pixelSize += sampleSize;
+            if (sampleSize != sampleSizes[i]) {
+                throw new IIOException("Variable BitsPerSample not supported: " + Arrays.toString(sampleSizes));
+            }
         }
-        else {
-            buffer = ByteBuffer.allocate(tileWidth * renderedImage.getSampleModel().getNumBands() * sampleSize / 8);
-        }
-        // System.err.println("tileWidth: " + tileWidth);
+
+        final ByteBuffer buffer = ByteBuffer.allocate(((tileWidth * pixelSize) + 7) / 8);
 
         for (int yTile = minTileY; yTile < maxYTiles; yTile++) {
             for (int xTile = minTileX; xTile < maxXTiles; xTile++) {
                 final Raster tile = renderedImage.getTile(xTile, yTile);
+
+                final int offsetX = tile.getMinX();
+                final int offsetY = tile.getMinY();
+                final int tX = tile.getSampleModelTranslateX();
+                final int tY = tile.getSampleModelTranslateY();
+
+                // line width, not accounting for model translation
+                final int lineWidth = tile.getSampleModel().getWidth();
                 final DataBuffer dataBuffer = tile.getDataBuffer();
                 final int numBands = tile.getNumBands();
 
-                switch (dataBuffer.getDataType()) {
-                    case DataBuffer.TYPE_BYTE:
+                for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
+                    for (int y = 0; y < tileHeight; y++) {
+                        int yOff = (y + offsetY - tY) * lineWidth;
 
-//                        System.err.println("Writing " + numBands + "BYTE -> " + numBands + "BYTE");
-                        for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                            for (int y = 0; y < tileHeight; y++) {
-                                int steps = sampleSize == 1 ? (tileWidth + 7) / 8 : tileWidth;
-                                final int yOff = y * steps * numBands;
+                        for (int x = 0; x < tileWidth; x++) {
+                            int xOff = yOff + (x + offsetX - tX);
 
-                                for (int x = 0; x < steps; x++) {
-                                    final int xOff = yOff + x * numBands;
+                            for (int s = 0; s < numBands; s++) {
+                                switch (dataBuffer.getDataType()) {
+                                    case DataBuffer.TYPE_BYTE:
+                                        if (numBands == 1 && pixelSize != 8) {
+                                            yOff = (y + offsetY - tY) * (((lineWidth * pixelSize) + 7) / 8);
 
-                                    for (int s = 0; s < numBands; s++) {
-                                        buffer.put((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
-                                    }
-                                }
+                                            int pixelsPerByte = 8 / pixelSize;
+                                            int effectiveX = x + offsetX - tX;
+                                            int shiftPixels = effectiveX % pixelsPerByte;
+                                            xOff = yOff + (effectiveX / pixelsPerByte);
+                                            byte data = ((byte) (dataBuffer.getElem(b, xOff) & 0xff));
+                                            if (shiftPixels != 0) {
+                                                data = (byte) ((data << (shiftPixels * pixelSize)) & 0xff);
+                                                if (x + (pixelsPerByte - shiftPixels) < tileWidth) {
+                                                    data |= ((byte) dataBuffer.getElem(b, xOff + 1) >> (shiftPixels * pixelSize));
+                                                }
+                                            }
+                                            buffer.put(data);
+                                            //TODO: bitshifting for offsets
 
-                                flushBuffer(buffer, stream);
-
-                                if (stream instanceof DataOutputStream) {
-                                    DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                    dataOutputStream.flush();
-                                }
-                            }
-                        }
-
-                        break;
-
-                    case DataBuffer.TYPE_USHORT:
-                    case DataBuffer.TYPE_SHORT:
-                        if (numComponents == 1) {
-                            // TODO: This is foobar...
-//                            System.err.println("Writing USHORT -> " + numBands * 2 + "_BYTES");
-                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                                for (int y = 0; y < tileHeight; y++) {
-                                    final int yOff = y * tileWidth;
-
-                                    for (int x = 0; x < tileWidth; x++) {
-                                        final int xOff = yOff + x;
-
-                                        buffer.putShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
-                                    }
-
-                                    flushBuffer(buffer, stream);
-
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
-                                }
-                            }
-                        }
-                        else {
-//                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-//                                for (int y = 0; y < tileHeight; y++) {
-//                                    final int yOff = y * tileWidth;
-//
-//                                    for (int x = 0; x < tileWidth; x++) {
-//                                        final int xOff = yOff + x;
-//                                        int element = dataBuffer.getElem(b, xOff);
-//
-//                                        for (int s = 0; s < numBands; s++) {
-//                                            buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
-//                                        }
-//                                    }
-//
-//                                    flushBuffer(buffer, stream);
-//                                    if (stream instanceof DataOutputStream) {
-//                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-//                                        dataOutputStream.flush();
-//                                    }
-//                                }
-//                            }
-                            throw new IllegalArgumentException("Not implemented for data type: " + dataBuffer.getDataType());
-                        }
-
-                        break;
-
-                    case DataBuffer.TYPE_INT:
-                        // TODO: This is incorrect for 32 bits/sample, only works for packed (INT_(A)RGB)
-//                        System.err.println("Writing INT -> " + numBands + "_BYTES");
-                        for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                            for (int y = 0; y < tileHeight; y++) {
-                                final int yOff = y * tileWidth;
-
-                                for (int x = 0; x < tileWidth; x++) {
-                                    final int xOff = yOff + x;
-                                    int element = dataBuffer.getElem(b, xOff);
-
-                                    for (int s = 0; s < numBands; s++) {
-                                        buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
-                                    }
-                                }
-
-                                flushBuffer(buffer, stream);
-                                if (stream instanceof DataOutputStream) {
-                                    DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                    dataOutputStream.flush();
+                                            x += (8 / pixelSize) - 1;
+                                        }
+                                        else {
+                                            buffer.put((byte) (dataBuffer.getElem(b, xOff * numBands + bandOffsets[s]) & 0xff));
+                                        }
+                                        break;
+                                    case DataBuffer.TYPE_USHORT:
+                                    case DataBuffer.TYPE_SHORT:
+                                        if (numBands == 1) {
+                                            buffer.putShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
+                                        }
+                                        else {
+                                            buffer.putShort((short) (dataBuffer.getElem(b, xOff * numBands + bandOffsets[s]) & 0xffff));
+                                        }
+                                        break;
+                                    case DataBuffer.TYPE_INT:
+                                        if (sampleSize == 8) {
+                                            // packed (INT_(A)RGB)
+                                            int element = dataBuffer.getElem(b, xOff);
+                                            buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
+                                        }
+                                        else {
+                                            if (numBands == 1) {
+                                                buffer.putInt(dataBuffer.getElem(b, xOff));
+                                            }
+                                            else {
+                                                buffer.putInt(dataBuffer.getElem(b, xOff * numBands + bandOffsets[s]));
+                                            }
+                                        }
+                                        break;
+                                    case DataBuffer.TYPE_FLOAT:
+                                        if (numBands == 1) {
+                                            buffer.putFloat(dataBuffer.getElemFloat(b, xOff));
+                                        }
+                                        else {
+                                            buffer.putFloat(dataBuffer.getElemFloat(b, xOff * numBands + bandOffsets[s]));
+                                        }
+                                        break;
+                                    case DataBuffer.TYPE_DOUBLE:
+                                        if (numBands == 1) {
+                                            buffer.putDouble(dataBuffer.getElemDouble(b, xOff));
+                                        }
+                                        else {
+                                            buffer.putDouble(dataBuffer.getElemDouble(b, xOff * numBands + bandOffsets[s]));
+                                        }
+                                        break;
+                                    default:
+                                        throw new IllegalArgumentException("Not implemented for data type: " + dataBuffer.getDataType());
                                 }
                             }
                         }
 
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Not implemented for data type: " + dataBuffer.getDataType());
+                        flushBuffer(buffer, stream);
+
+                        if (stream instanceof DataOutputStream) {
+                            DataOutputStream dataOutputStream = (DataOutputStream) stream;
+                            dataOutputStream.flush();
+                        }
+                    }
                 }
             }
 
