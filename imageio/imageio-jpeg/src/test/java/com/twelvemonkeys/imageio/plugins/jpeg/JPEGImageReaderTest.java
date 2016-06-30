@@ -956,7 +956,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                     int rgb = imageRGB.getRGB(x, y);
 
                     if (rgb != cmykAsRGB) {
-                        assertRGBEquals(String.format("Diff at [%d, %d]: %s != %s", x, y, String.format("#%04x", cmykAsRGB), String.format("#%04x", rgb)), rgb, cmykAsRGB, 2);
+                        assertRGBEquals(String.format("Diff at [%d, %d]: #%04x != #%04x", x, y, cmykAsRGB, rgb), rgb, cmykAsRGB, 2);
                     }
                 }
             }
@@ -1002,12 +1002,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertRGBEquals("RGB values differ", expectedRGB, actualRGB, 5);
     }
 
-    private void assertRGBEquals(String message, int expectedRGB, int actualRGB, int tolerance) {
-        assertEquals(message, (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, tolerance);
-        assertEquals(message, (expectedRGB >>  8) & 0xff, (actualRGB >>  8) & 0xff, tolerance);
-        assertEquals(message, (expectedRGB      ) & 0xff, (actualRGB      ) & 0xff, tolerance);
-    }
-
     // Regression: Test subsampling offset within  of bounds
     // NOTE: These tests assumes the reader will read at least 1024 scanlines (if available) each iteration,
     //       this might change in the future. If so, the tests will no longer test what tey are supposed to....
@@ -1037,8 +1031,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -1054,8 +1048,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -1071,8 +1065,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -1101,8 +1095,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
@@ -1118,8 +1112,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         assertNotNull(image);
 
         // Make sure correct color is actually read, not just left empty
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 2));
-        assertRGBEquals(0xfefefd, image.getRGB(0, image.getHeight() - 1));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 2));
+        assertRGBEquals(0xfffefefd, image.getRGB(0, image.getHeight() - 1));
     }
 
     @Test
