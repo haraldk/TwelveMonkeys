@@ -33,6 +33,8 @@ import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.servlet.ServletResponseStreamDelegate;
 import com.twelvemonkeys.servlet.ServletUtil;
+import com.twelvemonkeys.servlet.image.aoi.AreaOfInterest;
+import com.twelvemonkeys.servlet.image.aoi.AreaOfInterestFactory;
 
 import javax.imageio.*;
 import javax.imageio.stream.ImageInputStream;
@@ -598,7 +600,10 @@ class ImageServletResponseImpl extends HttpServletResponseWrapper implements Ima
         boolean aoiUniform = b != null && b; // default: false
 
         if (aoiX >= 0 || aoiY >= 0 || aoiW >= 0 || aoiH >= 0) {
-            aoi = getAOI(pDefaultWidth, pDefaultHeight, aoiX, aoiY, aoiW, aoiH, aoiPercent, aoiUniform);
+
+            AreaOfInterest areaOfInterest = AreaOfInterestFactory.getDefault().
+                    createAreaOfInterest(pDefaultWidth, pDefaultHeight, aoiPercent, aoiUniform);
+            aoi = areaOfInterest.getAOI(new Rectangle(aoiX, aoiY, aoiW, aoiH));
             return aoi;
         }
 
