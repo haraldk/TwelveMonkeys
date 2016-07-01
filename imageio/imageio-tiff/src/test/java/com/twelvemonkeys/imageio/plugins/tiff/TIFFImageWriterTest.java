@@ -34,8 +34,12 @@ import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import org.junit.Test;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
@@ -46,12 +50,18 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataTest.createTIFFFieldNode;
+import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertRGBEquals;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * TIFFImageWriterTest
@@ -277,62 +287,461 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
     }
 
     @Test
-    public void testSequenceWriter() throws IOException {
+    public void testWriterCanWriteSequence() {
+        ImageWriter writer = createImageWriter();
+        assertTrue("Writer should support sequence writing", writer.canWriteSequence());
+    }
+
+    // TODO: Test Sequence writing without prepare/end sequence
+
+    @Test
+    public void testWriteSequence() throws IOException {
+        BufferedImage[] images = new BufferedImage[] {
+                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(110, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(120, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(130, 100, BufferedImage.TYPE_INT_RGB)
+        };
+
+        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE};
+
+        for (int i = 0; i < images.length; i++) {
+            BufferedImage image = images[i];
+            Graphics2D g2d = image.createGraphics();
+            try {
+                g2d.setColor(colors[i]);
+                g2d.fillRect(0, 0, 100, 100);
+            }
+            finally {
+                g2d.dispose();
+            }
+        }
+
         ImageWriter writer = createImageWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
-        writer.setOutput(stream);
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            writer.setOutput(output);
 
-        Graphics2D g2d = null;
-        BufferedImage image[] = new BufferedImage[] {
-                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB)
-        };
-        g2d = image[0].createGraphics();
-        g2d.setColor(Color.red);
-        g2d.fillRect(0,0,100,100);
-        g2d.dispose();
-        g2d = image[1].createGraphics();
-        g2d.setColor(Color.green);
-        g2d.fillRect(0,0,100,100);
-        g2d.dispose();
-        g2d = image[2].createGraphics();
-        g2d.setColor(Color.blue);
-        g2d.fillRect(0,0,100,100);
-        g2d.dispose();
+            ImageWriteParam params = writer.getDefaultWriteParam();
+            params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 
+            try {
+                writer.prepareWriteSequence(null);
 
-        ImageWriteParam params = writer.getDefaultWriteParam();
-        params.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                params.setCompressionType("JPEG");
+                writer.writeToSequence(new IIOImage(images[0], null, null), params);
 
-        assertTrue("", writer.canWriteSequence());
+                params.setCompressionType("None");
+                writer.writeToSequence(new IIOImage(images[1], null, null), params);
 
-        try {
-            writer.prepareWriteSequence(null);
+                params.setCompressionType("None");
+                writer.writeToSequence(new IIOImage(images[2], null, null), params);
 
-            params.setCompressionType("JPEG");
-            writer.writeToSequence(new IIOImage(image[0], null, null), params);
-            params.setCompressionType("None");
-            writer.writeToSequence(new IIOImage(image[1], null, null), params);
-            params.setCompressionType("JPEG");
-            writer.writeToSequence(new IIOImage(image[2], null, null), params);
-            g2d.dispose();
-            writer.endWriteSequence();
-        }
-        catch (IOException e) {
-            fail(e.getMessage());
-        }
-        finally {
-            stream.close(); // Force data to be written
+                params.setCompressionType("PackBits");
+                writer.writeToSequence(new IIOImage(images[3], null, null), params);
+
+                writer.endWriteSequence();
+            }
+            catch (IOException e) {
+                fail(e.getMessage());
+            }
         }
 
-        ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()));
-        ImageReader reader = ImageIO.getImageReaders(input).next();
-        reader.setInput(input);
-        assertEquals("wrong image count", 3, reader.getNumImages(true));
-        for(int i = 0; i < reader.getNumImages(true); i++){
-           reader.read(i);
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            assertEquals("wrong image count", images.length, reader.getNumImages(true));
+
+            for (int i = 0; i < reader.getNumImages(true); i++) {
+                BufferedImage image = reader.read(i);
+
+                assertEquals(images[i].getWidth(), image.getWidth());
+                assertEquals(images[i].getHeight(), image.getHeight());
+
+                assertRGBEquals("RGB differ", images[i].getRGB(0, 0), image.getRGB(0, 0), 5); // Allow room for JPEG compression
+            }
+        }
+    }
+
+    @Test
+    public void testReadWriteRead1BitLZW() throws IOException {
+        // Read original LZW compressed TIFF
+        IIOImage original;
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/a33.tif"))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            original = reader.readAll(0, null);
+            reader.dispose();
+        }
+
+        assumeNotNull(original);
+
+        // Write it back, using same compression (copied from metadata)
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            ImageWriter writer = createImageWriter();
+            writer.setOutput(output);
+
+            writer.write(original);
+            writer.dispose();
+        }
+
+        // Try re-reading the same TIFF
+        try (ImageInputStream input = ImageIO.createImageInputStream(buffer.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+
+            BufferedImage orig = (BufferedImage) original.getRenderedImage();
+
+            int maxH = Math.min(300, image.getHeight());
+            for (int y = 0; y < maxH; y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                }
+            }
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            IIOMetadataNode compression = (IIOMetadataNode) tree.getElementsByTagName("CompressionTypeName").item(0);
+            assertEquals("LZW", compression.getAttribute("value"));
+
+            boolean softwareFound = false;
+            NodeList textEntries = tree.getElementsByTagName("TextEntry");
+            for (int i = 0; i < textEntries.getLength(); i++) {
+                IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+                if ("Software".equals(textEntry.getAttribute("keyword"))) {
+                    softwareFound = true;
+                    assertEquals("IrfanView", textEntry.getAttribute("value"));
+                }
+            }
+
+            assertTrue("Software metadata not found", softwareFound);
+        }
+    }
+
+    @Test
+    public void testReadWriteRead1BitDeflate() throws IOException {
+        // Read original LZW compressed TIFF
+        IIOImage original;
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/a33.tif"))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            original = reader.readAll(0, null);
+            reader.dispose();
+        }
+
+        assumeNotNull(original);
+
+        // Write it back, using same compression (copied from metadata)
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            ImageWriter writer = createImageWriter();
+            writer.setOutput(output);
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionType("Deflate");
+
+            writer.write(null, original, param);
+            writer.dispose();
+        }
+
+        // Try re-reading the same TIFF
+        try (ImageInputStream input = ImageIO.createImageInputStream(buffer.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+
+            BufferedImage orig = (BufferedImage) original.getRenderedImage();
+
+            int maxH = Math.min(300, image.getHeight());
+            for (int y = 0; y < maxH; y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                }
+            }
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            IIOMetadataNode compression = (IIOMetadataNode) tree.getElementsByTagName("CompressionTypeName").item(0);
+            assertEquals("Deflate", compression.getAttribute("value"));
+
+            boolean softwareFound = false;
+            NodeList textEntries = tree.getElementsByTagName("TextEntry");
+            for (int i = 0; i < textEntries.getLength(); i++) {
+                IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+                if ("Software".equals(textEntry.getAttribute("keyword"))) {
+                    softwareFound = true;
+                    assertEquals("IrfanView", textEntry.getAttribute("value"));
+                }
+            }
+
+            assertTrue("Software metadata not found", softwareFound);
+        }
+    }
+
+    @Test
+    public void testReadWriteRead1BitNone() throws IOException {
+        // Read original LZW compressed TIFF
+        IIOImage original;
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/a33.tif"))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            original = reader.readAll(0, null);
+            reader.dispose();
+        }
+
+        assumeNotNull(original);
+
+        // Write it back, using same compression (copied from metadata)
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            ImageWriter writer = createImageWriter();
+            writer.setOutput(output);
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionType("None");
+
+            writer.write(null, original, param);
+            writer.dispose();
+        }
+
+        // Try re-reading the same TIFF
+        try (ImageInputStream input = ImageIO.createImageInputStream(buffer.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+
+            BufferedImage orig = (BufferedImage) original.getRenderedImage();
+
+            int maxH = Math.min(300, image.getHeight());
+            for (int y = 0; y < maxH; y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                }
+            }
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            NodeList compressions = tree.getElementsByTagName("CompressionTypeName");
+            IIOMetadataNode compression = (IIOMetadataNode) compressions.item(0);
+            assertEquals("None", compression.getAttribute("value"));
+
+            boolean softwareFound = false;
+            NodeList textEntries = tree.getElementsByTagName("TextEntry");
+            for (int i = 0; i < textEntries.getLength(); i++) {
+                IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+                if ("Software".equals(textEntry.getAttribute("keyword"))) {
+                    softwareFound = true;
+                    assertEquals("IrfanView", textEntry.getAttribute("value"));
+                }
+            }
+
+            assertTrue("Software metadata not found", softwareFound);
+        }
+    }
+
+    @Test
+    public void testReadWriteRead24BitLZW() throws IOException {
+        // Read original LZW compressed TIFF
+        IIOImage original;
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/quad-lzw.tif"))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            original = reader.readAll(0, null);
+            reader.dispose();
+        }
+
+        assumeNotNull(original);
+
+        // Write it back, using same compression (copied from metadata)
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            ImageWriter writer = createImageWriter();
+            writer.setOutput(output);
+
+            writer.write(original);
+            writer.dispose();
+        }
+
+        // Try re-reading the same TIFF
+        try (ImageInputStream input = ImageIO.createImageInputStream(buffer.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+
+            BufferedImage orig = (BufferedImage) original.getRenderedImage();
+
+            int maxH = Math.min(300, image.getHeight());
+            for (int y = 0; y < maxH; y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                }
+            }
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            IIOMetadataNode compression = (IIOMetadataNode) tree.getElementsByTagName("CompressionTypeName").item(0);
+            assertEquals("LZW", compression.getAttribute("value"));
+
+            boolean softwareFound = false;
+            NodeList textEntries = tree.getElementsByTagName("TextEntry");
+            for (int i = 0; i < textEntries.getLength(); i++) {
+                IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+                if ("Software".equals(textEntry.getAttribute("keyword"))) {
+                    softwareFound = true;
+                    assertTrue(textEntry.getAttribute("value").startsWith("TwelveMonkeys ImageIO TIFF"));
+                }
+            }
+
+            assertTrue("Software metadata not found", softwareFound);
+        }
+    }
+
+    @Test
+    public void testReadWriteRead24BitDeflate() throws IOException {
+        // Read original LZW compressed TIFF
+        IIOImage original;
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/quad-lzw.tif"))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            original = reader.readAll(0, null);
+            reader.dispose();
+        }
+
+        assumeNotNull(original);
+
+        // Write it back, using same compression (copied from metadata)
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            ImageWriter writer = createImageWriter();
+            writer.setOutput(output);
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionType("Deflate");
+
+            writer.write(null, original, param);
+            writer.dispose();
+        }
+
+        // Try re-reading the same TIFF
+        try (ImageInputStream input = ImageIO.createImageInputStream(buffer.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+
+            BufferedImage orig = (BufferedImage) original.getRenderedImage();
+
+            int maxH = Math.min(300, image.getHeight());
+            for (int y = 0; y < maxH; y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                }
+            }
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            IIOMetadataNode compression = (IIOMetadataNode) tree.getElementsByTagName("CompressionTypeName").item(0);
+            assertEquals("Deflate", compression.getAttribute("value"));
+
+            boolean softwareFound = false;
+            NodeList textEntries = tree.getElementsByTagName("TextEntry");
+            for (int i = 0; i < textEntries.getLength(); i++) {
+                IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+                if ("Software".equals(textEntry.getAttribute("keyword"))) {
+                    softwareFound = true;
+                    assertTrue(textEntry.getAttribute("value").startsWith("TwelveMonkeys ImageIO TIFF"));
+                }
+            }
+
+            assertTrue("Software metadata not found", softwareFound);
+        }
+    }
+
+    @Test
+    public void testReadWriteRead24BitNone() throws IOException {
+        // Read original LZW compressed TIFF
+        IIOImage original;
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/quad-lzw.tif"))) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            original = reader.readAll(0, null);
+            reader.dispose();
+        }
+
+        assumeNotNull(original);
+
+        // Write it back, using same compression (copied from metadata)
+        FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            ImageWriter writer = createImageWriter();
+            writer.setOutput(output);
+
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionType("None");
+
+            writer.write(null, original, param);
+            writer.dispose();
+        }
+
+//        Path tempFile = Files.createTempFile("test-", ".tif");
+//        Files.write(tempFile, buffer.toByteArray());
+//        System.out.println("open " + tempFile.toAbsolutePath());
+
+        // Try re-reading the same TIFF
+        try (ImageInputStream input = ImageIO.createImageInputStream(buffer.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+
+            BufferedImage orig = (BufferedImage) original.getRenderedImage();
+
+            int maxH = Math.min(300, image.getHeight());
+            for (int y = 0; y < maxH; y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                }
+            }
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            IIOMetadataNode compression = (IIOMetadataNode) tree.getElementsByTagName("CompressionTypeName").item(0);
+            assertEquals("None", compression.getAttribute("value"));
+
+            boolean softwareFound = false;
+            NodeList textEntries = tree.getElementsByTagName("TextEntry");
+            for (int i = 0; i < textEntries.getLength(); i++) {
+                IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+                if ("Software".equals(textEntry.getAttribute("keyword"))) {
+                    softwareFound = true;
+                    assertTrue(textEntry.getAttribute("value").startsWith("TwelveMonkeys ImageIO TIFF"));
+                }
+            }
+
+            assertTrue("Software metadata not found", softwareFound);
         }
     }
 }

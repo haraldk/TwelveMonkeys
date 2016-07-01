@@ -196,39 +196,30 @@ public final class TIFFImageWriter extends ImageWriterBase {
     @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
         // TODO: Validate input
-
         assertOutput();
         // TODO: streamMetadata?
 
-        // TODO: Consider writing TIFF header, offset to IFD0 (leave blank), write image data with correct
-        // tiling/compression/etc, then write IFD0, go back and update IFD0 offset?
-
-        // Write minimal TIFF header (required "Baseline" fields)
-        // Use EXIFWriter to write leading metadata (TODO: consider rename to TTIFFWriter, again...)
         // TODO: Make TIFFEntry and possibly TIFFDirectory? public
         EXIFWriter exifWriter = new EXIFWriter();
         exifWriter.writeTIFFHeader(imageOutput);
-        long IFD0Pos = imageOutput.getStreamPosition();
-        writePage(image, param, exifWriter, IFD0Pos);
-        imageOutput.writeInt(0); // EOF
+
+        writePage(image, param, exifWriter, imageOutput.getStreamPosition());
+
         imageOutput.flush();
     }
 
-    private long writePage(IIOImage image, ImageWriteParam param, EXIFWriter exifWriter, long lastIFDPointer)
+    private long writePage(IIOImage image, ImageWriteParam param, EXIFWriter exifWriter, long lastIFDPointerOffset)
             throws IOException {
         RenderedImage renderedImage = image.getRenderedImage();
+
+        TIFFImageMetadata metadata = image.getMetadata() != null
+                                     ? convertImageMetadata(image.getMetadata(), ImageTypeSpecifier.createFromRenderedImage(renderedImage), param)
+                                     : getDefaultImageMetadata(ImageTypeSpecifier.createFromRenderedImage(renderedImage), param);
+
         ColorModel colorModel = renderedImage.getColorModel();
-        int numComponents = colorModel.getNumComponents();
-
-        TIFFImageMetadata metadata;
-        if (image.getMetadata() != null) {
-            metadata = convertImageMetadata(image.getMetadata(), ImageTypeSpecifier.createFromRenderedImage(renderedImage), param);
-        }
-        else {
-            metadata = initMeta(null, ImageTypeSpecifier.createFromRenderedImage(renderedImage), param);
-        }
-
         SampleModel sampleModel = renderedImage.getSampleModel();
+        int numBands = sampleModel.getNumBands();
+        int pixelSize = computePixelSize(sampleModel);
 
         int[] bandOffsets;
         int[] bitOffsets;
@@ -248,18 +239,19 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
+        // TODO: There shouldn't be necessary to create a separate map here, this should be handled in the
+        // convertImageMetadata/getDefaultImageMetadata methods....
         Map<Integer, Entry> entries = new LinkedHashMap<>();
         entries.put(TIFF.TAG_IMAGE_WIDTH, new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, renderedImage.getWidth()));
         entries.put(TIFF.TAG_IMAGE_HEIGHT, new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
-        // entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
+        entries.put(TIFF.TAG_ORIENTATION, new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
         entries.put(TIFF.TAG_BITS_PER_SAMPLE, new TIFFEntry(TIFF.TAG_BITS_PER_SAMPLE, asShortArray(sampleModel.getSampleSize())));
+
         // If numComponents > numColorComponents, write ExtraSamples
-        if (numComponents > colorModel.getNumColorComponents()) {
+        if (numBands > colorModel.getNumColorComponents()) {
             // TODO: Write per component > numColorComponents
             if (colorModel.hasAlpha()) {
-                entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, colorModel.isAlphaPremultiplied()
-                                                                                          ? TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA
-                                                                                          : TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA));
+                entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, colorModel.isAlphaPremultiplied() ? TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA : TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA));
             }
             else {
                 entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, TIFFBaseline.EXTRASAMPLE_UNSPECIFIED));
@@ -275,6 +267,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         else {
             compression = TIFFImageWriteParam.getCompressionType(param);
         }
+
         entries.put(TIFF.TAG_COMPRESSION, new TIFFEntry(TIFF.TAG_COMPRESSION, compression));
 
         // TODO: Let param/metadata control predictor
@@ -283,29 +276,39 @@ public final class TIFFImageWriter extends ImageWriterBase {
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
             case TIFFExtension.COMPRESSION_LZW:
-                entries.put(TIFF.TAG_PREDICTOR, new TIFFEntry(TIFF.TAG_PREDICTOR, TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING));
+                if (pixelSize >= 8) {
+                    entries.put(TIFF.TAG_PREDICTOR, new TIFFEntry(TIFF.TAG_PREDICTOR, TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING));
+                }
+
                 break;
+
             case TIFFExtension.COMPRESSION_CCITT_T4:
                 Entry group3options = metadata.getIFD().getEntryById(TIFF.TAG_GROUP3OPTIONS);
+
                 if (group3options == null) {
                     group3options = new TIFFEntry(TIFF.TAG_GROUP3OPTIONS, (long) TIFFExtension.GROUP3OPT_2DENCODING);
                 }
+
                 entries.put(TIFF.TAG_GROUP3OPTIONS, group3options);
+
                 break;
+
             case TIFFExtension.COMPRESSION_CCITT_T6:
                 Entry group4options = metadata.getIFD().getEntryById(TIFF.TAG_GROUP4OPTIONS);
+
                 if (group4options == null) {
                     group4options = new TIFFEntry(TIFF.TAG_GROUP4OPTIONS, 0L);
                 }
+
                 entries.put(TIFF.TAG_GROUP4OPTIONS, group4options);
+
                 break;
+
             default:
         }
 
         // TODO: We might want to support CMYK in JPEG as well... Pending JPEG CMYK write support.
-        int photometric = compression == TIFFExtension.COMPRESSION_JPEG ?
-                          TIFFExtension.PHOTOMETRIC_YCBCR :
-                          getPhotometricInterpretation(colorModel);
+        int photometric = compression == TIFFExtension.COMPRESSION_JPEG ? TIFFExtension.PHOTOMETRIC_YCBCR : getPhotometricInterpretation(colorModel);
         entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, photometric));
 
         if (photometric == TIFFBaseline.PHOTOMETRIC_PALETTE && colorModel instanceof IndexColorModel) {
@@ -313,11 +316,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, 1));
         }
         else {
-            if (colorModel.getPixelSize() == 1) {
-                numComponents = 1;
-            }
-
-            entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numComponents));
+            entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numBands));
 
             // Note: Assuming sRGB to be the default RGB interpretation
             ColorSpace colorSpace = colorModel.getColorSpace();
@@ -332,11 +331,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
         // TODO: Float values!
 
+        // TODO: Again, this should be handled in the metadata conversion....
         // Get Software from metadata, or use default
         Entry software = metadata.getIFD().getEntryById(TIFF.TAG_SOFTWARE);
-        entries.put(TIFF.TAG_SOFTWARE, software != null
-                                       ? software
-                                       : new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
+        entries.put(TIFF.TAG_SOFTWARE, software != null ? software : new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
 
         // Copy metadata to output
         int[] copyTags = {
@@ -366,36 +364,50 @@ public final class TIFFImageWriter extends ImageWriterBase {
         Entry yRes = metadata.getIFD().getEntryById(TIFF.TAG_Y_RESOLUTION);
         entries.put(TIFF.TAG_Y_RESOLUTION, yRes != null ? yRes : new TIFFEntry(TIFF.TAG_Y_RESOLUTION, STANDARD_DPI));
         Entry resUnit = metadata.getIFD().getEntryById(TIFF.TAG_RESOLUTION_UNIT);
-        entries.put(TIFF.TAG_RESOLUTION_UNIT,
-                resUnit != null ? resUnit : new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFFBaseline.RESOLUTION_UNIT_DPI));
+        entries.put(TIFF.TAG_RESOLUTION_UNIT, resUnit != null ? resUnit : new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFFBaseline.RESOLUTION_UNIT_DPI));
 
         // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
-        entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, Integer.MAX_VALUE)); // TODO: Allowed but not recommended
+        entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, renderedImage.getHeight()));
         // - StripByteCounts - for no compression, entire image data... (TODO: How to know the byte counts prior to writing data?)
-        TIFFEntry dummyStripByteCounts = new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, -1);
-        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, dummyStripByteCounts); // Updated later
+        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, -1)); // Updated later
         // - StripOffsets - can be offset to single strip only (TODO: but how large is the IFD data...???)
-        TIFFEntry dummyStripOffsets = new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, -1);
-        entries.put(TIFF.TAG_STRIP_OFFSETS, dummyStripOffsets); // Updated later
+        entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, -1)); // Updated later
 
         // TODO: If tiled, write tile indexes etc
         // Depending on param.getTilingMode
-        long nextIFDPointer = -1;
-        long stripOffset = -1;
-        long stripByteCount = 0;
+        long nextIFDPointerOffset = -1;
 
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
-            long ifdOffset = exifWriter.computeIFDOffsetSize(entries.values());
-            long dataLength = renderedImage.getWidth() * renderedImage.getHeight() * numComponents;
-            long pointerPos = imageOutput.getStreamPosition() + dataLength + 4 + ifdOffset;
-            imageOutput.writeInt((int) pointerPos);
+            // This implementation, allows semi-streaming-compatible uncompressed TIFFs
+            long streamPosition = imageOutput.getStreamPosition();
+
+            long ifdSize = exifWriter.computeIFDSize(entries.values());
+            long stripOffset = streamPosition + 4 +  ifdSize + 4;
+            long stripByteCount = (renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7) / 8;
+
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+
+            long ifdPointer = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
+            nextIFDPointerOffset = imageOutput.getStreamPosition();
+
+            // If we have a previous IFD, update pointer
+            if (streamPosition > lastIFDPointerOffset) {
+                imageOutput.seek(lastIFDPointerOffset);
+                imageOutput.writeInt((int) ifdPointer);
+                imageOutput.seek(nextIFDPointerOffset);
+            }
+
+            imageOutput.writeInt(0); // Update next IFD pointer later
         }
         else {
-            imageOutput.writeInt(0); // Update IFD Pointer later
+            imageOutput.writeInt(0); // Update current IFD pointer later
         }
 
-        stripOffset = imageOutput.getStreamPosition();
+        long stripOffset = imageOutput.getStreamPosition();
+
         // TODO: Create compressor stream per Tile/Strip
+        // TODO: Cache JPEGImageWriter, dispose in dispose() method
         if (compression == TIFFExtension.COMPRESSION_JPEG) {
             Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
 
@@ -415,40 +427,45 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
         else {
             // Write image data
-            writeImageData(createCompressorStream(renderedImage, param, entries), renderedImage, numComponents, bandOffsets,
-                    bitOffsets);
+            writeImageData(createCompressorStream(renderedImage, param, entries), renderedImage, numBands, bandOffsets, bitOffsets);
         }
-        stripByteCount = imageOutput.getStreamPosition() - stripOffset;
+
+        long stripByteCount = imageOutput.getStreamPosition() - stripOffset;
 
         // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            entries.remove(dummyStripOffsets);
             entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
-            entries.remove(dummyStripByteCounts);
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
 
-            long idfOffset = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
-            nextIFDPointer = imageOutput.getStreamPosition();
-            imageOutput.seek(lastIFDPointer);
-            imageOutput.writeInt((int) idfOffset);
-            imageOutput.seek(nextIFDPointer);
-            imageOutput.flush();
-        }
-        else {
-            entries.remove(dummyStripOffsets);
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
-            entries.remove(dummyStripByteCounts);
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+            long ifdPointer = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
 
-            exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
-            nextIFDPointer = imageOutput.getStreamPosition();
-            imageOutput.flush();
+            nextIFDPointerOffset = imageOutput.getStreamPosition();
+
+            // TODO: This is slightly duped....
+            // However, need to update here, because to the writeIFD method writes the pointer, but at the incorrect offset
+            // TODO: Refactor writeIFD to take an offset
+            imageOutput.seek(lastIFDPointerOffset);
+            imageOutput.writeInt((int) ifdPointer);
+            imageOutput.seek(nextIFDPointerOffset);
+
+            imageOutput.writeInt(0); // Next IFD pointer updated later
         }
 
-        return nextIFDPointer;
+        return nextIFDPointerOffset;
     }
 
-    private DataOutput createCompressorStream(RenderedImage image, ImageWriteParam param, Map<Integer, Entry> entries) {
+    // TODO: Candidate util method
+    private int computePixelSize(final SampleModel sampleModel) {
+        int size = 0;
+
+        for (int i = 0; i < sampleModel.getNumBands(); i++) {
+            size += sampleModel.getSampleSize(i);
+        }
+
+        return size;
+    }
+
+    private DataOutput createCompressorStream(final RenderedImage image, final ImageWriteParam param, final Map<Integer, Entry> entries) {
         /*
         36 MB test data:
 
@@ -513,57 +530,56 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 stream = new EncoderStream(stream, new PackBitsEncoder(), true);
                 // NOTE: PackBits + Predictor is possible, but not generally supported, disable it by default
                 // (and probably not even allow it, see http://stackoverflow.com/questions/20337400/tiff-packbits-compression-with-predictor-step)
-//                stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(), image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
                 return new DataOutputStream(stream);
 
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
+                // NOTE: This interpretation does the opposite of the JAI TIFFImageWriter, but seems more correct.
+                // API Docs says:
+                // A compression quality setting of 0.0 is most generically interpreted as "high compression is important,"
+                // while a setting of 1.0 is most generically interpreted as "high image quality is important."
+                // However, the JAI TIFFImageWriter uses:
+                //    if (param & compression etc...) {
+                //        float quality = param.getCompressionQuality();
+                //        deflateLevel = (int)(1 + 8*quality);
+                //    } else {
+                //        deflateLevel = Deflater.DEFAULT_COMPRESSION;
+                //    }
+                // (in other words, 0.0 means 1 == BEST_SPEED, 1.0 means 9 == BEST_COMPRESSION)
+                // PS: PNGImageWriter just uses hardcoded BEST_COMPRESSION... :-P
                 int deflateSetting = Deflater.BEST_SPEED; // This is consistent with default compression quality being 1.0 and 0 meaning max compression...
                 if (param.getCompressionMode() == ImageWriteParam.MODE_EXPLICIT) {
-                    // TODO: Determine how to interpret compression quality...
-                    // Docs says:
-                    // A compression quality setting of 0.0 is most generically interpreted as "high compression is important,"
-                    // while a setting of 1.0 is most generically interpreted as "high image quality is important."
-                    // Is this what JAI TIFFImageWriter (TIFFDeflater) does? No, it does:
-                    /*
-                    if (param & compression etc...) {
-                        float quality = param.getCompressionQuality();
-                        deflateLevel = (int)(1 + 8*quality);
-                    } else {
-                        deflateLevel = Deflater.DEFAULT_COMPRESSION;
-                    }
-                    */
-                    // PS: PNGImageWriter just uses hardcoded BEST_COMPRESSION... :-P
-                    deflateSetting = 9 - Math.round(8 * (param.getCompressionQuality())); // This seems more correct
+                    deflateSetting = Deflater.BEST_COMPRESSION - Math.round((Deflater.BEST_COMPRESSION - 1) * param.getCompressionQuality());
                 }
 
                 stream = IIOUtil.createStreamAdapter(imageOutput);
                 stream = new DeflaterOutputStream(stream, new Deflater(deflateSetting), 1024);
-                stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(), image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
+                if (entries.containsKey(TIFF.TAG_PREDICTOR) && entries.get(TIFF.TAG_PREDICTOR).getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING)) {
+                    stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(), image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
+                }
 
                 return new DataOutputStream(stream);
 
             case TIFFExtension.COMPRESSION_LZW:
                 stream = IIOUtil.createStreamAdapter(imageOutput);
-                stream = new EncoderStream(stream, new LZWEncoder((image.getTileWidth() * image.getTileHeight()
-                        * image.getTile(0, 0).getNumBands() * image.getColorModel().getComponentSize(0) + 7) / 8));
-                stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(),
-                        image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
+                stream = new EncoderStream(stream, new LZWEncoder((image.getTileWidth() * image.getTileHeight() * image.getColorModel().getPixelSize() + 7) / 8));
+                if (entries.containsKey(TIFF.TAG_PREDICTOR) && entries.get(TIFF.TAG_PREDICTOR).getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING)) {
+                    stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), image.getTile(0, 0).getNumBands(), image.getColorModel().getComponentSize(0), imageOutput.getByteOrder());
+                }
 
                 return new DataOutputStream(stream);
+
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
             case TIFFExtension.COMPRESSION_CCITT_T6:
                 long option = 0L;
+
                 if (compression != TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE) {
-                    option = (long) entries.get(compression == TIFFExtension.COMPRESSION_CCITT_T4
-                                                ? TIFF.TAG_GROUP3OPTIONS
-                                                : TIFF.TAG_GROUP4OPTIONS).getValue();
+                    option = (long) entries.get(compression == TIFFExtension.COMPRESSION_CCITT_T4 ? TIFF.TAG_GROUP3OPTIONS : TIFF.TAG_GROUP4OPTIONS).getValue();
                 }
+
                 Entry fillOrderEntry = entries.get(TIFF.TAG_FILL_ORDER);
-                int fillOrder = (int) (fillOrderEntry != null
-                                       ? fillOrderEntry.getValue()
-                                       : TIFFBaseline.FILL_LEFT_TO_RIGHT);
+                int fillOrder = (int) (fillOrderEntry != null ? fillOrderEntry.getValue() : TIFFBaseline.FILL_LEFT_TO_RIGHT);
                 stream = IIOUtil.createStreamAdapter(imageOutput);
                 stream = new CCITTFaxEncoderStream(stream, image.getTileWidth(), image.getTileHeight(), compression, fillOrder, option);
 
@@ -908,6 +924,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
         if (!isWritingSequence) {
             throw new IllegalStateException("prepareWriteSequence() must be called before writeToSequence()!");
         }
+
+        if (sequenceLastIFDPos > 0) {
+            imageOutput.flushBefore(sequenceLastIFDPos);
+        }
+
         sequenceLastIFDPos = writePage(image, param, sequenceExifWriter, sequenceLastIFDPos);
     }
 
@@ -916,7 +937,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         if (!isWritingSequence) {
             throw new IllegalStateException("prepareWriteSequence() must be called before endWriteSequence()!");
         }
-        imageOutput.writeInt(0); // EOF
+
         isWritingSequence = false;
         sequenceExifWriter = null;
         sequenceLastIFDPos = -1;
