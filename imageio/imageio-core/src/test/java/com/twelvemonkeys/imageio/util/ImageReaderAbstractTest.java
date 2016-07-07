@@ -1606,10 +1606,15 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
      * Slightly fuzzy RGB equals method. Variable tolerance.
      */
     public static void assertRGBEquals(String message, int expectedRGB, int actualRGB, int tolerance) {
-        assertEquals(message, (expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 0);
-        assertEquals(message, (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, tolerance);
-        assertEquals(message, (expectedRGB >>  8) & 0xff, (actualRGB >>  8) & 0xff, tolerance);
-        assertEquals(message, (expectedRGB      ) & 0xff, (actualRGB      ) & 0xff, tolerance);
+        try {
+            assertEquals((expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 0);
+            assertEquals((expectedRGB >>  16) & 0xff, (actualRGB >>  16) & 0xff, tolerance);
+            assertEquals((expectedRGB >>   8) & 0xff, (actualRGB >>   8) & 0xff, tolerance);
+            assertEquals((expectedRGB       ) & 0xff, (actualRGB       ) & 0xff, tolerance);
+        }
+        catch (AssertionError e) {
+            assertEquals(message, String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB));
+        }
     }
 
     static final protected class TestData {

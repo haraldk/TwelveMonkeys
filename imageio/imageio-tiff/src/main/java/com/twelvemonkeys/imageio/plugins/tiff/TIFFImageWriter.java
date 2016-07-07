@@ -669,36 +669,54 @@ public final class TIFFImageWriter extends ImageWriterBase {
         final int tileWidth = renderedImage.getTileWidth();
 
         // TODO: SampleSize may differ between bands/banks
-        int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
-        final ByteBuffer buffer;
-        if (sampleSize == 1) {
-            buffer = ByteBuffer.allocate((tileWidth + 7) / 8);
-        }
-        else {
-            buffer = ByteBuffer.allocate(tileWidth * renderedImage.getSampleModel().getNumBands() * sampleSize / 8);
-        }
-        // System.err.println("tileWidth: " + tileWidth);
+        final int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
+        final int numBands = renderedImage.getSampleModel().getNumBands();
+
+        final ByteBuffer buffer = ByteBuffer.allocate((tileWidth * numBands * sampleSize + 7) / 8);
 
         for (int yTile = minTileY; yTile < maxYTiles; yTile++) {
             for (int xTile = minTileX; xTile < maxXTiles; xTile++) {
                 final Raster tile = renderedImage.getTile(xTile, yTile);
+
+                // Model translation
+                final int offsetX = tile.getMinX() - tile.getSampleModelTranslateX();
+                final int offsetY = tile.getMinY() - tile.getSampleModelTranslateY();
+
+                // Scanline stride, not accounting for model translation
+                final int stride = (tile.getSampleModel().getWidth() * sampleSize + 7) / 8;
                 final DataBuffer dataBuffer = tile.getDataBuffer();
-                final int numBands = tile.getNumBands();
 
                 switch (dataBuffer.getDataType()) {
                     case DataBuffer.TYPE_BYTE:
-
 //                        System.err.println("Writing " + numBands + "BYTE -> " + numBands + "BYTE");
-                        for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                            for (int y = 0; y < tileHeight; y++) {
-                                int steps = sampleSize == 1 ? (tileWidth + 7) / 8 : tileWidth;
-                                final int yOff = y * steps * numBands;
+                        int steps = (tileWidth * sampleSize + 7) / 8;
+                        // Shift needed for "packed" samples with "odd" offset
+                        int shift = offsetX % 8;
 
-                                for (int x = 0; x < steps; x++) {
+                        // TODO: Generalize this code, to always use row raster
+                        final WritableRaster rowRaster = shift != 0 ? tile.createCompatibleWritableRaster(tile.getWidth(), 1) : null;
+                        final DataBuffer rowBuffer = shift != 0 ? rowRaster.getDataBuffer() : null;
+
+                        for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
+                            for (int y = offsetY; y < tileHeight + offsetY; y++) {
+                                final int yOff = y * stride * numBands;
+
+                                if (shift != 0) {
+                                    rowRaster.setDataElements(0, 0, tile.createChild(0, y - offsetY, tile.getWidth(), 1, 0, 0, null));
+                                }
+
+                                for (int x = offsetX; x < steps + offsetX; x++) {
                                     final int xOff = yOff + x * numBands;
 
                                     for (int s = 0; s < numBands; s++) {
-                                        buffer.put((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+                                        if (sampleSize == 8 || shift == 0) {
+                                            // Normal interleaved/planar case
+                                            buffer.put((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+                                        }
+                                        else {
+                                            // "Packed" case
+                                            buffer.put((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
+                                        }
                                     }
                                 }
 
@@ -716,13 +734,13 @@ public final class TIFFImageWriter extends ImageWriterBase {
                     case DataBuffer.TYPE_USHORT:
                     case DataBuffer.TYPE_SHORT:
                         if (numComponents == 1) {
-                            // TODO: This is foobar...
 //                            System.err.println("Writing USHORT -> " + numBands * 2 + "_BYTES");
-                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                                for (int y = 0; y < tileHeight; y++) {
-                                    final int yOff = y * tileWidth;
 
-                                    for (int x = 0; x < tileWidth; x++) {
+                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
+                                for (int y = offsetY; y < tileHeight + offsetY; y++) {
+                                    int yOff = y * stride / 2;
+
+                                    for (int x = offsetX; x < tileWidth + offsetX; x++) {
                                         final int xOff = yOff + x;
 
                                         buffer.putShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
@@ -765,24 +783,49 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
                     case DataBuffer.TYPE_INT:
                         // TODO: This is incorrect for 32 bits/sample, only works for packed (INT_(A)RGB)
-//                        System.err.println("Writing INT -> " + numBands + "_BYTES");
-                        for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                            for (int y = 0; y < tileHeight; y++) {
-                                final int yOff = y * tileWidth;
+                        if (1 == numComponents) {
+//                            System.err.println("Writing INT -> " + numBands * 4 + "_BYTES");
 
-                                for (int x = 0; x < tileWidth; x++) {
-                                    final int xOff = yOff + x;
-                                    int element = dataBuffer.getElem(b, xOff);
+                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
+                                for (int y = offsetY; y < tileHeight + offsetY; y++) {
+                                    int yOff = y * stride / 4;
 
-                                    for (int s = 0; s < numBands; s++) {
-                                        buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
+                                    for (int x = offsetX; x < tileWidth + offsetX; x++) {
+                                        final int xOff = yOff + x;
+
+                                        buffer.putInt(dataBuffer.getElem(b, xOff));
+                                    }
+
+                                    flushBuffer(buffer, stream);
+
+                                    if (stream instanceof DataOutputStream) {
+                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
+                                        dataOutputStream.flush();
                                     }
                                 }
+                            }
+                        }
+                        else {
+//                            System.err.println("Writing INT -> " + numBands + "_BYTES");
 
-                                flushBuffer(buffer, stream);
-                                if (stream instanceof DataOutputStream) {
-                                    DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                    dataOutputStream.flush();
+                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
+                                for (int y = 0; y < tileHeight; y++) {
+                                    final int yOff = y * tileWidth;
+
+                                    for (int x = 0; x < tileWidth; x++) {
+                                        final int xOff = yOff + x;
+                                        int element = dataBuffer.getElem(b, xOff);
+
+                                        for (int s = 0; s < numBands; s++) {
+                                            buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
+                                        }
+                                    }
+
+                                    flushBuffer(buffer, stream);
+                                    if (stream instanceof DataOutputStream) {
+                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
+                                        dataOutputStream.flush();
+                                    }
                                 }
                             }
                         }

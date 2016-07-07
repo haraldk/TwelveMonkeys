@@ -34,11 +34,9 @@ import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.exif.Rational;
 import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import org.junit.Test;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
@@ -50,9 +48,8 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -88,7 +85,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 new BufferedImage(300, 200, BufferedImage.TYPE_4BYTE_ABGR),
                 new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_GRAY),
                 new BufferedImage(300, 200, BufferedImage.TYPE_USHORT_GRAY),
-//                new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_BINARY), // TODO!
+                new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_BINARY),
                 new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_INDEXED)
         );
     }
@@ -429,7 +426,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         // Read original LZW compressed TIFF
         IIOImage original;
 
-        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/a33.tif"))) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/a33.tif"))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 
@@ -493,7 +490,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         // Read original LZW compressed TIFF
         IIOImage original;
 
-        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/a33.tif"))) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/a33.tif"))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 
@@ -558,7 +555,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         // Read original LZW compressed TIFF
         IIOImage original;
 
-        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/quad-lzw.tif"))) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/quad-lzw.tif"))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 
@@ -618,7 +615,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         // Read original LZW compressed TIFF
         IIOImage original;
 
-        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/quad-lzw.tif"))) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/quad-lzw.tif"))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 
@@ -682,7 +679,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         // Read original LZW compressed TIFF
         IIOImage original;
 
-        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/quad-lzw.tif"))) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/quad-lzw.tif"))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 
@@ -742,6 +739,54 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
             }
 
             assertTrue("Software metadata not found", softwareFound);
+        }
+    }
+
+    @Test
+    public void testWriteCropped() throws IOException {
+        List<URL> testData = Arrays.asList(
+                getClassLoaderResource("/tiff/quad-lzw.tif"),
+                getClassLoaderResource("/tiff/grayscale-alpha.tiff"),
+                getClassLoaderResource("/tiff/ccitt/group3_1d.tif"),
+                getClassLoaderResource("/tiff/depth/flower-palette-02.tif"),
+                getClassLoaderResource("/tiff/depth/flower-palette-04.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-16.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-32.tif")
+        );
+
+        for (URL resource : testData) {
+            // Read it
+            BufferedImage original = ImageIO.read(resource);
+
+            // Crop it
+            BufferedImage subimage = original.getSubimage(original.getWidth() / 4, original.getHeight() / 4, original.getWidth() / 2, original.getHeight() / 2);
+
+            // Store cropped
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+                ImageWriter imageWriter = createImageWriter();
+                imageWriter.setOutput(output);
+                imageWriter.write(subimage);
+            }
+
+            // Re-read cropped
+            BufferedImage cropped = ImageIO.read(new ByteArrayImageInputStream(bytes.toByteArray()));
+
+            // Compare
+            assertImageEquals(String.format("Cropped output differs: %s", resource.getFile()), subimage, cropped, 0);
+        }
+    }
+
+    private void assertImageEquals(final String message, final BufferedImage expected, final BufferedImage actual, final int tolerance) {
+        assertNotNull(message, expected);
+        assertNotNull(message, actual);
+        assertEquals(message + ", widths differ", expected.getWidth(), actual.getWidth());
+        assertEquals(message + ", heights differ", expected.getHeight(), actual.getHeight());
+
+        for (int y = 0; y < expected.getHeight(); y++) {
+            for (int x = 0; x < expected.getWidth(); x++) {
+                assertRGBEquals(String.format("%s, ARGB differs at (%s,%s)", message, x, y), expected.getRGB(x, y), actual.getRGB(x, y), tolerance);
+            }
         }
     }
 }

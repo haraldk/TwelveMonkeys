@@ -956,7 +956,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                     int rgb = imageRGB.getRGB(x, y);
 
                     if (rgb != cmykAsRGB) {
-                        assertRGBEquals(String.format("Diff at [%d, %d]: #%04x != #%04x", x, y, cmykAsRGB, rgb), rgb, cmykAsRGB, 2);
+                        assertRGBEquals(String.format("Diff at [%d, %d]", x, y), rgb, cmykAsRGB, 2);
                     }
                 }
             }

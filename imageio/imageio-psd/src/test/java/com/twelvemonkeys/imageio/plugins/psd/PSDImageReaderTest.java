@@ -447,7 +447,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
                     // NOTE: Allow some slack, as Java 1.7 and 1.8 color management differs slightly
                     int rgb = image.getRGB(0, 0);
-                    assertRGBEquals(String.format("#%04x != #%04x", colors[i], rgb), colors[i], rgb, 1);
+                    assertRGBEquals("Colors differ", colors[i], rgb, 1);
                 }
             }
         }
