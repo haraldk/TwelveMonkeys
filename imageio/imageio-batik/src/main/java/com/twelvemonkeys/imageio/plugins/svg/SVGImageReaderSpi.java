@@ -52,6 +52,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     /**
      * Creates an {@code SVGImageReaderSpi}.
      */
+    @SuppressWarnings("WeakerAccess")
     public SVGImageReaderSpi() {
         super(new SVGProviderInfo());
     }
@@ -60,6 +61,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         return pSource instanceof ImageInputStream && SVG_READER_AVAILABLE && canDecode((ImageInputStream) pSource);
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     private static boolean canDecode(final ImageInputStream pInput) throws IOException {
         // NOTE: This test is quite quick as it does not involve any parsing,
         // however it may not recognize all kinds of SVG documents.
@@ -94,15 +96,15 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
                 if (buffer[0] == '?') {
                     // This is the XML declaration or a processing instruction
-                    while (!(pInput.read() == '?' && pInput.read() == '>')) {
-                        // Skip until end of XML declaration or processing instruction
+                    while (!((pInput.readByte() & 0xFF) == '?' && pInput.read() == '>')) {
+                        // Skip until end of XML declaration or processing instruction or EOF
                     }
                 }
                 else if (buffer[0] == '!') {
                     if (buffer[1] == '-' && buffer[2] == '-') {
                         // This is a comment
-                        while (!(pInput.read() == '-' && pInput.read() == '-' && pInput.read() == '>')) {
-                            // Skip until end of comment
+                        while (!((pInput.readByte() & 0xFF) == '-' && pInput.read() == '-' && pInput.read() == '>')) {
+                            // Skip until end of comment or EOF
                         }
                     }
                     else if (buffer[1] == 'D' && buffer[2] == 'O' && buffer[3] == 'C'
@@ -137,8 +139,8 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                     return false;
                 }
 
-                while (pInput.read() != '<') {
-                    // Skip over, until next begin tag
+                while ((pInput.readByte() & 0xFF) != '<') {
+                    // Skip over, until next begin tag or EOF
                 }
             }
         }
@@ -147,6 +149,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
             return false;
         }
         finally {
+            //noinspection ThrowFromFinallyBlock
             pInput.reset();
         }
     }
