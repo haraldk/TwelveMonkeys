@@ -197,9 +197,7 @@ final class JPEGImage10MetadataCleaner {
             IIOMetadataNode unknown = new IIOMetadataNode("unknown");
             unknown.setAttribute("MarkerTag", Integer.toString(segment.marker() & 0xff));
 
-            DataInputStream stream = new DataInputStream(segment.data());
-
-            try {
+            try (DataInputStream stream = new DataInputStream(segment.data())) {
                 String identifier = segment.identifier();
                 int off = identifier != null ? identifier.length() + 1 : 0;
 
@@ -212,9 +210,6 @@ final class JPEGImage10MetadataCleaner {
                 stream.readFully(data, off, segment.length());
 
                 unknown.setUserObject(data);
-            }
-            finally {
-                stream.close();
             }
 
             if (next == null) {
@@ -271,12 +266,12 @@ final class JPEGImage10MetadataCleaner {
                 dht.getParentNode().insertBefore(acTables, dht.getNextSibling());
 
                 // Split into 2 dht nodes, one for AC and one for DC
-                for (int i = 0; i < dhtables.getLength(); i++) {
+                for (int i = dhtables.getLength() - 1; i >= 0 ; i--) {
                     Element dhtable = (Element) dhtables.item(i);
                     String tableClass = dhtable.getAttribute("class");
                     if ("1".equals(tableClass)) {
                         dht.removeChild(dhtable);
-                        acTables.appendChild(dhtable);
+                        acTables.insertBefore(dhtable, acTables.getFirstChild());
                     }
                 }
             }
