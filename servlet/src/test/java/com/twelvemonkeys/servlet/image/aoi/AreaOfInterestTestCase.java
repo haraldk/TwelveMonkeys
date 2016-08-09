@@ -1,7 +1,5 @@
 package com.twelvemonkeys.servlet.image.aoi;
 
-import com.twelvemonkeys.servlet.image.aoi.DefaultAreaOfInterest;
-import com.twelvemonkeys.servlet.image.aoi.UniformAreaOfInterest;
 import org.junit.Test;
 
 import java.awt.*;
@@ -33,19 +31,16 @@ public class AreaOfInterestTestCase {
 
     @Test
     public void testGetAOIAbsoluteOverflowW() {
-
         assertEquals(new Rectangle(0, 10, 100, 100), new DefaultAreaOfInterest(PORTRAIT_100_200).getAOI(0, 10, 110, 100));
     }
 
     @Test
     public void testGetAOIAbsoluteOverflowY() {
-
         assertEquals(new Rectangle(10, 10, 100, 90), new DefaultAreaOfInterest(LANDSCAPE_200_100).getAOI(10, 10, 100, 100));
     }
 
     @Test
     public void testGetAOIAbsoluteOverflowH() {
-
         assertEquals(new Rectangle(10, 0, 100, 100), new DefaultAreaOfInterest(LANDSCAPE_200_100).getAOI(10, 0, 100, 110));
     }
 
@@ -336,6 +331,5 @@ public class AreaOfInterestTestCase {
     public void testGetAOICenteredN2NMax() {
         assertEquals(new Rectangle(0, 0, 100, 200), new DefaultAreaOfInterest(PORTRAIT_100_200).getAOI(-1, -1, 100, 200));
     }
-
 
 }
