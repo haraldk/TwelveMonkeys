@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.color.YCbCrConverter;
@@ -39,16 +40,17 @@ import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import com.twelvemonkeys.imageio.plugins.jpeg.lossless.DataStream;
 import com.twelvemonkeys.imageio.plugins.jpeg.lossless.JPEGLosslessDecoderWrapper;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.xml.XMLSerializer;
+import org.w3c.dom.Node;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
@@ -136,6 +138,10 @@ public class JPEGImageReader extends ImageReaderBase {
         map.put(JPEG.SOF14, null);
         map.put(JPEG.SOF15, null);
 
+        map.put(JPEG.DQT, null);
+        map.put(JPEG.DHT, null);
+        map.put(JPEG.SOS, null);
+
         return Collections.unmodifiableMap(map);
     }
 
@@ -201,6 +207,12 @@ public class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public int getNumImages(boolean allowSearch) throws IOException {
+        if (allowSearch) {
+            if (isLossless()) {
+                return 1;
+            }
+        }
+
         try {
             return delegate.getNumImages(allowSearch);
         }
@@ -210,13 +222,43 @@ public class JPEGImageReader extends ImageReaderBase {
         }
     }
 
+    private boolean isLossless() throws IOException {
+        assertInput();
+
+        try {
+            SOFSegment sof = getSOF();
+            if (sof.marker == JPEG.SOF3) {
+                return true;
+            }
+        }
+        catch (IIOException ignore) {
+            // May happen if no SOF is found, in case we'll just fall through
+        }
+
+        return false;
+    }
+
     @Override
     public int getWidth(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+
+        SOFSegment sof = getSOF();
+        if (sof.marker == JPEG.SOF3) {
+            return sof.samplesPerLine;
+        }
+
         return delegate.getWidth(imageIndex);
     }
 
     @Override
     public int getHeight(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+
+        SOFSegment sof = getSOF();
+        if (sof.marker == JPEG.SOF3) {
+            return sof.lines;
+        }
+
         return delegate.getHeight(imageIndex);
     }
 
@@ -277,7 +319,7 @@ public class JPEGImageReader extends ImageReaderBase {
                 return rawType;
             }
         }
-        catch (NullPointerException ignore) {
+        catch (IIOException | NullPointerException ignore) {
             // Fall through
         }
 
@@ -340,33 +382,11 @@ public class JPEGImageReader extends ImageReaderBase {
 
         JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
 
-        //try to read an JPEG Lossless image
-        if(sof.marker == JPEG.SOF3){
-        	JPEGLosslessDecoderWrapper decoder = new JPEGLosslessDecoderWrapper();
-        	ImageInputStream inputStream = (ImageInputStream) this.getInput();
-        	
-        	/* try to read the input stream as once. If length is not supported
-        	 * the image is read blockwise
-        	 */
-        	byte[] rawByteData;
-        	long byteLength = inputStream.length();
-        	if(byteLength > 0 && byteLength < Integer.MAX_VALUE){
-        		rawByteData = new byte[(int)byteLength];
-        		inputStream.read(rawByteData);
-        	} else {
-        		ByteArrayOutputStream bytes = new ByteArrayOutputStream(1024 * 1024 /* Provide a size close to what is likely the case for better performance*/);
-
-        		byte[] buffer = new byte[1024];
-        		int count;
-        		while ((count = inputStream.read(buffer)) > 0) {
-        		    bytes.write(buffer, 0, count);
-        		}
-
-        		rawByteData = bytes.toByteArray();
-        	}
-        	
-        	//try do read the image, IOException can be thrown
-        	return decoder.readImage(rawByteData);
+        if (sof.marker == JPEG.SOF3) {
+            // TODO: What about stream position?
+            // TODO: Param handling: Source region, offset, subsampling, destination, destination type, etc....
+            // Read image as lossless
+            return new JPEGLosslessDecoderWrapper().readImage(imageInput);
         }
         
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
@@ -746,34 +766,35 @@ public class JPEGImageReader extends ImageReaderBase {
         initHeader();
 
         for (JPEGSegment segment : segments) {
-            if (JPEG.SOF0 >= segment.marker() && segment.marker() <= JPEG.SOF3 ||
-                    JPEG.SOF5 >= segment.marker() && segment.marker() <= JPEG.SOF7 ||
-                    JPEG.SOF9 >= segment.marker() && segment.marker() <= JPEG.SOF11 ||
-                    JPEG.SOF13 >= segment.marker() && segment.marker() <= JPEG.SOF15) {
+            if (JPEG.SOF0 <= segment.marker() && segment.marker() <= JPEG.SOF3 ||
+                    JPEG.SOF5 <= segment.marker() && segment.marker() <= JPEG.SOF7 ||
+                    JPEG.SOF9 <= segment.marker() && segment.marker() <= JPEG.SOF11 ||
+                    JPEG.SOF13 <= segment.marker() && segment.marker() <= JPEG.SOF15) {
 
-                DataInputStream data = new DataInputStream(segment.data());
-
-                try {
-                    int samplePrecision = data.readUnsignedByte();
-                    int lines = data.readUnsignedShort();
-                    int samplesPerLine = data.readUnsignedShort();
-                    int componentsInFrame = data.readUnsignedByte();
-
-                    SOFComponent[] components = new SOFComponent[componentsInFrame];
-
-                    for (int i = 0; i < componentsInFrame; i++) {
-                        int id = data.readUnsignedByte();
-                        int sub = data.readUnsignedByte();
-                        int qtSel = data.readUnsignedByte();
-
-                        components[i] = new SOFComponent(id, ((sub & 0xF0) >> 4), (sub & 0xF), qtSel);
-                    }
-
-                    return new SOFSegment(segment.marker(), samplePrecision, lines, samplesPerLine, components);
+                try (DataInputStream data = new DataInputStream(segment.data())) {
+                    return SOFSegment.read(segment.marker(), data);
                 }
-                finally {
-                    data.close();
-                }
+//                try {
+//                    int samplePrecision = data.readUnsignedByte();
+//                    int lines = data.readUnsignedShort();
+//                    int samplesPerLine = data.readUnsignedShort();
+//                    int componentsInFrame = data.readUnsignedByte();
+//
+//                    SOFComponent[] components = new SOFComponent[componentsInFrame];
+//
+//                    for (int i = 0; i < componentsInFrame; i++) {
+//                        int id = data.readUnsignedByte();
+//                        int sub = data.readUnsignedByte();
+//                        int qtSel = data.readUnsignedByte();
+//
+//                        components[i] = new SOFComponent(id, ((sub & 0xF0) >> 4), (sub & 0xF), qtSel);
+//                    }
+//
+//                    return new SOFSegment(segment.marker(), samplePrecision, lines, samplesPerLine, components);
+//                }
+//                finally {
+//                    data.close();
+//                }
             }
         }
 
@@ -960,7 +981,15 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     @Override
-    public Raster readRaster(int imageIndex, ImageReadParam param) throws IOException {
+    public Raster readRaster(final int imageIndex, final ImageReadParam param) throws IOException {
+        checkBounds(imageIndex);
+
+        if (isLossless()) {
+            // TODO: What about stream position?
+            // TODO: Param handling: Reading as raster should support source region, subsampling etc.
+            return new JPEGLosslessDecoderWrapper().readRaster(imageInput);
+        }
+
         return delegate.readRaster(imageIndex, param);
     }
 
@@ -1101,24 +1130,58 @@ public class JPEGImageReader extends ImageReaderBase {
 
         IIOMetadata imageMetadata;
 
-        try {
-            imageMetadata = delegate.getImageMetadata(imageIndex);
-        }
-        catch (IndexOutOfBoundsException knownIssue) {
-            // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
-            throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
-        }
-        catch (NegativeArraySizeException knownIssue) {
-            // Most likely from com.sun.imageio.plugins.jpeg.SOSMarkerSegment
-            throw new IIOException("Corrupt JPEG data: Bad component count", knownIssue);
-        }
+        if (isLossless()) {
+            return new AbstractMetadata(true, JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0, null, null, null) {
+                @Override
+                protected Node getNativeTree() {
+                    IIOMetadataNode root = new IIOMetadataNode(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
 
-        if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
-            if (metadataCleaner == null) {
-                metadataCleaner = new JPEGImage10MetadataCleaner(this);
+                    root.appendChild(new IIOMetadataNode("JPEGvariety"));
+                    IIOMetadataNode markerSequence = new IIOMetadataNode("markerSequence");
+                    root.appendChild(markerSequence);
+
+                    for (JPEGSegment segment : segments) {
+                        switch (segment.marker()) {
+                            // SOF3 is the only one supported by now
+                            case JPEG.SOF3:
+                                markerSequence.appendChild(new IIOMetadataNode("sof"));
+                                break;
+                            case JPEG.DHT:
+                                markerSequence.appendChild(new IIOMetadataNode("dht"));
+                                break;
+                            case JPEG.DQT:
+                                markerSequence.appendChild(new IIOMetadataNode("dqt"));
+                                break;
+                            case JPEG.SOS:
+                                markerSequence.appendChild(new IIOMetadataNode("sos"));
+                                break;
+                        }
+                    }
+
+                    return root;
+                }
+            };
+        }
+        else {
+            try {
+                imageMetadata = delegate.getImageMetadata(imageIndex);
+            }
+            catch (IndexOutOfBoundsException knownIssue) {
+                // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
+                throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
+            }
+            catch (NegativeArraySizeException knownIssue) {
+                // Most likely from com.sun.imageio.plugins.jpeg.SOSMarkerSegment
+                throw new IIOException("Corrupt JPEG data: Bad component count", knownIssue);
             }
 
-            return metadataCleaner.cleanMetadata(imageMetadata);
+            if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
+                if (metadataCleaner == null) {
+                    metadataCleaner = new JPEGImage10MetadataCleaner(this);
+                }
+
+                return metadataCleaner.cleanMetadata(imageMetadata);
+            }
         }
 
         return imageMetadata;
@@ -1402,7 +1465,8 @@ public class JPEGImageReader extends ImageReaderBase {
                     image = reader.getImageTypes(0).next().createBufferedImage((reader.getWidth(0) + subX - 1)/ subX, (reader.getHeight(0) + subY - 1) / subY);
                 }
                 else {
-                    image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+//                    image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                    image = null;
                 }
                 param.setDestination(image);
 

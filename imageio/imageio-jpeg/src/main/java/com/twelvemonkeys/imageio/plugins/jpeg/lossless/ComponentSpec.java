@@ -32,7 +32,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg.lossless;
 
 public class ComponentSpec {
 
-	protected int hSamp; // Horizontal sampling factor
-	protected int quantTableSel; // Quantization table destination selector
-	protected int vSamp; // Vertical
+    protected int hSamp; // Horizontal sampling factor
+    protected int quantTableSel; // Quantization table destination selector
+    protected int vSamp; // Vertical
 }

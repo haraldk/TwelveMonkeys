@@ -49,6 +49,22 @@ public interface JPEG {
     /** Define Huffman Tables segment marker (DHT). */
     int DHT = 0xFFC4;
 
+    /** Comment (COM) */
+    int COM = 0xFFFE;
+
+    /** Define Number of Lines (DNL). */
+    int DNL = 0xFFDC;
+    /** Define Restart Interval (DRI). */
+    int DRI = 0xFFDD;
+    /** Define Hierarchical Progression (DHP). */
+    int DHP = 0xFFDE;
+    /** Expand reference components (EXP). */
+    int EXP = 0xFFDF;
+    /** Temporary use in arithmetic coding (TEM). */
+    int TEM = 0xFF01;
+    /** Define Define Arithmetic Coding conditioning (DAC). */
+    int DAC = 0xFFCC;
+
     // App segment markers (APPn).
     int APP0 = 0xFFE0;
     int APP1 = 0xFFE1;

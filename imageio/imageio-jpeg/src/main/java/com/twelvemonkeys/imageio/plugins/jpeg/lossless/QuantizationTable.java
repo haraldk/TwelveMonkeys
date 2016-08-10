@@ -30,112 +30,109 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg.lossless;
 
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-
 
 public class QuantizationTable {
 
-	private final int precision[] = new int[4]; // Quantization precision 8 or 16
-	private final int[] tq = new int[4]; // 1: this table is presented
+    private final int precision[] = new int[4]; // Quantization precision 8 or 16
+    private final int[] tq = new int[4]; // 1: this table is presented
 
-	protected final int quantTables[][] = new int[4][64]; // Tables
+    protected final int quantTables[][] = new int[4][64]; // Tables
 
+    public QuantizationTable() {
+        tq[0] = 0;
+        tq[1] = 0;
+        tq[2] = 0;
+        tq[3] = 0;
+    }
 
+    protected int read(final ImageInputStream data, final int[] table) throws IOException {
+        int count = 0;
+        final int length = data.readUnsignedShort();
+        count += 2;
 
-	public QuantizationTable() {
-		tq[0] = 0;
-		tq[1] = 0;
-		tq[2] = 0;
-		tq[3] = 0;
-	}
+        while (count < length) {
+            final int temp = data.readUnsignedByte();
+            count++;
+            final int t = temp & 0x0F;
 
+            if (t > 3) {
+                throw new IOException("ERROR: Quantization table ID > 3");
+            }
 
+            precision[t] = temp >> 4;
 
-	protected int read(final DataStream data, final int[] table) throws IOException {
-		int count = 0;
-		final int length = data.get16();
-		count += 2;
+            if (precision[t] == 0) {
+                precision[t] = 8;
+            }
+            else if (precision[t] == 1) {
+                precision[t] = 16;
+            }
+            else {
+                throw new IOException("ERROR: Quantization table precision error");
+            }
 
-		while (count < length) {
-			final int temp = data.get8();
-			count++;
-			final int t = temp & 0x0F;
+            tq[t] = 1;
 
-			if (t > 3) {
-				throw new IOException("ERROR: Quantization table ID > 3");
-			}
+            if (precision[t] == 8) {
+                for (int i = 0; i < 64; i++) {
+                    if (count > length) {
+                        throw new IOException("ERROR: Quantization table format error");
+                    }
 
-			precision[t] = temp >> 4;
+                    quantTables[t][i] = data.readUnsignedByte();
+                    count++;
+                }
 
-			if (precision[t] == 0) {
-				precision[t] = 8;
-			} else if (precision[t] == 1) {
-				precision[t] = 16;
-			} else {
-				throw new IOException("ERROR: Quantization table precision error");
-			}
+                enhanceQuantizationTable(quantTables[t], table);
+            }
+            else {
+                for (int i = 0; i < 64; i++) {
+                    if (count > length) {
+                        throw new IOException("ERROR: Quantization table format error");
+                    }
 
-			tq[t] = 1;
+                    quantTables[t][i] = data.readUnsignedShort();
+                    count += 2;
+                }
 
-			if (precision[t] == 8) {
-				for (int i = 0; i < 64; i++) {
-					if (count > length) {
-						throw new IOException("ERROR: Quantization table format error");
-					}
+                enhanceQuantizationTable(quantTables[t], table);
+            }
+        }
 
-					quantTables[t][i] = data.get8();
-					count++;
-				}
+        if (count != length) {
+            throw new IOException("ERROR: Quantization table error [count!=Lq]");
+        }
 
-				enhanceQuantizationTable(quantTables[t], table);
-			} else {
-				for (int i = 0; i < 64; i++) {
-					if (count > length) {
-						throw new IOException("ERROR: Quantization table format error");
-					}
+        return 1;
+    }
 
-					quantTables[t][i] = data.get16();
-					count += 2;
-				}
+    private void enhanceQuantizationTable(final int qtab[], final int[] table) {
+        for (int i = 0; i < 8; i++) {
+            qtab[table[(0 * 8) + i]] *= 90;
+            qtab[table[(4 * 8) + i]] *= 90;
+            qtab[table[(2 * 8) + i]] *= 118;
+            qtab[table[(6 * 8) + i]] *= 49;
+            qtab[table[(5 * 8) + i]] *= 71;
+            qtab[table[(1 * 8) + i]] *= 126;
+            qtab[table[(7 * 8) + i]] *= 25;
+            qtab[table[(3 * 8) + i]] *= 106;
+        }
 
-				enhanceQuantizationTable(quantTables[t], table);
-			}
-		}
+        for (int i = 0; i < 8; i++) {
+            qtab[table[0 + (8 * i)]] *= 90;
+            qtab[table[4 + (8 * i)]] *= 90;
+            qtab[table[2 + (8 * i)]] *= 118;
+            qtab[table[6 + (8 * i)]] *= 49;
+            qtab[table[5 + (8 * i)]] *= 71;
+            qtab[table[1 + (8 * i)]] *= 126;
+            qtab[table[7 + (8 * i)]] *= 25;
+            qtab[table[3 + (8 * i)]] *= 106;
+        }
 
-		if (count != length) {
-			throw new IOException("ERROR: Quantization table error [count!=Lq]");
-		}
-
-		return 1;
-	}
-
-
-
-	private void enhanceQuantizationTable(final int qtab[], final int[] table) {
-		for (int i = 0; i < 8; i++) {
-			qtab[table[(0 * 8) + i]] *= 90;
-			qtab[table[(4 * 8) + i]] *= 90;
-			qtab[table[(2 * 8) + i]] *= 118;
-			qtab[table[(6 * 8) + i]] *= 49;
-			qtab[table[(5 * 8) + i]] *= 71;
-			qtab[table[(1 * 8) + i]] *= 126;
-			qtab[table[(7 * 8) + i]] *= 25;
-			qtab[table[(3 * 8) + i]] *= 106;
-		}
-
-		for (int i = 0; i < 8; i++) {
-			qtab[table[0 + (8 * i)]] *= 90;
-			qtab[table[4 + (8 * i)]] *= 90;
-			qtab[table[2 + (8 * i)]] *= 118;
-			qtab[table[6 + (8 * i)]] *= 49;
-			qtab[table[5 + (8 * i)]] *= 71;
-			qtab[table[1 + (8 * i)]] *= 126;
-			qtab[table[7 + (8 * i)]] *= 25;
-			qtab[table[3 + (8 * i)]] *= 106;
-		}
-
-		for (int i = 0; i < 64; i++) {
-			qtab[i] >>= 6;
-		}
-	}
+        for (int i = 0; i < 64; i++) {
+            qtab[i] >>= 6;
+        }
+    }
 }

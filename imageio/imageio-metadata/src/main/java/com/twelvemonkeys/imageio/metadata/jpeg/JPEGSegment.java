@@ -43,7 +43,7 @@ import java.util.Arrays;
 public final class JPEGSegment implements Serializable {
     final int marker;
     final byte[] data;
-    final int length;
+    private final int length;
 
     private transient String id;
 

@@ -30,117 +30,97 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg.lossless;
 
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-
 
 public class ScanHeader {
 
-	private int ah;
-	private int al;
-	private int numComp; // Number of components in the scan
-	private int selection; // Start of spectral or predictor selection
-	private int spectralEnd; // End of spectral selection
+    private int ah;
+    private int al;
+    private int numComp; // Number of components in the scan
+    private int selection; // Start of spectral or predictor selection
+    private int spectralEnd; // End of spectral selection
 
-	protected ScanComponent components[];
+    protected ScanComponent components[];
 
+    public int getAh() {
+        return ah;
+    }
 
+    public int getAl() {
+        return al;
+    }
 
-	public int getAh() {
-		return ah;
-	}
+    public int getNumComponents() {
+        return numComp;
+    }
 
+    public int getSelection() {
+        return selection;
+    }
 
+    public int getSpectralEnd() {
+        return spectralEnd;
+    }
 
-	public int getAl() {
-		return al;
-	}
+    public void setAh(final int ah) {
+        this.ah = ah;
+    }
 
+    public void setAl(final int al) {
+        this.al = al;
+    }
 
+    public void setSelection(final int selection) {
+        this.selection = selection;
+    }
 
-	public int getNumComponents() {
-		return numComp;
-	}
+    public void setSpectralEnd(final int spectralEnd) {
+        this.spectralEnd = spectralEnd;
+    }
 
+    protected int read(final ImageInputStream data) throws IOException {
+        int count = 0;
+        final int length = data.readUnsignedShort();
+        count += 2;
 
+        numComp = data.readUnsignedByte();
+        count++;
 
-	public int getSelection() {
-		return selection;
-	}
+        components = new ScanComponent[numComp];
 
+        for (int i = 0; i < numComp; i++) {
+            components[i] = new ScanComponent();
 
+            if (count > length) {
+                throw new IOException("ERROR: scan header format error");
+            }
 
-	public int getSpectralEnd() {
-		return spectralEnd;
-	}
+            components[i].setScanCompSel(data.readUnsignedByte());
+            count++;
 
+            final int temp = data.readUnsignedByte();
+            count++;
 
+            components[i].setDcTabSel(temp >> 4);
+            components[i].setAcTabSel(temp & 0x0F);
+        }
 
-	public void setAh(final int ah) {
-		this.ah = ah;
-	}
+        setSelection(data.readUnsignedByte());
+        count++;
 
+        setSpectralEnd(data.readUnsignedByte());
+        count++;
 
+        final int temp = data.readUnsignedByte();
+        setAh(temp >> 4);
+        setAl(temp & 0x0F);
+        count++;
 
-	public void setAl(final int al) {
-		this.al = al;
-	}
+        if (count != length) {
+            throw new IOException("ERROR: scan header format error [count!=Ns]");
+        }
 
-
-
-	public void setSelection(final int selection) {
-		this.selection = selection;
-	}
-
-
-
-	public void setSpectralEnd(final int spectralEnd) {
-		this.spectralEnd = spectralEnd;
-	}
-
-
-
-	protected int read(final DataStream data) throws IOException {
-		int count = 0;
-		final int length = data.get16();
-		count += 2;
-
-		numComp = data.get8();
-		count++;
-
-		components = new ScanComponent[numComp];
-
-		for (int i = 0; i < numComp; i++) {
-			components[i] = new ScanComponent();
-
-			if (count > length) {
-				throw new IOException("ERROR: scan header format error");
-			}
-
-			components[i].setScanCompSel(data.get8());
-			count++;
-
-			final int temp = data.get8();
-			count++;
-
-			components[i].setDcTabSel(temp >> 4);
-			components[i].setAcTabSel(temp & 0x0F);
-		}
-
-		setSelection(data.get8());
-		count++;
-
-		setSpectralEnd(data.get8());
-		count++;
-
-		final int temp = data.get8();
-		setAh(temp >> 4);
-		setAl(temp & 0x0F);
-		count++;
-
-		if (count != length) {
-			throw new IOException("ERROR: scan header format error [count!=Ns]");
-		}
-
-		return 1;
-	}
+        return 1;
+    }
 }

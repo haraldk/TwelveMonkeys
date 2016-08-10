@@ -32,43 +32,31 @@ package com.twelvemonkeys.imageio.plugins.jpeg.lossless;
 
 public class ScanComponent {
 
-	private int acTabSel; // AC table selector
-	private int dcTabSel; // DC table selector
-	private int scanCompSel; // Scan component selector
+    private int acTabSel; // AC table selector
+    private int dcTabSel; // DC table selector
+    private int scanCompSel; // Scan component selector
 
+    public int getAcTabSel() {
+        return acTabSel;
+    }
 
+    public int getDcTabSel() {
+        return dcTabSel;
+    }
 
-	public int getAcTabSel() {
-		return acTabSel;
-	}
+    public int getScanCompSel() {
+        return scanCompSel;
+    }
 
+    public void setAcTabSel(final int acTabSel) {
+        this.acTabSel = acTabSel;
+    }
 
+    public void setDcTabSel(final int dcTabSel) {
+        this.dcTabSel = dcTabSel;
+    }
 
-	public int getDcTabSel() {
-		return dcTabSel;
-	}
-
-
-
-	public int getScanCompSel() {
-		return scanCompSel;
-	}
-
-
-
-	public void setAcTabSel(final int acTabSel) {
-		this.acTabSel = acTabSel;
-	}
-
-
-
-	public void setDcTabSel(final int dcTabSel) {
-		this.dcTabSel = dcTabSel;
-	}
-
-
-
-	public void setScanCompSel(final int scanCompSel) {
-		this.scanCompSel = scanCompSel;
-	}
+    public void setScanCompSel(final int scanCompSel) {
+        this.scanCompSel = scanCompSel;
+    }
 }

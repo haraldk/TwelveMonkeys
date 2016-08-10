@@ -28,6 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -62,5 +64,24 @@ final class SOFSegment {
                 "SOF%d[%04x, precision: %d, lines: %d, samples/line: %d, components: %s]",
                 marker & 0xff - 0xc0, marker, samplePrecision, lines, samplesPerLine, Arrays.toString(components)
         );
+    }
+
+    public static SOFSegment read(final int marker, final DataInput data) throws IOException {
+        int samplePrecision = data.readUnsignedByte();
+        int lines = data.readUnsignedShort();
+        int samplesPerLine = data.readUnsignedShort();
+        int componentsInFrame = data.readUnsignedByte();
+
+        SOFComponent[] components = new SOFComponent[componentsInFrame];
+
+        for (int i = 0; i < componentsInFrame; i++) {
+            int id = data.readUnsignedByte();
+            int sub = data.readUnsignedByte();
+            int qtSel = data.readUnsignedByte();
+
+            components[i] = new SOFComponent(id, ((sub & 0xF0) >> 4), (sub & 0xF), qtSel);
+        }
+
+        return new SOFSegment(marker, samplePrecision, lines, samplesPerLine, components);
     }
 }
