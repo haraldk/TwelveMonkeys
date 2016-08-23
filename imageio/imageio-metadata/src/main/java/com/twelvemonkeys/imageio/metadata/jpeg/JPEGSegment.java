@@ -53,9 +53,13 @@ public final class JPEGSegment implements Serializable {
         this.length = length;
     }
 
-    int segmentLength() {
+    public int segmentLength() {
         // This is the length field as read from the stream
         return length;
+    }
+
+    public InputStream segmentData() {
+        return data != null ? new ByteArrayInputStream(data) : null;
     }
 
     public int marker() {

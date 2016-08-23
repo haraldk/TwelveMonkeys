@@ -28,6 +28,11 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+
+import java.io.DataInput;
+import java.io.IOException;
+
 /**
  * AdobeDCTSegment
  *
@@ -35,7 +40,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
  * @author last modified by $Author: haraldk$
  * @version $Id: AdobeDCTSegment.java,v 1.0 23.04.12 16:55 haraldk Exp$
  */
-class AdobeDCTSegment {
+final class AdobeDCT extends AppSegment {
     public static final int Unknown = 0;
     public static final int YCC = 1;
     public static final int YCCK = 2;
@@ -45,34 +50,34 @@ class AdobeDCTSegment {
     final int flags1;
     final int transform;
 
-    AdobeDCTSegment(int version, int flags0, int flags1, int transform) {
+    AdobeDCT(int version, int flags0, int flags1, int transform) {
+        super(JPEG.APP14, "Adobe", new byte[]{'A', 'd', 'o', 'b', 'e', 0, (byte) version, (byte) (flags0 >> 8), (byte) (flags0 & 0xff), (byte) (flags1 >> 8), (byte) (flags1 & 0xff), (byte) transform});
+
         this.version = version; // 100 or 101
         this.flags0 = flags0;
         this.flags1 = flags1;
         this.transform = transform;
     }
 
-    public int getVersion() {
-        return version;
-    }
-
-    public int getFlags0() {
-        return flags0;
-    }
-
-    public int getFlags1() {
-        return flags1;
-    }
-
-    public int getTransform() {
-        return transform;
-    }
-
     @Override
     public String toString() {
         return String.format(
                 "AdobeDCT[ver: %d.%02d, flags: %s %s, transform: %d]",
-                getVersion() / 100, getVersion() % 100, Integer.toBinaryString(getFlags0()), Integer.toBinaryString(getFlags1()), getTransform()
+                version / 100, version % 100, Integer.toBinaryString(flags0), Integer.toBinaryString(flags1), transform
+        );
+    }
+
+    public static AdobeDCT read(final DataInput data, final int length) throws IOException {
+        // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe APP14 markers
+
+        data.skipBytes(6);
+
+        // version (byte), flags (4bytes), color transform (byte: 0=unknown, 1=YCC, 2=YCCK)
+        return new AdobeDCT(
+                data.readUnsignedByte(),
+                data.readUnsignedShort(),
+                data.readUnsignedShort(),
+                data.readUnsignedByte()
         );
     }
 }

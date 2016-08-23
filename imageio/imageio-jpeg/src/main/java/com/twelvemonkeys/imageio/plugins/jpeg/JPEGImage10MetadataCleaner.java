@@ -1,7 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
-import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.xml.XMLSerializer;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -11,6 +10,7 @@ import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.color.ICC_Profile;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -39,7 +39,7 @@ final class JPEGImage10MetadataCleaner {
     IIOMetadata cleanMetadata(final IIOMetadata imageMetadata) throws IOException {
         // We filter out pretty much everything from the stream..
         // Meaning we have to read get *all APP segments* and re-insert into metadata.
-        List<JPEGSegment> appSegments = reader.getAppSegments(JPEGImageReader.ALL_APP_MARKERS, null);
+        List<AppSegment> appSegments = reader.getAppSegments(JPEGImageReader.ALL_APP_MARKERS, null);
 
         // NOTE: There's a bug in the merging code in JPEGMetadata mergeUnknownNode that makes sure all "unknown" nodes are added twice in certain conditions.... ARGHBL...
         // DONE: 1: Work around
@@ -70,11 +70,11 @@ final class JPEGImage10MetadataCleaner {
         IIOMetadataNode jpegVariety = (IIOMetadataNode) tree.getElementsByTagName("JPEGvariety").item(0);
         IIOMetadataNode markerSequence = (IIOMetadataNode) tree.getElementsByTagName("markerSequence").item(0);
 
-        JFIFSegment jfifSegment = reader.getJFIF();
-        JFXXSegment jfxxSegment = reader.getJFXX();
-        AdobeDCTSegment adobeDCT = reader.getAdobeDCT();
+        JFIF jfifSegment = reader.getJFIF();
+        JFXX jfxx = reader.getJFXX();
+        AdobeDCT adobeDCT = reader.getAdobeDCT();
         ICC_Profile embeddedICCProfile = reader.getEmbeddedICCProfile(true);
-        SOFSegment sof = reader.getSOF();
+        Frame sof = reader.getSOF();
 
         boolean hasRealJFIF = false;
         boolean hasRealJFXX = false;
@@ -104,17 +104,17 @@ final class JPEGImage10MetadataCleaner {
                     hasRealICC = true;
                 }
 
-                if (jfxxSegment != null) {
+                if (jfxx != null) {
                     IIOMetadataNode JFXX = new IIOMetadataNode("JFXX");
                     jfif.appendChild(JFXX);
                     IIOMetadataNode app0JFXX = new IIOMetadataNode("app0JFXX");
-                    app0JFXX.setAttribute("extensionCode", String.valueOf(jfxxSegment.extensionCode));
+                    app0JFXX.setAttribute("extensionCode", String.valueOf(jfxx.extensionCode));
 
-                    JFXXThumbnailReader thumbnailReader = new JFXXThumbnailReader(null, reader.getThumbnailReader(), 0, 0, jfxxSegment);
+                    JFXXThumbnailReader thumbnailReader = new JFXXThumbnailReader(null, reader.getThumbnailReader(), 0, 0, jfxx);
                     IIOMetadataNode jfifThumb;
 
-                    switch (jfxxSegment.extensionCode) {
-                        case JFXXSegment.JPEG:
+                    switch (jfxx.extensionCode) {
+                        case com.twelvemonkeys.imageio.plugins.jpeg.JFXX.JPEG:
                             jfifThumb = new IIOMetadataNode("JFIFthumbJPEG");
                             // Contains it's own "markerSequence" with full DHT, DQT, SOF etc...
                             IIOMetadata thumbMeta = thumbnailReader.readMetadata();
@@ -123,14 +123,14 @@ final class JPEGImage10MetadataCleaner {
                             app0JFXX.appendChild(jfifThumb);
                             break;
 
-                        case JFXXSegment.INDEXED:
+                        case com.twelvemonkeys.imageio.plugins.jpeg.JFXX.INDEXED:
                             jfifThumb = new IIOMetadataNode("JFIFthumbPalette");
                             jfifThumb.setAttribute("thumbWidth", String.valueOf(thumbnailReader.getWidth()));
                             jfifThumb.setAttribute("thumbHeight", String.valueOf(thumbnailReader.getHeight()));
                             app0JFXX.appendChild(jfifThumb);
                             break;
 
-                        case JFXXSegment.RGB:
+                        case com.twelvemonkeys.imageio.plugins.jpeg.JFXX.RGB:
                             jfifThumb = new IIOMetadataNode("JFIFthumbRGB");
                             jfifThumb.setAttribute("thumbWidth", String.valueOf(thumbnailReader.getWidth()));
                             jfifThumb.setAttribute("thumbHeight", String.valueOf(thumbnailReader.getHeight()));
@@ -138,7 +138,7 @@ final class JPEGImage10MetadataCleaner {
                             break;
 
                         default:
-                            reader.processWarningOccurred(String.format("Unknown JFXX extension code: %d", jfxxSegment.extensionCode));
+                            reader.processWarningOccurred(String.format("Unknown JFXX extension code: %d", jfxx.extensionCode));
                     }
 
                     JFXX.appendChild(app0JFXX);
@@ -156,12 +156,12 @@ final class JPEGImage10MetadataCleaner {
         }
 
         // Special case: Broken AdobeDCT segment, inconsistent with SOF, use values from SOF
-        if (adobeDCT != null && (adobeDCT.getTransform() == AdobeDCTSegment.YCCK && sof.componentsInFrame() < 4 ||
-                adobeDCT.getTransform() == AdobeDCTSegment.YCC && sof.componentsInFrame() < 3)) {
+        if (adobeDCT != null && (adobeDCT.transform == AdobeDCT.YCCK && sof.componentsInFrame() < 4 ||
+                adobeDCT.transform == AdobeDCT.YCC && sof.componentsInFrame() < 3)) {
             reader.processWarningOccurred(String.format(
                     "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
                             "Ignoring Adobe App14 marker.",
-                    adobeDCT.getTransform() == AdobeDCTSegment.YCCK ? "YCCK/CMYK" : "YCC/RGB",
+                    adobeDCT.transform == AdobeDCT.YCCK ? "YCCK/CMYK" : "YCC/RGB",
                     sof.marker & 0xf, sof.componentsInFrame()
             ));
 
@@ -176,41 +176,43 @@ final class JPEGImage10MetadataCleaner {
         }
 
         Node next = null;
-        for (JPEGSegment segment : appSegments) {
+        for (AppSegment segment : appSegments) {
             // Except real app0JFIF, app0JFXX, app2ICC and app14Adobe, add all the app segments that we filtered away as "unknown" markers
-            if (segment.marker() == JPEG.APP0 && "JFIF".equals(segment.identifier()) && hasRealJFIF) {
+            if (segment.marker == JPEG.APP0 && "JFIF".equals(segment.identifier) && hasRealJFIF) {
                 continue;
             }
-            else if (segment.marker() == JPEG.APP0 && "JFXX".equals(segment.identifier()) && hasRealJFXX) {
+            else if (segment.marker == JPEG.APP0 && "JFXX".equals(segment.identifier) && hasRealJFXX) {
                 continue;
             }
-            else if (segment.marker() == JPEG.APP1 && "Exif".equals(segment.identifier()) /* always inserted */) {
+            else if (segment.marker == JPEG.APP1 && "Exif".equals(segment.identifier) /* always inserted */) {
                 continue;
             }
-            else if (segment.marker() == JPEG.APP2 && "ICC_PROFILE".equals(segment.identifier()) && hasRealICC) {
+            else if (segment.marker == JPEG.APP2 && "ICC_PROFILE".equals(segment.identifier) && hasRealICC) {
                 continue;
             }
-            else if (segment.marker() == JPEG.APP14 && "Adobe".equals(segment.identifier()) /* always inserted */) {
+            else if (segment.marker == JPEG.APP14 && "Adobe".equals(segment.identifier) /* always inserted */) {
                 continue;
             }
 
             IIOMetadataNode unknown = new IIOMetadataNode("unknown");
-            unknown.setAttribute("MarkerTag", Integer.toString(segment.marker() & 0xff));
+            unknown.setAttribute("MarkerTag", Integer.toString(segment.marker & 0xff));
 
-            try (DataInputStream stream = new DataInputStream(segment.data())) {
-                String identifier = segment.identifier();
-                int off = identifier != null ? identifier.length() + 1 : 0;
+            unknown.setUserObject(segment.data);
 
-                byte[] data = new byte[off + segment.length()];
-
-                if (identifier != null) {
-                    System.arraycopy(identifier.getBytes(Charset.forName("ASCII")), 0, data, 0, identifier.length());
-                }
-
-                stream.readFully(data, off, segment.length());
-
-                unknown.setUserObject(data);
-            }
+//            try (DataInputStream stream = new DataInputStream(new ByteArrayInputStream(segment.data))) {
+//                String identifier = segment.identifier;
+//                int off = identifier != null ? identifier.length() + 1 : 0;
+//
+//                byte[] data = new byte[off + segment.data.length];
+//
+//                if (identifier != null) {
+//                    System.arraycopy(identifier.getBytes(Charset.forName("ASCII")), 0, data, 0, identifier.length());
+//                }
+//
+//                stream.readFully(data, off, segment.data.length);
+//
+//                unknown.setUserObject(data);
+//            }
 
             if (next == null) {
                 // To be semi-compatible with the functionality in mergeTree,

@@ -28,9 +28,11 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 /**
  * JFXXSegment
@@ -39,7 +41,7 @@ import java.io.InputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: JFXXSegment.java,v 1.0 23.04.12 16:54 haraldk Exp$
  */
-class JFXXSegment {
+final class JFXX extends AppSegment {
     public static final int JPEG = 0x10;
     public static final int INDEXED = 0x11;
     public static final int RGB  = 0x13;
@@ -47,7 +49,9 @@ class JFXXSegment {
     final int extensionCode;
     final byte[] thumbnail;
 
-    private JFXXSegment(int extensionCode, byte[] thumbnail) {
+    private JFXX(final int extensionCode, final byte[] thumbnail, final byte[] data) {
+        super(com.twelvemonkeys.imageio.metadata.jpeg.JPEG.APP0, "JFXX", data);
+
         this.extensionCode = extensionCode;
         this.thumbnail = thumbnail;
     }
@@ -70,12 +74,16 @@ class JFXXSegment {
         }
     }
 
-    public static JFXXSegment read(InputStream data, int length) throws IOException {
-        DataInputStream stream = new DataInputStream(data);
+    public static JFXX read(final DataInput data, final int length) throws IOException {
+        data.readFully(new byte[5]);
 
-        return new JFXXSegment(
-                stream.readUnsignedByte(),
-                JPEGImageReader.readFully(stream, length - 1)
+        byte[] bytes = new byte[length - 2 - 5];
+        data.readFully(bytes);
+
+        return new JFXX(
+                bytes[0] & 0xff,
+                bytes.length - 1 > 0 ? Arrays.copyOfRange(bytes, 1, bytes.length - 1) : null,
+                bytes
         );
     }
 }

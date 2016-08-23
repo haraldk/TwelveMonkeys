@@ -42,7 +42,6 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: ThumbnailReader.java,v 1.0 18.04.12 12:22 haraldk Exp$
  */
-// TODO: Get rid of the com.sun import!!
 abstract class ThumbnailReader {
 
     private final ThumbnailReadProgressListener progressListener;
@@ -68,19 +67,9 @@ abstract class ThumbnailReader {
     }
 
     static protected BufferedImage readJPEGThumbnail(final ImageReader reader, final ImageInputStream stream) throws IOException {
-//        try {
-//            try {
-                reader.setInput(stream);
+        reader.setInput(stream);
 
-                return reader.read(0);
-//            }
-//            finally {
-//                input.close();
-//            }
-//        }
-//        finally {
-//            reader.dispose();
-//        }
+        return reader.read(0);
     }
 
     static protected BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {

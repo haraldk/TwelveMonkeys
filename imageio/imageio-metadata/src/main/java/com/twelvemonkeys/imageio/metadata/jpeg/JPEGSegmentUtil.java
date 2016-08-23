@@ -106,7 +106,7 @@ public final class JPEGSegmentUtil {
 
                 if (isRequested(segment, segmentIdentifiers)) {
                     if (segments == Collections.EMPTY_LIST) {
-                        segments = new ArrayList<JPEGSegment>();
+                        segments = new ArrayList<>();
                     }
 
                     segments.add(segment);

@@ -36,6 +36,7 @@ import org.mockito.InOrder;
 
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -60,7 +61,8 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(segments);
         assertFalse(segments.isEmpty());
 
-        return new JFIFThumbnailReader(progressListener, imageIndex, thumbnailIndex, JFIFSegment.read(segments.get(0).data()));
+        JPEGSegment segment = segments.get(0);
+        return new JFIFThumbnailReader(progressListener, imageIndex, thumbnailIndex, JFIF.read(new DataInputStream(segment.segmentData()), segment.segmentLength()));
     }
 
     @Test

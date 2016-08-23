@@ -95,7 +95,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/jpeg/0x00-to-0xFF-between-segments.jpg"), new Dimension(16, 16)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-bogus-empty-jfif-segment.jpg"), new Dimension(942, 714)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-16bit-dqt.jpg"), new Dimension(204, 131)),
-                new TestData(getClassLoaderResource("/jpeg-lossless/testimgl.jpg"), new Dimension(227, 149))
+                new TestData(getClassLoaderResource("/jpeg-lossless/testimg_rgb.jpg"), new Dimension(227, 149)),
+                new TestData(getClassLoaderResource("/jpeg-lossless/testimg_gray.jpg"), new Dimension(512, 512))
         );
 
         // More test data in specific tests below

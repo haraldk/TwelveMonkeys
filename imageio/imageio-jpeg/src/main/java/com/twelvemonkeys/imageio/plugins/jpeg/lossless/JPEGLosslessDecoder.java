@@ -38,10 +38,14 @@ import java.io.IOException;
 public class JPEGLosslessDecoder {
 
     private final ImageInputStream input;
+
+    // TODO: Merge these classes with similar classes from the main package
+    // (FrameHeader == Frame, ComponentSpec == Frame.Component, ScanHeader == Scan etc)
     private final FrameHeader frame;
     private final HuffmanTable huffTable;
     private final QuantizationTable quantTable;
     private final ScanHeader scan;
+
     private final int HuffTab[][][] = new int[4][2][MAX_HUFFMAN_SUBTREE * 256];
     private final int IDCT_Source[] = new int[64];
     private final int nBlock[] = new int[10]; // number of blocks in the i-th Comp in a scan
@@ -224,9 +228,9 @@ public class JPEGLosslessDecoder {
             final int[][] quantTables = quantTable.quantTables;
 
             for (int i = 0; i < numComp; i++) {
-                final int compN = scanComps[i].getScanCompSel();
-                qTab[i] = quantTables[components[compN].quantTableSel];
-                nBlock[i] = components[compN].vSamp * components[compN].hSamp;
+                ComponentSpec component = getComponentSpec(components, scanComps[i].getScanCompSel());
+                qTab[i] = quantTables[component.quantTableSel];
+                nBlock[i] = component.vSamp * component.hSamp;
                 dcTab[i] = HuffTab[scanComps[i].getDcTabSel()][0];
                 acTab[i] = HuffTab[scanComps[i].getAcTabSel()][1];
             }
@@ -308,6 +312,16 @@ public class JPEGLosslessDecoder {
         } while ((current != JPEG.EOI) && ((xLoc < xDim) && (yLoc < yDim)) && (scanNum == 0));
 
         return outputRef;
+    }
+
+    private ComponentSpec getComponentSpec(ComponentSpec[] components, int sel) {
+        for (ComponentSpec component : components) {
+            if (component.id == sel) {
+                return component;
+            }
+        }
+
+        throw new IllegalArgumentException("No such component id: " + sel);
     }
 
     private int readScan() throws IOException {

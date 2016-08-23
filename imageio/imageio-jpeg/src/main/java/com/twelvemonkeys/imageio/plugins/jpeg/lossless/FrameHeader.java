@@ -64,7 +64,7 @@ public class FrameHeader {
     protected int read(final ImageInputStream data) throws IOException {
         int count = 0;
 
-        final int length = data.readUnsignedShort();
+        int length = data.readUnsignedShort();
         count += 2;
 
         precision = data.readUnsignedByte();
@@ -79,31 +79,31 @@ public class FrameHeader {
         numComp = data.readUnsignedByte();
         count++;
 
-        //components = new ComponentSpec[numComp]; // some image exceed this range...
-        components = new ComponentSpec[256]; // setting to 256 -- not sure what it should be.
+        components = new ComponentSpec[numComp];
 
-        for (int i = 1; i <= numComp; i++) {
+        for (int i = 0; i < numComp; i++) {
             if (count > length) {
                 throw new IOException("ERROR: frame format error");
             }
 
-            final int c = data.readUnsignedByte();
+            int cid = data.readUnsignedByte();
             count++;
 
             if (count >= length) {
                 throw new IOException("ERROR: frame format error [c>=Lf]");
             }
 
-            final int temp = data.readUnsignedByte();
+            int temp = data.readUnsignedByte();
             count++;
 
-            if (components[c] == null) {
-                components[c] = new ComponentSpec();
+            if (components[i] == null) {
+                components[i] = new ComponentSpec();
             }
 
-            components[c].hSamp = temp >> 4;
-            components[c].vSamp = temp & 0x0F;
-            components[c].quantTableSel = data.readUnsignedByte();
+            components[i].id = cid;
+            components[i].hSamp = temp >> 4;
+            components[i].vSamp = temp & 0x0F;
+            components[i].quantTableSel = data.readUnsignedByte();
             count++;
         }
 

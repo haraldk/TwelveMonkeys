@@ -28,9 +28,11 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * JFIFSegment
@@ -39,7 +41,7 @@ import java.io.InputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: JFIFSegment.java,v 1.0 23.04.12 16:52 haraldk Exp$
  */
-class JFIFSegment {
+final class JFIF extends AppSegment {
     final int majorVersion;
     final int minorVersion;
     final int units;
@@ -49,7 +51,9 @@ class JFIFSegment {
     final int yThumbnail;
     final byte[] thumbnail;
 
-    private JFIFSegment(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail) {
+    private JFIF(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail, byte[] data) {
+        super(JPEG.APP0, "JFIF", data);
+
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
         this.units = units;
@@ -86,20 +90,51 @@ class JFIFSegment {
         return String.format("thumbnail: %dx%d", xThumbnail, yThumbnail);
     }
 
-    public static JFIFSegment read(final InputStream data) throws IOException {
-        DataInputStream stream = new DataInputStream(data);
+    public static JFIF read(final DataInput data, int length) throws IOException {
+        if (length < 2 + 5 + 9) {
+            throw new EOFException();
+        }
+
+        data.readFully(new byte[5]);
+
+        byte[] bytes = new byte[length - 2 - 5];
+        data.readFully(bytes);
 
         int x, y;
 
-        return new JFIFSegment(
-                stream.readUnsignedByte(),
-                stream.readUnsignedByte(),
-                stream.readUnsignedByte(),
-                stream.readUnsignedShort(),
-                stream.readUnsignedShort(),
-                x = stream.readUnsignedByte(),
-                y = stream.readUnsignedByte(),
-                JPEGImageReader.readFully(stream, x * y * 3)
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
+
+        return new JFIF(
+                buffer.get() & 0xff,
+                buffer.get() & 0xff,
+                buffer.get() & 0xff,
+                buffer.getShort() & 0xffff,
+                buffer.getShort() & 0xffff,
+                x = buffer.get() & 0xff,
+                y = buffer.get() & 0xff,
+                getBytes(buffer, x * y * 3),
+                bytes
         );
+//        return new JFIF(
+//                data.readUnsignedByte(),
+//                data.readUnsignedByte(),
+//                data.readUnsignedByte(),
+//                data.readUnsignedShort(),
+//                data.readUnsignedShort(),
+//                x = data.readUnsignedByte(),
+//                y = data.readUnsignedByte(),
+//                JPEGImageReader.readFully(data, x * y * 3)
+//        );
+    }
+
+    private static byte[] getBytes(ByteBuffer buffer, int len) {
+        if (len == 0) {
+            return null;
+        }
+
+        byte[] dst = new byte[len];
+        buffer.get(dst);
+
+        return dst;
     }
 }

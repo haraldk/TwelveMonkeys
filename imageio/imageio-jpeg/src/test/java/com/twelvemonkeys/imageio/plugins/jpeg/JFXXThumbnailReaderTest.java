@@ -37,6 +37,7 @@ import org.mockito.InOrder;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -64,7 +65,7 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertFalse(segments.isEmpty());
 
         JPEGSegment jfxx = segments.get(0);
-        return new JFXXThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("jpeg").next(), imageIndex, thumbnailIndex, JFXXSegment.read(jfxx.data(), jfxx.length()));
+        return new JFXXThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("jpeg").next(), imageIndex, thumbnailIndex, JFXX.read(new DataInputStream(jfxx.data()), jfxx.length()));
     }
 
     @Test
