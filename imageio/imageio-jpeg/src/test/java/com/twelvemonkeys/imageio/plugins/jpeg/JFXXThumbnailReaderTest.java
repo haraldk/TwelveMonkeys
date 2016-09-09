@@ -65,7 +65,7 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertFalse(segments.isEmpty());
 
         JPEGSegment jfxx = segments.get(0);
-        return new JFXXThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("jpeg").next(), imageIndex, thumbnailIndex, JFXX.read(new DataInputStream(jfxx.data()), jfxx.length()));
+        return new JFXXThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("jpeg").next(), imageIndex, thumbnailIndex, JFXX.read(new DataInputStream(jfxx.segmentData()), jfxx.length()));
     }
 
     @Test
