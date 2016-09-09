@@ -54,7 +54,7 @@ final class JFXXThumbnailReader extends ThumbnailReader {
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    protected JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final JFXX segment) {
+    JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, final ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final JFXX segment) {
         super(progressListener, imageIndex, thumbnailIndex);
         this.reader = Validate.notNull(jpegReader);
         this.segment = segment;
@@ -85,7 +85,7 @@ final class JFXXThumbnailReader extends ThumbnailReader {
         return thumbnail;
     }
 
-    public IIOMetadata readMetadata() throws IOException {
+    IIOMetadata readMetadata() throws IOException {
         ImageInputStream input = new ByteArrayImageInputStream(segment.thumbnail);
 
         try {

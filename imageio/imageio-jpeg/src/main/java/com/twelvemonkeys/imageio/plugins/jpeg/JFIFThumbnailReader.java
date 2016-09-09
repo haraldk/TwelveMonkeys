@@ -41,7 +41,7 @@ import java.io.IOException;
 final class JFIFThumbnailReader extends ThumbnailReader {
     private final JFIF segment;
 
-    public JFIFThumbnailReader(ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, JFIF segment) {
+    JFIFThumbnailReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex, final JFIF segment) {
         super(progressListener, imageIndex, thumbnailIndex);
         this.segment = segment;
     }

@@ -62,7 +62,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    public EXIFThumbnailReader(ThumbnailReadProgressListener progressListener, ImageReader jpegReader, int imageIndex, int thumbnailIndex, Directory ifd, ImageInputStream stream) {
+    EXIFThumbnailReader(final ThumbnailReadProgressListener progressListener, final ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final Directory ifd, final ImageInputStream stream) {
         super(progressListener, imageIndex, thumbnailIndex);
         this.reader = Validate.notNull(jpegReader);
         this.ifd = ifd;
@@ -96,7 +96,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
         }
     }
 
-    private BufferedImage readJPEGCached(boolean pixelsExposed) throws IOException {
+    private BufferedImage readJPEGCached(final boolean pixelsExposed) throws IOException {
         BufferedImage thumbnail = cachedThumbnail != null ? cachedThumbnail.get() : null;
 
         if (thumbnail == null) {

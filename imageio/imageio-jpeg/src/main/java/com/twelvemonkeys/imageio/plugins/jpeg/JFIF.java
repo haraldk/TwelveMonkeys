@@ -114,16 +114,6 @@ final class JFIF extends Application {
                 getBytes(buffer, x * y * 3),
                 bytes
         );
-//        return new JFIF(
-//                data.readUnsignedByte(),
-//                data.readUnsignedByte(),
-//                data.readUnsignedByte(),
-//                data.readUnsignedShort(),
-//                data.readUnsignedShort(),
-//                x = data.readUnsignedByte(),
-//                y = data.readUnsignedByte(),
-//                JPEGImageReader.readFully(data, x * y * 3)
-//        );
     }
 
     private static byte[] getBytes(ByteBuffer buffer, int len) {

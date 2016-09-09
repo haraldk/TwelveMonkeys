@@ -70,7 +70,7 @@ final class AdobeDCT extends Application {
     public static AdobeDCT read(final DataInput data, final int length) throws IOException {
         // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe APP14 markers
 
-        data.skipBytes(6);
+        data.skipBytes(6); // A, d, o, b, e, \0
 
         // version (byte), flags (4bytes), color transform (byte: 0=unknown, 1=YCC, 2=YCCK)
         return new AdobeDCT(
