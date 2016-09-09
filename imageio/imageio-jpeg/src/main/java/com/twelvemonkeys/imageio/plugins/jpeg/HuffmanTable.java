@@ -1,37 +1,38 @@
 /*
- * Copyright (C) 2015 Michael Martinez
- * Changes: Added support for selection values 2-7, fixed minor bugs &
- * warnings, split into multiple class files, and general clean up.
+ * Copyright (c) 2016, Harald Kuhr
+ * Copyright (C) 2015, Michael Martinez
+ * Copyright (C) 2004, Helmut Dersch
+ * All rights reserved.
  *
- * 08-25-2015: Helmut Dersch agreed to a license change from LGPL to MIT.
- */
-
-/*
- * Copyright (C) Helmut Dersch
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
-
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
-
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.DataInput;
 import java.io.IOException;
@@ -45,7 +46,7 @@ final class HuffmanTable extends Segment {
 
     public static final int MSB = 0x80000000;
 
-    public HuffmanTable() {
+    private HuffmanTable() {
         super(JPEG.DHT);
 
         tc[0][0] = 0;
@@ -109,7 +110,7 @@ final class HuffmanTable extends Segment {
                 }
                 if (k >= 256) {
                     if (k > 256) {
-                        throw new IOException("Huffman table error");
+                        throw new IIOException("JPEG Huffman Table error");
                     }
 
                     k = 0;
@@ -119,9 +120,14 @@ final class HuffmanTable extends Segment {
         }
     }
 
-    public static Segment read(DataInput data, int length) throws IOException {
-        int count = 0;
-        count += 2;
+    @Override
+    public String toString() {
+        // TODO: Id and class for tables
+        return "DHT[]";
+    }
+
+    public static Segment read(final DataInput data, final int length) throws IOException {
+        int count = 2;
 
         HuffmanTable table = new HuffmanTable();
 
@@ -130,12 +136,12 @@ final class HuffmanTable extends Segment {
             count++;
             int t = temp & 0x0F;
             if (t > 3) {
-                throw new IOException("Huffman table Id > 3:" + t);
+                throw new IIOException("Unexpected JPEG Huffman Table Id (> 3):" + t);
             }
 
             int c = temp >> 4;
             if (c > 2) {
-                throw new IOException("Huffman table class > 2: " + c);
+                throw new IIOException("Unexpected JPEG Huffman Table class (> 2): " + c);
             }
 
             table.th[t] = 1;
@@ -149,7 +155,7 @@ final class HuffmanTable extends Segment {
             for (int i = 0; i < 16; i++) {
                 for (int j = 0; j < table.l[t][c][i]; j++) {
                     if (count > length) {
-                        throw new IOException("Huffman table format error [count>Lh]");
+                        throw new IIOException("JPEG Huffman Table format error");
                     }
                     table.v[t][c][i][j] = data.readUnsignedByte();
                     count++;
@@ -158,18 +164,9 @@ final class HuffmanTable extends Segment {
         }
 
         if (count != length) {
-            throw new IOException("Huffman table format error [count!=Lf]");
+            throw new IIOException("JPEG Huffman Table format error, bad segment length: " + length);
         }
 
-//        for (int i = 0; i < 4; i++) {
-//            for (int j = 0; j < 2; j++) {
-//                if (tc[i][j] != 0) {
-//                    buildHuffTable(HuffTab[i][j], l[i][j], v[i][j]);
-//                }
-//            }
-//        }
-//
-//        return 1;
         return table;
     }
 }

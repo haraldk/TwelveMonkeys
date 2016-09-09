@@ -51,7 +51,7 @@ final class Frame extends Segment {
 
     final Component[] components; // Components specifications
 
-    Frame(final int marker, final int samplePrecision, final int lines, final int samplesPerLine, final Component[] components) {
+    private Frame(final int marker, final int samplePrecision, final int lines, final int samplesPerLine, final Component[] components) {
         super(marker);
 
         this.samplePrecision = samplePrecision;
@@ -116,7 +116,7 @@ final class Frame extends Segment {
         return read(marker, new SubImageInputStream(data, length), length);
     }
 
-    static final class Component {
+    public static final class Component {
         final int id;
         final int hSub; // Horizontal sampling factor
         final int vSub; // Vertical sampling factor

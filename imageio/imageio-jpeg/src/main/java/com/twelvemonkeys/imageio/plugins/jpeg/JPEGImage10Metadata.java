@@ -2,13 +2,9 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
-import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import org.w3c.dom.Node;
 
 import javax.imageio.metadata.IIOMetadataNode;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -95,10 +91,10 @@ class JPEGImage10Metadata extends AbstractMetadata {
                     Scan scan = (Scan) segment;
                     IIOMetadataNode sos = new IIOMetadataNode("sos");
                     sos.setAttribute("numScanComponents", String.valueOf(scan.components.length));
-                    sos.setAttribute("startSpectralSelection", String.valueOf(scan.selection));
-                    sos.setAttribute("endSpectralSelection", String.valueOf(scan.spectralEnd));
-                    sos.setAttribute("approxHigh", String.valueOf(scan.ah));
-                    sos.setAttribute("approxLow", String.valueOf(scan.al));
+                    sos.setAttribute("startSpectralSelection", String.valueOf(scan.spectralSelStart));
+                    sos.setAttribute("endSpectralSelection", String.valueOf(scan.spectralSelEnd));
+                    sos.setAttribute("approxHigh", String.valueOf(scan.approxHigh));
+                    sos.setAttribute("approxLow", String.valueOf(scan.approxLow));
 
                     for (Scan.Component component : scan.components) {
                         IIOMetadataNode spec = new IIOMetadataNode("scanComponentSpec");
@@ -135,7 +131,7 @@ class JPEGImage10Metadata extends AbstractMetadata {
                 default:
                     IIOMetadataNode unknown = new IIOMetadataNode("unknown");
                     unknown.setAttribute("MarkerTag", String.valueOf(segment.marker & 0xFF));
-                    unknown.setUserObject(((AppSegment) segment).data);
+                    unknown.setUserObject(((Application) segment).data);
                     markerSequence.appendChild(unknown);
 
                     break;

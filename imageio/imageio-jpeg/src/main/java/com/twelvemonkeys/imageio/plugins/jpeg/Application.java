@@ -28,34 +28,72 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.lang.Validate;
+
+import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
- * Represents an unknown segment in the JPEG stream.
+ * Application.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
- * @version $Id: Unknown.java,v 1.0 22/08/16 harald.kuhr Exp$
+ * @version $Id: Application.java,v 1.0 22/08/16 harald.kuhr Exp$
  */
-final class Unknown extends Segment {
+class Application extends Segment {
+
+    final String identifier;
     final byte[] data;
 
-    private Unknown(final int marker, final byte[] data) {
+    Application(int marker, final String identifier, final byte[] data) {
         super(marker);
 
+        this.identifier = Validate.notEmpty(identifier, "identifier");
         this.data = data;
+    }
+
+    InputStream data() {
+        int offset = identifier.length() + 1;
+        return new ByteArrayInputStream(data, offset, data.length - offset);
     }
 
     @Override
     public String toString() {
-        return String.format("Unknown[%04x, length: %d]", marker, data.length);
+        return "APP" + (marker & 0x0f) + "/" + identifier + "[length: " + data.length + "]";
     }
 
-    public static Segment read(int marker, int length, DataInput data) throws IOException {
-        byte[] bytes = new byte[length - 2];
-        data.readFully(bytes);
+    public static Application read(final int marker, final String identifier, final DataInput data, final int length) throws IOException {
+        switch (marker) {
+            case JPEG.APP0:
+                // JFIF
+                if ("JFIF".equals(identifier)) {
+                    return JFIF.read(data, length);
+                }
+            case JPEG.APP1:
+                // JFXX
+                if ("JFXX".equals(identifier)) {
+                    return JFXX.read(data, length);
+                }
+                // TODO: Exif?
+            case JPEG.APP2:
+                // ICC_PROFILE
+                if ("ICC_PROFILE".equals(identifier)) {
+                    return ICCProfile.read(data, length);
+                }
+            case JPEG.APP14:
+                // Adobe
+                if ("Adobe".equals(identifier)) {
+                    return AdobeDCT.read(data, length);
+                }
 
-        return new Unknown(marker, bytes);
+            default:
+                // Generic APPn segment
+                byte[] bytes = new byte[length - 2];
+                data.readFully(bytes);
+                return new Application(marker, identifier, bytes);
+        }
     }
 }

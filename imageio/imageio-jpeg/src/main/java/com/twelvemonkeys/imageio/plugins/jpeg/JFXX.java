@@ -29,9 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 
 /**
@@ -41,7 +39,7 @@ import java.util.Arrays;
  * @author last modified by $Author: haraldk$
  * @version $Id: JFXXSegment.java,v 1.0 23.04.12 16:54 haraldk Exp$
  */
-final class JFXX extends AppSegment {
+final class JFXX extends Application {
     public static final int JPEG = 0x10;
     public static final int INDEXED = 0x11;
     public static final int RGB  = 0x13;

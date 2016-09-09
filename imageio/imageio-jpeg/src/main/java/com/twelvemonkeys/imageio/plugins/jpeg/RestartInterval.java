@@ -28,34 +28,37 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
 
 /**
- * Represents an unknown segment in the JPEG stream.
+ * RestartInterval.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
- * @version $Id: Unknown.java,v 1.0 22/08/16 harald.kuhr Exp$
+ * @version $Id: RestartInterval.java,v 1.0 24/08/16 harald.kuhr Exp$
  */
-final class Unknown extends Segment {
-    final byte[] data;
+class RestartInterval extends Segment {
+    final int interval;
 
-    private Unknown(final int marker, final byte[] data) {
-        super(marker);
-
-        this.data = data;
+    private RestartInterval(int interval) {
+        super(JPEG.DRI);
+        this.interval = interval;
     }
 
     @Override
     public String toString() {
-        return String.format("Unknown[%04x, length: %d]", marker, data.length);
+        return "DRI[" + interval + "]";
     }
 
-    public static Segment read(int marker, int length, DataInput data) throws IOException {
-        byte[] bytes = new byte[length - 2];
-        data.readFully(bytes);
+    public static RestartInterval read(final DataInput data, final int length) throws IOException {
+        if (length != 4) {
+            throw new IIOException("Unexpected length of DRI segment: " + length);
+        }
 
-        return new Unknown(marker, bytes);
+        return new RestartInterval(data.readUnsignedShort());
     }
 }

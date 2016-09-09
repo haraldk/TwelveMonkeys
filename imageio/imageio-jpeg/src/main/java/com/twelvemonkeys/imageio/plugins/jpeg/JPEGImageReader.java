@@ -39,7 +39,6 @@ import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import com.twelvemonkeys.imageio.plugins.jpeg.lossless.JPEGLosslessDecoderWrapper;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
@@ -110,7 +109,7 @@ public class JPEGImageReader extends ImageReaderBase {
     static final int ALL_APP_MARKERS = -1;
 
     /** Segment identifiers for the JPEG segments we care about reading. */
-    private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = createSegmentIds();
+    private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = JPEGSegmentUtil.ALL_SEGMENTS; //createSegmentIds();
 
     private static Map<Integer, List<String>> createSegmentIds() {
         Map<Integer, List<String>> map = new LinkedHashMap<>();
@@ -386,7 +385,7 @@ public class JPEGImageReader extends ImageReaderBase {
             // TODO: What about stream position?
             // TODO: Param handling: Source region, offset, subsampling, destination, destination type, etc....
             // Read image as lossless
-            return new JPEGLosslessDecoderWrapper().readImage(imageInput);
+            return new JPEGLosslessDecoderWrapper().readImage(segments, imageInput);
         }
         
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
@@ -592,25 +591,25 @@ public class JPEGImageReader extends ImageReaderBase {
         if (adobeDCT != null) {
             switch (adobeDCT.transform) {
                 case AdobeDCT.YCC:
-                    if (startOfFrame.components.length != 3) {
+                    if (startOfFrame.componentsInFrame() != 3) {
                         // This probably means the Adobe marker is bogus
                         break;
                     }
                     return JPEGColorSpace.YCbCr;
                 case AdobeDCT.YCCK:
-                    if (startOfFrame.components.length != 4) {
+                    if (startOfFrame.componentsInFrame() != 4) {
                         // This probably means the Adobe marker is bogus
                         break;
                     }
                     return JPEGColorSpace.YCCK;
                 case AdobeDCT.Unknown:
-                    if (startOfFrame.components.length == 1) {
+                    if (startOfFrame.componentsInFrame() == 1) {
                         return JPEGColorSpace.Gray;
                     }
-                    else if (startOfFrame.components.length == 3) {
+                    else if (startOfFrame.componentsInFrame() == 3) {
                         return JPEGColorSpace.RGB;
                     }
-                    else if (startOfFrame.components.length == 4) {
+                    else if (startOfFrame.componentsInFrame() == 4) {
                         return JPEGColorSpace.CMYK;
                     }
                     // Else fall through
@@ -619,7 +618,7 @@ public class JPEGImageReader extends ImageReaderBase {
         }
 
         // TODO: We should probably allow component ids out of order (ie. BGR or KMCY)...
-        switch (startOfFrame.components.length) {
+        switch (startOfFrame.componentsInFrame()) {
             case 1:
                 return JPEGColorSpace.Gray;
             case 2:
@@ -712,7 +711,7 @@ public class JPEGImageReader extends ImageReaderBase {
         if (segments == null) {
             long start = DEBUG ? System.currentTimeMillis() : 0;
 
-            // TODO: Consider just reading the segments here, for better performance...
+            // TODO: Consider just reading the segments directly, for better performance...
             List<JPEGSegment> jpegSegments = readSegments();
 
             List<Segment> segments = new ArrayList<>(jpegSegments.size());
@@ -761,20 +760,20 @@ public class JPEGImageReader extends ImageReaderBase {
         return Collections.emptyList();
     }
 
-    List<AppSegment> getAppSegments(final int marker, final String identifier) throws IOException {
+    List<Application> getAppSegments(final int marker, final String identifier) throws IOException {
         initHeader();
 
-        List<AppSegment> appSegments = Collections.emptyList();
+        List<Application> appSegments = Collections.emptyList();
 
         for (Segment segment : segments) {
-            if (segment instanceof AppSegment
+            if (segment instanceof Application
                     && (marker == ALL_APP_MARKERS || marker == segment.marker)
-                    && (identifier == null || identifier.equals(((AppSegment) segment).identifier))) {
+                    && (identifier == null || identifier.equals(((Application) segment).identifier))) {
                 if (appSegments == Collections.EMPTY_LIST) {
                     appSegments = new ArrayList<>(segments.size());
                 }
 
-                appSegments.add((AppSegment) segment);
+                appSegments.add((Application) segment);
             }
         }
 
@@ -794,26 +793,26 @@ public class JPEGImageReader extends ImageReaderBase {
     }
 
     AdobeDCT getAdobeDCT() throws IOException {
-        List<AppSegment> adobe = getAppSegments(JPEG.APP14, "Adobe");
+        List<Application> adobe = getAppSegments(JPEG.APP14, "Adobe");
         return adobe.isEmpty() ? null : (AdobeDCT) adobe.get(0);
     }
 
     JFIF getJFIF() throws IOException{
-        List<AppSegment> jfif = getAppSegments(JPEG.APP0, "JFIF");
+        List<Application> jfif = getAppSegments(JPEG.APP0, "JFIF");
         return jfif.isEmpty() ? null : (JFIF) jfif.get(0);
 
     }
 
     JFXX getJFXX() throws IOException {
-        List<AppSegment> jfxx = getAppSegments(JPEG.APP0, "JFXX");
+        List<Application> jfxx = getAppSegments(JPEG.APP0, "JFXX");
         return jfxx.isEmpty() ? null : (JFXX) jfxx.get(0);
     }
 
     private CompoundDirectory getExif() throws IOException {
-        List<AppSegment> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+        List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
 
         if (!exifSegments.isEmpty()) {
-            AppSegment exif = exifSegments.get(0);
+            Application exif = exifSegments.get(0);
             InputStream data = exif.data();
 
             if (data.read() == -1) { // Read pad
@@ -849,13 +848,13 @@ public class JPEGImageReader extends ImageReaderBase {
         // TODO: Allow metadata to contain the wrongly indexed profiles, if readable
         // NOTE: We ignore any profile with wrong index for reading and image types, just to be on the safe side
 
-        List<AppSegment> segments = getAppSegments(JPEG.APP2, "ICC_PROFILE");
+        List<Application> segments = getAppSegments(JPEG.APP2, "ICC_PROFILE");
 
         // TODO: Possibly move this logic to the ICCProfile class...
 
         if (segments.size() == 1) {
             // Faster code for the common case
-            AppSegment segment = segments.get(0);
+            Application segment = segments.get(0);
             DataInputStream stream = new DataInputStream(segment.data());
             int chunkNumber = stream.readUnsignedByte();
             int chunkCount = stream.readUnsignedByte();
@@ -945,7 +944,7 @@ public class JPEGImageReader extends ImageReaderBase {
         if (isLossless()) {
             // TODO: What about stream position?
             // TODO: Param handling: Reading as raster should support source region, subsampling etc.
-            return new JPEGLosslessDecoderWrapper().readRaster(imageInput);
+            return new JPEGLosslessDecoderWrapper().readRaster(segments, imageInput);
         }
 
         return delegate.readRaster(imageIndex, param);
@@ -1001,9 +1000,9 @@ public class JPEGImageReader extends ImageReaderBase {
             }
 
             // Read Exif thumbnails if present
-            List<AppSegment> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+            List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
             if (!exifSegments.isEmpty()) {
-                AppSegment exif = exifSegments.get(0);
+                Application exif = exifSegments.get(0);
                 InputStream data = exif.data();
 
                 if (data.read() == -1) {

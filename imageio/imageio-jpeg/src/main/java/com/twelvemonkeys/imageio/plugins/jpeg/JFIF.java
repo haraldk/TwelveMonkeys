@@ -32,7 +32,6 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * JFIFSegment
@@ -41,7 +40,7 @@ import java.util.Arrays;
  * @author last modified by $Author: haraldk$
  * @version $Id: JFIFSegment.java,v 1.0 23.04.12 16:52 haraldk Exp$
  */
-final class JFIF extends AppSegment {
+final class JFIF extends Application {
     final int majorVersion;
     final int minorVersion;
     final int units;

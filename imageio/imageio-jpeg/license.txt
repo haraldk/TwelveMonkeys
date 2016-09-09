@@ -1,4 +1,6 @@
-Copyright (c) 2013, Harald Kuhr
+Copyright (c) 2016, Harald Kuhr
+Copyright (C) 2015, Michael Martinez (JPEG Lossless decoder)
+Copyright (C) 2004, Helmut Dersch (Java JPEG decoder)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

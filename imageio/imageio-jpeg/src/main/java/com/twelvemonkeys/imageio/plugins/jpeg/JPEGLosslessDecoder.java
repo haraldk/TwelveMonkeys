@@ -1,50 +1,51 @@
-package com.twelvemonkeys.imageio.plugins.jpeg.lossless;
-
 /*
- * Copyright (C) 2015 Michael Martinez
- * Changes: Added support for selection values 2-7, fixed minor bugs &
- * warnings, split into multiple class files, and general clean up.
+ * Copyright (c) 2016, Harald Kuhr
+ * Copyright (C) 2015, Michael Martinez
+ * Copyright (C) 2004, Helmut Dersch
+ * All rights reserved.
  *
- * 08-25-2015: Helmut Dersch agreed to a license change from LGPL to MIT.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * Copyright (C) Helmut Dersch
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
-
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
-
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.lang.Validate;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.util.List;
 
-public class JPEGLosslessDecoder {
+final class JPEGLosslessDecoder {
 
     private final ImageInputStream input;
 
-    // TODO: Merge these classes with similar classes from the main package
-    // (FrameHeader == Frame, ComponentSpec == Frame.Component, ScanHeader == Scan etc)
-    private final FrameHeader frame;
+    private final Frame frame;
     private final HuffmanTable huffTable;
     private final QuantizationTable quantTable;
-    private final ScanHeader scan;
+    private Scan scan;
 
     private final int HuffTab[][][] = new int[4][2][MAX_HUFFMAN_SUBTREE * 256];
     private final int IDCT_Source[] = new int[64];
@@ -69,36 +70,65 @@ public class JPEGLosslessDecoder {
     private int[] outputBlueData;
 
     private static final int IDCT_P[] = {
-            0, 5, 40, 16, 45, 2, 7, 42, 21, 56, 8, 61, 18, 47, 1, 4, 41, 23, 58, 13, 32, 24, 37, 10, 63, 17, 44, 3, 6, 43, 20,
-            57, 15, 34, 29, 48, 53, 26, 39, 9, 60, 19, 46, 22, 59, 12, 33, 31, 50, 55, 25, 36, 11, 62, 14, 35, 28, 49, 52, 27, 38, 30, 51, 54
+             0,  5, 40, 16, 45,  2,  7, 42,
+            21, 56,  8, 61, 18, 47,  1,  4,
+            41, 23, 58, 13, 32, 24, 37, 10,
+            63, 17, 44,  3,  6, 43, 20, 57,
+            15, 34, 29, 48, 53, 26, 39,  9,
+            60, 19, 46, 22, 59, 12, 33, 31,
+            50, 55, 25, 36, 11, 62, 14, 35,
+            28, 49, 52, 27, 38, 30, 51, 54
     };
     private static final int TABLE[] = {
-            0, 1, 5, 6, 14, 15, 27, 28, 2, 4, 7, 13, 16, 26, 29, 42, 3, 8, 12, 17, 25, 30, 41, 43, 9, 11, 18, 24, 31, 40, 44, 53,
-            10, 19, 23, 32, 39, 45, 52, 54, 20, 22, 33, 38, 46, 51, 55, 60, 21, 34, 37, 47, 50, 56, 59, 61, 35, 36, 48, 49, 57, 58, 62, 63
+             0,  1,  5,  6, 14, 15, 27, 28,
+             2,  4,  7, 13, 16, 26, 29, 42,
+             3,  8, 12, 17, 25, 30, 41, 43,
+             9, 11, 18, 24, 31, 40, 44, 53,
+            10, 19, 23, 32, 39, 45, 52, 54,
+            20, 22, 33, 38, 46, 51, 55, 60,
+            21, 34, 37, 47, 50, 56, 59, 61,
+            35, 36, 48, 49, 57, 58, 62, 63
     };
 
-    public static final int RESTART_MARKER_BEGIN = 0xFFD0;
-    public static final int RESTART_MARKER_END = 0xFFD7;
-    public static final int MAX_HUFFMAN_SUBTREE = 50;
-    public static final int MSB = 0x80000000;
+    private static final int RESTART_MARKER_BEGIN = 0xFFD0;
+    private static final int RESTART_MARKER_END = 0xFFD7;
+    private static final int MAX_HUFFMAN_SUBTREE = 50;
+    private static final int MSB = 0x80000000;
 
-    public int getDimX() {
+    int getDimX() {
         return xDim;
     }
 
-    public int getDimY() {
+    int getDimY() {
         return yDim;
     }
 
-    public JPEGLosslessDecoder(final ImageInputStream data) {
+    JPEGLosslessDecoder(final List<Segment> segments, final ImageInputStream data) {
+        Validate.notNull(segments);
+
+        frame = get(segments, Frame.class);
+        scan = get(segments, Scan.class);
+
+        QuantizationTable qt = get(segments, QuantizationTable.class);
+        quantTable = qt != null ? qt : new QuantizationTable(); // For lossless there are no DQTs
+        huffTable = get(segments, HuffmanTable.class); // For non-lossless there can be multiple of DHTs
+        RestartInterval dri = get(segments, RestartInterval.class);
+        restartInterval = dri != null ? dri.interval : 0;
+
         input = data;
-        frame = new FrameHeader();
-        scan = new ScanHeader();
-        quantTable = new QuantizationTable();
-        huffTable = new HuffmanTable();
     }
 
-    public int[][] decode() throws IOException {
+    private <T> T get(final List<Segment> segments, final Class<T> type) {
+        for (Segment segment : segments) {
+            if (type.isInstance(segment)) {
+                return type.cast(segment);
+            }
+        }
+
+        return null;
+    }
+
+    int[][] decode() throws IOException {
         int current, scanNum = 0;
         final int pred[] = new int[10];
         int[][] outputRef;
@@ -108,108 +138,22 @@ public class JPEGLosslessDecoder {
         current = input.readUnsignedShort();
 
         if (current != JPEG.SOI) { // SOI
-            throw new IOException("Not a JPEG file");
+            throw new IIOException("Not a JPEG file");
         }
 
-        // TODO: Why the two loops?!
+        huffTable.buildHuffTables(HuffTab);
+        quantTable.enhanceTables(TABLE);
 
-        current = input.readUnsignedShort();
-
-        while (((current >> 4) != 0x0FFC) || (current == JPEG.DHT)) { // SOF 0~15
-            switch (current) {
-                case JPEG.DHT: // DHT
-                    huffTable.read(input, HuffTab);
-                    break;
-                case JPEG.DAC: // DAC
-                    throw new IOException("Program doesn't support arithmetic coding.");
-                case JPEG.DQT:
-                    quantTable.read(input, TABLE);
-                    break;
-                case JPEG.DRI:
-                    restartInterval = readNumber();
-                    break;
-                case JPEG.APP0:
-                case JPEG.APP1:
-                case JPEG.APP2:
-                case JPEG.APP3:
-                case JPEG.APP4:
-                case JPEG.APP5:
-                case JPEG.APP6:
-                case JPEG.APP7:
-                case JPEG.APP8:
-                case JPEG.APP9:
-                case JPEG.APP10:
-                case JPEG.APP11:
-                case JPEG.APP12:
-                case JPEG.APP13:
-                case JPEG.APP14:
-                case JPEG.APP15:
-                    readApp();
-                    break;
-                case JPEG.COM:
-                    readComment();
-                    break;
-                default:
-                    if ((current >> 8) != 0xFF) {
-                        throw new IOException("JPEG Segment marker expected.");
-                    }
-            }
-
-            current = input.readUnsignedShort();
-        }
-
-        if ((current < 0xFFC0) || (current > 0xFFC7)) {
-            throw new IOException("ERROR: could not handle arithmetic code!");
-        }
-
-        frame.read(input);
         current = input.readUnsignedShort();
 
         do {
-            while (current != 0x0FFDA) { //SOS
-                switch (current) {
-                    case 0xFFC4: //DHT
-                        huffTable.read(input, HuffTab);
-                        break;
-                    case 0xFFCC: //DAC
-                        throw new IOException("Program doesn't support arithmetic coding. (format throw new IOException)");
-                    case 0xFFDB:
-                        quantTable.read(input, TABLE);
-                        break;
-                    case 0xFFDD:
-                        restartInterval = readNumber();
-                        break;
-                    case 0xFFE0:
-                    case 0xFFE1:
-                    case 0xFFE2:
-                    case 0xFFE3:
-                    case 0xFFE4:
-                    case 0xFFE5:
-                    case 0xFFE6:
-                    case 0xFFE7:
-                    case 0xFFE8:
-                    case 0xFFE9:
-                    case 0xFFEA:
-                    case 0xFFEB:
-                    case 0xFFEC:
-                    case 0xFFED:
-                    case 0xFFEE:
-                    case 0xFFEF:
-                        readApp();
-                        break;
-                    case 0xFFFE:
-                        readComment();
-                        break;
-                    default:
-                        if ((current >> 8) != 0xFF) {
-                            throw new IOException("ERROR: format throw new IOException! (Parser.decode)");
-                        }
-                }
-
+            // Skip until first SOS
+            while (current != JPEG.SOS) {
+                input.skipBytes(input.readUnsignedShort() - 2);
                 current = input.readUnsignedShort();
             }
 
-            final int precision = frame.getPrecision();
+            int precision = frame.samplePrecision;
 
             if (precision == 8) {
                 mask = 0xFF;
@@ -218,28 +162,29 @@ public class JPEGLosslessDecoder {
                 mask = 0xFFFF;
             }
 
-            final ComponentSpec[] components = frame.getComponents();
+            Frame.Component[] components = frame.components;
 
-            readScan();
-            numComp = scan.getNumComponents();
-            selection = scan.getSelection();
+            scan = readScan();
+            numComp = scan.components.length;
+            selection = scan.spectralSelStart;
 
-            final ScanComponent[] scanComps = scan.components;
+            final Scan.Component[] scanComps = scan.components;
             final int[][] quantTables = quantTable.quantTables;
 
             for (int i = 0; i < numComp; i++) {
-                ComponentSpec component = getComponentSpec(components, scanComps[i].getScanCompSel());
-                qTab[i] = quantTables[component.quantTableSel];
-                nBlock[i] = component.vSamp * component.hSamp;
-                dcTab[i] = HuffTab[scanComps[i].getDcTabSel()][0];
-                acTab[i] = HuffTab[scanComps[i].getAcTabSel()][1];
+                Frame.Component component = getComponentSpec(components, scanComps[i].scanCompSel);
+                qTab[i] = quantTables[component.qtSel];
+                nBlock[i] = component.vSub * component.hSub;
+                dcTab[i] = HuffTab[scanComps[i].dcTabSel][0];
+                acTab[i] = HuffTab[scanComps[i].acTabSel][1];
             }
 
-            xDim = frame.getDimX();
-            yDim = frame.getDimY();
+            xDim = frame.samplesPerLine;
+            yDim = frame.lines;
 
             outputRef = new int[numComp][];
 
+            // TODO: Support 4 components (RGBA/YCCA/CMYK/YCCK), others?
             if (numComp == 1) {
                 outputData = new int[xDim * yDim];
                 outputRef[0] = outputData;
@@ -314,8 +259,8 @@ public class JPEGLosslessDecoder {
         return outputRef;
     }
 
-    private ComponentSpec getComponentSpec(ComponentSpec[] components, int sel) {
-        for (ComponentSpec component : components) {
+    private Frame.Component getComponentSpec(Frame.Component[] components, int sel) {
+        for (Frame.Component component : components) {
             if (component.id == sel) {
                 return component;
             }
@@ -324,8 +269,9 @@ public class JPEGLosslessDecoder {
         throw new IllegalArgumentException("No such component id: " + sel);
     }
 
-    private int readScan() throws IOException {
-        return scan.read(input);
+    private Scan readScan() throws IOException {
+        int length = input.readUnsignedShort();
+        return Scan.read(input, length);
     }
 
     private int decode(final int prev[], final int temp[], final int index[]) throws IOException {
@@ -341,11 +287,11 @@ public class JPEGLosslessDecoder {
     }
 
     private int decodeSingle(final int prev[], final int temp[], final int index[]) throws IOException {
-        //		At the beginning of the first line and
-        //		at the beginning of each restart interval the prediction value of 2P – 1 is used, where P is the input precision.
+        // At the beginning of the first line and
+        // at the beginning of each restart interval the prediction value of 2P – 1 is used, where P is the input precision.
         if (restarting) {
             restarting = false;
-            prev[0] = (1 << (frame.getPrecision() - 1));
+            prev[0] = (1 << (frame.samplePrecision - 1));
         }
         else {
             switch (selection) {
@@ -554,7 +500,7 @@ public class JPEGLosslessDecoder {
         index[0] += 8 - (code >> 8);
 
         if (index[0] < 0) {
-            throw new IOException("index=" + index[0] + " temp=" + temp[0] + " code=" + code + " in HuffmanValue()");
+            throw new IIOException("index=" + index[0] + " temp=" + temp[0] + " code=" + code + " in HuffmanValue()");
         }
 
         if (index[0] < markerIndex) {
@@ -566,7 +512,7 @@ public class JPEGLosslessDecoder {
         return code & 0xFF;
     }
 
-    private int getn(final int[] PRED, final int n, final int temp[], final int index[]) throws IOException {
+    private int getn(final int[] pred, final int n, final int temp[], final int index[]) throws IOException {
         int result;
         final int one = 1;
         final int n_one = -1;
@@ -578,7 +524,7 @@ public class JPEGLosslessDecoder {
         }
 
         if (n == 16) {
-            if (PRED[0] >= 0) {
+            if (pred[0] >= 0) {
                 return -32768;
             }
             else {
@@ -659,7 +605,7 @@ public class JPEGLosslessDecoder {
             return getPreviousY(data);
         }
         else {
-            return (1 << (frame.getPrecision() - 1));
+            return (1 << (frame.samplePrecision - 1));
         }
     }
 
@@ -685,18 +631,18 @@ public class JPEGLosslessDecoder {
         return (xLoc == (xDim - 1)) && (yLoc == (yDim - 1));
     }
 
-    private void output(final int PRED[]) {
+    private void output(final int pred[]) {
         if (numComp == 1) {
-            outputSingle(PRED);
+            outputSingle(pred);
         }
         else {
-            outputRGB(PRED);
+            outputRGB(pred);
         }
     }
 
-    private void outputSingle(final int PRED[]) {
+    private void outputSingle(final int pred[]) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
-            outputData[(yLoc * xDim) + xLoc] = mask & PRED[0];
+            outputData[(yLoc * xDim) + xLoc] = mask & pred[0];
             xLoc++;
 
             if (xLoc >= xDim) {
@@ -706,11 +652,11 @@ public class JPEGLosslessDecoder {
         }
     }
 
-    private void outputRGB(final int PRED[]) {
+    private void outputRGB(final int pred[]) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
-            outputRedData[(yLoc * xDim) + xLoc] = PRED[0];
-            outputGreenData[(yLoc * xDim) + xLoc] = PRED[1];
-            outputBlueData[(yLoc * xDim) + xLoc] = PRED[2];
+            outputRedData[(yLoc * xDim) + xLoc] = pred[0];
+            outputGreenData[(yLoc * xDim) + xLoc] = pred[1];
+            outputBlueData[(yLoc * xDim) + xLoc] = pred[2];
             xLoc++;
 
             if (xLoc >= xDim) {
@@ -718,34 +664,6 @@ public class JPEGLosslessDecoder {
                 xLoc = 0;
             }
         }
-    }
-
-    private int readApp() throws IOException {
-        int count = 0;
-        final int length = input.readUnsignedShort();
-        count += 2;
-
-        while (count < length) {
-            input.readUnsignedByte();
-            count++;
-        }
-
-        return length;
-    }
-
-    private String readComment() throws IOException {
-        final StringBuffer sb = new StringBuffer();
-        int count = 0;
-
-        final int length = input.readUnsignedShort();
-        count += 2;
-
-        while (count < length) {
-            sb.append((char) input.readUnsignedByte());
-            count++;
-        }
-
-        return sb.toString();
     }
 
     private int readNumber() throws IOException {
@@ -758,11 +676,11 @@ public class JPEGLosslessDecoder {
         return input.readUnsignedShort();
     }
 
-    public int getNumComponents() {
+    int getNumComponents() {
         return numComp;
     }
 
-    public int getPrecision() {
-        return frame.getPrecision();
+    int getPrecision() {
+        return frame.samplePrecision;
     }
 }

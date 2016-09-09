@@ -1,4 +1,33 @@
-package com.twelvemonkeys.imageio.plugins.jpeg.lossless;
+/*
+ * Copyright (c) 2016, Harald Kuhr
+ * Copyright (c) 2016, Herman Kroll
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
@@ -6,6 +35,7 @@ import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferUShort;
 import java.awt.image.Raster;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * This class provides the conversion of input data
@@ -22,7 +52,7 @@ import java.io.IOException;
  *
  * @author Hermann Kroll
  */
-public class JPEGLosslessDecoderWrapper {
+final class JPEGLosslessDecoderWrapper {
 
     /**
      * Decodes a JPEG Lossless stream to a {@code BufferedImage}.
@@ -31,17 +61,19 @@ public class JPEGLosslessDecoderWrapper {
      * -  8Bit, Grayscale -> BufferedImage.TYPE_BYTE_GRAY
      * - 16Bit, Grayscale -> BufferedImage.TYPE_USHORT_GRAY
      *
+     * @param segments
      * @param input input stream which contains a jpeg lossless data
      * @return if successfully a BufferedImage is returned
      * @throws IOException is thrown if the decoder failed or a conversion is not supported
      */
-    public BufferedImage readImage(final ImageInputStream input) throws IOException {
-        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(input);
+    BufferedImage readImage(final List<Segment> segments, final ImageInputStream input) throws IOException {
+        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, input);
 
         int[][] decoded = decoder.decode();
         int width = decoder.getDimX();
         int height = decoder.getDimY();
 
+        // Single component, assumed to be Gray
         if (decoder.getNumComponents() == 1) {
             switch (decoder.getPrecision()) {
                 case 8:
@@ -52,7 +84,8 @@ public class JPEGLosslessDecoderWrapper {
                     throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and 1 component cannot be decoded");
             }
         }
-        //rgb
+
+        // 3 components, assumed to be RGB
         if (decoder.getNumComponents() == 3) {
             switch (decoder.getPrecision()) {
                 case 8:
@@ -66,9 +99,9 @@ public class JPEGLosslessDecoderWrapper {
         throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and " + decoder.getNumComponents() + " component(s) cannot be decoded");
     }
 
-    public Raster readRaster(final ImageInputStream input) throws IOException {
+    Raster readRaster(final List<Segment> segments, final ImageInputStream input) throws IOException {
         // TODO: Can perhaps be implemented faster
-        return readImage(input).getRaster();
+        return readImage(segments, input).getRaster();
     }
 
     /**

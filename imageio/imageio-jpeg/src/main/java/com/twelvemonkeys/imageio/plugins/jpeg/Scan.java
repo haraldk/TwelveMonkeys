@@ -38,28 +38,28 @@ import java.io.IOException;
 import java.util.Arrays;
 
 final class Scan extends Segment {
-    final int selection; // Start of spectral or predictor selection
-    final int spectralEnd; // End of spectral selection
-    final int ah;
-    final int al;
+    final int spectralSelStart; // Start of spectral or predictor selection
+    final int spectralSelEnd; // End of spectral selection
+    final int approxHigh;
+    final int approxLow;
 
     final Component[] components;
 
-    Scan(final Component[] components, final int selection, final int spectralEnd, final int ah, final int al) {
+    Scan(final Component[] components, final int spectralStart, final int spectralSelEnd, final int approxHigh, final int approxLow) {
         super(JPEG.SOS);
 
         this.components = components;
-        this.selection = selection;
-        this.spectralEnd = spectralEnd;
-        this.ah = ah;
-        this.al = al;
+        this.spectralSelStart = spectralStart;
+        this.spectralSelEnd = spectralSelEnd;
+        this.approxHigh = approxHigh;
+        this.approxLow = approxLow;
     }
 
     @Override
     public String toString() {
         return String.format(
-                "SOS[selection: %d, spectralEnd: %d, ah: %d, al: %d, components: %s]",
-                selection, spectralEnd, ah, al, Arrays.toString(components)
+                "SOS[spectralSelStart: %d, spectralSelEnd: %d, approxHigh: %d, approxLow: %d, components: %s]",
+                spectralSelStart, spectralSelEnd, approxHigh, approxLow, Arrays.toString(components)
         );
     }
 
@@ -93,7 +93,7 @@ final class Scan extends Segment {
         return new Scan(components, selection, spectralEnd, temp >> 4, temp & 0x0F);
     }
 
-    final static class Component {
+    public final static class Component {
         final int scanCompSel; // Scan component selector
         final int acTabSel; // AC table selector
         final int dcTabSel; // DC table selector

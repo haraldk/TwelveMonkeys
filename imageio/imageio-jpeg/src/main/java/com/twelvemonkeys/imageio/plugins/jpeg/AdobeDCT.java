@@ -40,17 +40,17 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: AdobeDCTSegment.java,v 1.0 23.04.12 16:55 haraldk Exp$
  */
-final class AdobeDCT extends AppSegment {
-    public static final int Unknown = 0;
-    public static final int YCC = 1;
-    public static final int YCCK = 2;
+final class AdobeDCT extends Application {
+    static final int Unknown = 0;
+    static final int YCC = 1;
+    static final int YCCK = 2;
 
     final int version;
     final int flags0;
     final int flags1;
     final int transform;
 
-    AdobeDCT(int version, int flags0, int flags1, int transform) {
+    private AdobeDCT(int version, int flags0, int flags1, int transform) {
         super(JPEG.APP14, "Adobe", new byte[]{'A', 'd', 'o', 'b', 'e', 0, (byte) version, (byte) (flags0 >> 8), (byte) (flags0 & 0xff), (byte) (flags1 >> 8), (byte) (flags1 & 0xff), (byte) transform});
 
         this.version = version; // 100 or 101

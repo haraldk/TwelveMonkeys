@@ -1,38 +1,38 @@
 /*
- * Copyright (C) 2015 Michael Martinez
- * Changes: Added support for selection values 2-7, fixed minor bugs &
- * warnings, split into multiple class files, and general clean up.
+ * Copyright (c) 2016, Harald Kuhr
+ * Copyright (C) 2015, Michael Martinez
+ * Copyright (C) 2004, Helmut Dersch
+ * All rights reserved.
  *
- * 08-25-2015: Helmut Dersch agreed to a license change from LGPL to MIT.
- */
-
-/*
- * Copyright (C) Helmut Dersch
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
-
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
-
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 
-import javax.imageio.stream.ImageInputStream;
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
 
@@ -41,7 +41,7 @@ final class QuantizationTable extends Segment {
     private final int precision[] = new int[4]; // Quantization precision 8 or 16
     private final int[] tq = new int[4]; // 1: this table is presented
 
-    protected final int quantTables[][] = new int[4][64]; // Tables
+    final int quantTables[][] = new int[4][64]; // Tables
 
     QuantizationTable() {
         super(JPEG.DQT);
@@ -53,7 +53,7 @@ final class QuantizationTable extends Segment {
     }
 
     // TODO: Get rid of table param, make it a member?
-    protected void enhanceTables(final int[] table) throws IOException {
+    void enhanceTables(final int[] table) throws IOException {
         for (int t = 0; t < 4; t++) {
             if (tq[t] != 0) {
                 enhanceQuantizationTable(quantTables[t], table);
@@ -63,24 +63,24 @@ final class QuantizationTable extends Segment {
 
     private void enhanceQuantizationTable(final int qtab[], final int[] table) {
         for (int i = 0; i < 8; i++) {
-            qtab[table[(0 * 8) + i]] *= 90;
-            qtab[table[(4 * 8) + i]] *= 90;
+            qtab[table[          i]] *=  90;
+            qtab[table[(4 * 8) + i]] *=  90;
             qtab[table[(2 * 8) + i]] *= 118;
-            qtab[table[(6 * 8) + i]] *= 49;
-            qtab[table[(5 * 8) + i]] *= 71;
-            qtab[table[(1 * 8) + i]] *= 126;
-            qtab[table[(7 * 8) + i]] *= 25;
+            qtab[table[(6 * 8) + i]] *=  49;
+            qtab[table[(5 * 8) + i]] *=  71;
+            qtab[table[(    8) + i]] *= 126;
+            qtab[table[(7 * 8) + i]] *=  25;
             qtab[table[(3 * 8) + i]] *= 106;
         }
 
         for (int i = 0; i < 8; i++) {
-            qtab[table[0 + (8 * i)]] *= 90;
-            qtab[table[4 + (8 * i)]] *= 90;
+            qtab[table[(    8 * i)]] *=  90;
+            qtab[table[4 + (8 * i)]] *=  90;
             qtab[table[2 + (8 * i)]] *= 118;
-            qtab[table[6 + (8 * i)]] *= 49;
-            qtab[table[5 + (8 * i)]] *= 71;
+            qtab[table[6 + (8 * i)]] *=  49;
+            qtab[table[5 + (8 * i)]] *=  71;
             qtab[table[1 + (8 * i)]] *= 126;
-            qtab[table[7 + (8 * i)]] *= 25;
+            qtab[table[7 + (8 * i)]] *=  25;
             qtab[table[3 + (8 * i)]] *= 106;
         }
 
@@ -89,8 +89,14 @@ final class QuantizationTable extends Segment {
         }
     }
 
+    @Override
+    public String toString() {
+        // TODO: Tables...
+        return "DQT[]";
+    }
+
     public static QuantizationTable read(final DataInput data, final int length) throws IOException {
-        int count = 0; // TODO: Could probably use data.getPosition for this
+        int count = 2;
 
         QuantizationTable table = new QuantizationTable();
         while (count < length) {
@@ -99,7 +105,7 @@ final class QuantizationTable extends Segment {
             final int t = temp & 0x0F;
 
             if (t > 3) {
-                throw new IOException("ERROR: Quantization table ID > 3");
+                throw new IIOException("Unexpected JPEG Quantization Table Id (> 3): " + t);
             }
 
             table.precision[t] = temp >> 4;
@@ -111,7 +117,7 @@ final class QuantizationTable extends Segment {
                 table.precision[t] = 16;
             }
             else {
-                throw new IOException("ERROR: Quantization table precision error");
+                throw new IIOException("Unexpected JPEG Quantization Table precision: " + table.precision[t]);
             }
 
             table.tq[t] = 1;
@@ -119,31 +125,27 @@ final class QuantizationTable extends Segment {
             if (table.precision[t] == 8) {
                 for (int i = 0; i < 64; i++) {
                     if (count > length) {
-                        throw new IOException("ERROR: Quantization table format error");
+                        throw new IIOException("JPEG Quantization Table format error");
                     }
 
                     table.quantTables[t][i] = data.readUnsignedByte();
                     count++;
                 }
-
-//                table.enhanceQuantizationTable(table.quantTables[t], table);
             }
             else {
                 for (int i = 0; i < 64; i++) {
                     if (count > length) {
-                        throw new IOException("ERROR: Quantization table format error");
+                        throw new IIOException("JPEG Quantization Table format error");
                     }
 
                     table.quantTables[t][i] = data.readUnsignedShort();
                     count += 2;
                 }
-
-//                table.enhanceQuantizationTable(table.quantTables[t], table);
             }
         }
 
         if (count != length) {
-            throw new IOException("ERROR: Quantization table error [count!=Lq]");
+            throw new IIOException("JPEG Quantization Table error, bad segment length: " + length);
         }
 
         return table;

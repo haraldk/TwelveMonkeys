@@ -10,10 +10,7 @@ import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.color.ICC_Profile;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.List;
 
 /**
@@ -39,7 +36,7 @@ final class JPEGImage10MetadataCleaner {
     IIOMetadata cleanMetadata(final IIOMetadata imageMetadata) throws IOException {
         // We filter out pretty much everything from the stream..
         // Meaning we have to read get *all APP segments* and re-insert into metadata.
-        List<AppSegment> appSegments = reader.getAppSegments(JPEGImageReader.ALL_APP_MARKERS, null);
+        List<Application> appSegments = reader.getAppSegments(JPEGImageReader.ALL_APP_MARKERS, null);
 
         // NOTE: There's a bug in the merging code in JPEGMetadata mergeUnknownNode that makes sure all "unknown" nodes are added twice in certain conditions.... ARGHBL...
         // DONE: 1: Work around
@@ -176,7 +173,7 @@ final class JPEGImage10MetadataCleaner {
         }
 
         Node next = null;
-        for (AppSegment segment : appSegments) {
+        for (Application segment : appSegments) {
             // Except real app0JFIF, app0JFXX, app2ICC and app14Adobe, add all the app segments that we filtered away as "unknown" markers
             if (segment.marker == JPEG.APP0 && "JFIF".equals(segment.identifier) && hasRealJFIF) {
                 continue;

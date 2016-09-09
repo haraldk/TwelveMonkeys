@@ -38,7 +38,7 @@ import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
  * @version $Id: JPEGProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
 final class JPEGProviderInfo extends ReaderWriterProviderInfo {
-    protected JPEGProviderInfo() {
+    JPEGProviderInfo() {
         super(
                 JPEGProviderInfo.class,
                 new String[] {"JPEG", "jpeg", "JPG", "jpg"},
