@@ -44,7 +44,7 @@ import java.awt.image.*;
  */
 public class AffineTransformOp implements BufferedImageOp, RasterOp {
 
-    java.awt.image.AffineTransformOp delegate;
+    final java.awt.image.AffineTransformOp delegate;
 
     public static final int TYPE_NEAREST_NEIGHBOR = java.awt.image.AffineTransformOp.TYPE_NEAREST_NEIGHBOR;
 
@@ -56,8 +56,7 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
      * @param xform The {@link AffineTransform} to use for the operation.
      * @param hints The {@link RenderingHints} object used to specify the interpolation type for the operation.
      */
-    public AffineTransformOp(AffineTransform xform,
-                             RenderingHints hints) {
+    public AffineTransformOp(final AffineTransform xform, final RenderingHints hints) {
         delegate = new java.awt.image.AffineTransformOp(xform, hints);
     }
 
@@ -65,14 +64,12 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
      * @param xform             The {@link AffineTransform} to use for the operation.
      * @param interpolationType One of the integer interpolation type constants defined by this class: {@link #TYPE_NEAREST_NEIGHBOR}, {@link #TYPE_BILINEAR}, {@link #TYPE_BICUBIC}.
      */
-    public AffineTransformOp(AffineTransform xform,
-                             int interpolationType) {
+    public AffineTransformOp(final AffineTransform xform, final int interpolationType) {
         delegate = new java.awt.image.AffineTransformOp(xform, interpolationType);
     }
 
     @Override
-    public BufferedImage filter(BufferedImage src,
-                                BufferedImage dst) {
+    public BufferedImage filter(final BufferedImage src, BufferedImage dst) {
         try {
             return delegate.filter(src, dst);
         }
@@ -80,12 +77,16 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
             if (dst == null) {
                 dst = createCompatibleDestImage(src, src.getColorModel());
             }
+
             Graphics2D g2d = null;
+
             try {
                 g2d = dst.createGraphics();
                 int interpolationType = delegate.getInterpolationType();
+
                 if (interpolationType > 0) {
                     Object interpolationValue = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
+
                     switch (interpolationType) {
                         case java.awt.image.AffineTransformOp.TYPE_BILINEAR:
                             interpolationValue = RenderingHints.VALUE_INTERPOLATION_BILINEAR;
@@ -94,12 +95,15 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
                             interpolationValue = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
                             break;
                     }
+
                     g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolationValue);
                 }
                 else if (getRenderingHints() != null) {
                     g2d.setRenderingHints(getRenderingHints());
                 }
+
                 g2d.drawImage(src, delegate.getTransform(), null);
+
                 return dst;
             }
             finally {
@@ -111,32 +115,32 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
     }
 
     @Override
-    public Rectangle2D getBounds2D(BufferedImage src) {
+    public Rectangle2D getBounds2D(final BufferedImage src) {
         return delegate.getBounds2D(src);
     }
 
     @Override
-    public BufferedImage createCompatibleDestImage(BufferedImage src, ColorModel destCM) {
+    public BufferedImage createCompatibleDestImage(final BufferedImage src, final ColorModel destCM) {
         return delegate.createCompatibleDestImage(src, destCM);
     }
 
     @Override
-    public WritableRaster filter(Raster src, WritableRaster dest) {
+    public WritableRaster filter(final Raster src, final WritableRaster dest) {
         return delegate.filter(src, dest);
     }
 
     @Override
-    public Rectangle2D getBounds2D(Raster src) {
+    public Rectangle2D getBounds2D(final Raster src) {
         return delegate.getBounds2D(src);
     }
 
     @Override
-    public WritableRaster createCompatibleDestRaster(Raster src) {
+    public WritableRaster createCompatibleDestRaster(final Raster src) {
         return delegate.createCompatibleDestRaster(src);
     }
 
     @Override
-    public Point2D getPoint2D(Point2D srcPt, Point2D dstPt) {
+    public Point2D getPoint2D(final Point2D srcPt, final Point2D dstPt) {
         return delegate.getPoint2D(srcPt, dstPt);
     }
 

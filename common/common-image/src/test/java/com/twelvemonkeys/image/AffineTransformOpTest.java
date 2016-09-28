@@ -12,6 +12,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * AffineTransformOpTest.
@@ -70,8 +71,8 @@ public class AffineTransformOpTest {
             ImageTypeSpecifier.createInterleaved(S_RGB, new int[] {0, 1, 2, 3}, DataBuffer.TYPE_DOUBLE, true, false)
     );
 
-    final int width = 30;
-    final int height = 20;
+    private final int width = 30;
+    private final int height = 20;
 
     @Test
     public void testGetPoint2D() {
@@ -99,59 +100,64 @@ public class AffineTransformOpTest {
 
     @Test
     public void testFilterRotateBIStandard() {
-        BufferedImageOp op_jre = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        BufferedImageOp op_tm = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
 
         for (Integer type : TYPES) {
             BufferedImage image = new BufferedImage(width, height, type);
-            BufferedImage result_jre = op_jre.filter(image, null);
-            BufferedImage result_tm = op_tm.filter(image, null);
+            BufferedImage jreResult = jreOp.filter(image, null);
+            BufferedImage tmResult = tmOp.filter(image, null);
 
-            assertNotNull("No result!", result_tm);
-            assertEquals("Bad type", result_jre.getType(), result_tm.getType());
-            assertEquals("Incorrect color model", result_jre.getColorModel(), result_tm.getColorModel());
+            assertNotNull("No result!", tmResult);
+            assertEquals("Bad type", jreResult.getType(), tmResult.getType());
+            assertEquals("Incorrect color model", jreResult.getColorModel(), tmResult.getColorModel());
 
-            assertEquals("Incorrect width", result_jre.getWidth(), result_tm.getWidth());
-            assertEquals("Incorrect height", result_jre.getHeight(), result_tm.getHeight());
+            assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
+            assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
         }
     }
 
     @Test
     public void testFilterRotateBICustom() {
-        BufferedImageOp op_jre = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        BufferedImageOp op_tm = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
 
         for (ImageTypeSpecifier spec : SPECS) {
             BufferedImage image = spec.createBufferedImage(width, height);
 
-            BufferedImage result_tm = op_tm.filter(image, null);
-            assertNotNull("No result!", result_tm);
+            BufferedImage tmResult = tmOp.filter(image, null);
+            assertNotNull("No result!", tmResult);
 
-            BufferedImage result_jre;
+            BufferedImage jreResult = null;
+
             try {
-                result_jre = op_jre.filter(image, null);
-
-                assertEquals("Bad type", result_jre.getType(), result_tm.getType());
-                assertEquals("Incorrect color model", result_jre.getColorModel(), result_tm.getColorModel());
-
-                assertEquals("Incorrect width", result_jre.getWidth(), result_tm.getWidth());
-                assertEquals("Incorrect height", result_jre.getHeight(), result_tm.getHeight());
+                jreResult = jreOp.filter(image, null);
             }
-            catch (ImagingOpException e) {
-                System.err.println("spec: " + spec);
-                assertEquals("Bad type", spec.getBufferedImageType(), result_tm.getType());
-                assertEquals("Incorrect color model", spec.getColorModel(), result_tm.getColorModel());
+            catch (ImagingOpException ignore) {
+                // We expect this to fail for certain cases, that's why we crated the class in the first place
+            }
 
-                assertEquals("Incorrect width", height, result_tm.getWidth());
-                assertEquals("Incorrect height", width, result_tm.getHeight());
+            if (jreResult != null) {
+                assertEquals("Bad type", jreResult.getType(), tmResult.getType());
+                assertEquals("Incorrect color model", jreResult.getColorModel(), tmResult.getColorModel());
+
+                assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
+                assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
+            }
+            else {
+                assertEquals("Bad type", spec.getBufferedImageType(), tmResult.getType());
+                assertEquals("Incorrect color model", spec.getColorModel(), tmResult.getColorModel());
+
+                assertEquals("Incorrect width", height, tmResult.getWidth());
+                assertEquals("Incorrect height", width, tmResult.getHeight());
             }
         }
     }
 
-    // TODO: Test RasterOp variants of filter too
+    // Test RasterOp variants
 
     @Test
-    public void testRasterGetBounds2D() {
+    public void testGetBounds2DRaster() {
         AffineTransform shearInstance = AffineTransform.getShearInstance(33.77, 77.33);
         RasterOp original = new java.awt.image.AffineTransformOp(shearInstance, null);
         RasterOp fallback = new com.twelvemonkeys.image.AffineTransformOp(shearInstance, null);
@@ -162,81 +168,87 @@ public class AffineTransformOpTest {
     }
 
     @Test
-    public void testRasterRotateBIStandard() {
-        RasterOp op_jre = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        RasterOp op_tm = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+    public void testFilterRotateRasterStandard() {
+        RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
 
         for (Integer type : TYPES) {
             Raster raster = new BufferedImage(width, height, type).getRaster();
-            Raster result_jre = null, result_tm = null;
+            Raster jreResult = null;
+            Raster tmResult = null;
 
             try {
-                result_jre = op_jre.filter(raster, null);
+                jreResult = jreOp.filter(raster, null);
             }
-            catch (ImagingOpException e) {
-                System.err.println("type: " + type);
+            catch (ImagingOpException ignore) {
+                // We expect this to fail for certain cases, that's why we crated the class in the first place
             }
 
             try {
-                result_tm = op_tm.filter(raster, null);
+                tmResult = tmOp.filter(raster, null);
             }
             catch (ImagingOpException e) {
                 // Only fail if JRE AffineOp produces a result and our version not
-                if (result_jre != null) {
-                    assertNotNull("No result!", result_tm);
+                if (jreResult != null) {
+                    fail("No result!");
                 }
                 else {
+                    System.err.println("AffineTransformOpTest.testFilterRotateRasterStandard");
+                    System.err.println("type: " + type);
                     continue;
                 }
             }
 
-            if (result_jre != null) {
-                assertEquals("Incorrect width", result_jre.getWidth(), result_tm.getWidth());
-                assertEquals("Incorrect height", result_jre.getHeight(), result_tm.getHeight());
+            if (jreResult != null) {
+                assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
+                assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
             }
             else {
-                assertEquals("Incorrect width", height, result_tm.getWidth());
-                assertEquals("Incorrect height", width, result_tm.getHeight());
+                assertEquals("Incorrect width", height, tmResult.getWidth());
+                assertEquals("Incorrect height", width, tmResult.getHeight());
             }
         }
     }
 
     @Test
-    public void testRasterRotateBICustom() {
-        RasterOp op_jre = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        RasterOp op_tm = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+    public void testFilterRotateRasterCustom() {
+        RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
 
         for (ImageTypeSpecifier spec : SPECS) {
             Raster raster = spec.createBufferedImage(width, height).getRaster();
-            Raster result_jre = null, result_tm = null;
+            Raster jreResult = null;
+            Raster tmResult = null;
 
             try {
-                result_jre = op_jre.filter(raster, null);
+                jreResult = jreOp.filter(raster, null);
             }
-            catch (ImagingOpException e) {
-                System.err.println("spec: " + spec);
+            catch (ImagingOpException ignore) {
+                // We expect this to fail for certain cases, that's why we crated the class in the first place
             }
 
             try {
-                result_tm = op_tm.filter(raster, null);
+                tmResult = tmOp.filter(raster, null);
             }
             catch (ImagingOpException e) {
                 // Only fail if JRE AffineOp produces a result and our version not
-                if (result_jre != null) {
-                    assertNotNull("No result!", result_tm);
+                if (jreResult != null) {
+                    fail("No result!");
                 }
                 else {
+                    System.err.println("AffineTransformOpTest.testFilterRotateRasterCustom");
+                    System.err.println("spec: " + spec);
                     continue;
                 }
             }
 
-            if (result_jre != null) {
-                assertEquals("Incorrect width", result_jre.getWidth(), result_tm.getWidth());
-                assertEquals("Incorrect height", result_jre.getHeight(), result_tm.getHeight());
+            if (jreResult != null) {
+                assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
+                assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
             }
             else {
-                assertEquals("Incorrect width", height, result_tm.getWidth());
-                assertEquals("Incorrect height", width, result_tm.getHeight());
+                assertEquals("Incorrect width", height, tmResult.getWidth());
+                assertEquals("Incorrect height", width, tmResult.getHeight());
             }
         }
     }
