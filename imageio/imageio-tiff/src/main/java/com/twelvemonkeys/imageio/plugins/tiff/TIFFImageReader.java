@@ -1906,7 +1906,7 @@ public class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.COMPRESSION_PACKBITS:
                 return new DecoderStream(stream, new PackBitsDecoder(), 1024);
             case TIFFExtension.COMPRESSION_LZW:
-                return new DecoderStream(stream, LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), Math.max(width * bands, 1024));
+                return new DecoderStream(stream, LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), Math.max(width * bands, 4096));
             case TIFFExtension.COMPRESSION_ZLIB:
                 // TIFFphotoshop.pdf (aka TIFF specification, supplement 2) says ZLIB (8) and DEFLATE (32946) algorithms are identical
             case TIFFExtension.COMPRESSION_DEFLATE:
