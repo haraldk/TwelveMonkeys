@@ -160,13 +160,15 @@ public final class BMPImageReader extends ImageReaderBase {
                     }
                 }
 
-                // There might be more entries in the color map, but we ignore these for reading
-                int mapSize = Math.min(colors.length, 1 << header.getBitCount());
+                if (colors.length > 0) {
+                    // There might be more entries in the color map, but we ignore these for reading
+                    int mapSize = Math.min(colors.length, 1 << header.getBitCount());
 
-                // Compute bits for > 8 bits (used only for meta data)
-                int bits = header.getBitCount() <= 8 ? header.getBitCount() : mapSize <= 256 ? 8 : 16;
+                    // Compute bits for > 8 bits (used only for meta data)
+                    int bits = header.getBitCount() <= 8 ? header.getBitCount() : mapSize <= 256 ? 8 : 16;
 
-                colorMap = new IndexColorModel(bits, mapSize, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
+                    colorMap = new IndexColorModel(bits, mapSize, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
+                }
             }
         }
 

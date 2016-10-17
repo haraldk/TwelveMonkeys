@@ -108,7 +108,8 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 new TestData(getClassLoaderResource("/bmp/blauesglas_24.bmp"), new Dimension(301, 331)),
                 new TestData(getClassLoaderResource("/bmp/blauesglas_32.bmp"), new Dimension(301, 331)),
                 new TestData(getClassLoaderResource("/bmp/blauesglas_32_bitmask888.bmp"), new Dimension(301, 331)),
-                new TestData(getClassLoaderResource("/bmp/blauesglas_32_bitmask888_reversed.bmp"), new Dimension(301, 331))
+                new TestData(getClassLoaderResource("/bmp/blauesglas_32_bitmask888_reversed.bmp"), new Dimension(301, 331)),
+                new TestData(getClassLoaderResource("/bmp/24bitpalette.bmp"), new Dimension(320, 200))
         );
     }
 
