@@ -273,7 +273,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         }
     }
 
-    @Ignore("Known issue")
     @Test
     public void testReadJPEGRasterCaseWithSrcRegion() throws IOException {
         // Problematic test data, which is YCbCr encoded (as correctly specified by the PhotometricInterpretation tag,

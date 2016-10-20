@@ -992,14 +992,15 @@ public class TIFFImageReader extends ImageReaderBase {
 
                         // Read only tiles that lies within region
                         Rectangle tileRect = new Rectangle(col, row, colsInTile, rowsInTile);
-                        if (tileRect.intersects(srcRegion)) {
+                        Rectangle intersection = tileRect.intersection( srcRegion );
+                        if (!intersection.isEmpty()) {
                             imageInput.seek(stripTileOffsets[i]);
 
                             int length = stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Short.MAX_VALUE;
 
                             try (ImageInputStream subStream = new SubImageInputStream(imageInput, length)) {
                                 jpegReader.setInput(subStream);
-                                jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
+                                jpegParam.setSourceRegion(new Rectangle( intersection.x - col, intersection.y - row, intersection.width, intersection.height));
 
                                 // TODO: If we have non-standard reference B/W or yCbCr coefficients,
                                 // we might still have to do extra color space conversion...
@@ -1008,7 +1009,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 }
 
                                 if (!needsCSConversion) {
-                                    jpegParam.setDestinationOffset(new Point(col - srcRegion.x, row - srcRegion.y));
+                                    jpegParam.setDestinationOffset(new Point(intersection.x - srcRegion.x, intersection.y - srcRegion.y));
                                     jpegParam.setDestination(destination);
                                     jpegReader.read(0, jpegParam);
                                 }
@@ -1017,7 +1018,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     // We'll have to use readAsRaster and later apply color space conversion ourselves
                                     Raster raster = jpegReader.readRaster(0, jpegParam);
                                     normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
-                                    destination.getRaster().setDataElements(col - srcRegion.x, row - srcRegion.y, raster);
+                                    destination.getRaster().setDataElements(intersection.x - srcRegion.x, intersection.y - srcRegion.y, raster);
                                 }
                             }
                         }
