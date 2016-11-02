@@ -28,7 +28,6 @@
 
 package com.twelvemonkeys.imageio.util;
 
-import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -46,6 +45,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.awt.image.SampleModel;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -98,7 +98,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         return false;
     }    
 
-    private static void failBecause(String message, Throwable exception) {
+    protected static void failBecause(String message, Throwable exception) {
         AssertionError error = new AssertionError(message);
         error.initCause(exception);
         throw error;
@@ -471,7 +471,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertEquals("Read image has wrong height: ", (data.getDimension(0).height + 4) / 5, image.getHeight());
     }
 
-    @Ignore
     @Test
     public void testReadWithSubsampleParamPixels() throws IOException {
         ImageReader reader = createReader();
@@ -479,28 +478,66 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         reader.setInput(data.getInputStream());
 
         ImageReadParam param = reader.getDefaultReadParam();
-        param.setSourceRegion(new Rectangle(Math.min(100, reader.getWidth(0)), Math.min(100, reader.getHeight(0))));
 
         BufferedImage image = null;
         BufferedImage subsampled = null;
         try {
             image = reader.read(0, param);
-            param.setSourceSubsampling(2, 2, 1, 1); // Hmm.. Seems to be the offset the fake version (ReplicateScaleFilter) uses
 
+            param.setSourceSubsampling(2, 2, 0, 0);
             subsampled = reader.read(0, param);
         }
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
 
-        BufferedImage expected = ImageUtil.toBuffered(IIOUtil.fakeSubsampling(image, param));
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
 
-//        JPanel panel = new JPanel();
-//        panel.add(new JLabel("Expected", new BufferedImageIcon(expected, 300, 300), JLabel.CENTER));
-//        panel.add(new JLabel("Actual", new BufferedImageIcon(subsampled, 300, 300), JLabel.CENTER));
-//        JOptionPane.showConfirmDialog(null, panel);
+    // TODO: Subsample all test data
+    // TODO: Subsample with varying ratios and offsets
 
-        assertImageDataEquals("Subsampled image data does not match expected", expected, subsampled);
+    protected final void assertSubsampledImageDataEquals(String message, BufferedImage expected, BufferedImage actual, ImageReadParam param) throws IOException {
+        assertNotNull("Expected image was null", expected);
+        assertNotNull("Actual image was null!", actual);
+
+        if (expected == actual) {
+            return;
+        }
+
+        int xOff = param.getSubsamplingXOffset();
+        int yOff = param.getSubsamplingYOffset();
+        int xSub = param.getSourceXSubsampling();
+        int ySub = param.getSourceYSubsampling();
+
+        assertEquals("Subsampled image has wrong width: ", (expected.getWidth() - xOff + xSub - 1) / xSub, actual.getWidth());
+        assertEquals("Subsampled image has wrong height: ", (expected.getHeight() - yOff + ySub - 1) / ySub, actual.getHeight());
+        assertEquals("Subsampled has different type", expected.getType(), actual.getType());
+
+        for (int y = 0; y < actual.getHeight(); y++) {
+            for (int x = 0; x < actual.getWidth(); x++) {
+                int expectedRGB = expected.getRGB(xOff + x * xSub, yOff + y * ySub);
+                int actualRGB = actual.getRGB(x, y);
+
+                try {
+                    assertEquals(String.format("%s alpha at (%d, %d)", message, x, y), (expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 5);
+                    assertEquals(String.format("%s red at (%d, %d)", message, x, y), (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
+                    assertEquals(String.format("%s green at (%d, %d)", message, x, y), (expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5);
+                    assertEquals(String.format("%s blue at (%d, %d)", message, x, y), expectedRGB & 0xff, actualRGB & 0xff, 5);
+                }
+                catch (AssertionError e) {
+                    File tempExpected = File.createTempFile("junit-expected-", ".png");
+                    System.err.println("tempExpected.getAbsolutePath(): " + tempExpected.getAbsolutePath());
+                    ImageIO.write(expected, "PNG", tempExpected);
+                    File tempActual = File.createTempFile("junit-actual-", ".png");
+                    System.err.println("tempActual.getAbsolutePath(): " + tempActual.getAbsolutePath());
+                    ImageIO.write(actual, "PNG", tempActual);
+
+
+                    assertEquals(String.format("%s ARGB at (%d, %d)", message, x, y), String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB));
+                }
+            }
+        }
     }
 
     protected final void assertImageDataEquals(String message, BufferedImage expected, BufferedImage actual) {

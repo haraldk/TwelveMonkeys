@@ -3,6 +3,7 @@ package com.twelvemonkeys.imageio.plugins.pict;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.spi.IIORegistry;
@@ -83,6 +84,13 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         return Arrays.asList("image/pict", "image/x-pict");
     }
 
+    @Ignore("Known issue")
+    @Test
+    @Override
+    public void testReadWithSubsampleParamPixels() throws IOException {
+        super.testReadWithSubsampleParamPixels();
+    }
+
     // Regression tests
 
     @Test
@@ -142,12 +150,6 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);
-//        BufferedImage image = reader.read(0);
-//
-//        if (!GraphicsEnvironment.isHeadless()) {
-//            PICTImageReader.showIt(image, "dataV1CopyBits");
-//            Thread.sleep(10000);
-//        }
     }
 
     private static final byte[] DATA_EXT_V2 = {

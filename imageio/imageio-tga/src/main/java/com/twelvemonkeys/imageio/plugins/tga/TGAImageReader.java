@@ -229,15 +229,16 @@ public final class TGAImageReader extends ImageReaderBase {
 
         input.readFully(rowDataByte, 0, rowDataByte.length);
 
-        if (srcChannel.getNumBands() == 4 && (header.getAttributeBits() == 0 || extensions != null && !extensions.hasAlpha())) {
+        int numBands = srcChannel.getNumBands();
+        if (numBands == 4 && (header.getAttributeBits() == 0 || extensions != null && !extensions.hasAlpha())) {
             // Remove the alpha channel (make pixels opaque) if there are no "attribute bits" (alpha bits)
             removeAlpha32(rowDataByte);
         }
 
         // Subsample horizontal
         if (xSub != 1) {
-            for (int x = 0; x < srcRegion.width / xSub; x++) {
-                rowDataByte[srcRegion.x + x] = rowDataByte[srcRegion.x + x * xSub];
+            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                System.arraycopy(rowDataByte, x * xSub, rowDataByte, x, numBands);
             }
         }
 
