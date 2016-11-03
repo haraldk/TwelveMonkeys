@@ -102,7 +102,7 @@ final class EXIFEntry extends AbstractEntry {
             case TIFF.TAG_ORIENTATION:
                 return "Orientation";
             case TIFF.TAG_SAMPLES_PER_PIXEL:
-                return "SamplesPerPixels";
+                return "SamplesPerPixel";
             case TIFF.TAG_ROWS_PER_STRIP:
                 return "RowsPerStrip";
             case TIFF.TAG_STRIP_BYTE_COUNTS:

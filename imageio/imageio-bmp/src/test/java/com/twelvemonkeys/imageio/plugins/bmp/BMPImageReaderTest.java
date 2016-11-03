@@ -1,20 +1,19 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.*;
 import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URISyntaxException;
@@ -172,6 +171,58 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
             assertTrue("ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
         }
+    }
+
+    @Ignore("Known issue: Subsampled reading is currently broken")
+    @Test
+    public void testReadWithSubsampleParamPixelsIndexed8() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = getTestData().get(0);
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
+
+    // TODO: 1. Subsampling is currently broken, should fix it.
+    //       2. BMPs are (normally) stored bottom/up, meaning y subsampling offsets will differ from normal
+    //          subsampling of the same data with an offset... Should we deal with this in the reader? Yes?
+    @Ignore("Known issue: Subsampled reading is currently broken")
+    @Test
+    @Override
+    public void testReadWithSubsampleParamPixels() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = getTestData().get(19); // RGB 24
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
     }
 
     @Test(expected = IIOException.class)

@@ -86,4 +86,11 @@ public class WMFImageReaderTest extends ImageReaderAbstractTest<WMFImageReader> 
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
         super.testReadWithSourceRegionParamEqualImage();
     }
+
+    @Test
+    @Ignore("Known issue: Subsampled reading not supported")
+    @Override
+    public void testReadWithSubsampleParamPixels() throws IOException {
+        super.testReadWithSubsampleParamPixels();
+    }
 }

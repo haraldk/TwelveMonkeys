@@ -692,12 +692,14 @@ public final class BMPImageReader extends ImageReaderBase {
                 if (imageMetadata != null) {
                     new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
                 }
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 if (args.length > 1) {
                     System.err.println("---");
                     System.err.println("---> " + t.getClass().getSimpleName() + ": " + t.getMessage() + " for " + arg);
                     System.err.println("---");
-                } else {
+                }
+                else {
                     throwAs(RuntimeException.class, t);
                 }
             }

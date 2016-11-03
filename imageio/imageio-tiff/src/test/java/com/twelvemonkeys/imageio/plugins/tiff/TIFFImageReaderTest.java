@@ -27,7 +27,6 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
  */
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -441,5 +440,75 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             }
             assertTrue("no correct guess for PhotometricInterpretation: " + results[i], foundWarning.get());
         }
+    }
+
+    @Test
+    public void testReadWithSubsampleParamPixelsJPEG() throws IOException {
+        // Tiled "new style" JPEG
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/tiff/quad-jpeg.tif"), new Dimension(512, 384));
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
+
+    @Test
+    public void testReadWithSubsampleParamPixelsOldJPEG() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/tiff/smallliz.tif"), new Dimension(160, 160));
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
+
+    @Test
+    public void testReadWithSubsampleParamPixelsTiled() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/tiff/cramps-tile.tif"), new Dimension(800, 607));
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
     }
 }

@@ -121,6 +121,13 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
     }
 
     @Test
+    @Ignore("Known issue: Subsampled reading not supported")
+    @Override
+    public void testReadWithSubsampleParamPixels() throws IOException {
+        super.testReadWithSubsampleParamPixels();
+    }
+
+    @Test
     public void testRepeatedRead() throws IOException {
         Dimension dim = new Dimension(100, 100);
         ImageReader reader = createReader();
