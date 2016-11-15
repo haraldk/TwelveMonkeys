@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.*;
+
 /**
  * JPEGImageWriterSpi
  *
@@ -70,27 +72,13 @@ public class JPEGImageWriterSpi extends ImageWriterSpiBase {
 
         this.delegateProvider = Validate.notNull(delegateProvider);
     }
-    
-    static ImageWriterSpi lookupDelegateProvider(final ServiceRegistry registry) {
-        Iterator<ImageWriterSpi> providers = registry.getServiceProviders(ImageWriterSpi.class, true);
-
-        while (providers.hasNext()) {
-            ImageWriterSpi provider = providers.next();
-
-            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi")) {
-                return provider;
-            }
-        }
-
-        return null;
-    }
 
     @SuppressWarnings({"unchecked"})
     @Override
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {
             // Install delegate now
-            delegateProvider = lookupDelegateProvider(registry);
+            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
         }
 
         if (delegateProvider != null) {
@@ -99,7 +87,7 @@ public class JPEGImageWriterSpi extends ImageWriterSpiBase {
         }
         else {
             // Or, if no delegate is found, silently deregister from the registry
-            IIOUtil.deregisterProvider(registry, this, category);
+            deregisterProvider(registry, this, category);
         }
     }
 

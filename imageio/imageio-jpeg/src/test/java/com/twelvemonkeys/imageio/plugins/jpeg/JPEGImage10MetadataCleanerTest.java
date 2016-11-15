@@ -15,6 +15,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -32,10 +33,10 @@ public class JPEGImage10MetadataCleanerTest {
         ImageIO.setUseCache(false);
     }
 
-    protected static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
+    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
-    protected static ImageReaderSpi lookupDelegateProvider() {
-        return JPEGImageReaderSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
+    private static ImageReaderSpi lookupDelegateProvider() {
+        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
     }
 
     // Unit/regression test for #276

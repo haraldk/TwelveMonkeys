@@ -41,6 +41,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+
 /**
  * JPEGImageReaderSpi
  *
@@ -48,7 +50,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageReaderSpi.java,v 1.0 24.01.11 22.12 haraldk Exp$
  */
-public class JPEGImageReaderSpi extends ImageReaderSpiBase {
+public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
     protected ImageReaderSpi delegateProvider;
 
     /**
@@ -64,33 +66,14 @@ public class JPEGImageReaderSpi extends ImageReaderSpiBase {
      *
      * @param delegateProvider a {@code ImageReaderSpi} that can read JPEG.
      */
-    protected JPEGImageReaderSpi(final ImageReaderSpi delegateProvider) {
+    JPEGImageReaderSpi(final ImageReaderSpi delegateProvider) {
         this();
 
         this.delegateProvider = Validate.notNull(delegateProvider);
     }
 
-    /**
-     * Constructor for subclasses.
-     *
-     * @param info
-     */
-    protected JPEGImageReaderSpi(final ReaderWriterProviderInfo info) {
+    private JPEGImageReaderSpi(final ReaderWriterProviderInfo info) {
         super(info);
-    }
-
-    static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
-        Iterator<ImageReaderSpi> providers = registry.getServiceProviders(ImageReaderSpi.class, true);
-
-        while (providers.hasNext()) {
-            ImageReaderSpi provider = providers.next();
-
-            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi")) {
-                return provider;
-            }
-        }
-
-        return null;
     }
 
     @SuppressWarnings({"unchecked", "deprecation"})
@@ -98,7 +81,7 @@ public class JPEGImageReaderSpi extends ImageReaderSpiBase {
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {
             // Install delegate now
-            delegateProvider = lookupDelegateProvider(registry);
+            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
         }
 
         if (delegateProvider != null) {

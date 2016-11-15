@@ -99,7 +99,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // Use sensible defaults for compression based on input? None is sensible... :-)
     // Support resolution, resolution unit and software tags from ImageIO metadata
 
-    public static final Rational STANDARD_DPI = new Rational(72);
+    private static final Rational STANDARD_DPI = new Rational(72);
 
     /**
      * Flag for active sequence writing

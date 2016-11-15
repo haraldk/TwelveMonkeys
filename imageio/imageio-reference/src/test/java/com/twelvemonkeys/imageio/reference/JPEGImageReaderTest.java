@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 import static org.junit.Assume.assumeNoException;
 
 /**
@@ -27,18 +28,7 @@ import static org.junit.Assume.assumeNoException;
 public class JPEGImageReaderTest extends ImageReaderAbstractTest {
     private static final boolean IS_JAVA_6_OR_LATER = SystemUtil.isClassAvailable("java.util.Deque");
     
-    protected final ImageReaderSpi provider = lookupSpi();
-
-    private ImageReaderSpi lookupSpi() {
-        try {
-            return (ImageReaderSpi) IIORegistry.getDefaultInstance().getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi"));
-        }
-        catch (ClassNotFoundException e) {
-            assumeNoException(e);
-        }
-
-        return null;
-    }
+    private final ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
 
     @Override
     protected List<TestData> getTestData() {

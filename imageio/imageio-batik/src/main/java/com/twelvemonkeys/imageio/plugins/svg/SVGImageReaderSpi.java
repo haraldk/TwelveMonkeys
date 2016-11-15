@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.plugins.svg.SVGProviderInfo.SVG_READER_AVAILABLE;
+import static com.twelvemonkeys.imageio.util.IIOUtil.*;
 
 /**
  * SVGImageReaderSpi
@@ -175,7 +176,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                 t.printStackTrace();
             }
 
-            IIOUtil.deregisterProvider(registry, this, category);
+            deregisterProvider(registry, this, category);
         }
     }
 }

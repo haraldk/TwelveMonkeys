@@ -52,7 +52,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageWriter.java,v 1.0 06.02.12 16:39 haraldk Exp$
  */
-public class JPEGImageWriter extends ImageWriterBase {
+public final class JPEGImageWriter extends ImageWriterBase {
     // TODO: Extend with functionality to be able to write CMYK JPEGs as well?
 
     /** Our JPEG writing delegate */

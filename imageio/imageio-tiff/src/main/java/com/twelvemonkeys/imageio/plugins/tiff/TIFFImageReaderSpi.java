@@ -45,7 +45,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageReaderSpi.java,v 1.0 08.05.12 15:14 haraldk Exp$
  */
-public class TIFFImageReaderSpi extends ImageReaderSpiBase {
+public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
     /**
      * Creates a {@code TIFFImageReaderSpi}.
      */

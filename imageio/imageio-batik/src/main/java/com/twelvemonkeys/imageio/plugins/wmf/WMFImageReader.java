@@ -55,7 +55,7 @@ import java.util.Iterator;
  */
 // TODO: Probably possible to do less wrapping/unwrapping of data...
 // TODO: Consider using temp file instead of in-memory stream
-public class WMFImageReader extends ImageReaderBase {
+public final class WMFImageReader extends ImageReaderBase {
 
     private SVGImageReader reader = null;
 

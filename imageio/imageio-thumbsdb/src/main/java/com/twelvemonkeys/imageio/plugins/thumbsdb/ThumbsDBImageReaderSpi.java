@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 
 import javax.imageio.ImageReader;
@@ -39,6 +40,8 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * ThumbsDBImageReaderSpi
@@ -75,32 +78,21 @@ public final class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
     private void maybeInitJPEGProvider() {
         // NOTE: Can't do this from constructor, as ImageIO itself is not initialized yet,
         // and the lookup below will produce a NPE..
-
-        // TODO: A better approach...
-        //       - Could have a list with known working JPEG decoders?
-        //       - System property?
-        //       - Class path lookup of properties file with reader?
-        // This way we could deregister immediately
-
         if (jpegProvider == null) {
-            ImageReaderSpi provider = null;
-            try {
-                Iterator<ImageReaderSpi> providers = getJPEGProviders();
+            // Prefer the one we know
+            ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
 
-                while (providers.hasNext()) {
-                    provider = providers.next();
-
-                    // Prefer the one we know
-                    if ("Sun Microsystems, Inc.".equals(provider.getVendorName())) {
-                        break;
-                    }
+            if (provider == null) {
+                try {
+                    provider = getJPEGProviders().next();
+                }
+                catch (Exception ignore) {
+                    // It's pretty safe to assume there's always a JPEG reader out there
+                    // In any case, we deregister the provider if there isn't one
+                    IIORegistry.getDefaultInstance().deregisterServiceProvider(this, ImageReaderSpi.class);
                 }
             }
-            catch (Exception ignore) {
-                // It's pretty safe to assume there's always a JPEG reader out there
-                // In any case, we deregister the provider if there isn't one
-                IIORegistry.getDefaultInstance().deregisterServiceProvider(this, ImageReaderSpi.class);
-            }
+
             jpegProvider = provider;
         }
     }

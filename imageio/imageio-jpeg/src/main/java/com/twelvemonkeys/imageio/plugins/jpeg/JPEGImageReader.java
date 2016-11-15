@@ -98,7 +98,7 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageReader.java,v 1.0 24.01.11 16.37 haraldk Exp$
  */
-public class JPEGImageReader extends ImageReaderBase {
+public final class JPEGImageReader extends ImageReaderBase {
     // TODO: Allow automatic rotation based on EXIF rotation field?
     // TODO: Create a simplified native metadata format that is closer to the actual JPEG stream AND supports EXIF in a sensible way
     // TODO: As we already parse the SOF segments, maybe we should stop delegating getWidth/getHeight etc?

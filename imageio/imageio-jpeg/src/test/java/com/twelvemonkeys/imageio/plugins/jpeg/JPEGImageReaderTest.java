@@ -58,6 +58,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
@@ -74,10 +75,10 @@ import static org.mockito.Mockito.*;
  */
 public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader> {
 
-    protected static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
+    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
-    protected static ImageReaderSpi lookupDelegateProvider() {
-        return JPEGImageReaderSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
+    private static ImageReaderSpi lookupDelegateProvider() {
+        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
     }
 
     @Override

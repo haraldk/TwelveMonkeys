@@ -79,6 +79,9 @@ import java.util.*;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.*;
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+
 /**
  * ImageReader implementation for Aldus/Adobe Tagged Image File Format (TIFF).
  * <p/>
@@ -116,7 +119,7 @@ import java.util.zip.InflaterInputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageReader.java,v 1.0 08.05.12 15:14 haraldk Exp$
  */
-public class TIFFImageReader extends ImageReaderBase {
+public final class TIFFImageReader extends ImageReaderBase {
     // TODOs ImageIO basic functionality:
     // TODO: Thumbnail support
 
@@ -909,8 +912,8 @@ public class TIFFImageReader extends ImageReaderBase {
                             }
                             else {
                                 InputStream adapter = stripTileByteCounts != null
-                                                      ? IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts[i])
-                                                      : IIOUtil.createStreamAdapter(imageInput);
+                                                      ? createStreamAdapter(imageInput, stripTileByteCounts[i])
+                                                      : createStreamAdapter(imageInput);
 
                                 adapter = createDecompressorStream(compression, stripTileWidth, numBands, adapter);
                                 adapter = createUnpredictorStream(predictor, stripTileWidth, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
@@ -1247,7 +1250,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 try (ImageInputStream stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
                                         Arrays.asList(
                                                 createJFIFStream(destRaster.getNumBands(), stripTileWidth, stripTileHeight, qTables, dcTables, acTables),
-                                                IIOUtil.createStreamAdapter(imageInput, stripTileByteCounts != null
+                                                createStreamAdapter(imageInput, stripTileByteCounts != null
                                                                                         ? (int) stripTileByteCounts[i]
                                                                                         : Short.MAX_VALUE),
                                                 new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
@@ -1361,19 +1364,18 @@ public class TIFFImageReader extends ImageReaderBase {
         return false;
     }
 
-    private ImageReader createJPEGDelegate() throws IIOException {
+    private ImageReader createJPEGDelegate() throws IOException {
         // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
-        try {
-            @SuppressWarnings("unchecked")
-            Class<ImageReader> readerClass = (Class<ImageReader>) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReader");
-            Constructor<ImageReader> constructor = readerClass.getConstructor(ImageReaderSpi.class);
-            return constructor.newInstance(getOriginatingProvider());
+        ImageReaderSpi jpegProvider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+
+        if (jpegProvider != null) {
+            return jpegProvider.createReaderInstance();
         }
-        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ignore) {
-            if (DEBUG) {
-                ignore.printStackTrace();
-            }
-            // Fall back to default reader below
+
+        // Fall back to default reader below
+        if (DEBUG) {
+            System.err.println("Could not create " + "com.sun.imageio.plugins.jpeg.JPEGImageReader"
+                    + ", falling back to default JPEG capable ImageReader");
         }
 
         // If we can't get the standard reader, fall back to the default (first) reader
@@ -2286,15 +2288,10 @@ public class TIFFImageReader extends ImageReaderBase {
 
     private static void deregisterOSXTIFFImageReaderSpi() {
         IIORegistry registry = IIORegistry.getDefaultInstance();
-        Iterator<ImageReaderSpi> providers = registry.getServiceProviders(ImageReaderSpi.class, new ServiceRegistry.Filter() {
-            public boolean filter(Object provider) {
-                return provider.getClass().getName().equals("com.sun.imageio.plugins.tiff.TIFFImageReaderSpi");
-            }
-        }, false);
+        ImageReaderSpi provider = lookupProviderByName(registry, "com.sun.imageio.plugins.tiff.TIFFImageReaderSpi");
 
-        while (providers.hasNext()) {
-            ImageReaderSpi next = providers.next();
-            registry.deregisterServiceProvider(next);
+        if (provider != null) {
+            registry.deregisterServiceProvider(provider);
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.twelvemonkeys.imageio.reference;
 
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
@@ -23,18 +24,7 @@ import static org.junit.Assume.assumeNoException;
  * @version $Id: PNGImageReaderTest.java,v 1.0 Oct 9, 2009 3:37:25 PM haraldk Exp$
  */
 public class PNGImageReaderTest extends ImageReaderAbstractTest {
-    protected final ImageReaderSpi provider = lookupSpi();
-
-    private ImageReaderSpi lookupSpi() {
-        try {
-            return (ImageReaderSpi) IIORegistry.getDefaultInstance().getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.png.PNGImageReaderSpi"));
-        }
-        catch (ClassNotFoundException e) {
-            assumeNoException(e);
-        }
-
-        return null;
-    }
+    private final ImageReaderSpi provider = IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.png.PNGImageReaderSpi");
 
     @Override
     protected List<TestData> getTestData() {

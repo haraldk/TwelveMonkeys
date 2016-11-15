@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 
 import javax.imageio.ImageWriter;
@@ -51,7 +52,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
     private static final JPEGImageWriterSpi SPI = new JPEGImageWriterSpi(lookupDelegateProvider());
 
     private static ImageWriterSpi lookupDelegateProvider() {
-        return JPEGImageWriterSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
+        return IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
     }
 
     @Override

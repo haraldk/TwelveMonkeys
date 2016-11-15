@@ -102,7 +102,7 @@ import java.util.List;
  * @todo Some MAJOR clean up
  * @todo As we now have Graphics2D with more options, support more of the format?
  */
-public class PICTImageReader extends ImageReaderBase {
+public final class PICTImageReader extends ImageReaderBase {
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.pict.debug"));
 
