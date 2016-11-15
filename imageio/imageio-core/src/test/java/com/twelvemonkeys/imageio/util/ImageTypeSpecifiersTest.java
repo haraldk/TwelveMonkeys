@@ -609,7 +609,26 @@ public class ImageTypeSpecifiersTest {
                 new IndexedImageTypeSpecifier(colorModel),
                 ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
         );
+    }
 
+    @Test
+    public void testCreateDiscreteAlphaIndexedFromIndexColorModel8() {
+        int[] colors = createIntLut(1 << 8);
+        IndexColorModel colorModel = new IndexColorModel(8, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
+        assertEquals(
+                new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1)),
+                ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
+        );
+    }
+
+    @Test
+    public void testCreateDiscreteAlphaIndexedFromIndexColorModel16() {
+        int[] colors = createIntLut(1 << 16);
+        IndexColorModel colorModel = new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT);
+        assertEquals(
+                new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1)),
+                ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
+        );
     }
 
     private static byte[] createByteLut(final int count) {

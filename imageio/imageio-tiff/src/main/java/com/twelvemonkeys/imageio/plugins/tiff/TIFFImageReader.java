@@ -52,7 +52,6 @@ import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
-import com.twelvemonkeys.xml.XMLSerializer;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
@@ -459,7 +458,7 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
             case TIFFBaseline.PHOTOMETRIC_PALETTE:
                 // Palette
-                if (samplesPerPixel != 1) {
+                if (samplesPerPixel != 1 && !(samplesPerPixel == 2 && extraSamples != null && extraSamples.length == 1)) {
                     throw new IIOException("Bad SamplesPerPixel value for Palette TIFF (expected 1): " + samplesPerPixel);
                 }
                 else if (bitsPerSample <= 0 || bitsPerSample > 16) {
@@ -473,6 +472,12 @@ public class TIFFImageReader extends ImageReaderBase {
                 }
 
                 IndexColorModel icm = createIndexColorModel(bitsPerSample, dataType, (int[]) colorMap.getValue());
+
+                if (extraSamples != null && extraSamples.length > 0
+                        && (extraSamples[0] == TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA
+                        || extraSamples[0] == TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA)) {
+                    return ImageTypeSpecifiers.createDiscreteAlphaIndexedFromIndexColorModel(icm);
+                }
 
                 return ImageTypeSpecifiers.createFromIndexColorModel(icm);
 
@@ -808,8 +813,11 @@ public class TIFFImageReader extends ImageReaderBase {
 
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
+
+        // TODO: Get number of extra samples not part of the rawType spec...
         // TODO: If extrasamples, we might need to create a raster with more samples...
         WritableRaster rowRaster = rawType.createBufferedImage(stripTileWidth, 1).getRaster();
+//        WritableRaster rowRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, stripTileWidth, 1, 2, null).createWritableChild(0, 0, stripTileWidth, 1, 0, 0, new int[]{0});
         Rectangle clip = new Rectangle(srcRegion);
         int row = 0;
         Boolean needsCSConversion = null;

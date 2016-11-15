@@ -28,6 +28,7 @@
 
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
 import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -166,5 +167,10 @@ public final class ImageTypeSpecifiers {
 
     public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel pColorModel) {
         return new IndexedImageTypeSpecifier(pColorModel);
+    }
+
+    public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel pColorModel) {
+        ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel);
+        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
     }
 }
