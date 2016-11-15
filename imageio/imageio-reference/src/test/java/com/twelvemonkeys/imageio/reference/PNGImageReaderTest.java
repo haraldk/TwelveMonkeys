@@ -5,6 +5,7 @@ import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageReader;
+import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
@@ -26,9 +27,9 @@ public class PNGImageReaderTest extends ImageReaderAbstractTest {
 
     private ImageReaderSpi lookupSpi() {
         try {
-            return (ImageReaderSpi) Class.forName("com.sun.imageio.plugins.png.PNGImageReaderSpi").newInstance();
+            return (ImageReaderSpi) IIORegistry.getDefaultInstance().getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.png.PNGImageReaderSpi"));
         }
-        catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        catch (ClassNotFoundException e) {
             assumeNoException(e);
         }
 

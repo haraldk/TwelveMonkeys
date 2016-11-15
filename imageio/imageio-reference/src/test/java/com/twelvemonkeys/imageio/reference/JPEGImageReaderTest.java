@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageReader;
+import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
@@ -24,15 +25,15 @@ import static org.junit.Assume.assumeNoException;
  * @version $Id: JPEGImageReaderTest.java,v 1.0 Oct 9, 2009 3:37:25 PM haraldk Exp$
  */
 public class JPEGImageReaderTest extends ImageReaderAbstractTest {
-    private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
+    private static final boolean IS_JAVA_6_OR_LATER = SystemUtil.isClassAvailable("java.util.Deque");
     
     protected final ImageReaderSpi provider = lookupSpi();
 
     private ImageReaderSpi lookupSpi() {
         try {
-            return (ImageReaderSpi) Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi").newInstance();
+            return (ImageReaderSpi) IIORegistry.getDefaultInstance().getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi"));
         }
-        catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+        catch (ClassNotFoundException e) {
             assumeNoException(e);
         }
 
@@ -93,7 +94,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest {
     @Override
     public void testSetDestination() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
-        if (IS_JAVA_6) {
+        if (IS_JAVA_6_OR_LATER) {
             super.testSetDestination();
         }
         else {
@@ -105,7 +106,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest {
     @Override
     public void testSetDestinationType() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
-        if (IS_JAVA_6) {
+        if (IS_JAVA_6_OR_LATER) {
             super.testSetDestinationType();
         }
         else {
