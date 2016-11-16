@@ -286,6 +286,9 @@ public final class EXIFReader extends MetadataReader {
             pInput.seek(pOffset);
             return readValue(pInput, pType, pCount);
         }
+        catch (EOFException e) {
+            return e;
+        }
         finally {
             pInput.seek(pos);
         }
