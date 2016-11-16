@@ -19,7 +19,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testGray() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(GRAY, new int [] {0}, false, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int [] {0}, false, false);
 
         assertEquals(1, spec.getNumBands());
         assertEquals(1, spec.getNumComponents());
@@ -38,7 +38,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testGrayAlpha() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(GRAY, new int [] {0, 1}, true, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int [] {0, 1}, true, false);
         assertEquals(2, spec.getNumBands());
         assertEquals(2, spec.getNumComponents());
         assertEquals(32, spec.getBitsPerBand(0));
@@ -57,7 +57,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testRGB() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2}, false, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, false, false);
 
         assertEquals(3, spec.getNumBands());
         assertEquals(3, spec.getNumComponents());
@@ -78,7 +78,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testRGBAlpha() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2, 3}, true, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2, 3}, true, false);
         assertEquals(4, spec.getNumBands());
         assertEquals(4, spec.getNumComponents());
         assertEquals(32, spec.getBitsPerBand(0));
@@ -99,7 +99,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testRGBAlphaPre() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2, 3}, true, true);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2, 3}, true, true);
         assertEquals(4, spec.getNumBands());
         assertEquals(4, spec.getNumComponents());
         assertEquals(32, spec.getBitsPerBand(0));
@@ -120,7 +120,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testCMYK() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(CMYK, new int [] {0, 1, 2, 3}, false, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(CMYK, new int [] {0, 1, 2, 3}, false, false);
 
         assertEquals(4, spec.getNumBands());
         assertEquals(4, spec.getNumComponents());
@@ -142,7 +142,7 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testCMYKAlpha() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(CMYK, new int [] {0, 1, 2, 3, 4}, true, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(CMYK, new int [] {0, 1, 2, 3, 4}, true, false);
         assertEquals(5, spec.getNumBands());
         assertEquals(5, spec.getNumComponents());
         assertEquals(32, spec.getBitsPerBand(0));
@@ -165,9 +165,9 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testEquals() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2}, false, false);
-        ImageTypeSpecifier other = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2}, false, false);
-        ImageTypeSpecifier different = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2, 3}, true, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, false, false);
+        ImageTypeSpecifier other = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, false, false);
+        ImageTypeSpecifier different = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2, 3}, true, false);
         // Equivalent, but broken, not equal
         ImageTypeSpecifier broken =
                 ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, DataBuffer.TYPE_INT, false, false);
@@ -185,9 +185,9 @@ public class UInt32ImageTypeSpecifierTest {
 
     @Test
     public void testHashCode() {
-        ImageTypeSpecifier spec = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2}, false, false);
-        ImageTypeSpecifier other = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2}, false, false);
-        ImageTypeSpecifier different = new UInt32ImageTypeSpecifier(sRGB, new int [] {0, 1, 2, 3}, true, false);
+        ImageTypeSpecifier spec = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, false, false);
+        ImageTypeSpecifier other = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, false, false);
+        ImageTypeSpecifier different = UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2, 3}, true, false);
         // Equivalent, but broken, not equal
         ImageTypeSpecifier broken =
                 ImageTypeSpecifier.createInterleaved(sRGB, new int [] {0, 1, 2}, DataBuffer.TYPE_INT, false, false);

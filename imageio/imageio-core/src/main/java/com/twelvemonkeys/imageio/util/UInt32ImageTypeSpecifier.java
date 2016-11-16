@@ -32,8 +32,10 @@ import com.twelvemonkeys.imageio.color.UInt32ColorModel;
 
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
+import java.awt.image.BandedSampleModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.PixelInterleavedSampleModel;
+import java.awt.image.SampleModel;
 
 /**
  * ImageTypeSpecifier for interleaved 32 bit unsigned integral samples.
@@ -43,10 +45,12 @@ import java.awt.image.PixelInterleavedSampleModel;
  * @author last modified by $Author: haraldk$
  * @version $Id: UInt32ImageTypeSpecifier.java,v 1.0 24.01.11 17.51 haraldk Exp$
  */
-final class UInt32ImageTypeSpecifier extends ImageTypeSpecifier {
-    UInt32ImageTypeSpecifier(final ColorSpace cs, int[] bandOffsets, final boolean hasAlpha, final boolean isAlphaPremultiplied) {
-        super(
-                new UInt32ColorModel(cs, hasAlpha, isAlphaPremultiplied),
+final class UInt32ImageTypeSpecifier {
+    private UInt32ImageTypeSpecifier() {}
+
+    static ImageTypeSpecifier createInterleaved(final ColorSpace cs, final int[] bandOffsets, final boolean hasAlpha, final boolean isAlphaPremultiplied) {
+        return create(
+                cs, hasAlpha, isAlphaPremultiplied,
                 new PixelInterleavedSampleModel(
                         DataBuffer.TYPE_INT, 1, 1,
                         cs.getNumComponents() + (hasAlpha ? 1 : 0),
@@ -54,5 +58,19 @@ final class UInt32ImageTypeSpecifier extends ImageTypeSpecifier {
                         bandOffsets
                 )
         );
+    }
+
+    static ImageTypeSpecifier createBanded(final ColorSpace cs, final int[] bandIndices, final int[] bandOffsets, final boolean hasAlpha, final boolean isAlphaPremultiplied) {
+        return create(
+                cs, hasAlpha, isAlphaPremultiplied,
+                new BandedSampleModel(
+                        DataBuffer.TYPE_INT, 1, 1, 1,
+                        bandIndices, bandOffsets
+                )
+        );
+    }
+
+    private static ImageTypeSpecifier create(final ColorSpace cs, final boolean hasAlpha, final boolean isAlphaPremultiplied, final SampleModel sampleModel) {
+        return new ImageTypeSpecifier(new UInt32ColorModel(cs, hasAlpha, isAlphaPremultiplied), sampleModel);
     }
 }

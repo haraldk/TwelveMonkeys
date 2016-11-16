@@ -45,7 +45,6 @@ import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
@@ -62,7 +61,6 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.CMMException;
@@ -70,8 +68,6 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -378,6 +374,10 @@ public final class TIFFImageReader extends ImageReaderBase {
                         else if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0}, dataType, false, false);
                         }
+                        else if (bitsPerSample % 2 == 0) {
+                            ColorModel colorModel = new ComponentColorModel(cs, new int[] {bitsPerSample}, false, false, Transparency.OPAQUE, dataType);
+                            return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+                        }
 
                         throw new IIOException(String.format("Unsupported BitsPerSample for Bi-level/Gray TIFF (expected 1, 2, 4, 8, 16 or 32): %d", bitsPerSample));
 
@@ -441,6 +441,14 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
                                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, dataType, false, false);
                             }
+                        }
+                        else if (bitsPerSample > 8 && bitsPerSample % 2 == 0) {
+                            // TODO: Support variable bits/sample?
+                            ColorModel colorModel = new ComponentColorModel(cs, new int[] {bitsPerSample, bitsPerSample, bitsPerSample}, false, false, Transparency.OPAQUE, dataType);
+                            SampleModel sampleModel = planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY
+                                                      ? colorModel.createCompatibleSampleModel(1, 1)
+                                                      : new BandedSampleModel(dataType, 1, 1, 3, new int[]{0, 1, 2}, new int[]{0, 0, 0});
+                            return new ImageTypeSpecifier(colorModel, sampleModel);
                         }
                     case 4:
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
@@ -892,6 +900,10 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 // General uncompressed/compressed reading
                 int bands = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? rawType.getNumBands() : 1;
+                int bitsPerSample = getBitsPerSample();
+                boolean needsBitPadding = bitsPerSample > 16 && bitsPerSample % 16 != 0 || bitsPerSample > 8 && bitsPerSample % 8 != 0 || bitsPerSample == 6;
+                boolean needsAdapter = compression != TIFFBaseline.COMPRESSION_NONE
+                        || interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || needsBitPadding;
 
                 for (int y = 0; y < tilesDown; y++) {
                     int col = 0;
@@ -906,7 +918,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                             imageInput.seek(stripTileOffsets[i]);
 
                             DataInput input;
-                            if (compression == TIFFBaseline.COMPRESSION_NONE && interpretation != TIFFExtension.PHOTOMETRIC_YCBCR) {
+                            if (!needsAdapter) {
                                 // No need for transformation, fast forward
                                 input = imageInput;
                             }
@@ -916,7 +928,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                                       : createStreamAdapter(imageInput);
 
                                 adapter = createDecompressorStream(compression, stripTileWidth, numBands, adapter);
-                                adapter = createUnpredictorStream(predictor, stripTileWidth, numBands, getBitsPerSample(), adapter, imageInput.getByteOrder());
+                                adapter = createUnpredictorStream(predictor, stripTileWidth, numBands, bitsPerSample, adapter, imageInput.getByteOrder());
 
                                 if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_BYTE) {
                                     adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile);
@@ -927,6 +939,11 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 else if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
                                     // Handled in getRawImageType
                                     throw new AssertionError();
+                                }
+
+                                if (needsBitPadding) {
+                                    // We'll pad "odd" bitsPerSample streams to the smallest data type (byte/short/int) larger than the input
+                                    adapter = new BitPaddingStream(adapter, numBands, bitsPerSample, colsInTile, imageInput.getByteOrder());
                                 }
 
                                 // According to the spec, short/long/etc should follow order of containing stream
@@ -1299,8 +1316,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
 
                 break;
-
-                // Additionally, the specification defines these values as part of the TIFF extensions:
 
                 // Known, but unsupported compression types
             case TIFFCustom.COMPRESSION_NEXT:

@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
-import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
@@ -84,7 +83,7 @@ public final class ImageTypeSpecifiers {
                                                        final boolean isAlphaPremultiplied) {
         // As the ComponentColorModel is broken for 32 bit unsigned int, we'll use our own version
         if (dataType == DataBuffer.TYPE_INT) {
-            return new UInt32ImageTypeSpecifier(colorSpace, bandOffsets, hasAlpha, isAlphaPremultiplied);
+            return UInt32ImageTypeSpecifier.createInterleaved(colorSpace, bandOffsets, hasAlpha, isAlphaPremultiplied);
         }
 
         // ...or fall back to default for anything else
@@ -95,6 +94,12 @@ public final class ImageTypeSpecifiers {
                                                   final int[] bankIndices, final int[] bandOffsets,
                                                   final int dataType,
                                                   final boolean hasAlpha, final boolean isAlphaPremultiplied) {
+        // As the ComponentColorModel is broken for 32 bit unsigned int, we'll use our own version
+        if (dataType == DataBuffer.TYPE_INT) {
+            return UInt32ImageTypeSpecifier.createBanded(colorSpace, bankIndices, bandOffsets, hasAlpha, isAlphaPremultiplied);
+        }
+
+        // ...or fall back to default for anything else
         return ImageTypeSpecifier.createBanded(colorSpace, bankIndices, bandOffsets, dataType, hasAlpha, isAlphaPremultiplied);
     }
 
@@ -105,7 +110,7 @@ public final class ImageTypeSpecifiers {
         }
         else if (bits == 32 && dataType == DataBuffer.TYPE_INT) {
             // As the ComponentColorModel is broken for 32 bit unsigned int, we'll use our own version
-            return new UInt32ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0}, false, false);
+            return UInt32ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0}, false, false);
         }
 
         // NOTE: The isSigned boolean is stored but *not used for anything* in the Grayscale ImageTypeSpecifier...
@@ -119,7 +124,7 @@ public final class ImageTypeSpecifiers {
         }
         else if (bits == 32 && dataType == DataBuffer.TYPE_INT) {
             // As the ComponentColorModel is broken for 32 bit unsigned int, we'll use our own version
-            return new UInt32ImageTypeSpecifier(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0, 1}, true, isAlphaPremultiplied);
+            return UInt32ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {0, 1}, true, isAlphaPremultiplied);
         }
 
         // NOTE: The isSigned boolean is stored but *not used for anything* in the Grayscale ImageTypeSpecifier...
@@ -166,7 +171,7 @@ public final class ImageTypeSpecifiers {
     }
 
     public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel pColorModel) {
-        return new IndexedImageTypeSpecifier(pColorModel);
+        return IndexedImageTypeSpecifier.createFromIndexColorModel(pColorModel);
     }
 
     public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel pColorModel) {

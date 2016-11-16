@@ -182,24 +182,24 @@ public class ImageTypeSpecifiersTest {
     public void testCreateInterleaved32() {
         // 32 bits/sample
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0}, false, false),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, false, false),
                 ImageTypeSpecifiers.createInterleaved(GRAY, new int[] {0}, DataBuffer.TYPE_INT, false, false)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0, 1}, true, false),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, true, false),
                 ImageTypeSpecifiers.createInterleaved(GRAY, new int[] {0, 1}, DataBuffer.TYPE_INT, true, false)
         );
 
         assertEquals(
-                new UInt32ImageTypeSpecifier(sRGB, new int[] {0, 1, 2}, false, false),
+                UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int[] {0, 1, 2}, false, false),
                 ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {0, 1, 2}, DataBuffer.TYPE_INT, false, false)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(sRGB, new int[] {0, 1, 2, 3}, true, false),
+                UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int[] {0, 1, 2, 3}, true, false),
                 ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {0, 1, 2, 3}, DataBuffer.TYPE_INT, true, false)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(sRGB, new int[] {0, 1, 2, 3}, true, true),
+                UInt32ImageTypeSpecifier.createInterleaved(sRGB, new int[] {0, 1, 2, 3}, true, true),
                 ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {0, 1, 2, 3}, DataBuffer.TYPE_INT, true, true)
         );
     }
@@ -303,15 +303,15 @@ public class ImageTypeSpecifiersTest {
     @Test
     public void testCreateBanded32() {
         assertEquals(
-                ImageTypeSpecifier.createBanded(sRGB, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_INT, false, false),
+                UInt32ImageTypeSpecifier.createBanded(sRGB, new int[] {0, 1, 2}, new int[] {0, 0, 0}, false, false),
                 ImageTypeSpecifiers.createBanded(sRGB, new int[] {0, 1, 2}, new int[] {0, 0, 0}, DataBuffer.TYPE_INT, false, false)
         );
         assertEquals(
-                ImageTypeSpecifier.createBanded(sRGB, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false),
+                UInt32ImageTypeSpecifier.createBanded(sRGB, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, true, false),
                 ImageTypeSpecifiers.createBanded(sRGB, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false)
         );
         assertEquals(
-                ImageTypeSpecifier.createBanded(sRGB, new int[] {0, 1, 2, 3}, new int[] {0, 1000, 2000, 3000}, DataBuffer.TYPE_INT, true, true),
+                UInt32ImageTypeSpecifier.createBanded(sRGB, new int[] {0, 1, 2, 3}, new int[] {0, 1000, 2000, 3000}, true, true),
                 ImageTypeSpecifiers.createBanded(sRGB, new int[] {0, 1, 2, 3}, new int[] {0, 1000, 2000, 3000}, DataBuffer.TYPE_INT, true, true)
         );
     }
@@ -383,11 +383,11 @@ public class ImageTypeSpecifiersTest {
     @Test
     public void testCreateGrayscale32() {
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0}, false, false),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, false, false),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0}, false, false),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, false, false),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT)
         );
     }
@@ -446,19 +446,19 @@ public class ImageTypeSpecifiersTest {
     @Test
     public void testCreateGrayscaleAlpha32() {
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0, 1}, true, false),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, true, false),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT, false)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0, 1}, true, false),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, true, false),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT, false)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0, 1}, true, true),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, true, true),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT, true)
         );
         assertEquals(
-                new UInt32ImageTypeSpecifier(GRAY, new int[] {0, 1}, true, true),
+                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, true, true),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT, true)
         );
     }
@@ -573,7 +573,7 @@ public class ImageTypeSpecifiersTest {
         for (int bits = 1; bits <= 8; bits <<= 1) {
             int[] colors = createIntLut(1 << bits);
             assertEquals(
-                    new IndexedImageTypeSpecifier(new IndexColorModel(bits, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE)),
+                    IndexedImageTypeSpecifier.createFromIndexColorModel(new IndexColorModel(bits, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE)),
                     ImageTypeSpecifiers.createIndexed(colors, false, -1, bits, DataBuffer.TYPE_BYTE)
             );
         }
@@ -583,7 +583,7 @@ public class ImageTypeSpecifiersTest {
     public void testCreateIndexedIntArray16() {
         int[] colors = createIntLut(1 << 16);
         assertEquals(
-                new IndexedImageTypeSpecifier(new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT)),
+                IndexedImageTypeSpecifier.createFromIndexColorModel(new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT)),
                 ImageTypeSpecifiers.createIndexed(colors, false, -1, 16, DataBuffer.TYPE_USHORT)
         );
 
@@ -595,7 +595,7 @@ public class ImageTypeSpecifiersTest {
             int[] colors = createIntLut(1 << bits);
             IndexColorModel colorModel = new IndexColorModel(bits, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
             assertEquals(
-                    new IndexedImageTypeSpecifier(colorModel),
+                    IndexedImageTypeSpecifier.createFromIndexColorModel(colorModel),
                     ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
             );
         }
@@ -606,7 +606,7 @@ public class ImageTypeSpecifiersTest {
         int[] colors = createIntLut(1 << 16);
         IndexColorModel colorModel = new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT);
         assertEquals(
-                new IndexedImageTypeSpecifier(colorModel),
+                IndexedImageTypeSpecifier.createFromIndexColorModel(colorModel),
                 ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
         );
     }

@@ -29,6 +29,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;/*
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
+import static org.junit.internal.matchers.StringContains.containsString;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -109,8 +111,13 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 // Gray
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-02.tif"), new Dimension(73, 43)), // Gray 2 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-04.tif"), new Dimension(73, 43)), // Gray 4 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-06.tif"), new Dimension(73, 43)), // Gray 6 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-08.tif"), new Dimension(73, 43)), // Gray 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-10.tif"), new Dimension(73, 43)), // Gray 10 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-12.tif"), new Dimension(73, 43)), // Gray 12 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-14.tif"), new Dimension(73, 43)), // Gray 14 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-16.tif"), new Dimension(73, 43)), // Gray 16 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-24.tif"), new Dimension(73, 43)), // Gray 24 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-32.tif"), new Dimension(73, 43)), // Gray 32 bit/sample
                 // Palette
                 new TestData(getClassLoaderResource("/tiff/depth/flower-palette-02.tif"), new Dimension(73, 43)), // Palette 2 bit/sample
@@ -119,12 +126,21 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-palette-16.tif"), new Dimension(73, 43)), // Palette 16 bit/sample
                 // RGB Interleaved (PlanarConfiguration: 1)
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-10.tif"), new Dimension(73, 43)), // RGB 10 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-12.tif"), new Dimension(73, 43)), // RGB 12 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-14.tif"), new Dimension(73, 43)), // RGB 14 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-16.tif"), new Dimension(73, 43)), // RGB 16 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-24.tif"), new Dimension(73, 43)), // RGB 24 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-32.tif"), new Dimension(73, 43)), // RGB 32 bit/sample
                 // RGB Planar (PlanarConfiguration: 2)
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-10.tif"), new Dimension(73, 43)), // RGB 10 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-12.tif"), new Dimension(73, 43)), // RGB 12 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-14.tif"), new Dimension(73, 43)), // RGB 14 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-16.tif"), new Dimension(73, 43)), // RGB 16 bit/sample
-                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-32.tif"), new Dimension(73, 43)),  // RGB 32 bit FP samples!
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-24.tif"), new Dimension(73, 43)), // RGB 24 bit/sample
+                // RGB Interleaved Floating point..!? We can read this one, but the samples are not normalized, so colors are way too bright...
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-32.tif"), new Dimension(73, 43)),  // RGB 32 bit FP samples (!)
                 // Separated (CMYK) Interleaved (PlanarConfiguration: 1)
                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-16.tif"), new Dimension(73, 43)), // CMYK 16 bit/sample
@@ -134,6 +150,16 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         );
     }
 
+    protected List<TestData> getUnsupportedTestData() {
+        return Arrays.asList(
+                // RGB Interleaved (PlanarConfiguration: 1)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-04.tif"), new Dimension(73, 43)), // RGB 4 bit/sample
+                // RGB Planar (PlanarConfiguration: 2)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-04.tif"), new Dimension(73, 43)) // RGB 4 bit/sample
+        );
+    }
     @Override
     protected ImageReaderSpi createProvider() {
         return SPI;
@@ -511,5 +537,27 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         }
 
         assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
+
+    @Test
+    public void testReadUnsupported() {
+        ImageReader reader = createReader();
+
+        for (TestData data : getUnsupportedTestData()) {
+            reader.setInput(data.getInputStream());
+
+            for (int i = 0; i < data.getImageCount(); i++) {
+                try {
+                    reader.read(i);
+                    fail("Sample should be moved from unsupported to normal test case");
+                }
+                catch (IIOException e) {
+                    assertThat(e.getMessage().toLowerCase(), containsString("unsupported"));
+                }
+                catch (Exception e) {
+                    failBecause(String.format("Image %s index %s could not be read: %s", data.getInput(), i, e), e);
+                }
+            }
+        }
     }
 }
