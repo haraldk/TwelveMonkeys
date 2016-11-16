@@ -287,6 +287,7 @@ public final class EXIFReader extends MetadataReader {
             return readValue(pInput, pType, pCount);
         }
         catch (EOFException e) {
+            // TODO: Add warning listener API and report problem to client code
             return e;
         }
         finally {
