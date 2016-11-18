@@ -38,10 +38,8 @@ import org.junit.Test;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
@@ -299,13 +297,6 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
 
     @Test
     public void testReadValueBeyondEOF() throws IOException {
-        ArrayList<Entry> entries = new ArrayList<>();
-        entries.add(new EXIFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, 1, TIFF.TYPE_SHORT));
-        entries.add(new EXIFEntry(TIFF.TAG_IMAGE_WIDTH, 10, TIFF.TYPE_SHORT));
-        entries.add(new EXIFEntry(TIFF.TAG_IMAGE_HEIGHT, 10, TIFF.TYPE_SHORT));
-        entries.add(new EXIFEntry(32934, new byte[10], TIFF.TYPE_UNDEFINED));
-        entries.add(new EXIFEntry(32935, 42, TIFF.TYPE_LONG));
-
         try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/value-beyond-eof.tif"))) {
             CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
             assertEquals(1, directory.directoryCount());
