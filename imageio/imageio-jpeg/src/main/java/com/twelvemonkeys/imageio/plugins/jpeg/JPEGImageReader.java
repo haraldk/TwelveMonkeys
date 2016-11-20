@@ -723,7 +723,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                 catch (IOException e) {
                     // TODO: Handle bad segments better, for now, just ignore any bad APP markers
                     if (segment.marker() >= JPEG.APP0 && JPEG.APP15 >= segment.marker()) {
-                        processWarningOccurred("Bogus " +segment.identifier() + " segment, ignoring");
+                        processWarningOccurred("Bogus APP" + (segment.marker() & 0x0f) + "/" + segment.identifier() + " segment, ignoring");
                         continue;
                     }
 
