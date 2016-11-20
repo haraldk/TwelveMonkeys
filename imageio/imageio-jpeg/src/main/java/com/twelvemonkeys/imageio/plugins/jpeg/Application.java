@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
-import com.twelvemonkeys.lang.Validate;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
@@ -48,10 +47,10 @@ class Application extends Segment {
     final String identifier;
     final byte[] data;
 
-    Application(int marker, final String identifier, final byte[] data) {
+    Application(final int marker, final String identifier, final byte[] data) {
         super(marker);
 
-        this.identifier = Validate.notEmpty(identifier, "identifier");
+        this.identifier = identifier; // NOTE: Some JPEGs contain APP segments without NULL-terminated identifier
         this.data = data;
     }
 
