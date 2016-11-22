@@ -35,8 +35,10 @@ import org.w3c.dom.Node;
 import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.stream.ImageOutputStream;
 import java.nio.ByteOrder;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 
 /**
@@ -56,6 +58,10 @@ public final class TIFFStreamMetadata extends IIOMetadata {
         super(false, SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, null, null, null);
     }
 
+    TIFFStreamMetadata(final ByteOrder byteOrder) {
+        this();
+        this.byteOrder = byteOrder;
+    }
 
     @Override
     public boolean isReadOnly() {
@@ -78,7 +84,7 @@ public final class TIFFStreamMetadata extends IIOMetadata {
     @Override
     public void mergeTree(final String formatName, final Node root) throws IIOInvalidTreeException {
         Validate.isTrue(nativeMetadataFormatName.equals(formatName), formatName, "Unsupported metadata format: %s");
-        Validate.notNull(root, "root");
+        notNull(root, "root");
 
         if (!nativeMetadataFormatName.equals(root.getNodeName())) {
             throw new IIOInvalidTreeException("Root must be " + nativeMetadataFormatName, root);
@@ -90,8 +96,8 @@ public final class TIFFStreamMetadata extends IIOMetadata {
         }
 
         NamedNodeMap attributes = node.getAttributes();
-        String value = attributes.getNamedItem("value").getNodeValue();
 
+        String value = attributes.getNamedItem("value").getNodeValue();
         if (value == null) {
             throw new IIOInvalidTreeException("Missing \"value\" attribute in \"ByteOrder\" node", node);
         }
@@ -120,5 +126,20 @@ public final class TIFFStreamMetadata extends IIOMetadata {
     public void reset() {
         // Big endian is always the default
         byteOrder = BIG_ENDIAN;
+    }
+
+    static void configureStreamByteOrder(final IIOMetadata streamMetadata, final ImageOutputStream imageOutput) throws IIOInvalidTreeException {
+        notNull(imageOutput, "imageOutput");
+
+        if (streamMetadata instanceof TIFFStreamMetadata) {
+            imageOutput.setByteOrder(((TIFFStreamMetadata) streamMetadata).byteOrder);
+        }
+        else if (streamMetadata != null) {
+            TIFFStreamMetadata metadata = new TIFFStreamMetadata();
+            // Will throw exception if stream format differs from native
+            metadata.mergeTree(metadata.nativeMetadataFormatName, streamMetadata.getAsTree(metadata.nativeMetadataFormatName));
+            imageOutput.setByteOrder(metadata.byteOrder);
+        }
+        // else, leave as-is
     }
 }

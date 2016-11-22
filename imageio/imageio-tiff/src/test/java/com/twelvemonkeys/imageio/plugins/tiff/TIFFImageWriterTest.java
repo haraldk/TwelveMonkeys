@@ -48,10 +48,11 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 
@@ -788,5 +789,69 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 assertRGBEquals(String.format("%s, ARGB differs at (%s,%s)", message, x, y), expected.getRGB(x, y), actual.getRGB(x, y), tolerance);
             }
         }
+    }
+
+    @Test
+    public void testWriteStreamMetadataDefaultMM() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN); // Should pass through
+            writer.setOutput(stream);
+
+            writer.write(null, new IIOImage(getTestData(0), null, null), null);
+        }
+
+        byte[] bytes = output.toByteArray();
+        assertArrayEquals(new byte[] {'M', 'M', 0, 42}, Arrays.copyOf(bytes, 4));
+    }
+
+    @Test
+    public void testWriteStreamMetadataDefaultII() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // Should pass through
+            writer.setOutput(stream);
+
+            writer.write(null, new IIOImage(getTestData(0), null, null), null);
+        }
+
+        byte[] bytes = output.toByteArray();
+        assertArrayEquals(new byte[] {'I', 'I', 42, 0}, Arrays.copyOf(bytes, 4));
+    }
+
+    @Test
+    public void testWriteStreamMetadataMM() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // Should be overridden by stream metadata
+            writer.setOutput(stream);
+
+            writer.write(new TIFFStreamMetadata(ByteOrder.BIG_ENDIAN), new IIOImage(getTestData(0), null, null), null);
+        }
+
+        byte[] bytes = output.toByteArray();
+        assertArrayEquals(new byte[] {'M', 'M', 0, 42}, Arrays.copyOf(bytes, 4));
+    }
+
+    @Test
+    public void testWriteStreamMetadataII() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN); // Should be overridden by stream metadata
+            writer.setOutput(stream);
+
+            writer.write(new TIFFStreamMetadata(ByteOrder.LITTLE_ENDIAN), new IIOImage(getTestData(0), null, null), null);
+        }
+
+        byte[] bytes = output.toByteArray();
+        assertArrayEquals(new byte[] {'I', 'I', 42, 0}, Arrays.copyOf(bytes, 4));
     }
 }

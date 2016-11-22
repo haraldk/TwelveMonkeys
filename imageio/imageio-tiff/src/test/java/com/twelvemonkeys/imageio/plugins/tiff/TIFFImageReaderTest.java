@@ -34,16 +34,19 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.junit.internal.matchers.StringContains.containsString;
 import static org.mockito.Matchers.contains;
@@ -558,6 +561,46 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                     failBecause(String.format("Image %s index %s could not be read: %s", data.getInput(), i, e), e);
                 }
             }
+        }
+    }
+
+    @Test
+    public void testStreamMetadataNonNull() {
+        ImageReader reader = createReader();
+
+        for (TestData data : getTestData()) {
+            reader.setInput(data.getInputStream());
+
+            try {
+                IIOMetadata streamMetadata = reader.getStreamMetadata();
+                assertNotNull(streamMetadata);
+                assertThat(streamMetadata, is(TIFFStreamMetadata.class));
+            }
+            catch (Exception e) {
+                failBecause(String.format("Image %s could not be read: %s", data.getInput(), e), e);
+            }
+        }
+    }
+
+    @Test
+    public void testStreamMetadataII() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/ccitt_tolessrows.tif"))) {
+            reader.setInput(stream);
+            TIFFStreamMetadata streamMetadata = (TIFFStreamMetadata) reader.getStreamMetadata();
+            assertEquals(ByteOrder.LITTLE_ENDIAN, streamMetadata.byteOrder);
+        }
+    }
+
+    @Test
+    public void testStreamMetadataMM() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/sm_colors_pb.tif"))) {
+            reader.setInput(stream);
+            TIFFStreamMetadata streamMetadata = (TIFFStreamMetadata) reader.getStreamMetadata();
+            assertEquals(ByteOrder.BIG_ENDIAN, streamMetadata.byteOrder);
         }
     }
 }

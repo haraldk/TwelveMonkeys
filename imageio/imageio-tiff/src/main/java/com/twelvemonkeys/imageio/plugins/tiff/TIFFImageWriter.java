@@ -60,6 +60,8 @@ import java.util.*;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configureStreamByteOrder;
+
 /**
  * TIFFImageWriter
  *
@@ -195,9 +197,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
     @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
-        // TODO: Validate input
         assertOutput();
-        // TODO: streamMetadata?
+        configureStreamByteOrder(streamMetadata, imageOutput);
 
         // TODO: Make TIFFEntry and possibly TIFFDirectory? public
         EXIFWriter exifWriter = new EXIFWriter();

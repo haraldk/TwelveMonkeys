@@ -75,7 +75,7 @@ import java.util.*;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.*;
+import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
@@ -2113,8 +2113,9 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getStreamMetadata() throws IOException {
-        // TODO:
-        return super.getStreamMetadata();
+        readMetadata();
+
+        return new TIFFStreamMetadata(imageInput.getByteOrder());
     }
 
     public static void main(final String[] args) throws IOException {
