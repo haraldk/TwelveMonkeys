@@ -361,7 +361,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             return stream.read(b, off, len);
         }
 
-
         @Override
         public String toString() {
             return String.format("0x%04x[%d-%d]", marker, realStart, realEnd());
@@ -409,7 +408,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             byte[] replacementData = new byte[length];
 
             int numQTs = length / 128;
-            int newSegmentLength = 2 + 1 + 64 * numQTs;
+            int newSegmentLength = 2 + (1 + 64) * numQTs; // Len + (qtInfo + qtSize) * numQTs
 
             replacementData[0] = (byte) ((JPEG.DQT >> 8) & 0xff);
             replacementData[1] = (byte) (JPEG.DQT & 0xff);
