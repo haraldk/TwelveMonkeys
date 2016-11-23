@@ -1016,20 +1016,35 @@ public final class JPEGImageReader extends ImageReaderBase {
                     if (exifMetadata.directoryCount() == 2) {
                         Directory ifd1 = exifMetadata.getDirectory(1);
 
-                        Entry compression = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-                        // 1 = no compression, 6 = JPEG compression (default)
-                        if (compression == null || compression.getValue().equals(1) || compression.getValue().equals(6)) {
-                            Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+                        // Compression: 1 = no compression, 6 = JPEG compression (default)
+                        Entry compressionEntry = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
+                        int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
 
-                            if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
+                        if (compression == 6) {
+                            if (ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) != null) {
+                                Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+
+                                if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
+                                    thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                                }
+                                else {
+                                    processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
+                                }
+                            }
+                            else {
+                                processWarningOccurred("EXIF IFD with JPEG thumbnail missing JPEGInterchangeFormat tag");
+                            }
+                        }
+                        else if (compression == 1) {
+                            if (ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS) != null) {
                                 thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
                             }
                             else {
-                                processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
+                                processWarningOccurred("EXIF IFD with uncompressed thumbnail missing StripOffsets tag");
                             }
                         }
                         else {
-                            processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression.getValue());
+                            processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression);
                         }
                     }
                 }
