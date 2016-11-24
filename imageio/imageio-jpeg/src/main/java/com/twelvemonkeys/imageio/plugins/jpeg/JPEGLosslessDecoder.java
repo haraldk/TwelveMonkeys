@@ -211,7 +211,7 @@ final class JPEGLosslessDecoder {
                     pred[i] = (1 << (precision - 1));
                 }
 
-                restarting=true;//to init prediction value in decodeSingle at beginning of first line
+                restarting = true;//to init prediction value in decodeSingle at beginning of first line
                 if (restartInterval == 0) {
                     current = decode(pred, temp, index);
 
@@ -320,9 +320,15 @@ final class JPEGLosslessDecoder {
             }
         }
 
+        int[][] installedHuffTable = null;
+        if (0 == huffTable.tc[0][0]) {
+            installedHuffTable = acTab;
+        } else if (0 == huffTable.tc[0][1]) {
+            installedHuffTable = dcTab;
+        }
+        
         for (int i = 0; i < nBlock[0]; i++) {
-            //final int value = getHuffmanValue(dcTab[0], temp, index);
-            final int value = getHuffmanValue(acTab[0], temp, index);//to make it work
+            final int value = getHuffmanValue(installedHuffTable[0], temp, index);//to make it work
 
             if (value >= 0xFF00) {
                 return value;
