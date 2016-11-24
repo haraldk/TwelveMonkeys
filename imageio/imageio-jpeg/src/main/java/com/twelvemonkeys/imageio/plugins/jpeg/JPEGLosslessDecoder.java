@@ -320,11 +320,10 @@ final class JPEGLosslessDecoder {
             }
         }
 
-        int[][] installedHuffTable = null;
+        int[][] installedHuffTable = dcTab;
+        // if no dcTab, use acTab
         if (0 == huffTable.tc[0][0]) {
             installedHuffTable = acTab;
-        } else if (0 == huffTable.tc[0][1]) {
-            installedHuffTable = dcTab;
         }
         
         for (int i = 0; i < nBlock[0]; i++) {
