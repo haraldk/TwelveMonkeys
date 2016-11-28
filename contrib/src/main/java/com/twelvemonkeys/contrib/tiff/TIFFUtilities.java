@@ -346,24 +346,47 @@ public final class TIFFUtilities {
             if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
                 offsets = getValueAsLongArray(stripOffsetsEntry);
                 byteCounts = getValueAsLongArray(stripByteCountsEntry);
+            }
 
+            // Write JPEGInterchangeFormat data before StripByteData, as our reader expects the JPEG data to follow if it is not included
+            Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+            boolean writeInterchangeFormat = false;
+            if (oldJpegData != null && oldJpegData.valueCount() > 0) {
+                Entry oldJpegDataLength = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+                long[] jpegByteCounts = new long[0];
+                long[] jpegOffsets = new long[0];
+                if (oldJpegDataLength != null && oldJpegDataLength.valueCount() > 0) {
+                    jpegByteCounts = getValueAsLongArray(oldJpegDataLength);
+                }
+                else {
+                    // Fallback for writers that do not write JPEGInterchangeFormatLength
+                    jpegByteCounts = byteCounts;
+                }
+
+                if (!Arrays.equals(getValueAsLongArray(oldJpegData), offsets) || !Arrays.equals(jpegByteCounts, byteCounts)) {
+                    // data is not included in StripByteData, directly before StripByteData
+                    jpegOffsets = getValueAsLongArray(oldJpegData);
+                    newOffsets = writeData(jpegOffsets, jpegByteCounts, outputStream);
+
+                    newIFD.remove(oldJpegData);
+                    newIFD.add(new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, newOffsets));
+                }
+                else {
+                    // data is included in StripByteData and will be written later
+                    writeInterchangeFormat = true;
+                }
+            }
+
+            if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
                 newOffsets = writeData(offsets, byteCounts, outputStream);
 
                 newIFD.remove(stripOffsetsEntry);
                 newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
-            }
 
-            Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
-            Entry oldJpegDataLength = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
-            if (oldJpegData != null && oldJpegData.valueCount() > 0 && oldJpegDataLength != null && oldJpegDataLength.valueCount() > 0) {
-                if (!Arrays.equals(getValueAsLongArray(oldJpegData), offsets) || !Arrays.equals(getValueAsLongArray(oldJpegDataLength), byteCounts)) {
-                    // data already written from TIFF.TAG_STRIP_OFFSETS
-                    offsets = getValueAsLongArray(oldJpegData);
-                    byteCounts = getValueAsLongArray(oldJpegDataLength);
-                    newOffsets = writeData(offsets, byteCounts, outputStream);
+                if (writeInterchangeFormat) {
+                    newIFD.remove(oldJpegData);
+                    newIFD.add(new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, newOffsets));
                 }
-                newIFD.remove(oldJpegData);
-                newIFD.add(new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, newOffsets));
             }
 
             Entry oldJpegTable;

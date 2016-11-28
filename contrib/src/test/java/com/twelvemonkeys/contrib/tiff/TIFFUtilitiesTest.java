@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -196,6 +197,39 @@ public class TIFFUtilitiesTest {
         byte[] rotated = ((DataBufferByte) image360.getData().getDataBuffer()).getData();
 
         Assert.assertArrayEquals(original, rotated);
+    }
+
+    @Test
+    public void testMergeBogusInterchangeFormatLength() throws IOException {
+        String[] testFiles = new String[] {
+                "/tiff/old-style-jpeg-bogus-jpeginterchangeformatlength.tif", // InterchangeFormat before StripOffset, length not including StripOffset
+                "/tiff/old-style-jpeg-no-jpeginterchangeformatlength.tif" // missing JPEGInterChangeFormatLength and JPEGInterchangeFormat == StipOffset
+        };
+
+        for (String testFile : testFiles) {
+            File output = File.createTempFile("imageiotest", ".tif");
+            ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
+            InputStream inputStream1 = getClassLoaderResource(testFile).openStream();
+            ImageInputStream imageInput1 = ImageIO.createImageInputStream(inputStream1);
+            InputStream inputStream2 = getClassLoaderResource(testFile).openStream();
+            ImageInputStream imageInput2 = ImageIO.createImageInputStream(inputStream2);
+            ArrayList<TIFFUtilities.TIFFPage> pages = new ArrayList<>();
+            pages.addAll(TIFFUtilities.getPages(imageInput1));
+            pages.addAll(TIFFUtilities.getPages(imageInput2));
+            TIFFUtilities.writePages(outputStream, pages);
+
+            ImageInputStream testOutput = ImageIO.createImageInputStream(output);
+            ImageReader reader = ImageIO.getImageReaders(testOutput).next();
+            reader.setInput(testOutput);
+            int numImages = reader.getNumImages(true);
+            for (int i = 0; i < numImages; i++) {
+                reader.read(i);
+            }
+
+            imageInput1.close();
+            imageInput2.close();
+            outputStream.close();
+        }
     }
 
     protected URL getClassLoaderResource(final String pName) {
