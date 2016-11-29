@@ -29,6 +29,8 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
+
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
@@ -67,7 +69,7 @@ final class JPEGLosslessDecoderWrapper {
      * @throws IOException is thrown if the decoder failed or a conversion is not supported
      */
     BufferedImage readImage(final List<Segment> segments, final ImageInputStream input) throws IOException {
-        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, input);
+        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, createBufferedInput(input));
 
         int[][] decoded = decoder.decode();
         int width = decoder.getDimX();
@@ -97,6 +99,10 @@ final class JPEGLosslessDecoderWrapper {
         }
 
         throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and " + decoder.getNumComponents() + " component(s) cannot be decoded");
+    }
+
+    private ImageInputStream createBufferedInput(final ImageInputStream input) throws IOException {
+        return input instanceof BufferedImageInputStream ? input : new BufferedImageInputStream(input);
     }
 
     Raster readRaster(final List<Segment> segments, final ImageInputStream input) throws IOException {
