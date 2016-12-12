@@ -36,14 +36,16 @@ import com.twelvemonkeys.lang.Validate;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 final class JPEGLosslessDecoder {
 
     private final ImageInputStream input;
+    private final JPEGImageReader listenerDelegate;
 
     private final Frame frame;
-    private final HuffmanTable huffTable;
+    private final List<HuffmanTable> huffTables;
     private final QuantizationTable quantTable;
     private Scan scan;
 
@@ -103,7 +105,7 @@ final class JPEGLosslessDecoder {
         return yDim;
     }
 
-    JPEGLosslessDecoder(final List<Segment> segments, final ImageInputStream data) {
+    JPEGLosslessDecoder(final List<Segment> segments, final ImageInputStream data, final JPEGImageReader listenerDelegate) {
         Validate.notNull(segments);
 
         frame = get(segments, Frame.class);
@@ -111,11 +113,25 @@ final class JPEGLosslessDecoder {
 
         QuantizationTable qt = get(segments, QuantizationTable.class);
         quantTable = qt != null ? qt : new QuantizationTable(); // For lossless there are no DQTs
-        huffTable = get(segments, HuffmanTable.class); // For non-lossless there can be multiple of DHTs
+        huffTables = getAll(segments, HuffmanTable.class); // For lossless there's usually only one, and only DC tables
+
         RestartInterval dri = get(segments, RestartInterval.class);
         restartInterval = dri != null ? dri.interval : 0;
 
         input = data;
+        this.listenerDelegate = listenerDelegate;
+    }
+
+    private <T> List<T> getAll(final List<Segment> segments, final Class<T> type) {
+        ArrayList<T> list = new ArrayList<>();
+
+        for (Segment segment : segments) {
+            if (type.isInstance(segment)) {
+                list.add(type.cast(segment));
+            }
+        }
+
+        return list;
     }
 
     private <T> T get(final List<Segment> segments, final Class<T> type) {
@@ -138,10 +154,13 @@ final class JPEGLosslessDecoder {
         current = input.readUnsignedShort();
 
         if (current != JPEG.SOI) { // SOI
-            throw new IIOException("Not a JPEG file");
+            throw new IIOException("Not a JPEG file, does not start with 0xFFD8");
         }
 
-        huffTable.buildHuffTables(HuffTab);
+        for (HuffmanTable huffTable : huffTables) {
+            huffTable.buildHuffTables(HuffTab);
+        }
+
         quantTable.enhanceTables(TABLE);
 
         current = input.readUnsignedShort();
@@ -175,8 +194,23 @@ final class JPEGLosslessDecoder {
                 Frame.Component component = getComponentSpec(components, scanComps[i].scanCompSel);
                 qTab[i] = quantTables[component.qtSel];
                 nBlock[i] = component.vSub * component.hSub;
-                dcTab[i] = HuffTab[scanComps[i].dcTabSel][0];
-                acTab[i] = HuffTab[scanComps[i].acTabSel][1];
+
+                int dcTabSel = scanComps[i].dcTabSel;
+                int acTabSel = scanComps[i].acTabSel;
+
+                // NOTE: If we don't find any DC tables for lossless operation, this file isn't any good.
+                // However, we have seen files with AC tables only, we'll treat these as if the AC was DC
+                if (useACForDC(dcTabSel)) {
+                    processWarningOccured("Lossless JPEG with no DC tables encountered. Assuming only tables present to be DC tables.");
+
+                    dcTab[i] = HuffTab[dcTabSel][1];
+                    acTab[i] = HuffTab[acTabSel][0];
+                }
+                else {
+                    // All good
+                    dcTab[i] = HuffTab[dcTabSel][0];
+                    acTab[i] = HuffTab[acTabSel][1];
+                }
             }
 
             xDim = frame.samplesPerLine;
@@ -202,10 +236,8 @@ final class JPEGLosslessDecoder {
             scanNum++;
 
             while (true) { // Decode one scan
-                final int temp[] = new int[1]; // to store remainder bits
-                final int index[] = new int[1];
-                temp[0] = 0;
-                index[0] = 0;
+                int temp[] = new int[1]; // to store remainder bits
+                int index[] = new int[1];
 
                 for (int i = 0; i < 10; i++) {
                     pred[i] = (1 << (precision - 1));
@@ -242,10 +274,7 @@ final class JPEGLosslessDecoder {
                     }
                 }
 
-                if ((current >= RESTART_MARKER_BEGIN) && (current <= RESTART_MARKER_END)) {
-                    //empty
-                }
-                else {
+                if ((current < RESTART_MARKER_BEGIN) || (current > RESTART_MARKER_END)) {
                     break; //current=MARKER
                 }
             }
@@ -257,6 +286,34 @@ final class JPEGLosslessDecoder {
         } while ((current != JPEG.EOI) && ((xLoc < xDim) && (yLoc < yDim)) && (scanNum == 0));
 
         return outputRef;
+    }
+
+    private void processWarningOccured(String warning) {
+        listenerDelegate.processWarningOccurred(warning);
+    }
+
+    private boolean useACForDC(final int dcTabSel) {
+        if (isLossless()) {
+            for (HuffmanTable huffTable : huffTables) {
+                if (huffTable.tc[dcTabSel][0] == 0 && huffTable.tc[dcTabSel][1] != 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isLossless() {
+        switch (frame.marker) {
+            case JPEG.SOF3:
+            case JPEG.SOF7:
+            case JPEG.SOF11:
+            case JPEG.SOF15:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private Frame.Component getComponentSpec(Frame.Component[] components, int sel) {
@@ -320,15 +377,15 @@ final class JPEGLosslessDecoder {
         }
 
         for (int i = 0; i < nBlock[0]; i++) {
-            final int value = getHuffmanValue(dcTab[0], temp, index);
+            int value = getHuffmanValue(dcTab[0], temp, index);
 
             if (value >= 0xFF00) {
                 return value;
             }
 
-            final int n = getn(prev, value, temp, index);
+            int n = getn(prev, value, temp, index);
 
-            final int nRestart = (n >> 8);
+            int nRestart = (n >> 8);
             if ((nRestart >= RESTART_MARKER_BEGIN) && (nRestart <= RESTART_MARKER_END)) {
                 return nRestart;
             }
