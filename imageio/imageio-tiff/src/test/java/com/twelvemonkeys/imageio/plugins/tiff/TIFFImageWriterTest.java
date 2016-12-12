@@ -69,7 +69,7 @@ import static org.junit.Assume.assumeNotNull;
  */
 public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
-    public static final TIFFImageWriterSpi PROVIDER = new TIFFImageWriterSpi();
+    private static final TIFFImageWriterSpi PROVIDER = new TIFFImageWriterSpi();
 
     @Override
     protected ImageWriter createImageWriter() {
@@ -289,7 +289,27 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         assertTrue("Writer should support sequence writing", writer.canWriteSequence());
     }
 
-    // TODO: Test Sequence writing without prepare/end sequence
+    @Test(expected = IllegalStateException.class)
+    public void testWriteSequenceWithoutPrepare() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            writer.setOutput(output);
+            writer.writeToSequence(new IIOImage(new BufferedImage(10, 10, BufferedImage.TYPE_3BYTE_BGR), null, null), null);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testEndSequenceWithoutPrepare() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            writer.setOutput(output);
+            writer.endWriteSequence();
+        }
+    }
 
     @Test
     public void testWriteSequence() throws IOException {
