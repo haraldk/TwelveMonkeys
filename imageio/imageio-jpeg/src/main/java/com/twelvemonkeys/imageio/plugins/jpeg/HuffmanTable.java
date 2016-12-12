@@ -33,41 +33,27 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 
 import javax.imageio.IIOException;
-import javax.imageio.stream.ImageInputStream;
 import java.io.DataInput;
 import java.io.IOException;
 
 final class HuffmanTable extends Segment {
 
-    final int l[][][] = new int[4][2][16];
-    final int th[] = new int[4]; // 1: this table is presented
+    private final int l[][][] = new int[4][2][16];
+    private final int th[] = new int[4]; // 1: this table is present
     final int v[][][][] = new int[4][2][16][200]; // tables
-    final int[][] tc = new int[4][2]; // 1: this table is presented
+    final int[][] tc = new int[4][2]; // 1: this table is present
 
-    public static final int MSB = 0x80000000;
+    static final int MSB = 0x80000000;
 
     private HuffmanTable() {
         super(JPEG.DHT);
+   }
 
-        tc[0][0] = 0;
-        tc[1][0] = 0;
-        tc[2][0] = 0;
-        tc[3][0] = 0;
-        tc[0][1] = 0;
-        tc[1][1] = 0;
-        tc[2][1] = 0;
-        tc[3][1] = 0;
-        th[0] = 0;
-        th[1] = 0;
-        th[2] = 0;
-        th[3] = 0;
-    }
-
-    protected void buildHuffTables(final int[][][] HuffTab) throws IOException {
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 2; j++) {
-                if (tc[i][j] != 0) {
-                    buildHuffTable(HuffTab[i][j], l[i][j], v[i][j]);
+    void buildHuffTables(final int[][][] HuffTab) throws IOException {
+        for (int t = 0; t < 4; t++) {
+            for (int c = 0; c < 2; c++) {
+                if (tc[t][c] != 0) {
+                    buildHuffTable(HuffTab[t][c], l[t][c], v[t][c]);
                 }
             }
         }
@@ -81,10 +67,8 @@ final class HuffmanTable extends Segment {
     //	Effect:
     //	    build up HuffTab[t][c] using L and V.
     private void buildHuffTable(final int tab[], final int L[], final int V[][]) throws IOException {
-        int currentTable, temp;
-        int k;
-        temp = 256;
-        k = 0;
+        int temp = 256;
+        int k = 0;
 
         for (int i = 0; i < 8; i++) { // i+1 is Code length
             for (int j = 0; j < L[i]; j++) {
@@ -99,7 +83,7 @@ final class HuffmanTable extends Segment {
             tab[k] = i | MSB;
         }
 
-        currentTable = 1;
+        int currentTable = 1;
         k = 0;
 
         for (int i = 8; i < 16; i++) { // i+1 is Code length
@@ -122,8 +106,27 @@ final class HuffmanTable extends Segment {
 
     @Override
     public String toString() {
-        // TODO: Id and class for tables
-        return "DHT[]";
+        StringBuilder builder = new StringBuilder("DHT[");
+
+        for (int t = 0; t < tc.length; t++) {
+            for (int c = 0; c < tc[t].length; c++) {
+                if (tc[t][c] != 0) {
+                    if (builder.length() > 4) {
+                        builder.append(", ");
+                    }
+
+                    builder.append("id: ");
+                    builder.append(t);
+
+                    builder.append(", class: ");
+                    builder.append(c);
+                }
+            }
+        }
+
+        builder.append(']');
+
+        return builder.toString();
     }
 
     public static Segment read(final DataInput data, final int length) throws IOException {

@@ -109,37 +109,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     static final int ALL_APP_MARKERS = -1;
 
     /** Segment identifiers for the JPEG segments we care about reading. */
-    private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = JPEGSegmentUtil.ALL_SEGMENTS; //createSegmentIds();
-
-    private static Map<Integer, List<String>> createSegmentIds() {
-        Map<Integer, List<String>> map = new LinkedHashMap<>();
-
-        // Need all APP markers to be able to re-generate proper metadata later
-        for (int appMarker = JPEG.APP0; appMarker <= JPEG.APP15; appMarker++) {
-            map.put(appMarker, JPEGSegmentUtil.ALL_IDS);
-        }
-
-        // SOFn markers
-        map.put(JPEG.SOF0, null);
-        map.put(JPEG.SOF1, null);
-        map.put(JPEG.SOF2, null);
-        map.put(JPEG.SOF3, null);
-        map.put(JPEG.SOF5, null);
-        map.put(JPEG.SOF6, null);
-        map.put(JPEG.SOF7, null);
-        map.put(JPEG.SOF9, null);
-        map.put(JPEG.SOF10, null);
-        map.put(JPEG.SOF11, null);
-        map.put(JPEG.SOF13, null);
-        map.put(JPEG.SOF14, null);
-        map.put(JPEG.SOF15, null);
-
-        map.put(JPEG.DQT, null);
-        map.put(JPEG.DHT, null);
-        map.put(JPEG.SOS, null);
-
-        return Collections.unmodifiableMap(map);
-    }
+    private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = JPEGSegmentUtil.ALL_SEGMENTS;
 
     /** Our JPEG reading delegate */
     private final ImageReader delegate;
@@ -385,7 +355,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             // TODO: What about stream position?
             // TODO: Param handling: Source region, offset, subsampling, destination, destination type, etc....
             // Read image as lossless
-            return new JPEGLosslessDecoderWrapper().readImage(segments, imageInput);
+            return new JPEGLosslessDecoderWrapper(this).readImage(segments, imageInput);
         }
         
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
@@ -944,7 +914,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         if (isLossless()) {
             // TODO: What about stream position?
             // TODO: Param handling: Reading as raster should support source region, subsampling etc.
-            return new JPEGLosslessDecoderWrapper().readRaster(segments, imageInput);
+            return new JPEGLosslessDecoderWrapper(this).readRaster(segments, imageInput);
         }
 
         return delegate.readRaster(imageIndex, param);

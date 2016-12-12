@@ -31,6 +31,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
@@ -56,6 +57,12 @@ import java.util.List;
  */
 final class JPEGLosslessDecoderWrapper {
 
+    private final JPEGImageReader listenerDelegate;
+
+    JPEGLosslessDecoderWrapper(final JPEGImageReader listenerDelegate) {
+        this.listenerDelegate = listenerDelegate;
+    }
+
     /**
      * Decodes a JPEG Lossless stream to a {@code BufferedImage}.
      * Currently the following conversions are supported:
@@ -63,14 +70,19 @@ final class JPEGLosslessDecoderWrapper {
      * -  8Bit, Grayscale -> BufferedImage.TYPE_BYTE_GRAY
      * - 16Bit, Grayscale -> BufferedImage.TYPE_USHORT_GRAY
      *
-     * @param segments
+     * @param segments segments
      * @param input input stream which contains a jpeg lossless data
      * @return if successfully a BufferedImage is returned
      * @throws IOException is thrown if the decoder failed or a conversion is not supported
      */
     BufferedImage readImage(final List<Segment> segments, final ImageInputStream input) throws IOException {
-        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, createBufferedInput(input));
+        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, createBufferedInput(input), listenerDelegate);
 
+        // TODO: Allow 10/12/14 bit (using a ComponentColorModel with correct bits, as in TIFF)
+        // TODO: Rewrite this to pass a pre-allocated buffer of correct type (byte/short)/correct bands
+        // TODO: Progress callbacks
+        // TODO: Warning callbacks
+        // Callback can then do subsampling etc.
         int[][] decoded = decoder.decode();
         int width = decoder.getDimX();
         int height = decoder.getDimY();
@@ -82,23 +94,17 @@ final class JPEGLosslessDecoderWrapper {
                     return to8Bit1ComponentGrayScale(decoded, width, height);
                 case 16:
                     return to16Bit1ComponentGrayScale(decoded, width, height);
-                default:
-                    throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and 1 component cannot be decoded");
             }
         }
-
         // 3 components, assumed to be RGB
-        if (decoder.getNumComponents() == 3) {
+        else if (decoder.getNumComponents() == 3) {
             switch (decoder.getPrecision()) {
                 case 8:
                     return to24Bit3ComponentRGB(decoded, width, height);
-
-                default:
-                    throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and 3 components cannot be decoded");
             }
         }
 
-        throw new IOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and " + decoder.getNumComponents() + " component(s) cannot be decoded");
+        throw new IIOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and " + decoder.getNumComponents() + " component(s) not supported");
     }
 
     private ImageInputStream createBufferedInput(final ImageInputStream input) throws IOException {
