@@ -1008,7 +1008,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                 // TODO: If we have non-standard reference B/W or yCbCr coefficients,
                                 // we might still have to do extra color space conversion...
                                 if (needsCSConversion == null) {
-                                    needsCSConversion = needsCSConversion(interpretation, jpegReader.getImageMetadata(0));
+                                    needsCSConversion = needsCSConversion(interpretation, readJPEGMetadataSafe(jpegReader));
                                 }
 
                                 if (!needsCSConversion) {
@@ -1146,7 +1146,7 @@ public class TIFFImageReader extends ImageReaderBase {
                         jpegParam.setSourceSubsampling(xSub, ySub, 0, 0);
 
                         if (needsCSConversion == null) {
-                            needsCSConversion = needsCSConversion(interpretation, jpegReader.getImageMetadata(0));
+                            needsCSConversion = needsCSConversion(interpretation, readJPEGMetadataSafe(jpegReader));
                         }
 
                         if (!needsCSConversion) {
@@ -1251,7 +1251,7 @@ public class TIFFImageReader extends ImageReaderBase {
                                     Point offset = new Point(col - srcRegion.x, row - srcRegion.y);
 
                                     if (needsCSConversion == null) {
-                                        needsCSConversion = needsCSConversion(interpretation, jpegReader.getImageMetadata(0));
+                                        needsCSConversion = needsCSConversion(interpretation, readJPEGMetadataSafe(jpegReader));
                                     }
 
                                     if (!needsCSConversion) {
@@ -1317,6 +1317,17 @@ public class TIFFImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    private IIOMetadata readJPEGMetadataSafe(final ImageReader jpegReader) throws IOException {
+        try {
+            return jpegReader.getImageMetadata(0);
+        }
+        catch (IIOException e) {
+            processWarningOccurred("Could not read metadata metadata JPEG compressed TIFF: " + e.getMessage() + " colors may look incorrect");
+
+            return null;
+        }
     }
 
     private boolean needsCSConversion(final int photometricInterpretation, final IIOMetadata imageMetadata) throws IOException {

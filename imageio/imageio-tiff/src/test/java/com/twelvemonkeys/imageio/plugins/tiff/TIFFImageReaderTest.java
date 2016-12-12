@@ -221,6 +221,25 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadOldStyleJPEGInconsistentMetadata() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/old-style-jpeg-inconsistent-metadata.tif"), new Dimension(2483, 3515));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("metadata"));
+        }
+    }
+
+    @Test
     public void testReadIncompatibleICCProfileIgnoredWithWarning() throws IOException {
         TestData testData = new TestData(getClassLoaderResource("/tiff/rgb-with-embedded-cmyk-icc.tif"), new Dimension(1500, 1500));
 
