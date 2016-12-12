@@ -30,9 +30,9 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
-import com.twelvemonkeys.imageio.metadata.exif.Rational;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.Rational;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
@@ -131,7 +131,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
         assertTrue("No image data written", buffer.size() > 0);
 
-        Directory ifds = new EXIFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
+        Directory ifds = new TIFFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
 
         Entry resolutionUnit = ifds.getEntryById(TIFF.TAG_RESOLUTION_UNIT);
         assertNotNull(resolutionUnit);
@@ -179,7 +179,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
         assertTrue("No image data written", buffer.size() > 0);
 
-        Directory ifds = new EXIFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
+        Directory ifds = new TIFFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
         Entry software = ifds.getEntryById(TIFF.TAG_SOFTWARE);
         assertNotNull(software);
         assertEquals(softwareString, software.getValueAsString());
@@ -227,7 +227,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
         assertTrue("No image data written", buffer.size() > 0);
 
-        Directory ifds = new EXIFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
+        Directory ifds = new TIFFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
 
         Entry resolutionUnit = ifds.getEntryById(TIFF.TAG_RESOLUTION_UNIT);
         assertNotNull(resolutionUnit);
@@ -278,7 +278,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
         assertTrue("No image data written", buffer.size() > 0);
 
-        Directory ifds = new EXIFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
+        Directory ifds = new TIFFReader().read(new ByteArrayImageInputStream(buffer.toByteArray()));
         Entry software = ifds.getEntryById(TIFF.TAG_SOFTWARE);
         assertNotNull(software);
         assertEquals(softwareString, software.getValueAsString());

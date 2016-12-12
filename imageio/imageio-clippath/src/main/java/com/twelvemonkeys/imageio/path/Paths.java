@@ -31,13 +31,13 @@ package com.twelvemonkeys.imageio.path;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.metadata.psd.PSD;
 import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
@@ -129,7 +129,7 @@ public final class Paths {
         else if (magic >>> 16 == TIFF.BYTE_ORDER_MARK_BIG_ENDIAN && (magic & 0xffff) == TIFF.TIFF_MAGIC
                 || magic >>> 16 == TIFF.BYTE_ORDER_MARK_LITTLE_ENDIAN && (magic & 0xffff) == TIFF.TIFF_MAGIC << 8) {
             // TIFF version
-            CompoundDirectory IFDs = (CompoundDirectory) new EXIFReader().read(stream);
+            CompoundDirectory IFDs = (CompoundDirectory) new TIFFReader().read(stream);
 
             Directory directory = IFDs.getDirectory(0);
             Entry photoshop = directory.getEntryById(TIFF.TAG_PHOTOSHOP);

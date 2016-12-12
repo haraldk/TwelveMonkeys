@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.spi.ImageReaderSpi;

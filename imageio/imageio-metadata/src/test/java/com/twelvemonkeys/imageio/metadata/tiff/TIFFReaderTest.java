@@ -26,12 +26,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.exif.EXIF;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import org.junit.Test;
 
@@ -45,21 +46,21 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 /**
- * EXIFReaderTest
+ * TIFFReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFReaderTest.java,v 1.0 23.12.11 13:50 haraldk Exp$
+ * @version $Id: TIFFReaderTest.java,v 1.0 23.12.11 13:50 haraldk Exp$
  */
-public class EXIFReaderTest extends MetadataReaderAbstractTest {
+public class TIFFReaderTest extends MetadataReaderAbstractTest {
     @Override
     protected InputStream getData() throws IOException {
         return getResource("/exif/exif-jpeg-segment.bin").openStream();
     }
 
     @Override
-    protected EXIFReader createReader() {
-        return new EXIFReader();
+    protected TIFFReader createReader() {
+        return new TIFFReader();
     }
 
     @Test
@@ -147,6 +148,20 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
 
         // Special case: Ascii string with count == 0, not ok according to spec (?), but we'll let it pass
         assertEquals("", directory.getEntryById(TIFF.TAG_IMAGE_DESCRIPTION).getValue());
+    }
+
+    @Test
+    public void testReadBadDataRationalZeroDenominator() throws IOException {
+        // This image seems to contain bad Exif. But as other tools are able to read, so should we..
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-rgb-thumbnail-bad-exif-kodak-dc210.jpg"));
+        stream.seek(12);
+        Directory directory = createReader().read(new SubImageInputStream(stream, 21674));
+
+        // Special case: Rational with zero-denominator inside EXIF data
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        Entry entry = exif.getEntryById(EXIF.TAG_COMPRESSED_BITS_PER_PIXEL);
+        assertNotNull(entry);
+        assertEquals(Rational.NaN, entry.getValue());
     }
 
     @Test

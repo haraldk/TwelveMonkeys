@@ -26,24 +26,20 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.DirectoryAbstractTest;
-import com.twelvemonkeys.imageio.metadata.Entry;
-
-import java.util.Collection;
+import com.twelvemonkeys.lang.ObjectAbstractTestCase;
 
 /**
- * IFDTest
+ * UnknownTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: IFDTest.java,v 1.0 02.01.12 16:42 haraldk Exp$
+ * @version $Id: UnknownTest.java,v 1.0 03.01.12 17:21 haraldk Exp$
  */
-public class IFDTest extends DirectoryAbstractTest {
+public class UnknownTest extends ObjectAbstractTestCase {
     @Override
-    protected Directory createDirectory(final Collection<Entry> entries) {
-        return new IFD(entries);
+    protected Object makeObject() {
+        return new Unknown((short) 42, 77, (long) (Math.random() * (long) Integer.MAX_VALUE));
     }
 }

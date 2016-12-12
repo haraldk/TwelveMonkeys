@@ -26,20 +26,33 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
-import com.twelvemonkeys.lang.ObjectAbstractTestCase;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
+import org.junit.Test;
 
 /**
- * UnknownTest
+ * TIFFEntryTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: UnknownTest.java,v 1.0 03.01.12 17:21 haraldk Exp$
+ * @version $Id: TIFFEntryTest.java,v 1.0 02.01.12 17:35 haraldk Exp$
  */
-public class UnknownTest extends ObjectAbstractTestCase {
+public class TIFFEntryTest extends EntryAbstractTest {
     @Override
-    protected Object makeObject() {
-        return new Unknown((short) 42, 77, (long) (Math.random() * (long) Integer.MAX_VALUE));
+    protected Entry createEntry(final Object value) {
+        return createEXIFEntry(TIFF.TAG_COPYRIGHT, value, (short) 2);
     }
+
+    private TIFFEntry createEXIFEntry(final int identifier, final Object value, final int type) {
+        return new TIFFEntry(identifier, (short) type, value);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateEXIFEntryIllegalType() {
+        createEXIFEntry(0, null, -1);
+    }
+    
+    // TODO: TIFF/EXIF specific tests
 }

@@ -31,8 +31,8 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.iptc.IPTC;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.FilterIterator;
 import org.w3c.dom.Node;
@@ -369,12 +369,10 @@ public final class PSDMetadata extends AbstractMetadata {
 
     private Node createLayerInfoNode() {
         IIOMetadataNode layers = new IIOMetadataNode("Layers");
-        IIOMetadataNode node;
-
 
         for (PSDLayerInfo psdLayerInfo : layerInfo) {
             // TODO: Group in layer and use sub node for blend mode?
-            node = new IIOMetadataNode("LayerInfo");
+            IIOMetadataNode node = new IIOMetadataNode("LayerInfo");
             node.setAttribute("name", psdLayerInfo.getLayerName());
             node.setAttribute("top", String.valueOf(psdLayerInfo.top));
             node.setAttribute("left", String.valueOf(psdLayerInfo.left));

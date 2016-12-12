@@ -1,4 +1,4 @@
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
 /**
  * Unknown

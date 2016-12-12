@@ -26,7 +26,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectoryAbstractTest;
@@ -35,15 +35,15 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import java.util.Collection;
 
 /**
- * EXIFDirectoryTest
+ * TIFFDirectoryTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFDirectoryTest.java,v 1.0 02.01.12 16:41 haraldk Exp$
+ * @version $Id: TIFFDirectoryTest.java,v 1.0 02.01.12 16:41 haraldk Exp$
  */
-public class EXIFDirectoryTest extends CompoundDirectoryAbstractTest {
+public class TIFFDirectoryTest extends CompoundDirectoryAbstractTest {
     @Override
     protected CompoundDirectory createCompoundDirectory(Collection<Directory> directories) {
-        return new EXIFDirectory(directories);
+        return new TIFFDirectory(directories);
     }
 }

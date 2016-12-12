@@ -29,11 +29,12 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.AbstractMetadata;
-import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.Rational;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.IFD;
+import com.twelvemonkeys.imageio.metadata.tiff.Rational;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.lang.Validate;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -70,7 +71,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
      * or {@link #mergeTree(String, Node)} methods.
      */
     public TIFFImageMetadata() {
-        this(new TIFFIFD(Collections.<Entry>emptyList()));
+        this(new IFD(Collections.<Entry>emptyList()));
     }
 
     /**
@@ -94,7 +95,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
      * or {@link #mergeTree(String, Node)} methods.
      */
     public TIFFImageMetadata(final Collection<Entry> entries) {
-        this(new TIFFIFD(entries));
+        this(new IFD(entries));
     }
 
     protected IIOMetadataNode getNativeTree() {
@@ -921,7 +922,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         // TODO: Consistency validation?
 
         // Finally create a new IFD from merged values
-        ifd = new TIFFIFD(entries.values());
+        ifd = new IFD(entries.values());
     }
 
     @Override
@@ -941,7 +942,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         // TODO: Consistency validation?
 
         // Finally create a new IFD from merged values
-        ifd = new TIFFIFD(entries.values());
+        ifd = new IFD(entries.values());
     }
 
     private void mergeEntries(final String formatName, final Node root, final Map<Integer, Entry> entries) throws IIOInvalidTreeException {
@@ -1027,25 +1028,25 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             int x = Math.round(xRes * scale * RATIONAL_SCALE_FACTOR);
             int y = Math.round(yRes * scale * RATIONAL_SCALE_FACTOR);
 
-            entries.put(TIFF.TAG_X_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(x, RATIONAL_SCALE_FACTOR)));
-            entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(y, RATIONAL_SCALE_FACTOR)));
+            entries.put(TIFF.TAG_X_RESOLUTION, new TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(x, RATIONAL_SCALE_FACTOR)));
+            entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(y, RATIONAL_SCALE_FACTOR)));
             entries.put(TIFF.TAG_RESOLUTION_UNIT,
-                    new TIFFImageWriter.TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, resUnitValue));
+                    new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, resUnitValue));
         }
         else if (aspect != null) {
             if (aspect >= 1) {
                 int v = Math.round(aspect * RATIONAL_SCALE_FACTOR);
-                entries.put(TIFF.TAG_X_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(v, RATIONAL_SCALE_FACTOR)));
-                entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(1)));
+                entries.put(TIFF.TAG_X_RESOLUTION, new TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(v, RATIONAL_SCALE_FACTOR)));
+                entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(1)));
             }
             else {
                 int v = Math.round(RATIONAL_SCALE_FACTOR / aspect);
-                entries.put(TIFF.TAG_X_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(1)));
-                entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFImageWriter.TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(v, RATIONAL_SCALE_FACTOR)));
+                entries.put(TIFF.TAG_X_RESOLUTION, new TIFFEntry(TIFF.TAG_X_RESOLUTION, new Rational(1)));
+                entries.put(TIFF.TAG_Y_RESOLUTION, new TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(v, RATIONAL_SCALE_FACTOR)));
             }
 
             entries.put(TIFF.TAG_RESOLUTION_UNIT,
-                    new TIFFImageWriter.TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, TIFFBaseline.RESOLUTION_UNIT_NONE));
+                    new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, TIFFBaseline.RESOLUTION_UNIT_NONE));
         }
         // Else give up...
     }
@@ -1086,37 +1087,37 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                 // We do all comparisons in lower case, for compatibility
                 keyword = keyword.toLowerCase();
 
-                TIFFImageWriter.TIFFEntry entry;
+                TIFFEntry entry;
 
                 if ("documentname".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_DOCUMENT_NAME, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_DOCUMENT_NAME, TIFF.TYPE_ASCII, value);
                 }
                 else if ("imagedescription".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_IMAGE_DESCRIPTION, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_IMAGE_DESCRIPTION, TIFF.TYPE_ASCII, value);
                 }
                 else if ("make".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_MAKE, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_MAKE, TIFF.TYPE_ASCII, value);
                 }
                 else if ("model".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_MODEL, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_MODEL, TIFF.TYPE_ASCII, value);
                 }
                 else if ("pagename".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_PAGE_NAME, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_PAGE_NAME, TIFF.TYPE_ASCII, value);
                 }
                 else if ("software".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, value);
                 }
                 else if ("artist".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_ARTIST, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_ARTIST, TIFF.TYPE_ASCII, value);
                 }
                 else if ("hostcomputer".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_HOST_COMPUTER, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_HOST_COMPUTER, TIFF.TYPE_ASCII, value);
                 }
                 else if ("inknames".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_INK_NAMES, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_INK_NAMES, TIFF.TYPE_ASCII, value);
                 }
                 else if ("copyright".equals(keyword)) {
-                    entry = new TIFFImageWriter.TIFFEntry(TIFF.TAG_COPYRIGHT, TIFF.TYPE_ASCII, value);
+                    entry = new TIFFEntry(TIFF.TAG_COPYRIGHT, TIFF.TYPE_ASCII, value);
                 }
                 else {
                     continue;
@@ -1148,7 +1149,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             entries.add(toEntry(nodes.item(i)));
         }
 
-        return new TIFFIFD(entries);
+        return new IFD(entries);
     }
 
     private Entry toEntry(final Node node) throws IIOInvalidTreeException {
@@ -1158,14 +1159,14 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             int tag = Integer.parseInt(getAttribute(node, "parentTagNumber"));
             Directory subIFD = toIFD(node);
 
-            return new TIFFImageWriter.TIFFEntry(tag, TIFF.TYPE_IFD, subIFD);
+            return new TIFFEntry(tag, TIFF.TYPE_IFD, subIFD);
         }
         else if (name.equals("TIFFField")) {
             int tag = Integer.parseInt(getAttribute(node, "number"));
             short type = getTIFFType(node);
             Object value = getValue(node, type);
 
-            return value != null ? new TIFFImageWriter.TIFFEntry(tag, type, value) : null;
+            return value != null ? new TIFFEntry(tag, type, value) : null;
         }
         else {
             throw new IIOInvalidTreeException("Expected \"TIFFIFD\" or \"TIFFField\" node: " + name, node);
@@ -1336,12 +1337,5 @@ public final class TIFFImageMetadata extends AbstractMetadata {
      */
     public Entry getTIFFField(final int tagNumber) {
         return ifd.getEntryById(tagNumber);
-    }
-
-    // TODO: Replace with IFD class when moved to new package and made public!
-    private final static class TIFFIFD extends AbstractDirectory {
-        public TIFFIFD(final Collection<Entry> entries) {
-            super(entries);
-        }
     }
 }

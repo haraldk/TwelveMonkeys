@@ -1,41 +1,34 @@
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
-import junit.framework.TestCase;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- * RationalTestCase
+ * RationalTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: RationalTestCase.java,v 1.0 Nov 18, 2009 3:23:17 PM haraldk Exp$
+ * @version $Id: RationalTest.java,v 1.0 Nov 18, 2009 3:23:17 PM haraldk Exp$
  */
-public class RationalTestCase extends TestCase {
+public class RationalTest {
+    @Test(expected = IllegalArgumentException.class)
     public void testZeroDenominator() {
-        try {
-            new Rational(1, 0);
-            fail("IllegalArgumentException expected");
-        }
-        catch (IllegalArgumentException expected) {
-        }
+        new Rational(1, 0);
     }
 
     // TODO: Find a solution to this problem, as we should be able to work with it...
-    public void testLongMinValue() {
-        try {
-            new Rational(Long.MIN_VALUE, 1);
-            fail("IllegalArgumentException expected");
-        }
-        catch (IllegalArgumentException expected) {
-        }
-
-        try {
-            new Rational(1, Long.MIN_VALUE);
-            fail("IllegalArgumentException expected");
-        }
-        catch (IllegalArgumentException expected) {
-        }
+    @Test(expected = IllegalArgumentException.class)
+    public void testLongMinValueNumerator() {
+        new Rational(Long.MIN_VALUE, 1);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testLongMinValueDenominator() {
+        new Rational(1, Long.MIN_VALUE);
+    }
+
+    @Test
     public void testEquals() {
         assertEquals(new Rational(0, 1), new Rational(0, 999));
         assertEquals(new Rational(0, 1), new Rational(0, -1));
@@ -47,9 +40,9 @@ public class RationalTestCase extends TestCase {
         assertEquals(x, y);
         assertEquals(x.numerator(), y.numerator());
         assertEquals(x.denominator(), y.denominator());
-
     }
 
+    @Test
     public void testEqualsBoundaries() {
         assertEquals(new Rational(Long.MAX_VALUE, Long.MAX_VALUE), new Rational(1, 1));
 
@@ -59,16 +52,19 @@ public class RationalTestCase extends TestCase {
         assertEquals(new Rational(Long.MAX_VALUE, Long.MIN_VALUE + 1), new Rational(-1, 1));
     }
 
+    @Test
     public void testReciprocal() {
         assertEquals(new Rational(1, 99), new Rational(99, 1).reciprocal());
         assertEquals(new Rational(-1, 1234567), new Rational(-1234567, 1).reciprocal());
     }
 
+    @Test
     public void testNegate() {
         assertEquals(new Rational(-1, 99), new Rational(1, 99).negate());
         assertEquals(new Rational(1, 1234567), new Rational(1, -1234567).negate());
     }
 
+    @Test
     public void testPlus() {
         Rational x, y;
 
@@ -96,6 +92,7 @@ public class RationalTestCase extends TestCase {
         assertEquals(x, x.plus(Rational.ZERO));
     }
 
+    @Test
     public void testTimes() {
         Rational x, y;
 
@@ -113,6 +110,7 @@ public class RationalTestCase extends TestCase {
         assertEquals(Rational.ZERO, x.times(Rational.ZERO));
     }
 
+    @Test
     public void testMinus() {
         // 1/6 - -4/-8 = -1/3
         Rational x = new Rational(1, 6);
@@ -123,6 +121,7 @@ public class RationalTestCase extends TestCase {
         assertEquals(x, x.minus(Rational.ZERO));
     }
 
+    @Test
     public void testDivides() {
         // 3037141/3247033 / 3246599/3037547 = 841/961
         Rational x = new Rational(3037141, 3247033);
@@ -133,11 +132,8 @@ public class RationalTestCase extends TestCase {
         assertEquals(Rational.ZERO, new Rational(0, 386).divides(x));
     }
 
+    @Test(expected = ArithmeticException.class)
     public void testDivideZero() {
-        try {
-            new Rational(3037141, 3247033).divides(new Rational(0, 1));
-        }
-        catch (ArithmeticException expected) {
-        }
+        new Rational(3037141, 3247033).divides(new Rational(0, 1));
     }
 }

@@ -34,11 +34,11 @@ import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
@@ -790,9 +790,9 @@ public final class JPEGImageReader extends ImageReaderBase {
             }
             else {
                 ImageInputStream stream = ImageIO.createImageInputStream(data);
-                return (CompoundDirectory) new EXIFReader().read(stream);
+                return (CompoundDirectory) new TIFFReader().read(stream);
 
-                // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the EXIFReader...
+                // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the TIFFReader...
             }
         }
 
@@ -981,7 +981,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                 }
                 else {
                     ImageInputStream stream = new MemoryCacheImageInputStream(data);
-                    CompoundDirectory exifMetadata = (CompoundDirectory) new EXIFReader().read(stream);
+                    CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
 
                     if (exifMetadata.directoryCount() == 2) {
                         Directory ifd1 = exifMetadata.getDirectory(1);

@@ -30,9 +30,9 @@ package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.psd.PSD;
 import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMP;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
@@ -42,7 +42,10 @@ import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -279,13 +282,13 @@ public final class JPEGSegmentUtil {
                     ImageInputStream stream = new ByteArrayImageInputStream(segment.data, segment.offset() + 1, segment.length() - 1);
 
                     // Root entry is TIFF, that contains the EXIF sub-IFD
-                    Directory tiff = new EXIFReader().read(stream);
+                    Directory tiff = new TIFFReader().read(stream);
                     System.err.println("EXIF: " + tiff);
                 }
                 else if (XMP.NS_XAP.equals(segment.identifier())) {
                     Directory xmp = new XMPReader().read(new ByteArrayImageInputStream(segment.data, segment.offset(), segment.length()));
                     System.err.println("XMP: " + xmp);
-                    System.err.println(EXIFReader.HexDump.dump(segment.data));
+                    System.err.println(TIFFReader.HexDump.dump(segment.data));
                 }
                 else if ("Photoshop 3.0".equals(segment.identifier())) {
                     // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
@@ -298,13 +301,13 @@ public final class JPEGSegmentUtil {
                         System.err.println("colorSpace: " + colorSpace);
                     }
                     System.err.println("PSD: " + psd);
-                    System.err.println(EXIFReader.HexDump.dump(segment.data));
+                    System.err.println(TIFFReader.HexDump.dump(segment.data));
                 }
                 else if ("ICC_PROFILE".equals(segment.identifier())) {
                     // Skip
                 }
                 else {
-                    System.err.println(EXIFReader.HexDump.dump(segment.data));
+                    System.err.println(TIFFReader.HexDump.dump(segment.data));
                 }
             }
 

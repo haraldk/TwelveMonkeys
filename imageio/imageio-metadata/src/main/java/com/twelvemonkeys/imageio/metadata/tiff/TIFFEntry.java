@@ -26,22 +26,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.metadata.exif;
+package com.twelvemonkeys.imageio.metadata.tiff;
 
 import com.twelvemonkeys.imageio.metadata.AbstractEntry;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.lang.Validate;
+
+import java.lang.reflect.Array;
 
 /**
- * EXIFEntry
+ * Represents a TIFF IFD entry.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: EXIFEntry.java,v 1.0 Nov 13, 2009 5:47:35 PM haraldk Exp$
+ * @version $Id: TIFFEntry.java,v 1.0 Nov 13, 2009 5:47:35 PM haraldk Exp$
+ *
+ * @see TIFF
+ * @see IFD
  */
-final class EXIFEntry extends AbstractEntry {
-    // TODO: Expose as TIFFEntry
+public final class TIFFEntry extends AbstractEntry {
     final private short type;
 
-    EXIFEntry(final int identifier, final Object value, final short type) {
+    /**
+     * Creates a new {@code TIFFEntry}.
+     *
+     * @param identifier the TIFF tag identifier.
+     * @param value the value of the entry.
+     *
+     * @throws IllegalArgumentException if {@code value} is {@code null}.
+     *
+     * @see #TIFFEntry(int, short, Object)
+     */
+    public TIFFEntry(final int identifier, final Object value) {
+        this(identifier, guessType(value), value);
+    }
+
+    /**
+     * Creates a new {@code TIFFEntry}.
+     *
+     * @param identifier the TIFF tag identifier.
+     * @param type the type of the entry.
+     * @param value the value of the entry.
+     *
+     * @throws IllegalArgumentException if {@code type} is not a legal TIFF type.
+     *
+     * @see TIFF
+     */
+    public TIFFEntry(final int identifier, final short type, final Object value) {
         super(identifier, value);
 
         if (type < 1 || type >= TIFF.TYPE_NAMES.length) {
@@ -283,5 +315,83 @@ final class EXIFEntry extends AbstractEntry {
     @Override
     public String getTypeName() {
         return TIFF.TYPE_NAMES[type];
+    }
+
+    static short getType(final Entry entry) {
+        // For internal entries use type directly
+        if (entry instanceof TIFFEntry) {
+            TIFFEntry tiffEntry = (TIFFEntry) entry;
+            return tiffEntry.getType();
+        }
+
+        // For other entries, use name if it matches
+        Validate.notNull(entry, "entry");
+        String typeName = entry.getTypeName();
+
+        if (typeName != null) {
+            for (int i = 1; i < TIFF.TYPE_NAMES.length; i++) {
+                if (typeName.equals(TIFF.TYPE_NAMES[i])) {
+                    return (short) i;
+                }
+            }
+        }
+
+        // Otherwise, fall back to guessing based on value's type
+        return guessType(entry.getValue());
+    }
+
+    private static short guessType(final Object entryValue) {
+        // Guess type based on native Java type
+        Object value = Validate.notNull(entryValue);
+
+        boolean array = value.getClass().isArray();
+        if (array) {
+            value = Array.get(value, 0);
+        }
+
+        // Note: This "narrowing" is to keep data consistent between read/write.
+        // TODO: Check for negative values and use signed types?
+        if (value instanceof Byte) {
+            return TIFF.TYPE_BYTE;
+        }
+        if (value instanceof Short) {
+            if (!array && (Short) value < Byte.MAX_VALUE) {
+                return TIFF.TYPE_BYTE;
+            }
+
+            return TIFF.TYPE_SHORT;
+        }
+        if (value instanceof Integer) {
+            if (!array && (Integer) value < Short.MAX_VALUE) {
+                return TIFF.TYPE_SHORT;
+            }
+
+            return TIFF.TYPE_LONG;
+        }
+        if (value instanceof Long) {
+            if (!array && (Long) value < Integer.MAX_VALUE) {
+                return TIFF.TYPE_LONG;
+            }
+        }
+
+        if (value instanceof Rational) {
+            return TIFF.TYPE_RATIONAL;
+        }
+
+        if (value instanceof String) {
+            return TIFF.TYPE_ASCII;
+        }
+
+        // TODO: More types
+
+        throw new UnsupportedOperationException(String.format("Method guessType not implemented for type %s", value.getClass()));
+    }
+
+    static int getValueLength(final int pType, final int pCount) {
+        if (pType > 0 && pType < TIFF.TYPE_LENGTHS.length) {
+            return TIFF.TYPE_LENGTHS[pType] * pCount;
+        }
+
+        return -1;
     }
 }

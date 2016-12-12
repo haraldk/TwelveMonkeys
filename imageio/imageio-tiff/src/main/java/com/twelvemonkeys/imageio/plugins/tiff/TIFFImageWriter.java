@@ -30,12 +30,12 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageWriterBase;
-import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFWriter;
-import com.twelvemonkeys.imageio.metadata.exif.Rational;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.Rational;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter;
 import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.enc.EncoderStream;
@@ -54,7 +54,6 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.image.*;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.zip.Deflater;
@@ -111,7 +110,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     /**
      * Metadata writer for sequence writing
      */
-    private EXIFWriter sequenceExifWriter = null;
+    private TIFFWriter sequenceTiffWriter = null;
 
     /**
      * Position of last IFD Pointer on active sequence writing
@@ -129,87 +128,21 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: Allow appending/partly overwrite of existing file...
     }
 
-    static final class TIFFEntry extends AbstractEntry {
-        // TODO: Expose a merge of this and the EXIFEntry class...
-        private final short type;
-
-        private static short guessType(final Object val) {
-            // TODO: This code is duplicated in EXIFWriter.getType, needs refactor!
-            Object value = Validate.notNull(val);
-
-            boolean array = value.getClass().isArray();
-            if (array) {
-                value = Array.get(value, 0);
-            }
-
-            // Note: This "narrowing" is to keep data consistent between read/write.
-            // TODO: Check for negative values and use signed types?
-            if (value instanceof Byte) {
-                return TIFF.TYPE_BYTE;
-            }
-            if (value instanceof Short) {
-                if (!array && (Short) value < Byte.MAX_VALUE) {
-                    return TIFF.TYPE_BYTE;
-                }
-
-                return TIFF.TYPE_SHORT;
-            }
-            if (value instanceof Integer) {
-                if (!array && (Integer) value < Short.MAX_VALUE) {
-                    return TIFF.TYPE_SHORT;
-                }
-
-                return TIFF.TYPE_LONG;
-            }
-            if (value instanceof Long) {
-                if (!array && (Long) value < Integer.MAX_VALUE) {
-                    return TIFF.TYPE_LONG;
-                }
-            }
-
-            if (value instanceof Rational) {
-                return TIFF.TYPE_RATIONAL;
-            }
-
-            if (value instanceof String) {
-                return TIFF.TYPE_ASCII;
-            }
-
-            // TODO: More types
-
-            throw new UnsupportedOperationException(String.format("Method guessType not implemented for value of type %s", value.getClass()));
-        }
-
-        TIFFEntry(final int identifier, final Object value) {
-            this(identifier, guessType(value), value);
-        }
-
-        TIFFEntry(int identifier, short type, Object value) {
-            super(identifier, value);
-            this.type = type;
-        }
-
-        @Override
-        public String getTypeName() {
-            return TIFF.TYPE_NAMES[type];
-        }
-    }
-
     @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
         assertOutput();
         configureStreamByteOrder(streamMetadata, imageOutput);
 
         // TODO: Make TIFFEntry and possibly TIFFDirectory? public
-        EXIFWriter exifWriter = new EXIFWriter();
-        exifWriter.writeTIFFHeader(imageOutput);
+        TIFFWriter tiffWriter = new TIFFWriter();
+        tiffWriter.writeTIFFHeader(imageOutput);
 
-        writePage(image, param, exifWriter, imageOutput.getStreamPosition());
+        writePage(image, param, tiffWriter, imageOutput.getStreamPosition());
 
         imageOutput.flush();
     }
 
-    private long writePage(IIOImage image, ImageWriteParam param, EXIFWriter exifWriter, long lastIFDPointerOffset)
+    private long writePage(IIOImage image, ImageWriteParam param, TIFFWriter tiffWriter, long lastIFDPointerOffset)
             throws IOException {
         RenderedImage renderedImage = image.getRenderedImage();
 
@@ -382,14 +315,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
             // This implementation, allows semi-streaming-compatible uncompressed TIFFs
             long streamPosition = imageOutput.getStreamPosition();
 
-            long ifdSize = exifWriter.computeIFDSize(entries.values());
+            long ifdSize = tiffWriter.computeIFDSize(entries.values());
             long stripOffset = streamPosition + 4 +  ifdSize + 4;
             long stripByteCount = (renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7) / 8;
 
             entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
 
-            long ifdPointer = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
+            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
 
             // If we have a previous IFD, update pointer
@@ -438,7 +371,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
 
-            long ifdPointer = exifWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
+            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
 
             nextIFDPointerOffset = imageOutput.getStreamPosition();
 
@@ -958,8 +891,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // Ignore streamMetadata. ByteOrder is determined from OutputStream
         assertOutput();
         isWritingSequence = true;
-        sequenceExifWriter = new EXIFWriter();
-        sequenceExifWriter.writeTIFFHeader(imageOutput);
+        sequenceTiffWriter = new TIFFWriter();
+        sequenceTiffWriter.writeTIFFHeader(imageOutput);
         sequenceLastIFDPos = imageOutput.getStreamPosition();
     }
 
@@ -973,7 +906,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             imageOutput.flushBefore(sequenceLastIFDPos);
         }
 
-        sequenceLastIFDPos = writePage(image, param, sequenceExifWriter, sequenceLastIFDPos);
+        sequenceLastIFDPos = writePage(image, param, sequenceTiffWriter, sequenceLastIFDPos);
     }
 
     @Override
@@ -983,7 +916,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         isWritingSequence = false;
-        sequenceExifWriter = null;
+        sequenceTiffWriter = null;
         sequenceLastIFDPos = -1;
         imageOutput.flush();
     }
@@ -993,7 +926,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         super.resetMembers();
 
         isWritingSequence = false;
-        sequenceExifWriter = null;
+        sequenceTiffWriter = null;
         sequenceLastIFDPos = -1;
     }
 

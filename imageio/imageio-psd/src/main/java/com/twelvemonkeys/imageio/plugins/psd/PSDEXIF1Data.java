@@ -29,7 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
@@ -56,7 +56,7 @@ final class PSDEXIF1Data extends PSDImageResource {
     protected void readData(final ImageInputStream pInput) throws IOException {
         // This is in essence an embedded TIFF file.
         // TODO: Instead, read the byte data, store for later parsing (or better yet, store offset, and read on request)
-        directory = new EXIFReader().read(pInput);
+        directory = new TIFFReader().read(pInput);
     }
 
     @Override

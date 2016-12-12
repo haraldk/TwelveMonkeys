@@ -29,10 +29,10 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -63,7 +63,7 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(segments);
         assertFalse(segments.isEmpty());
 
-        EXIFReader reader = new EXIFReader();
+        TIFFReader reader = new TIFFReader();
         InputStream data = segments.get(0).data();
         if (data.read() < 0) {
             throw new AssertionError("EOF!");
