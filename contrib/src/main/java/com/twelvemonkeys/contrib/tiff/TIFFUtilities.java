@@ -33,6 +33,7 @@ import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
@@ -45,6 +46,8 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -348,6 +351,12 @@ public final class TIFFUtilities {
                 byteCounts = getValueAsLongArray(stripByteCountsEntry);
             }
 
+            // TODO:
+            // numStrips == 1 && JpegInterchangeFormat == StripOffset -> just remove InterchangeFormat/Length
+            // numStrips >= 1 && JpegInterchangeFormat+JpegInterchangeFormatLength not within stip data -> prepend to each strip? Suspecting those to contain (just) table data.
+            // else fail
+            // TODO: Find some way to enable checking if the transformed pages could really be read or at least notify the transform to the user
+
             // Write JPEGInterchangeFormat data before StripByteData, as our reader expects the JPEG data to follow if it is not included
             Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
             boolean writeInterchangeFormat = false;
@@ -389,40 +398,103 @@ public final class TIFFUtilities {
                 }
             }
 
-            Entry oldJpegTable;
-            long[] tableOffsets;
+            Validate.isTrue(IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) == null, "Failed to transform old-style JPEG");
+            Validate.isTrue(IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH) == null, "Failed to transform old-style JPEG");
 
-            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES);
-            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
-                tableOffsets = getValueAsLongArray(oldJpegTable);
-                byteCounts = new long[tableOffsets.length];
-                Arrays.fill(byteCounts, 64);
-                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
-                newIFD.remove(oldJpegTable);
-                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_AC_TABLES, newOffsets));
+            Entry oldJpegTableQ, oldJpegTableDC, oldJpegTableAC;
+            oldJpegTableQ = IFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES);
+            oldJpegTableDC = IFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES);
+            oldJpegTableAC = IFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES);
+            if (oldJpegTableQ != null || oldJpegTableDC != null || oldJpegTableAC != null) {
+                Validate.isTrue(IFD.getEntryById(TIFF.TAG_JPEG_TABLES) == null, "Found old-style and new-style JPEGTables");
+
+                newIFD.add(mergeTables(oldJpegTableQ, oldJpegTableDC, oldJpegTableAC));
+                if (oldJpegTableQ != null) {
+                    newIFD.remove(oldJpegTableQ);
+                }
+                if (oldJpegTableDC != null) {
+                    newIFD.remove(oldJpegTableDC);
+                }
+                if (oldJpegTableAC != null) {
+                    newIFD.remove(oldJpegTableAC);
+                }
             }
 
-            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES);
-            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
-                tableOffsets = getValueAsLongArray(oldJpegTable);
-                byteCounts = new long[tableOffsets.length];
-                Arrays.fill(byteCounts, 64);
-                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
-                newIFD.remove(oldJpegTable);
-                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_Q_TABLES, newOffsets));
-            }
-
-            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES);
-            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
-                tableOffsets = getValueAsLongArray(oldJpegTable);
-                byteCounts = new long[tableOffsets.length];
-                Arrays.fill(byteCounts, 64);
-                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
-                newIFD.remove(oldJpegTable);
-                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_DC_TABLES, newOffsets));
+            Entry compressionEntry = IFD.getEntryById(TIFF.TAG_COMPRESSION);
+            Number compression = (Number) compressionEntry.getValue();
+            if (compression.shortValue() == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                newIFD.remove(compressionEntry);
+                newIFD.add(new TIFFEntry(TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, TIFFExtension.COMPRESSION_JPEG));
             }
 
             return newIFD;
+        }
+
+        private Entry mergeTables(Entry qEntry, Entry dcEntry, Entry acEntry) throws IOException {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+            dos.writeShort(JPEG.SOI);
+
+            if (qEntry != null && qEntry.valueCount() > 0) {
+                long[] off = getValueAsLongArray(qEntry);
+                byte[] table = new byte[64];
+                for (int tableId = 0; tableId < off.length; tableId++) {
+                    stream.seek(off[tableId]);
+                    stream.readFully(table);
+                    dos.writeShort(JPEG.DQT);
+                    dos.writeShort(3 + 64);
+                    dos.writeByte(tableId);
+                    dos.write(table);
+                }
+            }
+
+            // same marker for AC & DC tables, distinguished by flag in tableId
+            if (dcEntry != null && dcEntry.valueCount() > 0) {
+                long[] off = getValueAsLongArray(dcEntry);
+                for (int tableId = 0; tableId < off.length; tableId++) {
+                    stream.seek(off[tableId]);
+                    byte[] table = readHUFFTable();
+                    dos.writeShort(JPEG.DHT);
+                    dos.writeShort(3 + table.length);
+                    dos.writeByte(tableId);
+                    dos.write(table);
+                }
+            }
+
+            if (acEntry != null && acEntry.valueCount() > 0) {
+                long[] off = getValueAsLongArray(acEntry);
+                for (int tableId = 0; tableId < off.length; tableId++) {
+                    stream.seek(off[tableId]);
+                    byte[] table = readHUFFTable();
+                    dos.writeShort(JPEG.DHT);
+                    dos.writeShort(3 + table.length);
+                    dos.writeByte(16 | tableId);
+                    dos.write(table);
+                }
+            }
+
+            dos.writeShort(JPEG.EOI);
+
+            bos.close();
+
+            return new TIFFEntry(TIFF.TAG_JPEG_TABLES, TIFF.TYPE_UNDEFINED, bos.toByteArray());
+        }
+
+        private byte[] readHUFFTable() throws IOException {
+            byte[] lengths = new byte[16];
+            stream.readFully(lengths);
+            int numCodes = 0;
+            for (int i = 0; i < lengths.length; i++) {
+                numCodes += lengths[i];
+            }
+            byte table[] = new byte[16 + numCodes];
+            System.arraycopy(lengths, 0, table, 0, 16);
+            int off = 16;
+            for (int i = 0; i < lengths.length; i++) {
+                stream.read(table, off, lengths[i]);
+                off += lengths[i];
+            }
+            return table;
         }
 
         private int[] writeData(long[] offsets, long[] byteCounts, ImageOutputStream outputStream) throws IOException {
@@ -540,6 +612,7 @@ public final class TIFFUtilities {
     /**
      * TODO: Temporary clone, to be removed after TMI204 has been closed
      */
+
     public interface TIFFExtension {
         int ORIENTATION_TOPRIGHT = 2;
         int ORIENTATION_BOTRIGHT = 3;
@@ -548,6 +621,11 @@ public final class TIFFUtilities {
         int ORIENTATION_RIGHTTOP = 6;
         int ORIENTATION_RIGHTBOT = 7;
         int ORIENTATION_LEFTBOT = 8;
+
+        /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
+        int COMPRESSION_OLD_JPEG = 6;
+        /** JPEG Compression (lossy). */
+        int COMPRESSION_JPEG = 7;
     }
 
     /**
