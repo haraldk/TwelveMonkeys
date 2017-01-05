@@ -39,7 +39,6 @@ import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageOutputStream;
-import javax.imageio.stream.ImageOutputStreamImpl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,6 +55,7 @@ import static org.junit.Assert.assertNotNull;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFWriterTest.java,v 1.0 18.07.13 09:53 haraldk Exp$
  */
+@SuppressWarnings("deprecation")
 public class EXIFWriterTest extends MetadataWriterAbstractTest {
 
     @Override
@@ -63,13 +63,13 @@ public class EXIFWriterTest extends MetadataWriterAbstractTest {
         return getResource("/exif/exif-jpeg-segment.bin").openStream();
     }
 
-    protected TIFFReader createReader() {
-        return new TIFFReader();
+    protected EXIFReader createReader() {
+        return new EXIFReader();
     }
 
     @Override
-    protected TIFFWriter createWriter() {
-        return new TIFFWriter();
+    protected EXIFWriter createWriter() {
+        return new EXIFWriter();
     }
 
     @Test
@@ -201,44 +201,5 @@ public class EXIFWriterTest extends MetadataWriterAbstractTest {
         Directory read = createReader().read(new ByteArrayImageInputStream(output.toByteArray()));
 
         assertEquals(original, read);
-    }
-
-    @Test
-    public void testComputeIFDSize() throws IOException {
-        ArrayList<Entry> entries = new ArrayList<>();
-        entries.add(new TIFFEntry(TIFF.TAG_ORIENTATION, TIFF.TYPE_SHORT, 1));
-        entries.add(new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, TIFF.TYPE_SHORT, 1600));
-        entries.add(new AbstractEntry(TIFF.TAG_IMAGE_HEIGHT, 900) {});
-        entries.add(new TIFFEntry(TIFF.TAG_ARTIST, TIFF.TYPE_ASCII, "Harald K."));
-        entries.add(new AbstractEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO") {});
-
-        TIFFWriter writer = createWriter();
-
-        ImageOutputStream stream = new NullImageOutputStream();
-        writer.write(entries, stream);
-
-        assertEquals(stream.getStreamPosition(), writer.computeIFDSize(entries) + 12);
-    }
-
-    private static class NullImageOutputStream extends ImageOutputStreamImpl {
-        @Override
-        public void write(int b) throws IOException {
-            streamPos++;
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            streamPos += len;
-        }
-
-        @Override
-        public int read() throws IOException {
-            throw new UnsupportedOperationException("Method read not implemented");
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            throw new UnsupportedOperationException("Method read not implemented");
-        }
     }
 }

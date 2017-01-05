@@ -51,6 +51,7 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: EXIFReaderTest.java,v 1.0 23.12.11 13:50 haraldk Exp$
  */
+@SuppressWarnings("deprecation")
 public class EXIFReaderTest extends MetadataReaderAbstractTest {
     @Override
     protected InputStream getData() throws IOException {
