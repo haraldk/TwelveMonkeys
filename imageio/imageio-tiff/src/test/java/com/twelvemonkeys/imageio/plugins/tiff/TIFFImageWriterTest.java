@@ -912,13 +912,13 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
                 getClassLoaderResource("/tiff/depth/flower-minisblack-02.tif"),
                 getClassLoaderResource("/tiff/depth/flower-minisblack-04.tif"),
-                getClassLoaderResource("/tiff/depth/flower-minisblack-06.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-minisblack-06.tif"),
                 getClassLoaderResource("/tiff/depth/flower-minisblack-08.tif"),
-                getClassLoaderResource("/tiff/depth/flower-minisblack-10.tif"),
-                getClassLoaderResource("/tiff/depth/flower-minisblack-12.tif"),
-                getClassLoaderResource("/tiff/depth/flower-minisblack-14.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-minisblack-10.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-minisblack-12.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-minisblack-14.tif"),
                 getClassLoaderResource("/tiff/depth/flower-minisblack-16.tif"),
-                getClassLoaderResource("/tiff/depth/flower-minisblack-24.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-minisblack-24.tif"),
                 getClassLoaderResource("/tiff/depth/flower-minisblack-32.tif"),
 
                 getClassLoaderResource("/tiff/depth/flower-palette-02.tif"),
