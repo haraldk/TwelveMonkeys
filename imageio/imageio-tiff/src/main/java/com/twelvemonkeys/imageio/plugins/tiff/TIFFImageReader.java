@@ -948,20 +948,20 @@ public final class TIFFImageReader extends ImageReaderBase {
         Boolean needsCSConversion = null;
 
         switch (compression) {
-            // TIFF Baseline
             case TIFFBaseline.COMPRESSION_NONE:
                 // No compression
-            case TIFFExtension.COMPRESSION_DEFLATE:
-                // 'PKZIP-style' Deflate
             case TIFFBaseline.COMPRESSION_PACKBITS:
                 // PackBits
             case TIFFExtension.COMPRESSION_LZW:
                 // LZW
             case TIFFExtension.COMPRESSION_ZLIB:
                 // 'Adobe-style' Deflate
+            case TIFFExtension.COMPRESSION_DEFLATE:
+                // 'PKZIP-style' Deflate
+            case TIFFCustom.COMPRESSION_PIXTIFF_ZIP:
+                // PIXTIFF proprietary 'ZIP' compression, same as Deflate
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
                 // CCITT modified Huffman
-                // Additionally, the specification defines these values as part of the TIFF extensions:
             case TIFFExtension.COMPRESSION_CCITT_T4:
                 // CCITT Group 3 fax encoding
             case TIFFExtension.COMPRESSION_CCITT_T6:
@@ -2068,6 +2068,7 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
                 // TIFF specification, supplement 2 says ZLIB (8) and DEFLATE (32946) algorithms are identical
+            case TIFFCustom.COMPRESSION_PIXTIFF_ZIP:
                 return new InflaterInputStream(stream, new Inflater(), 1024);
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
