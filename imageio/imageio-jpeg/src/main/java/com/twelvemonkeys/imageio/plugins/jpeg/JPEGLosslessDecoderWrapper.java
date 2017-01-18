@@ -33,10 +33,9 @@ import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferUShort;
-import java.awt.image.Raster;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.*;
 import java.io.IOException;
 import java.util.List;
 
@@ -71,7 +70,7 @@ final class JPEGLosslessDecoderWrapper {
      * - 16Bit, Grayscale -> BufferedImage.TYPE_USHORT_GRAY
      *
      * @param segments segments
-     * @param input input stream which contains a jpeg lossless data
+     * @param input input stream which contains JPEG Lossless data
      * @return if successfully a BufferedImage is returned
      * @throws IOException is thrown if the decoder failed or a conversion is not supported
      */
@@ -92,8 +91,11 @@ final class JPEGLosslessDecoderWrapper {
             switch (decoder.getPrecision()) {
                 case 8:
                     return to8Bit1ComponentGrayScale(decoded, width, height);
+                case 10:
+                case 12:
+                case 14:
                 case 16:
-                    return to16Bit1ComponentGrayScale(decoded, width, height);
+                    return to16Bit1ComponentGrayScale(decoded, decoder.getPrecision(), width, height);
             }
         }
         // 3 components, assumed to be RGB
@@ -121,12 +123,20 @@ final class JPEGLosslessDecoderWrapper {
      * precision: 16 bit, componentCount = 1
      *
      * @param decoded data buffer
+     * @param precision
      * @param width   of the image
-     * @param height  of the image
-     * @return a BufferedImage.TYPE_USHORT_GRAY
+     * @param height  of the image   @return a BufferedImage.TYPE_USHORT_GRAY
      */
-    private BufferedImage to16Bit1ComponentGrayScale(int[][] decoded, int width, int height) {
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_GRAY);
+    private BufferedImage to16Bit1ComponentGrayScale(int[][] decoded, int precision, int width, int height) {
+        BufferedImage image;
+        if (precision == 16) {
+            image = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_GRAY);
+        }
+        else {
+            ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), new int[] {precision}, false, false, Transparency.OPAQUE, DataBuffer.TYPE_USHORT);
+            image = new BufferedImage(colorModel, colorModel.createCompatibleWritableRaster(width, height), colorModel.isAlphaPremultiplied(), null);
+        }
+
         short[] imageBuffer = ((DataBufferUShort) image.getRaster().getDataBuffer()).getData();
 
         for (int i = 0; i < imageBuffer.length; i++) {

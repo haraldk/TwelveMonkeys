@@ -38,6 +38,7 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.iptc.IPTCReader;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.metadata.psd.PSD;
 import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
 import com.twelvemonkeys.imageio.metadata.tiff.Rational;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
@@ -51,6 +52,7 @@ import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
+import com.twelvemonkeys.lang.StringUtil;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
@@ -239,9 +241,97 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                     if (Arrays.equals(foo.getBytes(StandardCharsets.US_ASCII), Arrays.copyOf(value, foo.length()))) {
                         System.err.println("foo: " + foo);
-//                        int offset = foo.length() + 1;
-//                        ImageInputStream input = new ByteArrayImageInputStream(value, offset, value.length - offset);
+                        int offset = foo.length() + 1;
+                        ImageInputStream input = new ByteArrayImageInputStream(value, offset, value.length - offset);
 //                        input.setByteOrder(ByteOrder.LITTLE_ENDIAN); // TODO: WHY???!
+
+                        while (input.getStreamPosition() < value.length - offset) {
+                            int resourceId = input.readInt();
+                            if (resourceId != PSD.RESOURCE_TYPE) {
+                                System.err.println("Not a PSD resource: " + resourceId);
+                                break;
+                            }
+
+                            int resourceKey = input.readInt();
+                            System.err.println("resourceKey: " + intToStr(resourceKey));
+                            long resourceLength = input.readUnsignedInt();
+                            System.err.println("resourceLength: " + resourceLength);
+
+                            long pad = (4 - (resourceLength % 4)) % 4;
+                            long resourceLengthPadded = resourceLength + pad; // Padded to 32 bit boundary, possibly 64 bit for 8B64 resources
+                            long streamPosition = input.getStreamPosition();
+
+                            if (resourceKey == ('L' << 24 | 'a' << 16 | 'y' << 8 | 'r')) {
+                                short count = input.readShort();
+                                System.err.println("layer count: " + count);
+
+                                for (int layer = 0; layer < count; layer++) {
+                                    int top = input.readInt();
+                                    int left = input.readInt();
+                                    int bottom = input.readInt();
+                                    int right = input.readInt();
+                                    System.err.printf("%d, %d, %d, %d\n", top, left, bottom, right);
+
+                                    short channels = input.readShort();
+                                    System.err.println("channels: " + channels);
+
+                                    for (int channel = 0; channel < channels; channel++) {
+                                        short channelId = input.readShort();
+                                        System.err.println("channelId: " + channelId);
+                                        long channelLength = input.readUnsignedInt();
+                                        System.err.println("channelLength: " + channelLength);
+                                    }
+
+                                    System.err.println("8BIM: " + intToStr(input.readInt()));
+                                    int blendMode = input.readInt();
+                                    System.err.println("blend mode key: " + intToStr(blendMode));
+
+                                    int opacity = input.readUnsignedByte();
+                                    System.err.println("opacity: " + opacity);
+                                    int clipping = input.readUnsignedByte();
+                                    System.err.println("clipping: " + clipping);
+                                    byte flags = input.readByte();
+                                    System.err.printf("flags: 0x%02x\n", flags);
+                                    input.readByte(); // Pad
+
+                                    long layerExtraDataLength = input.readUnsignedInt();
+                                    long pos = input.getStreamPosition();
+                                    System.err.println("length: " + layerExtraDataLength);
+
+                                    long layerMaskSize = input.readUnsignedInt();
+                                    input.skipBytes(layerMaskSize);
+                                    long layerBlendingRangesSize = input.readUnsignedInt();
+                                    input.skipBytes(layerBlendingRangesSize);
+
+                                    String layerName = readPascalString(input);
+                                    System.err.println("layerName: " + layerName);
+                                    int mod = (layerName.length() + 1) % 4; // len + 1 for null-term
+                                    System.err.println("mod: " + mod);
+                                    if (mod != 0) {
+                                        input.skipBytes(4 - mod);
+                                    }
+                                    System.err.println("input.getStreamPosition(): " + input.getStreamPosition());
+
+                                    // TODO: More data here
+                                    System.err.println(TIFFReader.HexDump.dump(0, value, (int) (offset + input.getStreamPosition()), 64));;
+
+                                    input.seek(pos + layerExtraDataLength);
+                                }
+
+
+//                                long len = input.readUnsignedInt();
+//                                System.err.println("len: " + len);
+//
+//                                int count = input.readUnsignedShort();
+//                                System.err.println("count: " + count);
+
+                                System.err.println(TIFFReader.HexDump.dump(0, value, (int) (offset + input.getStreamPosition()), 64));;
+
+                            }
+                            input.seek(streamPosition + resourceLengthPadded);
+                            System.out.println("input.getStreamPosition(): " + input.getStreamPosition());
+                        }
+
 //                        Directory psd2 = new PSDReader().read(input);
 //                        System.err.println("-----------------------------------------------------------------------------");
 //                        System.err.println("psd2: " + psd2);
@@ -249,6 +339,30 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
             }
         }
+    }
+
+    static String readPascalString(final DataInput pInput) throws IOException {
+        int length = pInput.readUnsignedByte();
+
+        if (length == 0) {
+            return "";
+        }
+
+        byte[] bytes = new byte[length];
+        pInput.readFully(bytes);
+
+        return StringUtil.decode(bytes, 0, bytes.length, "ASCII");
+    }
+
+    static String intToStr(int value) {
+        return new String(
+                new byte[]{
+                        (byte) ((value & 0xff000000) >>> 24),
+                        (byte) ((value & 0x00ff0000) >> 16),
+                        (byte) ((value & 0x0000ff00) >> 8),
+                        (byte) ((value & 0x000000ff))
+                }
+        );
     }
 
     private void readIFD(final int imageIndex) throws IOException {
@@ -1048,7 +1162,18 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                     // We'll have to use readAsRaster and later apply color space conversion ourselves
                                     Raster raster = jpegReader.readRaster(0, jpegParam);
-                                    normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                    // TODO: Refactor + duplicate this for all JPEG-in-TIFF cases
+                                    switch (raster.getTransferType()) {
+                                        case DataBuffer.TYPE_BYTE:
+                                            normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                            break;
+                                        case DataBuffer.TYPE_USHORT:
+                                            normalizeColor(interpretation, ((DataBufferUShort) raster.getDataBuffer()).getData());
+                                            break;
+                                        default:
+                                            throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
+                                    }
+
                                     destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                 }
                             }
@@ -1081,9 +1206,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                 int mode = getValueAsIntWithDefault(TIFF.TAG_OLD_JPEG_PROC, TIFFExtension.JPEG_PROC_BASELINE);
                 switch (mode) {
                     case TIFFExtension.JPEG_PROC_BASELINE:
-                        break; // Supported
                     case TIFFExtension.JPEG_PROC_LOSSLESS:
-                        throw new IIOException("Unsupported TIFF JPEGProcessingMode: Lossless (14)");
+                        break; // Supported
                     default:
                         throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + mode);
                 }
@@ -1350,7 +1474,7 @@ public final class TIFFImageReader extends ImageReaderBase {
             return jpegReader.getImageMetadata(0);
         }
         catch (IIOException e) {
-            processWarningOccurred("Could not read metadata metadata JPEG compressed TIFF: " + e.getMessage() + " colors may look incorrect");
+            processWarningOccurred("Could not read metadata for JPEG compressed TIFF (" + e.getMessage() + "): Colors may look incorrect");
 
             return null;
         }
@@ -1391,20 +1515,8 @@ public final class TIFFImageReader extends ImageReaderBase {
     }
 
     private ImageReader createJPEGDelegate() throws IOException {
-        // TIFF is strictly ISO JPEG, so we should probably stick to the standard reader
-        ImageReaderSpi jpegProvider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
-
-        if (jpegProvider != null) {
-            return jpegProvider.createReaderInstance();
-        }
-
-        // Fall back to default reader below
-        if (DEBUG) {
-            System.err.println("Could not create " + "com.sun.imageio.plugins.jpeg.JPEGImageReader"
-                    + ", falling back to default JPEG capable ImageReader");
-        }
-
-        // If we can't get the standard reader, fall back to the default (first) reader
+        // We'll just use the default (first) reader
+        // If it's the TwelveMonkeys one, we will be able to read JPEG Lossless etc.
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
         if (!readers.hasNext()) {
             throw new IIOException("Could not instantiate JPEGImageReader");
@@ -1415,28 +1527,17 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     private static InputStream createJFIFStream(int bands, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
         FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
-                2 + 2 + 2 + 6 + 3 * bands +
+                2 +
                         5 * qTables.length + qTables.length * qTables[0].length +
                         5 * dcTables.length + dcTables.length * dcTables[0].length +
                         5 * acTables.length + acTables.length * acTables[0].length +
+                        2 + 2 + 6 + 3 * bands +
                         8 + 2 * bands
         );
 
         DataOutputStream out = new DataOutputStream(stream);
 
         out.writeShort(JPEG.SOI);
-        out.writeShort(JPEG.SOF0);
-        out.writeShort(2 + 6 + 3 * bands); // SOF0 len
-        out.writeByte(8); // bits TODO: Consult raster/transfer type or BitsPerSample for 12/16 bits support
-        out.writeShort(stripTileHeight); // height
-        out.writeShort(stripTileWidth); // width
-        out.writeByte(bands); // Number of components
-
-        for (int comp = 0; comp < bands; comp++) {
-            out.writeByte(comp); // Component id
-            out.writeByte(comp == 0 ? 0x22 : 0x11); // h/v subsampling TODO: FixMe, consult YCbCrSubsampling
-            out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
-        }
 
         // TODO: Consider merging if tables are equal
         for (int tableIndex = 0; tableIndex < qTables.length; tableIndex++) {
@@ -1463,6 +1564,19 @@ public final class TIFFImageReader extends ImageReaderBase {
             out.writeShort(3 + table.length); // DHT length
             out.writeByte(0x10 + (tableIndex & 0xf)); // Huffman table id
             out.write(table); // Table data
+        }
+
+        out.writeShort(JPEG.SOF0);
+        out.writeShort(2 + 6 + 3 * bands); // SOF0 len
+        out.writeByte(8); // bits TODO: Consult raster/transfer type or BitsPerSample for 12/16 bits support
+        out.writeShort(stripTileHeight); // height
+        out.writeShort(stripTileWidth); // width
+        out.writeByte(bands); // Number of components
+
+        for (int comp = 0; comp < bands; comp++) {
+            out.writeByte(comp); // Component id
+            out.writeByte(comp == 0 ? 0x22 : 0x11); // h/v subsampling TODO: FixMe, consult YCbCrSubsampling
+            out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
         }
 
         out.writeShort(JPEG.SOS);

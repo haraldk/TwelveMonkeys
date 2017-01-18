@@ -148,7 +148,7 @@ class JPEGImage10Metadata extends AbstractMetadata {
             if (segment instanceof Frame) {
                 Frame sofSegment = (Frame) segment;
                 IIOMetadataNode colorSpaceType = new IIOMetadataNode("ColorSpaceType");
-                colorSpaceType.setAttribute("name", sofSegment.componentsInFrame() == 1 ? "Gray" : "RGB"); // TODO YCC, YCCK, CMYK etc
+                colorSpaceType.setAttribute("name", sofSegment.componentsInFrame() == 1 ? "GRAY" : "RGB"); // TODO YCC, YCCK, CMYK etc
                 chroma.appendChild(colorSpaceType);
 
                 IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");

@@ -352,10 +352,24 @@ public final class JPEGImageReader extends ImageReaderBase {
         JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
 
         if (sof.marker == JPEG.SOF3) {
+            // Read image as lossless
+            if (DEBUG) {
+                System.out.println("Reading using Lossless decoder");
+            }
+
             // TODO: What about stream position?
             // TODO: Param handling: Source region, offset, subsampling, destination, destination type, etc....
-            // Read image as lossless
-            return new JPEGLosslessDecoderWrapper(this).readImage(segments, imageInput);
+            BufferedImage bufferedImage = new JPEGLosslessDecoderWrapper(this).readImage(segments, imageInput);
+
+            // TODO: This is QnD, move param handling to lossless wrapper
+            // TODO: Create test!
+            BufferedImage destination = param != null ? param.getDestination() : null;
+            if (destination != null) {
+                destination.getRaster().setDataElements(0, 0, bufferedImage.getRaster());
+                return destination;
+            }
+
+            return bufferedImage;
         }
         
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
@@ -380,6 +394,18 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
 
         return delegate.read(imageIndex, param);
+    }
+
+    static void drawOnto(final BufferedImage pDestination, final Image pSource) {
+        Graphics2D g = pDestination.createGraphics();
+        try {
+            g.setComposite(AlphaComposite.Src);
+            g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+            g.drawImage(pSource, 0, 0, null);
+        }
+        finally {
+            g.dispose();
+        }
     }
 
     private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, Frame startOfFrame, JPEGColorSpace csType, ICC_Profile profile) throws IOException {
