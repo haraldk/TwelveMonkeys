@@ -264,7 +264,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         int compression;
         if ((param == null || param.getCompressionMode() == TIFFImageWriteParam.MODE_COPY_FROM_METADATA)
                 && image.getMetadata() != null && metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION) != null) {
-            compression = (int) metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION).getValue();
+            compression = ((Number) metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION).getValue()).intValue();
         }
         else {
             compression = TIFFImageWriteParam.getCompressionType(param);
@@ -309,8 +309,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             default:
         }
 
-        // TODO: We might want to support CMYK in JPEG as well... Pending JPEG CMYK write support.
-        int photometric = compression == TIFFExtension.COMPRESSION_JPEG ? TIFFExtension.PHOTOMETRIC_YCBCR : getPhotometricInterpretation(colorModel);
+        int photometric = getPhotometricInterpretation(colorModel, compression);
         entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, photometric));
 
         if (photometric == TIFFBaseline.PHOTOMETRIC_PALETTE && colorModel instanceof IndexColorModel) {
@@ -529,7 +528,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         // Use predictor by default for LZW and ZLib/Deflate
         // TODO: Unless explicitly disabled in TIFFImageWriteParam
-        int compression = (int) entries.get(TIFF.TAG_COMPRESSION).getValue();
+        int compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
         OutputStream stream;
 
         switch (compression) {
@@ -585,7 +584,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 long option = 0L;
 
                 if (compression != TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE) {
-                    option = (long) entries.get(compression == TIFFExtension.COMPRESSION_CCITT_T4 ? TIFF.TAG_GROUP3OPTIONS : TIFF.TAG_GROUP4OPTIONS).getValue();
+                    Entry optionsEntry = entries.get(compression == TIFFExtension.COMPRESSION_CCITT_T4 ? TIFF.TAG_GROUP3OPTIONS : TIFF.TAG_GROUP4OPTIONS);
+                    option = ((Number) optionsEntry.getValue()).longValue();
                 }
 
                 Entry fillOrderEntry = entries.get(TIFF.TAG_FILL_ORDER);
@@ -599,7 +599,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         throw new IllegalArgumentException(String.format("Unsupported TIFF compression: %d", compression));
     }
 
-    private int getPhotometricInterpretation(final ColorModel colorModel) {
+    private int getPhotometricInterpretation(final ColorModel colorModel, int compression) {
         if (colorModel.getPixelSize() == 1) {
             if (colorModel instanceof IndexColorModel) {
                 if (colorModel.getRGB(0) == 0xFFFFFFFF && colorModel.getRGB(1) == 0xFF000000) {
@@ -621,7 +621,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             case ColorSpace.TYPE_GRAY:
                 return TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO;
             case ColorSpace.TYPE_RGB:
-                return TIFFBaseline.PHOTOMETRIC_RGB;
+                return compression == TIFFExtension.COMPRESSION_JPEG ? TIFFExtension.PHOTOMETRIC_YCBCR : TIFFBaseline.PHOTOMETRIC_RGB;
             case ColorSpace.TYPE_CMYK:
                 return TIFFExtension.PHOTOMETRIC_SEPARATED;
         }
@@ -928,8 +928,17 @@ public final class TIFFImageWriter extends ImageWriterBase {
             }
         }
 
-        // TODO: Set values from imageType
-        entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, getPhotometricInterpretation(imageType.getColorModel())));
+        int compression;
+        if ((param == null || param.getCompressionMode() == TIFFImageWriteParam.MODE_COPY_FROM_METADATA)
+                && ifd != null && ifd.getEntryById(TIFF.TAG_COMPRESSION) != null) {
+            compression = ((Number) ifd.getEntryById(TIFF.TAG_COMPRESSION).getValue()).intValue();
+        }
+        else {
+            compression = TIFFImageWriteParam.getCompressionType(param);
+        }
+
+        int photometricInterpretation = getPhotometricInterpretation(imageType.getColorModel(), compression);
+        entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, photometricInterpretation));
 
         // TODO: Set values from param if != null + combined values...
 

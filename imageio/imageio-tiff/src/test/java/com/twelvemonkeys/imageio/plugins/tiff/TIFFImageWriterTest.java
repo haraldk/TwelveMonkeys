@@ -54,6 +54,8 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -854,6 +856,145 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
             for (int x = 0; x < expected.getWidth(); x++) {
                 assertRGBEquals(String.format("%s, ARGB differs at (%s,%s)", message, x, y), expected.getRGB(x, y), actual.getRGB(x, y), tolerance);
             }
+        }
+    }
+
+    @Test
+    public void testWriteStreamMetadataDefaultMM() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN); // Should pass through
+            writer.setOutput(stream);
+
+            writer.write(null, new IIOImage(getTestData(0), null, null), null);
+        }
+
+        byte[] bytes = output.toByteArray();
+        assertArrayEquals(new byte[] {'M', 'M', 0, 42}, Arrays.copyOf(bytes, 4));
+    }
+
+    @Test
+    public void testWriteStreamMetadataDefaultII() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // Should pass through
+            writer.setOutput(stream);
+
+            writer.write(null, new IIOImage(getTestData(0), null, null), null);
+        }
+
+        byte[] bytes = output.toByteArray();
+        assertArrayEquals(new byte[] {'I', 'I', 42, 0}, Arrays.copyOf(bytes, 4));
+    }
+
+    @Test
+    public void testRewrite() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        List<URL> testData = Arrays.asList(
+                getClassLoaderResource("/tiff/pixtiff/17-tiff-binary-ccitt-group3.tif"),
+                getClassLoaderResource("/tiff/pixtiff/36-tiff-8-bit-gray-jpeg.tif"),
+                getClassLoaderResource("/tiff/pixtiff/51-tiff-24-bit-color-jpeg.tif"),
+                getClassLoaderResource("/tiff/pixtiff/58-plexustiff-binary-ccitt-group4.tif"),
+                getClassLoaderResource("/tiff/balloons.tif"),
+                getClassLoaderResource("/tiff/ColorCheckerCalculator.tif"),
+                getClassLoaderResource("/tiff/quad-jpeg.tif"),
+                getClassLoaderResource("/tiff/quad-lzw.tif"),
+                getClassLoaderResource("/tiff/old-style-jpeg-inconsistent-metadata.tif"),
+                getClassLoaderResource("/tiff/ccitt/group3_1d.tif"),
+                getClassLoaderResource("/tiff/ccitt/group3_2d.tif"),
+                getClassLoaderResource("/tiff/ccitt/group3_1d_fill.tif"),
+                getClassLoaderResource("/tiff/ccitt/group3_2d_fill.tif"),
+                getClassLoaderResource("/tiff/ccitt/group4.tif")
+        );
+
+        for (URL url : testData) {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            try (ImageInputStream input = ImageIO.createImageInputStream(url);
+                 ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
+                reader.setInput(input);
+                writer.setOutput(stream);
+
+                List<ImageInfo> infos = new ArrayList<>(20);
+
+                writer.prepareWriteSequence(null);
+
+                for (int i = 0; i < reader.getNumImages(true); i++) {
+                    IIOImage image = reader.readAll(i, null);
+
+                    // If compression is Old JPEG, rewrite as JPEG
+                    // Normally, use the getAsTree method, but we don't care here if we are tied to our impl
+                    TIFFImageMetadata metadata = (TIFFImageMetadata) image.getMetadata();
+                    Directory ifd = metadata.getIFD();
+                    Entry compressionEntry = ifd.getEntryById(TIFF.TAG_COMPRESSION);
+
+                    int compression = compressionEntry != null ? ((Number) compressionEntry.getValue()).intValue() : TIFFBaseline.COMPRESSION_NONE;
+
+                    infos.add(new ImageInfo(image.getRenderedImage().getWidth(), image.getRenderedImage().getHeight(), compression));
+
+                    ImageWriteParam param = writer.getDefaultWriteParam();
+
+                    if (compression == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT); // Override the copy from metadata
+                        param.setCompressionType("JPEG");
+                    }
+
+                    writer.writeToSequence(image, param);
+                }
+
+                writer.endWriteSequence();
+
+//                File tempFile = File.createTempFile("foo-", ".tif");
+//                System.err.println("open " + tempFile.getAbsolutePath());
+//                FileUtil.write(tempFile, output.toByteArray());
+
+                try (ImageInputStream inputAfter = new ByteArrayImageInputStream(output.toByteArray())) {
+                    reader.setInput(inputAfter);
+
+                    int numImages = reader.getNumImages(true);
+
+                    assertEquals("Number of pages differs from original", infos.size(), numImages);
+
+                    for (int i = 0; i < numImages; i++) {
+                        IIOImage after = reader.readAll(i, null);
+                        ImageInfo info = infos.get(i);
+
+                        TIFFImageMetadata afterMetadata = (TIFFImageMetadata) after.getMetadata();
+                        Directory afterIfd = afterMetadata.getIFD();
+                        Entry afterCompressionEntry = afterIfd.getEntryById(TIFF.TAG_COMPRESSION);
+
+                        if (info.compression == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                            // Should rewrite this from old-style to new style
+                            assertEquals("Old JPEG compression not rewritten as JPEG", TIFFExtension.COMPRESSION_JPEG, afterCompressionEntry.getValue());
+                        }
+                        else {
+                            assertEquals("Compression differs from original", info.compression, ((Number) afterCompressionEntry.getValue()).intValue());
+                        }
+
+                        assertEquals("Image width differs from original", info.width, after.getRenderedImage().getWidth());
+                        assertEquals("Image height differs from original", info.height, after.getRenderedImage().getHeight());
+                    }
+                }
+            }
+        }
+    }
+
+    private class ImageInfo {
+        final int width;
+        final int height;
+
+        final int compression;
+
+        private ImageInfo(int width, int height, int compression) {
+            this.width = width;
+            this.height = height;
+            this.compression = compression;
         }
     }
 }
