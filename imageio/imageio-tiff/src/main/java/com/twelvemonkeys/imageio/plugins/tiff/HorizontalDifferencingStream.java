@@ -66,7 +66,7 @@ final class HorizontalDifferencingStream extends OutputStream {
         buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8).order(byteOrder);
     }
 
-    private boolean isValidBPS(final int bitsPerSample) {
+    static boolean isValidBPS(final int bitsPerSample) {
         switch (bitsPerSample) {
             case 1:
             case 2:
