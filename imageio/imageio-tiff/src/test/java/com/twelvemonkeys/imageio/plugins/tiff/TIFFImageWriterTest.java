@@ -36,10 +36,12 @@ import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.io.NullOutputStream;
 import org.junit.Test;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
+import javax.imageio.event.IIOWriteProgressListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
@@ -59,6 +61,7 @@ import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataTest.creat
 import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertRGBEquals;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
+import static org.mockito.Mockito.*;
 
 /**
  * TIFFImageWriterTest
@@ -377,6 +380,50 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 assertEquals(images[i].getHeight(), image.getHeight());
 
                 assertRGBEquals("RGB differ", images[i].getRGB(0, 0), image.getRGB(0, 0), 5); // Allow room for JPEG compression
+            }
+        }
+    }
+
+    @Test
+    public void testWriteSequenceProgress() throws IOException {
+        BufferedImage[] images = new BufferedImage[] {
+                new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(110, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(120, 100, BufferedImage.TYPE_INT_RGB)
+        };
+
+        ImageWriter writer = createImageWriter();
+        IIOWriteProgressListener progress = mock(IIOWriteProgressListener.class, "progress");
+        writer.addIIOWriteProgressListener(progress);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(new NullOutputStream())) {
+            writer.setOutput(output);
+
+            try {
+                writer.prepareWriteSequence(null);
+
+                for (int i = 0; i < images.length; i++) {
+                    reset(progress);
+
+                    ImageWriteParam param = writer.getDefaultWriteParam();
+
+                    if (i == images.length - 1) {
+                        // Make sure that the JPEG delegation outputs the correct indexes
+                        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                        param.setCompressionType("JPEG");
+                    }
+
+                    writer.writeToSequence(new IIOImage(images[i], null, null), param);
+
+                    verify(progress, times(1)).imageStarted(writer, i);
+                    verify(progress, atLeastOnce()).imageProgress(eq(writer), anyFloat());
+                    verify(progress, times(1)).imageComplete(writer);
+                }
+
+                writer.endWriteSequence();
+            }
+            catch (IOException e) {
+                fail(e.getMessage());
             }
         }
     }
