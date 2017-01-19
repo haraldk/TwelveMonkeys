@@ -937,6 +937,45 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 getClassLoaderResource("/tiff/ColorCheckerCalculator.tif"),
                 getClassLoaderResource("/tiff/quad-jpeg.tif"),
                 getClassLoaderResource("/tiff/quad-lzw.tif"),
+                getClassLoaderResource("/tiff/bali.tif"),
+                getClassLoaderResource("/tiff/lzw-colormap-iiobe.tif"),
+                // TODO: FixMe for ColorMap + ExtraSamples (custom ColorModel)
+//                getClassLoaderResource("/tiff/colormap-with-extrasamples.tif"),
+
+                getClassLoaderResource("/tiff/depth/flower-minisblack-02.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-04.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-06.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-08.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-10.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-12.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-14.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-16.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-24.tif"),
+                getClassLoaderResource("/tiff/depth/flower-minisblack-32.tif"),
+
+                getClassLoaderResource("/tiff/depth/flower-palette-02.tif"),
+                getClassLoaderResource("/tiff/depth/flower-palette-04.tif"),
+                getClassLoaderResource("/tiff/depth/flower-palette-08.tif"),
+                getClassLoaderResource("/tiff/depth/flower-palette-16.tif"),
+
+                getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"),
+                // TODO: FixMe for RGB > 8 bits / sample
+//                getClassLoaderResource("/tiff/depth/flower-rgb-contig-10.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-contig-12.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-contig-14.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-contig-16.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-contig-24.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-contig-32.tif"),
+
+                getClassLoaderResource("/tiff/depth/flower-rgb-planar-08.tif"),
+                // TODO: FixMe for planar RGB > 8 bits / sample
+//                getClassLoaderResource("/tiff/depth/flower-rgb-planar-10.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-planar-12.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-planar-14.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-planar-16.tif"),
+//                getClassLoaderResource("/tiff/depth/flower-rgb-planar-24.tif"),
+
+                getClassLoaderResource("/tiff/scan-mono-iccgray.tif"),
                 getClassLoaderResource("/tiff/old-style-jpeg-inconsistent-metadata.tif"),
                 getClassLoaderResource("/tiff/ccitt/group3_1d.tif"),
                 getClassLoaderResource("/tiff/ccitt/group3_2d.tif"),
@@ -1003,7 +1042,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
 
                         if (info.compression == TIFFExtension.COMPRESSION_OLD_JPEG) {
                             // Should rewrite this from old-style to new style
-                            assertEquals("Old JPEG compression not rewritten as JPEG", TIFFExtension.COMPRESSION_JPEG, afterCompressionEntry.getValue());
+                            assertEquals("Old JPEG compression not rewritten as JPEG", TIFFExtension.COMPRESSION_JPEG, ((Number) afterCompressionEntry.getValue()).intValue());
                         }
                         else {
                             assertEquals("Compression differs from original", info.compression, ((Number) afterCompressionEntry.getValue()).intValue());
