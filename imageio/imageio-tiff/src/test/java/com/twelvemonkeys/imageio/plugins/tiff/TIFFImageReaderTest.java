@@ -129,7 +129,9 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-16.tif"), new Dimension(73, 43)), // CMYK 16 bit/sample
                 // Separated (CMYK) Planar (PlanarConfiguration: 2)
                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
-                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43))  // CMYK 16 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43)),  // CMYK 16 bit/sample
+                // Custom PIXTIFF ZIP (Compression: 50013)
+                new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313))  // ZIP Gray, 8 bit/sample
         );
     }
 
