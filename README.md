@@ -2,7 +2,7 @@
 
 Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
 
-Latest release is TwelveMonkeys ImageIO [3.3.1](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.3.1%22) (Nov. 2nd, 2016).
+Latest release is TwelveMonkeys ImageIO [3.3.2](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.3.2%22) (Feb. 2nd, 2017).
 [Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
 
 ## About
@@ -480,12 +480,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.3.1</version> <!-- Alternatively, build your own version -->
+            <version>3.3.2</version> <!-- Alternatively, build your own version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.3.1</version> <!-- Alternatively, build your own version -->
+            <version>3.3.2</version> <!-- Alternatively, build your own version -->
         </dependency>
     </dependencies>
 
@@ -493,13 +493,13 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.3.1.jar
-    twelvemonkeys-common-io-3.3.1.jar
-    twelvemonkeys-common-image-3.3.1.jar
-    twelvemonkeys-imageio-core-3.3.1.jar
-    twelvemonkeys-imageio-metadata-3.3.1.jar
-    twelvemonkeys-imageio-jpeg-3.3.1.jar
-    twelvemonkeys-imageio-tiff-3.3.1.jar
+    twelvemonkeys-common-lang-3.3.2.jar
+    twelvemonkeys-common-io-3.3.2.jar
+    twelvemonkeys-common-image-3.3.2.jar
+    twelvemonkeys-imageio-core-3.3.2.jar
+    twelvemonkeys-imageio-metadata-3.3.2.jar
+    twelvemonkeys-imageio-jpeg-3.3.2.jar
+    twelvemonkeys-imageio-tiff-3.3.2.jar
 
 ### Links to prebuilt binaries
 
@@ -508,41 +508,41 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 Requires Java 7 or later.
  
 Common dependencies
-* [common-lang-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.3.1/common-lang-3.3.1.jar)
-* [common-io-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.3.1/common-io-3.3.1.jar)
-* [common-image-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.3.1/common-image-3.3.1.jar)
+* [common-lang-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.3.2/common-lang-3.3.2.jar)
+* [common-io-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.3.2/common-io-3.3.2.jar)
+* [common-image-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.3.2/common-image-3.3.2.jar)
 
 ImageIO dependencies
-* [imageio-core-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.3.1/imageio-core-3.3.1.jar)
-* [imageio-metadata-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.3.1/imageio-metadata-3.3.1.jar)
+* [imageio-core-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.3.2/imageio-core-3.3.2.jar)
+* [imageio-metadata-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.3.2/imageio-metadata-3.3.2.jar)
 
 ImageIO plugins
-* [imageio-bmp-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.3.1/imageio-bmp-3.3.1.jar)
-* [imageio-jpeg-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.3.1/imageio-jpeg-3.3.1.jar)
-* [imageio-tiff-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.3.1/imageio-tiff-3.3.1.jar)
-* [imageio-pnm-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.3.1/imageio-pnm-3.3.1.jar)
-* [imageio-psd-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.3.1/imageio-psd-3.3.1.jar)
-* [imageio-hdr-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.3.1/imageio-hdr-3.3.1.jar)
-* [imageio-iff-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.3.1/imageio-iff-3.3.1.jar)
-* [imageio-pcx-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.3.1/imageio-pcx-3.3.1.jar)
-* [imageio-pict-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.3.1/imageio-pict-3.3.1.jar)
-* [imageio-sgi-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.3.1/imageio-sgi-3.3.1.jar)
-* [imageio-tga-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.3.1/imageio-tga-3.3.1.jar)
-* [imageio-icns-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.3.1/imageio-icns-3.3.1.jar)
-* [imageio-thumbsdb-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.3.1/imageio-thumbsdb-3.3.1.jar)
+* [imageio-bmp-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.3.2/imageio-bmp-3.3.2.jar)
+* [imageio-jpeg-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.3.2/imageio-jpeg-3.3.2.jar)
+* [imageio-tiff-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.3.2/imageio-tiff-3.3.2.jar)
+* [imageio-pnm-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.3.2/imageio-pnm-3.3.2.jar)
+* [imageio-psd-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.3.2/imageio-psd-3.3.2.jar)
+* [imageio-hdr-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.3.2/imageio-hdr-3.3.2.jar)
+* [imageio-iff-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.3.2/imageio-iff-3.3.2.jar)
+* [imageio-pcx-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.3.2/imageio-pcx-3.3.2.jar)
+* [imageio-pict-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.3.2/imageio-pict-3.3.2.jar)
+* [imageio-sgi-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.3.2/imageio-sgi-3.3.2.jar)
+* [imageio-tga-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.3.2/imageio-tga-3.3.2.jar)
+* [imageio-icns-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.3.2/imageio-icns-3.3.2.jar)
+* [imageio-thumbsdb-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.3.2/imageio-thumbsdb-3.3.2.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.3.1/imageio-batik-3.3.1.jar)
+* [imageio-batik-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.3.2/imageio-batik-3.3.2.jar)
 
 Photoshop Path support for ImageIO
-* [imageio-clippath-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.3.1/imageio-clippath-3.3.1.jar)
+* [imageio-clippath-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.3.2/imageio-clippath-3.3.2.jar)
 
 Servlet support
-* [servlet-3.3.1.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.3.1/servlet-3.3.1.jar)
+* [servlet-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.3.2/servlet-3.3.2.jar)
 
 ##### Old version (3.0.x)
 
-Use this version for projects that requires Java 6 or need the JMagick support. *Does not support Java 8*. 
+Use this version for projects that requires Java 6 or need the JMagick support. *Does not support Java 8 or later*.
 
 Common dependencies
 * [common-lang-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0.2/common-lang-3.0.2.jar)
