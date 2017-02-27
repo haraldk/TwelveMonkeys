@@ -97,6 +97,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/jpeg/jfif-bogus-empty-jfif-segment.jpg"), new Dimension(942, 714)),
                 new TestData(getClassLoaderResource("/jpeg/app-marker-missing-null-term.jpg"), new Dimension(200, 150)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-16bit-dqt.jpg"), new Dimension(204, 131)),
+                new TestData(getClassLoaderResource("/jpeg/jfif-grayscale-thumbnail.jpg"), new Dimension(2547, 1537)), // Non-compliant JFIF with 8 bit grayscale thumbnail
                 new TestData(getClassLoaderResource("/jpeg-lossless/8_ls.jpg"), new Dimension(800, 535)),  // Lossless gray, 8 bit
                 new TestData(getClassLoaderResource("/jpeg-lossless/16_ls.jpg"), new Dimension(800, 535)),  // Lossless gray, 16 bit
                 new TestData(getClassLoaderResource("/jpeg-lossless/24_ls.jpg"), new Dimension(800, 535)), // Lossless RGB, 8 bit per component (24 bit)

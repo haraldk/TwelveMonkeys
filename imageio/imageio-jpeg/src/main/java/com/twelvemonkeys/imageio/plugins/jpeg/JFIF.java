@@ -30,7 +30,9 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.EOFException;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -111,7 +113,7 @@ final class JFIF extends Application {
                 buffer.getShort() & 0xffff,
                 x = buffer.get() & 0xff,
                 y = buffer.get() & 0xff,
-                getBytes(buffer, x * y * 3),
+                getBytes(buffer, Math.min(buffer.remaining(), x * y * 3)),
                 bytes
         );
     }

@@ -41,9 +41,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 /**
  * JFIFThumbnailReaderTest
@@ -76,6 +74,20 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(thumbnail);
         assertEquals(131, thumbnail.getWidth());
         assertEquals(122, thumbnail.getHeight());
+    }
+
+    @Test
+    public void testReadNonSpecGray() throws IOException {
+        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/jfif-grayscale-thumbnail.jpg"));
+
+        assertEquals(127, reader.getWidth());
+        assertEquals(76, reader.getHeight());
+
+        BufferedImage thumbnail = reader.read();
+        assertNotNull(thumbnail);
+        assertEquals(BufferedImage.TYPE_BYTE_GRAY, thumbnail.getType());
+        assertEquals(127, thumbnail.getWidth());
+        assertEquals(76, thumbnail.getHeight());
     }
 
     @Test

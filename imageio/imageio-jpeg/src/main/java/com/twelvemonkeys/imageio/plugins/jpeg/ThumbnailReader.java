@@ -74,8 +74,17 @@ abstract class ThumbnailReader {
 
     static protected BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {
         DataBufferByte buffer = new DataBufferByte(thumbnail, size, offset);
-        WritableRaster raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
-        ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        WritableRaster raster;
+        ColorModel cm;
+
+        if (thumbnail.length == w * h) {
+            raster = Raster.createInterleavedRaster(buffer, w, h, w, 1, new int[] {0}, null);
+            cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        }
+        else {
+            raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
+            cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        }
 
         return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
     }
