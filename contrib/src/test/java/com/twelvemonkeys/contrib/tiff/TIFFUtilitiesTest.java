@@ -203,7 +203,8 @@ public class TIFFUtilitiesTest {
     public void testMergeBogusInterchangeFormatLength() throws IOException {
         String[] testFiles = new String[] {
                 "/tiff/old-style-jpeg-bogus-jpeginterchangeformatlength.tif", // InterchangeFormat before StripOffset, length not including StripOffset
-                "/tiff/old-style-jpeg-no-jpeginterchangeformatlength.tif" // missing JPEGInterChangeFormatLength and JPEGInterchangeFormat == StipOffset
+                "/tiff/old-style-jpeg-no-jpeginterchangeformatlength.tif", // missing JPEGInterChangeFormatLength and JPEGInterchangeFormat == StipOffset
+                "/tiff/old-style-jpeg-multiple-strips.tif" // InterchangeFormat with multiple strips
         };
 
         for (String testFile : testFiles) {
