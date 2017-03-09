@@ -88,8 +88,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 fillOrder, "Expected fill order 1  or 2: %s"
         );
 
-        this.changesReferenceRow = new int[columns + 1];
-        this.changesCurrentRow = new int[columns + 1];
+        this.changesReferenceRow = new int[columns + 2];
+        this.changesCurrentRow = new int[columns + 2];
 
         switch (type) {
             case TIFFExtension.COMPRESSION_CCITT_T4:
@@ -220,7 +220,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         }
     }
 
-    private int getNextChangingElement(final int a0, final boolean white) throws IOException {
+    private int getNextChangingElement(final int a0, final boolean white) {
         int start = (lastChangingElement & 0xFFFF_FFFE) + (white ? 0 : 1);
         if (start > 2) {
             start -= 2;

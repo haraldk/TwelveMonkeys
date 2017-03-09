@@ -233,7 +233,8 @@ public class CCITTFaxDecoderStreamTest {
         // Produces an CCITT Stream with 9 changes on 8 columns.
         byte[] data = new byte[] {(byte) 0b10101010};
         ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
-        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput, 8, 1, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        OutputStream outputSteam = new CCITTFaxEncoderStream(imageOutput,
+                8, 1, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
         outputSteam.write(data);
         outputSteam.close();
 
@@ -242,5 +243,22 @@ public class CCITTFaxDecoderStreamTest {
                 TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
         byte decoded = (byte) inputStream.read();
         assertEquals(data[0], decoded);
+    }
+
+    @Test
+    public void testMoreChangesThanColumnsFile() throws IOException {
+        // See https://github.com/haraldk/TwelveMonkeys/issues/328
+        // 26 changes on 24 columns: H0w1b, H1w1b, ..., H1w0b
+        InputStream stream = getClass().getResourceAsStream("/tiff/ccitt-too-many-changes.tif");
+
+        // Skip bytes before StripOffsets: 86
+        for (int i = 0; i < 86; i++) {
+            stream.read();
+        }
+
+        InputStream inputStream = new CCITTFaxDecoderStream(stream,
+                24, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        byte decoded = (byte) inputStream.read();
+        assertEquals((byte) 0b10101010, decoded);
     }
 }
