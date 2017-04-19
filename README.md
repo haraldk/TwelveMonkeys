@@ -94,7 +94,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
   * CMYK, 4-5 channels, 8, 16 and 32 bit
 * Read support for the following compression types:
   * Uncompressed
-  * RLE (PackBits)<
+  * RLE (PackBits)
 * Layer support
   * Image layers only, in all of the above types
 * Thumbnail support
@@ -365,7 +365,7 @@ Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doe
 servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
 Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins might never be available at all.
 
-I addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
+In addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
 If you restart your application, old classes will by default remain in memory forever (because the next time
 `scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
 in the registry). If a read is attempted using one of the remaining "old" readers, weird exceptions
