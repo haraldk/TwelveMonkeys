@@ -396,18 +396,6 @@ public final class JPEGImageReader extends ImageReaderBase {
         return delegate.read(imageIndex, param);
     }
 
-    static void drawOnto(final BufferedImage pDestination, final Image pSource) {
-        Graphics2D g = pDestination.createGraphics();
-        try {
-            g.setComposite(AlphaComposite.Src);
-            g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-            g.drawImage(pSource, 0, 0, null);
-        }
-        finally {
-            g.dispose();
-        }
-    }
-
     private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, Frame startOfFrame, JPEGColorSpace csType, ICC_Profile profile) throws IOException {
         int origWidth = getWidth(imageIndex);
         int origHeight = getHeight(imageIndex);
