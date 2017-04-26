@@ -379,6 +379,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                 sourceCSType == JPEGColorSpace.CMYK ||
                 sourceCSType == JPEGColorSpace.YCCK ||
                 profile != null && !ColorSpaces.isCS_sRGB(profile) ||
+                !delegate.getImageTypes(imageIndex).hasNext() ||
                 sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
@@ -499,8 +500,11 @@ public final class JPEGImageReader extends ImageReaderBase {
             Raster raster = delegate.readRaster(imageIndex, param); // non-converted
 
             // Apply source color conversion from implicit color space
-            if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.YCbCrA) {
-                convertYCbCr2RGB(raster);
+            if (csType == JPEGColorSpace.YCbCr) {
+                convertYCbCr2RGB(raster, 3);
+            }
+            else if (csType == JPEGColorSpace.YCbCrA) {
+                convertYCbCr2RGB(raster, 4);
             }
             else if (csType == JPEGColorSpace.YCCK) {
                 // TODO: Need to rethink this (non-) inversion, see #147
@@ -1124,7 +1128,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         super.processWarningOccurred(warning);
     }
 
-    static void invertCMYK(final Raster raster) {
+    private static void invertCMYK(final Raster raster) {
         byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
         for (int i = 0, dataLength = data.length; i < dataLength; i++) {
@@ -1132,19 +1136,19 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    public static void convertYCbCr2RGB(final Raster raster) {
+    private static void convertYCbCr2RGB(final Raster raster, final int numComponents) {
         final int height = raster.getHeight();
         final int width = raster.getWidth();
         final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                YCbCrConverter.convertYCbCr2RGB(data, data, (x + y * width) * 3);
+                YCbCrConverter.convertYCbCr2RGB(data, data, (x + y * width) * numComponents);
             }
         }
     }
 
-    public static void convertYCCK2CMYK(final Raster raster) {
+    private static void convertYCCK2CMYK(final Raster raster) {
         final int height = raster.getHeight();
         final int width = raster.getWidth();
         final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
@@ -1293,10 +1297,10 @@ public final class JPEGImageReader extends ImageReaderBase {
 
                     try {
                         if (region.length >= 4) {
-                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[2]), Integer.parseInt(region[2]), Integer.parseInt(region[3]));
+                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[1]), Integer.parseInt(region[2]), Integer.parseInt(region[3]));
                         }
                         else {
-                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[2]));
+                            roi = new Rectangle(Integer.parseInt(region[0]), Integer.parseInt(region[1]));
                         }
                     }
                     catch (IndexOutOfBoundsException | NumberFormatException e) {
@@ -1389,7 +1393,8 @@ public final class JPEGImageReader extends ImageReaderBase {
                     param.setSourceSubsampling(subX, subY, xOff, yOff);
                     param.setSourceRegion(roi);
 
-                    image = reader.getImageTypes(0).next().createBufferedImage((reader.getWidth(0) + subX - 1)/ subX, (reader.getHeight(0) + subY - 1) / subY);
+//                    image = reader.getImageTypes(0).next().createBufferedImage((reader.getWidth(0) + subX - 1)/ subX, (reader.getHeight(0) + subY - 1) / subY);
+                    image = null;
                 }
                 else {
 //                    image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
