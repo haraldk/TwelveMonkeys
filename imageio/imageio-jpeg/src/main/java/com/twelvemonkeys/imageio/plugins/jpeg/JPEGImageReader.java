@@ -379,6 +379,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                 sourceCSType == JPEGColorSpace.CMYK ||
                 sourceCSType == JPEGColorSpace.YCCK ||
                 profile != null && !ColorSpaces.isCS_sRGB(profile) ||
+                (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE ||
                 !delegate.getImageTypes(imageIndex).hasNext() ||
                 sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
             if (DEBUG) {
