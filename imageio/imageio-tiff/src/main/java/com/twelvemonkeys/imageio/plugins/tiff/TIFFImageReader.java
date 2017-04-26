@@ -129,8 +129,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     // TODO: Tiling support (readTile, readTileRaster)
     // TODO: Implement readAsRenderedImage to allow tiled RenderedImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
-    // TODO: Implement readAsRaster directly (100% correctly)
-    // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
+    // TODO: Implement readRaster directly (100% correctly)
 
     // TODOs Extension support
     // TODO: Auto-rotate based on Orientation
@@ -144,6 +143,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     // Source region
     // Subsampling
     // IIOMetadata (stay close to Sun's TIFF metadata)
+    // http://download.java.net/media/jai-imageio/javadoc/1.1/com/sun/media/imageio/plugins/tiff/package-summary.html#ImageMetadata
     // Support ICCProfile
     // Support PlanarConfiguration 2
     // Support Compression 3 & 4 (CCITT T.4 & T.6)
@@ -2217,6 +2217,16 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
 
         return null;
+    }
+
+    @Override
+    public boolean canReadRaster() {
+        return true;
+    }
+
+    @Override
+    public Raster readRaster(int imageIndex, ImageReadParam param) throws IOException {
+        return read(imageIndex, param).getData();
     }
 
     // TODO: Tiling support

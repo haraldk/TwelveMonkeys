@@ -39,6 +39,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.Raster;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -628,6 +629,38 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             reader.setInput(stream);
             TIFFStreamMetadata streamMetadata = (TIFFStreamMetadata) reader.getStreamMetadata();
             assertEquals(ByteOrder.BIG_ENDIAN, streamMetadata.byteOrder);
+        }
+    }
+
+    @Test
+    public void testReadRaster() {
+        ImageReader reader = createReader();
+
+        for (TestData data : getTestData()) {
+            reader.setInput(data.getInputStream());
+
+            for (int i = 0; i < data.getImageCount(); i++) {
+                Raster raster = null;
+
+                try {
+                    raster = reader.readRaster(i, null);
+                }
+                catch (Exception e) {
+                    failBecause(String.format("Image %s index %s could not be read: %s", data.getInput(), i, e), e);
+                }
+
+                assertNotNull(String.format("Raster %s index %s was null!", data.getInput(), i), raster);
+
+                assertEquals(
+                        String.format("Raster %s index %s has wrong width: %s", data.getInput(), i, raster.getWidth()),
+                        data.getDimension(i).width,
+                        raster.getWidth()
+                );
+                assertEquals(
+                        String.format("Raster %s index %s has wrong height: %s", data.getInput(), i, raster.getHeight()),
+                        data.getDimension(i).height, raster.getHeight()
+                );
+            }
         }
     }
 }
