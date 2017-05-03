@@ -14,7 +14,7 @@ env:
 jdk:
 - oraclejdk8
 install:
-- mvn clean install -DskipTests=true -P !build-extras -B -V
+- mvn clean install -Dgpg.skip=true -DskipTests=true -P !build-extras -B -V
 before_script: 
 script: mvn test -am -P !build-extras -B
 cache:
