@@ -2,11 +2,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.github.lafa.twelvemonkeysNoExec</groupId>
+        <groupId>com.github.lafa.twelvemonkeyspurejava</groupId>
         <artifactId>twelvemonkeys</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <groupId>com.github.lafa.twelvemonkeysNoExec.contrib</groupId>
+    <groupId>com.github.lafa.twelvemonkeyspurejava.contrib</groupId>
     <artifactId>contrib</artifactId>
     <name>TwelveMonkeys :: Contrib</name>
     <description>
@@ -15,47 +15,47 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-lang</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-io</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-image</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-lang</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-io</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
             <artifactId>imageio-metadata</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>

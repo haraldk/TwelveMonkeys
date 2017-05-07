@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.github.lafa.twelvemonkeysNoExec</groupId>
+        <groupId>com.github.lafa.twelvemonkeyspurejava</groupId>
         <artifactId>twelvemonkeys</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.github.lafa.twelvemonkeysNoExec.bom</groupId>
+    <groupId>com.github.lafa.twelvemonkeyspurejava.bom</groupId>
     <artifactId>bom</artifactId>
     <packaging>pom</packaging>
     <name>TwelveMonkeys :: BOM</name>
@@ -20,120 +20,120 @@
         <dependencies>
             <!-- Common dependencies-->
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
                 <artifactId>common-lang</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
                 <artifactId>common-io</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.common</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
                 <artifactId>common-image</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- ImageIO common dependencies -->
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-metadata</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-clippath</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- ImageIO plugins -->
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-bmp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-hdr</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-icns</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-iff</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-jpeg</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-pcx</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-pdf</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-pict</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-pnm</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-psd</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-sgi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-tga</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-thumbsdb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-tiff</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- ImageIO 3rd party dependent plugins -->
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.imageio</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
                 <artifactId>imageio-batik</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- Servlet -->
             <dependency>
-                <groupId>com.github.lafa.twelvemonkeysNoExec.servlet</groupId>
+                <groupId>com.github.lafa.twelvemonkeyspurejava.servlet</groupId>
                 <artifactId>servlet</artifactId>
                 <version>${project.version}</version>
             </dependency>

@@ -6,7 +6,7 @@
         <artifactId>oss-parent</artifactId>
         <version>9</version>
     </parent>
-    <groupId>com.github.lafa.twelvemonkeysNoExec</groupId>
+    <groupId>com.github.lafa.twelvemonkeyspurejava</groupId>
     <artifactId>twelvemonkeys</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
