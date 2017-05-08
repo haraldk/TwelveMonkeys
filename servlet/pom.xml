@@ -1,42 +1,42 @@
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
-        <groupId>com.twelvemonkeys</groupId>
+        <groupId>com.github.lafa.twelvemonkeyspurejava</groupId>
         <artifactId>twelvemonkeys</artifactId>
-        <version>3.4-SNAPSHOT</version>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.twelvemonkeys.servlet</groupId>
+    <groupId>com.github.lafa.twelvemonkeyspurejava.servlet</groupId>
     <artifactId>servlet</artifactId>
     <name>TwelveMonkeys :: Servlet</name>
 
     <dependencies>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-lang</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-io</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-image</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-lang</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-io</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
