@@ -63,6 +63,7 @@ final class UnixFileSystem extends FileSystem {
     private long getNumber(File pPath, int pIndex) throws IOException {
         // TODO: Test on other platforms
         // Tested on Mac OS X, CygWin
+    	// We will be changing this call to not use runtime.
         BufferedReader reader = exec(new String[] {"df", "-k", pPath.getAbsolutePath()});
 
         String last = null;
