@@ -109,7 +109,7 @@
                             <Implementation-Title>${project.name}</Implementation-Title>
                             <Implementation-Vendor>TwelveMonkeys</Implementation-Vendor>
                             <Implementation-Version>${project.version}</Implementation-Version>
-                            <Implementation-URL>http://github.com/haraldk/TwelveMonkeys</Implementation-URL>
+                            <Implementation-URL>http://github.com/lafaspot/TwelveMonkeys</Implementation-URL>
                         </manifestEntries>
                     </archive>
                 </configuration>

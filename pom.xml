@@ -10,15 +10,18 @@
     <artifactId>twelvemonkeys</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <url>https://github.com/lafaspot/TwelveMonkey</url>
     <name>Twelvemonkeys</name>
 
     <licenses>
         <license>
             <name>The BSD License</name>
-            <url>https://github.com/haraldk/TwelveMonkeys#license</url>
+            <url>https://github.com/lafaspot/TwelveMonkeys#license</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
+    
+    
 
     <modules>
         <module>common</module>
@@ -31,6 +34,7 @@
     </modules>
 
     <developers>
+    
         <developer>
             <id>harald.kuhr</id>
             <name>Harald Kuhr</name>
@@ -74,16 +78,11 @@
         </contributor>
     </contributors>
 
-    <issueManagement>
-        <system>GitHub</system>
-        <url>https://github.com/haraldk/TwelveMonkeys/issues</url>
-    </issueManagement>
-
     <scm>
-        <connection>scm:git:https://github.com/haraldk/TwelveMonkeys</connection>
-        <developerConnection>scm:git:https://github.com/haraldk/TwelveMonkeys</developerConnection>
-        <url>https://github.com/haraldk/TwelveMonkeys</url>
-        <tag>HEAD</tag>
+        <developerConnection>scm:git:https://github.com/lafaspot/TwelveMonkeys.git</developerConnection>
+        <connection>scm:git:https://github.com/lafaspot/TwelveMonkeys.git</connection>
+        <url>https://github.com/lafaspot/TwelveMonkeys.git</url>
+        <tag>TwelveMonkeys-.1</tag>
     </scm>
 
     <properties>
@@ -240,5 +239,50 @@
             </plugin>
         </plugins>
     </reporting>
+    
+    
+       <profiles>
+        <profile>
+            <id>commit</id>
+            <properties>
+                <buildtype>test</buildtype>
+            </properties>
+            <activation>
+                <property>
+                    <name>commit</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>release-sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
