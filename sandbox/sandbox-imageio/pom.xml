@@ -34,7 +34,7 @@
     <parent>
         <groupId>com.github.lafa.twelvemonkeyspurejava.sandbox</groupId>
         <artifactId>sandbox</artifactId>
-        <version>3.1-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
     <artifactId>sandbox-imageio</artifactId>
     <packaging>jar</packaging>
