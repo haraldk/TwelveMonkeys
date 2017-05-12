@@ -4,9 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.twelvemonkeys.sandbox</groupId>
+        <groupId>com.github.lafa.twelvemonkeyspurejava.sandbox</groupId>
         <artifactId>sandbox</artifactId>
-        <version>3.1-SNAPSHOT</version>
+        <version>1.0</version>
     </parent>
     <artifactId>sandbox-common</artifactId>
     <packaging>jar</packaging>
@@ -17,38 +17,38 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-lang</artifactId>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-io</artifactId>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-image</artifactId>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.twelvemonkeys.imageio</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.imageio</groupId>
             <artifactId>imageio-core</artifactId>
             <scope>compile</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-io</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
 
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
+            <groupId>com.github.lafa.twelvemonkeyspurejava.common</groupId>
             <artifactId>common-lang</artifactId>
             <scope>test</scope>
             <type>test-jar</type>
