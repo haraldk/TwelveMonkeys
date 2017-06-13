@@ -326,9 +326,6 @@ public final class TIFFUtilities {
         }
 
         private List<Entry> writeDirectoryData(Directory IFD, ImageOutputStream outputStream) throws IOException {
-            //TODO support tiles
-            Validate.isTrue(IFD.getEntryById(TIFF.TAG_TILE_BYTE_COUNTS) == null, "Tiled TIFFs are not supported");
-            Validate.isTrue(IFD.getEntryById(TIFF.TAG_TILE_OFFSETS) == null, "Tiled TIFFs are not supported");
 
             ArrayList<Entry> newIFD = new ArrayList<Entry>();
             Iterator<Entry> it = IFD.iterator();
@@ -346,12 +343,21 @@ public final class TIFFUtilities {
             long[] offsets = new long[0];
             long[] byteCounts = new long[0];
             int[] newOffsets = new int[0];
-
+            boolean useTiles = false;
             Entry stripOffsetsEntry = IFD.getEntryById(TIFF.TAG_STRIP_OFFSETS);
             Entry stripByteCountsEntry = IFD.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
             if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
                 offsets = getValueAsLongArray(stripOffsetsEntry);
                 byteCounts = getValueAsLongArray(stripByteCountsEntry);
+            }
+            else {
+                stripOffsetsEntry = IFD.getEntryById(TIFF.TAG_TILE_OFFSETS);
+                stripByteCountsEntry = IFD.getEntryById(TIFF.TAG_TILE_BYTE_COUNTS);
+                if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
+                    offsets = getValueAsLongArray(stripOffsetsEntry);
+                    byteCounts = getValueAsLongArray(stripByteCountsEntry);
+                    useTiles = true;
+                }
             }
 
             boolean rearrangedByteStrips = false;
@@ -376,9 +382,9 @@ public final class TIFFUtilities {
                     writeData(offsets, byteCounts, outputStream);
 
                     newIFD.remove(stripOffsetsEntry);
-                    newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
                     newIFD.remove(stripByteCountsEntry);
-                    newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, new int[]{ (int) (jpegByteCounts[0] + byteCounts[0])}));
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS, new int[]{ (int) (jpegByteCounts[0] + byteCounts[0])}));
 
                     newIFD.remove(oldJpegData);
                     newIFD.remove(oldJpegDataLength);
@@ -426,9 +432,9 @@ public final class TIFFUtilities {
                     }
 
                     newIFD.remove(stripOffsetsEntry);
-                    newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
                     newIFD.remove(stripByteCountsEntry);
-                    newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, newByteCounts));
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS, newByteCounts));
 
                     newIFD.remove(oldJpegData);
                     newIFD.remove(oldJpegDataLength);
@@ -441,7 +447,7 @@ public final class TIFFUtilities {
                 newOffsets = writeData(offsets, byteCounts, outputStream);
 
                 newIFD.remove(stripOffsetsEntry);
-                newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
             }
 
             Validate.isTrue(oldJpegData == null || !newIFD.contains(oldJpegData), "Failed to transform old-style JPEG");
