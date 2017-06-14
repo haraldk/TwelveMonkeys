@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.metadata.tiff.IFD;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
@@ -326,7 +327,6 @@ public final class TIFFUtilities {
         }
 
         private List<Entry> writeDirectoryData(Directory IFD, ImageOutputStream outputStream) throws IOException {
-
             ArrayList<Entry> newIFD = new ArrayList<Entry>();
             Iterator<Entry> it = IFD.iterator();
             while (it.hasNext()) {
@@ -371,12 +371,12 @@ public final class TIFFUtilities {
                     jpegByteCounts = getValueAsLongArray(oldJpegDataLength);
                 }
 
-                if(offsets.length == 1 && offsets[0] == jpegOffsets[0]){
+                if (offsets.length == 1 && offsets[0] == jpegOffsets[0]) {
                     // JPEGInterchangeFormat identical to stripdata
                     newIFD.remove(oldJpegData);
                     newIFD.remove(oldJpegDataLength);
                 }
-                else if(offsets.length == 1 && oldJpegDataLength != null && offsets[0] == (jpegOffsets[0] + jpegByteCounts[0])){
+                else if (offsets.length == 1 && oldJpegDataLength != null && offsets[0] == (jpegOffsets[0] + jpegByteCounts[0])) {
                     // prepend JPEGInterchangeFormat to stripdata
                     newOffsets = writeData(jpegOffsets, jpegByteCounts, outputStream);
                     writeData(offsets, byteCounts, outputStream);
@@ -384,12 +384,13 @@ public final class TIFFUtilities {
                     newIFD.remove(stripOffsetsEntry);
                     newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
                     newIFD.remove(stripByteCountsEntry);
-                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS, new int[]{ (int) (jpegByteCounts[0] + byteCounts[0])}));
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS, new int[]{(int) (jpegByteCounts[0] + byteCounts[0])}));
 
                     newIFD.remove(oldJpegData);
                     newIFD.remove(oldJpegDataLength);
                     rearrangedByteStrips = true;
-                } else if(oldJpegDataLength != null){
+                }
+                else if (oldJpegDataLength != null) {
                     // multiple bytestrips
                     // search for SOF on first strip and copy to each if needed
                     newIFD.remove(oldJpegData);
@@ -399,18 +400,18 @@ public final class TIFFUtilities {
                     stream.readFully(jpegInterchangeData);
 
                     stream.seek(offsets[0]);
-                    byte[] SOSMarker;
+                    byte[] sosMarker;
                     if (stream.read() == 0xff && stream.read() == 0xda) {
-                        int SOSLength = (stream.read() << 8) | stream.read();
-                        SOSMarker = new byte[SOSLength + 2];
-                        SOSMarker[0] = (byte) 0xff;
-                        SOSMarker[1] = (byte) 0xda;
-                        SOSMarker[2] = (byte) ((SOSLength & 0xff00) >> 8);
-                        SOSMarker[3] = (byte) (SOSLength & 0xff);
-                        stream.readFully(SOSMarker, 4, SOSLength - 2);
+                        int sosLength = (stream.read() << 8) | stream.read();
+                        sosMarker = new byte[sosLength + 2];
+                        sosMarker[0] = (byte) 0xff;
+                        sosMarker[1] = (byte) 0xda;
+                        sosMarker[2] = (byte) ((sosLength & 0xff00) >> 8);
+                        sosMarker[3] = (byte) (sosLength & 0xff);
+                        stream.readFully(sosMarker, 4, sosLength - 2);
                     }
                     else {
-                        throw new IllegalArgumentException("Old-style-JPEG with multiple strips are only supported, if first strip contains SOS");
+                        throw new IOException("Old-style-JPEG with multiple strips are only supported, if first strip contains SOS");
                     }
 
 
@@ -425,8 +426,8 @@ public final class TIFFUtilities {
                         newByteCounts[i] = (int) (jpegInterchangeData.length + byteCounts[i]);
                         stream.readFully(buffer);
                         if (buffer[0] != 0xff && buffer[1] != 0xda) {
-                            outputStream.write(SOSMarker);
-                            newByteCounts[i] += SOSMarker.length;
+                            outputStream.write(sosMarker);
+                            newByteCounts[i] += sosMarker.length;
                         }
                         outputStream.write(buffer);
                     }
@@ -450,15 +451,18 @@ public final class TIFFUtilities {
                 newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
             }
 
-            Validate.isTrue(oldJpegData == null || !newIFD.contains(oldJpegData), "Failed to transform old-style JPEG");
-            Validate.isTrue(oldJpegDataLength == null || !newIFD.contains(oldJpegDataLength), "Failed to transform old-style JPEG");
+            if ((oldJpegData != null && newIFD.contains(oldJpegData)) || (oldJpegDataLength != null && newIFD.contains(oldJpegDataLength))) {
+                throw new IOException("Failed to transform old-style JPEG");
+            }
 
             Entry oldJpegTableQ, oldJpegTableDC, oldJpegTableAC;
             oldJpegTableQ = IFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES);
             oldJpegTableDC = IFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES);
             oldJpegTableAC = IFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES);
             if (oldJpegTableQ != null || oldJpegTableDC != null || oldJpegTableAC != null) {
-                Validate.isTrue(IFD.getEntryById(TIFF.TAG_JPEG_TABLES) == null, "Found old-style and new-style JPEGTables");
+                if (IFD.getEntryById(TIFF.TAG_JPEG_TABLES) != null) {
+                    throw new IOException("Found old-style and new-style JPEGTables");
+                }
 
                 newIFD.add(mergeTables(oldJpegTableQ, oldJpegTableDC, oldJpegTableAC));
                 if (oldJpegTableQ != null) {
@@ -657,13 +661,9 @@ public final class TIFFUtilities {
             }
 
             newIDFData.add(new TIFFEntry(TIFF.TAG_ORIENTATION, (short) orientation));
-            IFD = new AbstractDirectory(newIDFData) {};
+            IFD = new IFD(newIDFData);
         }
     }
-
-    /**
-     * TODO: Temporary clone, to be removed after TMI204 has been closed
-     */
 
     public interface TIFFExtension {
         int ORIENTATION_TOPRIGHT = 2;
@@ -674,15 +674,16 @@ public final class TIFFUtilities {
         int ORIENTATION_RIGHTBOT = 7;
         int ORIENTATION_LEFTBOT = 8;
 
-        /** Deprecated. For backwards compatibility only ("Old-style" JPEG). */
+        /**
+         * Deprecated. For backwards compatibility only ("Old-style" JPEG).
+         */
         int COMPRESSION_OLD_JPEG = 6;
-        /** JPEG Compression (lossy). */
+        /**
+         * JPEG Compression (lossy).
+         */
         int COMPRESSION_JPEG = 7;
     }
 
-    /**
-     * TODO: Temporary clone, to be removed after TMI204 has been closed
-     */
     public interface TIFFBaseline {
         int ORIENTATION_TOPLEFT = 1;
     }
