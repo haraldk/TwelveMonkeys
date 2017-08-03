@@ -71,6 +71,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
     private boolean optionUncompressed = false;
 
+    private boolean optionByteAligned = false;
+
     public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
                                  final long options) {
         super(Validate.notNull(stream, "stream"));
@@ -92,6 +94,9 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         this.changesCurrentRow = new int[columns + 2];
 
         switch (type) {
+            case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
+                optionByteAligned = true;
+                break;
             case TIFFExtension.COMPRESSION_CCITT_T4:
                 optionG32D = (options & TIFFExtension.GROUP3OPT_2DENCODING) != 0;
                 optionG3Fill = (options & TIFFExtension.GROUP3OPT_FILLBITS) != 0;
@@ -104,6 +109,15 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
         Validate.isTrue(!optionUncompressed, optionUncompressed,
                 "CCITT GROUP 3/4 OPTION UNCOMPRESSED is not supported");
+    }
+
+    /**
+     * This is used for CCITT streams from PDF files, which use EncodedByteAlign
+     *
+     * @param enable enable byte alignment
+     */
+    public void setOptionByteAligned(boolean enable) {
+        optionByteAligned = enable;
     }
 
     private void fetch() throws IOException {
@@ -241,11 +255,16 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     }
 
     private void decodeRowType2() throws IOException {
-        resetBuffer();
+        if (optionByteAligned) {
+            resetBuffer();
+        }
         decode1D();
     }
 
     private void decodeRowType4() throws IOException {
+        if (optionByteAligned) {
+            resetBuffer();
+        }
         eof: while (true) {
             // read till next EOL code
             Node n = eolOnlyTree.root;
@@ -272,6 +291,9 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     }
 
     private void decodeRowType6() throws IOException {
+        if (optionByteAligned) {
+            resetBuffer();
+        }
         decode2D();
     }
 
@@ -366,17 +388,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     }
 
     private void resetBuffer() throws IOException {
-        for (int i = 0; i < decodedRow.length; i++) {
-            decodedRow[i] = 0;
-        }
-
-        while (true) {
-            if (bufferPos == -1) {
-                return;
-            }
-
-            readBit();
-        }
+        bufferPos = -1;
     }
 
     int buffer = -1;
