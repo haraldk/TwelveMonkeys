@@ -1338,4 +1338,31 @@ public final class TIFFImageMetadata extends AbstractMetadata {
     public Entry getTIFFField(final int tagNumber) {
         return ifd.getEntryById(tagNumber);
     }
+
+    public Iterable<Entry> getTIFFFields() {
+        return new Iterable<Entry>() {
+            @Override
+            public Iterator<Entry> iterator() {
+                return new Iterator<Entry>() {
+
+                    private final Iterator<Entry> iterator = ifd.iterator();
+
+                    @Override
+                    public boolean hasNext() {
+                        return iterator.hasNext();
+                    }
+
+                    @Override
+                    public Entry next() {
+                        return iterator.next();
+                    }
+
+                    @Override
+                    public void remove() {
+
+                    }
+                };
+            }
+        };
+    }
 }

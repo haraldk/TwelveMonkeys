@@ -28,8 +28,12 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.imageio.metadata.Entry;
+
 import javax.imageio.ImageWriteParam;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * TIFFImageWriteParam
@@ -53,6 +57,8 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
     // Support PackBits compression (32773)
     // Support LZW compression (5)?
     // Support JPEG compression (7)
+
+    private final Map<Object, Entry> tags = new HashMap<Object, Entry>();
 
     TIFFImageWriteParam() {
         this(Locale.getDefault());
@@ -125,5 +131,9 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
 //        }
 
         throw new IllegalArgumentException(String.format("Unsupported compression type: %s", param.getCompressionType()));
+    }
+
+    public Map<Object, Entry> getTags() {
+        return tags;
     }
 }
