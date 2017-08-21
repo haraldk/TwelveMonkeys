@@ -74,6 +74,13 @@ public class CCITTFaxDecoderStreamTest {
     // Line 4: V-1, V0, V0 EOL EOL
     static final byte[] DATA_G4 = { 0x04, 0x17, (byte) 0xF5, (byte) 0x80, 0x08, 0x00, (byte) 0x80 };
 
+    static final byte[] DATA_G4_ALIGNED = {
+            0x04, 0x14, // 00000100 000101(00)
+            (byte) 0xE0,    // 111 (00000)
+            (byte) 0xE0,   // 111 (00000)
+            0x58 // 01011 (000)
+    };
+
     // TODO: Better tests (full A4 width scan lines?)
 
     // From http://www.mikekohn.net/file_formats/tiff.php
@@ -262,6 +269,18 @@ public class CCITTFaxDecoderStreamTest {
         assertEquals((byte) 0b10101010, decoded);
     }
 
+    @Test
+    public void testDecodeType4ByteAligned() throws IOException {
+        CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4_ALIGNED), 6,
+                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        stream.setOptionByteAligned(true);
+
+        byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
+        byte[] bytes = new byte[imageData.length];
+        new DataInputStream(stream).readFully(bytes);
+        assertArrayEquals(imageData, bytes);
+    }
+  
     @Test
     public void testG3AOE() throws IOException {
         InputStream inputStream = getClass().getResourceAsStream("/tiff/ccitt/g3aoe.tif");
