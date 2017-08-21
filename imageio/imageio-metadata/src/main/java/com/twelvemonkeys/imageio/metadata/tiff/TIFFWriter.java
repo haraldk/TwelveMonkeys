@@ -163,15 +163,11 @@ public final class TIFFWriter extends MetadataWriter {
         return WORD_LENGTH + computeDataSize(new IFD(directory)) + directory.size() * ENTRY_LENGTH;
     }
 
-    public long computeIFDOffsetSize(final Collection<Entry> directory) {
-        return computeDataSize(new IFD(directory)) + LONGWORD_LENGTH;
-    }
-
     private long computeDataSize(final Directory directory) {
         long dataSize = 0;
 
         for (Entry entry : directory) {
-            int length = getValueLength(getType(entry), getCount(entry));
+            long length = getValueLength(getType(entry), getCount(entry));
 
             if (length < 0) {
                 throw new IllegalArgumentException(String.format("Unknown size for entry %s", entry));
@@ -229,13 +225,13 @@ public final class TIFFWriter extends MetadataWriter {
 
     private long writeValue(final Entry entry, final long dataOffset, final ImageOutputStream stream) throws IOException {
         short type = getType(entry);
-        int valueLength = getValueLength(type, getCount(entry));
+        long valueLength = getValueLength(type, getCount(entry));
 
         if (valueLength <= LONGWORD_LENGTH) {
             writeValueInline(entry.getValue(), type, stream);
 
             // Pad
-            for (int i = valueLength; i < LONGWORD_LENGTH; i++) {
+            for (long i = valueLength; i < LONGWORD_LENGTH; i++) {
                 stream.write(0);
             }
 

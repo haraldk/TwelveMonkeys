@@ -41,6 +41,7 @@ public interface TIFF {
     short BYTE_ORDER_MARK_LITTLE_ENDIAN = ('I' << 8) | 'I';
 
     int TIFF_MAGIC = 42;
+    int BIGTIFF_MAGIC = 43;
 
     short TYPE_BYTE = 1;
     short TYPE_ASCII = 2;
@@ -56,6 +57,10 @@ public interface TIFF {
     short TYPE_FLOAT = 11;
     short TYPE_DOUBLE = 12;
     short TYPE_IFD = 13;
+    // BigTIFF
+    short TYPE_LONG8 = 16;
+    short TYPE_SLONG8 = 17;
+    short TYPE_IFD8 = 18;
     /*
     1 = BYTE 8-bit unsigned integer.
     2 = ASCII 8-bit byte that contains a 7-bit ASCII code; the last byte

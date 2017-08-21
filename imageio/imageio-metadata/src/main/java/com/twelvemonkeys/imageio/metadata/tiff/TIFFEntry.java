@@ -387,7 +387,7 @@ public final class TIFFEntry extends AbstractEntry {
         throw new UnsupportedOperationException(String.format("Method guessType not implemented for type %s", value.getClass()));
     }
 
-    static int getValueLength(final int pType, final int pCount) {
+    static long getValueLength(final int pType, final long pCount) {
         if (pType > 0 && pType < TIFF.TYPE_LENGTHS.length) {
             return TIFF.TYPE_LENGTHS[pType] * pCount;
         }

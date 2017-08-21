@@ -59,6 +59,8 @@ public final class TIFFReader extends MetadataReader {
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.metadata.exif.debug"));
 
     static final Collection<Integer> KNOWN_IFDS = Collections.unmodifiableCollection(Arrays.asList(TIFF.TAG_EXIF_IFD, TIFF.TAG_GPS_IFD, TIFF.TAG_INTEROP_IFD, TIFF.TAG_SUB_IFD));
+    private boolean longOffsets;
+    private int offsetSize;
 
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
@@ -77,16 +79,39 @@ public final class TIFFReader extends MetadataReader {
             throw new IIOException(String.format("Invalid TIFF byte order mark '%s', expected: 'II' or 'MM'", StringUtil.decode(bom, 0, bom.length, "ASCII")));
         }
 
-        // TODO: BigTiff uses version 43 instead of TIFF's 42, and header is slightly different, see
+        // BigTiff uses version 43 instead of TIFF's 42, and header is slightly different, see
         // http://www.awaresystems.be/imaging/tiff/bigtiff.html
         int magic = input.readUnsignedShort();
-        if (magic != TIFF.TIFF_MAGIC) {
-            throw new IIOException(String.format("Wrong TIFF magic in EXIF data: %04x, expected: %04x", magic, TIFF.TIFF_MAGIC));
+        if (magic == TIFF.TIFF_MAGIC) {
+            longOffsets = false;
+            offsetSize = 4;
+        }
+        else if (magic == TIFF.BIGTIFF_MAGIC) {
+            longOffsets = true;
+            offsetSize = 8;
+
+            // Just validate we're ok
+            int offsetSize = input.readUnsignedShort();
+            if (offsetSize != 8) {
+                throw new IIOException(String.format("Unexpected BigTIFF offset size: %04x, expected: %04x", offsetSize, 8));
+            }
+
+            int padding = input.readUnsignedShort();
+            if (padding != 0) {
+                throw new IIOException(String.format("Unexpected BigTIFF padding: %04x, expected: %04x", padding, 0));
+            }
+        }
+        else {
+            throw new IIOException(String.format("Wrong TIFF magic in input data: %04x, expected: %04x", magic, TIFF.TIFF_MAGIC));
         }
 
-        long directoryOffset = input.readUnsignedInt();
+        long directoryOffset = readOffset(input);
 
         return readDirectory(input, directoryOffset, true);
+    }
+
+    private long readOffset(final ImageInputStream input) throws IOException {
+        return longOffsets ? input.readLong() : input.readUnsignedInt();
     }
 
     // TODO: Consider re-writing so that the linked IFD parsing is done externally to the method
@@ -97,14 +122,7 @@ public final class TIFFReader extends MetadataReader {
         pInput.seek(pOffset);
         long nextOffset = -1;
 
-        int entryCount;
-        try {
-            entryCount = pInput.readUnsignedShort();
-        }
-        catch (EOFException e) {
-            // Treat EOF here as empty Sub-IFD
-            entryCount = 0;
-        }
+        long entryCount = readEntryCount(pInput);
 
         for (int i = 0; i < entryCount; i++) {
             try {
@@ -122,7 +140,7 @@ public final class TIFFReader extends MetadataReader {
         if (readLinked) {
             if (nextOffset == -1) {
                 try {
-                    nextOffset = pInput.readUnsignedInt();
+                    nextOffset = readOffset(pInput);
                 }
                 catch (EOFException e) {
                     // catch EOF here as missing EOF marker
@@ -148,6 +166,16 @@ public final class TIFFReader extends MetadataReader {
         ifds.add(0, new IFD(entries));
 
         return new TIFFDirectory(ifds);
+    }
+
+    private long readEntryCount(final ImageInputStream pInput) throws IOException {
+        try {
+            return longOffsets ? pInput.readLong() : pInput.readUnsignedShort();
+        }
+        catch (EOFException e) {
+            // Treat EOF here as empty Sub-IFD
+            return 0;
+        }
     }
 
     // TODO: Might be better to leave this for client code, as it's tempting go really overboard and support any possible embedded format..
@@ -215,31 +243,27 @@ public final class TIFFReader extends MetadataReader {
             offsets = (long[]) value;
         }
         else {
-            throw new IIOException(String.format("Unknown pointer type: %s", (value != null
-                                                                              ? value.getClass()
-                                                                              : null)));
+            throw new IIOException(String.format("Unknown pointer type: %s", value != null ? value.getClass() : null));
         }
 
         return offsets;
     }
 
     private TIFFEntry readEntry(final ImageInputStream pInput) throws IOException {
-        // TODO: BigTiff entries are different
         int tagId = pInput.readUnsignedShort();
         short type = pInput.readShort();
-
-        int count = pInput.readInt(); // Number of values
+        int count = readValueCount(pInput); // Number of values
 
         // It's probably a spec violation to have count 0, but we'll be lenient about it
         if (count < 0) {
             throw new IIOException(String.format("Illegal count %d for tag %s type %s @%08x", count, tagId, type, pInput.getStreamPosition()));
         }
 
-        if (type <= 0 || type > 13) {
+        if (!isValidType(type)) {
             pInput.skipBytes(4); // read Value
 
             // Invalid tag, this is just for debugging
-            long offset = pInput.getStreamPosition() - 12l;
+            long offset = pInput.getStreamPosition() - 12L;
 
             if (DEBUG) {
                 System.err.printf("Bad EXIF data @%08x\n", pInput.getStreamPosition());
@@ -266,20 +290,35 @@ public final class TIFFReader extends MetadataReader {
             return null;
         }
 
-        int valueLength = getValueLength(type, count);
+        long valueLength = getValueLength(type, count);
 
         Object value;
-        // TODO: For BigTiff allow size > 4 && <= 8 in addition
-        if (valueLength > 0 && valueLength <= 4) {
+        if (valueLength > 0 && valueLength <= offsetSize) {
             value = readValueInLine(pInput, type, count);
-            pInput.skipBytes(4 - valueLength);
+            pInput.skipBytes(offsetSize - valueLength);
         }
         else {
-            long valueOffset = pInput.readUnsignedInt(); // This is the *value* iff the value size is <= 4 bytes
+            long valueOffset = readOffset(pInput); // This is the *value* iff the value size is <= 4 bytes
             value = readValueAt(pInput, valueOffset, type, count);
         }
 
         return new TIFFEntry(tagId, type, value);
+    }
+
+    private boolean isValidType(final short type) {
+        return type > 0 && type < TIFF.TYPE_LENGTHS.length && TIFF.TYPE_LENGTHS[type] > 0;
+    }
+
+    private int readValueCount(final ImageInputStream pInput) throws IOException {
+        return assertIntCount(longOffsets ? pInput.readLong() : pInput.readUnsignedInt());
+    }
+
+    private int assertIntCount(final long count) throws IOException {
+        if (count > Integer.MAX_VALUE) {
+            throw new IIOException(String.format("Unsupported TIFF value count value: %s > Integer.MAX_VALUE", count));
+        }
+
+        return (int) count;
     }
 
     private Object readValueAt(final ImageInputStream pInput, final long pOffset, final short pType, final int pCount) throws IOException {
@@ -423,16 +462,17 @@ public final class TIFFReader extends MetadataReader {
                 return srationals;
 
             // BigTiff:
-            case 16: // LONG8
-            case 17: // SLONG8
-            case 18: // IFD8
+            case TIFF.TYPE_LONG8:
+            case TIFF.TYPE_SLONG8:
+            case TIFF.TYPE_IFD8:
                 // TODO: Assert BigTiff (version == 43)
 
                 if (pCount == 1) {
                     long val = pInput.readLong();
-                    if (pType != 17 && val < 0) {
+                    if (pType != TIFF.TYPE_SLONG8 && val < 0) {
                         throw new IIOException(String.format("Value > %s", Long.MAX_VALUE));
                     }
+
                     return val;
                 }
 
@@ -459,6 +499,17 @@ public final class TIFFReader extends MetadataReader {
     }
 
     public static void main(String[] args) throws IOException {
+//        if (true) {
+//            ImageInputStream stream = ImageIO.createImageInputStream(new File(args[0]));
+//
+//            byte[] b = new byte[Math.min((int) stream.length(), 1024)];
+//            stream.readFully(b);
+//
+//            System.err.println(HexDump.dump(b));
+//
+//            return;
+//        }
+//
         TIFFReader reader = new TIFFReader();
         ImageInputStream stream = ImageIO.createImageInputStream(new File(args[0]));
 

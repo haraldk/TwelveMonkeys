@@ -157,7 +157,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     private CompoundDirectory IFDs;
     private Directory currentIFD;
 
-    TIFFImageReader(final TIFFImageReaderSpi provider) {
+    TIFFImageReader(final ImageReaderSpi provider) {
         super(provider);
     }
 

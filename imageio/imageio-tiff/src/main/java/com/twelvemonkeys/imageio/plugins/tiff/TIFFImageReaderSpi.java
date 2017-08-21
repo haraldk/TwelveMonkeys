@@ -71,6 +71,10 @@ public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
+        return canDecodeAs(pSource, TIFF.TIFF_MAGIC);
+    }
+
+    static boolean canDecodeAs(final Object pSource, final int magic) throws IOException {
         if (!(pSource instanceof ImageInputStream)) {
             return false;
         }
@@ -95,11 +99,7 @@ public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
                     return false;
                 }
 
-                // TODO: BigTiff uses version 43 instead of TIFF's 42, and header is slightly different, see
-                // http://www.awaresystems.be/imaging/tiff/bigtiff.html
-                int magic = stream.readUnsignedShort();
-
-                return magic == TIFF.TIFF_MAGIC;
+                return stream.readUnsignedShort() == magic;
             }
             finally {
                 stream.setByteOrder(originalOrder);
