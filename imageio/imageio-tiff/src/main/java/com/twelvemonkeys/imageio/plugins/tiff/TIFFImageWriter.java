@@ -923,6 +923,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         if (sequenceLastIFDPos > 0) {
+            imageOutput.seek(imageOutput.length());
             imageOutput.flushBefore(sequenceLastIFDPos);
         }
 
