@@ -280,4 +280,24 @@ public class CCITTFaxDecoderStreamTest {
         new DataInputStream(stream).readFully(bytes);
         assertArrayEquals(imageData, bytes);
     }
+  
+    @Test
+    public void testG3AOE() throws IOException {
+        InputStream inputStream = getClass().getResourceAsStream("/tiff/ccitt/g3aoe.tif");
+
+        // Skip until StripOffsets: 8
+        for (int i = 0; i < 8; i++) {
+            inputStream.read();
+        }
+
+        // Read until StripByteCounts: 20050
+        byte[] data = new byte[20050];
+        new DataInputStream(inputStream).readFully(data);
+
+        InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(data),
+                1728, TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
+
+        byte[] bytes = new byte[216 * 1168]; // 1728 x 1168 pixel, 1 bpp => 216 bytes * 1168
+        new DataInputStream(stream).readFully(bytes);
+    }
 }

@@ -377,11 +377,14 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
             if (n.isLeaf) {
                 total += n.value;
-                if (n.value < 64) {
+                if (n.value >= 64) {
+                    n = tree.root;
+                }
+                else if (n.value >= 0) {
                     return total;
                 }
                 else {
-                    n = tree.root;
+                    return columns;
                 }
             }
         }
