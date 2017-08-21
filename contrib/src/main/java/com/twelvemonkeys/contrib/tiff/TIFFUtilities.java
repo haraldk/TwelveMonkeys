@@ -33,6 +33,8 @@ import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.metadata.tiff.IFD;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
@@ -45,10 +47,11 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -340,66 +343,214 @@ public final class TIFFUtilities {
             long[] offsets = new long[0];
             long[] byteCounts = new long[0];
             int[] newOffsets = new int[0];
-
+            boolean useTiles = false;
             Entry stripOffsetsEntry = IFD.getEntryById(TIFF.TAG_STRIP_OFFSETS);
             Entry stripByteCountsEntry = IFD.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
             if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
                 offsets = getValueAsLongArray(stripOffsetsEntry);
                 byteCounts = getValueAsLongArray(stripByteCountsEntry);
+            }
+            else {
+                stripOffsetsEntry = IFD.getEntryById(TIFF.TAG_TILE_OFFSETS);
+                stripByteCountsEntry = IFD.getEntryById(TIFF.TAG_TILE_BYTE_COUNTS);
+                if (stripOffsetsEntry != null && stripByteCountsEntry != null) {
+                    offsets = getValueAsLongArray(stripOffsetsEntry);
+                    byteCounts = getValueAsLongArray(stripByteCountsEntry);
+                    useTiles = true;
+                }
+            }
 
+            boolean rearrangedByteStrips = false;
+            Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+            Entry oldJpegDataLength = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+            if (oldJpegData != null && oldJpegData.valueCount() > 0) {
+                // convert JPEGInterchangeFormat to new-style-JPEG
+                long[] jpegByteCounts = new long[0];
+                long[] jpegOffsets = getValueAsLongArray(oldJpegData);
+                if (oldJpegDataLength != null && oldJpegDataLength.valueCount() > 0) {
+                    jpegByteCounts = getValueAsLongArray(oldJpegDataLength);
+                }
+
+                if (offsets.length == 1 && offsets[0] == jpegOffsets[0]) {
+                    // JPEGInterchangeFormat identical to stripdata
+                    newIFD.remove(oldJpegData);
+                    newIFD.remove(oldJpegDataLength);
+                }
+                else if (offsets.length == 1 && oldJpegDataLength != null && offsets[0] == (jpegOffsets[0] + jpegByteCounts[0])) {
+                    // prepend JPEGInterchangeFormat to stripdata
+                    newOffsets = writeData(jpegOffsets, jpegByteCounts, outputStream);
+                    writeData(offsets, byteCounts, outputStream);
+
+                    newIFD.remove(stripOffsetsEntry);
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                    newIFD.remove(stripByteCountsEntry);
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS, new int[]{(int) (jpegByteCounts[0] + byteCounts[0])}));
+
+                    newIFD.remove(oldJpegData);
+                    newIFD.remove(oldJpegDataLength);
+                    rearrangedByteStrips = true;
+                }
+                else if (oldJpegDataLength != null) {
+                    // multiple bytestrips
+                    // search for SOF on first strip and copy to each if needed
+                    newIFD.remove(oldJpegData);
+                    newIFD.remove(oldJpegDataLength);
+                    stream.seek(jpegOffsets[0]);
+                    byte[] jpegInterchangeData = new byte[(int) jpegByteCounts[0]];
+                    stream.readFully(jpegInterchangeData);
+
+                    stream.seek(offsets[0]);
+                    byte[] sosMarker;
+                    if (stream.read() == 0xff && stream.read() == 0xda) {
+                        int sosLength = (stream.read() << 8) | stream.read();
+                        sosMarker = new byte[sosLength + 2];
+                        sosMarker[0] = (byte) 0xff;
+                        sosMarker[1] = (byte) 0xda;
+                        sosMarker[2] = (byte) ((sosLength & 0xff00) >> 8);
+                        sosMarker[3] = (byte) (sosLength & 0xff);
+                        stream.readFully(sosMarker, 4, sosLength - 2);
+                    }
+                    else {
+                        throw new IOException("Old-style-JPEG with multiple strips are only supported, if first strip contains SOS");
+                    }
+
+
+                    newOffsets = new int[offsets.length];
+                    int[] newByteCounts = new int[byteCounts.length];
+                    for (int i = 0; i < offsets.length; i++) {
+                        newOffsets[i] = (int) outputStream.getStreamPosition();
+                        outputStream.write(jpegInterchangeData);
+                        stream.seek(offsets[i]);
+
+                        byte[] buffer = new byte[(int) byteCounts[i]];
+                        newByteCounts[i] = (int) (jpegInterchangeData.length + byteCounts[i]);
+                        stream.readFully(buffer);
+                        if (buffer[0] != 0xff && buffer[1] != 0xda) {
+                            outputStream.write(sosMarker);
+                            newByteCounts[i] += sosMarker.length;
+                        }
+                        outputStream.write(buffer);
+                    }
+
+                    newIFD.remove(stripOffsetsEntry);
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                    newIFD.remove(stripByteCountsEntry);
+                    newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS, newByteCounts));
+
+                    newIFD.remove(oldJpegData);
+                    newIFD.remove(oldJpegDataLength);
+                    rearrangedByteStrips = true;
+                }
+            }
+
+
+            if (!rearrangedByteStrips && stripOffsetsEntry != null && stripByteCountsEntry != null) {
                 newOffsets = writeData(offsets, byteCounts, outputStream);
 
                 newIFD.remove(stripOffsetsEntry);
-                newIFD.add(new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, newOffsets));
+                newIFD.add(new TIFFEntry(useTiles ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS, newOffsets));
             }
 
-            Entry oldJpegData = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
-            Entry oldJpegDataLength = IFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
-            if (oldJpegData != null && oldJpegData.valueCount() > 0 && oldJpegDataLength != null && oldJpegDataLength.valueCount() > 0) {
-                if (!Arrays.equals(getValueAsLongArray(oldJpegData), offsets) || !Arrays.equals(getValueAsLongArray(oldJpegDataLength), byteCounts)) {
-                    // data already written from TIFF.TAG_STRIP_OFFSETS
-                    offsets = getValueAsLongArray(oldJpegData);
-                    byteCounts = getValueAsLongArray(oldJpegDataLength);
-                    newOffsets = writeData(offsets, byteCounts, outputStream);
+            if ((oldJpegData != null && newIFD.contains(oldJpegData)) || (oldJpegDataLength != null && newIFD.contains(oldJpegDataLength))) {
+                throw new IOException("Failed to transform old-style JPEG");
+            }
+
+            Entry oldJpegTableQ, oldJpegTableDC, oldJpegTableAC;
+            oldJpegTableQ = IFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES);
+            oldJpegTableDC = IFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES);
+            oldJpegTableAC = IFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES);
+            if (oldJpegTableQ != null || oldJpegTableDC != null || oldJpegTableAC != null) {
+                if (IFD.getEntryById(TIFF.TAG_JPEG_TABLES) != null) {
+                    throw new IOException("Found old-style and new-style JPEGTables");
                 }
-                newIFD.remove(oldJpegData);
-                newIFD.add(new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, newOffsets));
+
+                newIFD.add(mergeTables(oldJpegTableQ, oldJpegTableDC, oldJpegTableAC));
+                if (oldJpegTableQ != null) {
+                    newIFD.remove(oldJpegTableQ);
+                }
+                if (oldJpegTableDC != null) {
+                    newIFD.remove(oldJpegTableDC);
+                }
+                if (oldJpegTableAC != null) {
+                    newIFD.remove(oldJpegTableAC);
+                }
             }
 
-            Entry oldJpegTable;
-            long[] tableOffsets;
-
-            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_AC_TABLES);
-            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
-                tableOffsets = getValueAsLongArray(oldJpegTable);
-                byteCounts = new long[tableOffsets.length];
-                Arrays.fill(byteCounts, 64);
-                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
-                newIFD.remove(oldJpegTable);
-                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_AC_TABLES, newOffsets));
-            }
-
-            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_Q_TABLES);
-            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
-                tableOffsets = getValueAsLongArray(oldJpegTable);
-                byteCounts = new long[tableOffsets.length];
-                Arrays.fill(byteCounts, 64);
-                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
-                newIFD.remove(oldJpegTable);
-                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_Q_TABLES, newOffsets));
-            }
-
-            oldJpegTable = IFD.getEntryById(TIFF.TAG_OLD_JPEG_DC_TABLES);
-            if (oldJpegTable != null && oldJpegTable.valueCount() > 0) {
-                tableOffsets = getValueAsLongArray(oldJpegTable);
-                byteCounts = new long[tableOffsets.length];
-                Arrays.fill(byteCounts, 64);
-                newOffsets = writeData(tableOffsets, byteCounts, outputStream);
-                newIFD.remove(oldJpegTable);
-                newIFD.add(new TIFFEntry(TIFF.TAG_OLD_JPEG_DC_TABLES, newOffsets));
+            Entry compressionEntry = IFD.getEntryById(TIFF.TAG_COMPRESSION);
+            Number compression = (Number) compressionEntry.getValue();
+            if (compression.shortValue() == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                newIFD.remove(compressionEntry);
+                newIFD.add(new TIFFEntry(TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, TIFFExtension.COMPRESSION_JPEG));
             }
 
             return newIFD;
+        }
+
+        private Entry mergeTables(Entry qEntry, Entry dcEntry, Entry acEntry) throws IOException {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+            dos.writeShort(JPEG.SOI);
+
+            if (qEntry != null && qEntry.valueCount() > 0) {
+                long[] off = getValueAsLongArray(qEntry);
+                byte[] table = new byte[64];
+                for (int tableId = 0; tableId < off.length; tableId++) {
+                    stream.seek(off[tableId]);
+                    stream.readFully(table);
+                    dos.writeShort(JPEG.DQT);
+                    dos.writeShort(3 + 64);
+                    dos.writeByte(tableId);
+                    dos.write(table);
+                }
+            }
+
+            // same marker for AC & DC tables, distinguished by flag in tableId
+            if (dcEntry != null && dcEntry.valueCount() > 0) {
+                long[] off = getValueAsLongArray(dcEntry);
+                for (int tableId = 0; tableId < off.length; tableId++) {
+                    stream.seek(off[tableId]);
+                    byte[] table = readHUFFTable();
+                    dos.writeShort(JPEG.DHT);
+                    dos.writeShort(3 + table.length);
+                    dos.writeByte(tableId);
+                    dos.write(table);
+                }
+            }
+
+            if (acEntry != null && acEntry.valueCount() > 0) {
+                long[] off = getValueAsLongArray(acEntry);
+                for (int tableId = 0; tableId < off.length; tableId++) {
+                    stream.seek(off[tableId]);
+                    byte[] table = readHUFFTable();
+                    dos.writeShort(JPEG.DHT);
+                    dos.writeShort(3 + table.length);
+                    dos.writeByte(16 | tableId);
+                    dos.write(table);
+                }
+            }
+
+            dos.writeShort(JPEG.EOI);
+
+            bos.close();
+
+            return new TIFFEntry(TIFF.TAG_JPEG_TABLES, TIFF.TYPE_UNDEFINED, bos.toByteArray());
+        }
+
+        private byte[] readHUFFTable() throws IOException {
+            byte[] lengths = new byte[16];
+            stream.readFully(lengths);
+            int numCodes = 0;
+            for (int i = 0; i < lengths.length; i++) {
+                numCodes += lengths[i];
+            }
+            byte table[] = new byte[16 + numCodes];
+            System.arraycopy(lengths, 0, table, 0, 16);
+            int off = 16;
+            for (int i = 0; i < lengths.length; i++) {
+                stream.read(table, off, lengths[i]);
+                off += lengths[i];
+            }
+            return table;
         }
 
         private int[] writeData(long[] offsets, long[] byteCounts, ImageOutputStream outputStream) throws IOException {
@@ -510,13 +661,10 @@ public final class TIFFUtilities {
             }
 
             newIDFData.add(new TIFFEntry(TIFF.TAG_ORIENTATION, (short) orientation));
-            IFD = new AbstractDirectory(newIDFData) {};
+            IFD = new IFD(newIDFData);
         }
     }
 
-    /**
-     * TODO: Temporary clone, to be removed after TMI204 has been closed
-     */
     public interface TIFFExtension {
         int ORIENTATION_TOPRIGHT = 2;
         int ORIENTATION_BOTRIGHT = 3;
@@ -525,11 +673,17 @@ public final class TIFFUtilities {
         int ORIENTATION_RIGHTTOP = 6;
         int ORIENTATION_RIGHTBOT = 7;
         int ORIENTATION_LEFTBOT = 8;
+
+        /**
+         * Deprecated. For backwards compatibility only ("Old-style" JPEG).
+         */
+        int COMPRESSION_OLD_JPEG = 6;
+        /**
+         * JPEG Compression (lossy).
+         */
+        int COMPRESSION_JPEG = 7;
     }
 
-    /**
-     * TODO: Temporary clone, to be removed after TMI204 has been closed
-     */
     public interface TIFFBaseline {
         int ORIENTATION_TOPLEFT = 1;
     }
