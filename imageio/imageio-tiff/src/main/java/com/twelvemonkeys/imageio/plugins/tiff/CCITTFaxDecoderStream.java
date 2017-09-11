@@ -44,7 +44,7 @@ import java.util.Arrays;
  * @author last modified by $Author: haraldk$
  * @version $Id: CCITTFaxDecoderStream.java,v 1.0 23.05.12 15:55 haraldk Exp$
  */
-final class CCITTFaxDecoderStream extends FilterInputStream {
+public final class CCITTFaxDecoderStream extends FilterInputStream {
     // See TIFF 6.0 Specification, Section 10: "Modified Huffman Compression", page 43.
 
     private final int columns;
