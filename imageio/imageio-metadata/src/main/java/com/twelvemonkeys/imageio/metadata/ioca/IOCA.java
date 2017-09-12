@@ -53,116 +53,33 @@ public interface IOCA {
 	// User-defined algorithms (see the External Algorithm Specification parameter for details).
 	short COMPRID_USERDEF   = 0xFE;
 
-	short TYPE_BITS = 0; // Bit string
-	short TYPE_CHAR = 1; // Character string
-	short TYPE_CODE = 2; // Architected constant
-	short TYPE_UBIN = 3; // Unsigned binary
-	short TYPE_BLOB = 4;
+	short BITORDR_LTR       = 0x00;
+	short BITORDR_RTL       = 0x01;
 
-	String[] TYPE_NAMES = {
-			"BITS", "CHAR", "CODE", "UBIN", "BLOB"
-	};
+	short CODE_POINT_BEGIN_SEGMENT                              = 0x70;
+	short CODE_POINT_END_SEGMENT                                = 0x71;
+	short CODE_POINT_BEGIN_TILE                                 = 0x8C;
+	short CODE_POINT_END_TILE                                   = 0x8D;
+	short CODE_POINT_BEGIN_TRANSPARENCY_MASK                    = 0x8E;
+	short CODE_POINT_END_TRANSPARENCY_MASK                      = 0x8F;
+	short CODE_POINT_BEGIN_IMAGE_CONTENT                        = 0x91;
+	short CODE_POINT_END_IMAGE_CONTENT                          = 0x93;
+	short CODE_POINT_IMAGE_SIZE_PARAMETER                       = 0x94;
+	short CODE_POINT_IMAGE_ENCODING_PARAMETER                   = 0x95;
+	short CODE_POINT_IDE_SIZE_PARAMETER                         = 0x96;
+	short CODE_POINT_IMAGE_LUT_ID_PARAMETER                     = 0x97;
+	short CODE_POINT_BAND_IMAGE_PARAMETER                       = 0x98;
+	short CODE_POINT_IDE_STRUCTURE_PARAMETER                    = 0x9B;
+	short CODE_POINT_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER = 0x9F;
+	short CODE_POINT_TILE_POSITION                              = 0xB5;
+	short CODE_POINT_TILE_SIZE                                  = 0xB6;
+	short CODE_POINT_TILE_SET_COLOR                             = 0xB7;
 
-	short FIELD_NAME        = 0;
-	short FIELD_UNITBASE    = 1;
-	short FIELD_HRESOL      = 2;
-	short FIELD_VRESOL      = 3;
-	short FIELD_HSIZE       = 4;
-	short FIELD_VSIZE       = 5;
-	short FIELD_COMPRID     = 6;
-	short FIELD_RECID       = 7;
-	short FIELD_BITORDR     = 8;
-	short FIELD_IDESZ       = 9;
-	short FIELD_FLAGS       = 10;
-	short FIELD_FORMAT      = 11;
-	short FIELD_SIZE1       = 12;
-	short FIELD_SIZE2       = 13;
-	short FIELD_SIZE3       = 14;
-	short FIELD_SIZE4       = 15;
-	short FIELD_DATA        = 16;
+	short EXTENDED_CODE_POINT                                   = 0xFE;
 
-	String[] FIELD_NAMES = {
-			"ID", "LENGTH", "NAME", "UNITBASE", "HRESOL", "VRESOL", "HSIZE", "VSIZE", "COMPRID", "RECID", "BITORDR",
-			"IDESZ", "FLAGS", "FORMAT", "SIZE1", "SIZE2", "SIZE3", "SIZE4", "DATA"
-	};
-
-	short CODE_BEGIN_SEGMENT                                = 0;
-	short CODE_END_SEGMENT                                  = 1;
-	short CODE_BEGIN_TILE                                   = 2;
-	short CODE_END_TILE                                     = 3;
-	short CODE_BEGIN_TRANSPARENCY_MASK                      = 4;
-	short CODE_END_TRANSPARENCY_MASK                        = 5;
-	short CODE_BEGIN_IMAGE_CONTENT                          = 6;
-	short CODE_END_IMAGE_CONTENT                            = 7;
-	short CODE_IMAGE_SIZE_PARAMETER                         = 8;
-	short CODE_IMAGE_ENCODING_PARAMETER                     = 9;
-	short CODE_IDE_SIZE_PARAMETER                           = 10;
-	short CODE_IMAGE_LUT_ID_PARAMETER                       = 11;
-	short CODE_BAND_IMAGE_PARAMETER                         = 12;
-	short CODE_IDE_STRUCTURE_PARAMETER                      = 13;
-	short CODE_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER   = 14;
-	short CODE_TILE_POSITION                                = 15;
-	short CODE_TILE_SIZE                                    = 16;
-	short CODE_TILE_SET_COLOR                               = 17;
-	short CODE_IMAGE_DATA                                   = 18;
-	short CODE_BAND_IMAGE_DATA                              = 19;
-	short CODE_INCLUDE_TILE                                 = 20;
-	short CODE_TILE_TOC                                     = 21;
-	short CODE_IMAGE_SUBSAMPLING_PARAMETER                  = 22;
-
-	byte CODE_POINT_BEGIN_SEGMENT                           = 0x70;
-	byte CODE_POINT_END_SEGMENT                             = 0x71;
-	byte CODE_POINT_BEGIN_TILE                              = (byte) 0x8C;
-	byte CODE_POINT_END_TILE                                = (byte) 0x8D;
-	byte CODE_POINT_BEGIN_TRANSPARENCY_MASK                 = (byte) 0x8E;
-	byte CODE_POINT_END_TRANSPARENCY_MASK                   = (byte) 0x8F;
-	byte CODE_POINT_BEGIN_IMAGE_CONTENT                     = (byte) 0x91;
-	byte CODE_POINT_END_IMAGE_CONTENT                       = (byte) 0x93;
-	byte CODE_POINT_IMAGE_SIZE_PARAMETER                    = (byte) 0x94;
-	byte CODE_POINT_IMAGE_ENCODING_PARAMETER                = (byte) 0x95;
-	byte CODE_POINT_IDE_SIZE_PARAMETER                      = (byte) 0x96;
-	byte CODE_POINT_IMAGE_LUT_ID_PARAMETER                  = (byte) 0x97;
-	byte CODE_POINT_BAND_IMAGE_PARAMETER                    = (byte) 0x98;
-	byte CODE_POINT_IDE_STRUCTURE_PARAMETER                 = (byte) 0x9B;
-	byte CODE_POINT_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER = (byte) 0x9F;
-	byte CODE_POINT_TILE_POSITION                           = (byte) 0xB5;
-	byte CODE_POINT_TILE_SIZE                               = (byte) 0xB6;
-	byte CODE_POINT_TILE_SET_COLOR                          = (byte) 0xB7;
-
-	int CODE_POINT_IMAGE_DATA                               = 0xFE92;
-	int CODE_POINT_BAND_IMAGE_DATA                          = 0xFE9C;
-	int CODE_POINT_INCLUDE_TILE                             = 0xFEB8;
-	int CODE_POINT_TILE_TOC                                 = 0xFEBB;
-	int CODE_POINT_IMAGE_SUBSAMPLING_PARAMETER              = 0xFECE;
-
-	byte EXTENDED_CODE_POINT                                = (byte) 0xFE;
-
-	byte[] CODE_POINTS = {
-			CODE_POINT_BEGIN_SEGMENT,
-			CODE_POINT_END_SEGMENT,
-			CODE_POINT_BEGIN_TILE,
-			CODE_POINT_END_TILE,
-			CODE_POINT_BEGIN_TRANSPARENCY_MASK,
-			CODE_POINT_END_TRANSPARENCY_MASK,
-			CODE_POINT_BEGIN_IMAGE_CONTENT,
-			CODE_POINT_END_IMAGE_CONTENT,
-			CODE_POINT_IMAGE_SIZE_PARAMETER,
-			CODE_POINT_IMAGE_ENCODING_PARAMETER,
-			CODE_POINT_IDE_SIZE_PARAMETER,
-			CODE_POINT_IMAGE_LUT_ID_PARAMETER,
-			CODE_POINT_BAND_IMAGE_PARAMETER,
-			CODE_POINT_IDE_STRUCTURE_PARAMETER,
-			CODE_POINT_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER,
-			CODE_POINT_TILE_POSITION,
-			CODE_POINT_TILE_SIZE,
-			CODE_POINT_TILE_SET_COLOR
-	};
-
-	int[] EXTENDED_CODE_POINTS = {
-			CODE_POINT_IMAGE_DATA,
-			CODE_POINT_BAND_IMAGE_DATA,
-			CODE_POINT_INCLUDE_TILE,
-			CODE_POINT_TILE_TOC,
-			CODE_POINT_IMAGE_SUBSAMPLING_PARAMETER
-	};
+	short CODE_POINT_IMAGE_DATA                                 = 0x92;
+	short CODE_POINT_BAND_IMAGE_DATA                            = 0x9C;
+	short CODE_POINT_INCLUDE_TILE                               = 0xB8;
+	short CODE_POINT_TILE_TOC                                   = 0xBB;
+	short CODE_POINT_IMAGE_SUBSAMPLING_PARAMETER                = 0xCE;
 }

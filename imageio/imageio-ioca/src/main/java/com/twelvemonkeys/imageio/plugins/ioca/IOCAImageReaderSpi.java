@@ -18,31 +18,23 @@ public final class IOCAImageReaderSpi extends ImageReaderSpiBase {
 	}
 
 	@Override
-	public boolean canDecodeInput(final Object pSource) throws IOException {
-		return canDecodeAs(pSource);
+	public boolean canDecodeInput(final Object source) throws IOException {
+		return canDecodeAs(source);
 	}
 
-	private static boolean canDecodeAs(final Object pSource) throws IOException {
-		if (!(pSource instanceof ImageInputStream)) {
+	private static boolean canDecodeAs(final Object source) throws IOException {
+		if (!(source instanceof ImageInputStream)) {
 			return false;
 		}
 
-		try (final ImageInputStream stream = (ImageInputStream) pSource) {
-			byte[] magic = new byte[2];
+		final ImageInputStream iis = (ImageInputStream) source;
+		final byte[] header = new byte[2];
 
-			stream.mark();
-			stream.readFully(magic);
+		iis.mark();
+		iis.readFully(header);
 
-			if (magic[0] != 0x70) {
-				return false;
-			}
-
-			if (magic[1] < 0x00 || magic[1] > 0x04) {
-				return false;
-			}
-		}
-
-		return false;
+		// Look for the "begin segment" marker.
+		return header[0] == 0x70 && header[1] >= 0x00 && header[1] <= 0x04;
 	}
 
 	@Override
