@@ -62,7 +62,7 @@ public final class IOCAImageReader extends ImageReaderBase {
 				return readDelegated(imageIndex, param, "jbig2");
 
 			default:
-				throw new IIOException(String.format("Unknown compression ID: %02x", compressionId));
+				throw new IIOException(String.format("Unknown compression ID: 0x%02x", compressionId));
 		}
 	}
 
@@ -96,18 +96,24 @@ public final class IOCAImageReader extends ImageReaderBase {
 		delegate = delegate(imageIndex, mimeType);
 
 		// Copy progress listeners to the delegate.
-		for (final IIOReadProgressListener progressListener : progressListeners) {
-			delegate.addIIOReadProgressListener(progressListener);
+		if (null != progressListeners) {
+			for (final IIOReadProgressListener progressListener : progressListeners) {
+				delegate.addIIOReadProgressListener(progressListener);
+			}
 		}
 
 		// Copy update listeners.
-		for (final IIOReadUpdateListener updateListener : updateListeners) {
-			delegate.addIIOReadUpdateListener(updateListener);
+		if (null != updateListeners) {
+			for (final IIOReadUpdateListener updateListener : updateListeners) {
+				delegate.addIIOReadUpdateListener(updateListener);
+			}
 		}
 
 		// Copy warning listeners.
-		for (final IIOReadWarningListener warningListener : warningListeners) {
-			delegate.addIIOReadWarningListener(warningListener);
+		if (null != warningListeners) {
+			for (final IIOReadWarningListener warningListener : warningListeners) {
+				delegate.addIIOReadWarningListener(warningListener);
+			}
 		}
 
 		return delegate.read(0, param);
@@ -193,8 +199,10 @@ public final class IOCAImageReader extends ImageReaderBase {
 		readStructure();
 		checkBounds(imageIndex);
 
-		final IOCAImageEncoding imageEncoding = imageContents.get(imageIndex).getImageEncoding();
+		final IOCAImageContent imageContent = imageContents.get(imageIndex);
+		final IOCAImageEncoding imageEncoding = imageContent.getImageEncoding();
 
+		// Try and get the type determined by the raw format.
 		switch (imageEncoding.getCompressionId()) {
 			case IOCA.COMPRID_G3_MH:
 			case IOCA.COMPRID_G3_MR:
@@ -210,10 +218,31 @@ public final class IOCAImageReader extends ImageReaderBase {
 			case IOCA.COMPRID_TIFF_2:
 			case IOCA.COMPRID_TIFF_LZW:
 			case IOCA.COMPRID_TIFF_PB:
-				delegate(imageIndex, "tiff").getRawImageType(0);
+				return delegate(imageIndex, "tiff").getRawImageType(0);
 
 			case IOCA.COMPRID_JPEG:
-				delegate(imageIndex, "jpeg").getRawImageType(0);
+				final ImageTypeSpecifier type = delegate(imageIndex, "jpeg").getRawImageType(0);
+
+				if (null != type) {
+					return type;
+				}
+
+				break;
+		}
+
+		// Try and get the type from the IDE structure parameters.
+		switch (imageContent.getIdeStructure().getFormat()) {
+			case IOCA.FORMAT_RGB:
+				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+
+			case IOCA.FORMAT_CMYK:
+				return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK),
+						new int[] {3, 2, 1, 0},
+						DataBuffer.TYPE_BYTE, false, false);
+
+			case IOCA.FORMAT_YCBCR:
+			case IOCA.FORMAT_YCRCB:
+				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
 		}
 
 		// For all other types we can't give a response. Return null.

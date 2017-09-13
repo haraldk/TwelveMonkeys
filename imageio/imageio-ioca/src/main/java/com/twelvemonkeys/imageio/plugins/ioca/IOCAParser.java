@@ -32,13 +32,16 @@ final class IOCAParser {
 
 		try {
 			int code;
+			long offset = imageInput.getStreamPosition();
 
 			while (-1 != (code = imageInput.read())) {
 				if (IOCA.EXTENDED_CODE_POINT == code) {
-					readExtended(imageInput.read());
+					readExtended(offset, imageInput.read());
 				} else {
-					readLong(code);
+					readLong(offset, code);
 				}
+
+				offset = imageInput.getStreamPosition();
 			}
 
 			// Return a sequential, flat list of image contents for easy lookup by index.
@@ -49,7 +52,7 @@ final class IOCAParser {
 		}
 	}
 
-	private void readLong(final int code) throws IOException {
+	private void readLong(final long offset, final int code) throws IOException {
 		final int length = imageInput.read();
 
 		switch (code) {
@@ -85,24 +88,27 @@ final class IOCAParser {
 				ideStructure(length);
 				break;
 
+			case IOCA.CODE_POINT_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER:
+				externalAlgorithmSpecification(length);
+				break;
+
 			case IOCA.CODE_POINT_BEGIN_TILE:
 			case IOCA.CODE_POINT_END_TILE:
 			case IOCA.CODE_POINT_IMAGE_LUT_ID_PARAMETER:
 			case IOCA.CODE_POINT_BAND_IMAGE_PARAMETER:
-			case IOCA.CODE_POINT_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER:
 			case IOCA.CODE_POINT_TILE_POSITION:
 			case IOCA.CODE_POINT_TILE_SIZE:
 			case IOCA.CODE_POINT_TILE_SET_COLOR:
 			case IOCA.CODE_POINT_BEGIN_TRANSPARENCY_MASK:
 			case IOCA.CODE_POINT_END_TRANSPARENCY_MASK:
-				throw new IIOException("Not supported.");
+				throw new IIOException(String.format("Unsupported code point: 0x%02x at offset %d", code, offset));
 
 			default:
-				throw new IIOException(String.format("Unknown code point: %02x", code));
+				throw new IIOException(String.format("Unknown code point: 0x%02x at offset %d", code, offset));
 		}
 	}
 
-	private void readExtended(final int code) throws IOException {
+	private void readExtended(final long offset, final int code) throws IOException {
 		final int length = imageInput.readUnsignedShort();
 
 		switch (code) {
@@ -114,10 +120,11 @@ final class IOCAParser {
 			case IOCA.CODE_POINT_INCLUDE_TILE:
 			case IOCA.CODE_POINT_TILE_TOC:
 			case IOCA.CODE_POINT_IMAGE_SUBSAMPLING_PARAMETER:
-				throw new IIOException("Not supported.");
+				throw new IIOException(String.format("Unsupported extended code point: 0x%02x at offset %d", code,
+						offset));
 
 			default:
-				throw new IIOException(String.format("Unknown code point: %02x", code));
+				throw new IIOException(String.format("Unknown extended code point: 0x%02x at offset %d", code, offset));
 		}
 	}
 
@@ -210,6 +217,11 @@ final class IOCAParser {
 		imageSize.setHSize(imageInput.readUnsignedShort());
 		imageSize.setVSize(imageInput.readUnsignedShort());
 
+		if (DEBUG) {
+			System.err.println(String.format("IOCA: hsize set to %d", imageSize.getHSize()));
+			System.err.println(String.format("IOCA: vsize set to %d", imageSize.getVSize()));
+		}
+
 		imageContent.setImageSize(imageSize);
 	}
 
@@ -235,6 +247,12 @@ final class IOCAParser {
 			imageEncoding.setBitOrder((short) imageInput.readUnsignedByte());
 		}
 
+		if (DEBUG) {
+			System.err.println(String.format("IOCA: compression ID set to 0x%02x", imageEncoding.getCompressionId()));
+			System.err.println(String.format("IOCA: recording ID set to 0x%02x", imageEncoding.getRecordingId()));
+			System.err.println(String.format("IOCA: bit order set to 0x%02x", imageEncoding.getBitOrder()));
+		}
+
 		imageContent.setImageEncoding(imageEncoding);
 	}
 
@@ -254,7 +272,7 @@ final class IOCAParser {
 		imageContent.setIdeSize((short) imageInput.readUnsignedByte());
 
 		if (DEBUG) {
-			System.err.println(String.format("IOCA: IDE size set to %02x", imageContent.getIdeSize()));
+			System.err.println(String.format("IOCA: IDE size set to 0x%02x", imageContent.getIdeSize()));
 		}
 	}
 
@@ -276,25 +294,56 @@ final class IOCAParser {
 		ideStructure.setFlags(imageInput.readByte());
 		ideStructure.setFormat(imageInput.readByte());
 
-		if (0x0000 != imageInput.readShort()) {
+		if (DEBUG) {
+			System.err.println(String.format("IOCA: IDE format set to 0x%02x", ideStructure.getFormat()));
+		}
+
+		// Next three bytes should be 0x000000.
+		if (0x0000 != imageInput.readShort() || 0x00 != imageInput.readByte()) {
 			throw new IIOException("EC-9B10: invalid or unsupported IDE Structure parameter value");
 		}
 
 		ideStructure.setSize1(imageInput.readByte());
+		if (DEBUG) {
+			System.err.println(String.format("IOCA: size 1 set to 0x%02x", ideStructure.getSize1()));
+		}
 
 		if (length > 0x06) {
 			ideStructure.setSize2(imageInput.readByte());
+			if (DEBUG) {
+				System.err.println(String.format("IOCA: size 2 set to 0x%02x", ideStructure.getSize1()));
+			}
 		}
 
 		if (length > 0x07) {
 			ideStructure.setSize3(imageInput.readByte());
+			if (DEBUG) {
+				System.err.println(String.format("IOCA: size 3 set to 0x%02x", ideStructure.getSize1()));
+			}
 		}
 
 		if (length > 0x08) {
 			ideStructure.setSize4(imageInput.readByte());
+			if (DEBUG) {
+				System.err.println(String.format("IOCA: size 4 set to 0x%02x", ideStructure.getSize1()));
+			}
 		}
 
 		imageContent.setIdeStructure(ideStructure);
+	}
+
+	private void externalAlgorithmSpecification(final int length) throws IOException {
+		if (DEBUG) {
+			System.err.println("IOCA: external algorithm specification parameter");
+		}
+
+		if (length < 0x03 || length > 0xFF) {
+			throw new IIOException("EC-0003: invalid length.");
+		}
+
+		// TODO: support the specification.
+		// For now we just skip it.
+		skip(length);
 	}
 
 	private void imageData(final int length) throws IOException {
@@ -314,18 +363,22 @@ final class IOCAParser {
 		// be referenced later.
 		if (imageInput.isCached()) {
 			final long position = imageInput.getStreamPosition();
-			final int skipped = imageInput.skipBytes(length);
 
-			if (length > skipped) {
-				throw new EOFException(String.format("Only skipped %d bytes of %d requested.", skipped, length));
-			}
-
+			skip(length);
 			imageContent.recordData(position, length);
 		} else {
 			final byte[] buffer = new byte[length];
 
 			imageInput.readFully(buffer, 0, length);
 			imageContent.recordData(buffer);
+		}
+	}
+
+	private void skip(final int length) throws IOException {
+		final int skipped = imageInput.skipBytes(length);
+
+		if (length > skipped) {
+			throw new EOFException(String.format("Only skipped %d bytes of %d requested.", skipped, length));
 		}
 	}
 }
