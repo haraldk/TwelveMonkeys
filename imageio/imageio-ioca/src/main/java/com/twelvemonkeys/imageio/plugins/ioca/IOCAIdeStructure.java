@@ -1,5 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
+import com.twelvemonkeys.imageio.metadata.ioca.IOCA;
+
 final class IOCAIdeStructure {
 
 	private short flags, format, size1, size2, size3, size4;
@@ -17,7 +19,8 @@ final class IOCAIdeStructure {
 	}
 
 	void setFormat(final short format) {
-		if (0x01 != format && 0x02 != format && 0x04 != format && 0x12 != format) {
+		if (IOCA.FORMAT_RGB != format && IOCA.FORMAT_YCRCB != format && IOCA.FORMAT_CMYK != format
+				&& IOCA.FORMAT_YCBCR != format) {
 			throw new IllegalArgumentException("EC-9B10: invalid or unsupported IDE Structure parameter value.");
 		}
 

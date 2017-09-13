@@ -28,13 +28,17 @@ public final class IOCAImageReaderSpi extends ImageReaderSpiBase {
 		}
 
 		final ImageInputStream iis = (ImageInputStream) source;
-		final byte[] header = new byte[2];
 
+		iis.reset();
 		iis.mark();
-		iis.readFully(header);
 
-		// Look for the "begin segment" marker.
-		return header[0] == 0x70 && header[1] >= 0x00 && header[1] <= 0x04;
+		try {
+
+			// Look for the "begin segment" marker.
+			return 0x70 == iis.read() && 0x04 >= iis.read();
+		} finally {
+			iis.reset();
+		}
 	}
 
 	@Override

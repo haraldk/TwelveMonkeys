@@ -1,13 +1,8 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
-import java.util.LinkedList;
-import java.util.List;
-
 final class IOCASegment {
 
 	private long name;
-
-	private List<IOCAImageContent> imageContents = new LinkedList<>();
 
 	long getName() {
 		return name;
@@ -19,13 +14,5 @@ final class IOCASegment {
 		}
 
 		this.name = name;
-	}
-
-	void addImageContent(final IOCAImageContent imageContent) {
-		imageContents.add(imageContent);
-	}
-
-	List<IOCAImageContent> getImageContents() {
-		return imageContents;
 	}
 }

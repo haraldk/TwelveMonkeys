@@ -56,6 +56,13 @@ public interface IOCA {
 	short BITORDR_LTR       = 0x00;
 	short BITORDR_RTL       = 0x01;
 
+	short IDESZ_BILEVEL     = 0x01;
+
+	short FORMAT_RGB        = 0x01;
+	short FORMAT_YCRCB      = 0x02;
+	short FORMAT_CMYK       = 0x04;
+	short FORMAT_YCBCR      = 0x12;
+
 	short CODE_POINT_BEGIN_SEGMENT                              = 0x70;
 	short CODE_POINT_END_SEGMENT                                = 0x71;
 	short CODE_POINT_BEGIN_TILE                                 = 0x8C;

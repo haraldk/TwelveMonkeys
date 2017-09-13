@@ -1,17 +1,21 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
+import com.twelvemonkeys.imageio.metadata.ioca.IOCA;
+
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 final class IOCAImageContent {
 
-	private final List<byte[]> data = new LinkedList<>();
+	private final List<DataRecord> dataRecords = new LinkedList<>();
 
+	private IOCASegment segment;
 	private IOCAImageSize imageSize;
 	private IOCAImageEncoding imageEncoding;
 	private IOCAIdeStructure ideStructure;
 
-	private short ideSize = 0x01; // The default is 1 (bilevel image).
+	private short ideSize = IOCA.IDESZ_BILEVEL; // The default is 1 (bilevel image).
 
 	IOCAImageSize getImageSize() {
 		return imageSize;
@@ -34,7 +38,7 @@ final class IOCAImageContent {
 	}
 
 	void setIdeSize(final short ideSize) {
-		if (ideSize < 0x01 || ideSize > 0xFF) {
+		if (ideSize < IOCA.IDESZ_BILEVEL || ideSize > 0xFF) {
 			throw new IllegalArgumentException("EC-0004: Invalid parameter value");
 		}
 
@@ -49,24 +53,55 @@ final class IOCAImageContent {
 		this.ideStructure = ideStructure;
 	}
 
-	void addData(final byte[] chunk) {
-		data.add(chunk);
+	IOCASegment getSegment() {
+		return segment;
 	}
 
-	byte[] getData() {
-		int total = 0;
+	void setSegment(final IOCASegment segment) {
+		this.segment = segment;
+	}
 
-		for (byte[] chunk: data) {
-			total += chunk.length;
+	void recordData(final long offset, final int length) {
+		dataRecords.add(new DataRecord(offset, length));
+	}
+
+	void recordData(final byte[] buffer) {
+		dataRecords.add(new DataRecord(buffer, 0, buffer.length));
+	}
+
+	List<DataRecord> getDataRecords() {
+		return dataRecords;
+	}
+
+	static class DataRecord {
+
+		private final byte[] buffer;
+
+		private final long offset;
+		private final int length;
+
+		DataRecord(final long offset, final int length) {
+			this.offset = offset;
+			this.length = length;
+			this.buffer = null;
 		}
 
-		final byte[] copy = new byte[total];
-		int offset = 0;
-
-		for (byte[] chunk: data) {
-			System.arraycopy(chunk, 0, copy, offset, chunk.length);
+		DataRecord(final byte[] buffer, final long offset, final int length) {
+			this.offset = offset;
+			this.buffer = Objects.requireNonNull(buffer);
+			this.length = buffer.length;
 		}
 
-		return copy;
+		byte[] getBuffer() {
+			return buffer;
+		}
+
+		long getOffset() {
+			return offset;
+		}
+
+		int getLength() {
+			return length;
+		}
 	}
 }

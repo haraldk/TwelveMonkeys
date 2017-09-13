@@ -1,120 +1,181 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.ioca.*;
 import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxDecoderStream;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFBaseline;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFExtension;
+import com.twelvemonkeys.imageio.stream.SubInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.*;
+import javax.imageio.event.IIOReadProgressListener;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
+import java.awt.image.*;
 
 import java.io.*;
 import java.util.*;
 
 public final class IOCAImageReader extends ImageReaderBase {
 
-	private final static boolean DEBUG = true; //"true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.ioca.debug"));
-
-	private LinkedList<IOCASegment> segments;
 	private List<IOCAImageContent> imageContents;
 
-	private IOCASegment segment;
-	private IOCAImageContent imageContent;
+	private ImageReader delegate;
 
 	IOCAImageReader(final ImageReaderSpi provider) {
 		super(provider);
 	}
 
 	@Override
-	public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
-		buffer();
+	public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
+		readStructure();
 		checkBounds(imageIndex);
 
-		final IOCAImageContent imageContent = imageContents.get(imageIndex);
-
-		final short compressionId = imageContent.getImageEncoding().getCompressionId();
-		final InputStream bis = new ByteArrayInputStream(imageContent.getData());
-		final ImageReader reader;
-		final Iterator<ImageReader> readers;
+		final short compressionId = imageContents.get(imageIndex).getImageEncoding().getCompressionId();
 
 		switch (compressionId) {
 			case IOCA.COMPRID_G3_MH:
-				return decodeCCITTFax(bis, TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, imageContent);
+				return readFax(imageIndex, param, TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
 
 			case IOCA.COMPRID_G3_MR:
-				return decodeCCITTFax(bis, TIFFExtension.COMPRESSION_CCITT_T4, imageContent);
+				return readFax(imageIndex, param, TIFFExtension.COMPRESSION_CCITT_T4);
 
 			case IOCA.COMPRID_IBM_MMR:
 			case IOCA.COMPRID_G4_MMR:
-				return decodeCCITTFax(bis, TIFFExtension.COMPRESSION_CCITT_T6, imageContent);
+				return readFax(imageIndex, param, TIFFExtension.COMPRESSION_CCITT_T6);
 
 			case IOCA.COMPRID_TIFF_2:
 			case IOCA.COMPRID_TIFF_LZW:
 			case IOCA.COMPRID_TIFF_PB:
-				readers = ImageIO.getImageReadersByMIMEType("image/tiff");
-				break;
+				return readDelegated(imageIndex, param, "tiff");
 
 			case IOCA.COMPRID_JPEG:
-				readers = ImageIO.getImageReadersByMIMEType("image/jpeg");
-				break;
+				return readDelegated(imageIndex, param, "jpeg");
 
 			case IOCA.COMPRID_JBIG2:
-				readers = ImageIO.getImageReadersByMIMEType("image/jbig2");
-				break;
+				return readDelegated(imageIndex, param, "jbig2");
 
 			default:
 				throw new IIOException(String.format("Unknown compression ID: %02x", compressionId));
 		}
-
-		if (!readers.hasNext()) {
-			throw new IIOException(String.format("Unable to read image of type: %02x", compressionId));
-		}
-
-		reader = readers.next();
-		reader.setInput(bis);
-
-		try {
-			return reader.read(0);
-		} finally {
-			reader.dispose();
-		}
 	}
 
-	private BufferedImage decodeCCITTFax(final InputStream in, final int type, final IOCAImageContent imageContent)
+	private SequenceInputStream getDataSequence(final int imageIndex) {
+		final Enumeration<InputStream> imageInputViews = new StreamEnumeration(imageContents.get(imageIndex)
+				.getDataRecords());
+
+		// Return a sequence of views onto the data, tied together in a sequence to appear
+		// as a single stream.
+		return new SequenceInputStream(imageInputViews);
+	}
+
+	private ImageReader delegate(final int imageIndex, final String formatName) throws IOException {
+		final ImageReader delegate;
+		final Iterator<ImageReader> delegates;
+
+		delegates = ImageIO.getImageReadersByFormatName(formatName);
+
+		if (!delegates.hasNext()) {
+			throw new IIOException(String.format("Unable to read image of type: %s", formatName));
+		}
+
+		delegate = delegates.next();
+
+		delegate.setInput(new MemoryCacheImageInputStream(getDataSequence(imageIndex)));
+		return delegate;
+	}
+
+	private BufferedImage readDelegated(final int imageIndex, final ImageReadParam param, final String mimeType)
 			throws IOException {
-		short bitOrder = imageContent.getImageEncoding().getBitOrder();
+		delegate = delegate(imageIndex, mimeType);
+
+		// Copy progress listeners to the delegate.
+		for (final IIOReadProgressListener progressListener : progressListeners) {
+			delegate.addIIOReadProgressListener(progressListener);
+		}
+
+		// Copy update listeners.
+		for (final IIOReadUpdateListener updateListener : updateListeners) {
+			delegate.addIIOReadUpdateListener(updateListener);
+		}
+
+		// Copy warning listeners.
+		for (final IIOReadWarningListener warningListener : warningListeners) {
+			delegate.addIIOReadWarningListener(warningListener);
+		}
+
+		return delegate.read(0, param);
+	}
+
+	private BufferedImage readFax(final int imageIndex, final ImageReadParam param, final int type)
+			throws IOException {
+		final IOCAImageContent imageContent = imageContents.get(imageIndex);
+
 		int fillOrder;
+
 		int width = imageContent.getImageSize().getHSize();
 		int height = imageContent.getImageSize().getVSize();
 
-		if (bitOrder == IOCA.BITORDR_LTR) {
+		if (imageContent.getImageEncoding().getBitOrder() == IOCA.BITORDR_LTR) {
 			fillOrder = TIFFBaseline.FILL_LEFT_TO_RIGHT;
 		} else {
 			fillOrder = TIFFExtension.FILL_RIGHT_TO_LEFT;
 		}
 
-		final BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_BINARY);
-		final byte[] raster = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
+		final CCITTFaxDecoderStream decoder = new CCITTFaxDecoderStream(getDataSequence(imageIndex),
+				width, type, fillOrder, 0L);
 
-		final CCITTFaxDecoderStream decoder = new CCITTFaxDecoderStream(in, width, type, fillOrder, 0L);
+		final BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
+		final DataBuffer raster = destination.getRaster().getDataBuffer();
 
-		for (int b, i = 0, l = raster.length; i < l; i++) {
+		processImageStarted(imageIndex);
+
+		for (int b, i = 0, l = raster.getSize(); i < l; i++) {
 			b = decoder.read();
 			if (b < 0) {
 				throw new EOFException();
 			}
 
+			if (abortRequested()) {
+				break;
+			}
+
 			// Invert the colour.
 			// For some reason the decoder uses an inverted mapping.
-			raster[i] = (byte) ((~b) & 0x00FF);
+			raster.setElem(i, ((~b) & 0x00FF));
 		}
 
-		return image;
+		if (abortRequested()) {
+			processReadAborted();
+		} else {
+			processImageProgress(100F);
+		}
+
+		processImageComplete();
+		return destination;
+	}
+
+	@Override
+	public void dispose() {
+		super.dispose();
+		if (null != delegate) {
+			delegate.dispose();
+			delegate = null;
+		}
+	}
+
+	@Override
+	public void abort() {
+		super.abort();
+		if (null != delegate) {
+			delegate.abort();
+		}
 	}
 
 	@Override
@@ -128,19 +189,71 @@ public final class IOCAImageReader extends ImageReaderBase {
 	}
 
 	@Override
-	public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
-		buffer();
+	public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
+		readStructure();
+		checkBounds(imageIndex);
+
+		final IOCAImageEncoding imageEncoding = imageContents.get(imageIndex).getImageEncoding();
+
+		switch (imageEncoding.getCompressionId()) {
+			case IOCA.COMPRID_G3_MH:
+			case IOCA.COMPRID_G3_MR:
+			case IOCA.COMPRID_IBM_MMR:
+			case IOCA.COMPRID_G4_MMR:
+			case IOCA.COMPRID_JBIG2:
+			case IOCA.COMPRID_ABIC_Q:
+				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY);
+
+			case IOCA.COMPRID_ABIC_C:
+				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+
+			case IOCA.COMPRID_TIFF_2:
+			case IOCA.COMPRID_TIFF_LZW:
+			case IOCA.COMPRID_TIFF_PB:
+				delegate(imageIndex, "tiff").getRawImageType(0);
+
+			case IOCA.COMPRID_JPEG:
+				delegate(imageIndex, "jpeg").getRawImageType(0);
+		}
+
+		// For all other types we can't give a response. Return null.
+		return null;
+	}
+
+	@Override
+	public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
+		readStructure();
 		checkBounds(imageIndex);
 
 		final List<ImageTypeSpecifier> types = new ArrayList<>();
 		final IOCAImageContent imageContent = imageContents.get(imageIndex);
 
-		if (IOCA.COMPRID_JPEG == imageContent.getImageEncoding().getCompressionId()) {
+		final IOCAIdeStructure ideStructure = imageContent.getIdeStructure();
+		final short compressionId = imageContent.getImageEncoding().getCompressionId();
+
+		// TIFFs, JPEGs and RL4 images may be RGB.
+		if (IOCA.COMPRID_JPEG == compressionId
+				|| IOCA.COMPRID_TIFF_2 == compressionId
+				|| IOCA.COMPRID_TIFF_LZW == compressionId
+				|| IOCA.COMPRID_TIFF_PB == compressionId
+				|| IOCA.COMPRID_RL4 == compressionId
+				|| (null != ideStructure && ideStructure.getFormat() == IOCA.FORMAT_RGB)) {
 			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+		}
+
+		// JPEGs and any images that specify CMYK as a colour space may be CMYK.
+		if (IOCA.COMPRID_JPEG == compressionId
+				|| (null != ideStructure && ideStructure.getFormat() == IOCA.FORMAT_CMYK)) {
+			types.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK),
+					new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
+		}
+
+		// When no IDE structure is present, any IDE size > 0 implies grayscale.
+		// Otherwise bi-level is the default for everything except JPEG.
+		// For details see pp. 137: Appendix B. Bilevel, Grayscale, and Color Images.
+		if (imageContent.getIdeSize() > IOCA.IDESZ_BILEVEL) {
 			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
-		} else if (0xFF == imageContent.getIdeSize()) { // Not sure about this.
-			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
-		} else {
+		} else if (compressionId != IOCA.COMPRID_JPEG) {
 			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY));
 		}
 
@@ -153,328 +266,114 @@ public final class IOCAImageReader extends ImageReaderBase {
 			return -1;
 		}
 
-		buffer();
+		readStructure();
 		return imageContents.size();
 	}
 
 	@Override
 	public int getHeight(int imageIndex) throws IOException {
-		buffer();
+		readStructure();
 		checkBounds(imageIndex);
 		return imageContents.get(imageIndex).getImageSize().getVSize();
 	}
 
 	@Override
 	public int getWidth(final int imageIndex) throws IOException {
-		buffer();
+		readStructure();
 		checkBounds(imageIndex);
 		return imageContents.get(imageIndex).getImageSize().getHSize();
 	}
 
 	@Override
 	protected void resetMembers() {
-		segment = null;
-		segments = null;
-		imageContent = null;
 		imageContents = null;
 	}
 
-	private void buffer() throws IOException {
+	private void readStructure() throws IOException {
 		assertInput();
 
 		if (imageContents != null) {
 			return;
 		}
 
-		if (DEBUG) {
-			System.err.println("IOCA: buffering");
+		imageInput.seek(0);
+		imageInput.mark();
+
+		try {
+			imageContents = new IOCAParser(imageInput).parse();
+		} finally {
+			imageInput.reset();
 		}
+	}
 
-		segments = new LinkedList<>();
-		imageContents = new ArrayList<>(); // Keep a sequential, flat list of image contents for easy lookup by index.
+	// To test:
+	// $ mvn package -DskipTest
+	// $ cd imageio/imageio-ioca/target
+	// $ java -cp imageio-ioca-3.4-SNAPSHOT-shaded.jar com.twelvemonkeys.imageio.plugins.ioca.IOCAImageReader \
+	//      path/to/file.ica
+	public static void main(final String[] args) throws IOException {
+		ImageIO.setUseCache(true);
 
-		int code;
+		for (String path : args) {
+			final ImageInputStream iis = ImageIO.createImageInputStream(new File(path));
+			final Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
 
-		while (-1 != (code = imageInput.read())) {
-			if (abortRequested()) {
-				break;
+			if (!readers.hasNext()) {
+				System.err.println("Error: no reader for " + path);
+				return;
 			}
 
-			if (IOCA.EXTENDED_CODE_POINT == code) {
-				readExtended(imageInput.read());
-			} else {
-				readLong(code);
+			final ImageReader reader = readers.next();
+
+			reader.setInput(iis);
+
+			try {
+				for (int i = 0; i < reader.getNumImages(true); i++) {
+					showIt(reader.read(i), "");
+				}
+			} finally {
+				iis.close();
+				reader.dispose();
 			}
 		}
-
-		processImageProgress(100f);
-
-		if (abortRequested()) {
-			processReadAborted();
-		}
 	}
 
-	private void readLong(final int code) throws IOException {
-		final int length = imageInput.read();
+	private final class StreamEnumeration implements Enumeration<InputStream> {
 
-		switch (code) {
-			case IOCA.CODE_POINT_BEGIN_SEGMENT:
-				beginSegment(length);
-				break;
+		private Iterator<IOCAImageContent.DataRecord> dataRecords;
 
-			case IOCA.CODE_POINT_END_SEGMENT:
-				endSegment();
-				break;
-
-			case IOCA.CODE_POINT_BEGIN_IMAGE_CONTENT:
-				beginImageContent(length);
-				break;
-
-			case IOCA.CODE_POINT_END_IMAGE_CONTENT:
-				endImageContent();
-				break;
-
-			case IOCA.CODE_POINT_IMAGE_SIZE_PARAMETER:
-				imageSize(length);
-				break;
-
-			case IOCA.CODE_POINT_IMAGE_ENCODING_PARAMETER:
-				imageEncoding(length);
-				break;
-
-			case IOCA.CODE_POINT_IDE_SIZE_PARAMETER:
-				ideSize(length);
-				break;
-
-			case IOCA.CODE_POINT_IDE_STRUCTURE_PARAMETER:
-				ideStructure(length);
-				break;
-
-			case IOCA.CODE_POINT_BEGIN_TILE:
-			case IOCA.CODE_POINT_END_TILE:
-			case IOCA.CODE_POINT_IMAGE_LUT_ID_PARAMETER:
-			case IOCA.CODE_POINT_BAND_IMAGE_PARAMETER:
-			case IOCA.CODE_POINT_EXTERNAL_ALGORITHM_SPECIFICATION_PARAMETER:
-			case IOCA.CODE_POINT_TILE_POSITION:
-			case IOCA.CODE_POINT_TILE_SIZE:
-			case IOCA.CODE_POINT_TILE_SET_COLOR:
-			case IOCA.CODE_POINT_BEGIN_TRANSPARENCY_MASK:
-			case IOCA.CODE_POINT_END_TRANSPARENCY_MASK:
-				throw new IIOException("Not supported.");
-
-			default:
-				throw new IIOException(String.format("Unknown code point: %02x", code));
-		}
-	}
-
-	private void readExtended(final int code) throws IOException {
-		final int length = imageInput.readUnsignedShort();
-
-		switch (code) {
-			case IOCA.CODE_POINT_IMAGE_DATA:
-				imageData(length);
-				break;
-
-			case IOCA.CODE_POINT_BAND_IMAGE_DATA:
-			case IOCA.CODE_POINT_INCLUDE_TILE:
-			case IOCA.CODE_POINT_TILE_TOC:
-			case IOCA.CODE_POINT_IMAGE_SUBSAMPLING_PARAMETER:
-				throw new IIOException("Not supported.");
-
-			default:
-				throw new IIOException(String.format("Unknown code point: %02x", code));
-		}
-	}
-
-	private void beginSegment(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: begin segment");
+		StreamEnumeration(final List<IOCAImageContent.DataRecord> dataRecords) {
+			this.dataRecords = dataRecords.iterator();
 		}
 
-		if (length > 0x04) {
-			throw new IIOException("EC-0003: invalid length.");
+		@Override
+		public boolean hasMoreElements() {
+			return dataRecords.hasNext();
 		}
 
-		segment = new IOCASegment();
+		@Override
+		public InputStream nextElement() {
+			final IOCAImageContent.DataRecord dataRecord = dataRecords.next();
 
-		if (0x01 == length) {
-			segment.setName(imageInput.readUnsignedByte());
-		} else if (0x02 == length) {
-			segment.setName(imageInput.readUnsignedShort());
-		} else if (0x04 == length) {
-			segment.setName(imageInput.readUnsignedInt());
+			try {
+				if (imageInput.isCached()) {
+					imageInput.reset();
+					imageInput.mark();
+					imageInput.seek(dataRecord.getOffset());
+
+					return new SubInputStream(imageInput, dataRecord.getLength());
+				}
+
+				final byte[] buffer = dataRecord.getBuffer();
+
+				if (null == buffer) {
+					throw new IllegalStateException("Expected buffer for non-cached stream but found null.");
+				}
+
+				return new ByteArrayInputStream(buffer);
+			} catch (final IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
-	}
-
-	private void endSegment() throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: end segment");
-		}
-
-		if (null == segment) {
-			throw new IIOException("EC-710F: invalid sequence.");
-		}
-
-		segments.add(segment);
-		segment = null;
-	}
-
-	private void beginImageContent(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: begin image content");
-		}
-
-		if (0x01 != length) {
-			throw new IIOException("EC-0003: invalid length.");
-		}
-
-		if (0xFF != imageInput.readUnsignedByte()) {
-			throw new IIOException("EC-0004: invalid parameter value.");
-		}
-
-		if (null == segment) {
-			throw new IIOException("EC-910F: invalid sequence.");
-		}
-
-		imageContent = new IOCAImageContent();
-	}
-
-	private void endImageContent() throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: end image content");
-		}
-
-		if (null == segment || null == imageContent) {
-			throw new IIOException("EC-910F: invalid sequence.");
-		}
-
-		segment.addImageContent(imageContent);
-		imageContents.add(imageContent);
-		imageContent = null;
-	}
-
-	private void imageSize(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: image size");
-		}
-
-		if (0x09 != length) {
-			throw new IIOException("EC-0003: invalid length.");
-		}
-
-		if (null == imageContent) {
-			throw new IIOException("EC-940F: invalid sequence.");
-		}
-
-		final IOCAImageSize imageSize = new IOCAImageSize();
-
-		imageSize.setUnitBase((short) imageInput.readUnsignedByte());
-
-		imageSize.setHResolution(imageInput.readUnsignedShort());
-		imageSize.setVResolution(imageInput.readUnsignedShort());
-
-		imageSize.setHSize(imageInput.readUnsignedShort());
-		imageSize.setVSize(imageInput.readUnsignedShort());
-
-		imageContent.setImageSize(imageSize);
-	}
-
-	private void imageEncoding(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: image encoding");
-		}
-
-		if (length < 0x02 || length > 0x03) {
-			throw new IIOException("EC-0003: invalid length.");
-		}
-
-		if (null == imageContent) {
-			throw new IIOException("EC-950F: invalid sequence.");
-		}
-
-		final IOCAImageEncoding imageEncoding = new IOCAImageEncoding();
-
-		imageEncoding.setCompressionId((short) imageInput.readUnsignedByte());
-		imageEncoding.setRecordingId((short) imageInput.readUnsignedByte());
-
-		if (0x03 == length) {
-			imageEncoding.setBitOrder((short) imageInput.readUnsignedByte());
-		}
-
-		imageContent.setImageEncoding(imageEncoding);
-	}
-
-	private void ideSize(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: IDE size");
-		}
-
-		if (length != 0x01) {
-			throw new IIOException("EC-0003: invalid length.");
-		}
-
-		if (null == imageContent) {
-			throw new IIOException("EC-960F: invalid sequence.");
-		}
-
-		imageContent.setIdeSize((short) imageInput.readUnsignedByte());
-	}
-
-	private void ideStructure(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: IDE structure");
-		}
-
-		if (length < 0x06 || length > 0x09) {
-			throw new IIOException("EC-0005: invalid length");
-		}
-
-		if (null == imageContent) {
-			throw new IIOException("EC-9B0F: invalid sequence.");
-		}
-
-		final IOCAIdeStructure ideStructure = new IOCAIdeStructure();
-
-		ideStructure.setFlags(imageInput.readByte());
-		ideStructure.setFormat(imageInput.readByte());
-
-		if (0x0000 != imageInput.readShort()) {
-			throw new IIOException("EC-9B10: invalid or unsupported IDE Structure parameter value");
-		}
-
-		ideStructure.setSize1(imageInput.readByte());
-
-		if (length > 0x06) {
-			ideStructure.setSize2(imageInput.readByte());
-		}
-
-		if (length > 0x07) {
-			ideStructure.setSize3(imageInput.readByte());
-		}
-
-		if (length > 0x08) {
-			ideStructure.setSize4(imageInput.readByte());
-		}
-
-		imageContent.setIdeStructure(ideStructure);
-	}
-
-	private void imageData(final int length) throws IOException {
-		if (DEBUG) {
-			System.err.println("IOCA: image data");
-		}
-
-		if (length < 0x0001 || length > 0xFFFF) {
-			throw new IIOException("EC-0003: invalid length.");
-		}
-
-		if (null == imageContent) {
-			throw new IIOException("EC-920F: invalid sequence.");
-		}
-
-		final byte[] buffer = new byte[length];
-
-		imageInput.readFully(buffer, 0, length);
-		imageContent.addData(buffer);
 	}
 }
