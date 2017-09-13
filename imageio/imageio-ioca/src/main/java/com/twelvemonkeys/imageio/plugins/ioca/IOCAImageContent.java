@@ -89,7 +89,7 @@ final class IOCAImageContent {
 		DataRecord(final byte[] buffer, final long offset, final int length) {
 			this.offset = offset;
 			this.buffer = Objects.requireNonNull(buffer);
-			this.length = buffer.length;
+			this.length = length;
 		}
 
 		byte[] getBuffer() {

@@ -24,6 +24,9 @@ import java.util.*;
 
 public final class IOCAImageReader extends ImageReaderBase {
 
+	// TODO: support metadata that may be contained in the compressed format e.g. JPEG (use the delegate to get this).
+	// TODO: use strategy pattern for delegates when this plugin supports Java 8.
+
 	private List<IOCAImageContent> imageContents;
 
 	private ImageReader delegate;
@@ -328,8 +331,16 @@ public final class IOCAImageReader extends ImageReaderBase {
 		imageInput.seek(0);
 		imageInput.mark();
 
+		imageContents = new ArrayList<>();
+
 		try {
-			imageContents = new IOCAParser(imageInput).parse();
+			final IOCAReader reader = new IOCAReader(imageInput);
+			IOCAImageContent imageContent;
+
+			// Collect a sequential, flat list of image contents for easy lookup by index.
+			while (null != (imageContent = reader.read())) {
+				imageContents.add(imageContent);
+			}
 		} finally {
 			imageInput.reset();
 		}

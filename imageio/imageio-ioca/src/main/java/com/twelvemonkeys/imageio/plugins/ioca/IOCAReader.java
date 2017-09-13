@@ -8,11 +8,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-final class IOCAParser {
+final class IOCAReader {
 
 	private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.ioca.debug"));
 
@@ -21,38 +17,34 @@ final class IOCAParser {
 	private IOCASegment segment;
 	private IOCAImageContent imageContent;
 
-	private List<IOCAImageContent> imageContents;
-
-	IOCAParser(final ImageInputStream imageInput) {
+	IOCAReader(final ImageInputStream imageInput) {
 		this.imageInput = imageInput;
 	}
 
-	List<IOCAImageContent> parse() throws IOException {
-		imageContents = new ArrayList<>();
+	IOCAImageContent read() throws IOException {
+		long offset = imageInput.getStreamPosition();
+		IOCAImageContent imageContent = null;
+		int code;
 
-		try {
-			int code;
-			long offset = imageInput.getStreamPosition();
-
-			while (-1 != (code = imageInput.read())) {
-				if (IOCA.EXTENDED_CODE_POINT == code) {
-					readExtended(offset, imageInput.read());
-				} else {
-					readLong(offset, code);
-				}
-
-				offset = imageInput.getStreamPosition();
+		while (-1 != (code = imageInput.read())) {
+			if (IOCA.EXTENDED_CODE_POINT == code) {
+				readExtended(offset, imageInput.read());
+			} else {
+				imageContent = readLong(offset, code);
 			}
 
-			// Return a sequential, flat list of image contents for easy lookup by index.
-			return Collections.unmodifiableList(imageContents);
-		} finally {
-			imageContent = null;
-			imageContents = null;
+			if (null != imageContent) {
+				break;
+			}
+
+			// Keep track of the current offset for debugging/error messages.
+			offset = imageInput.getStreamPosition();
 		}
+
+		return imageContent;
 	}
 
-	private void readLong(final long offset, final int code) throws IOException {
+	private IOCAImageContent readLong(final long offset, final int code) throws IOException {
 		final int length = imageInput.read();
 
 		switch (code) {
@@ -69,8 +61,7 @@ final class IOCAParser {
 				break;
 
 			case IOCA.CODE_POINT_END_IMAGE_CONTENT:
-				endImageContent();
-				break;
+				return endImageContent();
 
 			case IOCA.CODE_POINT_IMAGE_SIZE_PARAMETER:
 				imageSize(length);
@@ -106,6 +97,8 @@ final class IOCAParser {
 			default:
 				throw new IIOException(String.format("Unknown code point: 0x%02x at offset %d", code, offset));
 		}
+
+		return null;
 	}
 
 	private void readExtended(final long offset, final int code) throws IOException {
@@ -120,8 +113,8 @@ final class IOCAParser {
 			case IOCA.CODE_POINT_INCLUDE_TILE:
 			case IOCA.CODE_POINT_TILE_TOC:
 			case IOCA.CODE_POINT_IMAGE_SUBSAMPLING_PARAMETER:
-				throw new IIOException(String.format("Unsupported extended code point: 0x%02x at offset %d", code,
-						offset));
+				throw new IIOException(String.format("Unsupported extended code point: 0x%02x at offset %d",
+						code, offset));
 
 			default:
 				throw new IIOException(String.format("Unknown extended code point: 0x%02x at offset %d", code, offset));
@@ -181,7 +174,7 @@ final class IOCAParser {
 		imageContent.setSegment(segment);
 	}
 
-	private void endImageContent() throws IOException {
+	private IOCAImageContent endImageContent() throws IOException {
 		if (DEBUG) {
 			System.err.println("IOCA: end image content");
 		}
@@ -190,8 +183,10 @@ final class IOCAParser {
 			throw new IIOException("EC-910F: invalid sequence.");
 		}
 
-		imageContents.add(imageContent);
-		imageContent = null;
+		final IOCAImageContent imageContent = this.imageContent;
+
+		this.imageContent = null;
+		return imageContent;
 	}
 
 	private void imageSize(final int length) throws IOException {
