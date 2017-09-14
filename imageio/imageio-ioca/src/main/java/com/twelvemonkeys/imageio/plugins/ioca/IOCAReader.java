@@ -13,12 +13,14 @@ final class IOCAReader {
 	private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.ioca.debug"));
 
 	private final ImageInputStream imageInput;
+	private final boolean seekForwardOnly;
 
 	private IOCASegment segment;
 	private IOCAImageContent imageContent;
 
-	IOCAReader(final ImageInputStream imageInput) {
+	IOCAReader(final ImageInputStream imageInput, final boolean seekForwardOnly) {
 		this.imageInput = imageInput;
+		this.seekForwardOnly = seekForwardOnly;
 	}
 
 	IOCAImageContent read() throws IOException {
@@ -92,10 +94,12 @@ final class IOCAReader {
 			case IOCA.CODE_POINT_TILE_SET_COLOR:
 			case IOCA.CODE_POINT_BEGIN_TRANSPARENCY_MASK:
 			case IOCA.CODE_POINT_END_TRANSPARENCY_MASK:
-				throw new IIOException(String.format("Unsupported code point: 0x%02x at offset %d", code, offset));
+				throw new IIOException(String.format("Unsupported code point: 0x%02x at offset %d",
+						code, offset));
 
 			default:
-				throw new IIOException(String.format("Unknown code point: 0x%02x at offset %d", code, offset));
+				throw new IIOException(String.format("Unknown code point: 0x%02x at offset %d",
+						code, offset));
 		}
 
 		return null;
@@ -117,7 +121,8 @@ final class IOCAReader {
 						code, offset));
 
 			default:
-				throw new IIOException(String.format("Unknown extended code point: 0x%02x at offset %d", code, offset));
+				throw new IIOException(String.format("Unknown extended code point: 0x%02x at offset %d",
+						code, offset));
 		}
 	}
 
@@ -318,10 +323,16 @@ final class IOCAReader {
 		}
 
 		if (length > 0x08) {
+			if (ideStructure.getFormat() != IOCA.FORMAT_CMYK) {
+				throw new IIOException("EC-9B18: SIZE4 is present and the colour space is not CMYK.");
+			}
+
 			ideStructure.setSize4(imageInput.readByte());
 			if (DEBUG) {
 				System.err.println(String.format("IOCA: size 4 set to 0x%02x", ideStructure.getSize1()));
 			}
+		} else if (ideStructure.getFormat() == IOCA.FORMAT_CMYK) {
+			throw new IIOException("EC-9B18: SIZE4 is not present and the colour space is not CMYK.");
 		}
 
 		imageContent.setIdeStructure(ideStructure);
@@ -356,7 +367,7 @@ final class IOCAReader {
 
 		// For cached streams, record only a view onto the data. There's no need to buffer input that can
 		// be referenced later.
-		if (imageInput.isCached()) {
+		if (!seekForwardOnly && imageInput.isCached()) {
 			final long position = imageInput.getStreamPosition();
 
 			skip(length);

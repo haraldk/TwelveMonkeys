@@ -3,6 +3,7 @@ package com.twelvemonkeys.imageio.plugins.ioca;
 import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 
 final class IOCAProviderInfo extends ReaderWriterProviderInfo {
+
 	IOCAProviderInfo() {
 		super(
 				IOCAProviderInfo.class,
@@ -12,7 +13,7 @@ final class IOCAProviderInfo extends ReaderWriterProviderInfo {
 				"com.twelvemonkeys.imageio.plugins.ioca.IOCAImageReader",
 				new String[] {"com.twelvemonkeys.imageio.plugins.ioca.IOCAImageReaderSpi"},
 				null,
-				new String[] {},
+				null,
 				false,
 				null,
 				null,

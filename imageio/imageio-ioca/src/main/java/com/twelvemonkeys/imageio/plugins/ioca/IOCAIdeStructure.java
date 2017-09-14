@@ -27,6 +27,14 @@ final class IOCAIdeStructure {
 		this.format = format;
 	}
 
+	boolean is8Bit() {
+		return 0x08 == size1 && 0x08 == size2 && 0x08 == size3;
+	}
+
+	boolean is16Bit() {
+		return 0x10 == size1 && 0x10 == size2 && 0x10 == size3;
+	}
+
 	short getSize1() {
 		return size1;
 	}

@@ -1,13 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.color.ColorSpaces;
-import com.twelvemonkeys.imageio.metadata.ioca.*;
-import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxDecoderStream;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFBaseline;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFExtension;
-import com.twelvemonkeys.imageio.stream.SubInputStream;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.metadata.ioca.IOCA;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadProgressListener;
@@ -15,8 +9,8 @@ import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.MemoryCacheImageInputStream;
 
+import java.awt.color.ColorSpace;
 import java.awt.image.*;
 
 import java.io.*;
@@ -28,7 +22,6 @@ public final class IOCAImageReader extends ImageReaderBase {
 	// TODO: use strategy pattern for delegates when this plugin supports Java 8.
 
 	private List<IOCAImageContent> imageContents;
-
 	private ImageReader delegate;
 
 	IOCAImageReader(final ImageReaderSpi provider) {
@@ -40,142 +33,44 @@ public final class IOCAImageReader extends ImageReaderBase {
 		readStructure();
 		checkBounds(imageIndex);
 
-		final short compressionId = imageContents.get(imageIndex).getImageEncoding().getCompressionId();
-
-		switch (compressionId) {
-			case IOCA.COMPRID_G3_MH:
-				return readFax(imageIndex, param, TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
-
-			case IOCA.COMPRID_G3_MR:
-				return readFax(imageIndex, param, TIFFExtension.COMPRESSION_CCITT_T4);
-
-			case IOCA.COMPRID_IBM_MMR:
-			case IOCA.COMPRID_G4_MMR:
-				return readFax(imageIndex, param, TIFFExtension.COMPRESSION_CCITT_T6);
-
-			case IOCA.COMPRID_TIFF_2:
-			case IOCA.COMPRID_TIFF_LZW:
-			case IOCA.COMPRID_TIFF_PB:
-				return readDelegated(imageIndex, param, "tiff");
-
-			case IOCA.COMPRID_JPEG:
-				return readDelegated(imageIndex, param, "jpeg");
-
-			case IOCA.COMPRID_JBIG2:
-				return readDelegated(imageIndex, param, "jbig2");
-
-			default:
-				throw new IIOException(String.format("Unknown compression ID: 0x%02x", compressionId));
-		}
-	}
-
-	private SequenceInputStream getDataSequence(final int imageIndex) {
-		final Enumeration<InputStream> imageInputViews = new StreamEnumeration(imageContents.get(imageIndex)
-				.getDataRecords());
-
-		// Return a sequence of views onto the data, tied together in a sequence to appear
-		// as a single stream.
-		return new SequenceInputStream(imageInputViews);
-	}
-
-	private ImageReader delegate(final int imageIndex, final String formatName) throws IOException {
-		final ImageReader delegate;
-		final Iterator<ImageReader> delegates;
-
-		delegates = ImageIO.getImageReadersByFormatName(formatName);
-
-		if (!delegates.hasNext()) {
-			throw new IIOException(String.format("Unable to read image of type: %s", formatName));
-		}
-
-		delegate = delegates.next();
-
-		delegate.setInput(new MemoryCacheImageInputStream(getDataSequence(imageIndex)));
-		return delegate;
-	}
-
-	private BufferedImage readDelegated(final int imageIndex, final ImageReadParam param, final String mimeType)
-			throws IOException {
-		delegate = delegate(imageIndex, mimeType);
+		final ImageReader delegate = getDelegate(imageIndex);
 
 		// Copy progress listeners to the delegate.
+		// TODO: in Java 8 this could be reduced to one line of code.
 		if (null != progressListeners) {
+			delegate.removeAllIIOReadProgressListeners();
 			for (final IIOReadProgressListener progressListener : progressListeners) {
-				delegate.addIIOReadProgressListener(progressListener);
+				delegate.addIIOReadProgressListener(new IIOReadProgressListenerProxy(this, progressListener));
 			}
 		}
 
 		// Copy update listeners.
 		if (null != updateListeners) {
+			delegate.removeAllIIOReadProgressListeners();
 			for (final IIOReadUpdateListener updateListener : updateListeners) {
-				delegate.addIIOReadUpdateListener(updateListener);
+				delegate.addIIOReadUpdateListener(new IIOReadUpdateListenerProxy(this, updateListener));
 			}
 		}
 
 		// Copy warning listeners.
 		if (null != warningListeners) {
+			delegate.removeAllIIOReadProgressListeners();
 			for (final IIOReadWarningListener warningListener : warningListeners) {
-				delegate.addIIOReadWarningListener(warningListener);
+				delegate.addIIOReadWarningListener(new IIOReadWarningListenerProxy(this, warningListener));
 			}
 		}
 
+		this.delegate = delegate;
 		return delegate.read(0, param);
-	}
-
-	private BufferedImage readFax(final int imageIndex, final ImageReadParam param, final int type)
-			throws IOException {
-		final IOCAImageContent imageContent = imageContents.get(imageIndex);
-
-		int fillOrder;
-
-		int width = imageContent.getImageSize().getHSize();
-		int height = imageContent.getImageSize().getVSize();
-
-		if (imageContent.getImageEncoding().getBitOrder() == IOCA.BITORDR_LTR) {
-			fillOrder = TIFFBaseline.FILL_LEFT_TO_RIGHT;
-		} else {
-			fillOrder = TIFFExtension.FILL_RIGHT_TO_LEFT;
-		}
-
-		final CCITTFaxDecoderStream decoder = new CCITTFaxDecoderStream(getDataSequence(imageIndex),
-				width, type, fillOrder, 0L);
-
-		final BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
-		final DataBuffer raster = destination.getRaster().getDataBuffer();
-
-		processImageStarted(imageIndex);
-
-		for (int b, i = 0, l = raster.getSize(); i < l; i++) {
-			b = decoder.read();
-			if (b < 0) {
-				throw new EOFException();
-			}
-
-			if (abortRequested()) {
-				break;
-			}
-
-			// Invert the colour.
-			// For some reason the decoder uses an inverted mapping.
-			raster.setElem(i, ((~b) & 0x00FF));
-		}
-
-		if (abortRequested()) {
-			processReadAborted();
-		} else {
-			processImageProgress(100F);
-		}
-
-		processImageComplete();
-		return destination;
 	}
 
 	@Override
 	public void dispose() {
 		super.dispose();
-		if (null != delegate) {
-			delegate.dispose();
-			delegate = null;
+		if (null != imageContents) {
+			for (IOCAImageContent imageContent : imageContents) {
+				imageContent.dispose();
+			}
 		}
 	}
 
@@ -202,54 +97,16 @@ public final class IOCAImageReader extends ImageReaderBase {
 		readStructure();
 		checkBounds(imageIndex);
 
-		final IOCAImageContent imageContent = imageContents.get(imageIndex);
-		final IOCAImageEncoding imageEncoding = imageContent.getImageEncoding();
+		final ImageTypeSpecifier typeSpecifier = getDelegate(imageIndex).getRawImageType(0);
 
-		// Try and get the type determined by the raw format.
-		switch (imageEncoding.getCompressionId()) {
-			case IOCA.COMPRID_G3_MH:
-			case IOCA.COMPRID_G3_MR:
-			case IOCA.COMPRID_IBM_MMR:
-			case IOCA.COMPRID_G4_MMR:
-			case IOCA.COMPRID_JBIG2:
-			case IOCA.COMPRID_ABIC_Q:
-				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY);
-
-			case IOCA.COMPRID_ABIC_C:
-				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
-
-			case IOCA.COMPRID_TIFF_2:
-			case IOCA.COMPRID_TIFF_LZW:
-			case IOCA.COMPRID_TIFF_PB:
-				return delegate(imageIndex, "tiff").getRawImageType(0);
-
-			case IOCA.COMPRID_JPEG:
-				final ImageTypeSpecifier type = delegate(imageIndex, "jpeg").getRawImageType(0);
-
-				if (null != type) {
-					return type;
-				}
-
-				break;
+		if (null != typeSpecifier) {
+			return typeSpecifier;
 		}
 
 		// Try and get the type from the IDE structure parameters.
-		switch (imageContent.getIdeStructure().getFormat()) {
-			case IOCA.FORMAT_RGB:
-				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
-
-			case IOCA.FORMAT_CMYK:
-				return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK),
-						new int[] {3, 2, 1, 0},
-						DataBuffer.TYPE_BYTE, false, false);
-
-			case IOCA.FORMAT_YCBCR:
-			case IOCA.FORMAT_YCRCB:
-				return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
-		}
-
-		// For all other types we can't give a response. Return null.
-		return null;
+		// This works around a problem with the JPEGImageReader, which doesn't return a specifier for images
+		// with no embedded metadata.
+		return getImageTypeSpecifierFromIdeStructure(imageIndex);
 	}
 
 	@Override
@@ -257,39 +114,33 @@ public final class IOCAImageReader extends ImageReaderBase {
 		readStructure();
 		checkBounds(imageIndex);
 
-		final List<ImageTypeSpecifier> types = new ArrayList<>();
-		final IOCAImageContent imageContent = imageContents.get(imageIndex);
+		final Iterator<ImageTypeSpecifier> specifierIterator = getDelegate(imageIndex).getImageTypes(0);
+		final ImageTypeSpecifier specifierFromStructure = getImageTypeSpecifierFromIdeStructure(imageIndex);
 
-		final IOCAIdeStructure ideStructure = imageContent.getIdeStructure();
-		final short compressionId = imageContent.getImageEncoding().getCompressionId();
-
-		// TIFFs, JPEGs and RL4 images may be RGB.
-		if (IOCA.COMPRID_JPEG == compressionId
-				|| IOCA.COMPRID_TIFF_2 == compressionId
-				|| IOCA.COMPRID_TIFF_LZW == compressionId
-				|| IOCA.COMPRID_TIFF_PB == compressionId
-				|| IOCA.COMPRID_RL4 == compressionId
-				|| (null != ideStructure && ideStructure.getFormat() == IOCA.FORMAT_RGB)) {
-			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+		// Some IOCA images have no IDE structure parameter.
+		// Nothing else can be done.
+		if (null == specifierFromStructure) {
+			return specifierIterator;
 		}
 
-		// JPEGs and any images that specify CMYK as a colour space may be CMYK.
-		if (IOCA.COMPRID_JPEG == compressionId
-				|| (null != ideStructure && ideStructure.getFormat() == IOCA.FORMAT_CMYK)) {
-			types.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK),
-					new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
+		// Use the type specifier implied by the structure if the delegate is unable to read one.
+		if (null == specifierIterator || !specifierIterator.hasNext()) {
+			return Collections.singletonList(specifierFromStructure).iterator();
 		}
 
-		// When no IDE structure is present, any IDE size > 0 implies grayscale.
-		// Otherwise bi-level is the default for everything except JPEG.
-		// For details see pp. 137: Appendix B. Bilevel, Grayscale, and Color Images.
-		if (imageContent.getIdeSize() > IOCA.IDESZ_BILEVEL) {
-			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
-		} else if (compressionId != IOCA.COMPRID_JPEG) {
-			types.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY));
+		// If the delegate produced a list of type specifiers, it may not necessarily include the one from the
+		// structure. Add that to the iterator.
+		final List<ImageTypeSpecifier> typeSpecifiers = new ArrayList<>();
+
+		// Add the implied type first.
+		typeSpecifiers.add(specifierFromStructure);
+
+		// Add all other suggested ones afterwards.
+		while (specifierIterator.hasNext()) {
+			typeSpecifiers.add(specifierIterator.next());
 		}
 
-		return types.iterator();
+		return typeSpecifiers.iterator();
 	}
 
 	@Override
@@ -321,6 +172,18 @@ public final class IOCAImageReader extends ImageReaderBase {
 		imageContents = null;
 	}
 
+	private ImageReader getDelegate(final int imageIndex) throws IIOException {
+		final IOCAImageContent imageContent = imageContents.get(imageIndex);
+		final ImageReader delegate = imageContent.getImageReader(imageInput);
+
+		if (null == delegate) {
+			throw new IIOException(String.format("Unsupported compression 0x%02x.",
+					imageContent.getImageEncoding().getCompressionId()));
+		}
+
+		return delegate;
+	}
+
 	private void readStructure() throws IOException {
 		assertInput();
 
@@ -334,7 +197,7 @@ public final class IOCAImageReader extends ImageReaderBase {
 		imageContents = new ArrayList<>();
 
 		try {
-			final IOCAReader reader = new IOCAReader(imageInput);
+			final IOCAReader reader = new IOCAReader(imageInput, seekForwardOnly);
 			IOCAImageContent imageContent;
 
 			// Collect a sequential, flat list of image contents for easy lookup by index.
@@ -344,6 +207,47 @@ public final class IOCAImageReader extends ImageReaderBase {
 		} finally {
 			imageInput.reset();
 		}
+	}
+
+	private ImageTypeSpecifier getImageTypeSpecifierFromIdeStructure(final int imageIndex) {
+		final IOCAIdeStructure ideStructure = imageContents.get(imageIndex).getIdeStructure();
+
+		if (null == ideStructure) {
+			return null;
+		}
+
+		switch (ideStructure.getFormat()) {
+			case IOCA.FORMAT_RGB:
+
+				// 8-bit RGB (all channels packed into one byte).
+				if (ideStructure.is8Bit()) {
+					return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+				}
+
+				// 24-bit RGB (each channel in a separate byte).
+				if (ideStructure.is16Bit()) {
+					return ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB),
+							new int[] { 0, 1, 2 }, DataBuffer.TYPE_BYTE, false, false);
+				}
+
+				break;
+
+			case IOCA.FORMAT_CMYK:
+
+				// Not sure about the band offsets here. Need a CMYK image to test.
+				return ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.TYPE_CMYK),
+						new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+
+			case IOCA.FORMAT_YCBCR:
+			case IOCA.FORMAT_YCRCB:
+
+				// Ibid. Need an image to test.
+				return ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.TYPE_YCbCr),
+						new int[] { 0, 1, 2 }, DataBuffer.TYPE_BYTE, false, false);
+		}
+
+		// Give up.
+		return null;
 	}
 
 	// To test:
@@ -378,42 +282,138 @@ public final class IOCAImageReader extends ImageReaderBase {
 		}
 	}
 
-	private final class StreamEnumeration implements Enumeration<InputStream> {
+	private static class IIOReadProgressListenerProxy implements IIOReadProgressListener {
 
-		private Iterator<IOCAImageContent.DataRecord> dataRecords;
+		private final IIOReadProgressListener target;
+		private final ImageReader source;
 
-		StreamEnumeration(final List<IOCAImageContent.DataRecord> dataRecords) {
-			this.dataRecords = dataRecords.iterator();
+		private IIOReadProgressListenerProxy(final ImageReader source, final IIOReadProgressListener target) {
+			this.source = source;
+			this.target = target;
 		}
 
 		@Override
-		public boolean hasMoreElements() {
-			return dataRecords.hasNext();
+		public void sequenceStarted(ImageReader source, int minIndex) {
+			target.sequenceStarted(this.source, minIndex);
 		}
 
 		@Override
-		public InputStream nextElement() {
-			final IOCAImageContent.DataRecord dataRecord = dataRecords.next();
+		public void sequenceComplete(final ImageReader source) {
+			target.sequenceComplete(this.source);
+		}
 
-			try {
-				if (imageInput.isCached()) {
-					imageInput.reset();
-					imageInput.mark();
-					imageInput.seek(dataRecord.getOffset());
+		@Override
+		public void imageStarted(final ImageReader source, final int imageIndex) {
+			target.imageStarted(this.source, imageIndex);
+		}
 
-					return new SubInputStream(imageInput, dataRecord.getLength());
-				}
+		@Override
+		public void imageProgress(final ImageReader source, final float percentageDone) {
+			target.imageProgress(this.source, percentageDone);
+		}
 
-				final byte[] buffer = dataRecord.getBuffer();
+		@Override
+		public void imageComplete(final ImageReader source) {
+			target.imageComplete(this.source);
+		}
 
-				if (null == buffer) {
-					throw new IllegalStateException("Expected buffer for non-cached stream but found null.");
-				}
+		@Override
+		public void thumbnailStarted(final ImageReader source, final int imageIndex, final int thumbnailIndex) {
+			target.thumbnailStarted(this.source, imageIndex, thumbnailIndex);
+		}
 
-				return new ByteArrayInputStream(buffer);
-			} catch (final IOException e) {
-				throw new RuntimeException(e);
-			}
+		@Override
+		public void thumbnailProgress(final ImageReader source, final float percentageDone) {
+			target.thumbnailProgress(this.source, percentageDone);
+		}
+
+		@Override
+		public void thumbnailComplete(final ImageReader source) {
+			target.thumbnailComplete(this.source);
+		}
+
+		@Override
+		public void readAborted(final ImageReader source) {
+			target.readAborted(this.source);
+		}
+	}
+
+	private static class IIOReadUpdateListenerProxy implements IIOReadUpdateListener {
+
+		private final IIOReadUpdateListener target;
+		private final ImageReader source;
+
+		private IIOReadUpdateListenerProxy(final ImageReader source, final IIOReadUpdateListener target) {
+			this.source = source;
+			this.target = target;
+		}
+
+		@Override
+		public void passStarted(final ImageReader source,
+		                        final BufferedImage theImage,
+		                        final int pass, final int minPass, final int maxPass,
+		                        final int minX, final int minY,
+		                        final int periodX, final int periodY,
+		                        final int[] bands) {
+			target.passStarted(this.source, theImage, pass, minPass, maxPass, minX, minY, periodX, periodY, bands);
+		}
+
+		@Override
+		public void imageUpdate(final ImageReader source,
+		                        final BufferedImage theImage,
+		                        final int minX, int minY,
+		                        final int width, int height,
+		                        final int periodX, int periodY,
+		                        final int[] bands) {
+			target.imageUpdate(this.source, theImage, minX, minY, width, height, periodX, periodY, bands);
+		}
+
+		@Override
+		public void passComplete(final ImageReader source, final BufferedImage theImage) {
+			target.passComplete(this.source, theImage);
+		}
+
+		@Override
+		public void thumbnailPassStarted(final ImageReader source,
+		                                 final BufferedImage theThumbnail,
+		                                 final int pass,
+		                                 final int minPass, final int maxPass,
+		                                 final int minX, final int minY,
+		                                 final int periodX, final int periodY,
+		                                 final int[] bands) {
+			target.thumbnailPassStarted(this.source,
+					theThumbnail, pass, minPass, maxPass, minX, minY, periodX, periodY, bands);
+		}
+
+		@Override
+		public void thumbnailUpdate(final ImageReader source,
+		                            final BufferedImage theThumbnail,
+		                            final int minX, final int minY,
+		                            final int width, final int height,
+		                            final int periodX, final int periodY,
+		                            final int[] bands) {
+			target.thumbnailUpdate(this.source, theThumbnail, minX, minY, width, height, periodX, periodY, bands);
+		}
+
+		@Override
+		public void thumbnailPassComplete(final ImageReader source, final BufferedImage theThumbnail) {
+			target.thumbnailPassComplete(this.source, theThumbnail);
+		}
+	}
+
+	private static class IIOReadWarningListenerProxy implements IIOReadWarningListener {
+
+		private final IIOReadWarningListener target;
+		private final ImageReader source;
+
+		private IIOReadWarningListenerProxy(final ImageReader source, final IIOReadWarningListener target) {
+			this.source = source;
+			this.target = target;
+		}
+
+		@Override
+		public void warningOccurred(final ImageReader source, final String warning) {
+			target.warningOccurred(this.source, warning);
 		}
 	}
 }
