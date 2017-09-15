@@ -272,7 +272,7 @@ final class IOCAReader {
 		imageContent.setIdeSize((short) imageInput.readUnsignedByte());
 
 		if (DEBUG) {
-			System.err.println(String.format("IOCA: IDE size set to 0x%02x", imageContent.getIdeSize()));
+			System.err.println(String.format("IOCA: IDE size set to %d bits.", imageContent.getIdeSize()));
 		}
 	}
 
@@ -292,6 +292,8 @@ final class IOCAReader {
 		final IOCAIdeStructure ideStructure = new IOCAIdeStructure();
 
 		ideStructure.setFlags(imageInput.readByte());
+
+		// TODO: check formats against "Table 19. Valid Compression Algorithms for Each Data Type".
 		ideStructure.setFormat(imageInput.readByte());
 
 		if (DEBUG) {
@@ -305,20 +307,21 @@ final class IOCAReader {
 
 		ideStructure.setSize1(imageInput.readByte());
 		if (DEBUG) {
-			System.err.println(String.format("IOCA: size 1 set to 0x%02x", ideStructure.getSize1()));
+			System.err.println(String.format("IOCA: size 1 set to %d bits", ideStructure.getSize1()));
 		}
 
+		// TODO: warn if the IDE sizes given here conflict with the IDESZ parameter.
 		if (length > 0x06) {
 			ideStructure.setSize2(imageInput.readByte());
 			if (DEBUG) {
-				System.err.println(String.format("IOCA: size 2 set to 0x%02x", ideStructure.getSize1()));
+				System.err.println(String.format("IOCA: size 2 set to %d bits.", ideStructure.getSize2()));
 			}
 		}
 
 		if (length > 0x07) {
 			ideStructure.setSize3(imageInput.readByte());
 			if (DEBUG) {
-				System.err.println(String.format("IOCA: size 3 set to 0x%02x", ideStructure.getSize1()));
+				System.err.println(String.format("IOCA: size 3 set to %d bits.", ideStructure.getSize3()));
 			}
 		}
 
@@ -329,10 +332,12 @@ final class IOCAReader {
 
 			ideStructure.setSize4(imageInput.readByte());
 			if (DEBUG) {
-				System.err.println(String.format("IOCA: size 4 set to 0x%02x", ideStructure.getSize1()));
+				System.err.println(String.format("IOCA: size 4 set to %d bits.", ideStructure.getSize4()));
 			}
 		} else if (ideStructure.getFormat() == IOCA.FORMAT_CMYK) {
-			throw new IIOException("EC-9B18: SIZE4 is not present and the colour space is not CMYK.");
+
+			// TODO: convert these non-fatal errors into warnings.
+			throw new IIOException("EC-9B18: SIZE4 is not present and the colour space is CMYK.");
 		}
 
 		imageContent.setIdeStructure(ideStructure);

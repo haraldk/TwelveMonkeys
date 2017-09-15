@@ -54,7 +54,7 @@ class CCITTFaxImageReader extends ImageReaderBase {
 
 			// Invert the colour.
 			// For some reason the decoder uses an inverted mapping.
-			raster.setElem(i, ((~b) & 0x00FF));
+			raster.setElem(i, (~b) & 0x00FF);
 			if (abortRequested()) {
 				break;
 			}
@@ -72,7 +72,7 @@ class CCITTFaxImageReader extends ImageReaderBase {
 
 	@Override
 	public boolean canReadRaster() {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -84,6 +84,9 @@ class CCITTFaxImageReader extends ImageReaderBase {
 	@Override
 	public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
 		checkBounds(imageIndex);
+
+		// TODO: G4 MMR supports 4 bit CMYK and and 1-bit YCrCb.
+		// See "Table 19. Valid Compression Algorithms for Each Data Type".
 		return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY);
 	}
 

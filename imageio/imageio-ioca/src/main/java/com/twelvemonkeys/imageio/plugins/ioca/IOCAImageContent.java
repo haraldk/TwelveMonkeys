@@ -1,5 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
+import com.sun.prism.PixelFormat;
+import com.twelvemonkeys.imageio.ImageReaderDecorator;
 import com.twelvemonkeys.imageio.metadata.ioca.IOCA;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFBaseline;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFExtension;
@@ -8,8 +10,11 @@ import com.twelvemonkeys.util.Function;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -142,13 +147,13 @@ final class IOCAImageContent {
 	static {
 
 		// Register factories for CCITT fax formats.
-		imageReaderFactory.put(IOCA.COMPRID_G4_MMR, new CCITFaxFactory(TIFFExtension.COMPRESSION_CCITT_T4));
+		imageReaderFactory.put(IOCA.COMPRID_G4_MMR, new CCITFaxFactory(TIFFExtension.COMPRESSION_CCITT_T6));
 		imageReaderFactory.put(IOCA.COMPRID_G3_MR, new CCITFaxFactory(TIFFExtension.COMPRESSION_CCITT_T4));
 		imageReaderFactory.put(IOCA.COMPRID_G3_MH, new CCITFaxFactory(TIFFBaseline
 				.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE));
 
 		// The one and only JPEG format.
-		imageReaderFactory.put(IOCA.COMPRID_JPEG, new ImageReaderFactory("JPEG"));
+		imageReaderFactory.put(IOCA.COMPRID_JPEG, new JPEGFactory());
 
 		// Various TIFF formats.
 		imageReaderFactory.put(IOCA.COMPRID_TIFF_2, new ImageReaderFactory("TIFF"));
@@ -177,6 +182,18 @@ final class IOCAImageContent {
 			}
 
 			return delegates.next();
+		}
+	}
+
+	private static class JPEGFactory extends ImageReaderFactory {
+
+		private JPEGFactory() {
+			super("JPEG");
+		}
+
+		@Override
+		public ImageReader apply(final IOCAImageContent imageContent) {
+			return new IOCAJPEGImageReader(super.apply(imageContent), imageContent);
 		}
 	}
 

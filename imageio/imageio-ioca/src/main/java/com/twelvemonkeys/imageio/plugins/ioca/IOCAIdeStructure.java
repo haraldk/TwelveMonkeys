@@ -27,12 +27,24 @@ final class IOCAIdeStructure {
 		this.format = format;
 	}
 
-	boolean is8Bit() {
-		return 0x08 == size1 && 0x08 == size2 && 0x08 == size3;
+	boolean is8BitGrayscale() {
+		return (8 == size1 + size2 + size3) && 0 == size4
+				&& (IOCA.FORMAT_YCRCB == format || IOCA.FORMAT_YCBCR == format);
 	}
 
-	boolean is16Bit() {
-		return 0x10 == size1 && 0x10 == size2 && 0x10 == size3;
+	boolean is24BitRGB() {
+		return 8 == size1 && 8 == size2 && 8 == size3 && 0 == size4
+				&& IOCA.FORMAT_RGB == format;
+	}
+
+	boolean is24BitYCbCr() {
+		return 8 == size1 && 8 == size2 && 8 == size3 && 0 == size4
+				&& IOCA.FORMAT_YCBCR == format;
+	}
+
+	boolean is32BitCMYK() {
+		return 8 == size1 && 8 == size2 && 8 == size3 && 8 == size4
+				&& IOCA.FORMAT_CMYK == format;
 	}
 
 	short getSize1() {
