@@ -1,7 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
-import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 
 import java.io.IOException;
 import java.util.Locale;

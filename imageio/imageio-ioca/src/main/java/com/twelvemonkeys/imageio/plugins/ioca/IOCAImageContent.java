@@ -1,7 +1,5 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
-import com.sun.prism.PixelFormat;
-import com.twelvemonkeys.imageio.ImageReaderDecorator;
 import com.twelvemonkeys.imageio.metadata.ioca.IOCA;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFBaseline;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFExtension;
@@ -10,15 +8,14 @@ import com.twelvemonkeys.util.Function;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
-import java.awt.color.ColorSpace;
-import java.awt.image.BufferedImage;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.SequenceInputStream;
+
 import java.util.*;
 
 final class IOCAImageContent {
