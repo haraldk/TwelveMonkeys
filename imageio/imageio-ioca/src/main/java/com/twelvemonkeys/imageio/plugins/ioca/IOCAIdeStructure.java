@@ -52,7 +52,7 @@ final class IOCAIdeStructure {
 	}
 
 	void setSize1(final short size1) {
-		this.size1 = size1;
+		this.size1 = verifyRange(size1);
 	}
 
 	short getSize2() {
@@ -60,7 +60,7 @@ final class IOCAIdeStructure {
 	}
 
 	void setSize2(final short size2) {
-		this.size2 = size2;
+		this.size2 = verifyRange(size2);
 	}
 
 	short getSize3() {
@@ -68,7 +68,7 @@ final class IOCAIdeStructure {
 	}
 
 	void setSize3(final short size3) {
-		this.size3 = size3;
+		this.size3 = verifyRange(size3);
 	}
 
 	short getSize4() {
@@ -76,10 +76,10 @@ final class IOCAIdeStructure {
 	}
 
 	void setSize4(final short size4) {
-		this.size4 = size4;
+		this.size4 = verifyRange(size4);
 	}
 
-	private int verifyRange(final short value) {
+	private short verifyRange(final short value) {
 		if (value < 0x00 || value > 0xFF) {
 			throw new IllegalArgumentException("EC-9B10: invalid or unsupported IDE Structure parameter value.");
 		}

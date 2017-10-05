@@ -1,6 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.ioca;
 
 import com.twelvemonkeys.imageio.ImageReaderDecorator;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
@@ -84,13 +85,13 @@ class IOCAJPEGImageReader extends ImageReaderDecorator {
 		// Standard 24-bit YCbCr (each component occupying 8 bits).
 		// Java stores each component in a separate byte internally, hence TYPE_BYTE.
 		if (ideStructure.is24BitYCbCr()) {
-			return ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.TYPE_YCbCr),
-					new int[]{0, 1, 2}, DataBuffer.TYPE_BYTE, false, false);
+			return ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_PYCC),
+					new int[] {0, 1, 2}, DataBuffer.TYPE_BYTE, false, false);
 		}
 
 		// Standard 32-bit CMYK.
 		if (ideStructure.is32BitCMYK()) {
-			return ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.TYPE_CMYK),
+			return ImageTypeSpecifier.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK),
 					new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
 		}
 

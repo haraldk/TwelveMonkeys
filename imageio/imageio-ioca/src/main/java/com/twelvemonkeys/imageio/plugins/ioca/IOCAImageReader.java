@@ -160,7 +160,8 @@ public final class IOCAImageReader extends ImageReaderBase {
 	// To test:
 	// $ mvn package -DskipTest
 	// $ cd imageio/imageio-ioca/target
-	// $ java -cp imageio-ioca-3.4-SNAPSHOT-shaded.jar com.twelvemonkeys.imageio.plugins.ioca.IOCAImageReader \
+	// $ java -cp imageio-ioca-3.4-SNAPSHOT-with-dependencies.jar \
+	//      com.twelvemonkeys.imageio.plugins.ioca.IOCAImageReader \
 	//      path/to/file.ica
 	public static void main(final String[] args) throws IOException {
 		ImageIO.setUseCache(true);
