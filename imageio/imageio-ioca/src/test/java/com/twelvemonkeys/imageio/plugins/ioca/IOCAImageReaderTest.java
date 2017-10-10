@@ -17,7 +17,8 @@ public class IOCAImageReaderTest extends ImageReaderAbstractTest<IOCAImageReader
 		return Arrays.asList(
 				new TestData(getClassLoaderResource("/ioca/G4MMR.ica"), new Dimension(2480, 3300)),
 				new TestData(getClassLoaderResource("/ioca/JPEG_YCbCr.ica"), new Dimension(1656, 2338)),
-				new TestData(getClassLoaderResource("/ioca/JPEG.ica"), new Dimension(778, 497))
+				new TestData(getClassLoaderResource("/ioca/JPEG.ica"), new Dimension(778, 497)),
+				new TestData(getClassLoaderResource("/ioca/bad_closing_sequence.ica"), new Dimension(1984, 2806))
 		);
 	}
 

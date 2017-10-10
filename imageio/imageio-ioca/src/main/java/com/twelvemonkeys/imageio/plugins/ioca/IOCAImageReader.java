@@ -144,8 +144,16 @@ public final class IOCAImageReader extends ImageReaderBase {
 
 		imageContents = new ArrayList<>();
 
+		final IOCAReader reader = new IOCAReader(imageInput, seekForwardOnly) {
+
+			@Override
+			void warningOccurred(final String warning) {
+				super.warningOccurred(warning);
+				processWarningOccurred(warning);
+			}
+		};
+
 		try {
-			final IOCAReader reader = new IOCAReader(imageInput, seekForwardOnly);
 			IOCAImageContent imageContent;
 
 			// Collect a sequential, flat list of image contents for easy lookup by index.

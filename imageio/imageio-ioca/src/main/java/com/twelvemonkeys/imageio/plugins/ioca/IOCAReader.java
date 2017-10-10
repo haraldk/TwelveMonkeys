@@ -8,7 +8,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
-final class IOCAReader {
+class IOCAReader {
 
 	private final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.ioca.debug"));
 
@@ -46,8 +46,18 @@ final class IOCAReader {
 		return imageContent;
 	}
 
+	void warningOccurred(final String warning) {
+		if (DEBUG) {
+			System.err.println("IOCA warning: " + warning);
+		}
+	}
+
 	private IOCAImageContent readLong(final long offset, final int code) throws IOException {
 		final int length = imageInput.read();
+
+		if (DEBUG) {
+			System.err.println("IOCA: read long (offset " + offset + "; length " + length + ")");
+		}
 
 		switch (code) {
 			case IOCA.CODE_POINT_BEGIN_SEGMENT:
@@ -108,6 +118,11 @@ final class IOCAReader {
 	private void readExtended(final long offset, final int code) throws IOException {
 		final int length = imageInput.readUnsignedShort();
 
+		if (DEBUG) {
+			System.err.println("IOCA: read extended (code xFE" + Integer.toHexString(code)
+					+ "; offset " + offset + "; length " + length + ")");
+		}
+
 		switch (code) {
 			case IOCA.CODE_POINT_IMAGE_DATA:
 				imageData(length);
@@ -152,7 +167,7 @@ final class IOCAReader {
 		}
 
 		if (null == segment) {
-			throw new IIOException("EC-710F: invalid sequence.");
+			warningOccurred("EC-710F: invalid sequence. End segment appears out of sequence.");
 		}
 
 		segment = null;
@@ -185,7 +200,7 @@ final class IOCAReader {
 		}
 
 		if (null == segment || null == imageContent) {
-			throw new IIOException("EC-910F: invalid sequence.");
+			warningOccurred("EC-910F: invalid sequence. End image content appears out of sequence.");
 		}
 
 		final IOCAImageContent imageContent = this.imageContent;
