@@ -1,7 +1,7 @@
 language: java
 jdk:
   - oraclejdk8
-  - oraclejdk9
+# Removing Oracle JDK 7 for now, as it seems no longer supported by Travis, which is extremely unfortunate
 #  - oraclejdk7
 # Some JPEGImageReader tests fail on OpenJDK, need to investigate/fix before enabling
 #  - openjdk7
