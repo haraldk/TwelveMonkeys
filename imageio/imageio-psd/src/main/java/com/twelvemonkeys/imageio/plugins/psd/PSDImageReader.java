@@ -227,19 +227,19 @@ public final class PSDImageReader extends ImageReaderBase {
                 if (header.channels == 4 && header.bits == 8) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_BYTE, false, false);
                 }
-                else if (header.channels == 5 && header.bits == 8) {
+                else if (header.channels >= 5 && header.bits == 8) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_BYTE, true, false);
                 }
                 else if (header.channels == 4 && header.bits == 16) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_USHORT, false, false);
                 }
-                else if (header.channels == 5 && header.bits == 16) {
+                else if (header.channels >= 5 && header.bits == 16) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_USHORT, true, false);
                 }
                 else if (header.channels == 4 && header.bits == 32) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, DataBuffer.TYPE_INT, false, false);
                 }
-                else if (header.channels == 5 && header.bits == 32) {
+                else if (header.channels >= 5 && header.bits == 32) {
                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3, 4}, new int[] {0, 0, 0, 0, 0}, DataBuffer.TYPE_INT, true, false);
                 }
 

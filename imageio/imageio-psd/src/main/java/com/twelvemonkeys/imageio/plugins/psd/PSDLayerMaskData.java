@@ -114,10 +114,9 @@ final class PSDLayerMaskData {
             if (dataLeft >= 2) {
                 // Real Flags. Same as Flags information above.
                 flags = pInput.readUnsignedByte();
-                dataLeft--;
                 // Real user mask background. 0 or 255.
                 defaultColor = pInput.readUnsignedByte();
-                dataLeft--;
+                dataLeft -= 2;
             }
             if (dataLeft >= 16) {
                 // Rectangle enclosing layer mask: Top, left, bottom, right.
