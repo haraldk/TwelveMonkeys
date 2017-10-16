@@ -386,9 +386,21 @@ public class ImageTypeSpecifiersTest {
                 UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, false, false),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT)
         );
+    }
+
+    @Test
+    public void testCreateGrayscaleFloat() {
         assertEquals(
-                UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, false, false),
-                ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT)
+                ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, DataBuffer.TYPE_FLOAT, false, false),
+                ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_FLOAT)
+        );
+    }
+
+    @Test
+    public void testCreateGrayscaleDouble() {
+        assertEquals(
+                ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0}, DataBuffer.TYPE_DOUBLE, false, false),
+                ImageTypeSpecifiers.createGrayscale(64, DataBuffer.TYPE_DOUBLE)
         );
     }
 
@@ -460,6 +472,30 @@ public class ImageTypeSpecifiersTest {
         assertEquals(
                 UInt32ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, true, true),
                 ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_INT, true)
+        );
+    }
+
+    @Test
+    public void testCreateGrayscaleAlphaFloat() {
+        assertEquals(
+                ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, DataBuffer.TYPE_FLOAT, true, false),
+                ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_FLOAT, false)
+        );
+        assertEquals(
+                ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, DataBuffer.TYPE_FLOAT, true, true),
+                ImageTypeSpecifiers.createGrayscale(32, DataBuffer.TYPE_FLOAT, true)
+        );
+    }
+
+    @Test
+    public void testCreateGrayscaleAlphaDouble() {
+        assertEquals(
+                ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, DataBuffer.TYPE_DOUBLE, true, false),
+                ImageTypeSpecifiers.createGrayscale(64, DataBuffer.TYPE_DOUBLE, false)
+        );
+        assertEquals(
+                ImageTypeSpecifier.createInterleaved(GRAY, new int[] {0, 1}, DataBuffer.TYPE_DOUBLE, true, true),
+                ImageTypeSpecifiers.createGrayscale(64, DataBuffer.TYPE_DOUBLE, true)
         );
     }
 
