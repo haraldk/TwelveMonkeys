@@ -2397,7 +2397,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 //    //                    System.err.println("Scale time: " + (System.currentTimeMillis() - start) + " ms");
 //                }
 
-                        if (image.getType() == BufferedImage.TYPE_CUSTOM) {
+                        if (image != null && image.getType() == BufferedImage.TYPE_CUSTOM) {
                             start = System.currentTimeMillis();
                             image = new ColorConvertOp(null).filter(image, new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB));
                             System.err.println("Conversion time: " + (System.currentTimeMillis() - start) + " ms");
@@ -2406,7 +2406,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                         showIt(image, String.format("Image: %s [%d x %d]", file.getName(), reader.getWidth(imageNo), reader.getHeight(imageNo)));
 
                         try {
-                            int numThumbnails = reader.getNumThumbnails(0);
+                            int numThumbnails = reader.getNumThumbnails(imageNo);
                             for (int thumbnailNo = 0; thumbnailNo < numThumbnails; thumbnailNo++) {
                                 BufferedImage thumbnail = reader.readThumbnail(imageNo, thumbnailNo);
                                 //                        System.err.println("thumbnail: " + thumbnail);

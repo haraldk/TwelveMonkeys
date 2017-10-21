@@ -1207,6 +1207,10 @@ public final class PSDImageReader extends ImageReaderBase {
     private List<PSDThumbnail> getThumbnailResources(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
 
+        if (imageIndex > 0) {
+            return null;
+        }
+
         readHeader();
 
         List<PSDThumbnail> thumbnails = null;
@@ -1240,7 +1244,7 @@ public final class PSDImageReader extends ImageReaderBase {
         List<PSDThumbnail> thumbnails = getThumbnailResources(imageIndex);
 
         if (thumbnails == null) {
-            throw new IndexOutOfBoundsException(String.format("thumbnail index %d > 0", thumbnailIndex));
+            throw new IndexOutOfBoundsException(String.format("image index %d > 0", imageIndex));
         }
 
         return thumbnails.get(thumbnailIndex);
@@ -1258,7 +1262,6 @@ public final class PSDImageReader extends ImageReaderBase {
 
     @Override
     public BufferedImage readThumbnail(final int imageIndex, final int thumbnailIndex) throws IOException {
-        // TODO: Thumbnail progress listeners...
         PSDThumbnail thumbnail = getThumbnailResource(imageIndex, thumbnailIndex);
 
         // TODO: It's possible to attach listeners to the ImageIO reader delegate... But do we really care?
