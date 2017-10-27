@@ -49,7 +49,7 @@ final class PSDUnicodeAlphaNames extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        names = new ArrayList<String>();
+        names = new ArrayList<>();
 
         long left = size;
         while (left > 0) {
@@ -57,5 +57,12 @@ final class PSDUnicodeAlphaNames extends PSDImageResource {
             names.add(name);
             left -= name.length() * 2 + 4;
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = toStringBuilder();
+        builder.append(", alpha channels: ").append(names).append("]");
+        return builder.toString();
     }
 }

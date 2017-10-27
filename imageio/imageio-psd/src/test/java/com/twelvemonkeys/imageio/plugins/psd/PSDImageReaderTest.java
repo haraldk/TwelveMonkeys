@@ -83,7 +83,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 // 3 channel, RGB, 32 bit samples
                 new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5)),
                 // 3 channel, RGB, 8 bit samples ("Large Document Format" aka PSB)
-                new TestData(getClassLoaderResource("/psd/test_original.psb"), new Dimension(710, 512)),
+                new TestData(getClassLoaderResource("/psb/test_original.psb"), new Dimension(710, 512)),
                 // From http://telegraphics.com.au/svn/psdparse/trunk/psd/
                 new TestData(getClassLoaderResource("/psd/adobehq.psd"), new Dimension(341, 512)),
                 new TestData(getClassLoaderResource("/psd/adobehq_ind.psd"), new Dimension(341, 512)),
@@ -93,7 +93,10 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 new TestData(getClassLoaderResource("/psd/adobehq-5.5.psd"), new Dimension(341, 512)),
                 new TestData(getClassLoaderResource("/psd/adobehq-7.0.psd"), new Dimension(341, 512)),
                 // From https://github.com/kmike/psd-tools/tree/master/tests/psd_files
-                new TestData(getClassLoaderResource("/psd/masks2.psd"), new Dimension(640, 1136)) // TODO: Test read layers!
+                new TestData(getClassLoaderResource("/psd/masks2.psd"), new Dimension(640, 1136)),
+                // RGB, multiple alpha channels, no transparency
+                new TestData(getClassLoaderResource("/psd/rgb-multichannel-no-transparency.psd"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"), new Dimension(100, 100))
                 // TODO: Need uncompressed PSD
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
         );
@@ -450,6 +453,34 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                     assertRGBEquals("Colors differ", colors[i], rgb, 1);
                 }
             }
+        }
+    }
+
+    @Test
+    public void testMultiChannelNoTransparencyPSD() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        // The following PSD is RGB, has 4 channels (1 alpha/auxillary channel), but should be treated as opaque
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/rgb-multichannel-no-transparency.psd"))) {
+            imageReader.setInput(stream);
+
+            BufferedImage image = imageReader.read(0);
+
+            assertEquals(Transparency.OPAQUE, image.getTransparency());
+        }
+    }
+
+    @Test
+    public void testMultiChannelNoTransparencyPSB() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        // The following PSB is RGB, has 4 channels (1 alpha/auxillary channel), but should be treated as opaque
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"))) {
+            imageReader.setInput(stream);
+
+            BufferedImage image = imageReader.read(0);
+
+            assertEquals(Transparency.OPAQUE, image.getTransparency());
         }
     }
 

@@ -64,6 +64,7 @@ public final class PSDMetadata extends AbstractMetadata {
     PSDGlobalLayerMask globalLayerMask;
     List<PSDLayerInfo> layerInfo;
 
+    int layerCount;
     long imageResourcesStart;
     long layerAndMaskInfoStart;
     long layersStart;
@@ -170,7 +171,7 @@ public final class PSDMetadata extends AbstractMetadata {
 
                 node = new IIOMetadataNode("DisplayInfo");
                 node.setAttribute("colorSpace", DISPLAY_INFO_CS[displayInfo.colorSpace]);
-                
+
                 StringBuilder builder = new StringBuilder();
 
                 for (short color : displayInfo.colors) {
@@ -307,7 +308,7 @@ public final class PSDMetadata extends AbstractMetadata {
             }
             else if (imageResource instanceof PSDXMPData) {
                 // TODO: Revise/rethink this... Would it be possible to parse XMP as IIOMetadataNodes? Or is that just stupid...
-                // Or maybe use the Directory approach used by IPTC and EXIF.. 
+                // Or maybe use the Directory approach used by IPTC and EXIF..
                 PSDXMPData xmp = (PSDXMPData) imageResource;
 
                 node = new IIOMetadataNode("DirectoryResource");
@@ -627,7 +628,7 @@ public final class PSDMetadata extends AbstractMetadata {
 
         // TODO: If no PSDResolutionInfo, this might still be available in the EXIF data...
         Iterator<PSDResolutionInfo> resolutionInfos = getResources(PSDResolutionInfo.class);
-        if (!resolutionInfos.hasNext()) {
+        if (resolutionInfos.hasNext()) {
             PSDResolutionInfo resolutionInfo = resolutionInfos.next();
 
             node = new IIOMetadataNode("HorizontalPixelSize");
@@ -643,7 +644,7 @@ public final class PSDMetadata extends AbstractMetadata {
     }
 
     private static float asMM(final short unit, final float resolution) {
-        // Unit: 1 -> pixels per inch, 2 -> pixels pr cm   
+        // Unit: 1 -> pixels per inch, 2 -> pixels pr cm
         return (unit == 1 ? 25.4f : 10) / resolution;
     }
 
@@ -795,12 +796,15 @@ public final class PSDMetadata extends AbstractMetadata {
         return transparencyNode;
     }
 
-    private boolean hasAlpha() {
-        return header.mode == PSD.COLOR_MODE_RGB && header.channels > 3 ||
-                header.mode == PSD.COLOR_MODE_CMYK & header.channels > 4;
+    boolean hasAlpha() {
+        return layerCount < 0;
     }
 
-    <T extends PSDImageResource> Iterator<T> getResources(final Class<T> resourceType) {
+    int getLayerCount() {
+        return Math.abs(layerCount);
+    }
+
+    private <T extends PSDImageResource> Iterator<T> getResources(final Class<T> resourceType) {
         // NOTE: The cast here is wrong, strictly speaking, but it does not matter...
         @SuppressWarnings({"unchecked"})
         Iterator<T> iterator = (Iterator<T>) imageResources.iterator();
@@ -812,7 +816,7 @@ public final class PSDMetadata extends AbstractMetadata {
         });
     }
 
-    Iterator<PSDImageResource> getResources(final int... resourceTypes) {
+    private Iterator<PSDImageResource> getResources(final int... resourceTypes) {
         Iterator<PSDImageResource> iterator = imageResources.iterator();
 
         return new FilterIterator<>(iterator, new FilterIterator.Filter<PSDImageResource>() {
