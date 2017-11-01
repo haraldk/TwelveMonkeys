@@ -158,7 +158,9 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-16bit-gray.tif"), new Dimension(512, 512)),  // Lossless JPEG Gray, 16 bit/sample
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-24bit-rgb"), new Dimension(512, 512)),  // Lossless JPEG RGB, 8 bit/sample
                 // Custom PIXTIFF ZIP (Compression: 50013)
-                new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313))  // ZIP Gray, 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313)),  // ZIP Gray, 8 bit/sample
+                // GeoTIFF
+                new TestData(getClassLoaderResource("/tiff/geotiff-float32.tif"), new Dimension(299, 221))  // GeoTIFF, float32
         );
     }
 
@@ -237,6 +239,28 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
 
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+        }
+    }
+
+    @Test
+    public void testReadGeoTIFFFloat32() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/geotiff-float32.tif"), new Dimension(299, 221));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+
+            Raster raster = image.getData();
+            float val = raster.getSampleFloat(37, 195, 0);
+            assertTrue(Float.compare(val,1.0f) > 0);
         }
     }
 
