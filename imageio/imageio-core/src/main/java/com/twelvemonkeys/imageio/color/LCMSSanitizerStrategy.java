@@ -12,7 +12,7 @@ import java.awt.color.ICC_Profile;
  * @version $Id: LCMSProfileCleaner.java,v 1.0 06/01/15 harald.kuhr Exp$
  */
 final class LCMSSanitizerStrategy implements ICCProfileSanitizer {
-    public void fixProfile(final ICC_Profile profile, byte[] profileHeader) {
+    public void fixProfile(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
         // Let LCMS handle things internally for now
     }

@@ -12,7 +12,7 @@ import java.awt.color.ICC_Profile;
  * @version $Id: ProfileCleaner.java,v 1.0 06/01/15 harald.kuhr Exp$
  */
 interface ICCProfileSanitizer {
-    void fixProfile(ICC_Profile profile, byte[] profileHeader);
+    void fixProfile(ICC_Profile profile);
 
     class Factory {
         static ICCProfileSanitizer get() {
@@ -36,7 +36,7 @@ interface ICCProfileSanitizer {
             // sun.java2d.cmm.CMSManager (using default sun.java2d.cmm=sun.java2d.cmm.kcms.CMM)
             // sun.java2d.cmm.PCMM
             // sun.java2d.cmm.kcms.CMM implements PCMM (similar to Java 6 CMM)
-            // sun.javard.cmm.lcms.LCMS implements PCMM
+            // sun.java2d.cmm.lcms.LCMS implements PCMM
 
             // Java 8:
             // sun.java2d.cmm.CMSManager (using default sun.java2d.cmm=sun.java2d.cmm.lcms.LcmsServiceProvider)

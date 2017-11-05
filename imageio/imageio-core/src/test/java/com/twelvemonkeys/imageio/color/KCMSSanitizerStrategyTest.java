@@ -9,33 +9,36 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 public class KCMSSanitizerStrategyTest {
     private static final byte[] XYZ = new byte[] {'X', 'Y', 'Z', ' '};
 
     @Test(expected = IllegalArgumentException.class)
     public void testFixProfileNullProfile() throws Exception {
-        new KCMSSanitizerStrategy().fixProfile(null, null);
+        new KCMSSanitizerStrategy().fixProfile(null);
     }
 
     @Test
-    public void testFixProfileNullHeader() throws Exception {
-        new KCMSSanitizerStrategy().fixProfile(((ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_sRGB)).getProfile(), null);
+    public void testFixProfile() throws Exception {
+        new KCMSSanitizerStrategy().fixProfile(((ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_sRGB)).getProfile());
     }
 
     @Test
     public void testFixProfileUpdateHeader() throws Exception {
+        byte[] header = new byte[128];
+        header[ICC_Profile.icHdrRenderingIntent + 3] = 1;
         ICC_Profile profile = mock(ICC_Profile.class);
-        byte[] header = new byte[0];
+        when(profile.getData(ICC_Profile.icSigHead)).thenReturn(header);
 
         // Can't test that the values are actually changed, as the LCMS-backed implementation
         // of ICC_Profile does not change based on this invocation.
-        new KCMSSanitizerStrategy().fixProfile(profile, header);
+        new KCMSSanitizerStrategy().fixProfile(profile);
 
         // Verify that the method was invoked
-        verify(profile).setData(ICC_Profile.icSigHead, header);
+        verify(profile).setData(eq(ICC_Profile.icSigHead), any(byte[].class));
     }
 
     @Test
@@ -43,7 +46,7 @@ public class KCMSSanitizerStrategyTest {
         // TODO: Consider re-writing this using mocks, to avoid dependencies on the CMS implementation
         ICC_Profile corbisRGB = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB.icc"));
 
-        new KCMSSanitizerStrategy().fixProfile(corbisRGB, null);
+        new KCMSSanitizerStrategy().fixProfile(corbisRGB);
 
         // Make sure all known affected tags have type 'XYZ '
         assertArrayEquals(XYZ, Arrays.copyOfRange(corbisRGB.getData(ICC_Profile.icSigMediaWhitePointTag), 0, 4));

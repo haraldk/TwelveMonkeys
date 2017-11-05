@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -82,7 +83,7 @@ public class ColorSpacesTest {
 
     private ICC_Profile createBrokenProfile(ICC_Profile internal) {
         byte[] data = internal.getData();
-        data[ICC_Profile.icHdrRenderingIntent] = 1; // Intent: 1 == Relative Colormetric
+        data[ICC_Profile.icHdrRenderingIntent + 3] = 1; // Intent: 1 == Relative Colormetric
         return ICC_Profile.getInstance(data);
     }
 
@@ -184,5 +185,19 @@ public class ColorSpacesTest {
     @Test(expected = IllegalArgumentException.class)
     public void testIsCS_sRGBNull() {
         ColorSpaces.isCS_sRGB(null);
+    }
+
+    @Test
+    public void testEqualHeadersDifferentProfile() throws IOException {
+        // These profiles are extracted from various JPEGs, and have the exact same profile header...
+        ICC_Profile profile1 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        ICC_Profile profile2 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/color_match_rgb.icc"));
+
+        assertNotSame(profile1, profile2); // Sanity
+
+        ICC_ColorSpace cs1 = ColorSpaces.createColorSpace(profile1);
+        ICC_ColorSpace cs2 = ColorSpaces.createColorSpace(profile2);
+
+        assertNotSame(cs1, cs2);
     }
 }

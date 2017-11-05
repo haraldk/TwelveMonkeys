@@ -40,6 +40,8 @@ import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
@@ -106,32 +108,53 @@ public final class ColorSpaces {
     public static ICC_ColorSpace createColorSpace(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
 
-        byte[] profileHeader = profile.getData(ICC_Profile.icSigHead);
+        // Fix profile before lookup/create
+        profileCleaner.fixProfile(profile);
+
+        byte[] profileHeader = getProfileHeaderWithProfileId(profile);
 
         ICC_ColorSpace cs = getInternalCS(profile.getColorSpaceType(), profileHeader);
         if (cs != null) {
             return cs;
         }
 
-        // Special case for color profiles with rendering intent != 0, see isOffendingColorProfile method
-        // NOTE: Rendering intent is really a 4 byte value, but legal values are 0-3 (ICC1v42_2006_05_1.pdf, 7.2.15, p. 19)
-        if (profileHeader[ICC_Profile.icHdrRenderingIntent] != 0) {
-            profileHeader[ICC_Profile.icHdrRenderingIntent] = 0;
-
-            // Test again if this is an internal CS
-            cs = getInternalCS(profile.getColorSpaceType(), profileHeader);
-            if (cs != null) {
-                return cs;
-            }
-
-            // Fix profile before lookup/create
-            profileCleaner.fixProfile(profile, profileHeader);
-        }
-        else {
-            profileCleaner.fixProfile(profile, null);
-        }
-
         return getCachedOrCreateCS(profile, profileHeader);
+    }
+
+    private static byte[] getProfileHeaderWithProfileId(final ICC_Profile profile) {
+        byte[] header = profile.getData(ICC_Profile.icSigHead);
+
+        computeProfileIdMD5(profile, header);
+
+        return header;
+    }
+
+    private static void computeProfileIdMD5(final ICC_Profile profile, final byte[] header) {
+        // Clear out preferred CMM, platform & creator, as these does not affect the profile in any way
+        // - LCMS updates CMM + creator to "lcms" and platform to current platform
+        // - KCMS keeps the values in the file...
+        Arrays.fill(header, ICC_Profile.icHdrCmmId, ICC_Profile.icHdrCmmId + 4, (byte) 0);
+        Arrays.fill(header, ICC_Profile.icHdrPlatform, ICC_Profile.icHdrPlatform + 4, (byte) 0);
+        // + Clear out rendering intent, as this may be updated by application
+        Arrays.fill(header, ICC_Profile.icHdrRenderingIntent, ICC_Profile.icHdrRenderingIntent + 4, (byte) 0);
+        Arrays.fill(header, ICC_Profile.icHdrCreator, ICC_Profile.icHdrCreator + 4, (byte) 0);
+
+        // Clear out any existing MD5, as it is no longer correct
+        Arrays.fill(header, ICC_Profile.icHdrProfileID, ICC_Profile.icHdrProfileID + 16, (byte) 0);
+
+        // Get *entire profile data*... :-/
+        byte[] data = profile.getData();
+
+        // Update with the new header data
+        System.arraycopy(header, 0, data, 0, header.length);
+
+        // Generate new MD5 and store in header
+        try {
+            byte[] md5 = MessageDigest.getInstance("MD5").digest(data);
+            System.arraycopy(md5, 0, header, ICC_Profile.icHdrProfileID, md5.length);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("Missing MD5 MessageDigest");
+        }
     }
 
     private static ICC_ColorSpace getInternalCS(final int profileCSType, final byte[] profileHeader) {
@@ -186,7 +209,7 @@ public final class ColorSpaces {
     public static boolean isCS_sRGB(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
 
-        return profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(profile.getData(ICC_Profile.icSigHead), sRGB.header);
+        return profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(getProfileHeaderWithProfileId(profile), sRGB.header);
     }
 
     /**
@@ -214,10 +237,11 @@ public final class ColorSpaces {
 
         // This is particularly annoying, as the byte copying isn't really necessary,
         // except the getRenderingIntent method is package protected in java.awt.color
-        byte[] data = profile.getData(ICC_Profile.icSigHead);
+        byte[] header = profile.getData(ICC_Profile.icSigHead);
 
-        return data[ICC_Profile.icHdrRenderingIntent] != 0;
-    }
+        return header[ICC_Profile.icHdrRenderingIntent] != 0 || header[ICC_Profile.icHdrRenderingIntent + 1] != 0
+                || header[ICC_Profile.icHdrRenderingIntent + 2] != 0 || header[ICC_Profile.icHdrRenderingIntent + 3] != 0;
+        }
 
     /**
      * Tests whether an ICC color profile is valid.
@@ -275,6 +299,10 @@ public final class ColorSpaces {
                             }
                         }
 
+                        if (profile.getColorSpaceType() != ColorSpace.TYPE_RGB) {
+                            throw new IllegalStateException("Configured AdobeRGB1998 profile is not TYPE_RGB");
+                        }
+
                         adobeRGB1998 = new WeakReference<>(profile);
                     }
                 }
@@ -296,6 +324,10 @@ public final class ColorSpaces {
 
                             // Fall back to generic CMYK ColorSpace, which is *insanely slow* using ColorConvertOp... :-P
                             return CMYKColorSpace.getInstance();
+                        }
+
+                        if (profile.getColorSpaceType() != ColorSpace.TYPE_CMYK) {
+                            throw new IllegalStateException("Configured Generic CMYK profile is not TYPE_CMYK");
                         }
 
                         genericCMYK = new WeakReference<>(profile);
@@ -356,7 +388,7 @@ public final class ColorSpaces {
     private static final class Key {
         private final byte[] data;
 
-        public Key(byte[] data) {
+        Key(byte[] data) {
             this.data = data;
         }
 
@@ -373,26 +405,27 @@ public final class ColorSpaces {
 
     // Cache header profile data to avoid excessive array creation/copying in static inner class for on-demand lazy init
     private static class sRGB {
-        private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData(ICC_Profile.icSigHead);
+        private static final byte[] header = getProfileHeaderWithProfileId(ICC_Profile.getInstance(ColorSpace.CS_sRGB));
     }
 
     private static class CIEXYZ {
-        private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ).getData(ICC_Profile.icSigHead);
+        private static final byte[] header = getProfileHeaderWithProfileId(ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ));
     }
 
     private static class PYCC {
-        private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_PYCC).getData(ICC_Profile.icSigHead);
+        private static final byte[] header = getProfileHeaderWithProfileId(ICC_Profile.getInstance(ColorSpace.CS_PYCC));
     }
 
     private static class GRAY {
-        private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_GRAY).getData(ICC_Profile.icSigHead);
+        private static final byte[] header = getProfileHeaderWithProfileId(ICC_Profile.getInstance(ColorSpace.CS_GRAY));
     }
 
     private static class LINEAR_RGB {
-        private static final byte[] header = ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB).getData(ICC_Profile.icSigHead);
+        private static final byte[] header = getProfileHeaderWithProfileId(ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB));
     }
 
     private static class Profiles {
+        // TODO: Honour java.iccprofile.path property?
         private static final Properties PROFILES = loadProfiles();
 
         private static Properties loadProfiles() {
@@ -439,7 +472,7 @@ public final class ColorSpaces {
             return profiles;
         }
 
-        public static String getPath(final String profileName) {
+        static String getPath(final String profileName) {
             return PROFILES.getProperty(profileName);
         }
     }

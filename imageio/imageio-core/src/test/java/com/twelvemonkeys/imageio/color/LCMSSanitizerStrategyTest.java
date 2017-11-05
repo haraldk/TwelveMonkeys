@@ -11,21 +11,13 @@ public class LCMSSanitizerStrategyTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testFixProfileNullProfile() throws Exception {
-        new LCMSSanitizerStrategy().fixProfile(null, null);
-    }
-
-    @Test
-    public void testFixProfileNoHeader() throws Exception {
-        ICC_Profile profile = mock(ICC_Profile.class);
-        new LCMSSanitizerStrategy().fixProfile(profile, null);
-
-        verifyNoMoreInteractions(profile);
+        new LCMSSanitizerStrategy().fixProfile(null);
     }
 
     @Test
     public void testFixProfile() throws Exception {
         ICC_Profile profile = mock(ICC_Profile.class);
-        new LCMSSanitizerStrategy().fixProfile(profile, new byte[0]);
+        new LCMSSanitizerStrategy().fixProfile(profile);
 
         verifyNoMoreInteractions(profile);
     }

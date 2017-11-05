@@ -17,11 +17,16 @@ final class KCMSSanitizerStrategy implements ICCProfileSanitizer {
     /** Value used instead of 'XYZ ' in problematic Corbis RGB Profiles */
     private static final byte[] CORBIS_RGB_ALTERNATE_XYZ = new byte[] {0x17, (byte) 0xA5, 0x05, (byte) 0xB8};
 
-    public void fixProfile(final ICC_Profile profile, byte[] profileHeader) {
+    public void fixProfile(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
 
-        if (profileHeader != null) {
-            profile.setData(ICC_Profile.icSigHead, profileHeader);
+        // Special case for color profiles with rendering intent != 0, see ColorSpaces.isOffendingColorProfile method
+        // NOTE: Rendering intent is a 4 byte value, legal values are 0-3 (ICC1v42_2006_05_1.pdf, 7.2.15, p. 19)
+        byte[] header = profile.getData(ICC_Profile.icSigHead);
+        if (header[ICC_Profile.icHdrRenderingIntent] != 0 || header[ICC_Profile.icHdrRenderingIntent + 1] != 0
+                || header[ICC_Profile.icHdrRenderingIntent + 2] != 0 || header[ICC_Profile.icHdrRenderingIntent + 3] != 0) {
+            Arrays.fill(header, ICC_Profile.icHdrRenderingIntent, ICC_Profile.icHdrRenderingIntent + 4, (byte) 0);
+            profile.setData(ICC_Profile.icSigHead, header);
         }
 
         // Special handling to detect problematic Corbis RGB ICC Profile for KCMS.
