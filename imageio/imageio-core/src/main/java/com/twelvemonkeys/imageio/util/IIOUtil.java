@@ -170,12 +170,13 @@ public final class IIOUtil {
      *
      * @param registry the registry to lookup from.
      * @param providerClassName name of the provider class.
+     * @param category provider category
      *
      * @return the provider instance, or {@code null}.
      */
-    public static <T> T lookupProviderByName(final ServiceRegistry registry, final String providerClassName) {
+    public static <T> T lookupProviderByName(final ServiceRegistry registry, final String providerClassName, Class<T> category) {
         try {
-            return (T) registry.getServiceProviderByClass(Class.forName(providerClassName));
+            return category.cast(registry.getServiceProviderByClass(Class.forName(providerClassName)));
         }
         catch (ClassNotFoundException ignore) {
             return null;

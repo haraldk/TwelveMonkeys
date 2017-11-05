@@ -2440,7 +2440,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     private static void deregisterOSXTIFFImageReaderSpi() {
         IIORegistry registry = IIORegistry.getDefaultInstance();
-        ImageReaderSpi provider = lookupProviderByName(registry, "com.sun.imageio.plugins.tiff.TIFFImageReaderSpi");
+        ImageReaderSpi provider = lookupProviderByName(registry, "com.sun.imageio.plugins.tiff.TIFFImageReaderSpi", ImageReaderSpi.class);
 
         if (provider != null) {
             registry.deregisterServiceProvider(provider);

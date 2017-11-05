@@ -38,7 +38,6 @@ import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
@@ -81,7 +80,7 @@ public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {
             // Install delegate now
-            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
         }
 
         if (delegateProvider != null) {

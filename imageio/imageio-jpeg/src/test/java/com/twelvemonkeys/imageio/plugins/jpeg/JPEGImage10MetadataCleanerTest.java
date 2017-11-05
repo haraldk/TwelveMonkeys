@@ -36,7 +36,7 @@ public class JPEGImage10MetadataCleanerTest {
     private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
     private static ImageReaderSpi lookupDelegateProvider() {
-        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
     }
 
     // Unit/regression test for #276

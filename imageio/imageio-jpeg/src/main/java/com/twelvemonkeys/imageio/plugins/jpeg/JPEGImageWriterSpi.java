@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -39,10 +38,10 @@ import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Locale;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.*;
+import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * JPEGImageWriterSpi
@@ -78,7 +77,7 @@ public class JPEGImageWriterSpi extends ImageWriterSpiBase {
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {
             // Install delegate now
-            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
+            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi", ImageWriterSpi.class);
         }
 
         if (delegateProvider != null) {

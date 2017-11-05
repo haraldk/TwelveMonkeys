@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 
 import javax.imageio.ImageReader;
@@ -80,7 +79,7 @@ public final class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
         // and the lookup below will produce a NPE..
         if (jpegProvider == null) {
             // Prefer the one we know
-            ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+            ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
 
             if (provider == null) {
                 try {

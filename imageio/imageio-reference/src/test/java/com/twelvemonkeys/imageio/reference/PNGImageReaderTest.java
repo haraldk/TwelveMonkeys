@@ -24,7 +24,7 @@ import static org.junit.Assume.assumeNoException;
  * @version $Id: PNGImageReaderTest.java,v 1.0 Oct 9, 2009 3:37:25 PM haraldk Exp$
  */
 public class PNGImageReaderTest extends ImageReaderAbstractTest {
-    private final ImageReaderSpi provider = IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.png.PNGImageReaderSpi");
+    private final ImageReaderSpi provider = IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.png.PNGImageReaderSpi", ImageReaderSpi.class);
 
     @Override
     protected List<TestData> getTestData() {

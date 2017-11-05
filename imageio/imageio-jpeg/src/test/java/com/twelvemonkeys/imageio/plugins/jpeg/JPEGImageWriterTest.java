@@ -52,7 +52,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
     private static final JPEGImageWriterSpi SPI = new JPEGImageWriterSpi(lookupDelegateProvider());
 
     private static ImageWriterSpi lookupDelegateProvider() {
-        return IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
+        return IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi", ImageWriterSpi.class);
     }
 
     @Override

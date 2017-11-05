@@ -78,7 +78,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
 
     private static ImageReaderSpi lookupDelegateProvider() {
-        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
     }
 
     @Override

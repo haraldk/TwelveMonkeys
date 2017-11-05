@@ -28,7 +28,7 @@ import static org.junit.Assume.assumeNoException;
 public class JPEGImageReaderTest extends ImageReaderAbstractTest {
     private static final boolean IS_JAVA_6_OR_LATER = SystemUtil.isClassAvailable("java.util.Deque");
     
-    private final ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+    private final ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
 
     @Override
     protected List<TestData> getTestData() {

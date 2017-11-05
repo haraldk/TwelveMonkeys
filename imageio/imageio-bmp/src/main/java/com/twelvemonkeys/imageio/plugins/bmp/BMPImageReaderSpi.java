@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
@@ -56,7 +55,7 @@ public final class BMPImageReaderSpi extends ImageReaderSpiBase {
     @SuppressWarnings("unchecked")
     @Override
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
-        ImageReaderSpi defaultProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.bmp.BMPImageReaderSpi");
+        ImageReaderSpi defaultProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.bmp.BMPImageReaderSpi", ImageReaderSpi.class);
 
         if (defaultProvider != null) {
             // Order before com.sun provider, to aid ImageIO in selecting our reader
