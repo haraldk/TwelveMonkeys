@@ -6,8 +6,8 @@ jdk:
 # Some JPEGImageReader tests fail on OpenJDK, need to investigate/fix before enabling
 #  - openjdk7
 env:
-  - MVN_OPTS=-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider
-  - MVN_OPTS=""
+  - MAVEN_OPTS=-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider
+  - MAVEN_OPTS=""
 cache:
   directories:
   - $HOME/.m2
