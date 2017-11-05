@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
@@ -45,22 +46,26 @@ import java.io.IOException;
  * @see <a href="http://www.awaresystems.be/imaging/tiff/tifftags/privateifd/exif.html">Aware systems TIFF tag reference</a>
  * @see <a href="http://partners.adobe.com/public/developer/tiff/index.html">Adobe TIFF developer resources</a>
  */
-final class PSDEXIF1Data extends PSDImageResource {
-    protected Directory directory;
+final class PSDEXIF1Data extends PSDDirectoryResource {
 
     PSDEXIF1Data(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
     }
 
     @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        // This is in essence an embedded TIFF file.
-        // TODO: Instead, read the byte data, store for later parsing (or better yet, store offset, and read on request)
-        directory = new TIFFReader().read(pInput);
+    Directory parseDirectory() throws IOException {
+        // The data is in essence an embedded TIFF file.
+        return new TIFFReader().read(new ByteArrayImageInputStream(data));
     }
 
     @Override
     public String toString() {
+        Directory directory = getDirectory();
+
+        if (directory == null) {
+            return super.toString();
+        }
+
         StringBuilder builder = toStringBuilder();
         builder.append(", ").append(directory);
         builder.append("]");

@@ -39,6 +39,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
@@ -73,6 +74,7 @@ public final class XMPReader extends MetadataReader {
             // TODO: Refactor scanner to return inputstream?
             // TODO: Be smarter about ASCII-NULL termination/padding (the SAXParser aka Xerces DOMParser doesn't like it)...
             DocumentBuilder builder = factory.newDocumentBuilder();
+            builder.setErrorHandler(new DefaultHandler());
             Document document = builder.parse(new InputSource(IIOUtil.createStreamAdapter(input)));
 
 //            XMLSerializer serializer = new XMLSerializer(System.err, System.getProperty("file.encoding"));

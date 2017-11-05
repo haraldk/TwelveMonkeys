@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2017, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,36 +29,54 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
-import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
 /**
- * XMP metadata.
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: XMPData.java,v 1.0 Jul 28, 2009 5:50:34 PM haraldk Exp$
- *
- * @see <a href="http://www.adobe.com/products/xmp/">Adobe Extensible Metadata Platform (XMP)</a>
- * @see <a href="http://www.adobe.com/devnet/xmp/">Adobe XMP Developer Center</a>
+ * PSDDirectoryResource
  */
-final class PSDXMPData extends PSDDirectoryResource {
-    PSDXMPData(final short pId, final ImageInputStream pInput) throws IOException {
-        super(pId, pInput);
+abstract class PSDDirectoryResource extends PSDImageResource {
+    byte[] data;
+    private Directory directory;
+
+    PSDDirectoryResource(short resourceId, ImageInputStream input) throws IOException {
+        super(resourceId, input);
     }
 
-    Directory parseDirectory() throws IOException {
-        // Chop off potential trailing null-termination/padding that SAX parsers don't like...
-        int len = data.length;
-        for (; len > 0; len--) {
-            if (data[len - 1] != 0) {
-                break;
-            }
+    @Override
+    protected void readData(final ImageInputStream pInput) throws IOException {
+        data = new byte[(int) size]; // TODO: Fix potential overflow, or document why that can't happen (read spec)
+        pInput.readFully(data);
+    }
+
+    abstract Directory parseDirectory() throws IOException;
+
+    final void initDirectory() throws IOException {
+        if (directory == null) {
+            directory = parseDirectory();
+        }
+    }
+
+    Directory getDirectory() {
+        return directory;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = toStringBuilder();
+
+        int length = Math.min(256, data.length);
+        String data = StringUtil.decode(this.data, 0, length, "UTF-8").replace('\n', ' ').replaceAll("\\s+", " ");
+        builder.append(", data: \"").append(data);
+
+        if (length < this.data.length) {
+            builder.append("...");
         }
 
-        return new XMPReader().read(new ByteArrayImageInputStream(data, 0, len));
+        builder.append("\"]");
+
+        return builder.toString();
     }
 }

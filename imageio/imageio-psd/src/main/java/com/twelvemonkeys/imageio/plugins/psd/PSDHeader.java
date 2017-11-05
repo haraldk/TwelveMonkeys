@@ -40,9 +40,7 @@ import java.io.IOException;
  * @version $Id: PSDHeader.java,v 1.0 Apr 29, 2008 5:18:22 PM haraldk Exp$
  */
 final class PSDHeader {
-    private static final int PSD_MAX_SIZE = 30000;
-    private static final int PSB_MAX_SIZE = 300000;
-    //    The header is 26 bytes in length and is structured as follows:
+//    The header is 26 bytes in length and is structured as follows:
 //
 //    typedef struct _PSD_HEADER
 //    {
@@ -56,6 +54,9 @@ final class PSDHeader {
 //       WORD Depth;          /* Number of bits per channel (1, 8, 16 or 32) */
 //       WORD Mode;           /* Color mode */
 //    } PSD_HEADER;
+
+    private static final int PSD_MAX_SIZE = 30000;
+    private static final int PSB_MAX_SIZE = 300000;
 
     final short channels;
     final int width;

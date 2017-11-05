@@ -892,8 +892,8 @@ public final class PSDImageReader extends ImageReaderBase {
             long imageResourcesLength = imageInput.readUnsignedInt();
 
             if (pParseData && metadata.imageResources == null && imageResourcesLength > 0) {
-                metadata.imageResources = new ArrayList<>();
                 long expectedEnd = imageInput.getStreamPosition() + imageResourcesLength;
+                metadata.imageResources = new ArrayList<>();
 
                 while (imageInput.getStreamPosition() < expectedEnd) {
                     PSDImageResource resource = PSDImageResource.read(imageInput);
@@ -975,6 +975,9 @@ public final class PSDImageReader extends ImageReaderBase {
                     }
                     // TODO: Else skip?
                 }
+                else {
+                    metadata.globalLayerMask = PSDGlobalLayerMask.NULL_MASK;
+                }
 
                 // TODO: Parse "Additional layer information"
 
@@ -982,9 +985,9 @@ public final class PSDImageReader extends ImageReaderBase {
 //                    imageInput.seek(metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4));
 //                    imageInput.flushBefore(metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4));
 
-                if (DEBUG) {
+                if (pParseData && DEBUG) {
                     System.out.println("layerInfo: " + metadata.layerInfo);
-                        System.out.println("globalLayerMask: " + metadata.globalLayerMask);
+                    System.out.println("globalLayerMask: " + (metadata.globalLayerMask != PSDGlobalLayerMask.NULL_MASK ? metadata.globalLayerMask : null));
                 }
                 //}
             }
@@ -1171,8 +1174,25 @@ public final class PSDImageReader extends ImageReaderBase {
         readLayerAndMaskInfo(true);
 
         // NOTE: Need to make sure compression is set in metadata, even without reading the image data!
-        imageInput.seek(metadata.imageDataStart);
-        metadata.compression = imageInput.readShort();
+        // TODO: Move this to readLayerAndMaskInfo?
+        if (metadata.compression == -1) {
+            imageInput.seek(metadata.imageDataStart);
+            metadata.compression = imageInput.readShort();
+        }
+
+        // Initialize XMP data etc.
+        for (PSDImageResource resource : metadata.imageResources) {
+            if (resource instanceof PSDDirectoryResource) {
+                PSDDirectoryResource directoryResource = (PSDDirectoryResource) resource;
+
+                try {
+                    directoryResource.initDirectory();
+                }
+                catch (IOException e) {
+                    processWarningOccurred(String.format("Error parsing %s: %s", resource.getClass().getSimpleName(), e.getMessage()));
+                }
+            }
+        }
 
         return metadata; // TODO: clone if we change to mutable metadata
     }

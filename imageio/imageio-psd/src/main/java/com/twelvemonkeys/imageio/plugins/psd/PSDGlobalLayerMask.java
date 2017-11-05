@@ -39,6 +39,9 @@ import java.io.IOException;
  * @version $Id: PSDGlobalLayerMask.java,v 1.0 May 8, 2008 5:33:48 PM haraldk Exp$
  */
 final class PSDGlobalLayerMask {
+
+    static final PSDGlobalLayerMask NULL_MASK = new PSDGlobalLayerMask();
+
     final int colorSpace;
     final short[] colors = new short[4];
     final int opacity;
@@ -56,6 +59,12 @@ final class PSDGlobalLayerMask {
 
         // Skip "Variable: Filler zeros"
         pInput.skipBytes(globalLayerMaskLength - 17);
+    }
+
+    private PSDGlobalLayerMask() {
+        colorSpace = 0;
+        opacity = 0;
+        kind = 0;
     }
 
     @Override
