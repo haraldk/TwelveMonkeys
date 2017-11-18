@@ -540,7 +540,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
     }
 
-    protected final void assertImageDataEquals(String message, BufferedImage expected, BufferedImage actual) {
+    public static void assertImageDataEquals(String message, BufferedImage expected, BufferedImage actual) {
         assertNotNull("Expected image was null", expected);
         assertNotNull("Actual image was null!", actual);
 
@@ -1447,7 +1447,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             ImageTypeSpecifier valid = pValidTypes.next();
             boolean removed = illegalTypes.remove(valid);
 
-            // TODO: 4BYTE_ABGR (6) and 4BYTE_ABGR_PRE (7) is essentially the same type... 
+            // TODO: 4BYTE_ABGR (6) and 4BYTE_ABGR_PRE (7) is essentially the same type...
             // #$@*%$! ImageTypeSpecifier.equals is not well-defined
             if (!removed) {
                 for (Iterator<ImageTypeSpecifier> iterator = illegalTypes.iterator(); iterator.hasNext();) {
@@ -1550,15 +1550,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
        
         assertNotSame("Multiple reads return same (mutable) image", one, two);
 
-        Graphics2D g = one.createGraphics();
-        try {
-            g.setColor(Color.WHITE);
-            g.setXORMode(Color.BLACK);
-            g.fillRect(0, 0, one.getWidth(), one.getHeight());
-        }
-        finally {
-            g.dispose();
-        }
+        one.setRGB(0, 0, Color.BLUE.getRGB());
+        two.setRGB(0, 0, Color.RED.getRGB());
 
         assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
     }
@@ -1574,7 +1567,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 int images = reader.getNumImages(true);
                 for (int i = 0; i < images; i++) {
                     int thumbnails = reader.getNumThumbnails(0);
-                    
+
                     for (int j = 0; j < thumbnails; j++) {
                         BufferedImage one = reader.readThumbnail(i, j);
                         BufferedImage two = reader.readThumbnail(i, j);
