@@ -1765,8 +1765,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                         readFully(input, rowDataFloat);
 
                         if (row >= srcRegion.y) {
-                            // TODO: Allow param to decide tone mapping strategy, like in the HDRImageReader
-                            clamp(rowDataFloat);
                             normalizeColor(interpretation, rowDataFloat);
 
                             // Subsample horizontal
@@ -2008,6 +2006,9 @@ public final class TIFFImageReader extends ImageReaderBase {
     }
 
     private void normalizeColor(int photometricInterpretation, float[] data) {
+        // TODO: Allow param to decide tone mapping strategy, like in the HDRImageReader
+        clamp(data);
+
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // Inverse values
