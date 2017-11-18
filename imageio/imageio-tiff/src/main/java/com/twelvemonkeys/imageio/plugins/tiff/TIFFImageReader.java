@@ -2205,6 +2205,13 @@ public final class TIFFImageReader extends ImageReaderBase {
         if (entry != null) {
             byte[] value = (byte[]) entry.getValue();
 
+            // Validate ICC profile size vs actual value size
+            int size = (value[0] & 0xff) << 24 | (value[1] & 0xff) << 16 | (value[2] & 0xff) << 8 | (value[3] & 0xff);
+            if (size < 0 || size > value.length) {
+                processWarningOccurred("Ignoring truncated ICC profile: Bad ICC profile size (" + size + ")");
+                return null;
+            }
+
             try {
                 // WEIRDNESS: Reading profile from InputStream is somehow more compatible
                 // than reading from byte array (chops off extra bytes + validates profile).
@@ -2218,7 +2225,6 @@ public final class TIFFImageReader extends ImageReaderBase {
 
         return null;
     }
-
     @Override
     public boolean canReadRaster() {
         return true;

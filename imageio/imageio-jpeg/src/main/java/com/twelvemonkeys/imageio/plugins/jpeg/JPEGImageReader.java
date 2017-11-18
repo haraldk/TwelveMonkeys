@@ -689,11 +689,20 @@ public final class JPEGImageReader extends ImageReaderBase {
         return profile;
     }
 
-    static void intToBigEndian(int value, byte[] array, int index) {
-        array[index]   = (byte) (value >> 24);
-        array[index+1] = (byte) (value >> 16);
-        array[index+2] = (byte) (value >>  8);
-        array[index+3] = (byte) (value);
+    // TODO: Move to some common util
+    static int intFromBigEndian(final byte[] array, final int index) {
+        return ((array[index     ] & 0xff) << 24) |
+                ((array[index + 1] & 0xff) << 16) |
+                ((array[index + 2] & 0xff) <<  8) |
+                ((array[index + 3] & 0xff)      );
+    }
+
+    // TODO: Move to some common util
+    static void intToBigEndian(final int value, final byte[] array, final int index) {
+        array[index    ] = (byte) (value >> 24);
+        array[index + 1] = (byte) (value >> 16);
+        array[index + 2] = (byte) (value >>  8);
+        array[index + 3] = (byte) (value      );
     }
 
     private void initHeader() throws IOException {
@@ -853,7 +862,10 @@ public final class JPEGImageReader extends ImageReaderBase {
                 return null;
             }
 
-            return readICCProfileSafe(stream, allowBadIndexes);
+            int iccChunkDataSize = segment.data.length - segment.identifier.length() - 3; // ICC_PROFILE + null + chunk number + count
+            int iccSize = intFromBigEndian(segment.data, segment.identifier.length() + 3);
+
+            return readICCProfileSafe(stream, allowBadIndexes, iccSize, iccChunkDataSize);
         }
         else if (!segments.isEmpty()) {
             // NOTE: This is probably over-complicated, as I've never encountered ICC_PROFILE chunks out of order...
@@ -888,25 +900,40 @@ public final class JPEGImageReader extends ImageReaderBase {
             InputStream[] streams = new InputStream[count];
             streams[badICC ? 0 : chunkNumber - 1] = stream;
 
+            int iccChunkDataSize = 0;
+            int iccSize = 0;
+
             for (int i = 1; i < count; i++) {
-                stream = new DataInputStream(segments.get(i).data());
+                Application segment = segments.get(i);
+                stream = new DataInputStream(segment.data());
 
                 chunkNumber = stream.readUnsignedByte();
 
-                if (!badICC && stream.readUnsignedByte() != chunkCount) {
+                if (stream.readUnsignedByte() != chunkCount && !badICC) {
                     throw new IIOException(String.format("Bad number of 'ICC_PROFILE' chunks: %d of %d.", chunkNumber, chunkCount));
                 }
 
-                streams[badICC ? i : chunkNumber - 1] = stream;
+                int index = badICC ? i : chunkNumber - 1;
+                streams[index] = stream;
+
+                iccChunkDataSize += segment.data.length - segment.identifier.length() - 3;
+                if (index == 0) {
+                    iccSize = intFromBigEndian(segment.data, segment.identifier.length() + 3);
+                }
             }
 
-            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))), allowBadIndexes);
+            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))), allowBadIndexes, iccSize, iccChunkDataSize);
         }
 
         return null;
     }
 
-    private ICC_Profile readICCProfileSafe(final InputStream stream, final boolean allowBadProfile) throws IOException {
+    private ICC_Profile readICCProfileSafe(final InputStream stream, final boolean allowBadProfile, final int iccSize, final int iccChunkDataSize) throws IOException {
+        if (iccSize < 0 || iccSize > iccChunkDataSize) {
+            processWarningOccurred(String.format("Truncated 'ICC_PROFILE' chunk(s), size: %d. Ignoring ICC profile.", iccSize));
+            return null;
+        }
+
         try {
             ICC_Profile profile = ICC_Profile.getInstance(stream);
 

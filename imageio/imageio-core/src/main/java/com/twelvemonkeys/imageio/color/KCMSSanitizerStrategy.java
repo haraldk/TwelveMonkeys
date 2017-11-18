@@ -65,7 +65,6 @@ final class KCMSSanitizerStrategy implements ICCProfileSanitizer {
                 ((array[index + 3] & 0xff)      );
     }
 
-
     // TODO: Move to some common util
     static void intToBigEndian(final int value, final byte[] array, final int index) {
         array[index    ] = (byte) (value >> 24);
