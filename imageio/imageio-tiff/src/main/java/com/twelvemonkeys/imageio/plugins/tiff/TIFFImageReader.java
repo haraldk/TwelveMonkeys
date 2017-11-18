@@ -1788,8 +1788,11 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     private void clamp(float[] rowDataFloat) {
         for (int i = 0; i < rowDataFloat.length; i++) {
-            if (rowDataFloat[i] > 1) {
-                rowDataFloat[i] = 1;
+            if (rowDataFloat[i] > 1f) {
+                rowDataFloat[i] = 1f;
+            }
+            else if (rowDataFloat[i] < 0f) {
+                rowDataFloat[i] = 0f;
             }
         }
     }
@@ -2007,6 +2010,13 @@ public final class TIFFImageReader extends ImageReaderBase {
     private void normalizeColor(int photometricInterpretation, float[] data) {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
+                // Inverse values
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = 1f - data[i];
+                }
+
+                break;
+
             case TIFFExtension.PHOTOMETRIC_CIELAB:
             case TIFFExtension.PHOTOMETRIC_ICCLAB:
             case TIFFExtension.PHOTOMETRIC_ITULAB:
