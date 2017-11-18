@@ -83,7 +83,10 @@ public class ColorSpacesTest {
 
     private ICC_Profile createBrokenProfile(ICC_Profile internal) {
         byte[] data = internal.getData();
-        data[ICC_Profile.icHdrRenderingIntent + 3] = 1; // Intent: 1 == Relative Colormetric
+        data[ICC_Profile.icHdrRenderingIntent] = 1; // Intent: 1 == Relative Colormetric Little Endian
+        data[ICC_Profile.icHdrRenderingIntent + 1] = 0;
+        data[ICC_Profile.icHdrRenderingIntent + 2] = 0;
+        data[ICC_Profile.icHdrRenderingIntent + 3] = 0;
         return ICC_Profile.getInstance(data);
     }
 

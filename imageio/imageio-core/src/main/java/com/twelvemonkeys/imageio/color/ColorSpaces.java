@@ -72,6 +72,10 @@ import java.util.Properties;
  * @version $Id: ColorSpaces.java,v 1.0 24.01.11 17.51 haraldk Exp$
  */
 public final class ColorSpaces {
+    // TODO: Consider creating our own ICC profile class, which just wraps the byte array,
+    // for easier access and manipulation until creating a "real" ICC_Profile/ColorSpace.
+    // This will also let us work around the issues in the LCMS implementation.
+
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.color.debug"));
 
     /** We need special ICC profile handling for KCMS vs LCMS. Delegate to specific strategy. */
@@ -80,9 +84,11 @@ public final class ColorSpaces {
     // NOTE: java.awt.color.ColorSpace.CS_* uses 1000-1004, we'll use 5000+ to not interfere with future additions
 
     /** The Adobe RGB 1998 (or compatible) color space. Either read from disk or built-in. */
+    @SuppressWarnings("WeakerAccess")
     public static final int CS_ADOBE_RGB_1998 = 5000;
 
     /** A best-effort "generic" CMYK color space. Either read from disk or built-in. */
+    @SuppressWarnings("WeakerAccess")
     public static final int CS_GENERIC_CMYK = 5001;
 
     // Weak references to hold the color spaces while cached
@@ -122,37 +128,34 @@ public final class ColorSpaces {
     }
 
     private static byte[] getProfileHeaderWithProfileId(final ICC_Profile profile) {
-        byte[] header = profile.getData(ICC_Profile.icSigHead);
-
-        computeProfileIdMD5(profile, header);
-
-        return header;
-    }
-
-    private static void computeProfileIdMD5(final ICC_Profile profile, final byte[] header) {
-        // Clear out preferred CMM, platform & creator, as these does not affect the profile in any way
-        // - LCMS updates CMM + creator to "lcms" and platform to current platform
-        // - KCMS keeps the values in the file...
-        Arrays.fill(header, ICC_Profile.icHdrCmmId, ICC_Profile.icHdrCmmId + 4, (byte) 0);
-        Arrays.fill(header, ICC_Profile.icHdrPlatform, ICC_Profile.icHdrPlatform + 4, (byte) 0);
-        // + Clear out rendering intent, as this may be updated by application
-        Arrays.fill(header, ICC_Profile.icHdrRenderingIntent, ICC_Profile.icHdrRenderingIntent + 4, (byte) 0);
-        Arrays.fill(header, ICC_Profile.icHdrCreator, ICC_Profile.icHdrCreator + 4, (byte) 0);
-
-        // Clear out any existing MD5, as it is no longer correct
-        Arrays.fill(header, ICC_Profile.icHdrProfileID, ICC_Profile.icHdrProfileID + 16, (byte) 0);
-
         // Get *entire profile data*... :-/
         byte[] data = profile.getData();
 
-        // Update with the new header data
-        System.arraycopy(header, 0, data, 0, header.length);
+        // Clear out preferred CMM, platform & creator, as these does not affect the profile in any way
+        // - LCMS updates CMM + creator to "lcms" and platform to current platform
+        // - KCMS keeps the values in the file...
+        Arrays.fill(data, ICC_Profile.icHdrCmmId, ICC_Profile.icHdrCmmId + 4, (byte) 0);
+        Arrays.fill(data, ICC_Profile.icHdrPlatform, ICC_Profile.icHdrPlatform + 4, (byte) 0);
+        // + Clear out rendering intent, as this may be updated by application
+        Arrays.fill(data, ICC_Profile.icHdrRenderingIntent, ICC_Profile.icHdrRenderingIntent + 4, (byte) 0);
+        Arrays.fill(data, ICC_Profile.icHdrCreator, ICC_Profile.icHdrCreator + 4, (byte) 0);
+
+        // Clear out any existing MD5, as it is no longer correct
+        Arrays.fill(data, ICC_Profile.icHdrProfileID, ICC_Profile.icHdrProfileID + 16, (byte) 0);
 
         // Generate new MD5 and store in header
+        byte[] md5 = computeMD5(data);
+        System.arraycopy(md5, 0, data, ICC_Profile.icHdrProfileID, md5.length);
+
+        // ICC profile header is the first 128 bytes
+        return Arrays.copyOf(data, 128);
+    }
+
+    private static byte[] computeMD5(byte[] data) {
         try {
-            byte[] md5 = MessageDigest.getInstance("MD5").digest(data);
-            System.arraycopy(md5, 0, header, ICC_Profile.icHdrProfileID, md5.length);
-        } catch (NoSuchAlgorithmException e) {
+            return MessageDigest.getInstance("MD5").digest(data);
+        }
+        catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("Missing MD5 MessageDigest");
         }
     }
@@ -186,15 +189,19 @@ public final class ColorSpaces {
             if (cs == null) {
                 cs = new ICC_ColorSpace(profile);
 
-                // Validate the color space, to avoid caching bad color spaces
-                // Will throw IllegalArgumentException or CMMException if the profile is bad
-                cs.fromRGB(new float[] {1f, 0f, 0f});
+                validateColorSpace(cs);
 
                 cache.put(key, cs);
             }
 
             return cs;
         }
+    }
+
+    private static void validateColorSpace(ICC_ColorSpace cs) {
+        // Validate the color space, to avoid caching bad color spaces
+        // Will throw IllegalArgumentException or CMMException if the profile is bad
+        cs.fromRGB(new float[] {1f, 0f, 0f});
     }
 
     /**
@@ -240,8 +247,8 @@ public final class ColorSpaces {
         byte[] header = profile.getData(ICC_Profile.icSigHead);
 
         return header[ICC_Profile.icHdrRenderingIntent] != 0 || header[ICC_Profile.icHdrRenderingIntent + 1] != 0
-                || header[ICC_Profile.icHdrRenderingIntent + 2] != 0 || header[ICC_Profile.icHdrRenderingIntent + 3] != 0;
-        }
+                || header[ICC_Profile.icHdrRenderingIntent + 2] != 0 || header[ICC_Profile.icHdrRenderingIntent + 3] > 3;
+    }
 
     /**
      * Tests whether an ICC color profile is valid.
@@ -258,7 +265,9 @@ public final class ColorSpaces {
      * @throws java.awt.color.CMMException if {@code profile} is invalid.
      */
     public static ICC_Profile validateProfile(final ICC_Profile profile) {
-        createColorSpace(profile); // Creating a color space will fail if the profile is bad
+        // Fix profile before validation
+        profileCleaner.fixProfile(profile);
+        validateColorSpace(new ICC_ColorSpace(profile));
 
         return profile;
     }
@@ -342,6 +351,7 @@ public final class ColorSpaces {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     private static ICC_Profile readProfileFromClasspathResource(final String profilePath) {
         InputStream stream = ColorSpaces.class.getResourceAsStream(profilePath);
 
@@ -400,6 +410,11 @@ public final class ColorSpaces {
         @Override
         public int hashCode() {
             return Arrays.hashCode(data);
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
         }
     }
 
