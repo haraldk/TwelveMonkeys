@@ -569,7 +569,15 @@ public final class TIFFImageReader extends ImageReaderBase {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     // "TYPE_4BYTE_RGBA" if cs.isCS_sRGB()
-                                    return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, isAlphaPremultiplied);
+                                    if (extraSamples != null && extraSamples.length == 1) {
+                                        return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, isAlphaPremultiplied);
+                                    }
+                                    else {
+                                        return new ImageTypeSpecifier(
+                                                new ExtraSamplesColorModel(cs, isAlphaPremultiplied, dataType, samplesPerPixel - significantSamples),
+                                                new PixelInterleavedSampleModel(dataType, 1, 1, samplesPerPixel, samplesPerPixel, createOffsets(samplesPerPixel))
+                                        );
+                                    }
 
                                 case TIFFExtension.PLANARCONFIG_PLANAR:
                                     return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2, 3}, new int[] {0, 0, 0, 0}, dataType, true, isAlphaPremultiplied);
@@ -681,6 +689,14 @@ public final class TIFFImageReader extends ImageReaderBase {
             default:
                 throw new IIOException("Unknown TIFF PhotometricInterpretation value: " + interpretation);
         }
+    }
+
+    private static int[] createOffsets(int samplesPerPixel) {
+        int[] offsets = new int[samplesPerPixel];
+        for (int i = 0; i < samplesPerPixel; i++) {
+            offsets[i] = i;
+        }
+        return offsets;
     }
 
     private int getPhotometricInterpretationWithFallback() throws IIOException {

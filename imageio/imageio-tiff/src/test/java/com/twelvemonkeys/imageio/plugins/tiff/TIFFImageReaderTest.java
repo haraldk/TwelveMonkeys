@@ -501,6 +501,32 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadMultipleExtraSamples() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/pack.tif"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+
+            BufferedImage image = null;
+            try {
+                param.setSourceRegion(new Rectangle(192, 64));
+                image = reader.read(0, param);
+            }
+            catch (IOException e) {
+                failBecause("Image could not be read", e);
+            }
+
+            assertNotNull(image);
+            assertEquals(192, image.getWidth());
+            assertEquals(64, image.getHeight());
+
+            assertEquals(0x00, image.getRGB(0, 0)); // Should be all transparent
+            assertEquals(0xff, (image.getRGB(150, 50) & 0xff000000) >>> 24, 2); // For some reason, it's not all transparent
+        }
+    }
+
+    @Test
     public void testReadWithSubsampleParamPixelsJPEG() throws IOException {
         // Tiled "new style" JPEG
         ImageReader reader = createReader();
