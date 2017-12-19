@@ -101,6 +101,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/scan-mono-iccgray.tif"), new Dimension(2408, 3436)), // B/W, PackBits w/gray ICC profile
                 new TestData(getClassLoaderResource("/tiff/planar-striped-lzw.tif"), new Dimension(229, 229)), // RGB 8 bit/sample, planar, LZW compression
                 new TestData(getClassLoaderResource("/tiff/colormap-with-extrasamples.tif"), new Dimension(10, 10)), // Palette, 8 bit/sample, 2 samples/pixel, extra samples, LZW
+                new TestData(getClassLoaderResource("/tiff/packbits-fillorder-2.tif"), new Dimension(3508, 2481)), // B/W, PackBits, FillOrder 2
                 // CCITT
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D

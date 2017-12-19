@@ -2152,25 +2152,38 @@ public final class TIFFImageReader extends ImageReaderBase {
     }
 
     private InputStream createDecompressorStream(final int compression, final int width, final int bands, final InputStream stream) throws IOException {
+        int fillOrder = getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1);
+
     	switch (compression) {
             case TIFFBaseline.COMPRESSION_NONE:
                 return stream;
             case TIFFBaseline.COMPRESSION_PACKBITS:
-                return new DecoderStream(stream, new PackBitsDecoder(), 1024);
+                return new DecoderStream(createFillOrderStream(fillOrder, stream), new PackBitsDecoder(), 1024);
             case TIFFExtension.COMPRESSION_LZW:
                 // NOTE: Needs large buffer for compatibility with certain encoders
-                return new DecoderStream(stream, LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), Math.max(width * bands, 4096));
+                return new DecoderStream(createFillOrderStream(fillOrder, stream), LZWDecoder.create(LZWDecoder.isOldBitReversedStream(stream)), Math.max(width * bands, 4096));
             case TIFFExtension.COMPRESSION_ZLIB:
             case TIFFExtension.COMPRESSION_DEFLATE:
                 // TIFF specification, supplement 2 says ZLIB (8) and DEFLATE (32946) algorithms are identical
             case TIFFCustom.COMPRESSION_PIXTIFF_ZIP:
-                return new InflaterInputStream(stream, new Inflater(), 1024);
+                return new InflaterInputStream(createFillOrderStream(fillOrder, stream), new Inflater(), 1024);
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
             case TIFFExtension.COMPRESSION_CCITT_T6:
-                return new CCITTFaxDecoderStream(stream, width, compression, getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1), getCCITTOptions(compression));
+                return new CCITTFaxDecoderStream(stream, width, compression, fillOrder, getCCITTOptions(compression));
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
+        }
+    }
+
+    private InputStream createFillOrderStream(final int fillOrder, final InputStream stream) {
+        switch (fillOrder) {
+            case TIFFBaseline.FILL_LEFT_TO_RIGHT:
+                return stream;
+            case TIFFExtension.FILL_RIGHT_TO_LEFT:
+                return new ReverseInputStream(stream);
+            default:
+                throw new IllegalArgumentException("Unsupported TIFF FillOrder: " + fillOrder);
         }
     }
 
