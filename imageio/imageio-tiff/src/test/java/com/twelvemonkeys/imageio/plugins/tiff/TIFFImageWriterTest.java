@@ -36,6 +36,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.io.NullOutputStream;
 import org.junit.Test;
 import org.w3c.dom.NodeList;
@@ -52,6 +53,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteOrder;
@@ -333,7 +335,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
             Graphics2D g2d = image.createGraphics();
             try {
                 g2d.setColor(colors[i]);
-                g2d.fillRect(0, 0, 100, 100);
+                g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
             }
             finally {
                 g2d.dispose();
@@ -373,6 +375,9 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
             }
         }
 
+        FileUtil.write(new File("/Downloads/multi-foo.tiff"), buffer.toByteArray());
+
+
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
@@ -385,7 +390,11 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 assertEquals(images[i].getWidth(), image.getWidth());
                 assertEquals(images[i].getHeight(), image.getHeight());
 
-                assertRGBEquals("RGB differ", images[i].getRGB(0, 0), image.getRGB(0, 0), 5); // Allow room for JPEG compression
+                for (int y = 0; y < image.getHeight(); y++) {
+                    for (int x = 0; x < image.getWidth(); x++) {
+                        assertRGBEquals("RGB differ for image " + i + " (" + x + "," + y + ")", images[i].getRGB(x, y), image.getRGB(x, y), 5); // Allow room for JPEG compression
+                    }
+                }
             }
         }
     }
