@@ -536,6 +536,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
             case TIFFExtension.COMPRESSION_CCITT_T6:
+                if (image.getSampleModel().getNumBands() != 1 || image.getSampleModel().getSampleSize(0) != 1) {
+                    throw new IllegalArgumentException("CCITT compressions supports 1 sample/pixel, 1 bit/sample only");
+                }
+
                 long option = 0L;
 
                 if (compression != TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE) {

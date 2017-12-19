@@ -288,6 +288,27 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
         assertEquals(softwareString, software.getValueAsString());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testWriteIncompatibleCompression() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+            writer.setOutput(output);
+
+            try {
+                ImageWriteParam param = writer.getDefaultWriteParam();
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionType("CCITT T.6");
+                writer.write(null, new IIOImage(new BufferedImage(8, 8, BufferedImage.TYPE_INT_RGB), null, null), param);
+                fail();
+            }
+            catch (IOException e) {
+                fail(e.getMessage());
+            }
+        }
+    }
+
     @Test
     public void testWriterCanWriteSequence() {
         ImageWriter writer = createImageWriter();
@@ -320,14 +341,15 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
     public void testWriteSequence() throws IOException {
         BufferedImage[] images = new BufferedImage[] {
                 new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(110, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(110, 100, BufferedImage.TYPE_3BYTE_BGR),
                 new BufferedImage(120, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(130, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(140, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(150, 100, BufferedImage.TYPE_BYTE_BINARY)
+                new BufferedImage(140, 100, BufferedImage.TYPE_INT_ARGB),
+                new BufferedImage(130, 100, BufferedImage.TYPE_BYTE_GRAY),
+                new BufferedImage(150, 100, BufferedImage.TYPE_BYTE_BINARY),
+                new BufferedImage(160, 100, BufferedImage.TYPE_BYTE_BINARY)
         };
 
-        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE, Color.PINK, Color.WHITE};
+        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE, Color.PINK, Color.WHITE, Color.GRAY};
 
         for (int i = 0; i < images.length; i++) {
             BufferedImage image = images[i];
@@ -367,8 +389,11 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 params.setCompressionType("Deflate");
                 writer.writeToSequence(new IIOImage(images[4], null, null), params);
 
-                params.setCompressionType("CCITT T.6");
+                params.setCompressionType("CCITT T.4");
                 writer.writeToSequence(new IIOImage(images[5], null, null), params);
+
+                params.setCompressionType("CCITT T.6");
+                writer.writeToSequence(new IIOImage(images[6], null, null), params);
 
                 writer.endWriteSequence();
             }
