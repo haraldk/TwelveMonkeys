@@ -50,7 +50,7 @@ final class ICCProfile extends Application {
 
     @Override
     public String toString() {
-        return "ICC_PROFILE[" + data[0] + "/" + data[1] + " length: " + data.length + "]";
+        return "ICC_PROFILE[" + data[12] + "/" + data[13] + " length: " + data.length + "]";
     }
 
     public static ICCProfile read(DataInput data, int length) throws IOException {
