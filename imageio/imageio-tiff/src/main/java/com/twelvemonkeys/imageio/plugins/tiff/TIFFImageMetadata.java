@@ -361,39 +361,39 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
             case TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO:
             case TIFFBaseline.PHOTOMETRIC_MASK: // It's really a transparency mask/alpha channel, but...
-                colorSpaceType.setAttribute("value", "GRAY");
+                colorSpaceType.setAttribute("name", "GRAY");
                 break;
             case TIFFBaseline.PHOTOMETRIC_RGB:
             case TIFFBaseline.PHOTOMETRIC_PALETTE:
-                colorSpaceType.setAttribute("value", "RGB");
+                colorSpaceType.setAttribute("name", "RGB");
                 break;
             case TIFFExtension.PHOTOMETRIC_YCBCR:
-                colorSpaceType.setAttribute("value", "YCbCr");
+                colorSpaceType.setAttribute("name", "YCbCr");
                 break;
             case TIFFExtension.PHOTOMETRIC_CIELAB:
             case TIFFExtension.PHOTOMETRIC_ICCLAB:
             case TIFFExtension.PHOTOMETRIC_ITULAB:
-                colorSpaceType.setAttribute("value", "Lab");
+                colorSpaceType.setAttribute("name", "Lab");
                 break;
             case TIFFExtension.PHOTOMETRIC_SEPARATED:
                 // TODO: May be CMYK, or something else... Consult InkSet and NumberOfInks!
                 if (numChannelsValue == 3) {
-                    colorSpaceType.setAttribute("value", "CMY");
+                    colorSpaceType.setAttribute("name", "CMY");
                 }
                 else {
-                    colorSpaceType.setAttribute("value", "CMYK");
+                    colorSpaceType.setAttribute("name", "CMYK");
                 }
                 break;
             case TIFFCustom.PHOTOMETRIC_LOGL: // ..?
             case TIFFCustom.PHOTOMETRIC_LOGLUV:
-                colorSpaceType.setAttribute("value", "Luv");
+                colorSpaceType.setAttribute("name", "Luv");
                 break;
             case TIFFCustom.PHOTOMETRIC_CFA:
             case TIFFCustom.PHOTOMETRIC_LINEAR_RAW: // ...or is this RGB?
-                colorSpaceType.setAttribute("value", "3CLR");
+                colorSpaceType.setAttribute("name", "3CLR");
                 break;
             default:
-                colorSpaceType.setAttribute("value", Integer.toHexString(numChannelsValue) + "CLR");
+                colorSpaceType.setAttribute("name", Integer.toHexString(numChannelsValue) + "CLR");
                 break;
         }
 

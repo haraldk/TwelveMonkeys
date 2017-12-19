@@ -74,7 +74,7 @@ public class TIFFImageMetadataTest {
 
         Node colorSpaceType = chroma.getFirstChild();
         assertEquals("ColorSpaceType", colorSpaceType.getNodeName());
-        assertEquals("YCbCr", ((Element) colorSpaceType).getAttribute("value"));
+        assertEquals("YCbCr", ((Element) colorSpaceType).getAttribute("name"));
 
         Node numChannels = colorSpaceType.getNextSibling();
         assertEquals("NumChannels", numChannels.getNodeName());
