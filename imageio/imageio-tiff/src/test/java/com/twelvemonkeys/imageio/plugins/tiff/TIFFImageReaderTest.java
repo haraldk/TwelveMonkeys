@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.junit.internal.matchers.StringContains.containsString;
+import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -233,10 +234,16 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         try (ImageInputStream stream = testData.getInputStream()) {
             TIFFImageReader reader = createReader();
             reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
             BufferedImage image = reader.read(0);
 
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("Old-style JPEG"));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("JPEGInterchangeFormat"), contains("Offsets")));
         }
     }
 
@@ -255,7 +262,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
 
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
-            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("JPEGInterchangeFormatLength"));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("Old-style JPEG"));
         }
     }
 
@@ -274,7 +281,26 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
 
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
-            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), contains("JPEG"));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
+        }
+    }
+
+    @Test
+    public void testReadOldStyleWangMultiStrip() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/old-style-jpeg-multiple-strips.tif"), new Dimension(1571, 2339));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
         }
     }
 
