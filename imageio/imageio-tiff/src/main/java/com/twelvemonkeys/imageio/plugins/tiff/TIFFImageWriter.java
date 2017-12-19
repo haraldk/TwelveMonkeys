@@ -359,7 +359,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 ListenerDelegate listener = new ListenerDelegate(imageIndex);
                 jpegWriter.addIIOWriteProgressListener(listener);
                 jpegWriter.addIIOWriteWarningListener(listener);
-                jpegWriter.write(renderedImage);
+                jpegWriter.write(null, image, copyParams(param, jpegWriter));
             }
             finally {
                 jpegWriter.dispose();
@@ -392,6 +392,27 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         return nextIFDPointerOffset;
+    }
+
+    // TODO: Candidate util method
+    private ImageWriteParam copyParams(final ImageWriteParam param, final ImageWriter writer) {
+        if (param == null) {
+            return null;
+        }
+
+        // Always safe
+        ImageWriteParam writeParam = writer.getDefaultWriteParam();
+        writeParam.setSourceSubsampling(param.getSourceXSubsampling(), param.getSourceYSubsampling(), param.getSubsamplingXOffset(), param.getSubsamplingYOffset());
+        writeParam.setSourceRegion(param.getSourceRegion());
+        writeParam.setSourceBands(param.getSourceBands());
+
+        // Only if canWriteCompressed()
+        writeParam.setCompressionMode(param.getCompressionMode());
+        if (param.getCompressionMode() == ImageWriteParam.MODE_EXPLICIT) {
+            writeParam.setCompressionQuality(param.getCompressionQuality());
+        }
+
+        return writeParam;
     }
 
     // TODO: Candidate util method

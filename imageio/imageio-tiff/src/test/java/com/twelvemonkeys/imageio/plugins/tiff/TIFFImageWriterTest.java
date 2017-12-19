@@ -322,10 +322,11 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB),
                 new BufferedImage(110, 100, BufferedImage.TYPE_INT_RGB),
                 new BufferedImage(120, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(130, 100, BufferedImage.TYPE_INT_RGB)
+                new BufferedImage(130, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(140, 100, BufferedImage.TYPE_BYTE_BINARY)
         };
 
-        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE};
+        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE, Color.WHITE};
 
         for (int i = 0; i < images.length; i++) {
             BufferedImage image = images[i];
@@ -350,17 +351,20 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
             try {
                 writer.prepareWriteSequence(null);
 
-                params.setCompressionType("JPEG");
+                params.setCompressionType("LZW");
                 writer.writeToSequence(new IIOImage(images[0], null, null), params);
 
                 params.setCompressionType("None");
                 writer.writeToSequence(new IIOImage(images[1], null, null), params);
 
-                params.setCompressionType("None");
+                params.setCompressionType("JPEG");
                 writer.writeToSequence(new IIOImage(images[2], null, null), params);
 
                 params.setCompressionType("PackBits");
                 writer.writeToSequence(new IIOImage(images[3], null, null), params);
+
+                params.setCompressionType("CCITT T.6");
+                writer.writeToSequence(new IIOImage(images[4], null, null), params);
 
                 writer.endWriteSequence();
             }
@@ -423,6 +427,30 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 }
 
                 writer.endWriteSequence();
+            }
+            catch (IOException e) {
+                fail(e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testWriteParamJPEGQuality() throws IOException {
+        ImageWriter writer = createImageWriter();
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(new NullOutputStream())) {
+            writer.setOutput(output);
+
+            try {
+                ImageWriteParam param = writer.getDefaultWriteParam();
+                // Make sure that the JPEG delegation outputs the correct indexes
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionType("JPEG");
+                param.setCompressionQuality(.1f);
+
+                writer.write(null, new IIOImage(new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB), null, null), param);
+
+                // In a perfect world, we should verify that the parameter was passed to the JPEG delegate...
             }
             catch (IOException e) {
                 fail(e.getMessage());
