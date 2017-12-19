@@ -107,17 +107,8 @@ public class JPEGImageWriterSpi extends ImageWriterSpiBase {
 
     @Override
     public String[] getFormatNames() {
+        // NOTE: Can't use super.getFormatNames() which includes JPEG-Lossless
         return delegateProvider.getFormatNames();
-    }
-
-    @Override
-    public String[] getFileSuffixes() {
-        return delegateProvider.getFileSuffixes();
-    }
-
-    @Override
-    public String[] getMIMETypes() {
-        return delegateProvider.getMIMETypes();
     }
 
     @Override

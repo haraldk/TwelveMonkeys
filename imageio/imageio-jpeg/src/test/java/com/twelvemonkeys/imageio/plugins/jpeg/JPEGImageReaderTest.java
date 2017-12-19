@@ -150,7 +150,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
     @Override
     protected List<String> getFormatNames() {
-        return Arrays.asList("JPEG", "jpeg", "JPG", "jpg");
+        return Arrays.asList("JPEG", "jpeg", "JPG", "jpg",
+                "jpeg-lossless", "JPEG-LOSSLESS");
     }
 
     @Override
@@ -1206,9 +1207,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         for (String resource : resources) {
             // Just test that we can read the metadata without exceptions
             JPEGImageReader reader = createReader();
-            ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(resource));
 
-            try {
+            try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(resource))) {
                 reader.setInput(stream);
                 IIOMetadata metadata = reader.getImageMetadata(0);
                 assertNotNull(String.format("%s: null metadata", resource), metadata);
@@ -1219,12 +1219,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
             }
             catch (IIOException e) {
-                AssertionError fail = new AssertionError(String.format("Reading metadata failed for %ss: %s", resource, e.getMessage()));
-                fail.initCause(e);
-                throw fail;
-            }
-            finally {
-                stream.close();
+                throw new AssertionError(String.format("Reading metadata failed for %ss: %s", resource, e.getMessage()), e);
             }
         }
     }
@@ -1256,9 +1251,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                         }
                     }
                     catch (IIOException e) {
-                        AssertionError fail = new AssertionError(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
-                        fail.initCause(e);
-                        throw fail;
+                        throw new AssertionError(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()), e);
                     }
                 }
                 catch (IIOException ignore) {

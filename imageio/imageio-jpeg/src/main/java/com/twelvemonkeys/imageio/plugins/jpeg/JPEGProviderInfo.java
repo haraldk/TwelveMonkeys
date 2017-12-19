@@ -41,7 +41,7 @@ final class JPEGProviderInfo extends ReaderWriterProviderInfo {
     JPEGProviderInfo() {
         super(
                 JPEGProviderInfo.class,
-                new String[] {"JPEG", "jpeg", "JPG", "jpg"},
+                new String[] {"JPEG", "jpeg", "JPG", "jpg", "JPEG-LOSSLESS", "jpeg-lossless"},
                 new String[] {"jpg", "jpeg"},
                 new String[] {"image/jpeg"},
                 "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader",

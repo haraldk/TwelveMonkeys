@@ -114,21 +114,6 @@ public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
     }
 
     @Override
-    public String[] getFormatNames() {
-        return delegateProvider.getFormatNames();
-    }
-
-    @Override
-    public String[] getFileSuffixes() {
-        return delegateProvider.getFileSuffixes();
-    }
-
-    @Override
-    public String[] getMIMETypes() {
-        return delegateProvider.getMIMETypes();
-    }
-
-    @Override
     public boolean isStandardStreamMetadataFormatSupported() {
         return delegateProvider.isStandardStreamMetadataFormatSupported();
     }
