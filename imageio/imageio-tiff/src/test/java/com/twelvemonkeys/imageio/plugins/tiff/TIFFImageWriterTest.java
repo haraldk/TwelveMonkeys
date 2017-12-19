@@ -323,10 +323,11 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 new BufferedImage(110, 100, BufferedImage.TYPE_INT_RGB),
                 new BufferedImage(120, 100, BufferedImage.TYPE_INT_RGB),
                 new BufferedImage(130, 100, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(140, 100, BufferedImage.TYPE_BYTE_BINARY)
+                new BufferedImage(140, 100, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(150, 100, BufferedImage.TYPE_BYTE_BINARY)
         };
 
-        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE, Color.WHITE};
+        Color[] colors = new Color[] {Color.RED, Color.GREEN, Color.BLUE, Color.ORANGE, Color.PINK, Color.WHITE};
 
         for (int i = 0; i < images.length; i++) {
             BufferedImage image = images[i];
@@ -363,8 +364,11 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 params.setCompressionType("PackBits");
                 writer.writeToSequence(new IIOImage(images[3], null, null), params);
 
-                params.setCompressionType("CCITT T.6");
+                params.setCompressionType("Deflate");
                 writer.writeToSequence(new IIOImage(images[4], null, null), params);
+
+                params.setCompressionType("CCITT T.6");
+                writer.writeToSequence(new IIOImage(images[5], null, null), params);
 
                 writer.endWriteSequence();
             }
