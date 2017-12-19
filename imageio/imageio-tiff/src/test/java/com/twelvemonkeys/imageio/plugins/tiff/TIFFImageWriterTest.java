@@ -36,7 +36,6 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.io.NullOutputStream;
 import org.junit.Test;
 import org.w3c.dom.NodeList;
@@ -53,7 +52,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteOrder;
@@ -374,9 +372,6 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTestCase {
                 fail(e.getMessage());
             }
         }
-
-        FileUtil.write(new File("/Downloads/multi-foo.tiff"), buffer.toByteArray());
-
 
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
