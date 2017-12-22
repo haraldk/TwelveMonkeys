@@ -947,9 +947,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalStateException("prepareWriteSequence() must be called before writeToSequence()!");
         }
 
-        if (sequenceLastIFDPos > 0) {
-            imageOutput.seek(imageOutput.length());
+        if (sequenceIndex > 0) {
             imageOutput.flushBefore(sequenceLastIFDPos);
+            imageOutput.seek(imageOutput.length());
         }
 
         sequenceLastIFDPos = writePage(sequenceIndex++, image, param, sequenceTIFFWriter, sequenceLastIFDPos);
