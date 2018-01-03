@@ -50,7 +50,7 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
-//                new TestData(getClassLoaderResource("/pcx/GMARBLES.PCX"), new Dimension(1419, 1001)) // RLE encoded gray (seems to be damanged, missing the last few scan lines)
+//                new TestData(getClassLoaderResource("/pcx/GMARBLES.PCX"), new Dimension(1419, 1001)) // RLE encoded gray (seems to be damaged, missing the last few scan lines)
                 new TestData(getClassLoaderResource("/pcx/lena.pcx"), new Dimension(512, 512)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/lena2.pcx"), new Dimension(512, 512)), // RLE encoded, 256 color indexed (8 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena3.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel)

@@ -185,16 +185,16 @@ public final class PCXImageReader extends ImageReaderBase {
         if (rawType.getColorModel() instanceof IndexColorModel && header.getChannels() > 1) {
             // Bit planes!
             // Create raster from a default 8 bit layout
-            WritableRaster rowRaster = GRAYSCALE.createBufferedImage(header.getWidth(), 1).getRaster();
+            int planeWidth = header.getBytesPerLine();
+            int rowWidth = planeWidth * 8; // bitsPerPixel == 1
+            WritableRaster rowRaster = GRAYSCALE.createBufferedImage(rowWidth, 1).getRaster();
 
             // Clip to source region
             Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
                                               param != null ? param.getSourceBands() : null,
                                               param != null ? param.getSourceXSubsampling() : 1);
 
-            int planeWidth = header.getBytesPerLine();
-            byte[] planeData = new byte[planeWidth * 8];
-
+            byte[] planeData = new byte[rowWidth];
             byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
 
             for (int y = 0; y < height; y++) {
@@ -351,6 +351,7 @@ public final class PCXImageReader extends ImageReaderBase {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             header = PCXHeader.read(imageInput);
+//            System.err.println("header: " + header);
             imageInput.flushBefore(imageInput.getStreamPosition());
         }
 
