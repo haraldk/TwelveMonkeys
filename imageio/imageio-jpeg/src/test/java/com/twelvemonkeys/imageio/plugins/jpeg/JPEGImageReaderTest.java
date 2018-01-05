@@ -88,6 +88,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
                 new TestData(getClassLoaderResource("/jpeg/corrupted-icc-srgb.jpg"), new Dimension(1024, 685)),
+                new TestData(getClassLoaderResource("/jpeg/adobe-unknown-rgb-ids.jpg"), new Dimension(225, 156)), // Adobe, unknown transform, component ids R, G & B
                 new TestData(getClassLoaderResource("/jpeg/gray-sample.jpg"), new Dimension(386, 396)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample.jpg"), new Dimension(160, 227)),
                 new TestData(getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), new Dimension(2707, 3804)),
@@ -1002,6 +1003,28 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         for (int i = 0; i < image.getWidth() / 10; i++) {
             int actualRGB = image.getRGB(i * 10, 7);
             assertRGBEquals(expectedRGB[i], actualRGB);
+        }
+    }
+
+    @Test
+    public void testAdobeUnknownRGBComponentIds() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/adobe-unknown-rgb-ids.jpg")));
+
+        assertEquals(225, reader.getWidth(0));
+        assertEquals(156, reader.getHeight(0));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setSourceRegion(new Rectangle(0, 0, 225, 8));
+        BufferedImage image = reader.read(0, param);
+        assertNotNull(image);
+        assertEquals(225, image.getWidth());
+        assertEquals(8, image.getHeight());
+
+        // Validate strip colors
+        for (int i = 0; i < image.getWidth() / 10; i++) {
+            int actualRGB = image.getRGB(i * 10, 7);
+            assertRGBEquals(0xffffffff, actualRGB); // Will be pink/purple if decoded as YCbCr and not RGB
         }
     }
 

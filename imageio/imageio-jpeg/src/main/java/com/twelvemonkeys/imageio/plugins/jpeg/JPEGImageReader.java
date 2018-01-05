@@ -274,6 +274,20 @@ public final class JPEGImageReader extends ImageReaderBase {
 
             return typeList.iterator();
         }
+        else if (csType == JPEGColorSpace.RGB) {
+            // Bug in com.sun...JPEGImageReader: returns gray as acceptable type, but refuses to convert
+            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
+
+            // Filter out the gray type
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+                if (type.getBufferedImageType() != BufferedImage.TYPE_BYTE_GRAY) {
+                    typeList.add(type);
+                }
+            }
+
+            return typeList.iterator();
+        }
 
         return types;
     }

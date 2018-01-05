@@ -1428,8 +1428,9 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             catch (IIOException | IllegalArgumentException expected) {
                 // TODO: This is thrown by ImageReader.getDestination. But are we happy with that?
                 String message = expected.getMessage().toLowerCase();
-                if (!(message.contains("destination") && message.contains("type"))) {
-                    // Allow this to bubble up, du to a bug in the Sun PNGImageReader
+                if (!(message.contains("destination") && message.contains("type")
+                        || message.contains("num source & dest bands differ"))) {
+                    // Allow this to bubble up, due to a bug in the Sun PNGImageReader
                     throw expected;
                 }
             }
