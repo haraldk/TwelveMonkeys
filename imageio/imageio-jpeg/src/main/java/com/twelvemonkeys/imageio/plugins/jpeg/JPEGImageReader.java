@@ -536,131 +536,86 @@ public final class JPEGImageReader extends ImageReaderBase {
         return image;
     }
 
-    static JPEGColorSpace getSourceCSType(JFIF jfif, AdobeDCT adobeDCT, final Frame startOfFrame) throws IIOException {
-        /*
-        ADAPTED from http://download.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html:
-
-        When reading, the contents of the stream are interpreted by the usual JPEG conventions, as follows:
-
-        • If a JFIF APP0 marker segment is present, the colorspace should be either grayscale or YCbCr.
-        If an APP2 marker segment containing an embedded ICC profile is also present, then YCbCr is converted to RGB according
-        to the formulas given in the JFIF spec, and the ICC profile is assumed to refer to the resulting RGB space.
-        But, as software does not follow the spec, we can't really assume anything.
-
-        • If an Adobe APP14 marker segment is present, the colorspace is determined by consulting the transform flag.
-        The transform flag takes one of three values:
-         o 2 - The image is encoded as YCCK (implicitly converted from CMYK on encoding).
-         o 1 - The image is encoded as YCbCr (implicitly converted from RGB on encoding).
-         o 0 - Unknown. 1-channel images are assumed to be Gray, 3-channel images are assumed to be RGB,
-               4-channel images are assumed to be CMYK.
-
-        • If neither marker segment is present, the following procedure is followed: Single-channel images are assumed
-        to be grayscale, and 2-channel images are assumed to be grayscale with an alpha channel. For 3- and 4-channel
-        images, the component ids are consulted. If these values are 1-3 for a 3-channel image, then the image is
-        assumed to be YCbCr. If these values are 1-4 for a 4-channel image, then the image is assumed to be YCbCrA. If
-        these values are > 4, they are checked against the ASCII codes for 'R', 'G', 'B', 'A', 'C', 'c', 'M', 'Y', 'K'.
-        These can encode the following colorspaces:
-
-        RGB
-        RGBA
-        YCC (as 'Y','C','c'), assumed to be PhotoYCC
-        YCCA (as 'Y','C','c','A'), assumed to be PhotoYCCA
-        CMYK (as 'C', 'M', 'Y', 'K').
-
-        Otherwise, 3-channel subsampled images are assumed to be YCbCr, 3-channel non-subsampled images are assumed to
-        be RGB, 4-channel subsampled images are assumed to be YCCK, and 4-channel, non-subsampled images are assumed to
-        be CMYK.
-
-        • All other images are declared uninterpretable and an exception is thrown if an attempt is made to read one as
-        a BufferedImage. Such an image may be read only as a Raster. If an image is interpretable but there is no Java
-        ColorSpace available corresponding to the encoded colorspace (e.g. YCbCr/YCCK), then ImageReader.getRawImageType
-        will return null.
-        */
-
-        if (adobeDCT != null) {
-            switch (adobeDCT.transform) {
-                case AdobeDCT.YCC:
-                    if (startOfFrame.componentsInFrame() != 3) {
-                        // This probably means the Adobe marker is bogus
-                        break;
-                    }
-                    return JPEGColorSpace.YCbCr;
-                case AdobeDCT.YCCK:
-                    if (startOfFrame.componentsInFrame() != 4) {
-                        // This probably means the Adobe marker is bogus
-                        break;
-                    }
-                    return JPEGColorSpace.YCCK;
-                case AdobeDCT.Unknown:
-                    if (startOfFrame.componentsInFrame() == 1) {
-                        return JPEGColorSpace.Gray;
-                    }
-                    else if (startOfFrame.componentsInFrame() == 3) {
-                        return JPEGColorSpace.RGB;
-                    }
-                    else if (startOfFrame.componentsInFrame() == 4) {
-                        return JPEGColorSpace.CMYK;
-                    }
-                    // Else fall through
-                default:
-            }
-        }
-
-        // TODO: We should probably allow component ids out of order (ie. BGR or KMCY)...
+    private JPEGColorSpace getSourceCSType(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame) throws IIOException {
+        // Adapted from libjpeg jdapimin.c:
+        // Guess the input colorspace
+        // (Wish JPEG committee had provided a real way to specify this...)
         switch (startOfFrame.componentsInFrame()) {
             case 1:
                 return JPEGColorSpace.Gray;
             case 2:
-                return JPEGColorSpace.GrayA;
+                return JPEGColorSpace.GrayA; // Java special case: Gray + Alpha
             case 3:
-                if (startOfFrame.components[0].id == 1 && startOfFrame.components[1].id == 2 && startOfFrame.components[2].id == 3) {
-                    // NOTE: Due to a bug in JPEGMetadata, standard format will report RGB for non-subsampled, non-JFIF files
-                    return JPEGColorSpace.YCbCr;
+                if (jfif != null) {
+                    return JPEGColorSpace.YCbCr; // JFIF implies YCbCr
                 }
-                else if (startOfFrame.components[0].id == 'R' && startOfFrame.components[1].id == 'G' && startOfFrame.components[2].id == 'B') {
-                    return JPEGColorSpace.RGB;
-                }
-                else if (startOfFrame.components[0].id == 'Y' && startOfFrame.components[1].id == 'C' && startOfFrame.components[2].id == 'c') {
-                    return JPEGColorSpace.PhotoYCC;
-                }
-                else {
-                    // If subsampled, YCbCr else RGB
-                    for (Frame.Component component : startOfFrame.components) {
-                        if (component.hSub != 1 || component.vSub != 1) {
+                else if (adobeDCT != null) {
+                    switch (adobeDCT.transform) {
+                        case AdobeDCT.Unknown:
+                            return JPEGColorSpace.RGB;
+                        case AdobeDCT.YCC:
                             return JPEGColorSpace.YCbCr;
-                        }
+                        default:
+                            // TODO: Warning!
+                            return JPEGColorSpace.YCbCr; // assume it's YCbCr
                     }
-
-                    return jfif != null ? JPEGColorSpace.YCbCr : JPEGColorSpace.RGB;
-                }
-            case 4:
-                if (startOfFrame.components[0].id == 1 && startOfFrame.components[1].id == 2 && startOfFrame.components[2].id == 3 && startOfFrame.components[3].id == 4) {
-                    // NOTE: Due to a bug in JPEGMetadata, standard format will report RGBA for non-subsampled, non-JFIF files
-                    return JPEGColorSpace.YCbCrA;
-                }
-                else if (startOfFrame.components[0].id == 'R' && startOfFrame.components[1].id == 'G' && startOfFrame.components[2].id == 'B' && startOfFrame.components[3].id == 'A') {
-                    return JPEGColorSpace.RGBA;
-                }
-                else if (startOfFrame.components[0].id == 'Y' && startOfFrame.components[1].id == 'C' && startOfFrame.components[2].id == 'c' && startOfFrame.components[3].id == 'A') {
-                    return JPEGColorSpace.PhotoYCCA;
-                }
-                else if (startOfFrame.components[0].id == 'C' && startOfFrame.components[1].id == 'M' && startOfFrame.components[2].id == 'Y' && startOfFrame.components[3].id == 'K') {
-                    return JPEGColorSpace.CMYK;
-                }
-                else if (startOfFrame.components[0].id == 'Y' && startOfFrame.components[1].id == 'C' && startOfFrame.components[2].id == 'c' && startOfFrame.components[3].id == 'K') {
-                    return JPEGColorSpace.YCCK;
                 }
                 else {
-                    // TODO: JPEGMetadata (standard format) will report YCbCrA for 4 channel subsampled... :-/
-                    // If subsampled, YCCK else CMYK
-                    for (Frame.Component component : startOfFrame.components) {
-                        if (component.hSub != 1 || component.vSub != 1) {
-                            return JPEGColorSpace.YCCK;
-                        }
-                    }
+                    // Saw no special markers, try to guess from the component IDs
+                    int cid0 = startOfFrame.components[0].id;
+                    int cid1 = startOfFrame.components[1].id;
+                    int cid2 = startOfFrame.components[2].id;
 
-                    return JPEGColorSpace.CMYK;
+                    if (cid0 == 1 && cid1 == 2 && cid2 == 3) {
+                        return JPEGColorSpace.YCbCr; // assume JFIF w/out marker
+                    }
+                    else if (cid0 == 'R' && cid1 == 'G' && cid2 == 'B') {
+                        return JPEGColorSpace.RGB; // ASCII 'R', 'G', 'B'
+                    }
+                    else if (cid0 == 'Y' && cid1 == 'C' && cid2 == 'c') {
+                        return JPEGColorSpace.PhotoYCC; // Java special case: YCc
+                    }
+                    else {
+                        // TODO: Warning!
+                        return JPEGColorSpace.YCbCr; // assume it's YCbCr
+                    }
                 }
+
+            case 4:
+                if (adobeDCT != null) {
+                    switch (adobeDCT.transform) {
+                        case AdobeDCT.Unknown:
+                            return JPEGColorSpace.CMYK;
+                        case AdobeDCT.YCCK:
+                            return JPEGColorSpace.YCCK;
+                        default:
+                            // TODO: Warning!
+                            return JPEGColorSpace.YCCK; // assume it's YCCK
+                    }
+                }
+                else {
+                    // Saw no special markers, try to guess from the component IDs
+                    int cid0 = startOfFrame.components[0].id;
+                    int cid1 = startOfFrame.components[1].id;
+                    int cid2 = startOfFrame.components[2].id;
+                    int cid3 = startOfFrame.components[3].id;
+
+                    if (cid0 == 1 && cid1 == 2 && cid2 == 3 && cid3 == 4) {
+                        return JPEGColorSpace.YCbCrA; // Java special case: YCbCrA
+                    }
+                    else if (cid0 == 'R' && cid1 == 'G' && cid2 == 'B' && cid3 == 'A') {
+                        return JPEGColorSpace.RGBA; // Java special case: RGBA
+                    }
+                    else if (cid0 == 'Y' && cid1 == 'C' && cid2 == 'c' && cid3 == 'A') {
+                        return JPEGColorSpace.PhotoYCCA; // Java special case: YCcA
+                    }
+                    else {
+                        // TODO: Warning!
+                        // No special markers, assume straight CMYK.
+                        return JPEGColorSpace.CMYK;
+                    }
+                }
+
             default:
                 throw new IIOException("Cannot determine source color space");
         }
