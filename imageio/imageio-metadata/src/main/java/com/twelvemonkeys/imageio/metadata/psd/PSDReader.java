@@ -64,9 +64,17 @@ public final class PSDReader extends MetadataReader {
         while (true) {
             try {
                 int type = input.readInt();
-                
-                if (type != PSD.RESOURCE_TYPE) {
-                    throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%08x'", type));
+
+                switch (type) {
+                    case PSD.RESOURCE_TYPE_IMAGEREADY:
+                    case PSD.RESOURCE_TYPE_PHOTODELUXE:
+                    case PSD.RESOURCE_TYPE_LIGHTROOM:
+                    case PSD.RESOURCE_TYPE_DCSR:
+                        // TODO: Warning for these types!
+                    case PSD.RESOURCE_TYPE:
+                        break;
+                    default:
+                        throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%08x'", type));
                 }
 
                 short id = input.readShort();

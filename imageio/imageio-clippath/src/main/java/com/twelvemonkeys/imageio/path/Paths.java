@@ -50,13 +50,13 @@ import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
+import static java.util.Collections.singletonList;
 
 /**
  * Support for various Adobe Photoshop Path related operations:
@@ -96,7 +96,7 @@ public final class Paths {
         int magic = readMagic(stream);
 
         if (magic == PSD.RESOURCE_TYPE) {
-            // This is a PSD Image Resource BLock, we can parse directly
+            // This is a PSD Image Resource Block, we can parse directly
             return buildPathFromPhotoshopResources(stream);
         }
         else if (magic == PSD.SIGNATURE_8BPS) {
@@ -117,8 +117,8 @@ public final class Paths {
         }
         else if (magic >>> 16 == JPEG.SOI && (magic & 0xff00) == 0xff00) {
             // JPEG version
-            Map<Integer, java.util.List<String>> segmentIdentifiers = new LinkedHashMap<Integer, java.util.List<String>>();
-            segmentIdentifiers.put(JPEG.APP13, Arrays.asList("Photoshop 3.0"));
+            Map<Integer, java.util.List<String>> segmentIdentifiers = new LinkedHashMap<>();
+            segmentIdentifiers.put(JPEG.APP13, singletonList("Photoshop 3.0"));
 
             List<JPEGSegment> photoshop = JPEGSegmentUtil.readSegments(stream, segmentIdentifiers);
 
@@ -262,7 +262,7 @@ public final class Paths {
 
         Desktop.getDesktop().open(tempFile);
 
-        Thread.sleep(3000l);
+        Thread.sleep(3000L);
 
         if (!tempFile.delete()) {
             System.err.printf("%s not deleted\n", tempFile);

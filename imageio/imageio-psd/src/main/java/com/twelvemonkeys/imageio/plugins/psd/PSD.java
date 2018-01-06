@@ -38,7 +38,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
  * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml">Adobe Photoshop File Formats Specification</a>
  * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
  */
-interface PSD {
+interface PSD extends com.twelvemonkeys.imageio.metadata.psd.PSD {
     /** PSD 2+ Native format (.PSD) identifier "8BPS" */
     int SIGNATURE_8BPS = ('8' << 24) + ('B' << 16) + ('P' << 8) + 'S';
 
@@ -49,9 +49,7 @@ interface PSD {
     int VERSION_PSD = 1;
     int VERSION_PSB = 2;
 
-    /** PSD Resource type identifier "8BIM" */
-    int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
-    int RESOURCE_TYPE_LONG = ('8' << 24) + ('B' << 16) + ('6' << 8) + '4';;
+    int RESOURCE_TYPE_LONG = ('8' << 24) + ('B' << 16) + ('6' << 8) + '4';
 
     // Blending modes
     /** Pass through blending mode "pass"*/

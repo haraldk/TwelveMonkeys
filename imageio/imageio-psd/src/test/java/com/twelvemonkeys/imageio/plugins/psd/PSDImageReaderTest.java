@@ -96,8 +96,9 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 new TestData(getClassLoaderResource("/psd/masks2.psd"), new Dimension(640, 1136)),
                 // RGB, multiple alpha channels, no transparency
                 new TestData(getClassLoaderResource("/psd/rgb-multichannel-no-transparency.psd"), new Dimension(100, 100)),
-                new TestData(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"), new Dimension(100, 100))
-                // TODO: Need uncompressed PSD
+                new TestData(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"), new Dimension(100, 100)),
+                // CMYK, uncompressed + contains some uncommon MeSa (instead of 8BIM) resource blocks
+                new TestData(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"), new Dimension(400, 191))
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
         );
     }
