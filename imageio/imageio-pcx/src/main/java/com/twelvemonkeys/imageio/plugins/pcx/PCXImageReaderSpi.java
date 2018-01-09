@@ -87,7 +87,7 @@ public final class PCXImageReaderSpi extends ImageReaderSpiBase {
     }
 
     @Override public String getDescription(final Locale locale) {
-        return "PC Paintbrush (PCX) image reader";
+        return "ZSoft PC Paintbrush (PCX) image reader";
     }
 }
 

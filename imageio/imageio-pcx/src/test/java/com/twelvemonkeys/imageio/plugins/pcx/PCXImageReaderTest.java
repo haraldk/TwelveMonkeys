@@ -31,12 +31,19 @@ package com.twelvemonkeys.imageio.plugins.pcx;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * PCXImageReaderTest
@@ -50,19 +57,18 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
-//                new TestData(getClassLoaderResource("/pcx/GMARBLES.PCX"), new Dimension(1419, 1001)) // RLE encoded gray (seems to be damaged, missing the last few scan lines)
                 new TestData(getClassLoaderResource("/pcx/lena.pcx"), new Dimension(512, 512)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/lena2.pcx"), new Dimension(512, 512)), // RLE encoded, 256 color indexed (8 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena3.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena4.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (1 bps/4 channels)
                 new TestData(getClassLoaderResource("/pcx/lena5.pcx"), new Dimension(512, 512)), // RLE encoded, 256 color indexed (8 bps/1 channel)
-                new TestData(getClassLoaderResource("/pcx/lena6.pcx"), new Dimension(512, 512)), // RLE encoded, 8 colorindexed (1 bps/3 channels)
+                new TestData(getClassLoaderResource("/pcx/lena6.pcx"), new Dimension(512, 512)), // RLE encoded, 8 color indexed (1 bps/3 channels)
                 new TestData(getClassLoaderResource("/pcx/lena7.pcx"), new Dimension(512, 512)), // RLE encoded, 4 color indexed (1 bps/2 channels)
                 new TestData(getClassLoaderResource("/pcx/lena8.pcx"), new Dimension(512, 512)), // RLE encoded, 4 color indexed (2 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena9.pcx"), new Dimension(512, 512)), // RLE encoded, 2 color indexed (1 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena10.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel) (uses only 8 colors)
                 new TestData(getClassLoaderResource("/pcx/DARKSTAR.PCX"), new Dimension(88, 52)), // RLE encoded monochrome (1 bps/1 channel)
-                // TODO: Get correct colors for CGA mode, see cga-pcx.txt (however, the text seems to be in error, the bits are not as described)
+                // See cga-pcx.txt, however, the text seems to be in error, the bits can not not as described
                 new TestData(getClassLoaderResource("/pcx/CGA_BW.PCX"), new Dimension(640, 200)), // RLE encoded indexed (CGA mode)
                 new TestData(getClassLoaderResource("/pcx/CGA_FSD.PCX"), new Dimension(320, 200)), // RLE encoded indexed (CGA mode)
                 new TestData(getClassLoaderResource("/pcx/CGA_RGBI.PCX"), new Dimension(320, 200)), // RLE encoded indexed (CGA mode)
@@ -100,6 +106,29 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
         return Arrays.asList(
                 "image/pcx", "image/x-pcx"
         );
+    }
+
+    @Test
+    public void testReadGray() throws IOException {
+        // Seems like the last scan lines have been overwritten by an unnecessary 768 byte palette + 1 byte magic...
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/pcx/GMARBLES.PCX"))) {
+            PCXImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertEquals(1, reader.getNumImages(true));
+            assertEquals(1419, reader.getWidth(0));
+            assertEquals(1001, reader.getHeight(0));
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(1419, 1000)); // Ignore the last garbled line
+
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(BufferedImage.TYPE_BYTE_INDEXED, image.getType());
+            assertEquals(1419, image.getWidth());
+            assertEquals(1000, image.getHeight());
+        }
     }
 
     @Test
