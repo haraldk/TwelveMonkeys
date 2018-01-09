@@ -68,6 +68,7 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
                 new TestData(getClassLoaderResource("/pcx/lena9.pcx"), new Dimension(512, 512)), // RLE encoded, 2 color indexed (1 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena10.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel) (uses only 8 colors)
                 new TestData(getClassLoaderResource("/pcx/DARKSTAR.PCX"), new Dimension(88, 52)), // RLE encoded monochrome (1 bps/1 channel)
+                new TestData(getClassLoaderResource("/pcx/no-palette-monochrome.pcx"), new Dimension(128, 152)), // RLE encoded monochrome (1 bps/1 channel)
                 // See cga-pcx.txt, however, the text seems to be in error, the bits can not not as described
                 new TestData(getClassLoaderResource("/pcx/CGA_BW.PCX"), new Dimension(640, 200)), // RLE encoded indexed (CGA mode)
                 new TestData(getClassLoaderResource("/pcx/CGA_FSD.PCX"), new Dimension(320, 200)), // RLE encoded indexed (CGA mode)
@@ -128,6 +129,29 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
             assertEquals(BufferedImage.TYPE_BYTE_INDEXED, image.getType());
             assertEquals(1419, image.getWidth());
             assertEquals(1000, image.getHeight());
+        }
+    }
+
+    @Test
+    public void testReadMonochromeNoPalette() throws IOException {
+        // Monochrome image V3 (no palette), palette is all 0's
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/pcx/no-palette-monochrome.pcx"))) {
+            PCXImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertEquals(1, reader.getNumImages(true));
+            assertEquals(128, reader.getWidth(0));
+            assertEquals(152, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(BufferedImage.TYPE_BYTE_BINARY, image.getType());
+            assertEquals(128, image.getWidth());
+            assertEquals(152, image.getHeight());
+
+            assertRGBEquals("Should have white background", 0xffffffff, image.getRGB(0, 0), 0);
+            assertRGBEquals("Should have black skull", 0xff000000, image.getRGB(64, 10), 0);
         }
     }
 
