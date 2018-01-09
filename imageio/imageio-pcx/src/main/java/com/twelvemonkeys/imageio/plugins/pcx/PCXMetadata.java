@@ -47,6 +47,7 @@ final class PCXMetadata extends AbstractMetadata {
         IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
         IndexColorModel palette = null;
+        boolean gray = false;
 
         IIOMetadataNode csType = new IIOMetadataNode("ColorSpaceType");
         switch (header.getBitsPerPixel()) {
@@ -58,13 +59,14 @@ final class PCXMetadata extends AbstractMetadata {
                 break;
             case 8:
                 // We may have IndexColorModel here for 1 channel images
-                if (header.getChannels() == 1 && header.getPaletteInfo() != PCX.PALETTEINFO_GRAY) {
+                if (header.getChannels() == 1 && vgaPalette != null) {
                     palette = vgaPalette;
                     csType.setAttribute("name", "RGB");
                     break;
                 }
                 if (header.getChannels() == 1) {
                     csType.setAttribute("name", "GRAY");
+                    gray = true;
                     break;
                 }
                 csType.setAttribute("name", "RGB");
@@ -81,6 +83,15 @@ final class PCXMetadata extends AbstractMetadata {
 
         chroma.appendChild(csType);
 
+        // NOTE: Channels in chroma node reflects channels in color model, not data! (see data node)
+        IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
+        numChannels.setAttribute("value", gray ? "1" : "3");
+        chroma.appendChild(numChannels);
+
+        IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
+        blackIsZero.setAttribute("value", "TRUE");
+        chroma.appendChild(blackIsZero);
+
         if (palette != null) {
             IIOMetadataNode paletteNode = new IIOMetadataNode("Palette");
             chroma.appendChild(paletteNode);
@@ -96,15 +107,6 @@ final class PCXMetadata extends AbstractMetadata {
                 paletteNode.appendChild(paletteEntry);
             }
         }
-
-        // TODO: Channels in chroma node should reflect channels in color model, not data! (see data node)
-        IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
-        numChannels.setAttribute("value", Integer.toString(header.getChannels()));
-        chroma.appendChild(numChannels);
-
-        IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
-        blackIsZero.setAttribute("value", "TRUE");
-        chroma.appendChild(blackIsZero);
 
         return chroma;
     }
@@ -141,9 +143,25 @@ final class PCXMetadata extends AbstractMetadata {
             node.appendChild(planarConfiguration);
         }
 
-        // TODO: SampleFormat value = Index if colormapped/palette data
         IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
-        sampleFormat.setAttribute("value", "UnsignedIntegral");
+
+        switch (header.getBitsPerPixel()) {
+            case 1:
+            case 2:
+            case 4:
+                sampleFormat.setAttribute("value", "Index");
+                break;
+            case 8:
+                if (header.getChannels() == 1 && vgaPalette != null) {
+                    sampleFormat.setAttribute("value", "Index");
+                    break;
+                }
+                // Else fall through for GRAY
+            default:
+                sampleFormat.setAttribute("value", "UnsignedIntegral");
+                break;
+        }
+
         node.appendChild(sampleFormat);
 
         IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
@@ -185,7 +203,16 @@ final class PCXMetadata extends AbstractMetadata {
         return dimension;
     }
 
-    // TODO: document node with version
+    @Override
+    protected IIOMetadataNode getStandardDocumentNode() {
+        IIOMetadataNode dimension = new IIOMetadataNode("Document");
+
+        IIOMetadataNode imageOrientation = new IIOMetadataNode("FormatVersion");
+        imageOrientation.setAttribute("value", String.valueOf(header.getVersion()));
+        dimension.appendChild(imageOrientation);
+
+        return dimension;
+    }
 
     // No text node
 
