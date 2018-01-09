@@ -45,7 +45,8 @@ public final class DCXImageReaderSpi extends ImageReaderSpiBase {
         super(new DCXProviderInfo());
     }
 
-    @Override public boolean canDecodeInput(final Object source) throws IOException {
+    @Override
+    public boolean canDecodeInput(final Object source) throws IOException {
         if (!(source instanceof ImageInputStream)) {
             return false;
         }
@@ -64,15 +65,18 @@ public final class DCXImageReaderSpi extends ImageReaderSpiBase {
                 stream.setByteOrder(originalByteOrder);
             }
         }
-        finally{
+        finally {
             stream.reset();
         }
     }
 
-    @Override public ImageReader createReaderInstance(final Object extension) throws IOException {
+    @Override
+    public ImageReader createReaderInstance(final Object extension) throws IOException {
         return new DCXImageReader(this);
     }
 
-    @Override public String getDescription(final Locale locale) {
+    @Override
+    public String getDescription(final Locale locale) {
         return "Multi-page PCX fax document (DCX) image reader";
-    }}
+    }
+}

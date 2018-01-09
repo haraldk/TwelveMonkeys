@@ -65,16 +65,16 @@ final class DCXHeader {
         int count = 0;
         do {
             offsets[count] = imageInput.readInt();
-            count++;
         }
-        while (offsets[count - 1] != 0 && count < offsets.length);
+        while (offsets[count] != 0 && count++ < offsets.length);
 
         return new DCXHeader(count == offsets.length ? offsets : Arrays.copyOf(offsets, count));
     }
 
-    @Override public String toString() {
-        return "DCXHeader{" +
+    @Override
+    public String toString() {
+        return "DCXHeader[" +
                 "offsetTable=" + Arrays.toString(offsetTable) +
-                '}';
+                ']';
     }
 }
