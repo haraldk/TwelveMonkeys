@@ -369,7 +369,8 @@ public final class PCXImageReader extends ImageReaderBase {
         imageInput.seek(imageInput.getFlushedPosition());
     }
 
-    @Override public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
