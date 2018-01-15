@@ -43,7 +43,6 @@ public interface PSD {
     int RESOURCE_TYPE = ('8' << 24) + ('B' << 16) + ('I' << 8) + 'M';
 
     // http://fileformats.archiveteam.org/wiki/Photoshop_Image_Resources
-    // However, ExifTool says ImageReady is PHUT and PhotoDeluxe is MeSa... :-/
     int RESOURCE_TYPE_IMAGEREADY = ('M' << 24) + ('e' << 16) + ('S' << 8) + 'a';
     int RESOURCE_TYPE_PHOTODELUXE = ('P' << 24) + ('H' << 16) + ('U' << 8) + 'T';
     int RESOURCE_TYPE_LIGHTROOM = ('A' << 24) + ('g' << 16) + ('H' << 8) + 'g';
