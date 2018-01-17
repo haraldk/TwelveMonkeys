@@ -72,7 +72,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
     /**
      * Creates a CCITTFaxDecoderStream.
-     * This is used for CCITT streams from PDF files, which use EncodedByteAlign.
+     * This constructor may be used for CCITT streams embedded in PDF files,
+     * which use EncodedByteAlign.
      *
      * @param stream the compressed CCITT stream.
      * @param columns the number of columns in the stream.
@@ -144,7 +145,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
      */
     public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
                                  final long options) {
-        this(stream, columns, type, fillOrder, options, false);
+        this(stream, columns, type, fillOrder, options, type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
     }
 
     private void fetch() throws IOException {
