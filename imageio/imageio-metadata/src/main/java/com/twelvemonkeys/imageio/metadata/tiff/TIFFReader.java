@@ -153,7 +153,10 @@ public final class TIFFReader extends MetadataReader {
                 CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset, true);
 
                 for (int i = 0; i < next.directoryCount(); i++) {
-                    ifds.add((IFD) next.getDirectory(i));
+                    if(next.getDirectory(i).size() > 0) {
+                        // Linked directories might be empty if nextOffset is after EOF, so skip them
+                        ifds.add((IFD) next.getDirectory(i));
+                    }
                 }
             }
         }

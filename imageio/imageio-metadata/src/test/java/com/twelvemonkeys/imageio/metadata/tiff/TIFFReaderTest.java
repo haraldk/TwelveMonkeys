@@ -311,4 +311,13 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
             assertTrue(directory.getEntryById(32934).getValue() instanceof EOFException);
         }
     }
+
+    @Test
+    public void testReadIDFPointerBeyondEOF() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/tiff/ifd-end-pointer.tif"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(1, directory.directoryCount());
+            assertEquals(15, directory.size());
+        }
+    }
 }
