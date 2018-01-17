@@ -192,7 +192,7 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(exif);
         assertEquals(23, exif.size());
 
-        // The interop IFD is empty (entry count is 0)
+        // The interop IFD with two values
         Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
         assertNotNull(interop);
         assertEquals(2, interop.size());

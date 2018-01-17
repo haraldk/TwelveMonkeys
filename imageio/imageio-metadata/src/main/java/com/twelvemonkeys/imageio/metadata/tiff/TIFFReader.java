@@ -120,7 +120,6 @@ public final class TIFFReader extends MetadataReader {
         List<Entry> entries = new ArrayList<>();
 
         pInput.seek(pOffset);
-        long nextOffset = -1;
 
         long entryCount = readEntryCount(pInput);
 
@@ -138,14 +137,14 @@ public final class TIFFReader extends MetadataReader {
         }
 
         if (readLinked) {
-            if (nextOffset == -1) {
-                try {
-                    nextOffset = readOffset(pInput);
-                }
-                catch (EOFException e) {
-                    // catch EOF here as missing EOF marker
-                    nextOffset = 0;
-                }
+            long nextOffset;
+
+            try {
+                nextOffset = readOffset(pInput);
+            }
+            catch (EOFException e) {
+                // catch EOF here as missing EOF marker
+                nextOffset = 0;
             }
 
             // Read linked IFDs
@@ -153,9 +152,11 @@ public final class TIFFReader extends MetadataReader {
                 CompoundDirectory next = (CompoundDirectory) readDirectory(pInput, nextOffset, true);
 
                 for (int i = 0; i < next.directoryCount(); i++) {
-                    if(next.getDirectory(i).size() > 0) {
-                        // Linked directories might be empty if nextOffset is after EOF, so skip them
-                        ifds.add((IFD) next.getDirectory(i));
+                    Directory directory = next.getDirectory(i);
+
+                    // Linked directories might be empty if nextOffset is after EOF (skip these)
+                    if (directory.size() > 0) {
+                        ifds.add((IFD) directory);
                     }
                 }
             }
