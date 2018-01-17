@@ -110,12 +110,18 @@ public class CCITTFaxDecoderStreamTest {
             (byte) 0xc0 // 11 (000000 padding)
     };
 
+    // 3W|1B|2W| 3W|1B|2W| 3W|1B|2W| 2W|2B|2W
+    // 1000|010|0111| 1000|010|0111| 1000|010|0111| 0111|11|0111
+    static final byte[] DATA_RLE_UNALIGNED = {
+            (byte)0x84, (byte)0xF0, (byte)0x9E,0x13, (byte)0xBE,(byte) 0xE0
+    };
+
     // Image should be (6 x 4):
     // 1 1 1 0 1 1 x x
     // 1 1 1 0 1 1 x x
     // 1 1 1 0 1 1 x x
     // 1 1 0 0 1 1 x x
-    final BufferedImage image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);;
+    final BufferedImage image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
 
     @Before
     public void init() {
@@ -279,7 +285,18 @@ public class CCITTFaxDecoderStreamTest {
         new DataInputStream(stream).readFully(bytes);
         assertArrayEquals(imageData, bytes);
     }
-  
+
+    @Test
+    public void testDecodeType2NotByteAligned() throws IOException {
+        CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_RLE_UNALIGNED), 6,
+                TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L, false);
+
+        byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
+        byte[] bytes = new byte[imageData.length];
+        new DataInputStream(stream).readFully(bytes);
+        assertArrayEquals(imageData, bytes);
+    }
+
     @Test
     public void testG3AOE() throws IOException {
         InputStream inputStream = getClass().getResourceAsStream("/tiff/ccitt/g3aoe.tif");

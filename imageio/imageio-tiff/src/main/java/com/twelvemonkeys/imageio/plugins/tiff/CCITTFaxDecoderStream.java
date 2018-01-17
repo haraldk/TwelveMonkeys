@@ -106,7 +106,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
         switch (type) {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
-                optionByteAligned = true;
+                optionByteAligned = byteAligned;
                 optionG32D = false;
                 optionG3Fill = false;
                 optionUncompressed = false;
