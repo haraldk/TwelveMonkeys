@@ -303,6 +303,19 @@ public final class TIFFImageWriter extends ImageWriterBase {
         Entry resUnit = metadata.getIFD().getEntryById(TIFF.TAG_RESOLUTION_UNIT);
         entries.put(TIFF.TAG_RESOLUTION_UNIT, resUnit != null ? resUnit : new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFFBaseline.RESOLUTION_UNIT_DPI));
 
+        if(param instanceof TIFFImageWriteParam) {
+            TIFFImageWriteParam tiffParam = (TIFFImageWriteParam) param;
+            for (Map.Entry<Object, Entry> entry : tiffParam.getTags().entrySet()) {
+                Integer identifier = (Integer) entry.getKey();
+                if (entry.getValue() == null) {
+                    entries.remove(identifier);
+                } else {
+                    entries.put(identifier, entry.getValue());
+                }
+            }
+        }
+
+
         // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
         entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, renderedImage.getHeight()));
         // - StripByteCounts - for no compression, entire image data... (TODO: How to know the byte counts prior to writing data?)
@@ -478,12 +491,27 @@ public final class TIFFImageWriter extends ImageWriterBase {
         output.length: 12600399
          */
 
-        int samplesPerPixel = (Integer) entries.get(TIFF.TAG_SAMPLES_PER_PIXEL).getValue();
-        int bitPerSample = ((short[]) entries.get(TIFF.TAG_BITS_PER_SAMPLE).getValue())[0];
+        int samplesPerPixel = 1;
+        int bitPerSample = 1;
+
+        if (entries.get(TIFF.TAG_SAMPLES_PER_PIXEL) != null) {
+            samplesPerPixel = (Integer) entries.get(TIFF.TAG_SAMPLES_PER_PIXEL).getValue();
+        }
+        if (entries.get(TIFF.TAG_BITS_PER_SAMPLE) != null) {
+            Object value = entries.get(TIFF.TAG_BITS_PER_SAMPLE).getValue();
+            if (value.getClass().isArray()) {
+                bitPerSample = ((short[]) value)[0];
+            } else {
+                bitPerSample = (Integer) value;
+            }
+        }
 
         // Use predictor by default for LZW and ZLib/Deflate
         // TODO: Unless explicitly disabled in TIFFImageWriteParam
-        int compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
+        int compression = TIFFBaseline.COMPRESSION_NONE;
+        if (entries.get(TIFF.TAG_COMPRESSION).getValue() != null) {
+            compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
+        }
         OutputStream stream;
 
         switch (compression) {
