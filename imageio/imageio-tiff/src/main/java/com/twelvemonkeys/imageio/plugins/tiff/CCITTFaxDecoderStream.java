@@ -50,12 +50,18 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     private final int columns;
     private final byte[] decodedRow;
 
-    private int decodedLength;
-    private int decodedPos;
+    private final boolean optionG32D;
+    // Leading zeros for aligning EOL
+    private final boolean optionG3Fill;
+    private final boolean optionUncompressed;
+    private final boolean optionByteAligned;
 
     // Need to take fill order into account (?) (use flip table?)
     private final int fillOrder;
     private final int type;
+
+    private int decodedLength;
+    private int decodedPos;
 
     private int[] changesReferenceRow;
     private int[] changesCurrentRow;
@@ -64,22 +70,24 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
     private int lastChangingElement = 0;
 
-    private boolean optionG32D = false;
-
-    @SuppressWarnings("unused") // Leading zeros for aligning EOL
-    private boolean optionG3Fill = false;
-
-    private boolean optionUncompressed = false;
-
-    private boolean optionByteAligned = false;
-
+    /**
+     * Creates a CCITTFaxDecoderStream.
+     * This is used for CCITT streams from PDF files, which use EncodedByteAlign.
+     *
+     * @param stream the compressed CCITT stream.
+     * @param columns the number of columns in the stream.
+     * @param type the type of stream, must be one of {@code COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE},
+     *             {@code COMPRESSION_CCITT_T4} or {@code COMPRESSION_CCITT_T6}.
+     * @param fillOrder fillOrder, must be {@code FILL_LEFT_TO_RIGHT} or
+     * {@code FILL_RIGHT_TO_LEFT}.
+     * @param options CCITT T.4 or T.6 options.
+     * @param byteAligned enable byte alignment used in PDF files (EncodedByteAlign).
+     */
     public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
-                                 final long options) {
+                                 final long options, final boolean byteAligned) {
         super(Validate.notNull(stream, "stream"));
 
         this.columns = Validate.isTrue(columns > 0, columns, "width must be greater than 0");
-        // We know this is only used for b/w (1 bit)
-        this.decodedRow = new byte[(columns + 7) / 8];
         this.type = Validate.isTrue(
                 type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE ||
                         type == TIFFExtension.COMPRESSION_CCITT_T4 || type == TIFFExtension.COMPRESSION_CCITT_T6,
@@ -90,21 +98,33 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 fillOrder, "Expected fill order 1  or 2: %s"
         );
 
-        this.changesReferenceRow = new int[columns + 2];
-        this.changesCurrentRow = new int[columns + 2];
+        // We know this is only used for b/w (1 bit)
+        decodedRow = new byte[(columns + 7) / 8];
+        changesReferenceRow = new int[columns + 2];
+        changesCurrentRow = new int[columns + 2];
 
         switch (type) {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
                 optionByteAligned = true;
+                optionG32D = false;
+                optionG3Fill = false;
+                optionUncompressed = false;
                 break;
             case TIFFExtension.COMPRESSION_CCITT_T4:
+                optionByteAligned = byteAligned;
                 optionG32D = (options & TIFFExtension.GROUP3OPT_2DENCODING) != 0;
                 optionG3Fill = (options & TIFFExtension.GROUP3OPT_FILLBITS) != 0;
                 optionUncompressed = (options & TIFFExtension.GROUP3OPT_UNCOMPRESSED) != 0;
                 break;
             case TIFFExtension.COMPRESSION_CCITT_T6:
+                optionByteAligned = byteAligned;
+                optionG32D = false;
+                optionG3Fill = false;
                 optionUncompressed = (options & TIFFExtension.GROUP4OPT_UNCOMPRESSED) != 0;
                 break;
+            default:
+                // Guarded above
+                throw new AssertionError();
         }
 
         Validate.isTrue(!optionUncompressed, optionUncompressed,
@@ -112,12 +132,19 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     }
 
     /**
-     * This is used for CCITT streams from PDF files, which use EncodedByteAlign
+     * Creates a CCITTFaxDecoderStream.
      *
-     * @param enable enable byte alignment
+     * @param stream the compressed CCITT stream.
+     * @param columns the number of columns in the stream.
+     * @param type the type of stream, must be one of {@code COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE},
+     *             {@code COMPRESSION_CCITT_T4} or {@code COMPRESSION_CCITT_T6}.
+     * @param fillOrder fillOrder, must be {@code FILL_LEFT_TO_RIGHT} or
+     * {@code FILL_RIGHT_TO_LEFT}.
+     * @param options CCITT T.4 or T.6 options.
      */
-    public void setOptionByteAligned(boolean enable) {
-        optionByteAligned = enable;
+    public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
+                                 final long options) {
+        this(stream, columns, type, fillOrder, options, false);
     }
 
     private void fetch() throws IOException {
@@ -133,8 +160,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                     throw e;
                 }
 
-                // ..otherwise, just client code trying to read past the end of
-                // stream
+                // ..otherwise, just let client code try to read past the
+                // end of stream
                 decodedLength = -1;
             }
 

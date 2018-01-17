@@ -272,8 +272,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType4ByteAligned() throws IOException {
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4_ALIGNED), 6,
-                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
-        stream.setOptionByteAligned(true);
+                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L, true);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
