@@ -240,9 +240,9 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
 
         // The interop IFD isn't there (offset points to outside the TIFF structure)...
         // Have double-checked using ExifTool, which says "Warning : Bad InteropOffset SubDirectory start"
-        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        Object interop = exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
         assertNotNull(interop);
-        assertEquals(0, interop.size());
+        assertEquals(240L, interop);
     }
 
     @Test
