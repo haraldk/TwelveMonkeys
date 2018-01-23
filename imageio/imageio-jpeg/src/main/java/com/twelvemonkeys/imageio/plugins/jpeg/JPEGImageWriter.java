@@ -29,6 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.ImageWriterBase;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
 import javax.imageio.IIOImage;
@@ -37,13 +38,18 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+
+import static com.twelvemonkeys.imageio.plugins.jpeg.JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0;
 
 /**
  * JPEGImageWriter
@@ -53,8 +59,6 @@ import java.util.Locale;
  * @version $Id: JPEGImageWriter.java,v 1.0 06.02.12 16:39 haraldk Exp$
  */
 public final class JPEGImageWriter extends ImageWriterBase {
-    // TODO: Extend with functionality to be able to write CMYK JPEGs as well?
-
     /** Our JPEG writing delegate */
     private final ImageWriter delegate;
 
@@ -75,11 +79,13 @@ public final class JPEGImageWriter extends ImageWriterBase {
 
     @Override
     protected void resetMembers() {
+        delegate.reset();
+
         installListeners();
     }
 
     @Override
-    public void setOutput(Object output) {
+    public void setOutput(final Object output) {
         super.setOutput(output);
 
         delegate.setOutput(output);
@@ -111,32 +117,32 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public IIOMetadata getDefaultStreamMetadata(ImageWriteParam param) {
+    public IIOMetadata getDefaultStreamMetadata(final ImageWriteParam param) {
         return delegate.getDefaultStreamMetadata(param);
     }
 
     @Override
-    public IIOMetadata getDefaultImageMetadata(ImageTypeSpecifier imageType, ImageWriteParam param) {
+    public IIOMetadata getDefaultImageMetadata(final ImageTypeSpecifier imageType, final ImageWriteParam param) {
         return delegate.getDefaultImageMetadata(imageType, param);
     }
 
     @Override
-    public IIOMetadata convertStreamMetadata(IIOMetadata inData, ImageWriteParam param) {
+    public IIOMetadata convertStreamMetadata(final IIOMetadata inData, final ImageWriteParam param) {
         return delegate.convertStreamMetadata(inData, param);
     }
 
     @Override
-    public IIOMetadata convertImageMetadata(IIOMetadata inData, ImageTypeSpecifier imageType, ImageWriteParam param) {
+    public IIOMetadata convertImageMetadata(final IIOMetadata inData, final ImageTypeSpecifier imageType, final ImageWriteParam param) {
         return delegate.convertImageMetadata(inData, imageType, param);
     }
 
     @Override
-    public int getNumThumbnailsSupported(ImageTypeSpecifier imageType, ImageWriteParam param, IIOMetadata streamMetadata, IIOMetadata imageMetadata) {
+    public int getNumThumbnailsSupported(final ImageTypeSpecifier imageType, final ImageWriteParam param, final IIOMetadata streamMetadata, final IIOMetadata imageMetadata) {
         return delegate.getNumThumbnailsSupported(imageType, param, streamMetadata, imageMetadata);
     }
 
     @Override
-    public Dimension[] getPreferredThumbnailSizes(ImageTypeSpecifier imageType, ImageWriteParam param, IIOMetadata streamMetadata, IIOMetadata imageMetadata) {
+    public Dimension[] getPreferredThumbnailSizes(final ImageTypeSpecifier imageType, final ImageWriteParam param, final IIOMetadata streamMetadata, final IIOMetadata imageMetadata) {
         return delegate.getPreferredThumbnailSizes(imageType, param, streamMetadata, imageMetadata);
     }
 
@@ -146,18 +152,105 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
-        delegate.write(streamMetadata, image, param);
+    public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
+        if (isDestinationCMYK(image, param)) {
+            writeCMYK(streamMetadata, image, param);
+        }
+        else {
+            delegate.write(streamMetadata, image, param);
+        }
     }
 
-    @Override
-    public void write(IIOImage image) throws IOException {
-        delegate.write(image);
+    private boolean isDestinationCMYK(final IIOImage image, final ImageWriteParam param) {
+        // If destination type != null, rendered image type doesn't matter
+        return !image.hasRaster() && image.getRenderedImage().getColorModel().getColorSpace().getType() == ColorSpace.TYPE_CMYK
+                || param != null && param.getDestinationType() != null && param.getDestinationType().getColorModel().getColorSpace().getType() == ColorSpace.TYPE_CMYK;
     }
 
-    @Override
-    public void write(RenderedImage image) throws IOException {
-        delegate.write(image);
+    private void writeCMYK(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
+        RenderedImage renderedImage = image.getRenderedImage();
+        boolean overrideDestination = param != null && param.getDestinationType() != null;
+        ImageTypeSpecifier destinationType = overrideDestination
+                                             ? param.getDestinationType()
+                                             : ImageTypeSpecifier.createFromRenderedImage(renderedImage);
+
+        ColorSpace cmykCS = destinationType.getColorModel().getColorSpace();
+
+        IIOMetadata metadata = delegate.getDefaultImageMetadata(destinationType, param);
+
+        IIOMetadataNode jpegMeta = new IIOMetadataNode(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+        jpegMeta.appendChild(new IIOMetadataNode("JPEGVariety")); // Just leave as default
+
+        IIOMetadataNode markerSequence = new IIOMetadataNode("markerSequence");
+        jpegMeta.appendChild(markerSequence);
+
+        IIOMetadataNode app14Adobe = new IIOMetadataNode("app14Adobe");
+        app14Adobe.setAttribute("transform", "0"); // 0 for CMYK, 2 for YCCK
+        markerSequence.appendChild(app14Adobe);
+
+        if (cmykCS instanceof ICC_ColorSpace) {
+            ICC_Profile profile = ((ICC_ColorSpace) cmykCS).getProfile();
+            byte[] profileData = profile.getData();
+
+            String segmentId = "ICC_PROFILE";
+            int idLength = segmentId.length();
+            byte[] segmentIdBytes = segmentId.getBytes(StandardCharsets.US_ASCII);
+
+            int maxSegmentLength = Short.MAX_VALUE - Short.MIN_VALUE - idLength - 3 - 2;
+
+            int count = (int) Math.ceil(profileData.length / (float) maxSegmentLength);
+
+            for (int i = 0; i < count; i++) {
+                // Insert unknown marker tags, as app2ICC can only be subtag of jpegVariety/JFIF :-P
+                IIOMetadataNode icc = new IIOMetadataNode("unknown");
+                icc.setAttribute("MarkerTag", String.valueOf(JPEG.APP2 & 0xFF));
+
+                int segmentLength = Math.min(maxSegmentLength, profileData.length - i * maxSegmentLength);
+                byte[] data = new byte[idLength + 3 + segmentLength];
+
+                System.arraycopy(segmentIdBytes, 0, data, 0, idLength);
+                data[idLength] = 0;     // null-terminator
+                data[idLength + 1] = (byte) (1 + i); // index
+                data[idLength + 2] = (byte) count;
+                System.arraycopy(profileData, i * maxSegmentLength, data, idLength + 3, segmentLength);
+
+                icc.setUserObject(data);
+
+                markerSequence.appendChild(icc);
+            }
+        }
+
+        metadata.mergeTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0, jpegMeta);
+
+        Raster raster = new InvertedRaster(getRaster(renderedImage));
+
+        // TODO: For YCCK we need oposite conversion
+//            for (int i = 0; i < data.length; i += 4) {
+//                YCbCrConverter.convertYCbCr2RGB(data, data, i);
+//            }
+
+        if (overrideDestination) {
+            // Avoid javax.imageio.IIOException: Invalid argument to native writeImage
+            param.setDestinationType(null);
+        }
+
+        try {
+            delegate.write(streamMetadata, new IIOImage(raster, null, metadata), param);
+        }
+        finally {
+            if (overrideDestination) {
+                param.setDestinationType(destinationType);
+            }
+        }
+    }
+
+    // TODO: Candidate util method
+    private static Raster getRaster(final RenderedImage image) {
+        return image instanceof BufferedImage
+               ? ((BufferedImage) image).getRaster()
+               : image.getNumXTiles() == 1 && image.getNumYTiles() == 1
+                 ? image.getTile(0, 0)
+                 : image.getData();
     }
 
     @Override
@@ -166,12 +259,12 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void prepareWriteSequence(IIOMetadata streamMetadata) throws IOException {
+    public void prepareWriteSequence(final IIOMetadata streamMetadata) throws IOException {
         delegate.prepareWriteSequence(streamMetadata);
     }
 
     @Override
-    public void writeToSequence(IIOImage image, ImageWriteParam param) throws IOException {
+    public void writeToSequence(final IIOImage image, final ImageWriteParam param) throws IOException {
         delegate.writeToSequence(image, param);
     }
 
@@ -186,37 +279,37 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void replaceStreamMetadata(IIOMetadata streamMetadata) throws IOException {
+    public void replaceStreamMetadata(final IIOMetadata streamMetadata) throws IOException {
         delegate.replaceStreamMetadata(streamMetadata);
     }
 
     @Override
-    public boolean canReplaceImageMetadata(int imageIndex) throws IOException {
+    public boolean canReplaceImageMetadata(final int imageIndex) throws IOException {
         return delegate.canReplaceImageMetadata(imageIndex);
     }
 
     @Override
-    public void replaceImageMetadata(int imageIndex, IIOMetadata imageMetadata) throws IOException {
+    public void replaceImageMetadata(final int imageIndex, final IIOMetadata imageMetadata) throws IOException {
         delegate.replaceImageMetadata(imageIndex, imageMetadata);
     }
 
     @Override
-    public boolean canInsertImage(int imageIndex) throws IOException {
+    public boolean canInsertImage(final int imageIndex) throws IOException {
         return delegate.canInsertImage(imageIndex);
     }
 
     @Override
-    public void writeInsert(int imageIndex, IIOImage image, ImageWriteParam param) throws IOException {
+    public void writeInsert(final int imageIndex, final IIOImage image, final ImageWriteParam param) throws IOException {
         delegate.writeInsert(imageIndex, image, param);
     }
 
     @Override
-    public boolean canRemoveImage(int imageIndex) throws IOException {
+    public boolean canRemoveImage(final int imageIndex) throws IOException {
         return delegate.canRemoveImage(imageIndex);
     }
 
     @Override
-    public void removeImage(int imageIndex) throws IOException {
+    public void removeImage(final int imageIndex) throws IOException {
         delegate.removeImage(imageIndex);
     }
 
@@ -226,7 +319,10 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void prepareWriteEmpty(IIOMetadata streamMetadata, ImageTypeSpecifier imageType, int width, int height, IIOMetadata imageMetadata, List<? extends BufferedImage> thumbnails, ImageWriteParam param) throws IOException {
+    public void prepareWriteEmpty(final IIOMetadata streamMetadata, final ImageTypeSpecifier imageType,
+                                  final int width, final int height,
+                                  final IIOMetadata imageMetadata, final List<? extends BufferedImage> thumbnails,
+                                  final ImageWriteParam param) throws IOException {
         delegate.prepareWriteEmpty(streamMetadata, imageType, width, height, imageMetadata, thumbnails, param);
     }
 
@@ -236,12 +332,15 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public boolean canInsertEmpty(int imageIndex) throws IOException {
+    public boolean canInsertEmpty(final int imageIndex) throws IOException {
         return delegate.canInsertEmpty(imageIndex);
     }
 
     @Override
-    public void prepareInsertEmpty(int imageIndex, ImageTypeSpecifier imageType, int width, int height, IIOMetadata imageMetadata, List<? extends BufferedImage> thumbnails, ImageWriteParam param) throws IOException {
+    public void prepareInsertEmpty(final int imageIndex, final ImageTypeSpecifier imageType,
+                                   final int width, final int height,
+                                   final IIOMetadata imageMetadata, final List<? extends BufferedImage> thumbnails,
+                                   final ImageWriteParam param) throws IOException {
         delegate.prepareInsertEmpty(imageIndex, imageType, width, height, imageMetadata, thumbnails, param);
     }
 
@@ -251,22 +350,22 @@ public final class JPEGImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public boolean canReplacePixels(int imageIndex) throws IOException {
+    public boolean canReplacePixels(final int imageIndex) throws IOException {
         return delegate.canReplacePixels(imageIndex);
     }
 
     @Override
-    public void prepareReplacePixels(int imageIndex, Rectangle region) throws IOException {
+    public void prepareReplacePixels(final int imageIndex, final Rectangle region) throws IOException {
         delegate.prepareReplacePixels(imageIndex, region);
     }
 
     @Override
-    public void replacePixels(RenderedImage image, ImageWriteParam param) throws IOException {
+    public void replacePixels(final RenderedImage image, final ImageWriteParam param) throws IOException {
         delegate.replacePixels(image, param);
     }
 
     @Override
-    public void replacePixels(Raster raster, ImageWriteParam param) throws IOException {
+    public void replacePixels(final Raster raster, final ImageWriteParam param) throws IOException {
         delegate.replacePixels(raster, param);
     }
 
@@ -291,6 +390,28 @@ public final class JPEGImageWriter extends ImageWriterBase {
     public void dispose() {
         super.dispose();
         delegate.dispose();
+    }
+
+    /**
+     * Helper class, returns sample values inverted,
+     * as CMYK values needs to be written inverted (255 - value).
+     */
+    private static class InvertedRaster extends WritableRaster {
+        InvertedRaster(final Raster raster) {
+            super(raster.getSampleModel(), new DataBuffer(raster.getDataBuffer().getDataType(), raster.getDataBuffer().getSize()) {
+                private final DataBuffer delegate = raster.getDataBuffer();
+
+                @Override
+                public int getElem(final int bank, final int i) {
+                    return (255 - delegate.getElem(bank, i));
+                }
+
+                @Override
+                public void setElem(int bank, int i, int val) {
+                    throw new UnsupportedOperationException("setElem");
+                }
+            }, new Point());
+        }
     }
 
     private class ProgressDelegator extends ProgressListenerBase implements IIOWriteWarningListener {
