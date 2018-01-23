@@ -143,8 +143,6 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
 
         ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"), writer, ColorSpace.TYPE_RGB);
 
-//        FileUtil.write(new File("/Downloads/foo-rgb.jpg"), stream.toByteArray());
-
         // TODO: Validate that correct warnings are emitted (if any are needed?)
 
         reader.reset();
@@ -158,7 +156,6 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
         ImageWriter writer = createImageWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
-        // TODO: Find a smaller test sample, to waste less time?
         ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), writer, ColorSpace.TYPE_CMYK);
 
         reader.reset();
