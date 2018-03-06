@@ -62,6 +62,7 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
+import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -1608,13 +1609,47 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         try {
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jfif-app13-app14ycck-3channel.jpg")));
 
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
+
             assertEquals(310, reader.getWidth(0));
             assertEquals(384, reader.getHeight(0));
 
             BufferedImage image = reader.read(0, null);
+
+            verify(listener, times(1)).warningOccurred(eq(reader), matches("(?i).*Adobe App14.*(?-i)CMYK.*SOF.*"));
+
             assertNotNull(image);
             assertEquals(310, image.getWidth());
             assertEquals(384, image.getHeight());
+            assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadDuplicateComponentIds() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/duplicate-component-ids.jpg")));
+
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
+
+            assertEquals(367, reader.getWidth(0));
+            assertEquals(242, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0, null);
+
+            verify(listener, times(1)).warningOccurred(eq(reader), and(matches("(?i).*duplicate component id.*(?-i)SOF.*"), contains("1")));
+            verify(listener, times(1)).warningOccurred(eq(reader), and(matches("(?i).*duplicate component selector.*(?-i)SOS.*"), contains("1")));
+
+            assertNotNull(image);
+            assertEquals(367, image.getWidth());
+            assertEquals(242, image.getHeight());
             assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
         }
         finally {

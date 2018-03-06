@@ -331,7 +331,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
         delegate.setInput(imageInput != null
-                          ? new JPEGSegmentImageInputStream(imageInput)
+                          ? new JPEGSegmentImageInputStream(imageInput, new JPEGSegmentStreamWarningDelegate())
                           : null, seekForwardOnly, ignoreMetadata);
     }
 
@@ -701,6 +701,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             this.segments = segments;
 
             if (DEBUG) {
+                System.out.println("segments: " + segments);
                 System.out.println("Read metadata in " + (System.currentTimeMillis() - start) + " ms");
             }
         }
@@ -1251,6 +1252,12 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
+    private class JPEGSegmentStreamWarningDelegate implements JPEGSegmentStreamWarningListener {
+        @Override
+        public void warningOccurred(String warning) {
+            processWarningOccurred(warning);
+        }
+    }
     protected static void showIt(final BufferedImage pImage, final String pTitle) {
         ImageReaderBase.showIt(pImage, pTitle);
     }

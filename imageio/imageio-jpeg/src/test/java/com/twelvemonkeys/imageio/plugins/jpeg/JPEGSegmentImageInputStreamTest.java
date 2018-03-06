@@ -59,7 +59,7 @@ public class JPEGSegmentImageInputStreamTest {
         ImageIO.setUseCache(false);
     }
 
-    protected URL getClassLoaderResource(final String pName) {
+    private URL getClassLoaderResource(final String pName) {
         return getClass().getResource(pName);
     }
 
@@ -119,7 +119,7 @@ public class JPEGSegmentImageInputStreamTest {
             length++;
         }
 
-        assertThat(length, new LessOrEqual<Long>(10203l)); // In no case should length increase
+        assertThat(length, new LessOrEqual<>(10203L)); // In no case should length increase
 
         assertEquals(9607L, length); // May change, if more chunks are passed to reader...
     }
@@ -149,7 +149,7 @@ public class JPEGSegmentImageInputStreamTest {
             length++;
         }
 
-        assertEquals(9281L, length); // Sanity check: same as file size
+        assertEquals(9281L, length); // Sanity check: same as file size, except..?
     }
 
     @Test
@@ -162,7 +162,7 @@ public class JPEGSegmentImageInputStreamTest {
         assertEquals(JPEG.APP1, appSegments.get(0).marker());
         assertEquals("Exif", appSegments.get(0).identifier());
 
-        stream.seek(0l);
+        stream.seek(0L);
 
         long length = 0;
         while (stream.read() != -1) {
