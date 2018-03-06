@@ -97,8 +97,8 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         createReader(listener, 0, 99, createStream("/jpeg/jfif-jfif-and-exif-thumbnail-sharpshot-iphone.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(0, 99);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 }

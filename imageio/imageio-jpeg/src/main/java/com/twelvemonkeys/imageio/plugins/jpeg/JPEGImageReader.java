@@ -1239,16 +1239,19 @@ public final class JPEGImageReader extends ImageReaderBase {
     }
 
     private class ThumbnailProgressDelegate implements ThumbnailReadProgressListener {
-        public void processThumbnailStarted(int imageIndex, int thumbnailIndex) {
-            JPEGImageReader.this.processThumbnailStarted(imageIndex, thumbnailIndex);
+        @Override
+        public void thumbnailStarted(int imageIndex, int thumbnailIndex) {
+            processThumbnailStarted(imageIndex, thumbnailIndex);
         }
 
-        public void processThumbnailProgress(float percentageDone) {
-            JPEGImageReader.this.processThumbnailProgress(percentageDone);
+        @Override
+        public void thumbnailProgress(float percentageDone) {
+            processThumbnailProgress(percentageDone);
         }
 
-        public void processThumbnailComplete() {
-            JPEGImageReader.this.processThumbnailComplete();
+        @Override
+        public void thumbnailComplete() {
+            processThumbnailComplete();
         }
     }
 

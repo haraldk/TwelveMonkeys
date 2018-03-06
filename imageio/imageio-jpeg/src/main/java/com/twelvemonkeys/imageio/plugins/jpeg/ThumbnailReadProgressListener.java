@@ -36,9 +36,9 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
  * @version $Id: ThumbnailReadProgressListener.java,v 1.0 07.05.12 10:15 haraldk Exp$
  */
 interface ThumbnailReadProgressListener {
-    void processThumbnailStarted(int imageIndex, int thumbnailIndex);
+    void thumbnailStarted(int imageIndex, int thumbnailIndex);
 
-    void processThumbnailProgress(float percentageDone);
+    void thumbnailProgress(float percentageDone);
 
-    void processThumbnailComplete();
+    void thumbnailComplete();
 }

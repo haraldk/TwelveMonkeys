@@ -110,9 +110,9 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         createReader(listener, 42, 43, createStream("/jpeg/cmyk-sample-multiple-chunk-icc.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(42, 43);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(42, 43);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 
     @Test
@@ -122,8 +122,8 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         createReader(listener, 0, 99, createStream("/jpeg/exif-rgb-thumbnail-sony-d700.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(0, 99);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 }

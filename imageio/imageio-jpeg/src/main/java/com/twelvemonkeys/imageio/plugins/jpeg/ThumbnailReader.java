@@ -55,15 +55,15 @@ abstract class ThumbnailReader {
     }
 
     protected final void processThumbnailStarted() {
-        progressListener.processThumbnailStarted(imageIndex, thumbnailIndex);
+        progressListener.thumbnailStarted(imageIndex, thumbnailIndex);
     }
 
     protected final void processThumbnailProgress(float percentageDone) {
-        progressListener.processThumbnailProgress(percentageDone);
+        progressListener.thumbnailProgress(percentageDone);
     }
 
     protected final void processThumbnailComplete() {
-        progressListener.processThumbnailComplete();
+        progressListener.thumbnailComplete();
     }
 
     static protected BufferedImage readJPEGThumbnail(final ImageReader reader, final ImageInputStream stream) throws IOException {
@@ -96,13 +96,16 @@ abstract class ThumbnailReader {
     public abstract int getHeight() throws IOException;
 
     private static class NullProgressListener implements ThumbnailReadProgressListener {
-        public void processThumbnailStarted(int imageIndex, int thumbnailIndex) {
+        @Override
+        public void thumbnailStarted(int imageIndex, int thumbnailIndex) {
         }
 
-        public void processThumbnailProgress(float percentageDone) {
+        @Override
+        public void thumbnailProgress(float percentageDone) {
         }
 
-        public void processThumbnailComplete() {
+        @Override
+        public void thumbnailComplete() {
         }
     }
 }

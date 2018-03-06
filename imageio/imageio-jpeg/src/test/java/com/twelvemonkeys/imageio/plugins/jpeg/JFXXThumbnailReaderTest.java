@@ -41,12 +41,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * JFXXThumbnailReaderTest
@@ -91,8 +87,8 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
         createReader(listener, 0, 99, createStream("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(0, 99);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 }
