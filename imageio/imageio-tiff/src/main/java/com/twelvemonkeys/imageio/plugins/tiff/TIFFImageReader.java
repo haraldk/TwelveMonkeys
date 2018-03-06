@@ -58,7 +58,6 @@ import org.w3c.dom.NodeList;
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.IIORegistry;
@@ -119,7 +118,7 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
  */
 public final class TIFFImageReader extends ImageReaderBase {
     // TODOs ImageIO basic functionality:
-    // TODO: Thumbnail support
+    // TODO: Thumbnail support (what is a TIFF thumbnail anyway? Photoshop way? Or use subfiletype?)
 
     // TODOs Full BaseLine support:
     // TODO: Support ExtraSamples (an array, if multiple extra samples!)
@@ -1166,7 +1165,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 // TODO: If we have non-standard reference B/W or yCbCr coefficients,
                                 // we might still have to do extra color space conversion...
                                 if (needsCSConversion == null) {
-                                    needsCSConversion = needsCSConversion(interpretation, readJPEGMetadataSafe(jpegReader));
+                                    needsCSConversion = needsCSConversion(compression, interpretation, readJPEGMetadataSafe(jpegReader));
                                 }
 
                                 if (!needsCSConversion) {
@@ -1336,7 +1335,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     Point offset = new Point(col - srcRegion.x, srcRow - srcRegion.y);
 
                                     if (needsCSConversion == null) {
-                                        needsCSConversion = needsCSConversion(interpretation, readJPEGMetadataSafe(jpegReader));
+                                        needsCSConversion = needsCSConversion(compression, interpretation, readJPEGMetadataSafe(jpegReader));
                                     }
 
                                     if (!needsCSConversion) {
@@ -1486,7 +1485,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     Point offset = new Point(col - srcRegion.x, srcRow - srcRegion.y);
 
                                     if (needsCSConversion == null) {
-                                        needsCSConversion = needsCSConversion(interpretation, readJPEGMetadataSafe(jpegReader));
+                                        needsCSConversion = needsCSConversion(compression, interpretation, readJPEGMetadataSafe(jpegReader));
                                     }
 
                                     if (!needsCSConversion) {
@@ -1557,44 +1556,166 @@ public final class TIFFImageReader extends ImageReaderBase {
             return jpegReader.getImageMetadata(0);
         }
         catch (IIOException e) {
-            processWarningOccurred("Could not read metadata for JPEG compressed TIFF (" + e.getMessage() + "): Colors may look incorrect");
+            processWarningOccurred(String.format("Could not read metadata for JPEG compressed TIFF (%s). Colors may look incorrect", e.getMessage()));
 
             return null;
         }
     }
 
-    private boolean needsCSConversion(final int photometricInterpretation, final IIOMetadata imageMetadata) throws IOException {
+    private boolean needsCSConversion(int compression, final int photometricInterpretation, final IIOMetadata imageMetadata) {
         if (imageMetadata == null) {
             // Assume we're ok
             return false;
         }
 
-        IIOMetadataNode stdTree = (IIOMetadataNode) imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        int sourceCS = getJPEGSourceCS(imageMetadata);
 
-        NodeList csTypes = stdTree.getElementsByTagName("ColorSpaceType");
+        if (sourceCS == ColorSpace.TYPE_YCbCr && photometricInterpretation == TIFFExtension.PHOTOMETRIC_YCBCR
+                || sourceCS == ColorSpace.TYPE_RGB && photometricInterpretation == TIFFBaseline.PHOTOMETRIC_RGB
+                || sourceCS == ColorSpace.TYPE_GRAY && photometricInterpretation == TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO) {
+            // Happy case, all equal and supported
+            return false;
+        }
+        else if ((sourceCS == ColorSpace.TYPE_CMYK || sourceCS == ColorSpace.TYPE_4CLR)
+                && photometricInterpretation == TIFFExtension.PHOTOMETRIC_SEPARATED) {
+            // For YCCK/CMYK we always have to convert, as it's unsupported in
+            // the standard JPEGImageReader
+            return true;
+        }
+        else {
+            // Otherwise, we have a mismatch
 
-        if (csTypes != null && csTypes.getLength() > 0) {
-            IIOMetadataNode csType = (IIOMetadataNode) csTypes.item(0);
-            String csName = csType.getAttribute("name");
-
-            if ("YCbCr".equals(csName) && photometricInterpretation == TIFFExtension.PHOTOMETRIC_YCBCR
-                    || "RGB".equals(csName) && photometricInterpretation == TIFFBaseline.PHOTOMETRIC_RGB
-                    || "GRAY".equals(csName) && photometricInterpretation == TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO) {
-                return false;
-            }
-            else {
-                // CMYK, or may happen because the JPEG stream is not subsampled,
-                // fooling the JPEGImageReader to believe the data is RGB, while it is YCbCr
-                if (DEBUG) {
-                    System.out.println("Incompatible JPEG CS/PhotometricInterpretation: " + csName + "/" + photometricInterpretation);
-                }
-
+            // For "new-style" JPEG, assume TIFF PhotometricInterpretation to
+            // be correct. This is in compliance with the TIFF spec.
+            if (compression == TIFFExtension.COMPRESSION_JPEG) {
                 return true;
+            }
+
+            processWarningOccurred(String.format("Determined color space from JPEG stream: '%s' does not match PhotometricInterpretation: %d. Colors may look incorrect", sourceCS, photometricInterpretation));
+
+            // For "old-style" JPEG, we'll go with YCbCr if that's what
+            // the JPEG stream says even though the TIFF spec says: "The
+            // Photometric Interpretation and sub sampling fields written
+            // to the file must describe what is actually in the file."
+            return sourceCS != ColorSpace.TYPE_YCbCr;
+        }
+    }
+
+    // NOTE: This algorithm is similar to the one found in the JPEGImageReader.
+    // Perhaps we should instead expose it in the
+    // com.twelvemonkeys.imageio.metadata.jpeg package to avoid duplication?
+    // TODO: For a more failsafe detection of YCbCr/YCCK we could take the
+    // chroma subsampling into account.
+    // TODO: We should probably also emit a warning, if the TIFF subsampling
+    // fields does not match the JPEG SOF subsampling fields.
+    private int getJPEGSourceCS(final IIOMetadata imageMetadata) {
+        if (imageMetadata == null) {
+            return -1;
+        }
+
+        IIOMetadataNode nativeTree = (IIOMetadataNode) imageMetadata.getAsTree("javax_imageio_jpeg_image_1.0");
+
+        IIOMetadataNode startOfFrame = getNode(nativeTree, "sof");
+        IIOMetadataNode jfif = getNode(nativeTree, "app0JFIF");
+        IIOMetadataNode adobe = getNode(nativeTree, "app14Adobe");
+
+        if (startOfFrame != null) {
+            int components = Integer.parseInt(startOfFrame.getAttribute("numFrameComponents"));
+
+            switch (components) {
+                case 1:
+                case 2:
+                    return ColorSpace.TYPE_GRAY;
+                case 3:
+                    if (jfif != null) {
+                        return ColorSpace.TYPE_YCbCr;
+                    }
+                    else if (adobe != null) {
+                        int transform = Integer.parseInt(adobe.getAttribute("transform"));
+
+                        switch (transform) {
+                            case 0:
+                                return ColorSpace.TYPE_RGB;
+                            case 1:
+                                return ColorSpace.TYPE_YCbCr;
+                            default:
+                                // TODO: Warning!
+                                return ColorSpace.TYPE_YCbCr; // assume it's YCbCr
+                        }
+                    }
+                    else {
+                        // Saw no special markers, try to guess from the component IDs
+                        NodeList componentSpecs = startOfFrame.getElementsByTagName("componentSpec");
+
+                        int cid0 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(0)).getAttribute("componentId"));
+                        int cid1 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(1)).getAttribute("componentId"));
+                        int cid2 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(2)).getAttribute("componentId"));
+
+                        if (cid0 == 1 && cid1 == 2 && cid2 == 3) {
+                            return ColorSpace.TYPE_YCbCr; // assume JFIF w/out marker
+                        }
+                        else if (cid0 == 'R' && cid1 == 'G' && cid2 == 'B') {
+                            return ColorSpace.TYPE_RGB; // ASCII 'R', 'G', 'B'
+                        }
+                        else if (cid0 == 'Y' && cid1 == 'C' && cid2 == 'c') {
+                            return ColorSpace.TYPE_3CLR; // Java special case: YCc
+                        }
+                        else {
+                            // TODO: Warning!
+                            return ColorSpace.TYPE_YCbCr; // assume it's YCbCr
+                        }
+                    }
+
+                case 4:
+                    if (adobe != null) {
+                        int transform = Integer.parseInt(adobe.getAttribute("transform"));
+
+                        switch (transform) {
+                            case 0:
+                                return ColorSpace.TYPE_CMYK;
+                            case 2:
+                                return ColorSpace.TYPE_4CLR; // YCCK
+                            default:
+                                // TODO: Warning!
+                                return ColorSpace.TYPE_4CLR; // assume it's YCCK
+                        }
+                    }
+                    else {
+                        // Saw no special markers, try to guess from the component IDs
+                        NodeList componentSpecs = startOfFrame.getElementsByTagName("componentSpec");
+
+                        int cid0 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(0)).getAttribute("componentId"));
+                        int cid1 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(1)).getAttribute("componentId"));
+                        int cid2 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(2)).getAttribute("componentId"));
+                        int cid3 = Integer.parseInt(((IIOMetadataNode) componentSpecs.item(3)).getAttribute("componentId"));
+
+                        if (cid0 == 1 && cid1 == 2 && cid2 == 3 && cid3 == 4) {
+                            return ColorSpace.TYPE_YCbCr; // Java special case: YCbCrA
+                        }
+                        else if (cid0 == 'R' && cid1 == 'G' && cid2 == 'B' && cid3 == 'A') {
+                            return ColorSpace.TYPE_RGB; // Java special case: RGBA
+                        }
+                        else if (cid0 == 'Y' && cid1 == 'C' && cid2 == 'c' && cid3 == 'A') {
+                            return ColorSpace.TYPE_3CLR; // Java special case: YCcA
+                        }
+                        else {
+                            // TODO: Warning!
+                            // No special markers, assume straight CMYK.
+                            return ColorSpace.TYPE_CMYK;
+                        }
+                    }
+
+                default:
+                    return -1;
             }
         }
 
-        // We don't really know, assume it's ok...
-        return false;
+        return -1;
+    }
+
+    private IIOMetadataNode getNode(final IIOMetadataNode parent, final String tagName) {
+        NodeList nodes = parent.getElementsByTagName(tagName);
+        return nodes != null && nodes.getLength() >= 1 ? (IIOMetadataNode) nodes.item(0) : null;
     }
 
     private ImageReader createJPEGDelegate() throws IOException {
