@@ -1644,8 +1644,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
             BufferedImage image = reader.read(0, null);
 
-            verify(listener, times(1)).warningOccurred(eq(reader), and(matches("(?i).*duplicate component id.*(?-i)SOF.*"), contains("1")));
-            verify(listener, times(1)).warningOccurred(eq(reader), and(matches("(?i).*duplicate component selector.*(?-i)SOS.*"), contains("1")));
+            verify(listener, times(1)).warningOccurred(eq(reader), and(matches("(?i).*duplicate component ID.*(?-i)SOF.*"), contains("1")));
+            verify(listener, times(1)).warningOccurred(eq(reader), and(matches("(?i).*duplicate component ID.*(?-i)SOS.*"), contains("1")));
 
             assertNotNull(image);
             assertEquals(367, image.getWidth());

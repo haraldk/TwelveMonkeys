@@ -36,9 +36,12 @@ import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
+import static java.util.Arrays.copyOf;
 
 /**
  * ImageInputStream implementation that filters out or rewrites
@@ -55,7 +58,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     final private ImageInputStream stream;
     final private JPEGSegmentStreamWarningListener warningListener;
 
-    final private Set<Integer> componentIds = new LinkedHashSet<>(4);
+    final private ComponentIdSet componentIds = new ComponentIdSet();
 
     private final List<Segment> segments = new ArrayList<Segment>(64);
     private int currentSegment = -1;
@@ -166,12 +169,12 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         }
                         else if (isSOFMarker(marker)) {
                             // Replace duplicate SOFn component ids
-                            byte[] data = replaceDuplicateSOFnComponentIds(marker, length);
+                            byte[] data = readReplaceDuplicateSOFnComponentIds(marker, length);
                             segment = new ReplacementSegment(marker, realPosition, segment.end(), length, data);
                         }
                         else if (marker == JPEG.SOS) {
                             // Replace duplicate SOS component selectors
-                            byte[] data = replaceDuplicateSOSComponentSelectors(length);
+                            byte[] data = readReplaceDuplicateSOSComponentSelectors(length);
 
                             segment = new ReplacementSegment(marker, realPosition, segment.end(), length, data);
                         }
@@ -223,18 +226,19 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         return segment;
     }
 
-    private byte[] replaceDuplicateSOSComponentSelectors(long length) throws IOException {
+    private byte[] readReplaceDuplicateSOSComponentSelectors(final long length) throws IOException {
         // See: http://www.hackerfactor.com/blog/index.php?/archives/588-JPEG-Patches.html
         byte[] data = readSegment(JPEG.SOS, (int) length, stream);
 
         // Detect duplicates
-        Set<Integer> componentSelectors = new LinkedHashSet<>(4);
+        ComponentIdSet componentSelectors = new ComponentIdSet();
         boolean duplicatesFound = false;
         int off = 5;
+
         while (off < length - 3) {
             int selector = data[off] & 0xff;
             if (!componentSelectors.add(selector)) {
-                processWarningOccured(String.format("Duplicate component selector %d in SOS", selector));
+                processWarningOccured(String.format("Duplicate component ID %d in SOS", selector));
                 duplicatesFound = true;
             }
 
@@ -245,23 +249,19 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         if (duplicatesFound) {
             off = 5;
 
-            Iterator<Integer> ids = componentIds.iterator();
-            while (off < length - 3) {
-                if (ids.hasNext()) {
-                    data[off] = (byte) (int) ids.next();
-                }
-                // Otherwise we'll have an undefined component selector...
-
-                off += 2;
+            for (int i = 0; i < componentIds.size() && off < length - 3; i++, off += 2) {
+                data[off] = (byte) componentIds.get(i);
             }
         }
+
         return data;
     }
 
-    private byte[] replaceDuplicateSOFnComponentIds(int marker, long length) throws IOException {
+    private byte[] readReplaceDuplicateSOFnComponentIds(final int marker, final long length) throws IOException {
         byte[] data = readSegment(marker, (int) length, stream);
 
         int off = 10;
+
         while (off < length) {
             int id = data[off] & 0xff;
             if (!componentIds.add(id)) {
@@ -277,6 +277,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
             off += 3;
         }
+
         return data;
     }
 
@@ -493,16 +494,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         private static byte[] createMarkerFixedLength(final ImageInputStream stream) throws IOException {
             return readSegment(JPEG.APP14, 16, stream);
-//            byte[] segmentData = new byte[16];
-//
-//            segmentData[0] = (byte) ((JPEG.APP14 >> 8) & 0xff);
-//            segmentData[1] = (byte) (JPEG.APP14 & 0xff);
-//            segmentData[2] = (byte) 0;
-//            segmentData[3] = (byte) 14;
-//
-//            stream.readFully(segmentData, 4, segmentData.length - 4);
-//
-//            return segmentData;
         }
     }
 
@@ -582,6 +573,44 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             pos += length;
 
             return length;
+        }
+    }
+
+    static final class ComponentIdSet {
+        final int[] values = new int[4]; // The native code don't support more than 4 components
+        int size;
+
+        boolean add(final int value) {
+            if (contains(value) || size >= values.length) {
+                return false;
+            }
+
+            values[size++] = value;
+
+            return true;
+        }
+
+        boolean contains(final int value) {
+            for (int i = 0; i < size; i++) {
+                if (values[i] == value) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        int size() {
+            return size;
+        }
+
+        int get(final int index) {
+            return values[index];
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(copyOf(values, size));
         }
     }
 }
