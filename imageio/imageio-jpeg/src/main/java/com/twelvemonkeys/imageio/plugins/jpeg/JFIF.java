@@ -67,7 +67,7 @@ final class JFIF extends Application {
 
     @Override
     public String toString() {
-        return String.format("JFIF v%d.%02d %dx%d %s (%s)", majorVersion, minorVersion, xDensity, yDensity, unitsAsString(), thumbnailToString());
+        return String.format("APP0/JFIF v%d.%02d %dx%d %s (%s)", majorVersion, minorVersion, xDensity, yDensity, unitsAsString(), thumbnailToString());
     }
 
     private String unitsAsString() {

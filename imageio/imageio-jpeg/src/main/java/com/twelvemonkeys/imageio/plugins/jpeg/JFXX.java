@@ -56,7 +56,7 @@ final class JFXX extends Application {
 
     @Override
     public String toString() {
-        return String.format("JFXX extension (%s thumb size: %d)", extensionAsString(), thumbnail.length);
+        return String.format("APP0/JFXX extension (%s thumb size: %d)", extensionAsString(), thumbnail.length);
     }
 
     private String extensionAsString() {
