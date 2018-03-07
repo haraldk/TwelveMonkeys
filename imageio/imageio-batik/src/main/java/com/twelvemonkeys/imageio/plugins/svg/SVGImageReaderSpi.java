@@ -29,7 +29,7 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.SystemUtil;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
@@ -38,8 +38,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Locale;
 
-import static com.twelvemonkeys.imageio.plugins.svg.SVGProviderInfo.SVG_READER_AVAILABLE;
-import static com.twelvemonkeys.imageio.util.IIOUtil.*;
+import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
 
 /**
  * SVGImageReaderSpi
@@ -50,6 +49,8 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.*;
  */
 public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
+    final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
+
     /**
      * Creates an {@code SVGImageReaderSpi}.
      */
@@ -59,7 +60,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && SVG_READER_AVAILABLE && canDecode((ImageInputStream) pSource);
+        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -166,13 +167,15 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     @SuppressWarnings({"deprecation"})
     @Override
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
+        // TODO: Perhaps just try to create an instance, and de-register if we fail?
         if (!SVG_READER_AVAILABLE) {
+            System.err.println("Could not instantiate SVGImageReader (missing support classes).");
+
             try {
                 // NOTE: This will break, but it gives us some useful debug info
                 new SVGImageReader(this);
             }
             catch (Throwable t) {
-                System.err.println("Could not instantiate SVGImageReader (missing support classes).");
                 t.printStackTrace();
             }
 

@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
-import com.twelvemonkeys.lang.SystemUtil;
 
 /**
  * SVGProviderInfo.
@@ -39,14 +38,12 @@ import com.twelvemonkeys.lang.SystemUtil;
  * @version $Id: SVGProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
 final class SVGProviderInfo extends ReaderWriterProviderInfo {
-    final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader");
-
-    protected SVGProviderInfo() {
+    SVGProviderInfo() {
         super(
                 SVGProviderInfo.class,
-                SVG_READER_AVAILABLE ? new String[]{"svg", "SVG"} : new String[]{""}, // Names
-                SVG_READER_AVAILABLE ? new String[]{"svg"} : null, // Suffixes
-                SVG_READER_AVAILABLE ? new String[]{"image/svg", "image/x-svg", "image/svg+xml", "image/svg-xml"} : null, // Mime-types
+                new String[]{"svg", "SVG"}, // Names
+                new String[]{"svg"}, // Suffixes
+                new String[]{"image/svg", "image/x-svg", "image/svg+xml", "image/svg-xml"}, // Mime-types
                 "com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", // Reader class name
                 new String[] {"com.twelvemonkeys.imageio.plugins.svg.SVGImageReaderSpi"},
                 null,
