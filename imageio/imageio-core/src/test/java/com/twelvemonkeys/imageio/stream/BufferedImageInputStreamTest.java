@@ -2,7 +2,7 @@ package com.twelvemonkeys.imageio.stream;
 
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -10,20 +10,25 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Random;
 
+import static java.util.Arrays.fill;
+import static org.junit.Assert.*;
+
 /**
- * BufferedImageInputStreamTestCase
+ * BufferedImageInputStreamTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: BufferedImageInputStreamTestCase.java,v 1.0 Jun 30, 2008 3:07:42 PM haraldk Exp$
+ * @version $Id: BufferedImageInputStreamTest.java,v 1.0 Jun 30, 2008 3:07:42 PM haraldk Exp$
  */
-public class BufferedImageInputStreamTestCase extends TestCase {
-    protected final Random random = new Random();
+public class BufferedImageInputStreamTest {
+    private final Random random = new Random(3450972865211L);
 
+    @Test
     public void testCreate() throws IOException {
         new BufferedImageInputStream(new ByteArrayImageInputStream(new byte[0]));
     }
 
+    @Test
     public void testCreateNull() throws IOException {
         try {
             new BufferedImageInputStream(null);
@@ -41,20 +46,23 @@ public class BufferedImageInputStreamTestCase extends TestCase {
 
     // TODO: Create test that exposes read += -1 (eof) bug
 
+    @Test
     public void testArrayIndexOutOfBoundsBufferedReadBug() throws IOException {
         // TODO: Create a more straight forward way to prove correctness, for now this is good enough to avoid regression
         ImageInputStream input = new BufferedImageInputStream(new MemoryCacheImageInputStream(getClass().getResourceAsStream("/Thumbs-camera.db")));
         input.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         Entry root = new CompoundDocument(input).getRootEntry();
 
-        Entry child = root.getChildEntry("Catalog");
+        Entry catalog = root.getChildEntry("Catalog");
 
-        assertNotNull("Input stream can never be null", child.getInputStream());
+        assertNotNull("Catalog should not be null", catalog);
+        assertNotNull("Input stream can never be null", catalog.getInputStream());
     }
 
+    @Test
     public void testReadResetReadDirectBufferBug() throws IOException {
         // Make sure we use the exact size of the buffer
-        final int size = BufferedImageInputStream.DEFAULT_BUFFER_SIZE;
+        int size = BufferedImageInputStream.DEFAULT_BUFFER_SIZE;
 
         // Fill bytes
         byte[] bytes = new byte[size * 2];
@@ -76,6 +84,7 @@ public class BufferedImageInputStreamTestCase extends TestCase {
         assertTrue(rangeEquals(bytes, size, result, 0, size));
     }
 
+    @Test
     public void testBufferPositionCorrect() throws IOException {
         // Fill bytes
         byte[] bytes = new byte[1024];
@@ -103,6 +112,25 @@ public class BufferedImageInputStreamTestCase extends TestCase {
         
         stream.seek(1020);
         assertEquals(1020, stream.getStreamPosition());
+    }
+
+    @Test
+    public void testReadIntegralOnBufferBoundary() throws IOException {
+        // Make sure we use the exact size of the buffer
+        int size = BufferedImageInputStream.DEFAULT_BUFFER_SIZE;
+
+        // Fill bytes
+        byte[] bytes = new byte[size * 2];
+        fill(bytes, size - 4, size + 4, (byte) 0xff);
+
+        // Create wrapper stream
+        BufferedImageInputStream stream = new BufferedImageInputStream(new ByteArrayImageInputStream(bytes));
+
+        // Read to fill the buffer, then seek to almost end of buffer
+        assertEquals(0, stream.readInt());
+        stream.seek(size - 3);
+        assertEquals(0xffffffff, stream.readInt());
+        assertEquals(size + 1, stream.getStreamPosition());
     }
 
     /**

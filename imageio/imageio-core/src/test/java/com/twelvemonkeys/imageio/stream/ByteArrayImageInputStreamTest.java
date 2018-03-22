@@ -1,11 +1,12 @@
 package com.twelvemonkeys.imageio.stream;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
 
-import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTestCase.rangeEquals;
+import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTest.rangeEquals;
+import static org.junit.Assert.*;
 
 /**
  * ByteArrayImageInputStreamTestCase
@@ -14,14 +15,16 @@ import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTestCase.
  * @author last modified by $Author: haraldk$
  * @version $Id: ByteArrayImageInputStreamTestCase.java,v 1.0 Apr 21, 2009 10:58:48 AM haraldk Exp$
  */
-public class ByteArrayImageInputStreamTestCase extends TestCase {
-    protected final Random random = new Random();
+public class ByteArrayImageInputStreamTest {
+    private final Random random = new Random(1709843507234566L);
 
+    @Test
     public void testCreate() {
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(new byte[0]);
         assertEquals("Data length should be same as stream length", 0, stream.length());
     }
 
+    @Test
     public void testCreateNull() {
         try {
             new ByteArrayImageInputStream(null);
@@ -35,6 +38,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testCreateNullOffLen() {
         try {
             new ByteArrayImageInputStream(null, 0, -1);
@@ -48,6 +52,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testCreateNegativeOff() {
         try {
             new ByteArrayImageInputStream(new byte[0], -1, 1);
@@ -61,6 +66,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testCreateBadOff() {
         try {
             new ByteArrayImageInputStream(new byte[1], 2, 0);
@@ -74,6 +80,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testCreateNegativeLen() {
         try {
             new ByteArrayImageInputStream(new byte[0], 0, -1);
@@ -87,6 +94,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testCreateBadLen() {
         try {
             new ByteArrayImageInputStream(new byte[1], 0, 2);
@@ -100,6 +108,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testRead() throws IOException {
         byte[] data = new byte[1024 * 1024];
         random.nextBytes(data);
@@ -113,6 +122,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testReadOffsetLen() throws IOException {
         byte[] data = new byte[1024 * 1024];
         random.nextBytes(data);
@@ -128,6 +138,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testReadArray() throws IOException {
         byte[] data = new byte[1024 * 1024];
         random.nextBytes(data);
@@ -144,6 +155,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testReadArrayOffLen() throws IOException {
         byte[] data = new byte[1024 * 1024];
         random.nextBytes(data);
@@ -162,6 +174,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testReadSkip() throws IOException {
         byte[] data = new byte[1024 * 14];
         random.nextBytes(data);
@@ -179,6 +192,7 @@ public class ByteArrayImageInputStreamTestCase extends TestCase {
         }
     }
 
+    @Test
     public void testReadSeek() throws IOException {
         byte[] data = new byte[1024 * 18];
         random.nextBytes(data);

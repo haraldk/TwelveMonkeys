@@ -1,6 +1,6 @@
 package com.twelvemonkeys.imageio.stream;
 
-import junit.framework.TestCase;
+import org.junit.Test;
 
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
+import static org.junit.Assert.*;
+
 /**
  * SubImageInputStreamTestCase
  *
@@ -17,9 +19,9 @@ import java.util.Random;
  * @author last modified by $Author: haraldk$
  * @version $Id: SubImageInputStreamTestCase.java,v 1.0 Nov 8, 2009 3:03:32 PM haraldk Exp$
  */
-public class SubImageInputStreamTestCase extends TestCase {
+public class SubImageInputStreamTest {
     // TODO: Extract super test case for all stream tests
-    private final Random random = new Random(837468l);
+    private final Random random = new Random(837468L);
 
     private ImageInputStream createStream(final int pSize) {
         byte[] bytes = new byte[pSize];
@@ -34,24 +36,19 @@ public class SubImageInputStreamTestCase extends TestCase {
         };
     }
 
+    @Test(expected = IllegalArgumentException.class)
     public void testCreateNullStream() throws IOException {
-        try {
-            new SubImageInputStream(null, 1);
-            fail("Expected IllegalArgumentException with null stream");
-        }
-        catch (IllegalArgumentException e) {
-        }
+        new SubImageInputStream(null, 1);
+        fail("Expected IllegalArgumentException with null stream");
     }
 
+    @Test(expected = IllegalArgumentException.class)
     public void testCreateNegativeLength() throws IOException {
-        try {
-            new SubImageInputStream(createStream(0), -1);
-            fail("Expected IllegalArgumentException with negative length");
-        }
-        catch (IllegalArgumentException e) {
-        }
+        new SubImageInputStream(createStream(0), -1);
+        fail("Expected IllegalArgumentException with negative length");
     }
 
+    @Test
     public void testCreate() throws IOException {
         ImageInputStream stream = new SubImageInputStream(createStream(11), 7);
 
@@ -59,11 +56,13 @@ public class SubImageInputStreamTestCase extends TestCase {
         assertEquals(7, stream.length());
     }
 
+    @Test
     public void testWraphBeyondWrappedLength() throws IOException {
         SubImageInputStream stream = new SubImageInputStream(createStream(5), 6);
         assertEquals(5, stream.length());
     }
 
+    @Test
     public void testWrapUnknownLength() throws IOException {
         SubImageInputStream stream = new SubImageInputStream(new ImageInputStreamImpl() {
             @Override
@@ -85,6 +84,7 @@ public class SubImageInputStreamTestCase extends TestCase {
         assertEquals(-1, stream.length());
     }
 
+    @Test
     public void testRead() throws IOException {
         ImageInputStream wrapped = createStream(42);
 
@@ -106,6 +106,7 @@ public class SubImageInputStreamTestCase extends TestCase {
         assertEquals(25, wrapped.getStreamPosition());
     }
 
+    @Test
     public void testReadResetRead() throws IOException {
         ImageInputStream stream = new SubImageInputStream(createStream(32), 16);
         stream.mark();
@@ -121,6 +122,7 @@ public class SubImageInputStreamTestCase extends TestCase {
         assertTrue(Arrays.equals(first, second));
     }
 
+    @Test
     public void testSeekNegative() throws IOException {
         ImageInputStream stream = new SubImageInputStream(createStream(7), 5);
         try {
@@ -128,11 +130,13 @@ public class SubImageInputStreamTestCase extends TestCase {
             fail("Expected IndexOutOfBoundsException");
         }
         catch (IndexOutOfBoundsException expected) {
+            assertTrue(expected.getMessage().contains("pos"));
         }
 
         assertEquals(0, stream.getStreamPosition());
     }
 
+    @Test
     public void testSeekBeforeFlushedPos() throws IOException {
         ImageInputStream stream = new SubImageInputStream(createStream(7), 5);
         stream.seek(3);
@@ -145,11 +149,13 @@ public class SubImageInputStreamTestCase extends TestCase {
             fail("Expected IndexOutOfBoundsException");
         }
         catch (IndexOutOfBoundsException expected) {
+            assertTrue(expected.getMessage().contains("pos"));
         }
 
         assertEquals(3, stream.getStreamPosition());
     }
 
+    @Test
     public void testSeekAfterEOF() throws IOException {
         ImageInputStream stream = new SubImageInputStream(createStream(7), 5);
         stream.seek(6);
@@ -157,6 +163,7 @@ public class SubImageInputStreamTestCase extends TestCase {
         assertEquals(-1, stream.read());
     }
 
+    @Test
     public void testSeek() throws IOException {
         ImageInputStream stream = new SubImageInputStream(createStream(7), 5);
         stream.seek(5);
