@@ -778,11 +778,11 @@ public final class TIFFImageReader extends ImageReaderBase {
                 throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer (expected 8/16/32): " + bitsPerSample);
 
             case TIFFExtension.SAMPLEFORMAT_FP:
-                if (bitsPerSample == 32) {
+                if (bitsPerSample == 16 || bitsPerSample == 32) {
                     return DataBuffer.TYPE_FLOAT;
                 }
 
-                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 32): " + bitsPerSample);
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 16/32): " + bitsPerSample);
             default:
                 throw new IIOException("Unknown TIFF SampleFormat (expected 1, 2, 3 or 4): " + sampleFormat);
         }
@@ -1962,31 +1962,98 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
                                         : tileRowRaster;
 
-                    for (int row = startRow; row < startRow + rowsInTile; row++) {
-                        if (row >= srcRegion.y + srcRegion.height) {
-                            break; // We're done with this tile
-                        }
-
-                        readFully(input, rowDataFloat);
-
-                        if (row >= srcRegion.y) {
-                            normalizeColor(interpretation, rowDataFloat);
-
-                            // Subsample horizontal
-                            if (xSub != 1) {
-                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                    System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
-                                }
+                    if (needsConversion()) {
+                        short[] rowDataShort = new short[rowDataFloat.length];
+                        for (int row = startRow; row < startRow + rowsInTile; row++) {
+                            if (row >= srcRegion.y + srcRegion.height) {
+                                break; // We're done with this tile
                             }
 
-                            destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                            readFully(input, rowDataShort);
+                            convertToFloat(rowDataFloat, rowDataShort);
+
+                            if (row >= srcRegion.y) {
+                                normalizeColor(interpretation, rowDataFloat);
+
+                                // Subsample horizontal
+                                if (xSub != 1) {
+                                    for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                        System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
+                                    }
+                                }
+
+                                destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                            }
+                            // Else skip data
                         }
-                        // Else skip data
+                    } else {
+                        for (int row = startRow; row < startRow + rowsInTile; row++) {
+                            if (row >= srcRegion.y + srcRegion.height) {
+                                break; // We're done with this tile
+                            }
+
+                            readFully(input, rowDataFloat);
+
+                            if (row >= srcRegion.y) {
+                                normalizeColor(interpretation, rowDataFloat);
+
+                                // Subsample horizontal
+                                if (xSub != 1) {
+                                    for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                        System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
+                                    }
+                                }
+
+                                destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                            }
+                            // Else skip data
+                        }
                     }
                 }
 
                 break;
         }
+    }
+
+    private boolean needsConversion() throws IIOException {
+        return getBitsPerSample() == 16;
+    }
+
+    private void convertToFloat(float[] rowDataFloat, short[] rowDataShort) {
+        for (int i = 0; i < rowDataFloat.length; i++) {
+            rowDataFloat[i] = toFloat(rowDataShort[i]);
+        }
+    }
+
+    /**
+     * Copied from Stackoverfow answer
+     * @see <a href="https://stackoverflow.com/a/6162687/259991">https://stackoverflow.com/a/6162687/259991</a>
+     * @param hbits
+     * @return
+     */
+    private float toFloat(int hbits) {
+        int mant = hbits & 0x03ff;            // 10 bits mantissa
+        int exp =  hbits & 0x7c00;            // 5 bits exponent
+        if (exp == 0x7c00) {                  // NaN/Inf
+            exp = 0x3fc00;                    // -> NaN/Inf
+        } else if (exp != 0) {                   // normalized value
+            exp += 0x1c000;                   // exp - 15 + 127
+            if (mant == 0 && exp > 0x1c400) {// smooth transition
+                return Float.intBitsToFloat((hbits & 0x8000) << 16
+                        | exp << 13 | 0x3ff);
+            }
+        } else if (mant != 0) {                  // && exp==0 -> subnormal
+            exp = 0x1c400;                    // make it normal
+            do {
+                mant <<= 1;                   // mantissa * 2
+                exp -= 0x400;                 // decrease exp by 1
+            } while ((mant & 0x400) == 0); // while not normal
+            mant &= 0x3ff;                    // discard subnormal bit
+        }                                     // else +/-0 -> +/-0
+
+        return Float.intBitsToFloat(          // combine all parts
+                (hbits & 0x8000) << 16          // sign  << ( 31 - 15 )
+                        | (exp | mant) << 13);         // value << ( 23 - 10 )
     }
 
     private void clamp(float[] rowDataFloat) {
