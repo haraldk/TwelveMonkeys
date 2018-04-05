@@ -2105,7 +2105,7 @@ public final class PICTImageReader extends ImageReaderBase {
         // Get transfer mode
         int transferMode = pStream.readUnsignedShort();
         if (DEBUG) {
-            System.out.print(", mode: " + transferMode);
+            System.out.println(", mode: " + transferMode);
         }
 
         // Set up pixel buffer for the RGB values
@@ -2172,12 +2172,12 @@ public final class PICTImageReader extends ImageReaderBase {
                     for (int i = 0; i < srcRect.width; i++) {
                         // Set alpha values to all opaque
                         pixArray[pixBufOffset + i] = 0xFF000000
-                        // Get red values
-                        | (dstBytes[/*0* bounds.width*/i] & 0xFF) << 16
-                        // Get green values
-                        | (dstBytes[/**/bounds.width + i] & 0xFF) << 8
-                        // Get blue values
-                        | (dstBytes[2 * bounds.width + i] & 0xFF);
+                                // Get red values
+                                | (dstBytes[/*0* bounds.width*/i] & 0xFF) << 16
+                                // Get green values
+                                | (dstBytes[/**/bounds.width + i] & 0xFF) << 8
+                                // Get blue values
+                                | (dstBytes[2 * bounds.width + i] & 0xFF);
                     }
                 }
                 else {
@@ -2185,12 +2185,12 @@ public final class PICTImageReader extends ImageReaderBase {
                     for (int i = 0; i < srcRect.width; i++) {
                         // Get alpha values
                         pixArray[pixBufOffset + i] = (dstBytes[/*0* bounds.width*/i] & 0xFF) << 24
-                        // Get red values
-                        | (dstBytes[/**/bounds.width + i] & 0xFF) << 16
-                        // Get green values
-                        | (dstBytes[2 * bounds.width + i] & 0xFF) << 8
-                        // Get blue values
-                        | (dstBytes[3 * bounds.width + i] & 0xFF);
+                                // Get red values
+                                | (dstBytes[/**/bounds.width + i] & 0xFF) << 16
+                                // Get green values
+                                | (dstBytes[2 * bounds.width + i] & 0xFF) << 8
+                                // Get blue values
+                                | (dstBytes[3 * bounds.width + i] & 0xFF);
                     }
                 }
             }
@@ -2409,7 +2409,7 @@ public final class PICTImageReader extends ImageReaderBase {
      * image resolution ratio.
      */
     private int getXPtCoord(int pPoint) {
-        return (int) (pPoint / screenImageXRatio);
+        return (int) Math.round(pPoint / screenImageXRatio);
     }
 
     /*
@@ -2418,7 +2418,7 @@ public final class PICTImageReader extends ImageReaderBase {
      * image resolution ratio.
      */
     private int getYPtCoord(int pPoint) {
-        return (int) (pPoint / screenImageYRatio);
+        return (int) Math.round(pPoint / screenImageYRatio);
     }
 
     /*
@@ -2480,7 +2480,6 @@ public final class PICTImageReader extends ImageReaderBase {
             // Might need to clear background
             g.setComposite(AlphaComposite.Src);
             g.setColor(new Color(0x00ffffff, true)); // Transparent white
-//            g.setColor(Color.WHITE);
             g.fillRect(0, 0, image.getWidth(), image.getHeight());
 
             AffineTransform instance = new AffineTransform();
@@ -2492,12 +2491,7 @@ public final class PICTImageReader extends ImageReaderBase {
 
             instance.scale(screenImageXRatio / subX, screenImageYRatio / subY);
             g.setTransform(instance);
-//            try {
-                drawOnto(g);
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
+            drawOnto(g);
         }
         finally {
             g.dispose();
