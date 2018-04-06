@@ -33,7 +33,11 @@ import org.junit.Test;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 
 import static org.junit.Assert.*;
 
@@ -45,6 +49,38 @@ import static org.junit.Assert.*;
  * @version $Id: ColorSpacesTest.java,v 1.0 07.02.11 14.32 haraldk Exp$
  */
 public class ColorSpacesTest {
+    @Test
+    public void testCMYKFromProfileAlwaysSame() throws IOException {
+        try {
+            initIccProfileProperties();
+
+            ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+            assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
+
+            if (cs instanceof ICC_ColorSpace) {
+                ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
+                assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
+            }
+            else {
+                System.err.println("Warning: Not an ICC_ColorSpace: " + cs);
+            }
+        } finally {
+            deleteIccProfileProperties();
+        }
+    }
+
+    private void initIccProfileProperties() throws IOException {
+        File file = new File("com/twelvemonkeys/imageio/color/icc_profiles.properties");
+        file.getParentFile().mkdirs();
+        FileWriter fw = new FileWriter(file);
+        String resourcePath = Thread.currentThread().getContextClassLoader().getResource("profiles/USWebCoatedSWOP.icc").getPath();
+        fw.write("GENERIC_CMYK=" + resourcePath);
+        fw.close();
+    }
+
+    private void deleteIccProfileProperties() {
+        new File("com/twelvemonkeys/imageio/color/icc_profiles.properties").delete();
+    }
 
     @Test
     public void testCreateColorSpaceFromKnownProfileReturnsInternalCS_sRGB() {
