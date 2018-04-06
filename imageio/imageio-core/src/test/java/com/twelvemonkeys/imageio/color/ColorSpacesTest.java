@@ -36,6 +36,7 @@ import java.awt.color.ICC_Profile;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * ColorSpacesTest
@@ -45,6 +46,25 @@ import static org.junit.Assert.*;
  * @version $Id: ColorSpacesTest.java,v 1.0 07.02.11 14.32 haraldk Exp$
  */
 public class ColorSpacesTest {
+    @Test
+    public void testAdobeRGB98AlwaysSame() {
+        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998);
+        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998));
+
+        assertTrue(cs instanceof ICC_ColorSpace);
+        ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
+        assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
+    }
+
+    @Test
+    public void testCMYKAlwaysSame() {
+        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
+
+        assumeTrue(cs instanceof ICC_ColorSpace); // NOTE: Ignores test on systems without CMYK profile
+        ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
+        assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
+    }
 
     @Test
     public void testCreateColorSpaceFromKnownProfileReturnsInternalCS_sRGB() {
@@ -135,20 +155,6 @@ public class ColorSpacesTest {
     }
 
     @Test
-    public void testAdobeRGB98AlwaysSame() {
-        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998);
-        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998));
-
-        if (cs instanceof ICC_ColorSpace) {
-            ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
-            assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
-        }
-        else {
-            System.err.println("WARNING: Not an ICC_ColorSpace: " + cs);
-        }
-    }
-
-    @Test
     public void testCMYKNotNull() {
         assertNotNull(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
     }
@@ -156,20 +162,6 @@ public class ColorSpacesTest {
     @Test
     public void testCMYKIsTypeCMYK() {
         assertEquals(ColorSpace.TYPE_CMYK, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK).getType());
-    }
-
-    @Test
-    public void testCMYKAlwaysSame() {
-        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
-        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
-
-        if (cs instanceof ICC_ColorSpace) {
-            ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
-            assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
-        }
-        else {
-            System.err.println("Warning: Not an ICC_ColorSpace: " + cs);
-        }
     }
 
     @Test

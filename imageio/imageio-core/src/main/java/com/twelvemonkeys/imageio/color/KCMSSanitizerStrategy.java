@@ -37,6 +37,11 @@ final class KCMSSanitizerStrategy implements ICCProfileSanitizer {
         }
     }
 
+    @Override
+    public boolean validationAltersProfileHeader() {
+        return false;
+    }
+
     /**
      * Fixes problematic 'XYZ ' tags in Corbis RGB profile.
      *
@@ -58,7 +63,7 @@ final class KCMSSanitizerStrategy implements ICCProfileSanitizer {
     }
 
     // TODO: Move to some common util
-    static int intFromBigEndian(final byte[] array, final int index) {
+    private static int intFromBigEndian(final byte[] array, final int index) {
         return ((array[index     ] & 0xff) << 24) |
                 ((array[index + 1] & 0xff) << 16) |
                 ((array[index + 2] & 0xff) <<  8) |
@@ -66,7 +71,7 @@ final class KCMSSanitizerStrategy implements ICCProfileSanitizer {
     }
 
     // TODO: Move to some common util
-    static void intToBigEndian(final int value, final byte[] array, final int index) {
+    private static void intToBigEndian(final int value, final byte[] array, final int index) {
         array[index    ] = (byte) (value >> 24);
         array[index + 1] = (byte) (value >> 16);
         array[index + 2] = (byte) (value >>  8);

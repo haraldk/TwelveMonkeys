@@ -14,6 +14,8 @@ import java.awt.color.ICC_Profile;
 interface ICCProfileSanitizer {
     void fixProfile(ICC_Profile profile);
 
+    boolean validationAltersProfileHeader();
+
     class Factory {
         static ICCProfileSanitizer get() {
             // Strategy pattern:

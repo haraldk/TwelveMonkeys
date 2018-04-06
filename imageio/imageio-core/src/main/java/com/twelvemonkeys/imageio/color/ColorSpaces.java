@@ -191,6 +191,11 @@ public final class ColorSpaces {
 
                 validateColorSpace(cs);
 
+                // On LCMS, validation *alters* the profile header, need to re-generate key
+                key = profileCleaner.validationAltersProfileHeader()
+                      ? new Key(getProfileHeaderWithProfileId(cs.getProfile()))
+                      : key;
+
                 cache.put(key, cs);
             }
 

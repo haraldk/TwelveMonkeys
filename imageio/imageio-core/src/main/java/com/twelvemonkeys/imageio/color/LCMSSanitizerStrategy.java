@@ -16,4 +16,9 @@ final class LCMSSanitizerStrategy implements ICCProfileSanitizer {
         Validate.notNull(profile, "profile");
         // Let LCMS handle things internally for now
     }
+
+    @Override
+    public boolean validationAltersProfileHeader() {
+        return true;
+    }
 }
