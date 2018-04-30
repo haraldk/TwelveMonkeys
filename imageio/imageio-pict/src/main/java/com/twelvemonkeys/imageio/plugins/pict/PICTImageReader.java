@@ -1604,8 +1604,8 @@ public final class PICTImageReader extends ImageReaderBase {
                         else if (opCode >= 0x0100 && opCode <= 0x7fff) {
                             // For opcodes $0100-$7FFF, the amount of data for
                             // opcode $nnXX = 2 times nn bytes.
-                            dataLength = ((opCode & 0xff00) >> 8) * 2;
-                            pStream.skipBytes(dataLength);  
+                            dataLength = (opCode & 0xff00) >> 7;
+                            pStream.readFully(new byte[dataLength], 0, dataLength);
                         }
                         else if (opCode >= 0x8000 && opCode <= 0x80ff) {
                             // Zero-length
@@ -1781,7 +1781,7 @@ public final class PICTImageReader extends ImageReaderBase {
             }
 
             // Get size of packed data (not used for v2)
-            int packSize = pStream.readInt(); // TODO: Probably not int for BitMap (value seems too high)?
+            int packSize = pStream.readInt();
             if (DEBUG) {
                 System.out.println(", packSize: " + packSize);
             }
@@ -1831,7 +1831,7 @@ public final class PICTImageReader extends ImageReaderBase {
             // Handle to ColorTable record
             int clutId = pStream.readInt();
             if (DEBUG) {
-                System.out.println(", clutId:" + clutId);
+                System.out.print(", clutId:" + clutId);
             }
 
             // Reserved
@@ -1869,7 +1869,7 @@ public final class PICTImageReader extends ImageReaderBase {
         srcRect.setSize(x - srcRect.x, y - srcRect.y);
 
         if (DEBUG) {
-            System.out.print("opPackBitsRect, srcRect:" + srcRect);
+            System.out.print(", srcRect:" + srcRect);
         }
 
         // TODO: FixMe...
@@ -1894,7 +1894,8 @@ public final class PICTImageReader extends ImageReaderBase {
         // Read in the RGB arrays
         for (int scanline = 0; scanline < srcRect.height; scanline++) {
             // Read in the scanline
-            if (rowBytes > 8) {
+            // TODO: This seems to be always compressed for v1 bitmaps...
+            if (!isPixMap || rowBytes > 8) {
                 // Get byteCount of the scanline
                 int packedBytesCount = rowBytes > 250 ? pStream.readUnsignedShort() : pStream.readUnsignedByte();
 
@@ -1981,10 +1982,6 @@ public final class PICTImageReader extends ImageReaderBase {
      * @throws java.io.IOException if an I/O error occurs while reading the image.
      */
     private void readOpDirectBitsRect(final ImageInputStream pStream, final int pPixmapCount) throws IOException {
-        if (DEBUG) {
-            System.out.println("directBitsRect");
-        }
-
         // Skip PixMap pointer (always 0x000000FF);
         pStream.readInt();
 
@@ -2066,7 +2063,7 @@ public final class PICTImageReader extends ImageReaderBase {
         // Get pixel component size
         int cmpSize = pStream.readUnsignedShort();
         if (DEBUG) {
-            System.out.println(", cmpSize:" + cmpSize);
+            System.out.print(", cmpSize:" + cmpSize);
         }
 
         // planeBytes (ignored)
@@ -2091,7 +2088,7 @@ public final class PICTImageReader extends ImageReaderBase {
         srcRect.setSize(x - srcRect.x, y - srcRect.y);
 
         if (DEBUG) {
-            System.out.print("opDirectBitsRect, srcRect:" + srcRect);
+            System.out.print(", srcRect:" + srcRect);
         }
 
         // Get destination rectangle. We DO scale the coordinates according to

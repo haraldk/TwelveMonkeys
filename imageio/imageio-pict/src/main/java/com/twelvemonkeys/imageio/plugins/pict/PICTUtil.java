@@ -262,11 +262,11 @@ final class PICTUtil {
 
         for (int i = 0; i < size; i++) {
             // Read ColorSpec records
-            int index = pStream.readUnsignedShort();
+            /*int index = */pStream.readUnsignedShort();
             Color color = readRGBColor(pStream);
-            colors[index] = color.getRGB();
+            colors[i] = color.getRGB();
         }
 
-        return new IndexColorModel(pPixelSize, size, colors, 0, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        return new IndexColorModel(pPixelSize, size, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
     }
 }
