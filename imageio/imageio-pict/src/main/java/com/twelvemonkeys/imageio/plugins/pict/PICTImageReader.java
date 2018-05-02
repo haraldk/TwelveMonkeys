@@ -122,7 +122,7 @@ public final class PICTImageReader extends ImageReaderBase {
     private double screenImageYRatio;
 
     // List of images created during image import
-    private List<BufferedImage> images = new ArrayList<BufferedImage>();
+    private List<BufferedImage> images = new ArrayList<>();
     private long imageStartStreamPos;
     protected int picSize;
 
@@ -1667,7 +1667,6 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         // Get bounds rectangle. THIS IS NOT TO BE SCALED BY THE RESOLUTION!
-        // TODO: ...or then again...? :-)
         Rectangle bounds = new Rectangle();
         int y = pStream.readUnsignedShort();
         int x = pStream.readUnsignedShort();
@@ -1800,14 +1799,14 @@ public final class PICTImageReader extends ImageReaderBase {
         // Get transfer mode
         int transferMode = pStream.readUnsignedShort();
         if (DEBUG) {
-            System.out.println(", mode: " + transferMode);
+            System.out.print(", mode: " + transferMode);
         }
 
         Rectangle regionBounds = new Rectangle();
         Polygon region = hasRegion ? readRegion(pStream, regionBounds) : null;
 
         if (DEBUG) {
-            verboseRegionCmd("region", regionBounds, region);
+            System.out.println(hasRegion ? ", region: " + region : "" );
         }
 
         // Set up pixel buffer for the RGB values
@@ -1873,7 +1872,7 @@ public final class PICTImageReader extends ImageReaderBase {
         if (images.size() <= pPixmapCount) {
             // Create BufferedImage and add buffer it for multiple reads
             DataBuffer db = new DataBufferByte(pixArray, pixArray.length);
-            WritableRaster raster = Raster.createPackedRaster(db, (rowBytes * 8) / cmpSize, srcRect.height, cmpSize, null); // TODO: last param should ideally be srcRect.getLocation()
+            WritableRaster raster = Raster.createPackedRaster(db, (rowBytes * 8) / cmpSize, srcRect.height, cmpSize, null);
             BufferedImage img = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
 
             images.add(img);
@@ -1882,9 +1881,8 @@ public final class PICTImageReader extends ImageReaderBase {
         // Draw the image
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
-            // TODO: FixMe.. Seems impossible to create a bufferedImage with a raster not starting at 0,0
-            srcRect.setLocation(0, 0); // should not require this line..
-//            context.copyBits(img, srcRect, dstRect, transferMode, region);
+            srcRect.setLocation(0, 0); // Raster always start at 0,0
+//            dstRect.translate(-frame.x, -frame.y);
             context.copyBits(img, srcRect, dstRect, transferMode, null);
         }
 
@@ -1924,7 +1922,6 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         // Get bounds rectangle. THIS IS NOT TO BE SCALED BY THE RESOLUTION!
-        // TODO: ...or then again...? :-)
         Rectangle bounds = new Rectangle();
         int y = pStream.readUnsignedShort();
         int x = pStream.readUnsignedShort();
@@ -1939,7 +1936,6 @@ public final class PICTImageReader extends ImageReaderBase {
 
         ColorModel colorModel = null;
         int packType;
-        int cmpSize;
         int cmpCount;
 
         if (isPixMap) {
@@ -1992,7 +1988,7 @@ public final class PICTImageReader extends ImageReaderBase {
             }
 
             // Get pixel component size
-            cmpSize = pStream.readUnsignedShort();
+            int cmpSize = pStream.readUnsignedShort();
             if (DEBUG) {
                 System.out.print(", cmpSize:" + cmpSize);
             }
@@ -2010,7 +2006,6 @@ public final class PICTImageReader extends ImageReaderBase {
         else {
             // Old style BitMap record
             packType = 1;
-            cmpSize = 1;
             cmpCount = 1;
             colorModel = QuickDraw.MONOCHROME;
         }
@@ -2179,17 +2174,17 @@ public final class PICTImageReader extends ImageReaderBase {
             if (colorModel != null) {
                 cm = colorModel;
                 DataBuffer db = new DataBufferByte(dstBytes, dstBytes.length);
-                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, 1, null);  // TODO: last param should ideally be srcRect.getLocation()
+                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, 1, null);
             }
             else if (packType == 3) {
                 cm = new DirectColorModel(15, 0x7C00, 0x03E0, 0x001F); // See BufferedImage TYPE_USHORT_555_RGB
                 DataBuffer db = new DataBufferUShort(shortArray, shortArray.length);
-                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, srcRect.width, ((DirectColorModel) cm).getMasks(), null);  // TODO: last param should ideally be srcRect.getLocation()
+                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, srcRect.width, ((DirectColorModel) cm).getMasks(), null);
             }
             else {
                 cm = ColorModel.getRGBdefault();
                 DataBuffer db = new DataBufferInt(pixArray, pixArray.length);
-                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, srcRect.width, ((DirectColorModel) cm).getMasks(), null);  // TODO: last param should ideally be srcRect.getLocation()
+                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, srcRect.width, ((DirectColorModel) cm).getMasks(), null);
             }
 
             BufferedImage img = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
@@ -2200,9 +2195,8 @@ public final class PICTImageReader extends ImageReaderBase {
         // Draw the image
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
-            // TODO: FixMe.. Something wrong here, might be the copyBits methods.
-            srcRect.setLocation(0, 0); // should not require this line..
-//            context.copyBits(img, srcRect, dstRect, transferMode, region);
+            srcRect.setLocation(0, 0); // Raster always starts at 0,0
+//            dstRect.translate(-frame.x, -frame.y);
             context.copyBits(img, srcRect, dstRect, transferMode, null);
         }
 
@@ -2311,9 +2305,6 @@ public final class PICTImageReader extends ImageReaderBase {
             // Reserved
             pStream.readInt();
 
-            // TODO: Seems to be packType 0 all the time?
-            // packType = 0 means default....
-
             // Color table
             colorModel = PICTUtil.readColorTable(pStream, pixelSize);
         }
@@ -2339,7 +2330,7 @@ public final class PICTImageReader extends ImageReaderBase {
             System.out.print(", srcRect: " + srcRect);
             System.out.print(", dstRect: " + dstRect);
             System.out.print(", mode: " + mode);
-            System.out.println(hasRegion ? ", region: " + region : "");
+            System.out.print(hasRegion ? ", region: " + region : "");
             System.out.println();
         }
 
@@ -2351,12 +2342,12 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         DataBuffer db = new DataBufferByte(data, data.length);
-        WritableRaster raster = Raster.createPackedRaster(db, (rowBytes * 8) / cmpSize, srcRect.height, cmpSize, null); // TODO: last param should ideally be srcRect.getLocation()
+        WritableRaster raster = Raster.createPackedRaster(db, (rowBytes * 8) / cmpSize, srcRect.height, cmpSize, null);
         BufferedImage image = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
 
         // Draw pixel data
-        srcRect.setLocation(0, 0); // should not require this line..
-        dstRect.setLocation(0, 0); // should not require this line..
+        srcRect.setLocation(0, 0); // Raster always start at 0,0
+//        dstRect.translate(-frame.x, -frame.y);
         context.copyBits(image, srcRect, dstRect, mode, null);
     }
 
@@ -2535,15 +2526,13 @@ public final class PICTImageReader extends ImageReaderBase {
      * Write out polygon command, bounds and points.
      */
     private void verbosePolyCmd(String pCmd, Rectangle pBounds, Polygon pPolygon) {
-        int i;
-
-        System.out.println(pCmd + ": " + new Rectangle(pBounds.x, pBounds.y, pBounds.width, pBounds.height));
+        System.out.println(pCmd + ": " + pBounds);
         System.out.print("Polygon points: ");
-        for (i = 0; pPolygon != null && i < pPolygon.npoints - 1; i++) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + "), ");
-        }
         if (pPolygon != null && pPolygon.npoints > 0) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
+            System.out.print("(" + pPolygon.xpoints[0] + "," + pPolygon.ypoints[0] + ")");
+        }
+        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
+            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
         }
         System.out.println();
     }
@@ -2552,15 +2541,13 @@ public final class PICTImageReader extends ImageReaderBase {
      * Write out region command, bounds and points.
      */
     private void verboseRegionCmd(String pCmd, Rectangle pBounds, Polygon pPolygon) {
-        int i;
-
-        System.out.println(pCmd + ": " + new Rectangle(pBounds.x, pBounds.y, pBounds.width, pBounds.height));
+        System.out.println(pCmd + ": " + pBounds);
         System.out.print("Region points: ");
-        for (i = 0; pPolygon != null && i < pPolygon.npoints - 1; i++) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + "), ");
-        }
         if (pPolygon != null && pPolygon.npoints > 0) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
+            System.out.print("(" + pPolygon.xpoints[0] + "," + pPolygon.ypoints[0] + ")");
+        }
+        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
+            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
         }
         System.out.println();
     }
@@ -2600,7 +2587,10 @@ public final class PICTImageReader extends ImageReaderBase {
             }
 
             instance.scale(screenImageXRatio / subX, screenImageYRatio / subY);
+            instance.translate(-frame.x, -frame.y);
+
             g.setTransform(instance);
+
             drawOnto(g);
         }
         finally {
