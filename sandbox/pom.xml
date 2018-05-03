@@ -91,14 +91,14 @@
                 <artifactId>common-io</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
-                <classifier>tests</classifier>
+                <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>com.twelvemonkeys.common</groupId>
                 <artifactId>common-lang</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
-                <classifier>tests</classifier>
+                <type>test-jar</type>
             </dependency>
 
             <dependency>

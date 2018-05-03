@@ -28,55 +28,26 @@
 
 package com.twelvemonkeys.imageio.plugins.pcx;
 
-import org.w3c.dom.Node;
+import com.twelvemonkeys.imageio.AbstractMetadata;
 
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.IndexColorModel;
 
-final class PCXMetadata extends IIOMetadata {
-    // TODO: Clean up & extend AbstractMetadata (after moving from PSD -> Core)
-
+final class PCXMetadata extends AbstractMetadata {
     private final PCXHeader header;
     private final IndexColorModel vgaPalette;
 
     PCXMetadata(final PCXHeader header, final IndexColorModel vgaPalette) {
         this.header = header;
         this.vgaPalette = vgaPalette;
-
-        standardFormatSupported = true;
     }
 
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override public Node getAsTree(final String formatName) {
-        if (formatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
-            return getStandardTree();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported metadata format: " + formatName);
-        }
-    }
-
-    @Override public void mergeTree(final String formatName, final Node root) {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override public void reset() {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override protected IIOMetadataNode getStandardChromaNode() {
+    @Override
+    protected IIOMetadataNode getStandardChromaNode() {
         IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
         IndexColorModel palette = null;
+        boolean gray = false;
 
         IIOMetadataNode csType = new IIOMetadataNode("ColorSpaceType");
         switch (header.getBitsPerPixel()) {
@@ -88,13 +59,14 @@ final class PCXMetadata extends IIOMetadata {
                 break;
             case 8:
                 // We may have IndexColorModel here for 1 channel images
-                if (header.getChannels() == 1 && header.getPaletteInfo() != PCX.PALETTEINFO_GRAY) {
+                if (header.getChannels() == 1 && vgaPalette != null) {
                     palette = vgaPalette;
                     csType.setAttribute("name", "RGB");
                     break;
                 }
                 if (header.getChannels() == 1) {
                     csType.setAttribute("name", "GRAY");
+                    gray = true;
                     break;
                 }
                 csType.setAttribute("name", "RGB");
@@ -110,6 +82,15 @@ final class PCXMetadata extends IIOMetadata {
         }
 
         chroma.appendChild(csType);
+
+        // NOTE: Channels in chroma node reflects channels in color model, not data! (see data node)
+        IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
+        numChannels.setAttribute("value", gray ? "1" : "3");
+        chroma.appendChild(numChannels);
+
+        IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
+        blackIsZero.setAttribute("value", "TRUE");
+        chroma.appendChild(blackIsZero);
 
         if (palette != null) {
             IIOMetadataNode paletteNode = new IIOMetadataNode("Palette");
@@ -127,21 +108,13 @@ final class PCXMetadata extends IIOMetadata {
             }
         }
 
-        // TODO: Channels in chroma node should reflect channels in color model, not data! (see data node)
-        IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
-        numChannels.setAttribute("value", Integer.toString(header.getChannels()));
-        chroma.appendChild(numChannels);
-
-        IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
-        blackIsZero.setAttribute("value", "TRUE");
-        chroma.appendChild(blackIsZero);
-
         return chroma;
     }
 
     // No compression
 
-    @Override protected IIOMetadataNode getStandardCompressionNode() {
+    @Override
+    protected IIOMetadataNode getStandardCompressionNode() {
         if (header.getCompression() != PCX.COMPRESSION_NONE) {
             IIOMetadataNode node = new IIOMetadataNode("Compression");
 
@@ -159,7 +132,8 @@ final class PCXMetadata extends IIOMetadata {
         return null;
     }
 
-    @Override protected IIOMetadataNode getStandardDataNode() {
+    @Override
+    protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode node = new IIOMetadataNode("Data");
 
         // Planar configuration only makes sense for multi-channel images
@@ -169,9 +143,25 @@ final class PCXMetadata extends IIOMetadata {
             node.appendChild(planarConfiguration);
         }
 
-        // TODO: SampleFormat value = Index if colormapped/palette data
         IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
-        sampleFormat.setAttribute("value", "UnsignedIntegral");
+
+        switch (header.getBitsPerPixel()) {
+            case 1:
+            case 2:
+            case 4:
+                sampleFormat.setAttribute("value", "Index");
+                break;
+            case 8:
+                if (header.getChannels() == 1 && vgaPalette != null) {
+                    sampleFormat.setAttribute("value", "Index");
+                    break;
+                }
+                // Else fall through for GRAY
+            default:
+                sampleFormat.setAttribute("value", "UnsignedIntegral");
+                break;
+        }
+
         node.appendChild(sampleFormat);
 
         IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
@@ -202,7 +192,8 @@ final class PCXMetadata extends IIOMetadata {
         return buffer.toString();
     }
 
-    @Override protected IIOMetadataNode getStandardDimensionNode() {
+    @Override
+    protected IIOMetadataNode getStandardDimensionNode() {
         IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
         IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
@@ -212,13 +203,23 @@ final class PCXMetadata extends IIOMetadata {
         return dimension;
     }
 
-    // TODO: document node with version
+    @Override
+    protected IIOMetadataNode getStandardDocumentNode() {
+        IIOMetadataNode dimension = new IIOMetadataNode("Document");
+
+        IIOMetadataNode imageOrientation = new IIOMetadataNode("FormatVersion");
+        imageOrientation.setAttribute("value", String.valueOf(header.getVersion()));
+        dimension.appendChild(imageOrientation);
+
+        return dimension;
+    }
 
     // No text node
 
     // No tiling
 
-    @Override protected IIOMetadataNode getStandardTransparencyNode() {
+    @Override
+    protected IIOMetadataNode getStandardTransparencyNode() {
         // NOTE: There doesn't seem to be any god way to determine transparency, other than by convention
         // 1 channel: Gray, 2 channel: Gray + Alpha, 3 channel: RGB, 4 channel: RGBA (hopefully never CMYK...)
 

@@ -30,6 +30,10 @@ package com.twelvemonkeys.imageio.metadata.xmp;
 
 import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 /**
 * XMPEntry
 *
@@ -63,6 +67,23 @@ final class XMPEntry extends AbstractEntry {
         return fieldName != null ? fieldName : XMP.DEFAULT_NS_MAPPING.get(getIdentifier());
     }
 
+    @Override
+    public String getTypeName() {
+        // Special handling for collections
+        Object value = getValue();
+        if (value instanceof List) {
+            return "List";
+        }
+        else if (value instanceof Set) {
+            return "Set";
+        }
+        else if (value instanceof Map) {
+            return "Map";
+        }
+
+        // Fall back to class name
+        return super.getTypeName();
+    }
     @Override
     public String toString() {
         String type = getTypeName();

@@ -1,9 +1,16 @@
-## Background
+## Latest
 
-TwelveMonkeys ImageIO is a collection of plug-ins for Java's ImageIO.
+Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
+
+Latest release is TwelveMonkeys ImageIO [3.3.2](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.3.2%22) (Feb. 2nd, 2017).
+[Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
+
+## About
+
+TwelveMonkeys ImageIO is a collection of plugins and extensions for Java's ImageIO.
 
 These plugins extends the number of image file formats supported in Java, using the javax.imageio.* package.
-The main purpose of this project is to provide support for formats not covered by the JDK itself.
+The main purpose of this project is to provide support for formats not covered by the JRE itself.
 
 Support for formats is important, both to be able to read data found
 "in the wild", as well as to maintain access to data in legacy formats.
@@ -16,27 +23,38 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 Mainstream format support
 
+#### BMP - MS Windows/IBM OS/2 Device Independent Bitmap
+ 
+* Read support for all known versions of the DIB/BMP format
+  * Indexed color, 1, 4 and 8 bit, including 4 and 8 bit RLE
+  * RGB, 16, 24 and 32 bit
+  * Embedded PNG and JPEG data
+  * Windows and OS/2 versions
+* Native and standard metadata format
+
 #### JPEG
 
-* Read support for the following JPEG flavors:
+* Read support for the following JPEG "flavors":
+  * All JFIF compliant JPEGs
+  * All Exif compliant JPEGs
   * YCbCr JPEGs without JFIF segment (converted to RGB, using embedded ICC profile)
-  * CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile )
+  * CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
   * Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
-  * JPEGs containing ICC profiles with interpretation other than 'Perceptual'
-  * JPEGs containing ICC profiles with class other than 'Display'
-  * JPEGs containing ICC profiles that are incompatible with stream data
-  * JPEGs with corrupted ICC profiles
-  * JPEGs with corrupted `ICC_PROFILE` segments
+  * JPEGs containing ICC profiles with interpretation other than 'Perceptual' or class other than 'Display'
+  * JPEGs containing ICC profiles that are incompatible with stream data, corrupted ICC profiles or corrupted `ICC_PROFILE` segments
   * JPEGs using non-standard color spaces, unsupported by Java 2D
-  * Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image data can still be read in a reasonable way
+  * JPEGs with APP14/Adobe segments with length other than 14 bytes
+  * 8 bit JPEGs with 16 bit DQT segments
+  * Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image 
+  data can still be read in a reasonable way
 * Thumbnail support:
-  * JFIF thumbnails (even if stream contains inconsistent metadata)
+  * JFIF thumbnails (even if stream contains "inconsistent metadata")
   * JFXX thumbnails (JPEG, Indexed and RGB)
   * EXIF thumbnails (JPEG, RGB and YCbCr)
 * Metadata support:
-  * JPEG metadata in both standard and native formats (even if stream contains inconsistent metadata)
+  * JPEG metadata in both standard and native formats (even if stream contains "inconsistent metadata")
   * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
-  * Illegal combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
+  * Non-conforming combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
    "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
 * Extended write support in progress:
   * CMYK JPEGs
@@ -46,10 +64,13 @@ Mainstream format support
 
 * Possibly coming in the future, pending some license issues.
 
-If you are one of the authors, or know one of the authors and/or the current license holders of either the original jj2000 package or the JAI ImageIO project, please contact me
-(I've tried to get in touch in various ways, without success so far).
+If you are one of the authors, or know one of the authors and/or the current license holders of either the original
+jj2000 package or the JAI ImageIO project, please contact me (I've tried to get in touch in various ways, 
+without success so far).
 
-#### NetPBM Portable Any Map (PNM) *3.1*
+Alternatively, if you have or know of a JPEG-2000 implementation in Java with a suitable license, get in touch. :-)
+
+#### PNM - NetPBM Portable Any Map
 
 * Read support for the following file types:
   * PBM in 'P1' (ASCII) and 'P4' (binary) formats, 1 bit per pixel
@@ -60,8 +81,9 @@ If you are one of the authors, or know one of the authors and/or the current lic
 * Write support for the following formats:
   * PPM in 'P6' (binary) format
   * PAM in 'P7' (binary) format
+* Standard metadata support
 
-#### Adobe Photoshop Document (PSD)
+#### PSD - Adobe Photoshop Document
 
 * Read support for the following file types:
   * Monochrome, 1 channel, 1 bit
@@ -79,8 +101,9 @@ If you are one of the authors, or know one of the authors and/or the current lic
   * JPEG
   * RAW (RGB)
 * Support for "Large Document Format" (PSB)
+* Native and Standard metadata support
 
-#### Aldus/Adobe Tagged Image File Format (TIFF)
+#### TIFF - Aldus/Adobe Tagged Image File Format
 
 * Read support for the following "Baseline" TIFF file types:
   * Class B (Bi-level), all relevant compression types, 1 bit per sample
@@ -89,27 +112,42 @@ If you are one of the authors, or know one of the authors and/or the current lic
   * Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer
 * Read support for the following TIFF extensions:
   * Tiling
+  * Class F (Facsimile), CCITT Modified Huffman RLE, T4 and T6 (type 2, 3 and 4) compressions.
   * LZW Compression (type 5)
   * "Old-style" JPEG Compression (type 6), as a best effort, as the spec is not well-defined
   * JPEG Compression (type 7)
   * ZLib (aka Adobe-style Deflate) Compression (type 8)
   * Deflate Compression (type 32946)
   * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate and PackBits compression
-  * Alpha channel (ExtraSamples type 1/Associated Alpha)
+  * Alpha channel (ExtraSamples type 1/Associated Alpha and type 2/Unassociated Alpha)
   * CMYK data (PhotometricInterpretation type 5/Separated)
   * YCbCr data (PhotometricInterpretation type 6/YCbCr) for JPEG
+  * CIELab data in TIFF, ITU and ICC variants (PhotometricInterpretation type 9, 10 and 11)
   * Planar data (PlanarConfiguration type 2/Planar)
   * ICC profiles (ICCProfile)
   * BitsPerSample values up to 16 for most PhotometricInterpretations
   * Multiple images (pages) in one file
-* Write support in progress
-  * Will support writing most "Baseline" TIFF file types
+* Write support for most "Baseline" TIFF options
+  * Uncompressed, PackBits, ZLib and Deflate 
+  * Additional support for CCITT T4 and and T6 compressions.
+  * Additional support for LZW and JPEG (type 7) compressions
+  * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate
+* Native and Standard metadata support
 
 Legacy formats
 
-#### Commodore Amiga/Electronic Arts Interchange File Format (IFF)
+#### HDR - Radiance High Dynamic Range RGBE Format
 
-* Legacy format, allows reading popular image from the Commodore Amiga computer.
+* Read support for the most common RGBE (.hdr) format
+* Samples are converted to 32 bit floating point (`float`) and normalized using a global tone mapper by default.
+  * Support for custom global tone mappers
+  * Alternatively, use a "null-tone mapper", for unnormalized data (allows local tone mapping)
+* Unconverted RGBE samples accessible using `readRaster`
+* Standard metadata support
+
+#### IFF - Commodore Amiga/Electronic Arts Interchange File Format
+
+* Legacy format, allows reading popular image format from the Commodore Amiga computer.
 * Read support for the following file types:
   * ILBM Indexed color, 1-8 interleaved bit planes, including 6 bit EHB
   * ILBM  Gray, 8 bit interleaved bit planes
@@ -125,7 +163,7 @@ Legacy formats
   * Uncompressed
   * RLE (PackBits)
 
-#### ZSoft Paintbrush Format (PCX) *3.1*
+#### PCX - ZSoft Paintbrush Format
 
 * Read support for the following file types:
   * Indexed color, 1, 2, 4 or 8 bits per pixel, bit planes or interleaved
@@ -135,8 +173,9 @@ Legacy formats
 * Support for the following compression types:
   * Uncompressed (experimental)
   * RLE compressed
+* Standard metadata support
 
-#### Apple Mac Paint Picture Format (PICT)
+#### PICT - Apple Mac Paint Picture Format
 
 * Legacy format, especially useful for reading OS X clipboard data.
 * Read support for the following file types:
@@ -147,7 +186,7 @@ Legacy formats
 * Write support for RGB pixel data:
   * QuickDraw pixmap
 
-#### Silicon Graphics Image Format (SGI) *3.1*
+#### SGI - Silicon Graphics Image Format
 
 * Read support for the following file types:
   * 1, 2, 3 or 4 channel image data
@@ -155,8 +194,9 @@ Legacy formats
 * Support for the following compression types:
   * Uncompressed
   * RLE compressed
+* Standard metadata support
 
-#### Truevision TGA Image Format (TGA) *3.1*
+#### TGA - Truevision TGA Image Format
 
 * Read support for the following file types:
   * ColorMapped
@@ -165,37 +205,42 @@ Legacy formats
 * Support for the following compression types:
   * Uncompressed
   * RLE compressed
+* Standard metadata support
 
 Icon/other formats
 
-#### Apple Icon Image (ICNS)
+#### ICNS - Apple Icon Image
 
 * Read support for the following icon types:
   * All known "native" icon types
   * Large PNG encoded icons
   * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin or fallback to `sips` command line tool)
 
-#### MS Windows Icon and Cursor Formats (ICO & CUR)
+#### ICO & CUR - MS Windows Icon and Cursor Formats
 
 * Read support for the following file types:
   * ICO Indexed color, 1, 4 and 8 bit
   * ICO RGB, 16, 24 and 32 bit
   * CUR Indexed color, 1, 4 and 8 bit
   * CUR RGB, 16, 24 and 32 bit
+* *3.1* Note: These formats are now part of the BMP plugin
 
-#### MS Windows Thumbs DB (Thumbs.db)
+#### Thumbs.db - MS Windows Thumbs DB
 
 * Read support
 
 Other formats, using 3rd party libraries
 
-#### Scalable Vector Graphics (SVG)
+#### SVG - Scalable Vector Graphics
 
 * Read-only support using Batik
 
-#### MS Windows MetaFile (WMF)
+#### WMF - MS Windows MetaFile
 
 * Limited read-only support using Batik
+
+**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
+either version 1.6.1, 1.7.1 or 1.8+.*
 
 
 ## Basic usage
@@ -320,14 +365,15 @@ Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doe
 servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
 Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins might never be available at all.
 
-I addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
+In addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
 If you restart your application, old classes will by default remain in memory forever (because the next time
 `scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
-in the registry). If a read is attempted using one of the remaining ("old") readers, weird exceptions
-(like `NullPointerException`s when accessing `static final` initialized fields) may occur.
+in the registry). If a read is attempted using one of the remaining "old" readers, weird exceptions
+(like `NullPointerException`s when accessing `static final` initialized fields or `NoClassDefFoundError`s 
+for uninitialized inner classes) may occur.
 
 To work around both the discovery problem and the resource leak,
-it is recommended to use the `IIOProviderContextListener` that implements
+it is *strongly recommended* to use the `IIOProviderContextListener` that implements
 dynamic loading and unloading of ImageIO plugins for web applications.
 
     <web-app ...>
@@ -343,6 +389,12 @@ dynamic loading and unloading of ImageIO plugins for web applications.
 
     </web-app>
 
+Loading plugins from `WEB-INF/lib` without the context listener installed is unsupported and will not work correctly.
+
+The context listener has no dependencies to the TwelveMonkeys ImageIO plugins, and may be used with JAI ImageIO 
+or other ImageIO plugins as well.
+
+Another safe option, is to place the JAR files in the application server's shared or common lib folder. 
 
 #### Using the ResampleOp
 
@@ -388,9 +440,9 @@ Build the project (using [Maven](http://maven.apache.org/download.cgi)):
 
     $ mvn package
 
-Currently, the only supported JDK for making a build is Oracle JDK 7.x. 
+Currently, the recommended JDK for making a build is Oracle JDK 7.x or 8.x. 
 
-It's possible to build using OpenJDK, but some tests will fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether. To build using JDK 8, you need to pass `-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider` to revert to the color manangement system used in Java 7.
+It's possible to build using OpenJDK, but some tests might fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether.
 
 Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable `MAVEN_OPTS`
 to give the Java process that runs Maven more memory. I suggest something like `-Xmx512m -XX:MaxPermSize=256m`.
@@ -416,7 +468,7 @@ To verify that the JPEG plugin is installed and used at run-time, you could use 
 
 The first line should print:
 
-    reader: com.twelvemonkeys.imageio.jpeg.JPEGImageReader@somehash
+    reader: com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReader@somehash
 
 #### Maven dependency example
 
@@ -428,12 +480,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.0</version> <!-- Alternatively, build your own 3.1-something version -->
+            <version>3.3.2</version> <!-- Alternatively, build your own version -->
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.0</version> <!-- Alternatively, build your own 3.1-something version -->
+            <version>3.3.2</version> <!-- Alternatively, build your own version -->
         </dependency>
     </dependencies>
 
@@ -441,47 +493,89 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.0.jar
-    twelvemonkeys-common-io-3.0.jar
-    twelvemonkeys-common-image-3.0.jar
-    twelvemonkeys-imageio-core-3.0.jar
-    twelvemonkeys-imageio-metadata-3.0.jar
-    twelvemonkeys-imageio-jpeg-3.0.jar
-    twelvemonkeys-imageio-tiff-3.0.jar
+    twelvemonkeys-common-lang-3.3.2.jar
+    twelvemonkeys-common-io-3.3.2.jar
+    twelvemonkeys-common-image-3.3.2.jar
+    twelvemonkeys-imageio-core-3.3.2.jar
+    twelvemonkeys-imageio-metadata-3.3.2.jar
+    twelvemonkeys-imageio-jpeg-3.3.2.jar
+    twelvemonkeys-imageio-tiff-3.3.2.jar
 
 ### Links to prebuilt binaries
 
+##### Latest version (3.2.x)
+
+Requires Java 7 or later.
+ 
 Common dependencies
-* [common-lang-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0/common-lang-3.0.jar)
-* [common-io-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0/common-io-3.0.jar)
-* [common-image-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0/common-image-3.0.jar)
+* [common-lang-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.3.2/common-lang-3.3.2.jar)
+* [common-io-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.3.2/common-io-3.3.2.jar)
+* [common-image-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.3.2/common-image-3.3.2.jar)
 
 ImageIO dependencies
-* [imageio-core-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0/imageio-core-3.0.jar)
-* [imageio-metadata-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0/imageio-metadata-3.0.jar)
+* [imageio-core-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.3.2/imageio-core-3.3.2.jar)
+* [imageio-metadata-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.3.2/imageio-metadata-3.3.2.jar)
 
 ImageIO plugins
-* [imageio-jpeg-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0/imageio-jpeg-3.0.jar)
-* [imageio-tiff-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0/imageio-tiff-3.0.jar)
-* [imageio-psd-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0/imageio-psd-3.0.jar)
-* [imageio-pict-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0/imageio-pict-3.0.jar)
-* [imageio-iff-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0/imageio-iff-3.0.jar)
-* [imageio-icns-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0/imageio-icns-3.0.jar)
-* [imageio-ico-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0/imageio-ico-3.0.jar)
-* [imageio-thumbsdb-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0/imageio-thumbsdb-3.0.jar)
+* [imageio-bmp-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.3.2/imageio-bmp-3.3.2.jar)
+* [imageio-jpeg-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.3.2/imageio-jpeg-3.3.2.jar)
+* [imageio-tiff-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.3.2/imageio-tiff-3.3.2.jar)
+* [imageio-pnm-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.3.2/imageio-pnm-3.3.2.jar)
+* [imageio-psd-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.3.2/imageio-psd-3.3.2.jar)
+* [imageio-hdr-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.3.2/imageio-hdr-3.3.2.jar)
+* [imageio-iff-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.3.2/imageio-iff-3.3.2.jar)
+* [imageio-pcx-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.3.2/imageio-pcx-3.3.2.jar)
+* [imageio-pict-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.3.2/imageio-pict-3.3.2.jar)
+* [imageio-sgi-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.3.2/imageio-sgi-3.3.2.jar)
+* [imageio-tga-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.3.2/imageio-tga-3.3.2.jar)
+* [imageio-icns-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.3.2/imageio-icns-3.3.2.jar)
+* [imageio-thumbsdb-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.3.2/imageio-thumbsdb-3.3.2.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0/imageio-batik-3.0.jar)
-* [imageio-jmagick-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0/imageio-jmagick-3.0.jar)
+* [imageio-batik-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.3.2/imageio-batik-3.3.2.jar)
+
+Photoshop Path support for ImageIO
+* [imageio-clippath-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.3.2/imageio-clippath-3.3.2.jar)
 
 Servlet support
-* [servlet-3.0.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0/servlet-3.0.jar)
+* [servlet-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.3.2/servlet-3.3.2.jar)
+
+##### Old version (3.0.x)
+
+Use this version for projects that requires Java 6 or need the JMagick support. *Does not support Java 8 or later*.
+
+Common dependencies
+* [common-lang-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.0.2/common-lang-3.0.2.jar)
+* [common-io-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.0.2/common-io-3.0.2.jar)
+* [common-image-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.0.2/common-image-3.0.2.jar)
+ 
+ImageIO dependencies
+* [imageio-core-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.0.2/imageio-core-3.0.2.jar)
+* [imageio-metadata-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.0.2/imageio-metadata-3.0.2.jar)
+ 
+ImageIO plugins
+* [imageio-jpeg-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.0.2/imageio-jpeg-3.0.2.jar)
+* [imageio-tiff-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.0.2/imageio-tiff-3.0.2.jar)
+* [imageio-psd-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.0.2/imageio-psd-3.0.2.jar)
+* [imageio-pict-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.0.2/imageio-pict-3.0.2.jar)
+* [imageio-iff-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.0.2/imageio-iff-3.0.2.jar)
+* [imageio-icns-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.0.2/imageio-icns-3.0.2.jar)
+* [imageio-ico-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-ico/3.0.2/imageio-ico-3.0.2.jar)
+* [imageio-thumbsdb-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.0.2/imageio-thumbsdb-3.0.2.jar)
+ 
+ImageIO plugins requiring 3rd party libs
+* [imageio-batik-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.0.2/imageio-batik-3.0.2.jar)
+* [imageio-jmagick-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jmagick/3.0.2/imageio-jmagick-3.0.2.jar)
+ 
+Servlet support
+* [servlet-3.0.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.0.2/servlet-3.0.2.jar)
+
 
 ## License
 
 The project is distributed under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
 
-    Copyright (c) 2008-2013, Harald Kuhr
+    Copyright (c) 2008-2015, Harald Kuhr
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -521,7 +615,7 @@ a: The easiest way is to build your own project using Maven, and just add depend
 
 q: What changes do I have to make to my code in order to use the plug-ins?
 
-a: The short answer is: None. For basic usage, like ImageIO.read(...) or ImageIO.getImageReaders(...), there is no need
+a: The short answer is: None. For basic usage, like `ImageIO.read(...)` or `ImageIO.getImageReaders(...)`, there is no need
 to change your code. Most of the functionality is available through standard ImageIO APIs, and great care has been taken
  not to introduce extra API where none is necessary.
 
@@ -538,11 +632,11 @@ All you have have to do, is to make sure you have the TwelveMonkeys JARs in your
 
 You can read more about the registry and the lookup mechanism in the [IIORegistry API doc](http://docs.oracle.com/javase/7/docs/api/javax/imageio/spi/IIORegistry.html).
 
-The fine print: The TwelveMonkeys service providers for TIFF and JPEG overrides the onRegistration method, and
-utilizes the pairwise partial ordering mechanism of the IIOServiceRegistry to make sure it is installed before
-the Sun/Oracle provided JPEGImageReader and the Apple provided TIFFImageReader on OS X, respectively.
-Using the pairwise ordering will not remove any functionality form these implementations, but in most cases you'll end
-up using the TwelveMonkeys plug-ins instead.
+The fine print: The TwelveMonkeys service providers for JPEG, BMP and TIFF, overrides the onRegistration method, and
+utilizes the pairwise partial ordering mechanism of the `IIOServiceRegistry` to make sure it is installed before
+the Sun/Oracle provided `JPEGImageReader` and `BMPImageReader`, and the Apple provided `TIFFImageReader` on OS X, 
+respectively. Using the pairwise ordering will not remove any functionality form these implementations, but in most 
+cases you'll end up using the TwelveMonkeys plug-ins instead.
 
 
 q: What about JAI? Several of the formats are already supported by JAI.

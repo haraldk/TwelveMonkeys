@@ -34,7 +34,10 @@ import org.w3c.dom.Document;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * PSDMetadataFormat
@@ -44,6 +47,19 @@ import java.util.Arrays;
  * @version $Id: PSDMetadataFormat.java,v 1.0 Nov 4, 2009 5:27:53 PM haraldk Exp$
  */
 public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
+
+    static final List<String> PSD_BLEND_MODES = Arrays.asList(
+            PSDUtil.intToStr(PSD.BLEND_PASS), PSDUtil.intToStr(PSD.BLEND_NORM), PSDUtil.intToStr(PSD.BLEND_DISS),
+            PSDUtil.intToStr(PSD.BLEND_DARK), PSDUtil.intToStr(PSD.BLEND_MUL), PSDUtil.intToStr(PSD.BLEND_IDIV),
+            PSDUtil.intToStr(PSD.BLEND_LBRN), PSDUtil.intToStr(PSD.BLEND_DKCL), PSDUtil.intToStr(PSD.BLEND_LITE),
+            PSDUtil.intToStr(PSD.BLEND_SCRN), PSDUtil.intToStr(PSD.BLEND_DIV), PSDUtil.intToStr(PSD.BLEND_LDDG),
+            PSDUtil.intToStr(PSD.BLEND_LGCL), PSDUtil.intToStr(PSD.BLEND_OVER), PSDUtil.intToStr(PSD.BLEND_SLIT),
+            PSDUtil.intToStr(PSD.BLEND_HLIT), PSDUtil.intToStr(PSD.BLEND_VLIT), PSDUtil.intToStr(PSD.BLEND_LLIT),
+            PSDUtil.intToStr(PSD.BLEND_PLIT), PSDUtil.intToStr(PSD.BLEND_HMIX), PSDUtil.intToStr(PSD.BLEND_DIFF),
+            PSDUtil.intToStr(PSD.BLEND_SMUD), PSDUtil.intToStr(PSD.BLEND_FSUB), PSDUtil.intToStr(PSD.BLEND_FDIV),
+            PSDUtil.intToStr(PSD.BLEND_HUE), PSDUtil.intToStr(PSD.BLEND_SAT), PSDUtil.intToStr(PSD.BLEND_COLR),
+            PSDUtil.intToStr(PSD.BLEND_LUM)
+    );
 
     private static final PSDMetadataFormat instance = new PSDMetadataFormat();
 
@@ -65,7 +81,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addElement("Header", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
 
         addAttribute("Header", "type", DATATYPE_STRING, false, "PSD", Arrays.asList("PSD", "PSB"));
-        addAttribute("Header", "version", DATATYPE_INTEGER, false, "1", Arrays.asList("1"));
+        addAttribute("Header", "version", DATATYPE_INTEGER, false, "1", Collections.singletonList("1"));
 
         addAttribute("Header", "channels", DATATYPE_INTEGER, true, null, "1", "24", true, true);
         // rows?
@@ -73,7 +89,8 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // columns?
         addAttribute("Header", "width", DATATYPE_INTEGER, true, null, "1", "30000", true, true);
         addAttribute("Header", "bits", DATATYPE_INTEGER, true, null, Arrays.asList("1", "8", "16"));
-        addAttribute("Header", "mode", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.COLOR_MODES));
+
+        addAttribute("Header", "mode", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.COLOR_MODES));
 
         /*
         Contains the required data to define the color mode.
@@ -119,7 +136,7 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addElement("DisplayInfo", "ImageResources", CHILD_POLICY_EMPTY);
         // TODO: Consider using human readable strings
         // TODO: Limit values (0-8, 10, 11, 3000)
-        addAttribute("DisplayInfo", "colorSpace", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DISPLAY_INFO_CS));
+        addAttribute("DisplayInfo", "colorSpace", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.DISPLAY_INFO_CS));
         addAttribute("DisplayInfo", "colors", DATATYPE_INTEGER, true, 4, 4);
         addAttribute("DisplayInfo", "opacity", DATATYPE_INTEGER, true, null, "0", "100", true, true);
         // TODO: Consider using human readable strings
@@ -182,16 +199,15 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // root -> ImageResources -> ResolutionInfo
         addElement("ResolutionInfo", "ImageResources", CHILD_POLICY_EMPTY);
         addAttribute("ResolutionInfo", "hRes", DATATYPE_FLOAT, true, null);
-        addAttribute("ResolutionInfo", "hResUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.RESOLUTION_UNITS));
-        addAttribute("ResolutionInfo", "widthUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DIMENSION_UNITS));
+        addAttribute("ResolutionInfo", "hResUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.RESOLUTION_UNITS));
+        addAttribute("ResolutionInfo", "widthUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.DIMENSION_UNITS));
         addAttribute("ResolutionInfo", "vRes", DATATYPE_FLOAT, true, null);
-        addAttribute("ResolutionInfo", "vResUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.RESOLUTION_UNITS));
-        addAttribute("ResolutionInfo", "heightUnit", DATATYPE_STRING, true, null, Arrays.asList(PSDMetadata.DIMENSION_UNITS));
+        addAttribute("ResolutionInfo", "vResUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.RESOLUTION_UNITS));
+        addAttribute("ResolutionInfo", "heightUnit", DATATYPE_STRING, true, null, asListNoNulls(PSDMetadata.DIMENSION_UNITS));
 
         // root -> ImageResources -> UnicodeAlphaNames
         addElement("UnicodeAlphaNames", "ImageResources", 0, Integer.MAX_VALUE);
         addChildElement("UnicodeAlphaNames", "Name"); // TODO: Does this really work?
-
 
         // root -> ImageResources -> VersionInfo
         addElement("VersionInfo", "ImageResources", CHILD_POLICY_EMPTY);
@@ -214,13 +230,47 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         // TODO: Incorporate XMP metadata here somehow (or treat as opaque bytes?)
         addObjectValue("XMP", Document.class, true, null);
 
-        // TODO: Layers
-        //addElement("ChannelSourceDestinationRange", "LayerSomething", CHILD_POLICY_CHOICE);
+        // root -> Layers
+        addElement("Layers", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, 0, Short.MAX_VALUE);
 
-        // TODO: Global layer mask info
+        // root -> Layers -> LayerInfo
+        addElement("LayerInfo", "Layers", CHILD_POLICY_EMPTY);
+        addAttribute("LayerInfo", "name", DATATYPE_STRING, false, "");
+        addAttribute("LayerInfo", "top", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "left", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "bottom", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "right", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "blendmode", DATATYPE_STRING, false, PSDUtil.intToStr(PSD.BLEND_NORM), PSD_BLEND_MODES);
+        addAttribute("LayerInfo", "opacity", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "clipping", DATATYPE_STRING, false, "base", Arrays.asList("base", "non-base"));
+        addAttribute("LayerInfo", "flags", DATATYPE_INTEGER, false, "0");
+
+        // Redundant (derived from flags)
+        addAttribute("LayerInfo", "transparencyProtected", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "visible", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "obsolete", DATATYPE_BOOLEAN, false, "false"); // Spec doesn't say if the flag is obsolete, or if this means the layer is obsolete...?
+        addAttribute("LayerInfo", "pixelDataIrrelevant", DATATYPE_BOOLEAN, false, "false");
+
+
+        // root -> GlobalLayerMask
+        addElement("GlobalLayerMask", PSDMetadata.NATIVE_METADATA_FORMAT_NAME, CHILD_POLICY_EMPTY);
+        addAttribute("GlobalLayerMask", "colorSpace", DATATYPE_INTEGER, false, "0");
+        addAttribute("GlobalLayerMask", "colors", DATATYPE_INTEGER, false, 4, 4);
+        addAttribute("GlobalLayerMask", "opacity", DATATYPE_INTEGER, false, "0");
+        addAttribute("GlobalLayerMask", "kind", DATATYPE_STRING, false, "layer", Arrays.asList("selected", "protected", "layer"));
     }
 
+    private static <T> List<T> asListNoNulls(final T[] values) {
+        List<T> list = new ArrayList<>(values.length);
 
+        for (T value : values) {
+            if (value != null) {
+                list.add(value);
+            }
+        }
+
+        return list;
+    }
 
     @Override
     public boolean canNodeAppear(final String elementName, final ImageTypeSpecifier imageType) {

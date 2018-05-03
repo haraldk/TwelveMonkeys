@@ -38,7 +38,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * YCbCr16UpsamplerStreamTest
@@ -50,22 +51,22 @@ import static org.junit.Assert.*;
 public class YCbCr16UpsamplerStreamTest {
     @Test(expected = IllegalArgumentException.class)
     public void testCreateNullStream() {
-        new YCbCr16UpsamplerStream(null, new int[2], 7, 5, null, ByteOrder.LITTLE_ENDIAN);
+        new YCbCr16UpsamplerStream(null, new int[2], 7, 5, ByteOrder.LITTLE_ENDIAN);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateNullChroma() {
-        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5, null, ByteOrder.LITTLE_ENDIAN);
+        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5, ByteOrder.LITTLE_ENDIAN);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateShortChroma() {
-        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5, null, ByteOrder.LITTLE_ENDIAN);
+        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5, ByteOrder.LITTLE_ENDIAN);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateNoByteOrder() {
-        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[] {2, 2}, 7, 5, null, null);
+        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[] {2, 2}, 7, 5, null);
     }
 
     // TODO: The expected values seems bogus...
@@ -81,11 +82,11 @@ public class YCbCr16UpsamplerStreamTest {
         byte[] bytes = new byte[shorts.length * 2];
         ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(shorts);
 
-        InputStream stream = new YCbCr16UpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 8, null, ByteOrder.LITTLE_ENDIAN);
+        InputStream stream = new YCbCr16UpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 8, ByteOrder.LITTLE_ENDIAN);
 
         short[] expected = new short[] {
-                0, -30864, 0, 0, -30863, 0, 0, -30966, 0, 0, -30965, 0, 0, -30870, 0, 0, -30869, 0, 0, -30815, 0, 0, -30761, 0,
-                0, -30862, 0, 0, -30861, 0, 0, -30931, 0, 0, -30877, 0, 0, -30868, 0, 0, -30867, 0, 0, -30858, 0, 0, -30858, 0
+                1, 5, 6, 2, 5, 6, 7, 108, 109, 8, 108, 109, 110, 114, 115, 111, 114, 115, 43, 0, 0, 97, 0, 0,
+                3, 5, 6, 4, 5, 6, 42, 108, 109, 96, 108, 109, 112, 114, 115, 113, 114, 115, 0, 0, 0, 0, 0, 0
         };
         short[] upsampled = new short[expected.length];
 
@@ -107,10 +108,10 @@ public class YCbCr16UpsamplerStreamTest {
 
         byte[] bytes = new byte[shorts.length * 2];
         ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).asShortBuffer().put(shorts);
-        InputStream stream = new YCbCr16UpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 1}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null, ByteOrder.BIG_ENDIAN);
+        InputStream stream = new YCbCr16UpsamplerStream(new ByteArrayInputStream(bytes), new int[] {2, 1}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, ByteOrder.BIG_ENDIAN);
 
         short[] expected = new short[] {
-                0, -30861, 0, 0, -30860, 0, 0, -30923, 0, 0, -30869, 0, 0, -30816, 0, 0, -30815, 0, 0, -30868, 0, 0, -30922, 0
+                1, 3, 4, 2, 3, 4, 42, 77, 112, 96, 77, 112, 113, 115, 43, 114, 115, 43, 97, 77, 112, 43, 77, 112
         };
         short[] upsampled = new short[expected.length];
 
@@ -132,10 +133,10 @@ public class YCbCr16UpsamplerStreamTest {
 
         byte[] bytes = new byte[shorts.length * 2];
         ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN).asShortBuffer().put(shorts);
-        InputStream stream = new YCbCr16UpsamplerStream(new ByteArrayInputStream(bytes), new int[] {1, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, null, ByteOrder.BIG_ENDIAN);
+        InputStream stream = new YCbCr16UpsamplerStream(new ByteArrayInputStream(bytes), new int[] {1, 2}, TIFFExtension.YCBCR_POSITIONING_CENTERED, 4, ByteOrder.BIG_ENDIAN);
 
         short[] expected = new short[] {
-                0, -30861, 0, 0, -30923, 0, 0, -30816, 0, 0, -30761, 0, 0, -30860, 0, 0, -30869, 0, 0, -30815, 0, 0, -30815, 0
+                1, 3, 4, 42, 77, 112, 113, 115, 43, 97, 0, 0, 2, 3, 4, 96, 77, 112, 114, 115, 43, 43, 0, 0
         };
         short[] upsampled = new short[expected.length];
 

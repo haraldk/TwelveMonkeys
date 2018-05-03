@@ -28,8 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 
 import javax.imageio.ImageReader;
@@ -41,6 +40,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Locale;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+
 /**
  * ThumbsDBImageReaderSpi
  * <p/>
@@ -48,36 +49,21 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ThumbsDBImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
+public final class ThumbsDBImageReaderSpi extends ImageReaderSpiBase {
     private ImageReaderSpi jpegProvider;
 
     /**
      * Creates a {@code ThumbsDBImageReaderSpi}.
      */
     public ThumbsDBImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(ThumbsDBImageReaderSpi.class));
-    }
-
-    private ThumbsDBImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"thumbs", "THUMBS", "Thumbs DB"},
-                new String[]{"db"},
-                new String[]{"image/x-thumbs-db", "application/octet-stream"}, // TODO: Check IANA et al...
-                "com.twelvemonkeys.imageio.plugins.thumbsdb.ThumbsDBImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new ThumbsDBProviderInfo());
     }
 
     public boolean canDecodeInput(Object source) throws IOException {
         return source instanceof ImageInputStream && canDecode((ImageInputStream) source);
     }
 
-    public boolean canDecode(ImageInputStream pInput) throws IOException {
+    boolean canDecode(final ImageInputStream pInput) throws IOException {
         maybeInitJPEGProvider();
         // If this is a OLE 2 CompoundDocument, we could try...
         // TODO: How do we know it's thumbs.db format (structure), without reading quite a lot?
@@ -91,32 +77,21 @@ public class ThumbsDBImageReaderSpi extends ImageReaderSpi {
     private void maybeInitJPEGProvider() {
         // NOTE: Can't do this from constructor, as ImageIO itself is not initialized yet,
         // and the lookup below will produce a NPE..
-
-        // TODO: A better approach...
-        //       - Could have a list with known working JPEG decoders?
-        //       - System property?
-        //       - Class path lookup of properties file with reader?
-        // This way we could deregister immediately
-
         if (jpegProvider == null) {
-            ImageReaderSpi provider = null;
-            try {
-                Iterator<ImageReaderSpi> providers = getJPEGProviders();
+            // Prefer the one we know
+            ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
 
-                while (providers.hasNext()) {
-                    provider = providers.next();
-
-                    // Prefer the one we know
-                    if ("Sun Microsystems, Inc.".equals(provider.getVendorName())) {
-                        break;
-                    }
+            if (provider == null) {
+                try {
+                    provider = getJPEGProviders().next();
+                }
+                catch (Exception ignore) {
+                    // It's pretty safe to assume there's always a JPEG reader out there
+                    // In any case, we deregister the provider if there isn't one
+                    IIORegistry.getDefaultInstance().deregisterServiceProvider(this, ImageReaderSpi.class);
                 }
             }
-            catch (Exception ignore) {
-                // It's pretty safe to assume there's always a JPEG reader out there
-                // In any case, we deregister the provider if there isn't one
-                IIORegistry.getDefaultInstance().deregisterServiceProvider(this, ImageReaderSpi.class);
-            }
+
             jpegProvider = provider;
         }
     }

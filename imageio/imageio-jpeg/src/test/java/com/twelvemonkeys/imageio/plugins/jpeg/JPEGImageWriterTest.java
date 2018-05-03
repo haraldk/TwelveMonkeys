@@ -28,16 +28,34 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTestCase;
+import org.junit.Test;
+import org.w3c.dom.NodeList;
 
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * JPEGImageWriterTest
@@ -51,7 +69,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
     private static final JPEGImageWriterSpi SPI = new JPEGImageWriterSpi(lookupDelegateProvider());
 
     private static ImageWriterSpi lookupDelegateProvider() {
-        return JPEGImageWriterSpi.lookupDelegateProvider(IIORegistry.getDefaultInstance());
+        return IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi", ImageWriterSpi.class);
     }
 
     @Override
@@ -75,4 +93,85 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTestCase {
                 new BufferedImage(32, 20, BufferedImage.TYPE_BYTE_GRAY)
         );
     }
+
+    @Test
+    public void testReaderForWriter() {
+        ImageWriter writer = createImageWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+        assertNotNull(reader);
+        assertEquals(writer.getClass().getPackage(), reader.getClass().getPackage());
+    }
+
+    private ByteArrayOutputStream transcode(final ImageReader reader, final URL resource, final ImageWriter writer, int outCSType) throws IOException {
+        try (ImageInputStream input = ImageIO.createImageInputStream(resource)) {
+            reader.setInput(input);
+            ImageTypeSpecifier specifier = null;
+
+            Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
+            while (types.hasNext()) {
+                ImageTypeSpecifier type = types.next();
+
+                if (type.getColorModel().getColorSpace().getType() == outCSType) {
+                    specifier = type;
+                    break;
+                }
+            }
+
+            // Read image with requested color space
+            ImageReadParam readParam = reader.getDefaultReadParam();
+            readParam.setSourceRegion(new Rectangle(Math.min(100, reader.getWidth(0)), Math.min(100, reader.getHeight(0))));
+            readParam.setDestinationType(specifier);
+            IIOImage image = reader.readAll(0, readParam);
+
+            // Write it back
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(1024);
+            try (ImageOutputStream output = new MemoryCacheImageOutputStream(bytes)) {
+                writer.setOutput(output);
+                ImageWriteParam writeParam = writer.getDefaultWriteParam();
+                writeParam.setDestinationType(specifier);
+                writer.write(null, image, writeParam);
+
+                return bytes;
+            }
+        }
+    }
+
+    @Test
+    public void testTranscodeWithMetadataRGBtoRGB() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"), writer, ColorSpace.TYPE_RGB);
+
+        // TODO: Validate that correct warnings are emitted (if any are needed?)
+
+        reader.reset();
+        reader.setInput(new ByteArrayImageInputStream(stream.toByteArray()));
+        BufferedImage image = reader.read(0);
+        assertNotNull(image);
+    }
+
+    @Test
+    public void testTranscodeWithMetadataCMYKtoCMYK() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), writer, ColorSpace.TYPE_CMYK);
+
+        reader.reset();
+        reader.setInput(new ByteArrayImageInputStream(stream.toByteArray()));
+
+        BufferedImage image = reader.read(0);
+        assertNotNull(image);
+        assertEquals(100, image.getWidth());
+        assertEquals(100, image.getHeight());
+
+        IIOMetadata metadata = reader.getImageMetadata(0);
+        IIOMetadataNode standard = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList colorSpaceType = standard.getElementsByTagName("ColorSpaceType");
+        assertEquals(1, colorSpaceType.getLength());
+        assertEquals("CMYK", ((IIOMetadataNode) colorSpaceType.item(0)).getAttribute("name"));
+    }
+
+    // TODO: YCCK
 }

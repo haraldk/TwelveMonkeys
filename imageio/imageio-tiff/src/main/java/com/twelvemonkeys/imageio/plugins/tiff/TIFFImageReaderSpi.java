@@ -28,9 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
@@ -46,34 +45,12 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageReaderSpi.java,v 1.0 08.05.12 15:14 haraldk Exp$
  */
-public class TIFFImageReaderSpi extends ImageReaderSpi {
+public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
     /**
      * Creates a {@code TIFFImageReaderSpi}.
      */
     public TIFFImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(TIFFImageReaderSpi.class));
-    }
-
-    private TIFFImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{"tiff", "TIFF"},
-                new String[]{"tif", "tiff"},
-                new String[]{
-                        "image/tiff", "image/x-tiff"
-                },
-                "com.twelvemkonkeys.imageio.plugins.tiff.TIFFImageReader",
-                new Class[] {ImageInputStream.class},
-//                new String[]{"com.twelvemkonkeys.imageio.plugins.tif.TIFFImageWriterSpi"},
-                null,
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
+        super(new TIFFProviderInfo());
     }
 
     @SuppressWarnings("unchecked")
@@ -94,6 +71,10 @@ public class TIFFImageReaderSpi extends ImageReaderSpi {
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
+        return canDecodeAs(pSource, TIFF.TIFF_MAGIC);
+    }
+
+    static boolean canDecodeAs(final Object pSource, final int magic) throws IOException {
         if (!(pSource instanceof ImageInputStream)) {
             return false;
         }
@@ -118,11 +99,7 @@ public class TIFFImageReaderSpi extends ImageReaderSpi {
                     return false;
                 }
 
-                // TODO: BigTiff uses version 43 instead of TIFF's 42, and header is slightly different, see
-                // http://www.awaresystems.be/imaging/tiff/bigtiff.html
-                int magic = stream.readUnsignedShort();
-
-                return magic == TIFF.TIFF_MAGIC;
+                return stream.readUnsignedShort() == magic;
             }
             finally {
                 stream.setByteOrder(originalOrder);

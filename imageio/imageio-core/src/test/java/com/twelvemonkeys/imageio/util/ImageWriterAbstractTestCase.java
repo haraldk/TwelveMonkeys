@@ -63,6 +63,7 @@ public abstract class ImageWriterAbstractTestCase {
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected abstract ImageWriter createImageWriter();
@@ -120,23 +121,20 @@ public abstract class ImageWriterAbstractTestCase {
 
         for (RenderedImage testData : getTestData()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            ImageOutputStream stream = ImageIO.createImageOutputStream(buffer);
-            writer.setOutput(stream);
 
-            try {
+            try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+                writer.setOutput(stream);
                 writer.write(drawSomething((BufferedImage) testData));
             }
             catch (IOException e) {
                 fail(e.getMessage());
-            }
-            finally {
-                stream.close(); // Force data to be written
             }
 
             assertTrue("No image data written", buffer.size() > 0);
         }
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testWriteNull() throws IOException {
         ImageWriter writer = createImageWriter();

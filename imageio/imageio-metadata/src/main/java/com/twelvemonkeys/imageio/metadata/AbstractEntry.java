@@ -174,8 +174,55 @@ public abstract class AbstractEntry implements Entry {
         AbstractEntry other = (AbstractEntry) pOther;
         
         return identifier.equals(other.identifier) && (
-                value == null && other.value == null || value != null && value.equals(other.value)
+                value == null && other.value == null || value != null && valueEquals(other)
         );
+    }
+
+    private boolean valueEquals(final AbstractEntry other) {
+        return value.getClass().isArray() ? arrayEquals(value, other.value) : value.equals(other.value);
+    }
+
+    static boolean arrayEquals(final Object thisArray, final Object otherArray) {
+        // TODO: This is likely a utility method, and should be extracted
+        if (thisArray == otherArray) {
+            return true;
+        }
+        if (otherArray == null  || thisArray == null || thisArray.getClass() != otherArray.getClass()) {
+            return false;
+        }
+
+        Class<?> componentType = thisArray.getClass().getComponentType();
+
+        if (componentType.isPrimitive()) {
+            if (thisArray instanceof byte[]) {
+                return Arrays.equals((byte[]) thisArray, (byte[]) otherArray);
+            }
+            if (thisArray instanceof char[]) {
+                return Arrays.equals((char[]) thisArray, (char[]) otherArray);
+            }
+            if (thisArray instanceof short[]) {
+                return Arrays.equals((short[]) thisArray, (short[]) otherArray);
+            }
+            if (thisArray instanceof int[]) {
+                return Arrays.equals((int[]) thisArray, (int[]) otherArray);
+            }
+            if (thisArray instanceof long[]) {
+                return Arrays.equals((long[]) thisArray, (long[]) otherArray);
+            }
+            if (thisArray instanceof boolean[]) {
+                return Arrays.equals((boolean[]) thisArray, (boolean[]) otherArray);
+            }
+            if (thisArray instanceof float[]) {
+                return Arrays.equals((float[]) thisArray, (float[]) otherArray);
+            }
+            if (thisArray instanceof double[]) {
+                return Arrays.equals((double[]) thisArray, (double[]) otherArray);
+            }
+
+            throw new AssertionError("Unsupported type:" + componentType);
+        }
+
+        return Arrays.equals((Object[]) thisArray, (Object[]) otherArray);
     }
 
     @Override

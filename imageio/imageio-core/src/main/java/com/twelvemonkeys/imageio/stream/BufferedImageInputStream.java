@@ -2,14 +2,16 @@ package com.twelvemonkeys.imageio.stream;
 
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * A buffered {@code ImageInputStream}.
- * Experimental - seems to be effective for {@link javax.imageio.stream.FileImageInputStream} 
+ * Experimental - seems to be effective for {@link javax.imageio.stream.FileImageInputStream}
  * and {@link javax.imageio.stream.FileCacheImageInputStream} when doing a lot of single-byte reads
  * (or short byte-array reads) on OS X at least.
  * Code that uses the {@code readFully} methods are not affected by the issue.
@@ -21,11 +23,12 @@ import static com.twelvemonkeys.lang.Validate.notNull;
 // TODO: Create a provider for this (wrapping the FileIIS and FileCacheIIS classes), and disable the Sun built-in spis?
 // TODO: Test on other platforms, might be just an OS X issue
 public final class BufferedImageInputStream extends ImageInputStreamImpl implements ImageInputStream {
-   static final int DEFAULT_BUFFER_SIZE = 8192;
+    static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private ImageInputStream stream;
 
     private ByteBuffer buffer;
+    private ByteBuffer integralCache = ByteBuffer.allocate(8);
 
     public BufferedImageInputStream(final ImageInputStream pStream) throws IOException {
         this(pStream, DEFAULT_BUFFER_SIZE);
@@ -44,13 +47,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         int length = stream.read(buffer.array(), 0, buffer.capacity());
 
         if (length >= 0) {
-            try {
-                buffer.position(length);
-            }
-            catch (IllegalArgumentException e) {
-                System.err.println("length: " + length);
-                throw e;
-            }
+            buffer.position(length);
             buffer.flip();
         }
         else {
@@ -58,9 +55,16 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         }
     }
 
+    @Override
+    public void setByteOrder(ByteOrder byteOrder) {
+        super.setByteOrder(byteOrder);
+        integralCache.order(byteOrder);
+    }
 
     @Override
     public int read() throws IOException {
+        checkClosed();
+
         if (!buffer.hasRemaining()) {
             fillBuffer();
         }
@@ -77,10 +81,11 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     @Override
     public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
+        checkClosed();
         bitOffset = 0;
 
         if (!buffer.hasRemaining()) {
-            // Bypass cache if cache is empty for reads longer than buffer
+            // Bypass buffer if buffer is empty for reads longer than buffer
             if (pLength >= buffer.capacity()) {
                 return readDirect(pBuffer, pOffset, pLength);
             }
@@ -93,8 +98,9 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     }
 
     private int readDirect(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
-        // TODO: Figure out why reading more than the buffer length causes alignment issues...
-        int read = stream.read(pBuffer, pOffset, Math.min(buffer.capacity(), pLength));
+        // Invalidate the buffer, as its contents is no longer in sync with the stream's position.
+        buffer.limit(0);
+        int read = stream.read(pBuffer, pOffset, pLength);
 
         if (read > 0) {
             streamPos += read;
@@ -102,7 +108,6 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
         return read;
     }
-
 
     private int readBuffered(final byte[] pBuffer, final int pOffset, final int pLength) {
         if (!buffer.hasRemaining()) {
@@ -116,7 +121,6 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
             int position = buffer.position();
             System.arraycopy(buffer.array(), position, pBuffer, pOffset, length);
             buffer.position(position + length);
-
         }
 
         streamPos += length;
@@ -124,16 +128,152 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         return length;
     }
 
+    // Need to override the readShort(), readInt() and readLong() methods,
+    // because the implementations in ImageInputStreamImpl expects the
+    // read(byte[], int, int) to always read the expected number of bytes,
+    // causing uninitialized values, alignment issues and EOFExceptions at
+    // random places...
+    // Notes:
+    // * readUnsignedXx() is covered by their signed counterparts
+    // * readChar() is covered by readShort()
+    // * readFloat() and readDouble() is covered by readInt() and readLong()
+    //   respectively.
+    // * readLong() may be covered by two readInt()s, we'll override to be safe
+
+    @Override
+    public short readShort() throws IOException {
+        readFully(integralCache.array(), 0, 2);
+
+        return integralCache.getShort(0);
+    }
+
+    @Override
+    public int readInt() throws IOException {
+        readFully(integralCache.array(), 0, 4);
+
+        return integralCache.getInt(0);
+    }
+
+    @Override
+    public long readLong() throws IOException {
+        readFully(integralCache.array(), 0, 8);
+
+        return integralCache.getLong(0);
+    }
+
+    @Override
+    public int readBit() throws IOException {
+        checkClosed();
+
+        if (!buffer.hasRemaining()) {
+            fillBuffer();
+
+            if (!buffer.hasRemaining()) {
+                throw new EOFException();
+            }
+        }
+
+        // Compute final bit offset before we call read() and seek()
+        int newBitOffset = (this.bitOffset + 1) & 0x7;
+
+        int val = buffer.get() & 0xff;
+
+        if (newBitOffset != 0) {
+            // Move byte position back if in the middle of a byte
+            buffer.position(buffer.position() - 1);
+
+            // Shift the bit to be read to the rightmost position
+            val >>= 8 - newBitOffset;
+        }
+        else {
+            streamPos++;
+        }
+
+        this.bitOffset = newBitOffset;
+
+        return val & 0x1;
+    }
+
+    @Override
+    public long readBits(int numBits) throws IOException {
+        checkClosed();
+
+        if (numBits < 0 || numBits > 64) {
+            throw new IllegalArgumentException();
+        }
+        if (numBits == 0) {
+            return 0L;
+        }
+
+        // Have to read additional bits on the left equal to the bit offset
+        int bitsToRead = numBits + bitOffset;
+
+        // Compute final bit offset before we call read() and seek()
+        int newBitOffset = (this.bitOffset + numBits) & 0x7;
+
+        // Read a byte at a time, accumulate
+        long accum = 0L;
+        while (bitsToRead > 0) {
+            if (!buffer.hasRemaining()) {
+                fillBuffer();
+
+                if (!buffer.hasRemaining()) {
+                    throw new EOFException();
+                }
+            }
+
+            int val = buffer.get() & 0xff;
+
+            accum <<= 8;
+            accum |= val;
+            bitsToRead -= 8;
+        }
+
+        // Move byte position back if in the middle of a byte
+        if (newBitOffset != 0) {
+            buffer.position(buffer.position() - 1);
+        }
+        else {
+            streamPos++;
+        }
+
+        this.bitOffset = newBitOffset;
+
+        // Shift away unwanted bits on the right.
+        accum >>>= (-bitsToRead); // Negative of bitsToRead == extra bits read
+
+        // Mask out unwanted bits on the left
+        accum &= (-1L >>> (64 - numBits));
+
+        return accum;
+    }
+
     @Override
     public void seek(long pPosition) throws IOException {
-        // TODO: Could probably be optimized to not invalidate buffer if new position is within current buffer
-        stream.seek(pPosition);
-        buffer.limit(0); // Will invalidate buffer
-        streamPos = stream.getStreamPosition();
+        checkClosed();
+        bitOffset = 0;
+
+        if (streamPos == pPosition) {
+            return;
+        }
+
+        // Optimized to not invalidate buffer if new position is within current buffer
+        long newBufferPos = buffer.position() + pPosition - streamPos;
+        if (newBufferPos >= 0 && newBufferPos <= buffer.limit()) {
+            buffer.position((int) newBufferPos);
+        }
+        else {
+            // Will invalidate buffer
+            buffer.limit(0);
+            stream.seek(pPosition);
+        }
+
+        streamPos = pPosition;
     }
 
     @Override
     public void flushBefore(long pos) throws IOException {
+        checkClosed();
         stream.flushBefore(pos);
     }
 

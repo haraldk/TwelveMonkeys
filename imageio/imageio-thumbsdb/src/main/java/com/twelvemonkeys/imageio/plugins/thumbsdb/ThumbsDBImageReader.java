@@ -62,7 +62,7 @@ import java.util.SortedSet;
  * @see com.twelvemonkeys.io.ole2.CompoundDocument
  * @see <a href="http://en.wikipedia.org/wiki/Thumbs.db>Wikipedia: Thumbs.db</a>
  */
-public class ThumbsDBImageReader extends ImageReaderBase {
+public final class ThumbsDBImageReader extends ImageReaderBase {
     private static final int THUMBNAIL_OFFSET = 12;
     private Entry root;
     private Catalog catalog;

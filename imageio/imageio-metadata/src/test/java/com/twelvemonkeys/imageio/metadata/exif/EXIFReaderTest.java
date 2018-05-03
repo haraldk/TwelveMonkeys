@@ -30,13 +30,14 @@ package com.twelvemonkeys.imageio.metadata.exif;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -50,6 +51,7 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: EXIFReaderTest.java,v 1.0 23.12.11 13:50 haraldk Exp$
  */
+@SuppressWarnings("deprecation")
 public class EXIFReaderTest extends MetadataReaderAbstractTest {
     @Override
     protected InputStream getData() throws IOException {
@@ -149,20 +151,6 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
     }
 
     @Test
-    public void testReadBadDataRationalZeroDenominator() throws IOException {
-        // This image seems to contain bad Exif. But as other tools are able to read, so should we..
-        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-rgb-thumbnail-bad-exif-kodak-dc210.jpg"));
-        stream.seek(12);
-        Directory directory = createReader().read(new SubImageInputStream(stream, 21674));
-
-        // Special case: Rational with zero-denominator inside EXIF data
-        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
-        Entry entry = exif.getEntryById(EXIF.TAG_COMPRESSED_BITS_PER_PIXEL);
-        assertNotNull(entry);
-        assertEquals(Rational.NaN, entry.getValue());
-    }
-
-    @Test
     public void testReadBadDirectoryCount() throws IOException {
         // This image seems to contain bad Exif. But as other tools are able to read, so should we..
         ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-bad-directory-entry-count.jpg"));
@@ -189,5 +177,124 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
         assertNotNull(exif);
         assertEquals(0, exif.size()); // EXIFTool reports "Warning: Bad ExifIFD directory"
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirR98() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-R98.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 1360));
+        assertEquals(17, directory.size());
+        assertEquals(2, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(23, exif.size());
+
+        // The interop IFD with two values
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(2, interop.size());
+
+        assertNotNull(interop.getEntryById(1)); // InteropIndex
+        assertEquals("ASCII", interop.getEntryById(1).getTypeName());
+        assertEquals("R98", interop.getEntryById(1).getValue());  // Known values: R98, THM or R03
+
+        assertNotNull(interop.getEntryById(2)); // InteropVersion
+        assertEquals("UNDEFINED", interop.getEntryById(2).getTypeName());
+        assertArrayEquals(new byte[] {'0', '1', '0', '0'}, (byte[]) interop.getEntryById(2).getValue());
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirEmpty() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-empty.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 1360));
+        assertEquals(11, directory.size());
+        assertEquals(1, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(24, exif.size());
+
+        // The interop IFD is empty (entry count is 0)
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(0, interop.size());
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirEOF() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-eof.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 236));
+        assertEquals(8, directory.size());
+        assertEquals(1, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(5, exif.size());
+
+        // The interop IFD isn't there (offset points to outside the TIFF structure)...
+        // Have double-checked using ExifTool, which says "Warning : Bad InteropOffset SubDirectory start"
+        Object interop = exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(240L, interop);
+    }
+
+    @Test
+    public void testReadExifJPEGWithInteropSubDirBad() throws IOException {
+        ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-interop-subdir-bad.jpg"));
+        stream.seek(30);
+
+        CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 12185));
+        assertEquals(16, directory.size());
+        assertEquals(2, directory.directoryCount());
+
+        Directory exif = (Directory) directory.getEntryById(TIFF.TAG_EXIF_IFD).getValue();
+        assertNotNull(exif);
+        assertEquals(26, exif.size());
+
+        // JPEG starts at offset 1666 and length 10519, interop IFD points to offset 1900...
+        // Have double-checked using ExifTool, which says "Warning : Bad InteropIFD directory"
+        Directory interop = (Directory) exif.getEntryById(TIFF.TAG_INTEROP_IFD).getValue();
+        assertNotNull(interop);
+        assertEquals(0, interop.size());
+    }
+
+    @Test
+    public void testReadExifWithMissingEOFMarker() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/noeof.tif"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(15, directory.size());
+            assertEquals(1, directory.directoryCount());
+        }
+    }
+
+    @Test
+    public void testReadExifWithEmptyTag() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/emptyexiftag.tif"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(3, directory.directoryCount());
+        }
+    }
+
+    @Test
+    public void testReadValueBeyondEOF() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/value-beyond-eof.tif"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(1, directory.directoryCount());
+            assertEquals(5, directory.size());
+
+            assertEquals(1, directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION).getValue());
+            assertEquals(10, directory.getEntryById(TIFF.TAG_IMAGE_WIDTH).getValue());
+            assertEquals(10, directory.getEntryById(TIFF.TAG_IMAGE_HEIGHT).getValue());
+            assertEquals(42L, directory.getEntryById(32935).getValue());
+            // NOTE: Assumes current implementation, could possibly change in the future.
+            assertTrue(directory.getEntryById(32934).getValue() instanceof EOFException);
+        }
     }
 }

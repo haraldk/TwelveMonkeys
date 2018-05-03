@@ -4,11 +4,11 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.1-SNAPSHOT</version>
+        <version>3.4-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-icns</artifactId>
     <name>TwelveMonkeys :: ImageIO :: ICNS plugin</name>
-    <description>ImageIO plugin for Apple Icon Image (icns) format.</description>
+    <description>ImageIO plugin for Apple Icon Image (ICNS) format.</description>
 
     <dependencies>
         <dependency>
@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
-            <classifier>tests</classifier>
+            <type>test-jar</type>
         </dependency>
     </dependencies>
 </project>

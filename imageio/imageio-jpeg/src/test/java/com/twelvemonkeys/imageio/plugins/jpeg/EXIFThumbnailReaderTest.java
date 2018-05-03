@@ -29,10 +29,10 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -63,7 +63,7 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(segments);
         assertFalse(segments.isEmpty());
 
-        EXIFReader reader = new EXIFReader();
+        TIFFReader reader = new TIFFReader();
         InputStream data = segments.get(0).data();
         if (data.read() < 0) {
             throw new AssertionError("EOF!");
@@ -110,9 +110,9 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         createReader(listener, 42, 43, createStream("/jpeg/cmyk-sample-multiple-chunk-icc.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(42, 43);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(42, 43);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 
     @Test
@@ -122,8 +122,8 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         createReader(listener, 0, 99, createStream("/jpeg/exif-rgb-thumbnail-sony-d700.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(0, 99);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 }

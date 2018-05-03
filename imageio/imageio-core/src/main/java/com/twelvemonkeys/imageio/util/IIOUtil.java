@@ -1,7 +1,33 @@
+/*
+ * Copyright (c) 2009, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name "TwelveMonkeys" nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
 
 import javax.imageio.IIOParam;
 import javax.imageio.ImageIO;
@@ -128,28 +154,33 @@ public final class IIOUtil {
     }
 
     /**
-     * Creates a {@link ProviderInfo} instance for the given service provider.
+     * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
      *
-     * @param pProviderClass the provider class to get info for.
-     * @return the newly created {@link ProviderInfo}.
+     * @param registry the registry to unregister from.
+     * @param provider the provider to unregister.
+     * @param category the category to unregister from.
      */
-    public static ProviderInfo getProviderInfo(final Class<? extends IIOServiceProvider> pProviderClass) {
-        return new ProviderInfo(pProviderClass.getPackage());
+    public static <T> void deregisterProvider(final ServiceRegistry registry, final IIOServiceProvider provider, final Class<T> category) {
+        // http://www.ibm.com/developerworks/java/library/j-jtp04298.html
+        registry.deregisterServiceProvider(category.cast(provider), category);
     }
 
     /**
      * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
      *
-     * @param pRegistry the registry to unregister from
-     * @param pProvider the provider to unregister
-     * @param pCategory the category to unregister from
+     * @param registry the registry to lookup from.
+     * @param providerClassName name of the provider class.
+     * @param category provider category
      *
-     * @deprecated
+     * @return the provider instance, or {@code null}.
      */
-    public static <T> void deregisterProvider(final ServiceRegistry pRegistry, final IIOServiceProvider pProvider, final Class<T> pCategory) {
-        // http://www.ibm.com/developerworks/java/library/j-jtp04298.html
-        // TODO: Consider placing this method in a ImageReaderSpiBase class or similar
-        pRegistry.deregisterServiceProvider(pCategory.cast(pProvider), pCategory);
+    public static <T> T lookupProviderByName(final ServiceRegistry registry, final String providerClassName, Class<T> category) {
+        try {
+            return category.cast(registry.getServiceProviderByClass(Class.forName(providerClassName)));
+        }
+        catch (ClassNotFoundException ignore) {
+            return null;
+        }
     }
 
     /**
@@ -175,7 +206,7 @@ public final class IIOUtil {
     }
 
     private static String[] normalizeNames(final String[] names) {
-        SortedSet<String> normalizedNames = new TreeSet<String>();
+        SortedSet<String> normalizedNames = new TreeSet<>();
 
         for (String name : names) {
             normalizedNames.add(name.toUpperCase());

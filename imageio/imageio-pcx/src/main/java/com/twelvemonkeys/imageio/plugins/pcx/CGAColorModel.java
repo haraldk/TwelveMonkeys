@@ -56,52 +56,36 @@ final class CGAColorModel {
             // Configured palette
             byte byte3 = cgaMode[3];
 
-            System.err.printf("background: %d\n", background);
-            System.err.printf("cgaMode: %02x\n", (byte3 & 0xff));
-            System.err.printf("cgaMode: %d\n", (byte3 & 0x80) >> 7);
-            System.err.printf("cgaMode: %d\n", (byte3 & 0x40) >> 6);
-            System.err.printf("cgaMode: %d\n", (byte3 & 0x20) >> 5);
-
-            boolean colorBurstEnable = (byte3 & 0x80) == 0;
+            boolean colorBurstEnable = (byte3 & 0x80) != 0;
             boolean paletteValue = (byte3 & 0x40) != 0;
             boolean intensityValue = (byte3 & 0x20) != 0;
 
-            System.err.println("colorBurstEnable: " + colorBurstEnable);
-            System.err.println("paletteValue: " + paletteValue);
-            System.err.println("intensityValue: " + intensityValue);
+            if (PCXImageReader.DEBUG) {
+                System.err.println("colorBurstEnable: " + colorBurstEnable);
+                System.err.println("paletteValue: " + paletteValue);
+                System.err.println("intensityValue: " + intensityValue);
+            }
 
             // Set up the fixed part of the palette
-            if (colorBurstEnable) {
-                if (paletteValue) {
-                    if (intensityValue) {
-                        cmap[1] = CGA_PALETTE[11];
-                        cmap[2] = CGA_PALETTE[13];
-                        cmap[3] = CGA_PALETTE[15];
-                    } else {
-                        cmap[1] = CGA_PALETTE[3];
-                        cmap[2] = CGA_PALETTE[5];
-                        cmap[3] = CGA_PALETTE[7];
-                    }
+            if (paletteValue) {
+                if (intensityValue) {
+                    cmap[1] = CGA_PALETTE[11];
+                    cmap[2] = colorBurstEnable ? CGA_PALETTE[13] : CGA_PALETTE[12];
+                    cmap[3] = CGA_PALETTE[15];
                 } else {
-                    if (intensityValue) {
-                        cmap[1] = CGA_PALETTE[10];
-                        cmap[2] = CGA_PALETTE[12];
-                        cmap[3] = CGA_PALETTE[14];
-                    } else {
-                        cmap[1] = CGA_PALETTE[2];
-                        cmap[2] = CGA_PALETTE[4];
-                        cmap[3] = CGA_PALETTE[6];
-                    }
+                    cmap[1] = CGA_PALETTE[3];
+                    cmap[2] = colorBurstEnable ? CGA_PALETTE[5] : CGA_PALETTE[4];
+                    cmap[3] = CGA_PALETTE[7];
                 }
             } else {
                 if (intensityValue) {
-                    cmap[1] = CGA_PALETTE[11];
+                    cmap[1] = CGA_PALETTE[10];
                     cmap[2] = CGA_PALETTE[12];
-                    cmap[3] = CGA_PALETTE[15];
+                    cmap[3] = CGA_PALETTE[14];
                 } else {
-                    cmap[1] = CGA_PALETTE[4];
-                    cmap[2] = CGA_PALETTE[5];
-                    cmap[3] = CGA_PALETTE[7];
+                    cmap[1] = CGA_PALETTE[2];
+                    cmap[2] = CGA_PALETTE[4];
+                    cmap[3] = CGA_PALETTE[6];
                 }
             }
         }

@@ -30,6 +30,11 @@ package com.twelvemonkeys.imageio.metadata.xmp;
 
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
+import org.junit.Test;
+
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * XMPEntryTest
@@ -42,5 +47,26 @@ public class XMPEntryTest extends EntryAbstractTest {
     @Override
     protected Entry createEntry(Object value) {
         return new XMPEntry(XMP.NS_XAP + ":foo", value);
+    }
+
+    @Test
+    public void testTypeNameMap() {
+        assertEquals("Map", createEntry(new HashMap<>()).getTypeName());
+        assertEquals("Map", createEntry(Collections.emptyMap()).getTypeName());
+        assertEquals("Map", createEntry(Collections.singletonMap("foo", "bar")).getTypeName());
+    }
+
+    @Test
+    public void testTypeNameSet() {
+        assertEquals("Set", createEntry(new HashSet<>()).getTypeName());
+        assertEquals("Set", createEntry(Collections.singleton("foo")).getTypeName());
+        assertEquals("Set", createEntry(Collections.unmodifiableSet(Collections.singleton("foo"))).getTypeName());
+    }
+
+    @Test
+    public void testTypeNameList() {
+        assertEquals("List", createEntry(new ArrayList<>()).getTypeName());
+        assertEquals("List", createEntry(Collections.emptyList()).getTypeName());
+        assertEquals("List", createEntry(Arrays.asList("foo", "bar")).getTypeName());
     }
 }

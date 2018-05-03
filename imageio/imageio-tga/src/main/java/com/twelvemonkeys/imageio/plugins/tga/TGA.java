@@ -29,6 +29,8 @@
 package com.twelvemonkeys.imageio.plugins.tga;
 
 interface TGA {
+    byte[] MAGIC = {'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', 0};
+
     /** Fixed header size: 18.*/
     int HEADER_SIZE = 18;
 

@@ -30,11 +30,14 @@ package com.twelvemonkeys.imageio.plugins.pcx;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.image.DataBuffer;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
 import java.util.Arrays;
 
 final class PCXHeader {
+    private static final IndexColorModel MONOCHROME = new IndexColorModel(1, 2, new int[] {0, -1}, 0, false, -1, DataBuffer.TYPE_BYTE);
+
     private int version;
     private int compression;
     private int bitsPerPixel;
@@ -69,14 +72,6 @@ final class PCXHeader {
         return height;
     }
 
-    public int getHdpi() {
-        return hdpi;
-    }
-
-    public int getVdpi() {
-        return vdpi;
-    }
-
     public int getChannels() {
         return channels;
     }
@@ -85,22 +80,63 @@ final class PCXHeader {
         return bytesPerLine;
     }
 
-    public int getPaletteInfo() {
-        return paletteInfo;
-    }
-
     public IndexColorModel getEGAPalette() {
-        // TODO: Figure out when/how to enable CGA palette... The test below isn't good enough.
-//        if (channels == 1 && (bitsPerPixel == 1  || bitsPerPixel == 2)) {
-//            return CGAColorModel.create(palette, bitsPerPixel);
-//        }
+        // Test for CGA modes
+        if (isCGAVideoMode4() || isCGAVideoMode5() || isCGAVideoMode6()) {
+            return CGAColorModel.create(palette, bitsPerPixel);
+        }
+
+        // Test if we should use a default B/W palette
+        if (bitsPerPixel == 1 && channels == 1 && (version < PCX.VERSION_2_X_WINDOWS || isDummyPalette())) {
+            return MONOCHROME;
+        }
 
         int bits = channels * bitsPerPixel;
         return new IndexColorModel(bits, Math.min(16, 1 << bits), palette, 0, false);
     }
 
+    private boolean isCGAVideoMode4() {
+        return bitsPerPixel * channels == 2 && width == 320 && hdpi == 320 && height == 200 && vdpi == 200;
+    }
+
+    private boolean isCGAVideoMode5() {
+        return bitsPerPixel == 1 && channels == 1 && width == 320 && hdpi == 320 && height == 200 && vdpi == 200;
+    }
+
+    private boolean isCGAVideoMode6() {
+        return bitsPerPixel == 1 && channels == 1 && width == 640 && hdpi == 640 && height == 200 && vdpi == 200;
+    }
+
+    private boolean isDummyPalette() {
+        return isEmptyPalette() || isPhotoshopPalette();
+    }
+
+    private boolean isEmptyPalette() {
+        // All black
+        for (int i = 0; i < 48; i++) {
+            if (palette[i] != 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isPhotoshopPalette() {
+        // Written by Photoshop: 15,15,15, 14,14,14, ... 0,0,0
+        for (int i = 0; i < 16; i++) {
+            int off = i * 3;
+
+            if (palette[off] != 15 - i || palette[off + 1] != 15 - i || palette[off + 2] != 15 - i) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override public String toString() {
-        return "PCXHeader{" +
+        return "PCXHeader[" +
                 "version=" + version +
                 ", compression=" + compression +
                 ", bitsPerPixel=" + bitsPerPixel +
@@ -114,7 +150,7 @@ final class PCXHeader {
                 ", hScreenSize=" + hScreenSize +
                 ", vScreenSize=" + vScreenSize +
                 ", palette=" + Arrays.toString(palette) +
-                '}';
+                ']';
     }
 
     public static PCXHeader read(final ImageInputStream imageInput) throws IOException {
@@ -142,7 +178,7 @@ final class PCXHeader {
 
         byte magic = imageInput.readByte();
         if (magic != PCX.MAGIC) {
-            throw new IIOException(String.format("Not a PCX image. Expected PCX magic %02x, read %02x", PCX.MAGIC, magic));
+            throw new IIOException(String.format("Not a PCX image. Expected PCX magic 0x%02x: 0x%02x", PCX.MAGIC, magic));
         }
 
         PCXHeader header = new PCXHeader();
@@ -165,10 +201,10 @@ final class PCXHeader {
 
         imageInput.readUnsignedByte(); // Reserved, should be 0
 
-        header.channels = imageInput.readUnsignedByte();
+        header.channels = imageInput.readUnsignedByte();      // Channels or Bit planes
         header.bytesPerLine = imageInput.readUnsignedShort(); // Must be even!
 
-        header.paletteInfo = imageInput.readUnsignedShort(); // 1 == Color/BW, 2 == Gray
+        header.paletteInfo = imageInput.readUnsignedShort() & 0x2; // 1 == Color/BW, 2 == Gray. Ignored
 
         header.hScreenSize = imageInput.readUnsignedShort();
         header.vScreenSize = imageInput.readUnsignedShort();

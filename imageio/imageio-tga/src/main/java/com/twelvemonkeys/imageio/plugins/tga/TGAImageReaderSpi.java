@@ -28,52 +28,25 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Locale;
 
-public final class TGAImageReaderSpi extends ImageReaderSpi {
+public final class TGAImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code TGAImageReaderSpi}.
      */
     public TGAImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(TGAImageReaderSpi.class));
+        super(new TGAProviderInfo());
     }
 
-    private TGAImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{
-                        "tga", "TGA",
-                        "targa", "TARGA"
-                },
-                new String[]{"tga", "tpic"},
-                new String[]{
-                        // No official IANA record exists
-                        "image/tga", "image/x-tga",
-                        "image/targa", "image/x-targa",
-                },
-                "com.twelvemkonkeys.imageio.plugins.tga.TGAImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
-    }
-
-    @Override public boolean canDecodeInput(final Object source) throws IOException {
+    @Override
+    public boolean canDecodeInput(final Object source) throws IOException {
         if (!(source instanceof ImageInputStream)) {
             return false;
         }
@@ -86,7 +59,7 @@ public final class TGAImageReaderSpi extends ImageReaderSpi {
         try {
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
-            // NOTE: The TGA format does not have a magic identifier, so this is guesswork...
+            // NOTE: The original TGA format does not have a magic identifier, so this is guesswork...
             // We'll try to match sane values, and hope no other files contains the same sequence.
 
             stream.readUnsignedByte();
@@ -116,11 +89,11 @@ public final class TGAImageReaderSpi extends ImageReaderSpi {
 
             int colorMapStart = stream.readUnsignedShort();
             int colorMapSize = stream.readUnsignedShort();
-            int colorMapDetph = stream.readUnsignedByte();
+            int colorMapDepth = stream.readUnsignedByte();
 
             if (colorMapSize == 0) {
                 // No color map, all 3 fields should be 0
-                if (colorMapStart!= 0 || colorMapDetph != 0) {
+                if (colorMapStart != 0 || colorMapDepth != 0) {
                     return false;
                 }
             }
@@ -134,7 +107,7 @@ public final class TGAImageReaderSpi extends ImageReaderSpi {
                 if (colorMapStart >= colorMapSize) {
                     return false;
                 }
-                if (colorMapDetph != 15 && colorMapDetph != 16 && colorMapDetph != 24 && colorMapDetph != 32) {
+                if (colorMapDepth != 15 && colorMapDepth != 16 && colorMapDepth != 24 && colorMapDepth != 32) {
                     return false;
                 }
             }
@@ -162,6 +135,7 @@ public final class TGAImageReaderSpi extends ImageReaderSpi {
 
             // We're pretty sure by now, but there can still be false positives...
             // For 2.0 format, we could skip to end, and read "TRUEVISION-XFILE.\0" but it would be too slow
+            // unless we are working with a local file (and the file may still be a valid original TGA without it).
             return true;
         }
         finally {

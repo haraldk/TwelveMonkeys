@@ -40,7 +40,7 @@ import static com.twelvemonkeys.lang.Validate.noNullElements;
  * @version $Id: AbstractDirectory.java,v 1.0 Nov 11, 2009 5:31:04 PM haraldk Exp$
  */
 public abstract class AbstractDirectory implements Directory {
-    private final List<Entry> entries = new ArrayList<Entry>();
+    private final List<Entry> entries = new ArrayList<>();
     private final List<Entry> unmodifiable = Collections.unmodifiableList(entries);
 
     protected AbstractDirectory(final Collection<? extends Entry> entries) {

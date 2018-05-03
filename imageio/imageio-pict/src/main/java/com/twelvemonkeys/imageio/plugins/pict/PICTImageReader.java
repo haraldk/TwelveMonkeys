@@ -61,9 +61,9 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.io.enc.PackBits16Decoder;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
 import javax.imageio.*;
@@ -99,23 +99,21 @@ import java.util.List;
  *        - Or methods like frameRect(pen, penmode, penwidth, rect), frameOval(pen, penmode, penwidth, rect), etc?
  *        - Or methods like frameShape(pen, penmode, penwidth, shape), paintShape(pen, penmode, shape) etc??
  *      QuickDrawContext that wraps an AWT Grpahics, and with methods macthing opcodes, seems like the best fit ATM
- * @todo Remove null-checks for Graphics, as null-graphics makes no sense. 
  * @todo Some MAJOR clean up
- * @todo Object orientation of different opcodes?
  * @todo As we now have Graphics2D with more options, support more of the format?
- * @todo Support for some other compression (packType 3) that seems to be common...
  */
-public class PICTImageReader extends ImageReaderBase {
+public final class PICTImageReader extends ImageReaderBase {
 
-    static boolean DEBUG = false;
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.pict.debug"));
 
-    // Private fields
     private QuickDrawContext context;
     private Rectangle frame;
 
+    // TODO: Do we need this?
     private int version;
 
     // Variables for storing draw status
+    // TODO: Get rid of these, or move to context
     private Point penPosition = new Point(0, 0);
     private Rectangle lastRectangle = new Rectangle(0, 0);
 
@@ -124,7 +122,7 @@ public class PICTImageReader extends ImageReaderBase {
     private double screenImageYRatio;
 
     // List of images created during image import
-    private List<BufferedImage> images = new ArrayList<BufferedImage>();
+    private List<BufferedImage> images = new ArrayList<>();
     private long imageStartStreamPos;
     protected int picSize;
 
@@ -179,7 +177,7 @@ public class PICTImageReader extends ImageReaderBase {
             pStream.seek(0l);
 
             // Skip first 512 bytes
-            skipNullHeader(pStream);
+            PICTImageReaderSpi.skipNullHeader(pStream);
             readPICTHeader0(pStream);
         }
     }
@@ -325,12 +323,6 @@ public class PICTImageReader extends ImageReaderBase {
         pStream.flushBefore(imageStartStreamPos);
     }
 
-    static void skipNullHeader(final ImageInputStream pStream) throws IOException {
-        // NOTE: Only skip if FILE FORMAT, not needed for Mac OS DnD
-        // Spec says "platofrm dependent", may not be all nulls..
-        pStream.skipBytes(PICT.PICT_NULL_HEADER_SIZE);
-    }
-
     /**
      * Reads the PICT stream.
      * The contents of the stream will be drawn onto the supplied graphics 
@@ -368,12 +360,9 @@ public class PICTImageReader extends ImageReaderBase {
         int opCode, dh, dv, dataLength;
         byte[] colorBuffer = new byte[3 * PICT.COLOR_COMP_SIZE];
 
-
         Pattern fill = QuickDraw.BLACK;
         Pattern bg;
         Pattern pen;
-        Paint foreground;
-        Paint background;
         Color hilight = Color.RED;
 
         Point origin, dh_dv;
@@ -440,39 +429,27 @@ public class PICTImageReader extends ImageReaderBase {
                         }
                         break;
 
-                    case PICT.OP_TX_FONT:// DIFFICULT TO KNOW THE FONT???
+                    case PICT.OP_TX_FONT:
                         // Get the data
-                        pStream.readFully(new byte[2], 0, 2);
+                        byte[] fontData = new byte[2];
+                        pStream.readFully(fontData, 0, 2);
                         // TODO: Font family id, 0 - System font, 1 - Application font.
                         // But how can we get these mappings?
                         if (DEBUG) {
-                            System.out.println("txFont");
+                            System.out.println("txFont: " + Arrays.toString(fontData));
                         }
                         break;
 
-                    case PICT.OP_TX_FACE:// SEE IF IT IS TO BE IMPLEMENTED FOR NOW?
+                    case PICT.OP_TX_FACE:
                         // Get the data
-                        byte txFace = pStream.readByte();
-
-                        //// Construct text face mask
-//                        currentFont = mGraphics.getFont();
-                        //int awt_face_mask = 0;
-                        //if ((txFace & (byte) QuickDraw.TX_BOLD_MASK) > 0) {
-                        //    awt_face_mask |= Font.BOLD;
-                        //}
-                        //if ((txFace & (byte) QuickDraw.TX_ITALIC_MASK) > 0) {
-                        //    awt_face_mask |= Font.ITALIC;
-                        //}
-                        //
-                        //// Set the font
-                        //mGraphics.setFont(new Font(currentFont.getName(), awt_face_mask, currentFont.getSize()));
-
+                        int txFace = pStream.readUnsignedByte();
+                        context.setTextFace(txFace);
                         if (DEBUG) {
                             System.out.println("txFace: " + txFace);
                         }
                         break;
 
-                    case PICT.OP_TX_MODE:// SEE IF IT IS TO BE IMPLEMENTED FOR NOW?
+                    case PICT.OP_TX_MODE:
                         // Get the data
                         byte[] mode_buf = new byte[2];
                         pStream.readFully(mode_buf, 0, mode_buf.length);
@@ -493,25 +470,25 @@ public class PICTImageReader extends ImageReaderBase {
                         // Get the two words
                         // NOTE: This is out of order, compared to other Points
                         Dimension pnsize = new Dimension(pStream.readUnsignedShort(), pStream.readUnsignedShort());
-                        context.setPenSize(pnsize);
                         if (DEBUG) {
                             System.out.println("pnsize: " + pnsize);
                         }
+                        context.setPenSize(pnsize);
+
                         break;
 
-                    case PICT.OP_PN_MODE:// TRY EMULATING WITH SETXORMODE ETC
+                    case PICT.OP_PN_MODE:
                         // Get the data
                         int mode = pStream.readUnsignedShort();
                         if (DEBUG) {
                             System.out.println("pnMode: " + mode);
                         }
-
                         context.setPenMode(mode);
 
                         break;
 
                     case PICT.OP_PN_PAT:
-                        context.setPenPattern(PICTUtil.readPattern(pStream));
+                        context.setPenPattern(PICTUtil.readPattern(pStream, context.getForeground(), context.getBackground()));
                         if (DEBUG) {
                             System.out.println("pnPat");
                         }
@@ -545,9 +522,6 @@ public class PICTImageReader extends ImageReaderBase {
                         y = getYPtCoord(pStream.readUnsignedShort());
                         x = getXPtCoord(pStream.readUnsignedShort());
                         origin = new Point(x, y);
-                        //if (mGraphics != null) {
-                        //    mGraphics.translate(origin.x, origin.y);
-                        //}
                         if (DEBUG) {
                             System.out.println("Origin: " + origin);
                         }
@@ -556,10 +530,6 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_TX_SIZE:// OK
                         // Get the text size
                         int tx_size = getYPtCoord(pStream.readUnsignedShort());
-                        //if (mGraphics != null) {
-                        //    currentFont = mGraphics.getFont();
-                        //    mGraphics.setFont(new Font(currentFont.getName(), currentFont.getStyle(), tx_size));
-                        //}
                         context.setTextSize(tx_size);
                         if (DEBUG) {
                             System.out.println("txSize: " + tx_size);
@@ -603,14 +573,23 @@ public class PICTImageReader extends ImageReaderBase {
                     case 0x0012: // BkPixPat
                         bg = PICTUtil.readColorPattern(pStream);
                         context.setBackgroundPattern(bg);
+                        if (DEBUG) {
+                            System.out.println("BkPixPat");
+                        }
                         break;
                     case 0x0013: // PnPixPat
                         pen = PICTUtil.readColorPattern(pStream);
-                        context.setBackgroundPattern(pen);
+                        context.setPenPattern(pen);
+                        if (DEBUG) {
+                            System.out.println("PnPixPat");
+                        }
                         break;
                     case 0x0014: // FillPixPat
                         fill = PICTUtil.readColorPattern(pStream);
-                        context.setBackgroundPattern(fill);
+                        context.setFillPattern(fill);
+                        if (DEBUG) {
+                            System.out.println("FillPixPat");
+                        }
                         break;
 
                     case PICT.OP_PN_LOC_H_FRAC:// TO BE DONE???
@@ -632,23 +611,22 @@ public class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_RGB_FG_COL:// OK
                         // Get the color
                         pStream.readFully(colorBuffer, 0, colorBuffer.length);
-                        foreground = new Color((colorBuffer[0] & 0xFF), (colorBuffer[2] & 0xFF), (colorBuffer[4] & 0xFF));
-                        //if (mGraphics != null) {
-                        //    mGraphics.setColor(foreground);
-                        //}
+                        Color foreground = new Color((colorBuffer[0] & 0xFF), (colorBuffer[2] & 0xFF), (colorBuffer[4] & 0xFF));
                         if (DEBUG) {
                             System.out.println("rgbFgColor: " + foreground);
                         }
+                        context.setForeground(foreground);
                         break;
 
                     case PICT.OP_RGB_BK_COL:// OK
                         // Get the color
                         pStream.readFully(colorBuffer, 0, colorBuffer.length);
-                        // TODO: The color might be 16 bit per component..
-                        background = new Color((colorBuffer[0] & 0xFF), (colorBuffer[2] & 0xFF), (colorBuffer[4] & 0xFF));
+                        // The color might be 16 bit per component..
+                        Color background = new Color(colorBuffer[0] & 0xFF, colorBuffer[2] & 0xFF, colorBuffer[4] & 0xFF);
                         if (DEBUG) {
                             System.out.println("rgbBgColor: " + background);
                         }
+                        context.setBackground(background);
                         break;
 
                     case PICT.OP_HILITE_MODE:
@@ -724,11 +702,12 @@ public class PICTImageReader extends ImageReaderBase {
                         x = getXPtCoord(pStream.readUnsignedShort());
                         origin = new Point(x, y);
 
-                        y = getYPtCoord(pStream.readByte());
                         x = getXPtCoord(pStream.readByte());
+                        y = getYPtCoord(pStream.readByte());
                         dh_dv = new Point(x, y);
 
                         // Move pen to new position, draw line if we have a graphics
+                        context.moveTo(origin);
                         penPosition.setLocation(origin.x + dh_dv.x, origin.y + dh_dv.y);
                         context.lineTo(penPosition);
 
@@ -739,8 +718,8 @@ public class PICTImageReader extends ImageReaderBase {
 
                     case PICT.OP_SHORT_LINE_FROM:// OK
                         // Get dh, dv
-                        y = getYPtCoord(pStream.readByte());
                         x = getXPtCoord(pStream.readByte());
+                        y = getYPtCoord(pStream.readByte());
 
                         // Draw line
                         context.line(x, y);
@@ -771,10 +750,6 @@ public class PICTImageReader extends ImageReaderBase {
                         penPosition = origin;
                         context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
-                        // TODO
-                        //if (mGraphics != null) {
-                        //    mGraphics.drawString(text, penPosition.x, penPosition.y);
-                        //}
                         context.drawString(text);
                         if (DEBUG) {
                             System.out.println("longText origin: " + penPosition + ", text:" + text);
@@ -787,10 +762,6 @@ public class PICTImageReader extends ImageReaderBase {
                         penPosition.translate(dh, 0);
                         context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
-                        // TODO
-//                        if (mGraphics != null) {
-//                            mGraphics.drawString(text, penPosition.x, penPosition.y);
-//                        }
                         context.drawString(text);
                         if (DEBUG) {
                             System.out.println("DHText dh: " + dh + ", text:" + text);
@@ -803,10 +774,6 @@ public class PICTImageReader extends ImageReaderBase {
                         penPosition.translate(0, dv);
                         context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
-                        // TODO
-                        //if (mGraphics != null) {
-                        //    mGraphics.drawString(text, penPosition.x, penPosition.y);
-                        //}
                         context.drawString(text);
                         if (DEBUG) {
                             System.out.println("DVText dv: " + dv + ", text:" + text);
@@ -820,10 +787,6 @@ public class PICTImageReader extends ImageReaderBase {
                         penPosition.translate(x, y);
                         context.moveTo(penPosition);
                         text = PICTUtil.readPascalString(pStream);
-                        // TODO
-                        //if (mGraphics != null) {
-                        //    mGraphics.drawString(text, penPosition.x, penPosition.y);
-                        //}
                         context.drawString(text);
                         if (DEBUG) {
                             System.out.println("DHDVText penPosition: " + penPosition + ", text:" + text);
@@ -836,25 +799,20 @@ public class PICTImageReader extends ImageReaderBase {
                         pStream.readShort();
 
                         // Get old font ID, ignored
-//                        pStream.readInt();
                         pStream.readUnsignedShort();
 
                         // Get font name and set the new font if we have one
-                        text = PICTUtil.readPascalString(pStream);
-                        // TODO
-                        //if (mGraphics != null) {
-                        //    mGraphics.setFont(Font.decode(text)
-                        //            .deriveFont(currentFont.getStyle(), currentFont.getSize()));
-                        //}
-                        context.drawString(text);
+                        String fontName = PICTUtil.readPascalString(pStream);
+                        context.setTextFont(fontName);
                         if (DEBUG) {
-                            System.out.println("fontName: \"" + text +"\"");
+                            System.out.println("fontName: \"" + fontName +"\"");
                         }
                         break;
 
-                    case PICT.OP_LINE_JUSTIFY:// TO BE DONE???
+                    case PICT.OP_LINE_JUSTIFY:// TODO
                         // Get data
-                        pStream.readFully(new byte[10], 0, 10);
+                        byte[] lineJustifyData = new byte[10];
+                        pStream.readFully(lineJustifyData, 0, lineJustifyData.length);
                         if (DEBUG) {
                             System.out.println("opLineJustify");
                         }
@@ -862,9 +820,10 @@ public class PICTImageReader extends ImageReaderBase {
 
                     case PICT.OP_GLYPH_STATE:// TODO: NOT SUPPORTED IN AWT GRAPHICS YET?
                         // Get data
-                        pStream.readFully(new byte[6], 0, 6);
+                        byte[] glyphState = new byte[6];
+                        pStream.readFully(glyphState, 0, glyphState.length);
                         if (DEBUG) {
-                            System.out.println("glyphState");
+                            System.out.println("glyphState: " + Arrays.toString(glyphState));
                         }
                         break;
 
@@ -1318,6 +1277,14 @@ public class PICTImageReader extends ImageReaderBase {
                         // Polygon treatments finished
                         break;
 
+                    case 0x7d:
+                    case 0x7e:
+                    case 0x7f:
+                        if (DEBUG) {
+                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                        }
+                        break;
+
                     case 0x75:
                     case 0x76:
                     case 0x77:
@@ -1429,83 +1396,18 @@ public class PICTImageReader extends ImageReaderBase {
                         // [5] For opcodes $0090 (BitsRect) and $0091 (BitsRgn), the data is unpacked. These
                         // opcodes can be used only when rowBytes is less than 8.
                         /*
-                           PixMap:     PixMap;     {pixel map}
+                           pixMap:     PixMap;     {pixel map}
                            ColorTable: ColorTable; {ColorTable record}
                            srcRect:    Rect;       {source rectangle}
                            dstRect:    Rect;       {destination rectangle}
                            mode:       Word;       {transfer mode (may include }
                                                    { new transfer modes)}
-                           PixData:    PixData;
-                         */
-
-                        int rowBytesRaw = pStream.readUnsignedShort();
-                        int rowBytes = rowBytesRaw & 0x3FFF;
-
-                        // TODO: Use rowBytes to determine size of PixMap/ColorTable?
-                        if ((rowBytesRaw & 0x8000) > 0) {
-                            // Do stuff...
-                        }
-
-                        // Get bounds rectangle. THIS IS NOT TO BE SCALED BY THE RESOLUTION! TODO: ?!
-                        bounds = new Rectangle();
-                        y = pStream.readUnsignedShort();
-                        x = pStream.readUnsignedShort();
-                        bounds.setLocation(x, y);
-
-                        y = pStream.readUnsignedShort();
-                        x = pStream.readUnsignedShort();
-                        bounds.setSize(x - bounds.x,
-                                        y - bounds.y);
-
-                        Rectangle srcRect = new Rectangle();
-                        readRectangle(pStream, srcRect);
-
-                        Rectangle dstRect = new Rectangle();
-                        readRectangle(pStream, dstRect);
-
-                        mode = pStream.readUnsignedShort();
-                        context.setPenMode(mode); // TODO: Or parameter?
-
-                        if (DEBUG) {
-                            System.out.print("bitsRect, rowBytes: " + rowBytes);
-                            if ((rowBytesRaw & 0x8000) > 0) {
-                                System.out.print(", it is a PixMap");
-                            }
-                            else {
-                                System.out.print(", it is a BitMap");
-                            }
-                            System.out.print(", bounds: " + bounds);
-                            System.out.print(", srcRect: " + srcRect);
-                            System.out.print(", dstRect: " + dstRect);
-                            System.out.print(", mode: " + mode);
-                            System.out.println();
-                        }
-
-                        BufferedImage image = new BufferedImage(bounds.width, bounds.height, BufferedImage.TYPE_BYTE_BINARY);
-                        byte[] data = ((DataBufferByte) image.getRaster().getDataBuffer()).getData();
-
-                        // Read pixel data
-                        int width = bounds.width / 8;
-                        for (int i = 0; i < bounds.height; i++) {
-                            pStream.readFully(data, i * width, width);
-                            pStream.skipBytes(rowBytes - width);
-                        }
-
-                        // Draw pixel data
-                        Rectangle rect = new Rectangle(srcRect);
-                        rect.translate(-bounds.x, -bounds.y);
-                        context.copyBits(image, rect, dstRect, mode, null);
-                        //mGraphics.drawImage(image,
-                        //                    dstRect.x,  dstRect.y,
-                        //                    dstRect.x + dstRect.width, dstRect.y + dstRect.height,
-                        //                    srcRect.x - bounds.x, srcRect.y - bounds.y,
-                        //                    srcRect.x - bounds.x + srcRect.width, srcRect.y - bounds.y + srcRect.height,
-                        //                    null);
-                        //
+                           pixData:    PixData;
+                        */
+                        readOpBits(pStream, false);
                         break;
 
                     case PICT.OP_BITS_RGN:
-                        // TODO: As OP_BITS_RECT but with clip
                         /*
                            pixMap:     PixMap;
                            colorTable: ColorTable;
@@ -1516,9 +1418,8 @@ public class PICTImageReader extends ImageReaderBase {
                            maskRgn:    Rgn;           {region for masking}
                            pixData:    PixData;
                          */
-                        if (DEBUG) {
-                            System.out.println("bitsRgn");
-                        }
+                        readOpBits(pStream, true);
+
                         break;
 
                     case 0x92:
@@ -1530,35 +1431,24 @@ public class PICTImageReader extends ImageReaderBase {
                         dataLength = pStream.readUnsignedShort();
                         pStream.readFully(new byte[dataLength], 0, dataLength);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.println(String.format("%s: 0x%04x - length: %d", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength));
                         }
                         break;
 
                     case PICT.OP_PACK_BITS_RECT:
-                        readOpPackBitsRect(pStream, bounds, pixmapCount++);
-                        if (DEBUG) {
-                            System.out.println("packBitsRect - TODO");
-                        }
+                        readOpPackBits(pStream, false, pixmapCount++);
                         break;
 
                     case PICT.OP_PACK_BITS_RGN:
-                        // TODO: As OP_PACK_BITS_RECT but with clip
-                        // TODO: Read/Skip data
-                        if (DEBUG) {
-                            System.out.println("packBitsRgn - TODO");
-                        }
+                        readOpPackBits(pStream, true, pixmapCount++);
                         break;
 
                     case PICT.OP_DIRECT_BITS_RECT:
-                        readOpDirectBitsRect(pStream, bounds, pixmapCount++);
+                        readOpDirectBits(pStream, false, pixmapCount++);
                         break;
 
                     case PICT.OP_DIRECT_BITS_RGN:
-                        // TODO: As OP_DIRECT_BITS_RECT but with clip
-                        // TODO: Read/Skip data
-                        if (DEBUG) {
-                            System.out.println("directBitsRgn - TODO");
-                        }
+                        readOpDirectBits(pStream, true, pixmapCount++);
                         break;
 
                     case 0x9C:
@@ -1574,27 +1464,25 @@ public class PICTImageReader extends ImageReaderBase {
                         break;
 
                     case PICT.OP_SHORT_COMMENT:// NOTHING TO DO, JUST JUMP OVER
-                        pStream.readFully(new byte[2], 0, 2);
+                        byte[] shortComment = new byte[2];
+                        pStream.readFully(shortComment, 0, 2);
                         if (DEBUG) {
-                            System.out.println("Short comment");
+                            System.out.println("Short comment: " + Arrays.toString(shortComment));
                         }
                         break;
 
                     case PICT.OP_LONG_COMMENT:// NOTHING TO DO, JUST JUMP OVER
-                        readLongComment(pStream);
-                        if (DEBUG) {
-                            System.out.println("Long comment");
-                        }
+                        /*byte[] longComment =*/ readLongComment(pStream);
+                        // TODO: Don't just skip...
+                        // https://developer.apple.com/legacy/library/documentation/mac/pdf/Imaging_With_QuickDraw/Appendix_B.pdf
+                        // Long comments can be used for PhotoShop IRBs (kind 498) or ICC profiles (224) and other meta data...
+//                        if (DEBUG) {
+//                            System.out.println("Long comment: " + Arrays.toString(longComment));
+//                        }
                         break;
 
                     case PICT.OP_END_OF_PICTURE:// OK
                         break;
-
-                        // WE DON'T CARE ABOUT CODES 0x100 to 0x2FE, even if it might be needed
-
-                        // WE DON'T CARE ABOUT CODES 0x300 to 0xBFF, even if it might be needed
-
-                        // WE DON'T CARE ABOUT CODES 0xC01 to 0x81FF, even if it might be needed
 
                     case PICT.OP_COMPRESSED_QUICKTIME:
                         // $8200: CompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
@@ -1610,25 +1498,16 @@ public class PICTImageReader extends ImageReaderBase {
                         // $8201: UncompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
                         // TODO: Read this as well, need test data
                         dataLength = pStream.readInt();
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
                         if (DEBUG) {
-                            System.out.println("unCompressedQuickTime");
+                            System.out.println(String.format("unCompressedQuickTime, length %d", dataLength));
                         }
-                        break;
-
-                    case 0xFFFF:// JUST JUMP OVER
-                        dataLength = pStream.readInt();
                         pStream.readFully(new byte[dataLength], 0, dataLength);
-                        if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x - length: %s", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength));
-                        }
                         break;
 
                     default:
                         // See: http://developer.apple.com/DOCUMENTATION/mac/QuickDraw/QuickDraw-461.html
-                        if (opCode >= 0x00a0 && opCode <= 0x00af) {
+                        if (opCode >= 0x00a2 && opCode <= 0x00af) {
                             dataLength = pStream.readUnsignedShort();
-                            pStream.readFully(new byte[dataLength], 0, dataLength);
                         }
                         else if (opCode >= 0x00b0 && opCode <= 0x00cf) {
                             // Zero-length
@@ -1636,13 +1515,11 @@ public class PICTImageReader extends ImageReaderBase {
                         }
                         else if (opCode >= 0x00d0 && opCode <= 0x00fe) {
                             dataLength = pStream.readInt();
-                            pStream.readFully(new byte[dataLength], 0, dataLength);
                         }
                         else if (opCode >= 0x0100 && opCode <= 0x7fff) {
                             // For opcodes $0100-$7FFF, the amount of data for
                             // opcode $nnXX = 2 times nn bytes.
-                            dataLength = ((opCode & 0xff00) >> 8) * 2;
-                            pStream.skipBytes(dataLength);  
+                            dataLength = (opCode & 0xff00) >> 7;
                         }
                         else if (opCode >= 0x8000 && opCode <= 0x80ff) {
                             // Zero-length
@@ -1650,7 +1527,9 @@ public class PICTImageReader extends ImageReaderBase {
                         }
                         else if (opCode >= 0x8100 && opCode <= 0x81ff) {
                             dataLength = pStream.readInt();
-                            pStream.readFully(new byte[dataLength], 0, dataLength);
+                        }
+                        else if (opCode == 0xffff) {
+                            dataLength = pStream.readInt();
                         }
                         else {
                             throw new IIOException(String.format("Found unknown opcode: 0x%04x", opCode));
@@ -1658,6 +1537,10 @@ public class PICTImageReader extends ImageReaderBase {
 
                         if (DEBUG) {
                             System.out.println(String.format("%s: 0x%04x - length: %s", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength));
+                        }
+
+                        if (dataLength != 0) {
+                            pStream.readFully(new byte[dataLength], 0, dataLength);
                         }
                 }
             }
@@ -1736,7 +1619,7 @@ public class PICTImageReader extends ImageReaderBase {
 
             pStream.seek(pos + dataLength); // Might be word-align mismatch here
 
-            // Skip "QuickTime? and a ... decompressor required" text
+            // Skip "QuickTime™ and a ... decompressor required" text
             // TODO: Verify that this is correct. It works with all my test data, but the algorithm is
             // reverse-engineered by looking at the input data and not from any spec I've seen...
             int penSizeMagic = pStream.readInt();
@@ -1766,24 +1649,16 @@ public class PICTImageReader extends ImageReaderBase {
     MatteRect       Rectangle for matte data                8
      */
 
-
-    private void readOpPackBitsRect(ImageInputStream pStream, Rectangle pBounds, int pPixmapCount) throws IOException {
-        if (DEBUG) {
-            System.out.println("packBitsRect");
-        }
-
-        // Skip PixMap pointer (always 0x000000FF);
-//        pStream.skipBytes(4);
-//        int pixmapPointer = pStream.readInt();
-//        System.out.println(String.format("%08d: 0x%08x", pStream.getStreamPosition(), pixmapPointer));
-
+    private void readOpPackBits(final ImageInputStream pStream, final boolean hasRegion, final int pPixmapCount) throws IOException {
         // Get rowBytes
         int rowBytesRaw = pStream.readUnsignedShort();
-//        System.out.println(String.format("%08d: 0x%04x", pStream.getStreamPosition(), rowBytesRaw));
-        int rowBytes = rowBytesRaw & 0x3FFF;
+        int rowBytes = rowBytesRaw & 0x7FFF;
+        boolean isPixMap = (rowBytesRaw & 0x8000) > 0;
+
         if (DEBUG) {
-            System.out.print("packBitsRect, rowBytes: " + rowBytes);
-            if ((rowBytesRaw & 0x8000) > 0) {
+            System.out.print(hasRegion ? "packBitsRgn" : "packBitsRect");
+            System.out.print(", rowBytes: " + rowBytes);
+            if (isPixMap) {
                 System.out.print(", it is a PixMap");
             }
             else {
@@ -1792,98 +1667,113 @@ public class PICTImageReader extends ImageReaderBase {
         }
 
         // Get bounds rectangle. THIS IS NOT TO BE SCALED BY THE RESOLUTION!
+        Rectangle bounds = new Rectangle();
         int y = pStream.readUnsignedShort();
         int x = pStream.readUnsignedShort();
-        pBounds.setLocation(x, y);
+        bounds.setLocation(x, y);
 
         y = pStream.readUnsignedShort();
         x = pStream.readUnsignedShort();
-        pBounds.setSize(x - pBounds.x, y - pBounds.y);
+        bounds.setSize(x - bounds.x, y - bounds.y);
         if (DEBUG) {
-            System.out.print(", bounds: " + pBounds);
+            System.out.print(", bounds: " + bounds);
         }
 
-        // Get PixMap record version number
-        int pmVersion = pStream.readUnsignedShort() & 0xFFFF;
-        if (DEBUG) {
-            System.out.print(", pmVersion: " + pmVersion);
-        }
-
-        // Get packing format
-        int packType = pStream.readUnsignedShort() & 0xFFFF;
-        if (DEBUG) {
-            System.out.print(", packType: " + packType);
-        }
-
-        // Get size of packed data (not used for v2)
-        int packSize = pStream.readInt();
-        if (DEBUG) {
-            System.out.println(", packSize: " + packSize);
-        }
-
-        // Get resolution info
-        double hRes = PICTUtil.readFixedPoint(pStream);
-        double vRes = PICTUtil.readFixedPoint(pStream);
-        if (DEBUG) {
-            System.out.print("hRes: " + hRes + ", vRes: " + vRes);
-        }
-
-        // Get pixel type
-        int pixelType = pStream.readUnsignedShort();
-        if (DEBUG) {
-            if (pixelType == 0) {
-                System.out.print(", indexed pixels");
-            }
-            else {
-                System.out.print(", RGBDirect");
-            }
-        }
-
-        // Get pixel size
-        int pixelSize = pStream.readUnsignedShort();
-        if (DEBUG) {
-            System.out.print(", pixelSize:" + pixelSize);
-        }
-
-        // Get pixel component count
-        int cmpCount = pStream.readUnsignedShort();
-        if (DEBUG) {
-            System.out.print(", cmpCount:" + cmpCount);
-        }
-
-        // Get pixel component size
-        int cmpSize = pStream.readUnsignedShort();
-        if (DEBUG) {
-            System.out.print(", cmpSize:" + cmpSize);
-        }
-
-        // planeBytes (ignored)
-        int planeBytes = pStream.readInt();
-        if (DEBUG) {
-            System.out.print(", planeBytes:" + planeBytes);
-        }
-
-        // Handle to ColorTable record, there should be none for direct
-        // bits so this should be 0, just skip
-        int clutId = pStream.readInt();
-        if (DEBUG) {
-            System.out.println(", clutId:" + clutId);
-        }
-
-        // Reserved
-        pStream.readInt();
-
-        // Color table
         ColorModel colorModel;
-        if (pixelType == 0) {
+        int cmpSize;
+
+        if (isPixMap) {
+            // Get PixMap record version number
+            int pmVersion = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", pmVersion: " + pmVersion);
+            }
+
+            // Get packing format
+            int packType = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", packType: " + packType);
+            }
+
+            // Get size of packed data (not used for v2)
+            int packSize = pStream.readInt();
+            if (DEBUG) {
+                System.out.println(", packSize: " + packSize);
+            }
+
+            // Get resolution info
+            double hRes = PICTUtil.readFixedPoint(pStream);
+            double vRes = PICTUtil.readFixedPoint(pStream);
+            if (DEBUG) {
+                System.out.print("hRes: " + hRes + ", vRes: " + vRes);
+            }
+
+            // Get pixel type
+            int pixelType = pStream.readUnsignedShort();
+            if (DEBUG) {
+                if (pixelType == 0) {
+                    System.out.print(", indexed pixels");
+                }
+                else {
+                    System.out.print(", RGBDirect");
+                }
+            }
+
+            // Get pixel size
+            int pixelSize = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", pixelSize:" + pixelSize);
+            }
+
+            // Get pixel component count
+            int cmpCount = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", cmpCount:" + cmpCount);
+            }
+
+            // Get pixel component size
+            cmpSize = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", cmpSize:" + cmpSize);
+            }
+
+            // planeBytes (ignored)
+            int planeBytes = pStream.readInt();
+            if (DEBUG) {
+                System.out.print(", planeBytes:" + planeBytes);
+            }
+
+            // Handle to ColorTable record
+            int clutId = pStream.readInt();
+            if (DEBUG) {
+                System.out.print(", clutId:" + clutId);
+            }
+
+            // Reserved
+            pStream.readInt();
+
+            // TODO: Seems to be packType 0 all the time?
+            // packType = 0 means default....
+
+            if (packType != 0) {
+                throw new IIOException("Unknown pack type: " + packType);
+            }
+            if (pixelType != 0) {
+                throw new IIOException("Unsupported pixel type: " + pixelType);
+            }
+
+            // Color table
             colorModel = PICTUtil.readColorTable(pStream, pixelSize);
         }
         else {
-            throw new IIOException("Unsupported pixel type: " + pixelType);
+            // Old style BitMap record
+            cmpSize = 1;
+            colorModel = QuickDraw.MONOCHROME;
         }
 
         // Get source rectangle. We DO NOT scale the coordinates by the
         // resolution info, since we are in pixmap coordinates here
+        // TODO: readReactangleNonScaled()
         Rectangle srcRect = new Rectangle();
         y = pStream.readUnsignedShort();
         x = pStream.readUnsignedShort();
@@ -1894,7 +1784,7 @@ public class PICTImageReader extends ImageReaderBase {
         srcRect.setSize(x - srcRect.x, y - srcRect.y);
 
         if (DEBUG) {
-            System.out.print("opPackBitsRect, srcRect:" + srcRect);
+            System.out.print(", srcRect:" + srcRect);
         }
 
         // TODO: FixMe...
@@ -1912,154 +1802,62 @@ public class PICTImageReader extends ImageReaderBase {
             System.out.print(", mode: " + transferMode);
         }
 
+        Rectangle regionBounds = new Rectangle();
+        Polygon region = hasRegion ? readRegion(pStream, regionBounds) : null;
+
+        if (DEBUG) {
+            System.out.println(hasRegion ? ", region: " + region : "" );
+        }
+
         // Set up pixel buffer for the RGB values
-
-        // TODO: Seems to be packType 0 all the time?
-        // packType = 0 means default....
-
-
-        // Read in the RGB arrays
-        byte[] dstBytes;
-        /*
-        if (packType == 1 || rowBytes < 8) {
-            // TODO: Verify this...
-            dstBytes = new byte[rowBytes];
-        }
-        else if (packType == 2) {
-            // TODO: Verify this...
-            dstBytes = new byte[rowBytes * 3 / 4];
-        }
-        else if (packType == 3) {
-            dstBytes = new byte[2 * pBounds.width];
-        }
-        else if (packType == 4) {
-            dstBytes = new byte[cmpCount * pBounds.width];
-        }
-        else {
-            throw new IIOException("Unknown pack type: " + packType);
-        }
-        */
-        if (packType == 0) {
-            dstBytes = new byte[cmpCount * pBounds.width];
-        }
-        else {
-            throw new IIOException("Unknown pack type: " + packType);
-        }
-
-//        int[] pixArray = new int[pBounds.height * pBounds.width];
-        byte[] pixArray = new byte[pBounds.height * pBounds.width];
+        byte[] pixArray = new byte[srcRect.height * rowBytes];
         int pixBufOffset = 0;
 
-        int packedBytesCount;
-        for (int scanline = 0; scanline < pBounds.height; scanline++) {
-            // Get byteCount of the scanline
-            if (rowBytes > 250) {
-                packedBytesCount = pStream.readUnsignedShort();
-            }
-            else {
-                packedBytesCount = pStream.readUnsignedByte();
-            }
-            if (DEBUG) {
-                System.out.println();
-                System.out.print("Line " + scanline + ", byteCount: " + packedBytesCount);
-                System.out.print(" dstBytes: " + dstBytes.length);
-            }
-
+        // Read in the RGB arrays
+        for (int scanline = 0; scanline < srcRect.height; scanline++) {
             // Read in the scanline
-            /*if (packType > 2) {
-                // Unpack them all*/
-                Decoder decoder;/*
-                if (packType == 3) {
-                    decoder = new PackBits16Decoder();
-                }
-                else {*/
-                    decoder = new PackBitsDecoder();
-                /*}*/
-            DataInput unPackBits = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pStream, packedBytesCount), decoder));
-//                unPackBits.readFully(dstBytes);
-            unPackBits.readFully(pixArray, pixBufOffset, pBounds.width);
-            /*}
-            else {
-                imageInput.readFully(dstBytes);
-            }*/
+            if (rowBytes >= 8) {
+                // Get byteCount of the scanline
+                int packedBytesCount = rowBytes > 250 ? pStream.readUnsignedShort() : pStream.readUnsignedByte();
 
-            // TODO: Use TYPE_USHORT_555_RGB for 16 bit
-            /*
-            if (packType == 3) {
-                for (int i = 0; i < pBounds.width; i++) {
-                    // Set alpha values to all opaque
-                    pixArray[pixBufOffset + i] = 0xFF000000;
-
-                    // Get red values
-                    int red = 8 * ((dstBytes[2 * i] & 0x7C) >> 2);
-                    pixArray[pixBufOffset + i] |= red << 16;
-                    // Get green values
-                    int green = 8 * (((dstBytes[2 * i] & 0x07) << 3) + ((dstBytes[2 * i + 1] & 0xE0) >> 5));
-                    pixArray[pixBufOffset + i] |= green << 8;
-                    // Get blue values
-                    int blue = 8 * ((dstBytes[2 * i + 1] & 0x1F));
-                    pixArray[pixBufOffset + i] |= blue;
-                }
+                // Unpack them all
+                Decoder decoder = new PackBitsDecoder();
+                DataInput unPackBits = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pStream, packedBytesCount), decoder));
+                unPackBits.readFully(pixArray, pixBufOffset, rowBytes);
             }
             else {
-                if (cmpCount == 3) {
-                    for (int i = 0; i < pBounds.width; i++) {
-                        // Set alpha values to all opaque
-                        pixArray[pixBufOffset + i] = 0xFF000000;
-                        // Get red values
-                        pixArray[pixBufOffset + i] |= (dstBytes[i] & 0xFF) << 16;
-                        // Get green values
-                        pixArray[pixBufOffset + i] |= (dstBytes[pBounds.width + i] & 0xFF) << 8;
-                        // Get blue values
-                        pixArray[pixBufOffset + i] |= (dstBytes[2 * pBounds.width + i] & 0xFF);
-                    }
-                }
-                else {
-                    for (int i = 0; i < pBounds.width; i++) {
-//                        // Get alpha values
-//                        pixArray[pixBufOffset + i] = (dstBytes[i] & 0xFF) << 24;
-//                        // Get red values
-//                        pixArray[pixBufOffset + i] |= (dstBytes[pBounds.width + i] & 0xFF) << 16;
-//                        // Get green values
-//                        pixArray[pixBufOffset + i] |= (dstBytes[2 * pBounds.width + i] & 0xFF) << 8;
-//                        // Get blue values
-//                        pixArray[pixBufOffset + i] |= (dstBytes[3 * pBounds.width + i] & 0xFF);
-
-                        // TODO: Fake it for now... Should ideally just use byte array and use the ICM
-//                        pixArray[pixBufOffset + i] = 0xFF << 24;
-//                        pixArray[pixBufOffset + i] |= colorModel.getRed(dstBytes[i] & 0xFF) << 16;
-//                        pixArray[pixBufOffset + i] |= colorModel.getGreen(dstBytes[i] & 0xFF) << 8;
-//                        pixArray[pixBufOffset + i] |= colorModel.getBlue(dstBytes[i] & 0xFF);
-
-                        pixArray[pixBufOffset + i] = dstBytes[i];
-                    }
-//                }
-//            }
-*/
+                // Uncompressed
+                imageInput.readFully(pixArray, pixBufOffset, rowBytes);
+            }
 
             // Increment pixel buffer offset
-            pixBufOffset += pBounds.width;
+            pixBufOffset += rowBytes;
 
             ////////////////////////////////////////////////////
             // TODO: This works for single image PICTs only...
             // However, this is the most common case. Ok for now
-            processImageProgress(scanline * 100 / pBounds.height);
+            processImageProgress(scanline * 100 / srcRect.height);
             if (abortRequested()) {
                 processReadAborted();
 
                 // Skip rest of image data
-                for (int skip = scanline + 1; skip < pBounds.height; skip++) {
+                for (int skip = scanline + 1; skip < srcRect.height; skip++) {
                     // Get byteCount of the scanline
-                    if (rowBytes > 250) {
+                    int packedBytesCount;
+
+                    if (rowBytes < 8) {
+                        packedBytesCount = rowBytes;
+                    }
+                    else if (rowBytes > 250) {
                         packedBytesCount = pStream.readUnsignedShort();
                     }
                     else {
                         packedBytesCount = pStream.readUnsignedByte();
                     }
+
                     pStream.readFully(new byte[packedBytesCount], 0, packedBytesCount);
 
                     if (DEBUG) {
-                        System.out.println();
                         System.out.print("Skip " + skip + ", byteCount: " + packedBytesCount);
                     }
                 }
@@ -2073,11 +1871,8 @@ public class PICTImageReader extends ImageReaderBase {
         // "pPixmapCount" will never be greater than the size of the vector
         if (images.size() <= pPixmapCount) {
             // Create BufferedImage and add buffer it for multiple reads
-//            DirectColorModel cm = (DirectColorModel) ColorModel.getRGBdefault();
-//            DataBuffer db = new DataBufferInt(pixArray, pixArray.length);
-//            WritableRaster raster = Raster.createPackedRaster(db, pBounds.width, pBounds.height, pBounds.width, cm.getMasks(), null);
             DataBuffer db = new DataBufferByte(pixArray, pixArray.length);
-            WritableRaster raster = Raster.createPackedRaster(db, pBounds.width, pBounds.height, cmpSize, null); // TODO: last param should ideally be srcRect.getLocation()
+            WritableRaster raster = Raster.createPackedRaster(db, (rowBytes * 8) / cmpSize, srcRect.height, cmpSize, null);
             BufferedImage img = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
 
             images.add(img);
@@ -2086,8 +1881,8 @@ public class PICTImageReader extends ImageReaderBase {
         // Draw the image
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
-            // TODO: FixMe.. Seems impossible to create a bufferedImage with a raster not starting at 0,0
-            srcRect.setLocation(0, 0); // should not require this line..
+            srcRect.setLocation(0, 0); // Raster always start at 0,0
+//            dstRect.translate(-frame.x, -frame.y);
             context.copyBits(img, srcRect, dstRect, transferMode, null);
         }
 
@@ -2101,27 +1896,24 @@ public class PICTImageReader extends ImageReaderBase {
      * Reads the data following a {@code directBitsRect} opcode.
      *
      * @param pStream the stream to read from
-     * @param pBounds the bounding rectangle
      * @param pPixmapCount the index of the bitmap in the PICT file, used for
      *        cahcing.
      *
      * @throws javax.imageio.IIOException if the data can not be read.
-     * @throws IOException if an I/O error occurs while reading the image.
+     * @throws java.io.IOException if an I/O error occurs while reading the image.
      */
-    private void readOpDirectBitsRect(ImageInputStream pStream, Rectangle pBounds, int pPixmapCount) throws IOException {
-        if (DEBUG) {
-            System.out.println("directBitsRect");
-        }
-
+    private void readOpDirectBits(final ImageInputStream pStream, final boolean hasRegion, final int pPixmapCount) throws IOException {
         // Skip PixMap pointer (always 0x000000FF);
-        pStream.skipBytes(4);
+        pStream.readInt();
 
         // Get rowBytes
         int rowBytesRaw = pStream.readUnsignedShort();
-        int rowBytes = rowBytesRaw & 0x3FFF;
+        int rowBytes = rowBytesRaw & 0x7FFF;
+        boolean isPixMap = (rowBytesRaw & 0x8000) > 0;
         if (DEBUG) {
-            System.out.print("directBitsRect, rowBytes: " + rowBytes);
-            if ((rowBytesRaw & 0x8000) > 0) {
+            System.out.print(hasRegion ? "directBitsRgn" : "directBitsRect");
+            System.out.print(", rowBytes: " + rowBytes);
+            if (isPixMap) {
                 System.out.print(", it is a PixMap");
             }
             else {
@@ -2130,80 +1922,93 @@ public class PICTImageReader extends ImageReaderBase {
         }
 
         // Get bounds rectangle. THIS IS NOT TO BE SCALED BY THE RESOLUTION!
+        Rectangle bounds = new Rectangle();
         int y = pStream.readUnsignedShort();
         int x = pStream.readUnsignedShort();
-        pBounds.setLocation(x, y);
+        bounds.setLocation(x, y);
 
         y = pStream.readUnsignedShort();
         x = pStream.readUnsignedShort();
-        pBounds.setSize(x - pBounds.x, y - pBounds.y);
+        bounds.setSize(x - bounds.x, y - bounds.y);
         if (DEBUG) {
-            System.out.print(", bounds: " + pBounds);
+            System.out.print(", bounds: " + bounds);
         }
 
-        // Get PixMap record version number
-        int pmVersion = pStream.readUnsignedShort() & 0xFFFF;
-        if (DEBUG) {
-            System.out.print(", pmVersion: " + pmVersion);
-        }
+        ColorModel colorModel = null;
+        int packType;
+        int cmpCount;
 
-        // Get packing format
-        int packType = pStream.readUnsignedShort() & 0xFFFF;
-        if (DEBUG) {
-            System.out.print(", packType: " + packType);
-        }
-
-        // Get size of packed data (not used for v2)
-        int packSize = pStream.readInt();
-        if (DEBUG) {
-            System.out.println(", packSize: " + packSize);
-        }
-
-        // Get resolution info
-        double hRes = PICTUtil.readFixedPoint(pStream);
-        double vRes = PICTUtil.readFixedPoint(pStream);
-        if (DEBUG) {
-            System.out.print("hRes: " + hRes + ", vRes: " + vRes);
-        }
-
-        // Get pixel type
-        int pixelType = pStream.readUnsignedShort();
-        if (DEBUG) {
-            if (pixelType == 0) {
-                System.out.print(", indexed pixels");
+        if (isPixMap) {
+            // Get PixMap record version number
+            int pmVersion = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", pmVersion: " + pmVersion);
             }
-            else {
-                System.out.print(", RGBDirect");
+
+            // Get packing format
+            packType = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", packType: " + packType);
             }
+
+            // Get size of packed data (not used for v2)
+            int packSize = pStream.readInt();
+            if (DEBUG) {
+                System.out.println(", packSize: " + packSize);
+            }
+
+            // Get resolution info
+            double hRes = PICTUtil.readFixedPoint(pStream);
+            double vRes = PICTUtil.readFixedPoint(pStream);
+            if (DEBUG) {
+                System.out.print("hRes: " + hRes + ", vRes: " + vRes);
+            }
+
+            // Get pixel type
+            int pixelType = pStream.readUnsignedShort();
+            if (DEBUG) {
+                if (pixelType == 0) {
+                    System.out.print(", indexed pixels");
+                }
+                else {
+                    System.out.print(", RGBDirect");
+                }
+            }
+
+            // Get pixel size
+            int pixelSize = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", pixelSize:" + pixelSize);
+            }
+
+            // Get pixel component count
+            cmpCount = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", cmpCount:" + cmpCount);
+            }
+
+            // Get pixel component size
+            int cmpSize = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", cmpSize:" + cmpSize);
+            }
+
+            // planeBytes (ignored)
+            pStream.readInt();
+
+            // Handle to ColorTable record, there should be none for direct
+            // bits so this should be 0, just skip
+            pStream.readInt();
+
+            // Reserved
+            pStream.readInt();
         }
-
-        // Get pixel size
-        int pixelSize = pStream.readUnsignedShort();
-        if (DEBUG) {
-            System.out.print(", pixelSize:" + pixelSize);
+        else {
+            // Old style BitMap record
+            packType = 1;
+            cmpCount = 1;
+            colorModel = QuickDraw.MONOCHROME;
         }
-
-        // Get pixel component count
-        int cmpCount = pStream.readUnsignedShort();
-        if (DEBUG) {
-            System.out.print(", cmpCount:" + cmpCount);
-        }
-
-        // Get pixel component size
-        int cmpSize = pStream.readUnsignedShort();
-        if (DEBUG) {
-            System.out.println(", cmpSize:" + cmpSize);
-        }
-
-        // planeBytes (ignored)
-        pStream.readInt();
-
-        // Handle to ColorTable record, there should be none for direct
-        // bits so this should be 0, just skip
-        pStream.readInt();
-
-        // Reserved
-        pStream.readInt();
 
         // Get source rectangle. We DO NOT scale the coordinates by the
         // resolution info, since we are in pixmap coordinates here
@@ -2217,10 +2022,9 @@ public class PICTImageReader extends ImageReaderBase {
         srcRect.setSize(x - srcRect.x, y - srcRect.y);
 
         if (DEBUG) {
-            System.out.print("opDirectBitsRect, srcRect:" + srcRect);
+            System.out.print(", srcRect:" + srcRect);
         }
 
-        // TODO: FixMe...
         // Get destination rectangle. We DO scale the coordinates according to
         // the image resolution, since we are working in display coordinates
         Rectangle dstRect = new Rectangle();
@@ -2235,23 +2039,21 @@ public class PICTImageReader extends ImageReaderBase {
             System.out.print(", mode: " + transferMode);
         }
 
+        Polygon region = hasRegion ? readRegion(pStream, new Rectangle()) : null;
+
+        if (DEBUG) {
+            System.out.println(hasRegion ? ", region: " + region : "");
+        }
+
         // Set up pixel buffer for the RGB values
 
         // Read in the RGB arrays
         byte[] dstBytes;
-        if (packType == 1 || rowBytes < 8) {
-            // TODO: Verify this...
+        if (packType == 1 || packType == 2 || packType == 3) {
             dstBytes = new byte[rowBytes];
         }
-        else if (packType == 2) {
-            // TODO: Verify this...
-            dstBytes = new byte[rowBytes * 3 / 4];
-        }
-        else if (packType == 3) {
-            dstBytes = new byte[2 * pBounds.width];
-        }
         else if (packType == 4) {
-            dstBytes = new byte[cmpCount * pBounds.width];
+            dstBytes = new byte[cmpCount * rowBytes / 4];
         }
         else {
             throw new IIOException("Unknown pack type: " + packType);
@@ -2260,40 +2062,35 @@ public class PICTImageReader extends ImageReaderBase {
         int[] pixArray = null;
         short[] shortArray = null;
         if (packType == 3) {
-            shortArray = new short[pBounds.height * pBounds.width];
+            shortArray = new short[srcRect.height * (rowBytes + 1) / 2];
         }
         else {
-            pixArray = new int[pBounds.height * pBounds.width];
+            pixArray = new int[srcRect.height * (rowBytes + 3) / 4];
         }
 
         int pixBufOffset = 0;
 
         int packedBytesCount;
-        for (int scanline = 0; scanline < pBounds.height; scanline++) {
-            // Get byteCount of the scanline
-            if (rowBytes > 250) {
-                packedBytesCount = pStream.readUnsignedShort();
-            }
-            else {
-                packedBytesCount = pStream.readUnsignedByte();
-            }
-            if (DEBUG) {
-                System.out.println();
-                System.out.print("Line " + scanline + ", byteCount: " + packedBytesCount);
-                System.out.print(" dstBytes: " + dstBytes.length);
-            }
-
+        for (int scanline = 0; scanline < srcRect.height; scanline++) {
             // Read in the scanline
             if (packType > 2) {
-                // Unpack them all
-                Decoder decoder;
-                if (packType == 3) {
-                    decoder = new PackBits16Decoder();
+                // Get byteCount of the scanline
+                if (rowBytes > 250) {
+                    packedBytesCount = pStream.readUnsignedShort();
                 }
                 else {
-                    decoder = new PackBitsDecoder();
+                    packedBytesCount = pStream.readUnsignedByte();
                 }
-                DataInput unPackBits = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pStream, packedBytesCount), decoder));
+
+                if (DEBUG) {
+                    System.out.print("Line " + scanline + ", byteCount: " + packedBytesCount);
+                    System.out.print(" dstBytes: " + dstBytes.length);
+                    System.out.println();
+                }
+
+                // Unpack them all
+                Decoder decoder = packType == 3 ? new PackBitsDecoder(2, false) : new PackBitsDecoder();
+                DataInput unPackBits = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pStream, packedBytesCount), decoder, dstBytes.length));
                 unPackBits.readFully(dstBytes);
             }
             else {
@@ -2302,63 +2099,51 @@ public class PICTImageReader extends ImageReaderBase {
 
             if (packType == 3) {
                 // TYPE_USHORT_555_RGB for 16 bit
-                for (int i = 0; i < pBounds.width; i++) {
+                for (int i = 0; i < srcRect.width; i++) {
                     shortArray[pixBufOffset + i] = (short) (((0xff & dstBytes[2 * i]) << 8) | (0xff & dstBytes[2 * i + 1]));
-//                    // Set alpha values to all opaque
-//                    pixArray[pixBufOffset + i] = 0xFF000000;
-//
-//                    // Get red values
-//                    int red = 8 * ((dstBytes[2 * i] & 0x7C) >> 2);
-//                    pixArray[pixBufOffset + i] |= red << 16;
-//                    // Get green values
-//                    int green = 8 * (((dstBytes[2 * i] & 0x07) << 3) + ((dstBytes[2 * i + 1] & 0xE0) >> 5));
-//                    pixArray[pixBufOffset + i] |= green << 8;
-//                    // Get blue values
-//                    int blue = 8 * ((dstBytes[2 * i + 1] & 0x1F));
-//                    pixArray[pixBufOffset + i] |= blue;
                 }
             }
             else {
                 if (cmpCount == 3) {
                     // RGB
-                    for (int i = 0; i < pBounds.width; i++) {
+                    for (int i = 0; i < srcRect.width; i++) {
                         // Set alpha values to all opaque
-                        pixArray[pixBufOffset + i] = 0xFF000000;
-                        // Get red values
-                        pixArray[pixBufOffset + i] |= (dstBytes[i] & 0xFF) << 16;
-                        // Get green values
-                        pixArray[pixBufOffset + i] |= (dstBytes[pBounds.width + i] & 0xFF) << 8;
-                        // Get blue values
-                        pixArray[pixBufOffset + i] |= (dstBytes[2 * pBounds.width + i] & 0xFF);
+                        pixArray[pixBufOffset + i] = 0xFF000000
+                                // Get red values
+                                | (dstBytes[/*0* bounds.width*/i] & 0xFF) << 16
+                                // Get green values
+                                | (dstBytes[/**/bounds.width + i] & 0xFF) << 8
+                                // Get blue values
+                                | (dstBytes[2 * bounds.width + i] & 0xFF);
                     }
                 }
-                else {
+                else if (cmpCount == 4) {
                     // ARGB
-                    for (int i = 0; i < pBounds.width; i++) {
+                    for (int i = 0; i < srcRect.width; i++) {
                         // Get alpha values
-                        pixArray[pixBufOffset + i] = (dstBytes[i] & 0xFF) << 24;
-                        // Get red values
-                        pixArray[pixBufOffset + i] |= (dstBytes[pBounds.width + i] & 0xFF) << 16;
-                        // Get green values
-                        pixArray[pixBufOffset + i] |= (dstBytes[2 * pBounds.width + i] & 0xFF) << 8;
-                        // Get blue values
-                        pixArray[pixBufOffset + i] |= (dstBytes[3 * pBounds.width + i] & 0xFF);
+                        pixArray[pixBufOffset + i] = (dstBytes[/*0* bounds.width*/i] & 0xFF) << 24
+                                // Get red values
+                                | (dstBytes[/**/bounds.width + i] & 0xFF) << 16
+                                // Get green values
+                                | (dstBytes[2 * bounds.width + i] & 0xFF) << 8
+                                // Get blue values
+                                | (dstBytes[3 * bounds.width + i] & 0xFF);
                     }
                 }
             }
 
             // Increment pixel buffer offset
-            pixBufOffset += pBounds.width;
+            pixBufOffset += srcRect.width;
 
             ////////////////////////////////////////////////////
             // TODO: This works for single image PICTs only...
             // However, this is the most common case. Ok for now
-            processImageProgress(scanline * 100 / pBounds.height);
+            processImageProgress(scanline * 100 / srcRect.height);
             if (abortRequested()) {
                 processReadAborted();
 
                 // Skip rest of image data
-                for (int skip = scanline + 1; skip < pBounds.height; skip++) {
+                for (int skip = scanline + 1; skip < srcRect.height; skip++) {
                     // Get byteCount of the scanline
                     if (rowBytes > 250) {
                         packedBytesCount = pStream.readUnsignedShort();
@@ -2383,18 +2168,23 @@ public class PICTImageReader extends ImageReaderBase {
         // "pPixmapCount" will never be greater than the size of the vector
         if (images.size() <= pPixmapCount) {
             // Create BufferedImage and add buffer it for multiple reads
-            DirectColorModel cm;
+            ColorModel cm;
             WritableRaster raster;
 
-            if (packType == 3) {
+            if (colorModel != null) {
+                cm = colorModel;
+                DataBuffer db = new DataBufferByte(dstBytes, dstBytes.length);
+                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, 1, null);
+            }
+            else if (packType == 3) {
                 cm = new DirectColorModel(15, 0x7C00, 0x03E0, 0x001F); // See BufferedImage TYPE_USHORT_555_RGB
                 DataBuffer db = new DataBufferUShort(shortArray, shortArray.length);
-                raster = Raster.createPackedRaster(db, pBounds.width, pBounds.height, pBounds.width, cm.getMasks(), null);  // TODO: last param should ideally be srcRect.getLocation()
+                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, srcRect.width, ((DirectColorModel) cm).getMasks(), null);
             }
             else {
-                cm = (DirectColorModel) ColorModel.getRGBdefault();
+                cm = ColorModel.getRGBdefault();
                 DataBuffer db = new DataBufferInt(pixArray, pixArray.length);
-                raster = Raster.createPackedRaster(db, pBounds.width, pBounds.height, pBounds.width, cm.getMasks(), null);  // TODO: last param should ideally be srcRect.getLocation()
+                raster = Raster.createPackedRaster(db, srcRect.width, srcRect.height, srcRect.width, ((DirectColorModel) cm).getMasks(), null);
             }
 
             BufferedImage img = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
@@ -2405,8 +2195,8 @@ public class PICTImageReader extends ImageReaderBase {
         // Draw the image
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
-            // TODO: FixMe.. Something wrong here, might be the copyBits methods.
-            srcRect.setLocation(0, 0); // should not require this line..
+            srcRect.setLocation(0, 0); // Raster always starts at 0,0
+//            dstRect.translate(-frame.x, -frame.y);
             context.copyBits(img, srcRect, dstRect, transferMode, null);
         }
 
@@ -2414,7 +2204,151 @@ public class PICTImageReader extends ImageReaderBase {
         if (DEBUG) {
             System.out.println();
         }
+    }
 
+    private void readOpBits(ImageInputStream pStream, boolean hasRegion) throws IOException {
+        // Get rowBytes
+        int rowBytesRaw = pStream.readUnsignedShort();
+        int rowBytes = rowBytesRaw & 0x7FFF;
+        boolean isPixMap = (rowBytesRaw & 0x8000) > 0;
+        if (DEBUG) {
+            System.out.print(hasRegion ? "bitsRgn" : "bitsRect");
+            System.out.print(", rowBytes: " + rowBytes);
+            if (isPixMap) {
+                System.out.print(", it is a PixMap");
+            }
+            else {
+                System.out.print(", it is a BitMap");
+            }
+        }
+
+        // Get bounds rectangle. THIS IS NOT TO BE SCALED BY THE RESOLUTION!
+        Rectangle bounds = new Rectangle();
+        int y = pStream.readUnsignedShort();
+        int x = pStream.readUnsignedShort();
+        bounds.setLocation(x, y);
+
+        y = pStream.readUnsignedShort();
+        x = pStream.readUnsignedShort();
+        bounds.setSize(x - bounds.x, y - bounds.y);
+
+        ColorModel colorModel;
+        int cmpSize;
+
+        if (isPixMap) {
+            // Get PixMap record version number
+            int pmVersion = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", pmVersion: " + pmVersion);
+            }
+
+            // Get packing format
+            int packType = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", packType: " + packType);
+            }
+
+            // Get size of packed data (not used for v2)
+            int packSize = pStream.readInt();
+            if (DEBUG) {
+                System.out.println(", packSize: " + packSize);
+            }
+
+            // Get resolution info
+            double hRes = PICTUtil.readFixedPoint(pStream);
+            double vRes = PICTUtil.readFixedPoint(pStream);
+            if (DEBUG) {
+                System.out.print("hRes: " + hRes + ", vRes: " + vRes);
+            }
+
+            // Get pixel type
+            int pixelType = pStream.readUnsignedShort();
+            if (DEBUG) {
+                if (pixelType == 0) {
+                    System.out.print(", indexed pixels");
+                }
+                else {
+                    System.out.print(", RGBDirect");
+                }
+            }
+
+            // Get pixel size
+            int pixelSize = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", pixelSize:" + pixelSize);
+            }
+
+            // Get pixel component count
+            int cmpCount = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", cmpCount:" + cmpCount);
+            }
+
+            // Get pixel component size
+            cmpSize = pStream.readUnsignedShort();
+            if (DEBUG) {
+                System.out.print(", cmpSize:" + cmpSize);
+            }
+
+            // planeBytes (ignored)
+            int planeBytes = pStream.readInt();
+            if (DEBUG) {
+                System.out.print(", planeBytes:" + planeBytes);
+            }
+
+            // Handle to ColorTable record
+            int clutId = pStream.readInt();
+            if (DEBUG) {
+                System.out.print(", clutId:" + clutId);
+            }
+
+            // Reserved
+            pStream.readInt();
+
+            // Color table
+            colorModel = PICTUtil.readColorTable(pStream, pixelSize);
+        }
+        else {
+            // Old style BitMap record
+            colorModel = QuickDraw.MONOCHROME;
+            cmpSize = 1;
+        }
+
+        Rectangle srcRect = new Rectangle();
+        readRectangle(pStream, srcRect);
+
+        Rectangle dstRect = new Rectangle();
+        readRectangle(pStream, dstRect);
+
+        // Get transfer mode
+        int mode = pStream.readUnsignedShort();
+
+        Polygon region = hasRegion ? readRegion(pStream, new Rectangle()) : null;
+
+        if (DEBUG) {
+            System.out.print(", bounds: " + bounds);
+            System.out.print(", srcRect: " + srcRect);
+            System.out.print(", dstRect: " + dstRect);
+            System.out.print(", mode: " + mode);
+            System.out.print(hasRegion ? ", region: " + region : "");
+            System.out.println();
+        }
+
+        byte[] data = new byte[rowBytes * bounds.height];
+
+        // Read pixel data
+        for (int i = 0; i < bounds.height; i++) {
+            pStream.readFully(data, i * rowBytes, rowBytes);
+        }
+
+        DataBuffer db = new DataBufferByte(data, data.length);
+        WritableRaster raster = Raster.createPackedRaster(db, (rowBytes * 8) / cmpSize, srcRect.height, cmpSize, null);
+        BufferedImage image = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
+
+        // Draw pixel data
+        srcRect.setLocation(0, 0); // Raster always start at 0,0
+//        dstRect.translate(-frame.x, -frame.y);
+        context.copyBits(image, srcRect, dstRect, mode, null);
     }
 
     /**
@@ -2438,7 +2372,7 @@ public class PICTImageReader extends ImageReaderBase {
     }
 
     /**
-     * Read in a region. The inputstream should be positioned at the first byte
+     * Read in a region. The input stream should be positioned at the first byte
      * of the region. {@code pBoundsRect} is a rectangle that will be set to the
      * region bounds.
      * The point array may therefore be empty if the region is just a rectangle.
@@ -2447,7 +2381,7 @@ public class PICTImageReader extends ImageReaderBase {
      * @param pBoundsRect the bounds rectangle to read into
      *
      * @return the polygon containing the region, or an empty polygon if the
-     * region is a rectanlge.
+     * region is a rectangle.
      *
      * @throws IOException if an I/O error occurs while reading the image.
      */
@@ -2458,31 +2392,46 @@ public class PICTImageReader extends ImageReaderBase {
         int size = pStream.readUnsignedShort();
 
         // Get region bounds
-        int y = getYPtCoord(pStream.readUnsignedShort());
-        int x = getXPtCoord(pStream.readUnsignedShort());
+        int y = getYPtCoord(pStream.readShort());
+        int x = getXPtCoord(pStream.readShort());
         pBoundsRect.setLocation(x, y);
 
         y = getYPtCoord(pStream.readShort()) - pBoundsRect.getLocation().y;
         x = getXPtCoord(pStream.readShort()) - pBoundsRect.getLocation().x;
         pBoundsRect.setSize(x, y);
 
-        // Initialize the point array to the right size
-        int points = (size - 10) / (2 * 2);
-
-        // Get the rest of the polygon points
         Polygon polygon = new Polygon();
-        for (int i = 0; i < points; i++) {
-            x = getXPtCoord(pStream.readShort());
-            y = getYPtCoord(pStream.readShort());
+        int count = (size - 10) / 2;
+        boolean nextIsV = true;
 
-            polygon.addPoint(x, y);
+        for (int i = 0; i < count; i++) {
+            short point = pStream.readShort();
+
+            if (nextIsV) {
+                if (point == 0x7fff) {
+                    // Done
+                    break;
+                }
+
+                y = point;
+                nextIsV = false;
+            }
+            else {
+                if (point == 0x7fff) {
+                    nextIsV = true;
+                    continue;
+                }
+
+                x = point;
+                polygon.addPoint(x, y);
+            }
         }
 
         return polygon;
     }
 
     /*
-     * Read in a polygon. The inputstream should be positioned at the first byte
+     * Read in a polygon. The input stream should be positioned at the first byte
      * of the polygon.
      */
     private Polygon readPoly(DataInput pStream, Rectangle pBoundsRect) throws IOException {
@@ -2499,7 +2448,7 @@ public class PICTImageReader extends ImageReaderBase {
         pBoundsRect.setSize(x, y);
 
         // Initialize the point array to the right size
-        int points = (size - 10) / (2 * 2);
+        int points = (size - 10) / 4;
 
         // Get the rest of the polygon points
         Polygon polygon = new Polygon();
@@ -2539,13 +2488,20 @@ public class PICTImageReader extends ImageReaderBase {
     /*
      * Read a long comment from the stream.
      */
-    private void readLongComment(final DataInput pStream) throws IOException {
+    private byte[] readLongComment(final DataInput pStream) throws IOException {
         // Comment kind and data byte count
-        pStream.readShort();
+        short kind = pStream.readShort();
+        int length = pStream.readUnsignedShort();
+
+        if (DEBUG) {
+            System.out.println("Long comment: " + kind + ", " + length + " bytes");
+        }
 
         // Get as many bytes as indicated by byte count
-        int length = pStream.readUnsignedShort();
-        pStream.readFully(new byte[length], 0, length);
+        byte[] bytes = new byte[length];
+        pStream.readFully(bytes, 0, length);
+
+        return bytes;
     }
 
     /*
@@ -2554,7 +2510,7 @@ public class PICTImageReader extends ImageReaderBase {
      * image resolution ratio.
      */
     private int getXPtCoord(int pPoint) {
-        return (int) (pPoint / screenImageXRatio);
+        return (int) Math.round(pPoint / screenImageXRatio);
     }
 
     /*
@@ -2563,22 +2519,20 @@ public class PICTImageReader extends ImageReaderBase {
      * image resolution ratio.
      */
     private int getYPtCoord(int pPoint) {
-        return (int) (pPoint / screenImageYRatio);
+        return (int) Math.round(pPoint / screenImageYRatio);
     }
 
     /*
      * Write out polygon command, bounds and points.
      */
     private void verbosePolyCmd(String pCmd, Rectangle pBounds, Polygon pPolygon) {
-        int i;
-
-        System.out.println(pCmd + ": " + new Rectangle(pBounds.x, pBounds.y, pBounds.width, pBounds.height));
+        System.out.println(pCmd + ": " + pBounds);
         System.out.print("Polygon points: ");
-        for (i = 0; pPolygon != null && i < pPolygon.npoints - 1; i++) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + "), ");
-        }
         if (pPolygon != null && pPolygon.npoints > 0) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
+            System.out.print("(" + pPolygon.xpoints[0] + "," + pPolygon.ypoints[0] + ")");
+        }
+        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
+            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
         }
         System.out.println();
     }
@@ -2587,15 +2541,13 @@ public class PICTImageReader extends ImageReaderBase {
      * Write out region command, bounds and points.
      */
     private void verboseRegionCmd(String pCmd, Rectangle pBounds, Polygon pPolygon) {
-        int i;
-
-        System.out.println(pCmd + ": " + new Rectangle(pBounds.x, pBounds.y, pBounds.width, pBounds.height));
+        System.out.println(pCmd + ": " + pBounds);
         System.out.print("Region points: ");
-        for (i = 0; pPolygon != null && i < pPolygon.npoints - 1; i++) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + "), ");
-        }
         if (pPolygon != null && pPolygon.npoints > 0) {
-            System.out.print("(" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
+            System.out.print("(" + pPolygon.xpoints[0] + "," + pPolygon.ypoints[0] + ")");
+        }
+        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
+            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
         }
         System.out.println();
     }
@@ -2622,20 +2574,24 @@ public class PICTImageReader extends ImageReaderBase {
         BufferedImage image = getDestination(pParam, getImageTypes(pIndex), getXPtCoord(frame.width), getYPtCoord(frame.height));
         Graphics2D g = image.createGraphics();
         try {
-            // TODO: Might need to clear background
+            // Might need to clear background
+            g.setComposite(AlphaComposite.Src);
+            g.setColor(new Color(0x00ffffff, true)); // Transparent white
+            g.fillRect(0, 0, image.getWidth(), image.getHeight());
+
             AffineTransform instance = new AffineTransform();
+
             if (pParam != null && pParam.getSourceRegion() != null) {
                 Rectangle rectangle = pParam.getSourceRegion();
                 instance.translate(-rectangle.x, -rectangle.y);
             }
+
             instance.scale(screenImageXRatio / subX, screenImageYRatio / subY);
+            instance.translate(-frame.x, -frame.y);
+
             g.setTransform(instance);
-//            try {
-                drawOnto(g);
-//            }
-//            catch (IOException e) {
-//                e.printStackTrace();
-//            }
+
+            drawOnto(g);
         }
         finally {
             g.dispose();
@@ -2659,165 +2615,44 @@ public class PICTImageReader extends ImageReaderBase {
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         // TODO: The images look slightly different in Preview.. Could indicate the color space is wrong...
         return Arrays.asList(
-                ImageTypeSpecifier.createPacked(
+                ImageTypeSpecifiers.createPacked(
                         ColorSpace.getInstance(ColorSpace.CS_sRGB),
                         0xff0000, 0xff00, 0xff, 0xff000000, DataBuffer.TYPE_INT, false
                 )
         ).iterator();
     }
 
-    public static void main(String[] pArgs) throws IOException {
-        ImageReader reader = new PICTImageReader(new PICTImageReaderSpi());
-
-        ImageInputStream input;
-        String title;
-        if (pArgs.length >= 1) {
-            File file = new File(pArgs[0]);
-            input = ImageIO.createImageInputStream(file);
-            title = file.getName();
-        }
-        else {
-            input = ImageIO.createImageInputStream(new ByteArrayInputStream(DATA_V1_OVERPAINTED_ARC));
-            title = "PICT test data";
-        }
-
-        System.out.println("canRead: " + reader.getOriginatingProvider().canDecodeInput(input));
-
-        reader.setInput(input);
-        long start = System.currentTimeMillis();
-        BufferedImage image = reader.read(0);
-
-        System.out.println("time: " + (System.currentTimeMillis() - start));
-
-        showIt(image, title);
-
-        System.out.println("image = " + image);
+    protected static void showIt(final BufferedImage pImage, final String pTitle) {
+        ImageReaderBase.showIt(pImage, pTitle);
     }
 
-    // Sample data from http://developer.apple.com/documentation/mac/QuickDraw/QuickDraw-458.html
-    // TODO: Create test case(s)!
-    private static final byte[] DATA_EXT_V2 = {
-            0x00, 0x78, /* picture size; don't use this value for picture size */
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x6C, 0x00, (byte) 0xA8, /* bounding rectangle of picture at 72 dpi */
-            0x00, 0x11, /* VersionOp opcode; always $0011 for extended version 2 */
-            0x02, (byte) 0xFF, /* Version opcode; always $02FF for extended version 2 */
-            0x0C, 0x00, /* HeaderOp opcode; always $0C00 for extended version 2 */
-            /* next 24 bytes contain header information */
-            (byte) 0xFF, (byte) 0xFE, /* version; always -2 for extended version 2 */
-            0x00, 0x00, /* reserved */
-            0x00, 0x48, 0x00, 0x00, /* best horizontal resolution: 72 dpi */
-            0x00, 0x48, 0x00, 0x00, /* best vertical resolution: 72 dpi */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* optimal source rectangle for 72 dpi horizontal
-                              and 72 dpi vertical resolutions */
-            0x00, 0x00, /* reserved */
-            0x00, 0x1E, /* DefHilite opcode to use default hilite color */
-            0x00, 0x01, /* Clip opcode to define clipping region for picture */
-            0x00, 0x0A, /* region size */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle for clipping region */
-            0x00, 0x0A, /* FillPat opcode; fill pattern specified in next 8 bytes */
-            0x77, (byte) 0xDD, 0x77, (byte) 0xDD, 0x77, (byte) 0xDD, 0x77, (byte) 0xDD, /* fill pattern */
-            0x00, 0x34, /* fillRect opcode; rectangle specified in next 8 bytes */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* rectangle to fill */
-            0x00, 0x0A, /* FillPat opcode; fill pattern specified in next 8 bytes */
-            (byte) 0x88, 0x22, (byte) 0x88, 0x22, (byte) 0x88, 0x22, (byte) 0x88, 0x22, /* fill pattern */
-            0x00, 0x5C, /* fillSameOval opcode */
-            0x00, 0x08, /* PnMode opcode */
-            0x00, 0x08, /* pen mode data */
-            0x00, 0x71, /* paintPoly opcode */
-            0x00, 0x1A, /* size of polygon */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle for polygon */
-            0x00, 0x6E, 0x00, 0x02, 0x00, 0x02, 0x00, 0x54, 0x00, 0x6E, 0x00, (byte) 0xAA, 0x00, 0x6E, 0x00, 0x02, /* polygon points */
-            0x00, (byte) 0xFF, /* OpEndPic opcode; end of picture */
-    };
+    public static void main(final String[] pArgs) throws IOException {
+        ImageReader reader = new PICTImageReader(new PICTImageReaderSpi());
 
-    private static final byte[] DATA_V2 = {
-            0x00, 0x78, /* picture size; don't use this value for picture size */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle of picture */
-            0x00, 0x11, /* VersionOp opcode; always $0x00, 0x11, for version 2 */
-            0x02, (byte) 0xFF, /* Version opcode; always $0x02, 0xFF, for version 2 */
-            0x0C, 0x00, /* HeaderOp opcode; always $0C00 for version 2 */
-            /* next 24 bytes contain header information */
-            (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, /* version; always -1 (long) for version 2 */
-            0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, (byte) 0xAA, 0x00, 0x00, 0x00, 0x6E, 0x00, 0x00, /* fixed-point bounding
-                                                   rectangle for picture */
-            0x00, 0x00, 0x00, 0x00, /* reserved */
-            0x00, 0x1E, /* DefHilite opcode to use default hilite color */
-            0x00, 0x01, /* Clip opcode to define clipping region for picture */
-            0x00, 0x0A, /* region size */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle for clipping region */
-            0x00, 0x0A, /* FillPat opcode; fill pattern specifed in next 8 bytes */
-            0x77, (byte) 0xDD, 0x77, (byte) 0xDD, 0x77, (byte) 0xDD, 0x77, (byte) 0xDD, /* fill pattern */
-            0x00, 0x34, /* fillRect opcode; rectangle specified in next 8 bytes */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* rectangle to fill */
-            0x00, 0x0A, /* FillPat opcode; fill pattern specified in next 8 bytes */
-            (byte) 0x88, 0x22, (byte) 0x88, 0x22, (byte) 0x88, 0x22, (byte) 0x88, 0x22, /* fill pattern */
-            0x00, 0x5C, /* fillSameOval opcode */
-            0x00, 0x08, /* PnMode opcode */
-            0x00, 0x08, /* pen mode data */
-            0x00, 0x71, /* paintPoly opcode */
-            0x00, 0x1A, /* size of polygon */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle for polygon */
-            0x00, 0x6E, 0x00, 0x02, 0x00, 0x02, 0x00, 0x54, 0x00, 0x6E, 0x00, (byte) 0xAA, 0x00, 0x6E, 0x00, 0x02, /* polygon points */
-            0x00, (byte) 0xFF, /* OpEndPic opcode; end of picture */
-    };
+        for (String arg : pArgs) {
+            File file = new File(arg);
+            try {
+                ImageInputStream input = ImageIO.createImageInputStream(file);
+                String title = file.getName();
 
-    private static final byte[] DATA_V1 = {
-            0x00, 0x4F, /* picture size; this value is reliable for version 1 pictures */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle of picture */
-            0x11, /* picVersion opcode for version 1 */
-            0x01, /* version number 1 */
-            0x01, /* ClipRgn opcode to define clipping region for picture */
-            0x00, 0x0A, /* region size */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle for region */
-            0x0A, /* FillPat opcode; fill pattern specified in next 8 bytes */
-            0x77, (byte) 0xDD, 0x77, (byte) 0xDD, 0x77, (byte) 0xDD, 0x77, (byte) 0xDD, /* fill pattern */
-            0x34, /* fillRect opcode; rectangle specified in next 8 bytes */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* rectangle to fill */
-            0x0A, /* FillPat opcode; fill pattern specified in next 8 bytes */
-            (byte) 0x88, 0x22, (byte) 0x88, 0x22, (byte) 0x88, 0x22, (byte) 0x88, 0x22, /* fill pattern */
-            0x5C, /* fillSameOval opcode */
-            0x71, /* paintPoly opcode */
-            0x00, 0x1A, /* size of polygon */
-            0x00, 0x02, 0x00, 0x02, 0x00, 0x6E, 0x00, (byte) 0xAA, /* bounding rectangle for polygon */
-            0x00, 0x6E, 0x00, 0x02, 0x00, 0x02, 0x00, 0x54, 0x00, 0x6E, 0x00, (byte) 0xAA, 0x00, 0x6E, 0x00, 0x02, /* polygon points */
-            (byte) 0xFF, /* EndOfPicture opcode; end of picture */
-    };
+                System.out.println("canRead: " + reader.getOriginatingProvider().canDecodeInput(input));
 
-    // Examples from http://developer.apple.com/technotes/qd/qd_14.html
-    private static final byte[] DATA_V1_OVAL_RECT = {
-            0x00, 0x26, /*size */
-            0x00, 0x0A, 0x00, 0x14, 0x00, (byte) 0xAF, 0x00, 0x78, /* picFrame */
-            0x11, 0x01, /* version 1 */
-            0x01, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xFA, 0x01, (byte) 0x90, /* clipRgn -- 10 byte region */
-            0x0B, 0x00, 0x04, 0x00, 0x05, /* ovSize point */
-            0x40, 0x00, 0x0A, 0x00, 0x14, 0x00, (byte) 0xAF, 0x00, 0x78, /* frameRRect rectangle */
-            (byte) 0xFF, /* fin */
-    };
+                reader.setInput(input);
+                //            BufferedImage image = reader.getImageTypes(0).next().createBufferedImage(reader.getWidth(0), reader.getHeight(0));
+                //            ImageReadParam param = reader.getDefaultReadParam();
+                //            param.setDestination(image);
 
-    private static final byte[] DATA_V1_OVERPAINTED_ARC = {
-            0x00, 0x36, /* size */
-            0x00, 0x0A, 0x00, 0x14, 0x00, (byte) 0xAF, 0x00, 0x78, /* picFrame */
-            0x11, 0x01, /* version 1 */
-            0x01, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xFA, 0x01, (byte) 0x90, /* clipRgn -- 10 byte region */
-            0x61, 0x00, 0x0A, 0x00, 0x14, 0x00, (byte) 0xAF, 0x00, 0x78, 0x00, 0x03, 0x00, 0x2D, /* paintArc rectangle,startangle,endangle */
-            0x08, 0x00, 0x0A, /* pnMode patXor -- note that the pnMode comes before the pnPat */
-            0x09, (byte) 0xAA, 0x55, (byte) 0xAA, 0x55, (byte) 0xAA, 0x55, (byte) 0xAA, 0x55, /* pnPat gray */
-            0x69, 0x00, 0x03, 0x00, 0x2D, /* paintSameArc startangle,endangle */
-            (byte) 0xFF, /* fin */
-    };
+                long start = System.currentTimeMillis();
+                BufferedImage image = reader.read(0);
+                System.out.println("time: " + (System.currentTimeMillis() - start));
 
-    private static final byte[] DATA_V1_COPY_BITS = {
-            0x00, 0x48, /* size */
-            0x00, 0x0A, 0x00, 0x14, 0x00, (byte) 0xAF, 0x00, 0x78, /* picFrame */
-            0x11, 0x01, /* version 1 */
-            0x01, 0x00, 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0xFA, 0x01, (byte) 0x90, /* clipRgn -- 10 byte region */
-            0x31, 0x00, 0x0A, 0x00, 0x14, 0x00, (byte) 0xAF, 0x00, 0x78, /* paintRect rectangle */
-            (byte) 0x90, 0x00, 0x02, 0x00, 0x0A, 0x00, 0x14, 0x00, 0x0F, 0x00, 0x1C, /* BitsRect rowbytes bounds (note that bounds is wider than smallr) */
-            0x00, 0x0A, 0x00, 0x14, 0x00, 0x0F, 0x00, 0x19, /* srcRect */
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x1E, /* dstRect */
-            0x00, 0x06, /* mode=notSrcXor */
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* 5 rows of empty bitmap (we copied from a
-                                still-blank window) */
-            (byte) 0xFF, /* fin */
-    };
+                showIt(image, title);
+
+                System.out.println("image = " + image);
+            }
+            catch (IOException e) {
+                System.err.println("Could not read " + file.getAbsolutePath() + ": " + e);
+            }
+        }
+    }
 }

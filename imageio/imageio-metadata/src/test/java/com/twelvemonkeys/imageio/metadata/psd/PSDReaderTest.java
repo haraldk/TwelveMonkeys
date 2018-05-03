@@ -30,12 +30,16 @@ package com.twelvemonkeys.imageio.metadata.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import org.junit.Test;
 
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * PhotoshopReaderTest
@@ -69,5 +73,17 @@ public class PSDReaderTest extends MetadataReaderAbstractTest {
         assertNotNull(directory.getEntryById(0x0426));
 
         // TODO: More
+    }
+
+    @Test
+    public void testPhotoshopResourcePHUT() throws IOException {
+        // Test sample contains non-8BIM resource: PHUT (PhotoDeluxe)
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/psd/friends-phut-resource.jpg"))) {
+            stream.seek(38);
+
+            Directory directory = createReader().read(new SubImageInputStream(stream, 298));
+
+            assertEquals(9, directory.size()); // 6 8BIM + 2 PHUT + 1 8 BIM
+        }
     }
 }

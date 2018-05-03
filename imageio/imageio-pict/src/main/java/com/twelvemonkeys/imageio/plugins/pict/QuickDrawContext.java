@@ -31,8 +31,11 @@ package com.twelvemonkeys.imageio.plugins.pict;
 import com.twelvemonkeys.lang.Validate;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.awt.geom.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
 
 /**
  * Emulates an Apple QuickDraw rendering context, backed by a Java {@link Graphics2D}.
@@ -121,9 +124,20 @@ class QuickDrawContext {
     private Dimension2D penSize = new Dimension();
     private int penMode;
 
-    QuickDrawContext(Graphics2D pGraphics) {
+    // TODO: Make sure setting bgColor/fgColor does not reset pattern, and pattern not resetting bg/fg!
+    private Color bgColor = Color.WHITE;
+    private Color fgColor = Color.BLACK;
+
+    private int textMode;
+    private Pattern textPattern = new BitMapPattern(Color.BLACK);
+    private Pattern fillPattern;
+
+    QuickDrawContext(final Graphics2D pGraphics) {
         graphics = Validate.notNull(pGraphics, "graphics");
-        
+
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
         setPenNormal();
     }
 
@@ -144,18 +158,34 @@ class QuickDrawContext {
     // Font number (sic), integer
     void setTextFont(int fontFamily) {
         // ..?
-        System.err.println("QuickDrawContext.setTextFont");
+        System.err.println("QuickDrawContext.setTextFont: " + fontFamily);
+    }
+
+    public void setTextFont(final String fontName) {
+        // TODO: Need mapping between known QD font names and Java font names?
+        Font current = graphics.getFont();
+        graphics.setFont(Font.decode(fontName).deriveFont(current.getStyle(), (float) current.getSize()));
     }
 
     // Sets the text's font style (0..255)
-    void setTextFace(int face) {
-        // int?
-        System.err.println("QuickDrawContext.setTextFace");
+    void setTextFace(final int face) {
+        int style = 0;
+        if ((face &  QuickDraw.TX_BOLD_MASK) > 0) {
+            style |= Font.BOLD;
+        }
+        if ((face & QuickDraw.TX_ITALIC_MASK) > 0) {
+            style |= Font.ITALIC;
+        }
+
+        // TODO: Other face options, like underline, shadow, etc...
+
+        graphics.setFont(graphics.getFont().deriveFont(style));
     }
 
     void setTextMode(int pSourceMode) {
         // ..?
         System.err.println("QuickDrawContext.setTextMode");
+        textMode = pSourceMode;
     }
 
     public void setTextSize(int pSize) {
@@ -175,13 +205,22 @@ class QuickDrawContext {
         graphics.translate(pOrigin.getX(), pOrigin.getY());
     }
 
-    public void setForeground(Color pColor) {
-        // TODO: Is this really correct? Or does it depend on pattern mode?
+    public void setForeground(final Color pColor) {
+        fgColor = pColor;
         penPattern = new BitMapPattern(pColor);
     }
 
-    public void setBackground(Color pColor) {
+    Color getForeground() {
+        return fgColor;
+    }
+
+    public void setBackground(final Color pColor) {
+        bgColor = pColor;
         background = new BitMapPattern(pColor);
+    }
+
+    Color getBackground() {
+        return bgColor;
     }
 
     /*
@@ -306,8 +345,12 @@ class QuickDrawContext {
     BackPat // Used by the Erase* methods
     *BackPixPat
     */
-    public void setBackgroundPattern(Pattern pPaint) {
+    public void setBackgroundPattern(final Pattern pPaint) {
         background = pPaint;
+    }
+
+    public void setFillPattern(final Pattern fillPattern) {
+        this.fillPattern = fillPattern;
     }
 
     private Composite getCompositeFor(final int pMode) {
@@ -321,9 +364,10 @@ class QuickDrawContext {
                 return AlphaComposite.Xor;
             case QuickDraw.SRC_BIC:
                 return AlphaComposite.Clear;
+            case QuickDraw.NOT_SRC_XOR:
+                return new NotSrcXor();
             case QuickDraw.NOT_SRC_COPY:
             case QuickDraw.NOT_SRC_OR:
-            case QuickDraw.NOT_SRC_XOR:
             case QuickDraw.NOT_SRC_BIC:
                 throw new UnsupportedOperationException("Not implemented for mode " + pMode);
 //                return null;
@@ -348,6 +392,15 @@ class QuickDrawContext {
                 throw new IllegalArgumentException("Unknown pnMode: " + pMode);
         }
     }
+
+    /**
+     * Sets up context for text drawing.
+     */
+    protected void setupForText() {
+        graphics.setPaint(textPattern);
+        graphics.setComposite(getCompositeFor(textMode));
+    }
+
 
     /**
      * Sets up context for line drawing/painting.
@@ -415,9 +468,7 @@ class QuickDrawContext {
 
         if (isPenVisible()) {
             // NOTE: Workaround for known Mac JDK bug: Paint, not frame
-            //graphics.setStroke(getStroke(penSize)); // Make sure we have correct stroke
             paintShape(graphics.getStroke().createStrokedShape(line));
-
         }
 
         moveTo(pX, pY);
@@ -811,13 +862,18 @@ class QuickDrawContext {
 
     // TODO: All other operations can delegate to these! :-)
     private void frameShape(final Shape pShape) {
-        setupForPaint();
-        graphics.draw(pShape);
+        if (isPenVisible()) {
+            setupForPaint();
+
+            Stroke stroke = getStroke(penSize);
+            Shape shape = stroke.createStrokedShape(pShape);
+            graphics.draw(shape);
+        }
     }
 
     private void paintShape(final Shape pShape) {
         setupForPaint();
-        graphics.fill(pShape);
+        graphics.fill(pShape); // Yes, fill
     }
 
     private void fillShape(final Shape pShape, final Pattern pPattern) {
@@ -878,20 +934,22 @@ class QuickDrawContext {
                 pSrcRect.y + pSrcRect.height,
                 null
         );
+
+       setClipRegion(null);
    }
 
     /**
      * CopyMask
      */
     public void copyMask(BufferedImage pSrcBitmap, BufferedImage pMaskBitmap, Rectangle pSrcRect, Rectangle pMaskRect, Rectangle pDstRect, int pSrcCopy, Shape pMaskRgn) {
-         throw new UnsupportedOperationException("Method copyBits not implemented"); // TODO: Implement
+         throw new UnsupportedOperationException("Method copyMask not implemented"); // TODO: Implement
     }
     
    /**
     * CopyDeepMask -- available to basic QuickDraw only in System 7, combines the functionality of both CopyBits and CopyMask
     */
    public void copyDeepMask(BufferedImage pSrcBitmap, BufferedImage pMaskBitmap, Rectangle pSrcRect, Rectangle pMaskRect, Rectangle pDstRect, int pSrcCopy, Shape pMaskRgn) {
-        throw new UnsupportedOperationException("Method copyBits not implemented"); // TODO: Implement
+        throw new UnsupportedOperationException("Method copyDeepMask not implemented"); // TODO: Implement
    }
 
    /*
@@ -926,7 +984,8 @@ class QuickDrawContext {
     * @param pString a Pascal string (a string of length less than or equal to 255 chars).
     */
    public void drawString(String pString) {
-        graphics.drawString(pString, (float) getPenPosition().getX(), (float) getPenPosition().getY());
+       setupForText();
+       graphics.drawString(pString, (float) getPenPosition().getX(), (float) getPenPosition().getY());
    }
 
    /*
@@ -1048,5 +1107,42 @@ class QuickDrawContext {
             return result;
         }
 
+    }
+
+    private static class NotSrcXor implements Composite {
+        // TODO: Src can probably be any color model that can be encoded in PICT, dst is always RGB/TYPE_INT
+        public CompositeContext createContext(final ColorModel srcColorModel, final ColorModel dstColorModel, RenderingHints hints) {
+            {
+                if (!srcColorModel.getColorSpace().isCS_sRGB() || !dstColorModel.getColorSpace().isCS_sRGB()) {
+                    throw new IllegalArgumentException("Only sRGB supported");
+                }
+            }
+
+            return new CompositeContext() {
+                public void dispose() {
+
+                }
+
+                public void compose(Raster src, Raster dstIn, WritableRaster dstOut) {
+                    // We always work in RGB, using DataBuffer.TYPE_INT transfer type.
+                    int[] srcData = null;
+                    int[] dstData = null;
+                    int[] resData = new int[src.getWidth() - src.getMinX()];
+
+                    for (int y = src.getMinY(); y < src.getHeight(); y++) {
+                        srcData = (int[]) src.getDataElements(src.getMinX(), y, src.getWidth(), 1, srcData);
+                        dstData = (int[]) dstIn.getDataElements(src.getMinX(), y, src.getWidth(), 1, dstData);
+
+                        for (int x = src.getMinX(); x < src.getWidth(); x++) {
+                            // TODO: Decide how to handle alpha (if at all)
+                            resData[x] = 0xff000000 | ((~ srcData[x] ^ dstData[x])) & 0xffffff ;
+//                            resData[x] = ~ srcData[x] ^ dstData[x];
+                        }
+
+                        dstOut.setDataElements(src.getMinX(), y, src.getWidth(), 1, resData);
+                    }
+                }
+            };
+        }
     }
 }

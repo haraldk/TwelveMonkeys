@@ -30,7 +30,7 @@ package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.*;
 import javax.imageio.spi.ImageReaderSpi;
@@ -99,21 +99,21 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         switch (resource.depth()) {
             case 1:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS1BitColorModel.INSTANCE);
+                return ImageTypeSpecifiers.createFromIndexColorModel(ICNS1BitColorModel.INSTANCE);
             case 4:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS4BitColorModel.INSTANCE);
+                return ImageTypeSpecifiers.createFromIndexColorModel(ICNS4BitColorModel.INSTANCE);
             case 8:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(ICNS8BitColorModel.INSTANCE);
+                return ImageTypeSpecifiers.createFromIndexColorModel(ICNS8BitColorModel.INSTANCE);
             case 32:
                 if (resource.isCompressed()) {
-                    return ImageTypeSpecifier.createBanded(
+                    return ImageTypeSpecifiers.createBanded(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
                             new int[]{0, 1, 2, 3}, createBandOffsets(resource.size().width * resource.size().height),
                             DataBuffer.TYPE_BYTE, true, false
                     );
                 }
                 else {
-                    return ImageTypeSpecifier.createInterleaved(
+                    return ImageTypeSpecifiers.createInterleaved(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
                             new int[]{1, 2, 3, 0},
                             DataBuffer.TYPE_BYTE, true, false
@@ -141,8 +141,8 @@ public final class ICNSImageReader extends ImageReaderBase {
             case 8:
                 // Fall through & convert during read
             case 32:
-                specifiers.add(ImageTypeSpecifier.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB), 0xff0000, 0x00ff00, 0x0000ff, 0xff000000, DataBuffer.TYPE_INT, false));
-                specifiers.add(ImageTypeSpecifier.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
+                specifiers.add(ImageTypeSpecifiers.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB), 0xff0000, 0x00ff00, 0x0000ff, 0xff000000, DataBuffer.TYPE_INT, false));
+                specifiers.add(ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, true, false));
                 break;
             default:
                 throw new IllegalStateException(String.format("Unknown bit depth: %d", resource.depth()));
@@ -199,7 +199,7 @@ public final class ICNSImageReader extends ImageReaderBase {
         BufferedImage image = getDestination(param, getImageTypes(imageIndex), width, height);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
-        if (rawType instanceof IndexedImageTypeSpecifier && rawType.getBufferedImageType() != image.getType()) {
+        if (rawType.getColorModel() instanceof IndexColorModel && rawType.getBufferedImageType() != image.getType()) {
             checkReadParamBandSettings(param, 4, image.getSampleModel().getNumBands());
         }
         else {

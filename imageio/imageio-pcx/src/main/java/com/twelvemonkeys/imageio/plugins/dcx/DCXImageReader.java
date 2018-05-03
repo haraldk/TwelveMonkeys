@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.dcx;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.plugins.pcx.PCXImageReader;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.xml.XMLSerializer;
 
@@ -48,14 +49,16 @@ import java.nio.ByteOrder;
 import java.util.Iterator;
 
 public final class DCXImageReader extends ImageReaderBase {
-    // TODO: Delegate listeners with correct index!
+
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.dcx.debug"));
 
     private DCXHeader header;
 
+    private int index = -1;
     private PCXImageReader readerDelegate;
     private ProgressDelegator progressDelegator;
 
-    public DCXImageReader(final ImageReaderSpi provider) {
+    DCXImageReader(final ImageReaderSpi provider) {
         super(provider);
         readerDelegate = new PCXImageReader(provider);
 
@@ -68,62 +71,73 @@ public final class DCXImageReader extends ImageReaderBase {
         readerDelegate.addIIOReadWarningListener(progressDelegator);
     }
 
-    @Override protected void resetMembers() {
+    @Override
+    protected void resetMembers() {
         header = null;
 
+        index = -1;
         readerDelegate.reset();
         installListeners();
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         super.dispose();
 
         readerDelegate.dispose();
         readerDelegate = null;
     }
 
-    @Override public int getWidth(final int imageIndex) throws IOException {
+    @Override
+    public int getWidth(final int imageIndex) throws IOException {
         initIndex(imageIndex);
 
         return readerDelegate.getWidth(0);
     }
 
-    @Override public int getHeight(final int imageIndex) throws IOException {
+    @Override
+    public int getHeight(final int imageIndex) throws IOException {
         initIndex(imageIndex);
 
         return readerDelegate.getHeight(0);
     }
 
-    @Override public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
+    @Override
+    public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
         initIndex(imageIndex);
 
         return readerDelegate.getRawImageType(0);
     }
 
-    @Override public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
+    @Override
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         initIndex(imageIndex);
 
         return readerDelegate.getImageTypes(0);
     }
 
-    @Override public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
+    @Override
+    public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
         initIndex(imageIndex);
 
         return readerDelegate.read(imageIndex, param);
     }
 
-    @Override public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
         initIndex(imageIndex);
 
         return readerDelegate.getImageMetadata(0);
     }
 
-    @Override public synchronized void abort() {
+    @Override
+    public synchronized void abort() {
         super.abort();
         readerDelegate.abort();
     }
 
-    @Override public int getNumImages(final boolean allowSearch) throws IOException {
+    @Override
+    public int getNumImages(final boolean allowSearch) throws IOException {
         readHeader();
 
         return header.getCount();
@@ -132,9 +146,11 @@ public final class DCXImageReader extends ImageReaderBase {
     private void initIndex(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
 
-        imageInput.seek(header.getOffset(imageIndex));
-        progressDelegator.index = imageIndex;
-        readerDelegate.setInput(imageInput);
+        if (index != imageIndex) {
+            imageInput.seek(header.getOffset(imageIndex));
+            index = imageIndex;
+            readerDelegate.setInput(new SubImageInputStream(imageInput, Long.MAX_VALUE));
+        }
     }
 
     private void readHeader() throws IOException {
@@ -143,7 +159,11 @@ public final class DCXImageReader extends ImageReaderBase {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             header = DCXHeader.read(imageInput);
-//            System.err.println("header: " + header);
+
+            if (DEBUG) {
+                System.err.println("header: " + header);
+            }
+
             imageInput.flushBefore(imageInput.getStreamPosition());
         }
 
@@ -151,11 +171,9 @@ public final class DCXImageReader extends ImageReaderBase {
     }
 
     private class ProgressDelegator extends ProgressListenerBase implements IIOReadWarningListener {
-        private int index;
-
         @Override
         public void imageComplete(ImageReader source) {
-                processImageComplete();
+            processImageComplete();
         }
 
         @Override
@@ -188,7 +206,6 @@ public final class DCXImageReader extends ImageReaderBase {
         }
     }
 
-
     public static void main(String[] args) throws IOException {
         DCXImageReader reader = new DCXImageReader(null);
 
@@ -201,8 +218,8 @@ public final class DCXImageReader extends ImageReaderBase {
 //            param.setSourceSubsampling(2, 3, 0, 0);
 //            param.setSourceSubsampling(2, 1, 0, 0);
 //
-//            int width = reader.getHdpi(0);
-//            int height = reader.getVdpi(0);
+//            int width = reader.getWidth(0);
+//            int height = reader.getHeight(0);
 //
 //            param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //            param.setSourceRegion(new Rectangle(width / 2, height / 2));

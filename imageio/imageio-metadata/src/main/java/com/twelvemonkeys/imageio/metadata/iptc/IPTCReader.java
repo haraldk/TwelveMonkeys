@@ -43,8 +43,9 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * IPTCReader
@@ -60,61 +61,88 @@ public final class IPTCReader extends MetadataReader {
 
     private int encoding = ENCODING_UNSPECIFIED;
 
-
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
         Validate.notNull(input, "input");
 
-        List<Entry> entries = new ArrayList<Entry>();
+        Map<Short, Entry> entries = new LinkedHashMap<>();
 
         // 0x1c identifies start of a tag
         while (input.read() == 0x1c) {
             short tagId = input.readShort();
             int tagByteCount = input.readUnsignedShort();
-            Entry entry = readEntry(input, tagId, tagByteCount);
+
+            boolean array = IPTC.Tags.isArray(tagId);
+            Entry entry = readEntry(input, tagId, tagByteCount, array, array ? entries.get(tagId) : null);
 
             if (entry != null) {
-                entries.add(entry);
+                entries.put(tagId, entry);
             }
         }
 
-        return new IPTCDirectory(entries);
+        return new IPTCDirectory(entries.values());
     }
 
-    private IPTCEntry readEntry(final ImageInputStream pInput, final short pTagId, final int pLength) throws IOException {
-        Object value = null;
+    private IPTCEntry mergeEntries(final short tagId, final Object newValue, final Entry oldEntry) {
+        Object[] oldValue = oldEntry != null ? (Object[]) oldEntry.getValue() : null;
+        Object[] value;
+
+        if (newValue instanceof String) {
+            if (oldValue == null) {
+                value = new String[] {(String) newValue};
+            }
+            else {
+                String[] array = (String[]) oldValue;
+                value = Arrays.copyOf(array, array.length + 1);
+                value[value.length - 1] = newValue;
+            }
+        }
+        else {
+            if (oldValue == null) {
+                value = new Object[] {newValue};
+            }
+            else {
+                value = Arrays.copyOf(oldValue, oldValue.length + 1);
+                value [value .length - 1] = newValue;
+            }
+        }
+
+        return new IPTCEntry(tagId, value);
+    }
+
+    private IPTCEntry readEntry(final ImageInputStream pInput, final short pTagId, final int pLength, final boolean array, final Entry oldEntry) throws IOException {
+        Object value;
 
         switch (pTagId) {
             case IPTC.TAG_CODED_CHARACTER_SET:
                 // TODO: Mapping from ISO 646 to Java supported character sets?
-                // TODO: Move somewhere else?
                 encoding = parseEncoding(pInput, pLength);
                 return null;
             case IPTC.TAG_RECORD_VERSION:
+                // TODO: Assert length == 2?
                 // A single unsigned short value
                 value = pInput.readUnsignedShort();
                 break;
             default:
-                // Skip non-Application fields, as they are typically not human readable
-                if ((pTagId & 0xff00) != IPTC.APPLICATION_RECORD) {
-                    pInput.skipBytes(pLength);
-                    return null;
+                // TODO: Create Tags.getType(tag), to allow for more flexible types
+                if ((pTagId & 0xff00) == IPTC.APPLICATION_RECORD) {
+                    // Treat Application records as Strings
+                    if (pLength < 1) {
+                        value = null;
+                    }
+                    else {
+                        value = parseString(pInput, pLength);
+                    }
                 }
-
-                // fall through
+                else {
+                    // Non-Application fields, typically not human readable
+                    byte[] data = new byte[pLength];
+                    pInput.readFully(data);
+                    value = data;
+                }
         }
 
-        // If we don't have a value, treat it as a string
-        if (value == null) {
-            if (pLength < 1) {
-                value = null;
-            }
-            else {
-                value = parseString(pInput, pLength);
-            }
-        }
-
-        return new IPTCEntry(pTagId, value);
+        return array ? mergeEntries(pTagId, value, oldEntry) : new IPTCEntry(pTagId, value);
     }
 
     private int parseEncoding(final ImageInputStream pInput, int tagByteCount) throws IOException {
@@ -148,7 +176,7 @@ public final class IPTCReader extends MetadataReader {
             }
 
             // Fall back to use ISO-8859-1
-            // This will not fail, but may may create wrong fallback-characters
+            // This will not fail, but may create wrong fallback-characters
             return StringUtil.decode(data, 0, data.length, "ISO8859_1");
         }
     }

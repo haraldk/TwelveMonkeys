@@ -28,9 +28,10 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.Validate;
 
@@ -61,7 +62,7 @@ final class EXIFThumbnailReader extends ThumbnailReader {
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    public EXIFThumbnailReader(ThumbnailReadProgressListener progressListener, ImageReader jpegReader, int imageIndex, int thumbnailIndex, Directory ifd, ImageInputStream stream) {
+    EXIFThumbnailReader(final ThumbnailReadProgressListener progressListener, final ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final Directory ifd, final ImageInputStream stream) {
         super(progressListener, imageIndex, thumbnailIndex);
         this.reader = Validate.notNull(jpegReader);
         this.ifd = ifd;
@@ -95,14 +96,14 @@ final class EXIFThumbnailReader extends ThumbnailReader {
         }
     }
 
-    private BufferedImage readJPEGCached(boolean pixelsExposed) throws IOException {
+    private BufferedImage readJPEGCached(final boolean pixelsExposed) throws IOException {
         BufferedImage thumbnail = cachedThumbnail != null ? cachedThumbnail.get() : null;
 
         if (thumbnail == null) {
             thumbnail = readJPEG();
         }
 
-        cachedThumbnail = pixelsExposed ? null : new SoftReference<BufferedImage>(thumbnail);
+        cachedThumbnail = pixelsExposed ? null : new SoftReference<>(thumbnail);
 
         return thumbnail;
     }
@@ -132,13 +133,9 @@ final class EXIFThumbnailReader extends ThumbnailReader {
             input = new SequenceInputStream(new ByteArrayInputStream(fakeEmptyExif), input);
 
             try {
-                MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(input);
 
-                try {
+                try (MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(input)) {
                     return readJPEGThumbnail(reader, stream);
-                }
-                finally {
-                    stream.close();
                 }
             }
             finally {
@@ -195,15 +192,15 @@ final class EXIFThumbnailReader extends ThumbnailReader {
                     break;
                 case 6:
                     // YCbCr
-                    for (int i = 0, thumbDataLength = thumbData.length; i < thumbDataLength; i += 3) {
-                        JPEGImageReader.YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
+                    for (int i = 0; i < thumbSize; i += 3) {
+                        YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
                     }
                     break;
                 default:
                     throw new IIOException("Unknown PhotometricInterpretation value for uncompressed EXIF thumbnail (expected 2 or 6): " + interpretation);
             }
 
-            return ThumbnailReader.readRawThumbnail(thumbData, thumbData.length, 0, w, h);
+            return ThumbnailReader.readRawThumbnail(thumbData, thumbSize, 0, w, h);
         }
 
         throw new IIOException("Missing StripOffsets tag for uncompressed EXIF thumbnail");
