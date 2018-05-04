@@ -33,9 +33,8 @@ import com.twelvemonkeys.lang.Validate;
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
+
+import static java.lang.Math.sqrt;
 
 /**
  * Emulates an Apple QuickDraw rendering context, backed by a Java {@link Graphics2D}.
@@ -170,7 +169,7 @@ class QuickDrawContext {
     // Sets the text's font style (0..255)
     void setTextFace(final int face) {
         int style = 0;
-        if ((face &  QuickDraw.TX_BOLD_MASK) > 0) {
+        if ((face & QuickDraw.TX_BOLD_MASK) > 0) {
             style |= Font.BOLD;
         }
         if ((face & QuickDraw.TX_ITALIC_MASK) > 0) {
@@ -308,9 +307,9 @@ class QuickDrawContext {
             case QuickDraw.ADD_OVER:
             case QuickDraw.SUB_PIN:
             case QuickDraw.TRANSPARENT:
-            case QuickDraw.AD_MAX:
+            case QuickDraw.ADD_MAX:
             case QuickDraw.SUB_OVER:
-            case QuickDraw.AD_MIN:
+            case QuickDraw.ADD_MIN:
             case QuickDraw.GRAYISH_TEXT_OR:
                 penMode = pPenMode;
                 break;
@@ -365,12 +364,11 @@ class QuickDrawContext {
             case QuickDraw.SRC_BIC:
                 return AlphaComposite.Clear;
             case QuickDraw.NOT_SRC_XOR:
-                return new NotSrcXor();
+                return QuickDrawComposite.NotSrcXor;
             case QuickDraw.NOT_SRC_COPY:
             case QuickDraw.NOT_SRC_OR:
             case QuickDraw.NOT_SRC_BIC:
                 throw new UnsupportedOperationException("Not implemented for mode " + pMode);
-//                return null;
                 // Boolean pattern transfer modes
             case QuickDraw.PAT_COPY:
                 return AlphaComposite.Src; // Tested
@@ -385,8 +383,22 @@ class QuickDrawContext {
             case QuickDraw.NOT_PAT_XOR:
             case QuickDraw.NOT_PAT_BIC:
                 throw new UnsupportedOperationException("Not implemented for mode " + pMode);
-//                return null;
-                // TODO: Aritmetic transfer modes
+                // Aritmetic transfer modes
+            case QuickDraw.BLEND:
+                return AlphaComposite.SrcOver.derive(.5f);
+            case QuickDraw.ADD_PIN:
+            case QuickDraw.ADD_OVER:
+            case QuickDraw.SUB_PIN:
+            case QuickDraw.TRANSPARENT:
+                throw new UnsupportedOperationException("Not implemented for mode " + pMode);
+            case QuickDraw.ADD_MAX:
+                return QuickDrawComposite.AddMax;
+            case QuickDraw.SUB_OVER:
+                throw new UnsupportedOperationException("Not implemented for mode " + pMode);
+            case QuickDraw.ADD_MIN:
+                return QuickDrawComposite.AddMin;
+            case QuickDraw.GRAYISH_TEXT_OR:
+                throw new UnsupportedOperationException("Not implemented for mode " + pMode);
 
             default:
                 throw new IllegalArgumentException("Unknown pnMode: " + pMode);
@@ -400,7 +412,6 @@ class QuickDrawContext {
         graphics.setPaint(textPattern);
         graphics.setComposite(getCompositeFor(textMode));
     }
-
 
     /**
      * Sets up context for line drawing/painting.
@@ -575,8 +586,8 @@ class QuickDrawContext {
      * the graphics pen.
      *
      * @param pRectangle the rectangle to frame
-     * @param pArcW width of the oval defining the rounded corner.
-     * @param pArcH height of the oval defining the rounded corner.
+     * @param pArcW      width of the oval defining the rounded corner.
+     * @param pArcH      height of the oval defining the rounded corner.
      */
     public void frameRoundRect(final Rectangle2D pRectangle, int pArcW, int pArcH) {
         frameShape(toRoundRect(pRectangle, pArcW, pArcH));
@@ -587,8 +598,8 @@ class QuickDrawContext {
      * graphics pen, using the pattern mode of the graphics pen.
      *
      * @param pRectangle the rectangle to paint
-     * @param pArcW width of the oval defining the rounded corner.
-     * @param pArcH height of the oval defining the rounded corner.
+     * @param pArcW      width of the oval defining the rounded corner.
+     * @param pArcH      height of the oval defining the rounded corner.
      */
     public void paintRoundRect(final Rectangle2D pRectangle, int pArcW, int pArcH) {
         paintShape(toRoundRect(pRectangle, pArcW, pArcH));
@@ -694,75 +705,75 @@ class QuickDrawContext {
     /**
      * Converts a rectangle to an arc.
      *
-     * @param pRectangle the framing rectangle
+     * @param pRectangle  the framing rectangle
      * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
-     * @param pArcAngle rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
-     * @param pClosed specifies if the arc should be closed
+     * @param pArcAngle   rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
+     * @param pClosed     specifies if the arc should be closed
      * @return the arc
      */
-   private static Arc2D.Double toArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle, final boolean pClosed) {
-       return new Arc2D.Double(pRectangle, 90 - pStartAngle, -pArcAngle, pClosed ? Arc2D.PIE : Arc2D.OPEN);
-   }
+    private static Arc2D.Double toArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle, final boolean pClosed) {
+        return new Arc2D.Double(pRectangle, 90 - pStartAngle, -pArcAngle, pClosed ? Arc2D.PIE : Arc2D.OPEN);
+    }
 
     /**
-    * FrameArc(r,int,int) // outline arc with the size, pattern, and pattern mode of
-    * the graphics pen.
-    *
-    * @param pRectangle the rectangle to frame
-    * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
-    * @param pArcAngle rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
-    */
-   public void frameArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
-       frameShape(toArc(pRectangle, pStartAngle, pArcAngle, false));
-   }
+     * FrameArc(r,int,int) // outline arc with the size, pattern, and pattern mode of
+     * the graphics pen.
+     *
+     * @param pRectangle  the rectangle to frame
+     * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
+     * @param pArcAngle   rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
+     */
+    public void frameArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
+        frameShape(toArc(pRectangle, pStartAngle, pArcAngle, false));
+    }
 
     /**
-    * PaintArc(r,int,int) // fills an arc's interior with the pattern of the
-    * graphics pen, using the pattern mode of the graphics pen.
-    *
-    * @param pRectangle the rectangle to paint
-    * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
-    * @param pArcAngle rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
-    */
-   public void paintArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
-       paintShape(toArc(pRectangle, pStartAngle, pArcAngle, true));
-   }
+     * PaintArc(r,int,int) // fills an arc's interior with the pattern of the
+     * graphics pen, using the pattern mode of the graphics pen.
+     *
+     * @param pRectangle  the rectangle to paint
+     * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
+     * @param pArcAngle   rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
+     */
+    public void paintArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
+        paintShape(toArc(pRectangle, pStartAngle, pArcAngle, true));
+    }
 
     /**
-    * FillArc(r,int,int, pat) // fills an arc's interior with any pattern you
-    * specify. The procedure transfers the pattern with the patCopy pattern
-    * mode, which directly copies your requested pattern into the shape.
-    *
-    * @param pRectangle the rectangle to fill
-    * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
-    * @param pArcAngle rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
-    * @param pPattern   the pattern to use
-    */
-   public void fillArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle, Pattern pPattern) {
-       fillShape(toArc(pRectangle, pStartAngle, pArcAngle, true), pPattern);
-   }
+     * FillArc(r,int,int, pat) // fills an arc's interior with any pattern you
+     * specify. The procedure transfers the pattern with the patCopy pattern
+     * mode, which directly copies your requested pattern into the shape.
+     *
+     * @param pRectangle  the rectangle to fill
+     * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
+     * @param pArcAngle   rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
+     * @param pPattern    the pattern to use
+     */
+    public void fillArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle, Pattern pPattern) {
+        fillShape(toArc(pRectangle, pStartAngle, pArcAngle, true), pPattern);
+    }
 
     /**
-    * EraseArc(r,int,int) // fills the arc's interior with the background pattern
-    *
-    * @param pRectangle the rectangle to erase
-    * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
-    * @param pArcAngle rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
-    */
-   public void eraseArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
-       eraseShape(toArc(pRectangle, pStartAngle, pArcAngle, true));
-   }
+     * EraseArc(r,int,int) // fills the arc's interior with the background pattern
+     *
+     * @param pRectangle  the rectangle to erase
+     * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
+     * @param pArcAngle   rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
+     */
+    public void eraseArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
+        eraseShape(toArc(pRectangle, pStartAngle, pArcAngle, true));
+    }
 
     /**
-    * InvertArc(r,int,int) // reverses the color of all pixels in the arc
-    *
-    * @param pRectangle the rectangle to invert
-    * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
-    * @param pArcAngle rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
-    */
-   public void invertArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
-       invertShape(toArc(pRectangle, pStartAngle, pArcAngle, true));
-   }
+     * InvertArc(r,int,int) // reverses the color of all pixels in the arc
+     *
+     * @param pRectangle  the rectangle to invert
+     * @param pStartAngle start angle in degrees (starting from 12'o clock, this differs from Java)
+     * @param pArcAngle   rotation angle in degrees (starting from {@code pStartAngle}, this differs from Java arcs)
+     */
+    public void invertArc(final Rectangle2D pRectangle, int pStartAngle, int pArcAngle) {
+        invertShape(toArc(pRectangle, pStartAngle, pArcAngle, true));
+    }
 
     /*
    // http://developer.apple.com/documentation/mac/quickdraw/QuickDraw-120.html#HEADING120-0
@@ -776,7 +787,7 @@ class QuickDrawContext {
 
     // Drawing Polygons:
     // TODO: What is the Xxx2D equivalent of Polygon!? GeneralPath?
-   // FramePoly
+    // FramePoly
     public void framePoly(final Polygon pPolygon) {
         // TODO: The old PICTImageReader does not draw the last connection line,
         // unless the start and end point is the same...
@@ -905,18 +916,19 @@ class QuickDrawContext {
 
    // Copying Images (SKIP?):
    */
-   /**
-    * CopyBits.
-    * <p/>
-    * Note that the destination is always {@code this}.
-    *
-    * @param pSrcBitmap the source bitmap to copy pixels from
-    * @param pSrcRect the source rectangle
-    * @param pDstRect the destination rectangle
-    * @param pMode the blending mode
-    * @param pMaskRgn the mask region
-    */
-   public void copyBits(BufferedImage pSrcBitmap, Rectangle pSrcRect, Rectangle pDstRect, int pMode, Shape pMaskRgn) {
+
+    /**
+     * CopyBits.
+     * <p/>
+     * Note that the destination is always {@code this}.
+     *
+     * @param pSrcBitmap the source bitmap to copy pixels from
+     * @param pSrcRect   the source rectangle
+     * @param pDstRect   the destination rectangle
+     * @param pMode      the blending mode
+     * @param pMaskRgn   the mask region
+     */
+    public void copyBits(BufferedImage pSrcBitmap, Rectangle pSrcRect, Rectangle pDstRect, int pMode, Shape pMaskRgn) {
         graphics.setComposite(getCompositeFor(pMode));
         if (pMaskRgn != null) {
             setClipRegion(pMaskRgn);
@@ -924,7 +936,7 @@ class QuickDrawContext {
 
         graphics.drawImage(
                 pSrcBitmap,
-                pDstRect.x, 
+                pDstRect.x,
                 pDstRect.y,
                 pDstRect.x + pDstRect.width,
                 pDstRect.y + pDstRect.height,
@@ -935,22 +947,34 @@ class QuickDrawContext {
                 null
         );
 
-       setClipRegion(null);
-   }
+        setClipRegion(null);
+    }
 
     /**
      * CopyMask
      */
-    public void copyMask(BufferedImage pSrcBitmap, BufferedImage pMaskBitmap, Rectangle pSrcRect, Rectangle pMaskRect, Rectangle pDstRect, int pSrcCopy, Shape pMaskRgn) {
-         throw new UnsupportedOperationException("Method copyMask not implemented"); // TODO: Implement
+    public void copyMask(BufferedImage pSrcBitmap,
+                         BufferedImage pMaskBitmap,
+                         Rectangle pSrcRect,
+                         Rectangle pMaskRect,
+                         Rectangle pDstRect,
+                         int pSrcCopy,
+                         Shape pMaskRgn) {
+        throw new UnsupportedOperationException("Method copyMask not implemented"); // TODO: Implement
     }
-    
-   /**
-    * CopyDeepMask -- available to basic QuickDraw only in System 7, combines the functionality of both CopyBits and CopyMask
-    */
-   public void copyDeepMask(BufferedImage pSrcBitmap, BufferedImage pMaskBitmap, Rectangle pSrcRect, Rectangle pMaskRect, Rectangle pDstRect, int pSrcCopy, Shape pMaskRgn) {
+
+    /**
+     * CopyDeepMask -- available to basic QuickDraw only in System 7, combines the functionality of both CopyBits and CopyMask
+     */
+    public void copyDeepMask(BufferedImage pSrcBitmap,
+                             BufferedImage pMaskBitmap,
+                             Rectangle pSrcRect,
+                             Rectangle pMaskRect,
+                             Rectangle pDstRect,
+                             int pSrcCopy,
+                             Shape pMaskRgn) {
         throw new UnsupportedOperationException("Method copyDeepMask not implemented"); // TODO: Implement
-   }
+    }
 
    /*
    // Drawing With the Eight-Color System:
@@ -978,15 +1002,15 @@ class QuickDrawContext {
    DrawChar // draws the glyph of a single 1-byte character.
    */
 
-   /**
-    * DrawString - draws the text of a Pascal string.
-    * 
-    * @param pString a Pascal string (a string of length less than or equal to 255 chars).
-    */
-   public void drawString(String pString) {
-       setupForText();
-       graphics.drawString(pString, (float) getPenPosition().getX(), (float) getPenPosition().getY());
-   }
+    /**
+     * DrawString - draws the text of a Pascal string.
+     *
+     * @param pString a Pascal string (a string of length less than or equal to 255 chars).
+     */
+    public void drawString(String pString) {
+        setupForText();
+        graphics.drawString(pString, (float) getPenPosition().getX(), (float) getPenPosition().getY());
+    }
 
    /*
    DrawText // draws the glyphs of a sequence of characters.
@@ -1079,7 +1103,7 @@ class QuickDrawContext {
                         thisY = points[1];
                         float dx = thisX - lastX;
                         float dy = thisY - lastY;
-                        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+                        float distance = (float) sqrt(dx * dx + dy * dy);
                         if (distance >= next) {
                             float r = 1.0f / distance;
                             //float angle = (float) Math.atan2(dy, dx);
@@ -1105,44 +1129,6 @@ class QuickDrawContext {
             }
 
             return result;
-        }
-
-    }
-
-    private static class NotSrcXor implements Composite {
-        // TODO: Src can probably be any color model that can be encoded in PICT, dst is always RGB/TYPE_INT
-        public CompositeContext createContext(final ColorModel srcColorModel, final ColorModel dstColorModel, RenderingHints hints) {
-            {
-                if (!srcColorModel.getColorSpace().isCS_sRGB() || !dstColorModel.getColorSpace().isCS_sRGB()) {
-                    throw new IllegalArgumentException("Only sRGB supported");
-                }
-            }
-
-            return new CompositeContext() {
-                public void dispose() {
-
-                }
-
-                public void compose(Raster src, Raster dstIn, WritableRaster dstOut) {
-                    // We always work in RGB, using DataBuffer.TYPE_INT transfer type.
-                    int[] srcData = null;
-                    int[] dstData = null;
-                    int[] resData = new int[src.getWidth() - src.getMinX()];
-
-                    for (int y = src.getMinY(); y < src.getHeight(); y++) {
-                        srcData = (int[]) src.getDataElements(src.getMinX(), y, src.getWidth(), 1, srcData);
-                        dstData = (int[]) dstIn.getDataElements(src.getMinX(), y, src.getWidth(), 1, dstData);
-
-                        for (int x = src.getMinX(); x < src.getWidth(); x++) {
-                            // TODO: Decide how to handle alpha (if at all)
-                            resData[x] = 0xff000000 | ((~ srcData[x] ^ dstData[x])) & 0xffffff ;
-//                            resData[x] = ~ srcData[x] ^ dstData[x];
-                        }
-
-                        dstOut.setDataElements(src.getMinX(), y, src.getWidth(), 1, resData);
-                    }
-                }
-            };
         }
     }
 }

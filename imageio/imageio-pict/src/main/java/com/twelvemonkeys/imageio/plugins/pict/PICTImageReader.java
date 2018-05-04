@@ -332,7 +332,7 @@ public final class PICTImageReader extends ImageReaderBase {
      *
      * @param pGraphics the graphics object to draw onto.
      *
-     * @throws javax.imageio.IIOException if the data can not be read.
+     * @throws IIOException if the data can not be read.
      * @throws IOException if an I/O error occurs while reading the image.
      */
     private void drawOnto(Graphics2D pGraphics) throws IOException {
@@ -351,8 +351,8 @@ public final class PICTImageReader extends ImageReaderBase {
      *
      * @param pStream the stream to read from
      *
-     * @throws javax.imageio.IIOException if the data can not be read. 
-     * @throws java.io.IOException if an I/O error occurs while reading the image.
+     * @throws IIOException if the data can not be read.
+     * @throws IOException if an I/O error occurs while reading the image.
      */
     private void readPICTopcodes(ImageInputStream pStream) throws IOException {
         pStream.seek(imageStartStreamPos);
@@ -371,7 +371,7 @@ public final class PICTImageReader extends ImageReaderBase {
         String text;
         Rectangle bounds = new Rectangle();
         Polygon polygon = new Polygon();
-        Polygon region = new Polygon();
+        Area region = new Area();
         int pixmapCount = 0;
 
         try {
@@ -1312,27 +1312,27 @@ public final class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_INVERT_SAME_RGN:// OK, not tested
                     case PICT.OP_FILL_SAME_RGN:// OK, not tested
                         // Draw
-                        if (region != null && region.npoints > 1) {
+                        if (region != null && !region.getBounds().isEmpty()) {
                             switch (opCode) {
                                 case PICT.OP_FRAME_RGN:
                                 case PICT.OP_FRAME_SAME_RGN:
-                                    context.frameRegion(new Area(region));
+                                    context.frameRegion(region);
                                     break;
                                 case PICT.OP_PAINT_RGN:
                                 case PICT.OP_PAINT_SAME_RGN:
-                                    context.paintRegion(new Area(region));
+                                    context.paintRegion(region);
                                     break;
                                 case PICT.OP_ERASE_RGN:
                                 case PICT.OP_ERASE_SAME_RGN:
-                                    context.eraseRegion(new Area(region));
+                                    context.eraseRegion(region);
                                     break;
                                 case PICT.OP_INVERT_RGN:
                                 case PICT.OP_INVERT_SAME_RGN:
-                                    context.invertRegion(new Area(region));
+                                    context.invertRegion(region);
                                     break;
                                 case PICT.OP_FILL_RGN:
                                 case PICT.OP_FILL_SAME_RGN:
-                                    context.fillRegion(new Area(region), fill);
+                                    context.fillRegion(region, fill);
                                     break;
                             }
                         }
@@ -1395,29 +1395,10 @@ public final class PICTImageReader extends ImageReaderBase {
                         // map replaces the bitmap, a color table has been added, and pixData replaces bitData.
                         // [5] For opcodes $0090 (BitsRect) and $0091 (BitsRgn), the data is unpacked. These
                         // opcodes can be used only when rowBytes is less than 8.
-                        /*
-                           pixMap:     PixMap;     {pixel map}
-                           ColorTable: ColorTable; {ColorTable record}
-                           srcRect:    Rect;       {source rectangle}
-                           dstRect:    Rect;       {destination rectangle}
-                           mode:       Word;       {transfer mode (may include }
-                                                   { new transfer modes)}
-                           pixData:    PixData;
-                        */
                         readOpBits(pStream, false);
                         break;
 
                     case PICT.OP_BITS_RGN:
-                        /*
-                           pixMap:     PixMap;
-                           colorTable: ColorTable;
-                           srcRect:    Rect;          {source rectangle}
-                           dstRect:    Rect;          {destination rectangle}
-                           mode:       Word;          {transfer mode (may }
-                                                      { include new modes)}
-                           maskRgn:    Rgn;           {region for masking}
-                           pixData:    PixData;
-                         */
                         readOpBits(pStream, true);
 
                         break;
@@ -1486,10 +1467,6 @@ public final class PICTImageReader extends ImageReaderBase {
 
                     case PICT.OP_COMPRESSED_QUICKTIME:
                         // $8200: CompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
-                        if (DEBUG) {
-                            System.out.println("compressedQuickTime");
-                        }
-
                         readCompressedQT(pStream);
 
                         break;
@@ -1585,43 +1562,56 @@ public final class PICTImageReader extends ImageReaderBase {
         int dataLength = pStream.readInt();
         long pos = pStream.getStreamPosition();
 
-        if (DEBUG) {
-            System.out.println("QT data length: " + dataLength);
-        }
-
-        // TODO: Need to figure out what the skipped data is?
-        for (int i = 0; i < 13; i++) {
-            int value = pStream.readInt();
-            if (DEBUG) {
-                System.out.println(String.format("%2d: 0x%08x", i * 4, value));
-            }
-        }
-
-        // Read the destination rectangle
-        Rectangle destination = new Rectangle();
-        readRectangle(pStream, destination);
+        int version = pStream.readUnsignedShort();
 
         if (DEBUG) {
-            System.out.println("...");
+            System.out.print("compressedQuickTime");
+            System.out.println(", size: " + dataLength + ", version: " + version);
         }
 
-        for (int i = 0; i < 2; i++) {
-            int value = pStream.readInt();
-            if (DEBUG) {
-                System.out.println(String.format("%2d: 0x%08x", (i + 15) * 4, value));
-            }
+        // Matrix
+        int[] matrix = new int[9];
+        for (int i = 0; i < matrix.length; i++) {
+            matrix[i] = pStream.readInt();
+        }
+        if (DEBUG) {
+            System.out.println(String.format("matrix: %s", Arrays.toString(matrix)));
+        }
+
+        // Matte
+        long matteSize = pStream.readUnsignedInt();
+        Rectangle matteRect = new Rectangle();
+        readRectangle(pStream, matteRect);
+
+        // Transfer mode
+        int mode = pStream.readUnsignedShort();
+
+        // Read the source rectangle
+        Rectangle srcRect = new Rectangle();
+        readRectangle(pStream, srcRect);
+
+        // ...and more
+        int accuracy = pStream.readInt();
+        int maskSize = pStream.readInt();
+
+        if (DEBUG) {
+            System.out.print("matteSize: " + matteSize);
+            System.out.print(", matteRect: " + matteRect);
+            System.out.print(", mode: " + mode);
+            System.out.print(", srcRect: " + srcRect);
+            System.out.print(", accuracy: " + accuracy);
+            System.out.println(", maskSize: " + maskSize);
         }
 
         BufferedImage image = QuickTime.decompress(pStream);
 
         if (image != null) {
-            context.copyBits(image, new Rectangle(image.getWidth(), image.getHeight()), destination, QuickDraw.SRC_COPY, null);
+            context.copyBits(image, srcRect, srcRect, mode, null);
 
             pStream.seek(pos + dataLength); // Might be word-align mismatch here
 
             // Skip "QuickTime™ and a ... decompressor required" text
-            // TODO: Verify that this is correct. It works with all my test data, but the algorithm is
-            // reverse-engineered by looking at the input data and not from any spec I've seen...
+            // NOTE: This algorithm is reverse-engineered by looking at various test inputs and not from any spec...
             int penSizeMagic = pStream.readInt();
             if (penSizeMagic == 0x000700ae) {           // OP_PN_SIZE + bogus x value..?
                 int skip = pStream.readUnsignedShort(); // bogus y value is the number of bytes to skip
@@ -1803,10 +1793,15 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         Rectangle regionBounds = new Rectangle();
-        Polygon region = hasRegion ? readRegion(pStream, regionBounds) : null;
+        Area region = hasRegion ? readRegion(pStream, regionBounds) : null;
 
         if (DEBUG) {
-            System.out.println(hasRegion ? ", region: " + region : "" );
+            if (hasRegion) {
+                verboseRegionCmd(", region", regionBounds, region);
+            }
+            else {
+                System.out.println();
+            }
         }
 
         // Set up pixel buffer for the RGB values
@@ -1882,8 +1877,7 @@ public final class PICTImageReader extends ImageReaderBase {
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
             srcRect.setLocation(0, 0); // Raster always start at 0,0
-//            dstRect.translate(-frame.x, -frame.y);
-            context.copyBits(img, srcRect, dstRect, transferMode, null);
+            context.copyBits(img, srcRect, dstRect, transferMode, region);
         }
 
         // Line break at the end
@@ -1899,8 +1893,8 @@ public final class PICTImageReader extends ImageReaderBase {
      * @param pPixmapCount the index of the bitmap in the PICT file, used for
      *        cahcing.
      *
-     * @throws javax.imageio.IIOException if the data can not be read.
-     * @throws java.io.IOException if an I/O error occurs while reading the image.
+     * @throws IIOException if the data can not be read.
+     * @throws IOException if an I/O error occurs while reading the image.
      */
     private void readOpDirectBits(final ImageInputStream pStream, final boolean hasRegion, final int pPixmapCount) throws IOException {
         // Skip PixMap pointer (always 0x000000FF);
@@ -2039,7 +2033,7 @@ public final class PICTImageReader extends ImageReaderBase {
             System.out.print(", mode: " + transferMode);
         }
 
-        Polygon region = hasRegion ? readRegion(pStream, new Rectangle()) : null;
+        Area region = hasRegion ? readRegion(pStream, new Rectangle()) : null;
 
         if (DEBUG) {
             System.out.println(hasRegion ? ", region: " + region : "");
@@ -2196,8 +2190,7 @@ public final class PICTImageReader extends ImageReaderBase {
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
             srcRect.setLocation(0, 0); // Raster always starts at 0,0
-//            dstRect.translate(-frame.x, -frame.y);
-            context.copyBits(img, srcRect, dstRect, transferMode, null);
+            context.copyBits(img, srcRect, dstRect, transferMode, region);
         }
 
         // Line break at the end
@@ -2206,6 +2199,16 @@ public final class PICTImageReader extends ImageReaderBase {
         }
     }
 
+    /*
+       pixMap:     PixMap;
+       colorTable: ColorTable;
+       srcRect:    Rect;          {source rectangle}
+       dstRect:    Rect;          {destination rectangle}
+       mode:       Word;          {transfer mode (may }
+                                  { include new modes)}
+       maskRgn:    Rgn;           {region for masking}
+       pixData:    PixData;
+     */
     private void readOpBits(ImageInputStream pStream, boolean hasRegion) throws IOException {
         // Get rowBytes
         int rowBytesRaw = pStream.readUnsignedShort();
@@ -2323,7 +2326,7 @@ public final class PICTImageReader extends ImageReaderBase {
         // Get transfer mode
         int mode = pStream.readUnsignedShort();
 
-        Polygon region = hasRegion ? readRegion(pStream, new Rectangle()) : null;
+        Area region = hasRegion ? readRegion(pStream, new Rectangle()) : null;
 
         if (DEBUG) {
             System.out.print(", bounds: " + bounds);
@@ -2347,8 +2350,7 @@ public final class PICTImageReader extends ImageReaderBase {
 
         // Draw pixel data
         srcRect.setLocation(0, 0); // Raster always start at 0,0
-//        dstRect.translate(-frame.x, -frame.y);
-        context.copyBits(image, srcRect, dstRect, mode, null);
+        context.copyBits(image, srcRect, dstRect, mode, region);
     }
 
     /**
@@ -2368,84 +2370,90 @@ public final class PICTImageReader extends ImageReaderBase {
 
         pDestRect.setLocation(getXPtCoord(x), getYPtCoord(y));
         pDestRect.setSize(getXPtCoord(w - x), getYPtCoord(h - y));
-
     }
 
     /**
      * Read in a region. The input stream should be positioned at the first byte
-     * of the region. {@code pBoundsRect} is a rectangle that will be set to the
+     * of the region. {@code pBounds} is a rectangle that will be set to the
      * region bounds.
      * The point array may therefore be empty if the region is just a rectangle.
      *
      * @param pStream the stream to read from
-     * @param pBoundsRect the bounds rectangle to read into
+     * @param pBounds the bounds rectangle to read into
      *
-     * @return the polygon containing the region, or an empty polygon if the
+     * @return the area containing the region, or an empty polygon if the
      * region is a rectangle.
      *
      * @throws IOException if an I/O error occurs while reading the image.
      */
-    private Polygon readRegion(DataInput pStream, Rectangle pBoundsRect) throws IOException {
-        // Get minimal region
-
+    private Area readRegion(DataInput pStream, Rectangle pBounds) throws IOException {
         // Get region data size
         int size = pStream.readUnsignedShort();
 
         // Get region bounds
-        int y = getYPtCoord(pStream.readShort());
-        int x = getXPtCoord(pStream.readShort());
-        pBoundsRect.setLocation(x, y);
+        readRectangle(pStream, pBounds);
 
-        y = getYPtCoord(pStream.readShort()) - pBoundsRect.getLocation().y;
-        x = getXPtCoord(pStream.readShort()) - pBoundsRect.getLocation().x;
-        pBoundsRect.setSize(x, y);
-
-        Polygon polygon = new Polygon();
         int count = (size - 10) / 2;
-        boolean nextIsV = true;
 
-        for (int i = 0; i < count; i++) {
-            short point = pStream.readShort();
-
-            if (nextIsV) {
-                if (point == 0x7fff) {
-                    // Done
-                    break;
-                }
-
-                y = point;
-                nextIsV = false;
-            }
-            else {
-                if (point == 0x7fff) {
-                    nextIsV = true;
-                    continue;
-                }
-
-                x = point;
-                polygon.addPoint(x, y);
-            }
+        if (count == 0) {
+            // Minimal region, just the bounds
+            return new Area(pBounds);
         }
+        else {
+            // Normal region, parse inversion points and build area
+            Area area = new Area();
 
-        return polygon;
+            boolean nextIsVertical = true;
+
+            int x, y = 0;
+            for (int i = 0; i < count; i++) {
+                short point = pStream.readShort();
+
+                if (nextIsVertical) {
+                    if (point == 0x7fff) {
+                        // Done
+                        break;
+                    }
+
+                    y = point;
+                    nextIsVertical = false;
+                }
+                else {
+                    if (point == 0x7fff) {
+                        nextIsVertical = true;
+                        continue;
+                    }
+
+                    x = point;
+                    area.exclusiveOr(new Area(new Rectangle(x, y, pBounds.x + pBounds.width - x, pBounds.y + pBounds.height - y)));
+                }
+            }
+
+            if (!pBounds.contains(area.getBounds())) {
+                processWarningOccurred("Bad region, contains point(s) out of bounds " + pBounds + ": " + area);
+            }
+
+            return area;
+        }
     }
 
-    /*
+    /**
      * Read in a polygon. The input stream should be positioned at the first byte
      * of the polygon.
+     *
+     * @param pStream the stream to read from
+     * @param pBounds the bounds rectangle to read into
+     *
+     * @return the polygon
+     *
+     * @throws IOException if an I/O error occurs while reading the image.
      */
-    private Polygon readPoly(DataInput pStream, Rectangle pBoundsRect) throws IOException {
+    private Polygon readPoly(DataInput pStream, Rectangle pBounds) throws IOException {
         // Get polygon data size
         int size = pStream.readUnsignedShort();
 
         // Get poly bounds
-        int y = getYPtCoord(pStream.readShort());
-        int x = getXPtCoord(pStream.readShort());
-        pBoundsRect.setLocation(x, y);
-
-        y = getYPtCoord(pStream.readShort()) - pBoundsRect.getLocation().y;
-        x = getXPtCoord(pStream.readShort()) - pBoundsRect.getLocation().x;
-        pBoundsRect.setSize(x, y);
+        readRectangle(pStream, pBounds);
 
         // Initialize the point array to the right size
         int points = (size - 10) / 4;
@@ -2454,9 +2462,13 @@ public final class PICTImageReader extends ImageReaderBase {
         Polygon polygon = new Polygon();
 
         for (int i = 0; i < points; i++) {
-            y = getYPtCoord(pStream.readShort());
-            x = getXPtCoord(pStream.readShort());
+            int y = getYPtCoord(pStream.readShort());
+            int x = getXPtCoord(pStream.readShort());
             polygon.addPoint(x, y);
+        }
+
+        if (!pBounds.contains(polygon.getBounds())) {
+            processWarningOccurred("Bad poly, contains point(s) out of bounds " + pBounds + ": " + polygon);
         }
 
         return polygon;
@@ -2540,15 +2552,15 @@ public final class PICTImageReader extends ImageReaderBase {
     /*
      * Write out region command, bounds and points.
      */
-    private void verboseRegionCmd(String pCmd, Rectangle pBounds, Polygon pPolygon) {
+    private void verboseRegionCmd(String pCmd, Rectangle pBounds, Area pRegion) {
         System.out.println(pCmd + ": " + pBounds);
-        System.out.print("Region points: ");
-        if (pPolygon != null && pPolygon.npoints > 0) {
-            System.out.print("(" + pPolygon.xpoints[0] + "," + pPolygon.ypoints[0] + ")");
-        }
-        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
-            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
-        }
+//        System.out.print("Region points: ");
+//        if (pPolygon != null && pPolygon.npoints > 0) {
+//            System.out.print("(" + pPolygon.xpoints[0] + "," + pPolygon.ypoints[0] + ")");
+//        }
+//        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
+//            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
+//        }
         System.out.println();
     }
 
