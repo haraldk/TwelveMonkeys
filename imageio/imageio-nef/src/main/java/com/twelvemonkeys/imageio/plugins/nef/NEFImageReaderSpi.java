@@ -28,12 +28,10 @@
 
 package com.twelvemonkeys.imageio.plugins.nef;
 
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -46,28 +44,9 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: CR2ImageReaderSpi.java,v 1.0 07.04.14 21:26 haraldk Exp$
  */
-public final class NEFImageReaderSpi extends ImageReaderSpi {
+public final class NEFImageReaderSpi extends ImageReaderSpiBase {
     public NEFImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(NEFImageReaderSpi.class));
-    }
-
-    private NEFImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"nef", "NEF"},
-                new String[]{"nef"},
-                new String[]{
-                        "image/x-nikon-nef",               // TODO: Look up
-                },
-                "com.twelvemonkeys.imageio.plugins.nef.NEFImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, null, null, null, null,
-                true,
-                null, null,
-                null, null
-        );
+        super(new NEFProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {

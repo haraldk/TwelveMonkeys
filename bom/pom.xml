@@ -60,6 +60,16 @@
             </dependency>
             <dependency>
                 <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-cr2</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-dng</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
                 <artifactId>imageio-hdr</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -76,6 +86,11 @@
             <dependency>
                 <groupId>com.twelvemonkeys.imageio</groupId>
                 <artifactId>imageio-jpeg</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-nef</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

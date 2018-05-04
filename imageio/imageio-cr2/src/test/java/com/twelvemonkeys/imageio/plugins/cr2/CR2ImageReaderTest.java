@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.cr2;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -47,7 +47,7 @@ import java.util.List;
  * @version $Id: CR2ImageReaderTest.java,v 1.0 07.04.14 21:52 haraldk Exp$
  */
 @Ignore
-public class CR2ImageReaderTest extends ImageReaderAbstractTestCase {
+public class CR2ImageReaderTest extends ImageReaderAbstractTest {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(

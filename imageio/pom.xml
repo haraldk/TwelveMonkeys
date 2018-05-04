@@ -32,7 +32,6 @@
         <!-- Stand-alone readers/writers -->
         <module>imageio-cr2</module>
         <module>imageio-dng</module>
-        <module>imageio-ico</module>
         <module>imageio-bmp</module>
         <module>imageio-hdr</module>
         <module>imageio-icns</module>
@@ -131,6 +130,12 @@
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>imageio-core</artifactId>
+                <version>${project.version}</version>
+                <classifier>tests</classifier>
             </dependency>
 
 	        <dependency>

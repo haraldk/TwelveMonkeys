@@ -28,12 +28,10 @@
 
 package com.twelvemonkeys.imageio.plugins.cr2;
 
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -46,28 +44,9 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: CR2ImageReaderSpi.java,v 1.0 07.04.14 21:26 haraldk Exp$
  */
-public final class CR2ImageReaderSpi extends ImageReaderSpi {
+public final class CR2ImageReaderSpi extends ImageReaderSpiBase {
     public CR2ImageReaderSpi() {
-        this(IIOUtil.getProviderInfo(CR2ImageReaderSpi.class));
-    }
-
-    private CR2ImageReaderSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[]{"cr2", "CR2"},
-                new String[]{"cr2"},
-                new String[]{
-                        "image/x-canon-raw",               // TODO: Look up
-                },
-                "com.twelvemonkeys.imageio.plugins.cr2.CR2ImageReader",
-                new Class[] {ImageInputStream.class},
-                null,
-                true, null, null, null, null,
-                true,
-                null, null,
-                null, null
-        );
+        super(new CR2ProviderInfo());
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {

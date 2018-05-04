@@ -32,8 +32,8 @@ import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
 import javax.imageio.*;
@@ -102,7 +102,7 @@ public final class NEFImageReader extends ImageReaderBase {
         if (IFDs == null) {
             imageInput.seek(0);
 
-            IFDs = (CompoundDirectory) new EXIFReader().read(imageInput); // NOTE: Sets byte order as a side effect
+            IFDs = (CompoundDirectory) new TIFFReader().read(imageInput); // NOTE: Sets byte order as a side effect
 
             // Pull up the sub-ifds now
             Entry subIFDEntry = IFDs.getEntryById(TIFF.TAG_SUB_IFD);
