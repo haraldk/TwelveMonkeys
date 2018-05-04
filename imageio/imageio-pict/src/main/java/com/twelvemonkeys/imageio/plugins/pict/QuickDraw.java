@@ -28,8 +28,9 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import java.awt.image.*;
 import java.awt.*;
+import java.awt.image.DataBuffer;
+import java.awt.image.IndexColorModel;
 
 /**
  * QuickDraw constants.
@@ -61,6 +62,18 @@ interface QuickDraw {
     // http://developer.apple.com/documentation/mac/quickdraw/QuickDraw-196.html#HEADING196-2
     // http://developer.apple.com/documentation/mac/quickdraw/QuickDraw-269.html#HEADING269-2
     // See http://developer.apple.com/documentation/mac/quickdraw/QuickDraw-199.html#HEADING199-76 for color!
+    /*
+    Source mode	Action on destination pixel
+ 	If source pixel is black	If source pixel is white	If source pixel is any other color
+    srcCopy	Apply foreground color	Apply background color	Apply weighted portions of foreground and background colors
+    notSrcCopy	Apply background color	Apply foreground color	Apply weighted portions of background and foreground colors
+    srcOr	Apply foreground color	Leave alone	Apply weighted portions of foreground color
+    notSrcOr	Leave alone	Apply foreground color	Apply weighted portions of foreground color
+    srcXor	Invert (undefined for colored destination pixel)	Leave alone	Leave alone
+    notSrcXor	Leave alone	Invert (undefined for colored destination pixel)	Leave alone
+    srcBic	Apply background color	Leave alone	Apply weighted portions of background color
+    notSrcBic	Leave alone	Apply background color	Apply weighted portions of background color
+     */
     int SRC_COPY = 0;
     int SRC_OR = 1;
     int SRC_XOR = 2;
@@ -84,16 +97,73 @@ interface QuickDraw {
 
     // Arithmetic Transfer Modes
     // http://developer.apple.com/documentation/mac/quickdraw/QuickDraw-199.html#HEADING199-112
+    /*
+    CONST
+    blend       = 32; {replace destination pixel with a blend }
+                      { of the source and destination pixel }
+                      { colors; if the destination is a bitmap or }
+                      { 1-bit pixel map, revert to srcCopy mode}
+    addPin      = 33; {replace destination pixel with the sum of }
+                      { the source and destination pixel colors-- }
+                      { up to a maximum allowable value; if }
+                      { the destination is a bitmap or }
+                      { 1-bit pixel map, revert to srcBic mode}
+    addOver     = 34; {replace destination pixel with the sum of }
+                      { the source and destination pixel colors-- }
+                      { but if the value of the red, green, or }
+                      { blue component exceeds 65,536, then }
+                      { subtract 65,536 from that value; if the }
+                      { destination is a bitmap or 1-bit }
+                      { pixel map, revert to srcXor mode}
+    subPin      = 35; {replace destination pixel with the }
+                      { difference of the source and destination }
+                      { pixel colors--but not less than a minimum }
+                      { allowable value; if the destination }
+                      { is a bitmap or 1-bit pixel map, revert to }
+                      { srcOr mode}
+    transparent = 36; {replace the destination pixel with the }
+                      { source pixel if the source pixel isn't }
+                      { equal to the background color}
+    addMax      = 37; {compare the source and destination pixels, }
+                      { and replace the destination pixel with }
+                      { the color containing the greater }
+                      { saturation of each of the RGB components; }
+                      { if the destination is a bitmap or }
+                      { 1-bit pixel map, revert to srcBic mode}
+    subOver     = 38; {replace destination pixel with the }
+                      { difference of the source and destination }
+                      { pixel colors--but if the value of a red, }
+                      { green, or blue component is }
+                      { less than 0, add the negative result to }
+                      { 65,536; if the destination is a bitmap or }
+                      { 1-bit pixel map, revert to srcXor mode}
+    adMin       = 39; {compare the source and destination pixels, }
+                      { and replace the destination pixel with }
+                      { the color containing the lesser }
+                      { saturation of each of the RGB components; }
+                      { if the destination is a bitmap or }
+                      { 1-bit pixel map, revert to srcOr mode}
+   */
     int BLEND = 32; // dest = source weight/65,535 + destination (1 - weight/65,535)
     int ADD_PIN = 33;
     int ADD_OVER = 34;
     int SUB_PIN = 35;
     int TRANSPARENT = 36;
-    int AD_MAX = 37;
+    int ADD_MAX = 37;
     int SUB_OVER = 38;
-    int AD_MIN = 39;
+    int ADD_MIN = 39;
+
+    // Transfer mode for text only
+    /*
+    If the destination device is color and grayishTextOr is the transfer mode,
+    QuickDraw draws with a blend of the foreground and background colors. If
+    the destination device is black and white, the grayishTextOr mode dithers
+    black and white.
+
+    Note that grayishTextOr is not considered a standard transfer mode because
+    currently it is not stored in pictures, and printing with it is undefined.
+     */
     int GRAYISH_TEXT_OR = 49;
-//    int MASK = 64; // ?! From Käry's code..
 
     /*
      * Text face masks.
