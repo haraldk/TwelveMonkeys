@@ -86,6 +86,22 @@ final class JPEGLosslessDecoderWrapper {
         int width = decoder.getDimX();
         int height = decoder.getDimY();
 
+        if (SliceContext.isPresent()) { //QnD
+            final int[][] unsliced = new int[1][];
+            final int componentCount = decoder.getNumComponents();
+            final Slice slice = SliceContext.get();
+            unsliced[0] = slice.unslice(decoded, componentCount, height);
+            switch (decoder.getPrecision()) {
+                case 8:
+                    return to8Bit1ComponentGrayScale(unsliced, width * componentCount, height);
+                case 10:
+                case 12:
+                case 14:
+                case 16:
+                    return to16Bit1ComponentGrayScale(unsliced, decoder.getPrecision(), width * componentCount, height);
+            }
+        }
+
         // Single component, assumed to be Gray
         if (decoder.getNumComponents() == 1) {
             switch (decoder.getPrecision()) {

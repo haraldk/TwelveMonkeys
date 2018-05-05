@@ -36,6 +36,8 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.plugins.jpeg.Slice;
+import com.twelvemonkeys.imageio.plugins.jpeg.SliceContext;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
 import javax.imageio.IIOException;
@@ -432,17 +434,20 @@ public final class CR2ImageReader extends ImageReaderBase {
             int stripByteCounts = getValueAsInt(TIFF.TAG_STRIP_BYTE_COUNTS, "StripByteCounts");
             long[] slices = getValueAsLongArray(50752, "Slices", true);
 
-            // Format of this array, is slices[0] = N, slices[1] = slice0.width ... slices[N + 1] = sliceN.width
-            if (slices[0] != slices.length - 2) {
-                throw new IIOException("Unexpected slices array: " + Arrays.toString(slices));
+            try {
+                final Slice slice = Slice.createSlice(slices);
+                SliceContext.set(slice);
+
+                // TODO: Get correct dimensions (sensor size?)
+                int width = getWidth(0);
+                int height = getHeight(0);
+
+                imageInput.seek(stripOffsets);
+                return ImageIO.read(new SubImageInputStream(imageInput, stripByteCounts));
+            } finally {
+                SliceContext.remove();
             }
-            // TODO: We really have multiple slices...
 
-            // TODO: Get correct dimensions (sensor size?)
-            int width = getWidth(0);
-            int height = getHeight(0);
-
-            imageInput.seek(stripOffsets);
 //            byte[] data = new LosslessJPEGDecoder().decompress(new SubImageInputStream(imageInput, stripByteCounts), null);
 //
 //            // TODO: We really have 2 bytes/sample
@@ -477,7 +482,7 @@ public final class CR2ImageReader extends ImageReaderBase {
             for (int i = 0; i < numImages; i++) {
                 int numThumbnails = reader.getNumThumbnails(i);
                 for (int n = 0; n < numThumbnails; n++) {
-                    showIt(reader.readThumbnail(i, n), arg + " image thumbnail" + n);
+                    showIt(reader.readThumbnail(i, n), arg + " image " + i + " thumbnail " + n);
                 }
 
                 showIt(reader.read(i), arg + " image " + i);
