@@ -42,7 +42,7 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTImageWriterSpi.java,v 1.0 02.mar.2006 19:21:05 haku Exp$
  */
-public class PICTImageWriterSpi extends ImageWriterSpiBase {
+public final class PICTImageWriterSpi extends ImageWriterSpiBase {
 
     /**
      * Creates a {@code PICTImageWriterSpi}.

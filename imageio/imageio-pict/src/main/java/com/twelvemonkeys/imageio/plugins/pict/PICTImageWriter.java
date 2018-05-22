@@ -83,7 +83,7 @@ import java.io.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTWriter.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */
-public class PICTImageWriter extends ImageWriterBase {
+public final class PICTImageWriter extends ImageWriterBase {
 
     // TODO: Inline these?
     private int rowBytes;

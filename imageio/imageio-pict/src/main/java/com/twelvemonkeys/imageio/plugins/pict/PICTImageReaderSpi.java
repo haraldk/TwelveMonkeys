@@ -43,11 +43,12 @@ import java.util.Locale;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
  */
-public class PICTImageReaderSpi extends ImageReaderSpiBase {
+public final class PICTImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code PICTImageReaderSpi}.
      */
+    @SuppressWarnings("WeakerAccess")
     public PICTImageReaderSpi() {
         super(new PICTProviderInfo());
     }
@@ -83,11 +84,12 @@ public class PICTImageReaderSpi extends ImageReaderSpiBase {
 
     static void skipNullHeader(final ImageInputStream pStream) throws IOException {
         // NOTE: Only skip if FILE FORMAT, not needed for Mac OS DnD
-        // Spec says "platofrm dependent", may not be all nulls..
+        // Spec says "platform dependent", may not be all nulls..
         pStream.skipBytes(PICT.PICT_NULL_HEADER_SIZE);
     }
 
     private boolean isPICT(final ImageInputStream pStream) throws IOException {
+        // TODO: Need to validate better...
         // Size may be 0, so we can't use this for validation...
         pStream.readUnsignedShort();
 
