@@ -90,7 +90,7 @@ class Application extends Segment {
 
             default:
                 // Generic APPn segment
-                byte[] bytes = new byte[length - 2];
+                byte[] bytes = new byte[Math.max(0, length - 2)];
                 data.readFully(bytes);
                 return new Application(marker, identifier, bytes);
         }

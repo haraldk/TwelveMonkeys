@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil.isKnownJPEGMarker;
 import static com.twelvemonkeys.lang.Validate.notNull;
 import static java.util.Arrays.copyOf;
 
@@ -105,24 +106,25 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
             // Scan forward
             while (true) {
-                long realPosition = stream.getStreamPosition();
-
                 int trash = 0;
                 int marker = stream.readUnsignedByte();
 
-                // Skip bad padding before the marker
-                while (marker != 0xff) {
-                    marker = stream.readUnsignedByte();
-                    trash++;
-                    realPosition++;
-                }
+                while (!isKnownJPEGMarker(marker)) {
+                    marker &= 0xff;
 
-                marker = 0xff00 | stream.readUnsignedByte();
+                    // Skip bad padding before the marker
+                    while (marker != 0xff) {
+                        marker = stream.readUnsignedByte();
+                        trash++;
+                    }
 
-                // Skip over 0xff padding between markers
-                while (marker == 0xffff) {
-                    realPosition++;
                     marker = 0xff00 | stream.readUnsignedByte();
+
+                    // Skip over 0xff padding between markers
+                    while (marker == 0xffff) {
+                        marker = 0xff00 | stream.readUnsignedByte();
+                        trash++;
+                    }
                 }
 
                 if (trash != 0) {
@@ -130,6 +132,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     // and issued the correct warning. However, the native metadata chokes on it, so we'll mask it out.
                     processWarningOccured(String.format("Corrupt JPEG data: %d extraneous bytes before marker 0x%02x", trash, marker & 0xff));
                 }
+
+                long realPosition = stream.getStreamPosition() - 2;
 
                 // We are now handling all important segments ourselves, except APP1/Exif and APP14/Adobe,
                 // as these segments affects image decoding.
@@ -380,6 +384,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 fetchSegment();
             }
             catch (EOFException ignore) {
+                segments.add(new Segment(0, segment.realEnd(), segment.end(), Integer.MAX_VALUE * 2L - segment.realEnd()));
                 // This might happen if the segment lengths in the stream are bad.
                 // We MUST leave internal state untouched in this case.
                 // We ignore this exception here, but client code will get
@@ -415,7 +420,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             repositionAsNecessary();
 
             long bytesLeft = segment.end() - streamPos; // If no more bytes after reposition, we're at EOF
-            int count = bytesLeft == 0 ? -1 : segment.read(stream, b, off + total, (int) Math.min(len - total, bytesLeft));
+            int count = bytesLeft <= 0 ? -1 : segment.read(stream, b, off + total, (int) Math.min(len - total, bytesLeft));
 
             if (count == -1) {
                 // EOF

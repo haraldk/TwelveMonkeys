@@ -233,7 +233,14 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
-        Iterator<ImageTypeSpecifier> types = delegate.getImageTypes(imageIndex);
+        Iterator<ImageTypeSpecifier> types;
+        try {
+            types = delegate.getImageTypes(imageIndex);
+        }
+        catch (IndexOutOfBoundsException | NegativeArraySizeException ignore) {
+            types = null;
+        }
+
         JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
         if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
@@ -302,7 +309,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                 return rawType;
             }
         }
-        catch (IIOException | NullPointerException ignore) {
+        catch (IIOException | NullPointerException | ArrayIndexOutOfBoundsException | NegativeArraySizeException ignore) {
             // Fall through
         }
 
@@ -933,7 +940,13 @@ public final class JPEGImageReader extends ImageReaderBase {
             return new JPEGLosslessDecoderWrapper(this).readRaster(segments, imageInput);
         }
 
-        return delegate.readRaster(imageIndex, param);
+        try {
+            return delegate.readRaster(imageIndex, param);
+        }
+        catch (IndexOutOfBoundsException knownIssue) {
+            // com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
+            throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
+        }
     }
 
     @Override

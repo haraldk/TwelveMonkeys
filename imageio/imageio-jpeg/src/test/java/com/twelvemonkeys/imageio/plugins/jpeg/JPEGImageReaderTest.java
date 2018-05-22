@@ -119,8 +119,15 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-invalid-adobe-ycc-gray.jpg"), new Dimension(11, 440)), // Image readable, broken metadata (fixable?)
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg"), new Dimension(-1, -1)), // Unreadable, can't find SOFn marker
                 new TestData(getClassLoaderResource("/broken-jpeg/broken-sos-before-sof.jpg"), new Dimension(-1, -1)), // Unreadable, can't find SOFn marker
-                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-segment-length-beyond-eof.jpg"), new Dimension(-1, -1)) // Unreadable, no EOI
-        );
+                new TestData(getClassLoaderResource("/broken-jpeg/broken-adobe-segment-length-beyond-eof.jpg"), new Dimension(-1, -1)), // Unreadable, no EOI
+                new TestData(getClassLoaderResource("/broken-jpeg/513f29d0-02a8-11e7-9756-6035edb96e79.jpg"), new Dimension(-1, -1)),
+                new TestData(getClassLoaderResource("/broken-jpeg/51432b02-02a8-11e7-9203-b42b1c43c0c3.jpg"), new Dimension(-1, -1)),
+                new TestData(getClassLoaderResource("/broken-jpeg/5145e95a-02a8-11e7-8372-4787a7307ab8.jpg"), new Dimension(-1, -1)),
+                new TestData(getClassLoaderResource("/broken-jpeg/514b20dc-02a8-11e7-92c6-d4fed7b4ebb1.jpg"), new Dimension(-1, -1)),
+                new TestData(getClassLoaderResource("/broken-jpeg/514c48ea-02a8-11e7-8789-bb75321f404f.jpg"), new Dimension(-1, -1)),
+                new TestData(getClassLoaderResource("/broken-jpeg/514e4122-02a8-11e7-8c03-0830d60cd585.jpg"), new Dimension(-1, -1)),
+                new TestData(getClassLoaderResource("/broken-jpeg/513f29d0-02a8-11e7-9756-6035edb96e79.jpg"), new Dimension(-1, -1))
+                );
 
         // More test data in specific tests below
     }
@@ -446,7 +453,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
     @Test
     public void testBrokenReadRasterAfterGetMetadataException() throws IOException {
-        // See issue 107, from PDFBox team
+        // See issue #107, from PDFBox team
         JPEGImageReader reader = createReader();
 
         try {
@@ -458,7 +465,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 }
                 catch (IOException ignore) {
                     // Expected IOException here, due to broken file
-//                    ignore.printStackTrace();
                 }
 
                 try {
@@ -466,6 +472,122 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 }
                 catch (IOException expected) {
                     // Should not throw anything other than IOException here
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testSPIRecognizesBrokenJPEG() throws IOException {
+        // TODO: There's a bug in com.sun.imageio.plugins.png.PNGImageReaderSpi.canDecode
+        // causing files < 8 bytes to not be recognized as anything...
+        ImageReaderSpi provider = createProvider();
+        for (TestData data : getBrokenTestData()) {
+            assertTrue(data.toString(), provider.canDecodeInput(data.getInputStream()));
+        }
+    }
+
+    // TODO: Consider wrapping the delegate in JPEGImageReader with methods that don't throw
+    // runtime exceptions, and instead throw IIOException?
+    @Test
+    public void testBrokenGetRawImageType() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                try {
+                    reader.getRawImageType(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(timeout = 200)
+    public void testBrokenGetRawImageTypeIgnoreMetadata() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream(), true, true);
+
+                try {
+                    reader.getRawImageType(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testBrokenGetImageTypes() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream());
+
+                try {
+                    reader.getImageTypes(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
+                    if (!(expected instanceof EOFException)) {
+                        assertNotNull(expected.getMessage());
+                    }
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(timeout = 200)
+    public void testBrokenGetImageTypesIgnoreMetadata() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            for (TestData broken : getBrokenTestData()) {
+                reader.setInput(broken.getInputStream(), true, true);
+
+                try {
+                    reader.getImageTypes(0);
+                }
+                catch (IIOException expected) {
+                    assertNotNull(expected.getMessage());
+                }
+                catch (IOException expected) {
                     if (!(expected instanceof EOFException)) {
                         assertNotNull(expected.getMessage());
                     }

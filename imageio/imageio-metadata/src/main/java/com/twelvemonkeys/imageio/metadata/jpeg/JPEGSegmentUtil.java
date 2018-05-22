@@ -165,22 +165,24 @@ public final class JPEGSegmentUtil {
 //        int trash = 0;
         int marker = stream.readUnsignedByte();
 
-        // Skip trash padding before the marker
-        while (marker != 0xff) {
-            marker = stream.readUnsignedByte();
+        while (!isKnownJPEGMarker(marker)) {
+            // Skip trash padding before the marker
+            while (marker != 0xff) {
+                marker = stream.readUnsignedByte();
 //            trash++;
-        }
+            }
 
 //        if (trash != 0) {
             // TODO: Issue warning?
 //            System.err.println("trash: " + trash);
 //        }
 
-        marker = 0xff00 | stream.readUnsignedByte();
-
-        // Skip over 0xff padding between markers
-        while (marker == 0xffff) {
             marker = 0xff00 | stream.readUnsignedByte();
+
+            // Skip over 0xff padding between markers
+            while (marker == 0xffff) {
+                marker = 0xff00 | stream.readUnsignedByte();
+            }
         }
 
         if ((marker >> 8 & 0xff) != 0xff) {
@@ -192,7 +194,7 @@ public final class JPEGSegmentUtil {
         byte[] data;
 
         if (segmentIdentifiers.containsKey(marker)) {
-            data = new byte[length - 2];
+            data = new byte[Math.max(0, length - 2)];
             stream.readFully(data);
         }
         else {
@@ -216,6 +218,57 @@ public final class JPEGSegmentUtil {
         }
 
         return new JPEGSegment(marker, data, length);
+    }
+
+    public static boolean isKnownJPEGMarker(final int marker) {
+        switch (marker) {
+            case JPEG.SOI:
+            case JPEG.EOI:
+            case JPEG.DHT:
+            case JPEG.SOS:
+            case JPEG.DQT:
+            case JPEG.COM:
+            case JPEG.SOF0:
+            case JPEG.SOF1:
+            case JPEG.SOF2:
+            case JPEG.SOF3:
+            case JPEG.SOF5:
+            case JPEG.SOF6:
+            case JPEG.SOF7:
+            case JPEG.SOF9:
+            case JPEG.SOF10:
+            case JPEG.SOF11:
+            case JPEG.SOF13:
+            case JPEG.SOF14:
+            case JPEG.SOF15:
+            case JPEG.SOF55:
+            case JPEG.APP0:
+            case JPEG.APP1:
+            case JPEG.APP2:
+            case JPEG.APP3:
+            case JPEG.APP4:
+            case JPEG.APP5:
+            case JPEG.APP6:
+            case JPEG.APP7:
+            case JPEG.APP8:
+            case JPEG.APP9:
+            case JPEG.APP10:
+            case JPEG.APP11:
+            case JPEG.APP12:
+            case JPEG.APP13:
+            case JPEG.APP14:
+            case JPEG.APP15:
+            case JPEG.DRI:
+            case JPEG.TEM:
+            case JPEG.DAC:
+            case JPEG.DHP:
+            case JPEG.DNL:
+            case JPEG.EXP:
+            case JPEG.LSE:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static class AllIdsList extends ArrayList<String> {

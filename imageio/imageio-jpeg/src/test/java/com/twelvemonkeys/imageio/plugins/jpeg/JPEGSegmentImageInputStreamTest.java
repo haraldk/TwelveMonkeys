@@ -173,6 +173,32 @@ public class JPEGSegmentImageInputStreamTest {
     }
 
     @Test
+    public void testEOFExceptionInSegmentParsingShouldNotCreateBadState2() throws IOException {
+        ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/51432b02-02a8-11e7-9203-b42b1c43c0c3.jpg")));
+
+        byte[] buffer = new byte[4096];
+
+        // NOTE: This is a simulation of how the native parts of com.sun...JPEGImageReader would read the image...
+        assertEquals(2, iis.read(buffer, 0, buffer.length));
+        assertEquals(2, iis.getStreamPosition());
+
+        iis.seek(2000); // Just a random postion beyond EOF
+        assertEquals(2000, iis.getStreamPosition());
+
+        // So far, so good (but stream position is now really beyond EOF)...
+
+        // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(-1, iis.read());
+        assertEquals(2000, iis.getStreamPosition());
+
+        // Again, should just continue returning -1 for ever
+        assertEquals(-1, iis.read());
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(2000, iis.getStreamPosition());
+    }
+
+    @Test
     public void testEOFExceptionInSegmentParsingShouldNotCreateBadState() throws IOException {
         ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg")));
 
@@ -189,10 +215,12 @@ public class JPEGSegmentImageInputStreamTest {
 
         // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
         assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(-1, iis.read());
         assertEquals(0x2012, iis.getStreamPosition());
 
         // Again, should just continue returning -1 for ever
         assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(-1, iis.read());
         assertEquals(0x2012, iis.getStreamPosition());
     }
 }
