@@ -100,9 +100,15 @@ public abstract class ImageWriterBase extends ImageWriter {
     }
 
     @Override
-    public void reset() {
-        super.reset();
+    public void dispose() {
         resetMembers();
+        super.dispose();
+    }
+
+    @Override
+    public void reset() {
+        resetMembers();
+        super.reset();
     }
 
     protected void resetMembers() {
@@ -138,7 +144,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * The AOI is defined by the {@link javax.imageio.IIOParam#setSourceRegion(java.awt.Rectangle)}
      * method.
      * <p/>
-     * Note: If it is possible for the reader to read the AOI directly, such a
+     * Note: If it is possible for the writer to write the AOI directly, such a
      * method should be used instead, for efficiency.
      *
      * @param pImage the image to get AOI from
@@ -161,7 +167,7 @@ public abstract class ImageWriterBase extends ImageWriter {
      * NOTE: This method does not take the subsampling offsets into
      * consideration.
      * <p/>
-     * Note: If it is possible for the reader to subsample directly, such a
+     * Note: If it is possible for the writer to subsample directly, such a
      * method should be used instead, for efficiency.
      *
      * @param pImage the image to subsample
