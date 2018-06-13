@@ -866,7 +866,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 }
             }
             catch (IIOInvalidTreeException e) {
-                // TODO: How to issue warning when warning requires imageIndex??? Use -1?
+                processWarningOccurred(sequenceIndex, "Could not convert image meta data: " + e.getMessage());
             }
 
             ifd = outData.getIFD();
