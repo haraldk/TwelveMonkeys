@@ -93,7 +93,7 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
 
     static int getCompressionType(final ImageWriteParam param) {
         // TODO: Support mode COPY_FROM_METADATA (when we have metadata...)
-        if (param == null || param.getCompressionMode() != MODE_EXPLICIT || param.getCompressionType().equals("None")) {
+        if (param == null || param.getCompressionMode() != MODE_EXPLICIT || param.getCompressionType() == null || param.getCompressionType().equals("None")) {
             return TIFFBaseline.COMPRESSION_NONE;
         }
         else if (param.getCompressionType().equals("PackBits")) {
