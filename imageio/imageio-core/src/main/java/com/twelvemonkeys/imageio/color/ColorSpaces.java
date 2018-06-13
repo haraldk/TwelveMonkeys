@@ -98,6 +98,11 @@ public final class ColorSpaces {
     // Cache for the latest used color spaces
     private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<>(10);
 
+    static {
+        // Force invocation of ProfileDeferralMgr.activateProfiles() to avoid JDK-6986863
+        ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData();
+    }
+
     private ColorSpaces() {}
 
     /**
