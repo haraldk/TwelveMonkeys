@@ -132,16 +132,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
     @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
-        assertOutput();
-        configureStreamByteOrder(streamMetadata, imageOutput);
-
-        // TODO: Make TIFFEntry and possibly TIFFDirectory? public
-        TIFFWriter tiffWriter = new TIFFWriter();
-        tiffWriter.writeTIFFHeader(imageOutput);
-
-        writePage(0, image, param, tiffWriter, imageOutput.getStreamPosition());
-
-        imageOutput.flush();
+        prepareWriteSequence(streamMetadata);
+        writeToSequence(image, param);
+        endWriteSequence();
     }
 
     private long writePage(int imageIndex, IIOImage image, ImageWriteParam param, TIFFWriter tiffWriter, long lastIFDPointerOffset)
@@ -927,7 +920,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void prepareWriteSequence(IIOMetadata streamMetadata) throws IOException {
+    public void prepareWriteSequence(final IIOMetadata streamMetadata) throws IOException {
         if (writingSequence) {
             throw new IllegalStateException("sequence writing has already been started!");
         }
@@ -942,7 +935,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void writeToSequence(IIOImage image, ImageWriteParam param) throws IOException {
+    public void writeToSequence(final IIOImage image, final ImageWriteParam param) throws IOException {
         if (!writingSequence) {
             throw new IllegalStateException("prepareWriteSequence() must be called before writeToSequence()!");
         }
