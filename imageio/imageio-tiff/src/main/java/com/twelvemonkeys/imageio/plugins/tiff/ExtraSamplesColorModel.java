@@ -7,6 +7,7 @@ import java.awt.color.ColorSpace;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.ComponentSampleModel;
 import java.awt.image.SampleModel;
+import java.awt.image.WritableRaster;
 
 /**
  * ExtraSamplesColorModel.
@@ -40,5 +41,20 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
 
         // Must have the same number of components
         return numComponents == sm.getNumBands() && transferType == sm.getTransferType();
+    }
+
+    @Override
+    public WritableRaster getAlphaRaster(WritableRaster raster) {
+        if (hasAlpha() == false) {
+            return null;
+        }
+
+        int x = raster.getMinX();
+        int y = raster.getMinY();
+        int[] band = new int[1];
+        band[0] = super.getNumComponents() - 1;
+        return raster.createWritableChild(x, y, raster.getWidth(),
+                raster.getHeight(), x, y,
+                band);
     }
 }

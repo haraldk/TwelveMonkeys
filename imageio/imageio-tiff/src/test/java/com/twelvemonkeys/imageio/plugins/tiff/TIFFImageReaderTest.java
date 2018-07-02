@@ -40,6 +40,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -583,6 +584,25 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
 
             assertEquals(0x00, image.getRGB(0, 0)); // Should be all transparent
             assertEquals(0xff, (image.getRGB(150, 50) & 0xff000000) >>> 24, 2); // For some reason, it's not all transparent
+        }
+    }
+
+    @Test
+    public void testAlphaRasterForMultipleExtraSamples() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/extra-channels.tif"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            assertEquals(0x00, image.getRGB(0, 0));
+            assertEquals(0xf5, (image.getRGB(50, 50) & 0xff000000) >>> 24);
+
+            int[] alpha = new int[1];
+            WritableRaster alphaRaster = image.getAlphaRaster();
+            assertEquals(0x00, alphaRaster.getPixel(0, 0, alpha)[0]);
+            assertEquals(0xf5,  alphaRaster.getPixel(50, 50, alpha)[0]);
         }
     }
 
