@@ -8,6 +8,7 @@ import java.awt.image.ComponentColorModel;
 import java.awt.image.ComponentSampleModel;
 import java.awt.image.SampleModel;
 import java.awt.image.WritableRaster;
+import java.awt.image.DataBuffer;
 
 /**
  * ExtraSamplesColorModel.
@@ -23,7 +24,7 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
     private final int numComponents;
 
     ExtraSamplesColorModel(ColorSpace cs, boolean isAlphaPremultiplied, int dataType, int extraComponents) {
-        super(cs, true, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
+        super(cs, bitsArrayHelper(dataType, cs, extraComponents), true, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
         Validate.isTrue(extraComponents > 0, "Extra components must be > 0");
         this.numComponents = super.getNumComponents() + extraComponents;
     }
@@ -56,5 +57,15 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
         return raster.createWritableChild(x, y, raster.getWidth(),
                 raster.getHeight(), x, y,
                 band);
+    }
+
+    private static int[] bitsArrayHelper(int transferType, ColorSpace colorSpace, int extraComponents) {
+        int numBits = DataBuffer.getDataTypeSize(transferType);
+        int numComponents = colorSpace.getNumComponents() + 1 + extraComponents;
+        int[] bits = new int[numComponents];
+        for (int i = 0; i < numComponents; i++) {
+            bits[i] = numBits;
+        }
+        return bits;
     }
 }
