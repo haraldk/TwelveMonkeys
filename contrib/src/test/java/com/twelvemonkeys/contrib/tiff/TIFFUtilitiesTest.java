@@ -233,6 +233,34 @@ public class TIFFUtilitiesTest {
         }
     }
 
+    @Test
+    public void testMergeWithSubIFD() throws IOException {
+        String testFile = "/tiff/cmyk_jpeg.tif";
+
+        File output = File.createTempFile("imageiotest", ".tif");
+        ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
+        InputStream inputStream1 = getClassLoaderResource(testFile).openStream();
+        ImageInputStream imageInput1 = ImageIO.createImageInputStream(inputStream1);
+        InputStream inputStream2 = getClassLoaderResource(testFile).openStream();
+        ImageInputStream imageInput2 = ImageIO.createImageInputStream(inputStream2);
+        ArrayList<TIFFUtilities.TIFFPage> pages = new ArrayList<>();
+        pages.addAll(TIFFUtilities.getPages(imageInput1));
+        pages.addAll(TIFFUtilities.getPages(imageInput2));
+        TIFFUtilities.writePages(outputStream, pages);
+
+        ImageInputStream testOutput = ImageIO.createImageInputStream(output);
+        ImageReader reader = ImageIO.getImageReaders(testOutput).next();
+        reader.setInput(testOutput);
+        int numImages = reader.getNumImages(true);
+        for (int i = 0; i < numImages; i++) {
+            reader.read(i);
+        }
+
+        imageInput1.close();
+        imageInput2.close();
+        outputStream.close();
+    }
+
     protected URL getClassLoaderResource(final String pName) {
         return getClass().getResource(pName);
     }
