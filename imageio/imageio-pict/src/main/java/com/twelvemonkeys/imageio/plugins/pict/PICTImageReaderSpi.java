@@ -69,6 +69,12 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
             else {
                 // Skip header 512 bytes for file-based streams
                 stream.reset();
+
+                // If we don't mark again here, the reset call in the finally block will:
+                // A) do nothing
+                // B) eat marks created in the stream previously
+                stream.mark();
+
                 skipNullHeader(stream);
             }
 
