@@ -70,9 +70,8 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
                 // Skip header 512 bytes for file-based streams
                 stream.reset();
 
-                // If we don't mark again here, the reset call in the finally block will:
-                // A) do nothing
-                // B) eat marks created in the stream previously
+                // We need to set mark again, to make sure the reset call in
+                // the finally block will not consume existing marks
                 stream.mark();
 
                 skipNullHeader(stream);
@@ -118,7 +117,7 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
         return (magic & 0xffff0000) == PICT.MAGIC_V1 || magic == PICT.MAGIC_V2;
     }
 
-    public ImageReader createReaderInstance(final Object pExtension) throws IOException {
+    public ImageReader createReaderInstance(final Object pExtension) {
         return new PICTImageReader(this);
     }
 

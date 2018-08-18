@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
@@ -89,6 +91,21 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();
+    }
+
+    @Test
+    public void testProviderShouldNotConsumeExistingMarks() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[1024])) {
+            stream.seek(42);
+            stream.mark();
+            stream.seek(123);
+
+            sProvider.canDecodeInput(stream);
+
+            assertEquals(123, stream.getStreamPosition());
+            stream.reset();
+            assertEquals(42, stream.getStreamPosition());
+        }
     }
 
     // Regression tests
