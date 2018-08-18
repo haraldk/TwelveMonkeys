@@ -477,12 +477,13 @@ public final class TIFFUtilities {
             }
 
             Entry compressionEntry = IFD.getEntryById(TIFF.TAG_COMPRESSION);
-            Number compression = (Number) compressionEntry.getValue();
-            if (compression.shortValue() == TIFFExtension.COMPRESSION_OLD_JPEG) {
-                newIFD.remove(compressionEntry);
-                newIFD.add(new TIFFEntry(TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, TIFFExtension.COMPRESSION_JPEG));
+            if(compressionEntry != null) {
+                Number compression = (Number) compressionEntry.getValue();
+                if (compression.shortValue() == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                    newIFD.remove(compressionEntry);
+                    newIFD.add(new TIFFEntry(TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, TIFFExtension.COMPRESSION_JPEG));
+                }
             }
-
             return newIFD;
         }
 
