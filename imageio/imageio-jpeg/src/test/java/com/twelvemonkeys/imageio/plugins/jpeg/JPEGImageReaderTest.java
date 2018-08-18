@@ -100,6 +100,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/jpeg/app-marker-missing-null-term.jpg"), new Dimension(200, 150)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-16bit-dqt.jpg"), new Dimension(204, 131)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-grayscale-thumbnail.jpg"), new Dimension(2547, 1537)), // Non-compliant JFIF with 8 bit grayscale thumbnail
+                new TestData(getClassLoaderResource("/jpeg/jfif-with-preview-as-second-image.jpg"), new Dimension(3968, 2976), new Dimension(640, 480)), // JFIF, full size + preview
                 new TestData(getClassLoaderResource("/jpeg-lossless/8_ls.jpg"), new Dimension(800, 535)),  // Lossless gray, 8 bit
                 new TestData(getClassLoaderResource("/jpeg-lossless/16_ls.jpg"), new Dimension(800, 535)),  // Lossless gray, 16 bit
                 new TestData(getClassLoaderResource("/jpeg-lossless/24_ls.jpg"), new Dimension(800, 535)), // Lossless RGB, 8 bit per component (24 bit)
@@ -1773,6 +1774,34 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             assertEquals(367, image.getWidth());
             assertEquals(242, image.getHeight());
             assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadSequenceInverse() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-with-preview-as-second-image.jpg")));
+
+            BufferedImage image = reader.read(1, null);
+
+            assertNotNull(image);
+            assertEquals(640, image.getWidth());
+            assertEquals(480, image.getHeight());
+            assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
+
+            image = reader.read(0, null);
+
+            assertNotNull(image);
+            assertEquals(3968, image.getWidth());
+            assertEquals(2976, image.getHeight());
+            assertEquals(ColorSpace.TYPE_RGB, image.getColorModel().getColorSpace().getType());
+
+            assertEquals(2, reader.getNumImages(true));
         }
         finally {
             reader.dispose();

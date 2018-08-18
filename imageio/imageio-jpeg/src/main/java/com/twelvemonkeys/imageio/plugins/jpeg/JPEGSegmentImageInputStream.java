@@ -172,6 +172,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                             }
                         }
                         else if (isSOFMarker(marker)) {
+                            // TODO: Warning + ignore if we already have a SOF
                             // Replace duplicate SOFn component ids
                             byte[] data = readReplaceDuplicateSOFnComponentIds(marker, length);
                             segment = new ReplacementSegment(marker, realPosition, segment.end(), length, data);
@@ -272,7 +273,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 processWarningOccured(String.format("Duplicate component ID %d in SOF", id));
 
                 id++;
-                while (!componentIds.add(id)) {
+                while (!componentIds.add(id) && componentIds.size() <= 16) {
                     id++;
                 }
 

@@ -39,6 +39,8 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
@@ -126,6 +128,9 @@ public final class JPEGImageReader extends ImageReaderBase {
     /** Cached list of JPEG segments we filter from the underlying stream */
     private List<Segment> segments;
 
+    private int currentStreamIndex = 0;
+    private List<Long> streamOffsets = new ArrayList<>();
+
     protected JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
 
@@ -142,6 +147,10 @@ public final class JPEGImageReader extends ImageReaderBase {
     @Override
     protected void resetMembers() {
         delegate.reset();
+
+        currentStreamIndex = 0;
+        streamOffsets.clear();
+
         segments = null;
         thumbnails = null;
 
@@ -171,29 +180,11 @@ public final class JPEGImageReader extends ImageReaderBase {
         return delegate.getFormatName();
     }
 
-    @Override
-    public int getNumImages(boolean allowSearch) throws IOException {
-        if (allowSearch) {
-            if (isLossless()) {
-                return 1;
-            }
-        }
-
-        try {
-            return delegate.getNumImages(allowSearch);
-        }
-        catch (ArrayIndexOutOfBoundsException ignore) {
-            // This will happen if we find a "tables only" image, with no more images in stream.
-            return 0;
-        }
-    }
-
     private boolean isLossless() throws IOException {
         assertInput();
 
         try {
-            Frame sof = getSOF();
-            if (sof.marker == JPEG.SOF3) {
+            if (getSOF().marker == JPEG.SOF3) {
                 return true;
             }
         }
@@ -210,32 +201,27 @@ public final class JPEGImageReader extends ImageReaderBase {
     @Override
     public int getWidth(int imageIndex) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
-        Frame sof = getSOF();
-        if (sof.marker == JPEG.SOF3) {
-            return sof.samplesPerLine;
-        }
-
-        return delegate.getWidth(imageIndex);
+        return getSOF().samplesPerLine;
     }
 
     @Override
     public int getHeight(int imageIndex) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
-        Frame sof = getSOF();
-        if (sof.marker == JPEG.SOF3) {
-            return sof.lines;
-        }
-
-        return delegate.getHeight(imageIndex);
+        return getSOF().lines;
     }
 
     @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+        initHeader(imageIndex);
+
         Iterator<ImageTypeSpecifier> types;
         try {
-            types = delegate.getImageTypes(imageIndex);
+            types = delegate.getImageTypes(0);
         }
         catch (IndexOutOfBoundsException | NegativeArraySizeException ignore) {
             types = null;
@@ -301,9 +287,12 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+        initHeader(imageIndex);
+
         // If delegate can determine the spec, we'll just go with that
         try {
-            ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
+            ImageTypeSpecifier rawType = delegate.getRawImageType(0);
 
             if (rawType != null) {
                 return rawType;
@@ -333,24 +322,9 @@ public final class JPEGImageReader extends ImageReaderBase {
     }
 
     @Override
-    public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
-        super.setInput(input, seekForwardOnly, ignoreMetadata);
-
-        // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
-        delegate.setInput(imageInput != null
-                          ? new JPEGSegmentImageInputStream(imageInput, new JPEGSegmentStreamWarningDelegate())
-                          : null, seekForwardOnly, ignoreMetadata);
-    }
-
-    @Override
-    public boolean isRandomAccessEasy(int imageIndex) throws IOException {
-        return delegate.isRandomAccessEasy(imageIndex);
-    }
-
-    @Override
     public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
-        assertInput();
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         Frame sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
@@ -392,17 +366,17 @@ public final class JPEGImageReader extends ImageReaderBase {
 
             return bufferedImage;
         }
-        
+
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
         else if (delegate.canReadRaster() && (
                 bogusAdobeDCT ||
-                sourceCSType == JPEGColorSpace.CMYK ||
-                sourceCSType == JPEGColorSpace.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile) ||
-                (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE ||
-                !delegate.getImageTypes(imageIndex).hasNext() ||
-                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
+                        sourceCSType == JPEGColorSpace.CMYK ||
+                        sourceCSType == JPEGColorSpace.YCCK ||
+                        profile != null && !ColorSpaces.isCS_sRGB(profile) ||
+                        (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE ||
+                        !delegate.getImageTypes(0).hasNext() ||
+                        sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
@@ -416,7 +390,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             System.out.println("Reading using delegate");
         }
 
-        return delegate.read(imageIndex, param);
+        return delegate.read(0, param);
     }
 
     private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, Frame startOfFrame, JPEGColorSpace csType, ICC_Profile profile) throws IOException {
@@ -519,7 +493,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         // for each iteration, so we'll read all at once.
         try {
             param.setSourceRegion(srcRegion);
-            Raster raster = delegate.readRaster(imageIndex, param); // non-converted
+            Raster raster = delegate.readRaster(0, param); // non-converted
 
             // Apply source color conversion from implicit color space
             if (csType == JPEGColorSpace.YCbCr) {
@@ -642,7 +616,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    protected ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
+    private ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
         // NOTE: This is probably not the right way to do it... :-P
         // TODO: Consider moving method to ColorSpaces class or new class in imageio.color package
 
@@ -681,6 +655,30 @@ public final class JPEGImageReader extends ImageReaderBase {
         array[index + 3] = (byte) (value      );
     }
 
+    @Override
+    public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
+        super.setInput(input, seekForwardOnly, ignoreMetadata);
+
+        try {
+            if (imageInput != null) {
+                streamOffsets.add(imageInput.getStreamPosition());
+            }
+
+            initDelegate(seekForwardOnly, ignoreMetadata);
+        }
+        catch (IOException e) {
+            // TODO: This should ideally be reported as an IOException, but I don't see how
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
+    private void initDelegate(boolean seekForwardOnly, boolean ignoreMetadata) throws IOException {
+        // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
+        delegate.setInput(imageInput != null
+                          ? new JPEGSegmentImageInputStream(new SubImageInputStream(imageInput, Long.MAX_VALUE), new JPEGSegmentStreamWarningDelegate())
+                          : null, seekForwardOnly, ignoreMetadata);
+    }
+
     private void initHeader() throws IOException {
         if (segments == null) {
             long start = DEBUG ? System.currentTimeMillis() : 0;
@@ -714,11 +712,127 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
+    private void initHeader(final int imageIndex) throws IOException {
+        if (imageIndex < 0) {
+            throw new IllegalArgumentException("imageIndex < 0: " + imageIndex);
+        }
+
+        if (imageIndex == currentStreamIndex) {
+            return;
+        }
+
+        gotoImage(imageIndex);
+
+        // Reset segments and re-init the header
+        segments = null;
+        thumbnails = null;
+
+        initDelegate(seekForwardOnly, ignoreMetadata);
+
+        initHeader();
+    }
+
+    private void gotoImage(final int imageIndex) throws IOException {
+        if (imageIndex < streamOffsets.size()) {
+            imageInput.seek(streamOffsets.get(imageIndex));
+        }
+        else {
+            long lastKnownSOIOffset = streamOffsets.get(streamOffsets.size() - 1);
+            imageInput.seek(lastKnownSOIOffset);
+
+            try (ImageInputStream stream = new BufferedImageInputStream(imageInput)) { // Extreme (10s -> 50ms) speedup if imageInput is FileIIS
+                for (int i = streamOffsets.size() - 1; i < imageIndex; i++) {
+                    long start = 0;
+
+                    if (DEBUG) {
+                        start = System.currentTimeMillis();
+                        System.out.println(String.format("Start seeking for image index %d", i + 1));
+                    }
+
+                    // Need to skip over segments, as they may contain JPEG markers (eg. JFXX or EXIF thumbnail)
+                    JPEGSegmentUtil.readSegments(stream, Collections.<Integer, List<String>>emptyMap());
+
+                    // Now, search for EOI and following SOI...
+                    int marker;
+                    while ((marker = stream.read()) != -1) {
+                        if (marker == 0xFF && (0xFF00 | stream.readUnsignedByte()) == JPEG.EOI) {
+                            // Found EOI, now the SOI should be nearby...
+                            while ((marker = stream.read()) != -1) {
+                                if (marker == 0xFF && (0xFF00 | stream.readUnsignedByte()) == JPEG.SOI) {
+                                    long nextSOIOffset = stream.getStreamPosition() - 2;
+                                    imageInput.seek(nextSOIOffset);
+                                    streamOffsets.add(nextSOIOffset);
+
+                                    break;
+                                }
+                            }
+
+                            // ...or we may have missed it, but at least we tried
+                            break;
+                        }
+                    }
+
+                    if (DEBUG) {
+                        System.out.println(String.format("Seek in %d ms", System.currentTimeMillis() - start));
+                    }
+                }
+
+            }
+            catch (EOFException eof) {
+                IndexOutOfBoundsException ioobe = new IndexOutOfBoundsException("Image index " + imageIndex + " not found in stream");
+                ioobe.initCause(eof);
+                throw ioobe;
+            }
+
+            if (imageIndex >= streamOffsets.size()) {
+                throw new IndexOutOfBoundsException("Image index " + imageIndex + " not found in stream");
+            }
+        }
+
+        currentStreamIndex = imageIndex;
+    }
+
+    @Override
+    public int getNumImages(boolean allowSearch) throws IOException {
+        assertInput();
+
+        if (allowSearch) {
+            if (seekForwardOnly) {
+                throw new IllegalStateException("seekForwardOnly and allowSearch are both true");
+            }
+
+            int index = 0;
+            int count = 0;
+            while (true) {
+                try {
+                    gotoImage(index++);
+                }
+                catch (IndexOutOfBoundsException e) {
+                    break;
+                }
+
+                // TODO: We should probably optimize this
+                try {
+                    getSOF(); // No SOF, no image
+                    count++;
+                }
+                catch (IIOException ignore) {}
+            }
+
+            currentStreamIndex = -1;
+
+            return count;
+        }
+
+        // We can't possibly know without searching
+        return -1;
+    }
+
     private List<JPEGSegment> readSegments() throws IOException {
         imageInput.mark();
 
         try {
-            imageInput.seek(0); // TODO: Seek to wanted image, skip images on the way
+            imageInput.seek(streamOffsets.get(currentStreamIndex));
 
             return JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
         }
@@ -794,7 +908,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                 processWarningOccurred("Exif chunk has no data.");
             }
             else {
-                ImageInputStream stream = ImageIO.createImageInputStream(data);
+                ImageInputStream stream = new MemoryCacheImageInputStream(data);
                 return (CompoundDirectory) new TIFFReader().read(stream);
 
                 // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the TIFFReader...
@@ -933,6 +1047,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     @Override
     public Raster readRaster(final int imageIndex, final ImageReadParam param) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         if (isLossless()) {
             // TODO: What about stream position?
@@ -941,7 +1056,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
 
         try {
-            return delegate.readRaster(imageIndex, param);
+            return delegate.readRaster(0, param);
         }
         catch (IndexOutOfBoundsException knownIssue) {
             // com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
@@ -973,6 +1088,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     private void readThumbnailMetadata(int imageIndex) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         if (thumbnails == null) {
             thumbnails = new ArrayList<>();
@@ -1098,6 +1214,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         // checkBounds needed, as we catch the IndexOutOfBoundsException below.
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         IIOMetadata imageMetadata;
 
@@ -1106,7 +1223,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
         else {
             try {
-                imageMetadata = delegate.getImageMetadata(imageIndex);
+                imageMetadata = delegate.getImageMetadata(0);
             }
             catch (IndexOutOfBoundsException knownIssue) {
                 // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
@@ -1179,22 +1296,22 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         @Override
         public void imageComplete(ImageReader source) {
-                processImageComplete();
+            processImageComplete();
         }
 
         @Override
         public void imageProgress(ImageReader source, float percentageDone) {
-                processImageProgress(percentageDone);
+            processImageProgress(percentageDone);
         }
 
         @Override
         public void imageStarted(ImageReader source, int imageIndex) {
-                processImageStarted(imageIndex);
+            processImageStarted(currentStreamIndex);
         }
 
         @Override
         public void readAborted(ImageReader source) {
-                processReadAborted();
+            processReadAborted();
         }
 
         @Override
@@ -1219,7 +1336,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         @Override
         public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
-            processThumbnailStarted(imageIndex, thumbnailIndex);
+            processThumbnailStarted(currentStreamIndex, thumbnailIndex);
         }
 
         public void passStarted(ImageReader source, BufferedImage theImage, int pass, int minPass, int maxPass, int minX, int minY, int periodX, int periodY, int[] bands) {
@@ -1274,6 +1391,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             processWarningOccurred(warning);
         }
     }
+
     protected static void showIt(final BufferedImage pImage, final String pTitle) {
         ImageReaderBase.showIt(pImage, pTitle);
     }
