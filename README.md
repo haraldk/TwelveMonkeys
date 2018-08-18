@@ -2,7 +2,7 @@
 
 Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
 
-Latest release is TwelveMonkeys ImageIO [3.3.2](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.3.2%22) (Feb. 2nd, 2017).
+Latest release is TwelveMonkeys ImageIO [3.4](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio%20AND%20v:3.4) (Aug. 18th, 2018).
 [Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
 
 ## About
@@ -239,7 +239,7 @@ Other formats, using 3rd party libraries
 
 * Limited read-only support using Batik
 
-**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
+**Important note on using Batik:** *Please read [The Apache? XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
 either version 1.6.1, 1.7.1 or 1.8+.*
 
 
@@ -649,7 +649,7 @@ Native libs does not exist for several popular platforms/architectures, and furt
 Some environments may also prevent deployment of native libs, which brings us back to square one.
 
 
-q: What about JMagick or IM4Java? Can't you just use what´s already available?
+q: What about JMagick or IM4Java? Can't you just use what?s already available?
 
 a: While great libraries with a wide range of formats support, the ImageMagick-based libraries has some disadvantages
 compared to ImageIO.
