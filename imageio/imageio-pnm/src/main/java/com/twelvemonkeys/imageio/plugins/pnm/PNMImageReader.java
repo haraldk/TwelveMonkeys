@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.pnm;
@@ -62,7 +64,8 @@ public final class PNMImageReader extends ImageReaderBase {
         super(provider);
     }
 
-    @Override protected void resetMembers() {
+    @Override
+    protected void resetMembers() {
         header = null;
     }
 
@@ -72,7 +75,8 @@ public final class PNMImageReader extends ImageReaderBase {
 
             imageInput.flushBefore(imageInput.getStreamPosition());
             imageInput.setByteOrder(header.getByteOrder()); // For PFM support
-        } else {
+        }
+        else {
             imageInput.seek(imageInput.getFlushedPosition());
         }
     }
@@ -82,21 +86,24 @@ public final class PNMImageReader extends ImageReaderBase {
         return new String(asciiBytes, Charset.forName("ASCII"));
     }
 
-    @Override public int getWidth(final int imageIndex) throws IOException {
+    @Override
+    public int getWidth(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
         return header.getWidth();
     }
 
-    @Override public int getHeight(final int imageIndex) throws IOException {
+    @Override
+    public int getHeight(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
         return header.getHeight();
     }
 
-    @Override public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
+    @Override
+    public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
@@ -121,7 +128,7 @@ public final class PNMImageReader extends ImageReaderBase {
                 }
                 if (header.getMaxSample() <= PNM.MAX_VAL_16BIT) {
                     return hasAlpha ? ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false)
-                            : ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType);
+                                    : ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType);
                 }
 
                 return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
@@ -158,7 +165,8 @@ public final class PNMImageReader extends ImageReaderBase {
         return offsets;
     }
 
-    @Override public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
+    @Override
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
         List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
@@ -192,7 +200,8 @@ public final class PNMImageReader extends ImageReaderBase {
         return specifiers.iterator();
     }
 
-    @Override public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
+    @Override
+    public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
@@ -205,14 +214,16 @@ public final class PNMImageReader extends ImageReaderBase {
         Rectangle destRegion = new Rectangle();
         computeRegions(param, width, height, destination, srcRegion, destRegion);
 
-        WritableRaster destRaster = clipToRect(destination.getRaster(), destRegion, param != null ? param.getDestinationBands() : null);
+        WritableRaster destRaster = clipToRect(destination.getRaster(), destRegion, param != null
+                                                                                    ? param.getDestinationBands()
+                                                                                    : null);
         checkReadParamBandSettings(param, rawType.getNumBands(), destRaster.getNumBands());
 
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
         // Clip to source region
         Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
-                                          param != null ? param.getSourceBands() : null,
-                                          param != null ? param.getSourceXSubsampling() : 1);
+                param != null ? param.getSourceBands() : null,
+                param != null ? param.getSourceXSubsampling() : 1);
 
         int transferType = rowRaster.getTransferType();
         int samplesPerPixel = header.getSamplesPerPixel();
@@ -287,10 +298,10 @@ public final class PNMImageReader extends ImageReaderBase {
             case PNM.PGM_PLAIN:
             case PNM.PPM_PLAIN:
                 if (header.getBitsPerSample() <= 8) {
-                    return  new DataInputStream(new Plain8BitDecoder(IIOUtil.createStreamAdapter(imageInput)));
+                    return new DataInputStream(new Plain8BitDecoder(IIOUtil.createStreamAdapter(imageInput)));
                 }
                 if (header.getBitsPerSample() <= 16) {
-                    return  new DataInputStream(new Plain16BitDecoder(IIOUtil.createStreamAdapter(imageInput)));
+                    return new DataInputStream(new Plain16BitDecoder(IIOUtil.createStreamAdapter(imageInput)));
                 }
                 throw new IIOException("Unsupported bit depth for type: " + asASCII(header.getFileType()));
             case PNM.PBM:
@@ -348,7 +359,8 @@ public final class PNMImageReader extends ImageReaderBase {
         int destY = (y - srcRegion.y) / ySub;
         if (colorConvert != null) {
             colorConvert.filter(rowRaster, destRaster.createWritableChild(0, destY, rowRaster.getWidth(), 1, 0, 0, null));
-        } else {
+        }
+        else {
             destRaster.setDataElements(0, destY, rowRaster);
         }
     }
@@ -482,7 +494,8 @@ public final class PNMImageReader extends ImageReaderBase {
         }
     }
 
-    @Override public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
