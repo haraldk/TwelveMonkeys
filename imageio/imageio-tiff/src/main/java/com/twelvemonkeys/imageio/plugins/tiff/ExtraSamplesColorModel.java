@@ -9,6 +9,8 @@ import java.awt.image.ComponentSampleModel;
 import java.awt.image.SampleModel;
 import java.awt.image.WritableRaster;
 
+import static java.awt.image.DataBuffer.getDataTypeSize;
+
 /**
  * ExtraSamplesColorModel.
  *
@@ -22,10 +24,22 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
     // still thinks it has numComponents == cs.getNumComponents() + 1 for most operations
     private final int numComponents;
 
-    ExtraSamplesColorModel(ColorSpace cs, boolean isAlphaPremultiplied, int dataType, int extraComponents) {
-        super(cs, true, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
+    ExtraSamplesColorModel(ColorSpace cs, boolean hasAlpha, boolean isAlphaPremultiplied, int dataType, int extraComponents) {
+        super(cs, bitsArrayHelper(cs, dataType, extraComponents + (hasAlpha ? 1 : 0)), hasAlpha, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
         Validate.isTrue(extraComponents > 0, "Extra components must be > 0");
-        this.numComponents = super.getNumComponents() + extraComponents;
+        this.numComponents = cs.getNumComponents() + (hasAlpha ? 1 : 0) + extraComponents;
+    }
+
+    private static int[] bitsArrayHelper(ColorSpace cs, int dataType, int extraComponents) {
+        int numBits = getDataTypeSize(dataType);
+        int numComponents = cs.getNumComponents() + extraComponents;
+        int[] bits = new int[numComponents];
+
+        for (int i = 0; i < numComponents; i++) {
+            bits[i] = numBits;
+        }
+
+        return bits;
     }
 
     @Override
@@ -45,16 +59,18 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
 
     @Override
     public WritableRaster getAlphaRaster(WritableRaster raster) {
-        if (hasAlpha() == false) {
+        if (!hasAlpha()) {
             return null;
         }
 
         int x = raster.getMinX();
         int y = raster.getMinY();
-        int[] band = new int[1];
-        band[0] = super.getNumComponents() - 1;
-        return raster.createWritableChild(x, y, raster.getWidth(),
-                raster.getHeight(), x, y,
-                band);
+        int[] band = new int[] {getAlphaComponent()};
+
+        return raster.createWritableChild(x, y, raster.getWidth(), raster.getHeight(), x, y, band);
+    }
+
+    private int getAlphaComponent() {
+        return super.getNumComponents() - 1;
     }
 }

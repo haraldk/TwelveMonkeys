@@ -438,18 +438,20 @@ public final class TIFFImageReader extends ImageReaderBase {
 
         int opaqueSamplesPerPixel = getOpaqueSamplesPerPixel(interpretation);
 
-        // Spec says ExtraSamples are mandatory of extra samples, however known encoders
+        // Spec says ExtraSamples are mandatory for extra samples, however known encoders
         // (ie. SeaShore) writes ARGB TIFFs without ExtraSamples.
         long[] extraSamples = getValueAsLongArray(TIFF.TAG_EXTRA_SAMPLES, "ExtraSamples", false);
         if (extraSamples == null && samplesPerPixel > opaqueSamplesPerPixel) {
             // TODO: Log warning!
-            // First extra is alpha, rest is "unspecified"
+            // First extra is alpha, rest is "unspecified" (0)
             extraSamples = new long[samplesPerPixel - opaqueSamplesPerPixel];
             extraSamples[0] = TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA;
         }
 
         // Determine alpha
-        boolean hasAlpha = extraSamples != null;
+        boolean hasAlpha = extraSamples != null
+                && (extraSamples[0] == TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA
+                || extraSamples[0] == TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA);
         boolean isAlphaPremultiplied = hasAlpha && extraSamples[0] == TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA;
         int significantSamples = opaqueSamplesPerPixel + (hasAlpha ? 1 : 0);
 
@@ -577,12 +579,12 @@ public final class TIFFImageReader extends ImageReaderBase {
                             switch (planarConfiguration) {
                                 case TIFFBaseline.PLANARCONFIG_CHUNKY:
                                     // "TYPE_4BYTE_RGBA" if cs.isCS_sRGB()
-                                    if (extraSamples != null && extraSamples.length == 1) {
+                                    if (hasAlpha && extraSamples.length == 1) {
                                         return ImageTypeSpecifiers.createInterleaved(cs, new int[] {0, 1, 2, 3}, dataType, true, isAlphaPremultiplied);
                                     }
                                     else {
                                         return new ImageTypeSpecifier(
-                                                new ExtraSamplesColorModel(cs, isAlphaPremultiplied, dataType, samplesPerPixel - significantSamples),
+                                                new ExtraSamplesColorModel(cs, hasAlpha, isAlphaPremultiplied, dataType, samplesPerPixel - significantSamples),
                                                 new PixelInterleavedSampleModel(dataType, 1, 1, samplesPerPixel, samplesPerPixel, createOffsets(samplesPerPixel))
                                         );
                                     }
@@ -614,9 +616,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 IndexColorModel icm = createIndexColorModel(bitsPerSample, dataType, (int[]) colorMap.getValue());
 
-                if (extraSamples != null && extraSamples.length > 0
-                        && (extraSamples[0] == TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA
-                        || extraSamples[0] == TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA)) {
+                if (hasAlpha) {
                     return ImageTypeSpecifiers.createDiscreteAlphaIndexedFromIndexColorModel(icm);
                 }
 
@@ -1843,158 +1843,158 @@ public final class TIFFImageReader extends ImageReaderBase {
             case DataBuffer.TYPE_BYTE:
 
                 /*for (int band = 0; band < bands; band++)*/ {
-                    int bank = banded ? ((BandedSampleModel) tileRowRaster.getSampleModel()).getBankIndices()[band] : band;
+                int bank = banded ? ((BandedSampleModel) tileRowRaster.getSampleModel()).getBankIndices()[band] : band;
 
-                    byte[] rowDataByte = ((DataBufferByte) dataBuffer).getData(bank);
-                    WritableRaster destChannel = banded
-                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                                 : raster;
-                    Raster srcChannel = banded
-                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                        : tileRowRaster;
+                byte[] rowDataByte = ((DataBufferByte) dataBuffer).getData(bank);
+                WritableRaster destChannel = banded
+                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                             : raster;
+                Raster srcChannel = banded
+                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                    : tileRowRaster;
 
-                    for (int row = startRow; row < startRow + rowsInTile; row++) {
-                        if (row >= srcRegion.y + srcRegion.height) {
-                            break; // We're done with this tile
-                        }
-
-                        input.readFully(rowDataByte);
-
-                        if (row % ySub == 0 && row >= srcRegion.y) {
-                            if (!banded) {
-                                normalizeColor(interpretation, rowDataByte);
-                            }
-
-                            // Subsample horizontal
-                            if (xSub != 1) {
-                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + colsInTile) / xSub) * numBands; x += numBands) {
-                                    System.arraycopy(rowDataByte, x * xSub, rowDataByte, x, numBands);
-                                }
-                            }
-
-                            destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
-                        }
-                        // Else skip data
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
+
+                    input.readFully(rowDataByte);
+
+                    if (row % ySub == 0 && row >= srcRegion.y) {
+                        if (!banded) {
+                            normalizeColor(interpretation, rowDataByte);
+                        }
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + colsInTile) / xSub) * numBands; x += numBands) {
+                                System.arraycopy(rowDataByte, x * xSub, rowDataByte, x, numBands);
+                            }
+                        }
+
+                        destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
+                    }
+                    // Else skip data
                 }
+            }
 
 //                if (banded) {
 //                    // TODO: Normalize colors for tile (need to know tile region and sample model)
 //                    // Unfortunately, this will disable acceleration...
 //                }
 
-                break;
+            break;
             case DataBuffer.TYPE_USHORT:
             case DataBuffer.TYPE_SHORT:
                 /*for (int band = 0; band < bands; band++)*/ {
-                    short[] rowDataShort = dataBuffer.getDataType() == DataBuffer.TYPE_USHORT
-                                           ? ((DataBufferUShort) dataBuffer).getData(band)
-                                           : ((DataBufferShort) dataBuffer).getData(band);
+                short[] rowDataShort = dataBuffer.getDataType() == DataBuffer.TYPE_USHORT
+                                       ? ((DataBufferUShort) dataBuffer).getData(band)
+                                       : ((DataBufferShort) dataBuffer).getData(band);
 
-                    WritableRaster destChannel = banded
-                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                                 : raster;
-                    Raster srcChannel = banded
-                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                        : tileRowRaster;
+                WritableRaster destChannel = banded
+                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                             : raster;
+                Raster srcChannel = banded
+                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                    : tileRowRaster;
 
-                    for (int row = startRow; row < startRow + rowsInTile; row++) {
-                        if (row >= srcRegion.y + srcRegion.height) {
-                            break; // We're done with this tile
-                        }
-
-                        readFully(input, rowDataShort);
-
-                        if (row >= srcRegion.y) {
-                            normalizeColor(interpretation, rowDataShort);
-
-                            // Subsample horizontal
-                            if (xSub != 1) {
-                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + colsInTile) / xSub) * numBands; x += numBands) {
-                                    System.arraycopy(rowDataShort, x * xSub, rowDataShort, x, numBands);
-                                }
-                            }
-
-                            destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
-                            // TODO: Possible speedup ~30%!:
-//                        raster.setDataElements(startCol, row - srcRegion.y, colsInTile, 1, rowDataShort);
-                        }
-                        // Else skip data
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
-                }
 
-                break;
+                    readFully(input, rowDataShort);
+
+                    if (row >= srcRegion.y) {
+                        normalizeColor(interpretation, rowDataShort);
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + colsInTile) / xSub) * numBands; x += numBands) {
+                                System.arraycopy(rowDataShort, x * xSub, rowDataShort, x, numBands);
+                            }
+                        }
+
+                        destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
+                        // TODO: Possible speedup ~30%!:
+//                        raster.setDataElements(startCol, row - srcRegion.y, colsInTile, 1, rowDataShort);
+                    }
+                    // Else skip data
+                }
+            }
+
+            break;
             case DataBuffer.TYPE_INT:
                 /*for (int band = 0; band < bands; band++)*/ {
-                    int[] rowDataInt = ((DataBufferInt) dataBuffer).getData(band);
+                int[] rowDataInt = ((DataBufferInt) dataBuffer).getData(band);
 
-                    WritableRaster destChannel = banded
-                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                                 : raster;
-                    Raster srcChannel = banded
-                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                        : tileRowRaster;
+                WritableRaster destChannel = banded
+                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                             : raster;
+                Raster srcChannel = banded
+                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                    : tileRowRaster;
 
-                    for (int row = startRow; row < startRow + rowsInTile; row++) {
-                        if (row >= srcRegion.y + srcRegion.height) {
-                            break; // We're done with this tile
-                        }
-
-                        readFully(input, rowDataInt);
-
-                        if (row >= srcRegion.y) {
-                            normalizeColor(interpretation, rowDataInt);
-
-                            // Subsample horizontal
-                            if (xSub != 1) {
-                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + colsInTile) / xSub) * numBands; x += numBands) {
-                                    System.arraycopy(rowDataInt, x * xSub, rowDataInt, x, numBands);
-                                }
-                            }
-
-                            destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
-                        }
-                        // Else skip data
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
-                }
 
-                break;
+                    readFully(input, rowDataInt);
+
+                    if (row >= srcRegion.y) {
+                        normalizeColor(interpretation, rowDataInt);
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + colsInTile) / xSub) * numBands; x += numBands) {
+                                System.arraycopy(rowDataInt, x * xSub, rowDataInt, x, numBands);
+                            }
+                        }
+
+                        destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
+                    }
+                    // Else skip data
+                }
+            }
+
+            break;
 
             case DataBuffer.TYPE_FLOAT:
                 /*for (int band = 0; band < bands; band++)*/ {
-                    float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData(band);
+                float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData(band);
 
-                    WritableRaster destChannel = banded
-                                                 ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                                 : raster;
-                    Raster srcChannel = banded
-                                        ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                        : tileRowRaster;
+                WritableRaster destChannel = banded
+                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                             : raster;
+                Raster srcChannel = banded
+                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                                    : tileRowRaster;
 
-                    for (int row = startRow; row < startRow + rowsInTile; row++) {
-                        if (row >= srcRegion.y + srcRegion.height) {
-                            break; // We're done with this tile
-                        }
-
-                        readFully(input, rowDataFloat);
-
-                        if (row >= srcRegion.y) {
-                            normalizeColor(interpretation, rowDataFloat);
-
-                            // Subsample horizontal
-                            if (xSub != 1) {
-                                for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
-                                    System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
-                                }
-                            }
-
-                            destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
-                        }
-                        // Else skip data
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
                     }
-                }
 
-                break;
+                    readFully(input, rowDataFloat);
+
+                    if (row >= srcRegion.y) {
+                        normalizeColor(interpretation, rowDataFloat);
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            for (int x = srcRegion.x / xSub * numBands; x < ((srcRegion.x + srcRegion.width) / xSub) * numBands; x += numBands) {
+                                System.arraycopy(rowDataFloat, x * xSub, rowDataFloat, x, numBands);
+                            }
+                        }
+
+                        destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                    }
+                    // Else skip data
+                }
+            }
+
+            break;
         }
     }
 
@@ -2287,7 +2287,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     private InputStream createDecompressorStream(final int compression, final int width, final int bands, final InputStream stream) throws IOException {
         int fillOrder = getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, 1);
 
-    	switch (compression) {
+        switch (compression) {
             case TIFFBaseline.COMPRESSION_NONE:
                 return stream;
             case TIFFBaseline.COMPRESSION_PACKBITS:
