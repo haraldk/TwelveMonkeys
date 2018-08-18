@@ -53,8 +53,7 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.io.EOFException;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.List;
 
@@ -100,7 +99,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/jpeg/app-marker-missing-null-term.jpg"), new Dimension(200, 150)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-16bit-dqt.jpg"), new Dimension(204, 131)),
                 new TestData(getClassLoaderResource("/jpeg/jfif-grayscale-thumbnail.jpg"), new Dimension(2547, 1537)), // Non-compliant JFIF with 8 bit grayscale thumbnail
-                new TestData(getClassLoaderResource("/jpeg/jfif-with-preview-as-second-image.jpg"), new Dimension(3968, 2976), new Dimension(640, 480)), // JFIF, full size + preview
                 new TestData(getClassLoaderResource("/jpeg-lossless/8_ls.jpg"), new Dimension(800, 535)),  // Lossless gray, 8 bit
                 new TestData(getClassLoaderResource("/jpeg-lossless/16_ls.jpg"), new Dimension(800, 535)),  // Lossless gray, 16 bit
                 new TestData(getClassLoaderResource("/jpeg-lossless/24_ls.jpg"), new Dimension(800, 535)), // Lossless RGB, 8 bit per component (24 bit)
@@ -128,7 +126,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 new TestData(getClassLoaderResource("/broken-jpeg/514c48ea-02a8-11e7-8789-bb75321f404f.jpg"), new Dimension(-1, -1)),
                 new TestData(getClassLoaderResource("/broken-jpeg/514e4122-02a8-11e7-8c03-0830d60cd585.jpg"), new Dimension(-1, -1)),
                 new TestData(getClassLoaderResource("/broken-jpeg/513f29d0-02a8-11e7-9756-6035edb96e79.jpg"), new Dimension(-1, -1))
-                );
+        );
 
         // More test data in specific tests below
     }
@@ -1804,6 +1802,38 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             assertEquals(2, reader.getNumImages(true));
         }
         finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testStreamOffset() throws IOException {
+        // Tests a known issue:
+        // If the JPEGImageReader reads an embedded JPEG stream, we can't assume SOI starts at pos 0,
+        // instead, we'll just assume SOI at the current stream position.
+
+        JPEGImageReader reader = createReader();
+
+        try {
+            // Prepend the data with random padding
+            InputStream input = new SequenceInputStream(new ByteArrayInputStream(new byte[42]),
+                    getClass().getResourceAsStream("/jpeg/gray-sample.jpg"));
+
+            ImageInputStream stream = ImageIO.createImageInputStream(input);
+            // Skip padding
+            stream.seek(42);
+
+            reader.setInput(stream);
+
+            assertEquals(386, reader.getWidth(0));
+            assertEquals(396, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0, null);
+
+            assertNotNull(image);
+            assertEquals(386, image.getWidth());
+            assertEquals(396, image.getHeight());
+        } finally {
             reader.dispose();
         }
     }
