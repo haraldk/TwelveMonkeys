@@ -461,7 +461,16 @@ public final class TIFFImageReader extends ImageReaderBase {
             // TIFF 6.0 baseline
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // WhiteIsZero
-                // NOTE: We handle this by inverting the values when reading, as Java has no ColorModel that easily supports this.
+                // We need special case to preserve WhiteIsZero for CCITT 1 bit encodings
+                // as some software will treat black/white runs as-is, regardless of photometric.
+                // Special handling is also in the normalizeColor method
+                if (profile == null && significantSamples == 1 && bitsPerSample == 1) {
+                    byte[] lut = new byte[] {-1, 0};
+                    return ImageTypeSpecifier.createIndexed(lut, lut, lut, null, bitsPerSample, dataType);
+                }
+
+                // Otherwise, we'll handle this by inverting the values when reading
+
             case TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO:
                 // BlackIsZero
                 // Gray scale or B/W
@@ -2042,9 +2051,12 @@ public final class TIFFImageReader extends ImageReaderBase {
     private void normalizeColor(int photometricInterpretation, byte[] data) throws IIOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
-                // Inverse values
-                for (int i = 0; i < data.length; i++) {
-                    data[i] ^= -1;
+                // NOTE: Preserve WhiteIsZero for 1 bit monochrome, for CCITT compatibility
+                if (getBitsPerSample() > 1 || getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXEL, 1) > 1) {
+                    // Inverse values
+                    for (int i = 0; i < data.length; i++) {
+                        data[i] ^= -1;
+                    }
                 }
 
                 break;
