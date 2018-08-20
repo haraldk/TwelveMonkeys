@@ -56,9 +56,9 @@ Mainstream format support
   * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
   * Non-conforming combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
    "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
-* Extended write support in progress:
+* Extended write support:
   * CMYK JPEGs
-  * YCCK JPEGs
+  * YCCK JPEGs (in progress)
 
 #### JPEG-2000
 
@@ -132,6 +132,7 @@ Alternatively, if you have or know of a JPEG-2000 implementation in Java with a 
   * Additional support for CCITT T4 and and T6 compressions.
   * Additional support for LZW and JPEG (type 7) compressions
   * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate
+  * Multipage TIFF files
 * Native and Standard metadata support
 
 Legacy formats
