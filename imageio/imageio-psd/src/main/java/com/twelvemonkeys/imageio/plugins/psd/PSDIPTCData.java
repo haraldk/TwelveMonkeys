@@ -30,6 +30,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.iptc.IPTCReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
@@ -41,21 +42,24 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDIPTCData.java,v 1.0 Nov 7, 2009 9:52:14 PM haraldk Exp$
  */
-final class PSDIPTCData extends PSDImageResource {
-    Directory directory;
-
+final class PSDIPTCData extends PSDDirectoryResource {
     PSDIPTCData(final short pId, final ImageInputStream pInput) throws IOException {
         super(pId, pInput);
     }
 
     @Override
-    protected void readData(final ImageInputStream pInput) throws IOException {
-        // Read IPTC directory
-        directory = new IPTCReader().read(pInput);
+    Directory parseDirectory() throws IOException {
+        return new IPTCReader().read(new ByteArrayImageInputStream(data));
     }
 
     @Override
     public String toString() {
+        Directory directory = getDirectory();
+
+        if (directory == null) {
+            return super.toString();
+        }
+
         StringBuilder builder = toStringBuilder();
         builder.append(", ").append(directory);
         builder.append("]");

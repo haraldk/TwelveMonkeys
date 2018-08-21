@@ -30,7 +30,7 @@ package com.twelvemonkeys.imageio.plugins.pcx;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.IndexedImageTypeSpecifier;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.xml.XMLSerializer;
 
@@ -54,9 +54,17 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * ImageReader for ZSoft PC Paintbrush (PCX) format.
+ *
+ * @see <a href="http://www.drdobbs.com/pcx-graphics/184402396">PCX Graphics</a>
+ */
 public final class PCXImageReader extends ImageReaderBase {
+
+    final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.pcx.debug"));
+
     /** 8 bit ImageTypeSpecifer used for reading bitplane images. */
-    private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifier.createGrayscale(8, DataBuffer.TYPE_BYTE, false);
+    private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
 
     private PCXHeader header;
     private boolean readPalette;
@@ -93,7 +101,7 @@ public final class PCXImageReader extends ImageReaderBase {
     public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
-        List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> specifiers = new ArrayList<>();
 
         // TODO: Implement
         specifiers.add(rawType);
@@ -107,30 +115,36 @@ public final class PCXImageReader extends ImageReaderBase {
         readHeader();
 
         int channels = header.getChannels();
-        int paletteInfo = header.getPaletteInfo();
-        ColorSpace cs = paletteInfo == PCX.PALETTEINFO_GRAY ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpace.getInstance(ColorSpace.CS_sRGB);
 
         switch (header.getBitsPerPixel()) {
             case 1:
             case 2:
             case 4:
-                return IndexedImageTypeSpecifier.createFromIndexColorModel(header.getEGAPalette());
-            case 8:
-                // We may have IndexColorModel here for 1 channel images
-                if (channels == 1 && paletteInfo != PCX.PALETTEINFO_GRAY) {
-                    IndexColorModel palette = getVGAPalette();
-                    if (palette == null) {
-                        throw new IIOException("Expected VGA palette not found");
-                    }
+                // TODO: If there's a VGA palette here, use it?
 
-                    return IndexedImageTypeSpecifier.createFromIndexColorModel(palette);
+                return ImageTypeSpecifiers.createFromIndexColorModel(header.getEGAPalette());
+            case 8:
+                if (channels == 1) {
+                    // We may have IndexColorModel here for 1 channel images
+                    IndexColorModel palette = getVGAPalette();
+
+                    if (palette != null) {
+                        return ImageTypeSpecifiers.createFromIndexColorModel(palette);
+                    }
+                    else {
+                        // PCX Gray has 1 channel and no palette
+                        return ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
+                    }
                 }
 
-                // PCX has 1 or 3 channels for 8 bit gray or 24 bit RGB, will be validated by ImageTypeSpecifier
-                return ImageTypeSpecifier.createBanded(cs, createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, false, false);
+                // PCX RGB has channels for 24 bit RGB, will be validated by ImageTypeSpecifier
+                return ImageTypeSpecifiers.createBanded(ColorSpace.getInstance(ColorSpace.CS_sRGB), createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, channels == 4, false);
             case 24:
-                // Some sources says this is possible... Untested.
-                return ImageTypeSpecifier.createInterleaved(cs, createIndices(channels, 0), DataBuffer.TYPE_BYTE, false, false);
+                // Some sources says this is possible...
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+            case 32:
+                // Some sources says this is possible...
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
             default:
                 throw new IIOException("Unknown number of bytes per pixel: " + header.getBitsPerPixel());
         }
@@ -151,10 +165,6 @@ public final class PCXImageReader extends ImageReaderBase {
         Iterator<ImageTypeSpecifier> imageTypes = getImageTypes(imageIndex);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
-        if (header.getPaletteInfo() != PCX.PALETTEINFO_COLOR && header.getPaletteInfo() != PCX.PALETTEINFO_GRAY) {
-            processWarningOccurred(String.format("Unsupported color mode: %d, colors may look incorrect", header.getPaletteInfo()));
-        }
-
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
@@ -171,8 +181,8 @@ public final class PCXImageReader extends ImageReaderBase {
 
         // Wrap input (COMPRESSION_RLE is really the only value allowed)
         DataInput input = compression == PCX.COMPRESSION_RLE
-                ? new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput), new RLEDecoder()))
-                : imageInput;
+                          ? new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput), new RLEDecoder()))
+                          : imageInput;
 
         int xSub = param != null ? param.getSourceXSubsampling() : 1;
         int ySub = param != null ? param.getSourceYSubsampling() : 1;
@@ -182,16 +192,16 @@ public final class PCXImageReader extends ImageReaderBase {
         if (rawType.getColorModel() instanceof IndexColorModel && header.getChannels() > 1) {
             // Bit planes!
             // Create raster from a default 8 bit layout
-            WritableRaster rowRaster = GRAYSCALE.createBufferedImage(header.getWidth(), 1).getRaster();
+            int planeWidth = header.getBytesPerLine();
+            int rowWidth = planeWidth * 8; // bitsPerPixel == 1
+            WritableRaster rowRaster = GRAYSCALE.createBufferedImage(rowWidth, 1).getRaster();
 
             // Clip to source region
             Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
-                                              param != null ? param.getSourceBands() : null,
-                                              param != null ? param.getSourceXSubsampling() : 1);
+                    param != null ? param.getSourceBands() : null,
+                    param != null ? param.getSourceXSubsampling() : 1);
 
-            int planeWidth = header.getBytesPerLine();
-            byte[] planeData = new byte[planeWidth * 8];
-
+            byte[] planeData = new byte[rowWidth];
             byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
 
             for (int y = 0; y < height; y++) {
@@ -211,7 +221,33 @@ public final class PCXImageReader extends ImageReaderBase {
 
                 processImageProgress(100f * y / height);
 
-                if (y < srcRegion.y) {
+                if (y >= srcRegion.y + srcRegion.height) {
+                    break;
+                }
+
+                if (abortRequested()) {
+                    processReadAborted();
+                    break;
+                }
+            }
+        }
+        else if (header.getBitsPerPixel() == 24 || header.getBitsPerPixel() == 32) {
+            // Can't use width here, as we need to take bytesPerLine into account, and re-create a width based on this
+            int rowWidth = (header.getBytesPerLine() * 8) / header.getBitsPerPixel();
+            WritableRaster rowRaster = rawType.createBufferedImage(rowWidth, 1).getRaster();
+
+            // Clip to source region
+            Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
+                    param != null ? param.getSourceBands() : null,
+                    param != null ? param.getSourceXSubsampling() : 1);
+
+            for (int y = 0; y < height; y++) {
+                byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                readRowByte(input, srcRegion, xSub, ySub, rowDataByte, 0, rowDataByte.length, destRaster, clippedRow, y);
+
+                processImageProgress(100f * y / height);
+
+                if (y >= srcRegion.y + srcRegion.height) {
                     break;
                 }
 
@@ -228,8 +264,8 @@ public final class PCXImageReader extends ImageReaderBase {
 
             // Clip to source region
             Raster clippedRow = clipRowToRect(rowRaster, srcRegion,
-                                              param != null ? param.getSourceBands() : null,
-                                              param != null ? param.getSourceXSubsampling() : 1);
+                    param != null ? param.getSourceBands() : null,
+                    param != null ? param.getSourceXSubsampling() : 1);
 
             for (int y = 0; y < height; y++) {
                 for (int c = 0; c < header.getChannels(); c++) {
@@ -248,15 +284,15 @@ public final class PCXImageReader extends ImageReaderBase {
                             throw new AssertionError();
                     }
 
-                    processImageProgress(100f * y / height * c / header.getChannels());
-
-                    if (y < srcRegion.y) {
-                        break;
-                    }
-
                     if (abortRequested()) {
                         break;
                     }
+                }
+
+                processImageProgress(100f * y / height);
+
+                if (y >= srcRegion.y + srcRegion.height) {
+                    break;
                 }
 
                 if (abortRequested()) {
@@ -322,13 +358,19 @@ public final class PCXImageReader extends ImageReaderBase {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             header = PCXHeader.read(imageInput);
+
+            if (DEBUG) {
+                System.err.println("header: " + header);
+            }
+
             imageInput.flushBefore(imageInput.getStreamPosition());
         }
 
         imageInput.seek(imageInput.getFlushedPosition());
     }
 
-    @Override public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
         readHeader();
 
@@ -342,36 +384,34 @@ public final class PCXImageReader extends ImageReaderBase {
             // Mark palette as read, to avoid further attempts
             readPalette = true;
 
-            // Wee can't simply skip to an offset, as the RLE compression makes the file size unpredictable
-            skiptToEOF(imageInput);
+            if (header.getVersion() >= PCX.VERSION_3 || header.getVersion() == PCX.VERSION_2_8_PALETTE) {
+                // We can't simply skip to an offset, as the RLE compression makes the file size unpredictable
+                skipToEOF(imageInput);
 
-            // Seek backwards from EOF
-            long paletteStart = imageInput.getStreamPosition() - 769;
-            if (paletteStart <= imageInput.getFlushedPosition()) {
-                return null;
+                int paletteSize = 256 * 3; // 256 * 3 for RGB
+
+                // Seek backwards from EOF
+                long paletteStart = imageInput.getStreamPosition() - paletteSize - 1;
+                if (paletteStart > imageInput.getFlushedPosition()) {
+                    imageInput.seek(paletteStart);
+
+                    byte val = imageInput.readByte();
+
+                    if (val == PCX.VGA_PALETTE_MAGIC) {
+                        byte[] palette = new byte[paletteSize];
+                        imageInput.readFully(palette);
+
+                        vgaPalette = new IndexColorModel(8, 256, palette, 0, false);
+                    }
+                }
             }
-
-            imageInput.seek(paletteStart);
-
-            byte val = imageInput.readByte();
-
-            if (val == PCX.VGA_PALETTE_MAGIC) {
-                byte[] palette = new byte[768]; // 256 * 3 for RGB
-                imageInput.readFully(palette);
-
-                vgaPalette = new IndexColorModel(8, 256, palette, 0, false);
-
-                return vgaPalette;
-            }
-
-            return null;
         }
 
         return vgaPalette;
     }
 
     // TODO: Candidate util method
-    private static long skiptToEOF(final ImageInputStream stream) throws IOException {
+    private static long skipToEOF(final ImageInputStream stream) throws IOException {
         long length = stream.length();
 
         if (length > 0) {
@@ -384,7 +424,7 @@ public final class PCXImageReader extends ImageReaderBase {
             long pos = stream.getStreamPosition();
 
             // ...skip 1k blocks until we're passed EOF...
-            while (stream.skipBytes(1024l) > 0) {
+            while (stream.skipBytes(1024L) > 0) {
                 if (stream.read() == -1) {
                     break;
                 }
@@ -415,8 +455,8 @@ public final class PCXImageReader extends ImageReaderBase {
 //            param.setSourceSubsampling(2, 3, 0, 0);
 //            param.setSourceSubsampling(2, 1, 0, 0);
 //
-//            int width = reader.getHdpi(0);
-//            int height = reader.getVdpi(0);
+//            int width = reader.getWidth(0);
+//            int height = reader.getHeight(0);
 //
 //            param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //            param.setSourceRegion(new Rectangle(width / 2, height / 2));

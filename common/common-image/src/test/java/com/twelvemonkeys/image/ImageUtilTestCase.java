@@ -103,11 +103,6 @@ public class ImageUtilTestCase {
         // Should have same dimensions
         assertEquals(scaled.getWidth(null), bufferedScaled.getWidth());
         assertEquals(scaled.getHeight(null), bufferedScaled.getHeight());
-
-        // Hmmm...
-        assertTrue(new Integer(42).equals(bufferedScaled.getProperty("lucky-number"))
-                || bufferedScaled.getPropertyNames() == null
-                || bufferedScaled.getPropertyNames().length == 0);
     }
 
     @Test

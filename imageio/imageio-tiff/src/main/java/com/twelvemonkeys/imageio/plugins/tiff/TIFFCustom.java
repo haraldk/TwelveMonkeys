@@ -50,6 +50,11 @@ interface TIFFCustom {
     int COMPRESSION_SGILOG = 34676;
     int COMPRESSION_SGILOG24 = 34677;
     int COMPRESSION_JPEG2000 = 34712;
+    // TODO: Aperio SVS JPEG2000: 33003 (YCbCr) and 33005 (RGB), see http://openslide.org/formats/aperio/
+
+    // PIXTIFF aka DELL PixTools, see https://community.emc.com/message/515755#515755
+    /** PIXTIFF proprietary ZIP compression, identical to Deflate/ZLib. */
+    int COMPRESSION_PIXTIFF_ZIP = 50013;
 
     int PHOTOMETRIC_LOGL = 32844;
     int PHOTOMETRIC_LOGLUV = 32845;

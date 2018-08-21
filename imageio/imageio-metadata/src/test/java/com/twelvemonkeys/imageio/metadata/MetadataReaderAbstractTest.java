@@ -40,9 +40,8 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * ReaderAbstractTest
@@ -54,6 +53,7 @@ import static org.junit.Assert.*;
 public abstract class MetadataReaderAbstractTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
     protected final URL getResource(final String name) throws IOException {
@@ -79,7 +79,7 @@ public abstract class MetadataReaderAbstractTest {
         assertNotNull(directory);
     }
 
-    protected final Matcher<Entry> hasValue(final Object value) {
+    protected static Matcher<Entry> hasValue(final Object value) {
         return new EntryHasValue(value);
     }
 
@@ -96,46 +96,7 @@ public abstract class MetadataReaderAbstractTest {
         }
 
         private static boolean valueEquals(final Object expected, final Object actual) {
-            return expected.getClass().isArray() ? arrayEquals(expected, actual) : expected.equals(actual);
-        }
-
-        private static boolean arrayEquals(final Object expected, final Object actual) {
-            Class<?> componentType = expected.getClass().getComponentType();
-
-            if (actual == null || !actual.getClass().isArray() || actual.getClass().getComponentType() != componentType) {
-                return false;
-            }
-
-            return componentType.isPrimitive() ? primitiveArrayEquals(componentType, expected, actual) : Arrays.equals((Object[]) expected, (Object[]) actual);
-        }
-
-        private static boolean primitiveArrayEquals(Class<?> componentType, Object expected, Object actual) {
-            if (componentType == boolean.class) {
-                return Arrays.equals((boolean[]) expected, (boolean[]) actual);
-            }
-            else if (componentType == byte.class) {
-                return Arrays.equals((byte[]) expected, (byte[]) actual);
-            }
-            else if (componentType == char.class) {
-                return Arrays.equals((char[]) expected, (char[]) actual);
-            }
-            else if (componentType == double.class) {
-                return Arrays.equals((double[]) expected, (double[]) actual);
-            }
-            else if (componentType == float.class) {
-                return Arrays.equals((float[]) expected, (float[]) actual);
-            }
-            else if (componentType == int.class) {
-                return Arrays.equals((int[]) expected, (int[]) actual);
-            }
-            else if (componentType == long.class) {
-                return Arrays.equals((long[]) expected, (long[]) actual);
-            }
-            else if (componentType == short.class) {
-                return Arrays.equals((short[]) expected, (short[]) actual);
-            }
-
-            throw new AssertionError("Unsupported type:" + componentType);
+            return expected.getClass().isArray() ? AbstractEntry.arrayEquals(expected, actual) : expected.equals(actual);
         }
 
         public void describeTo(final Description description) {

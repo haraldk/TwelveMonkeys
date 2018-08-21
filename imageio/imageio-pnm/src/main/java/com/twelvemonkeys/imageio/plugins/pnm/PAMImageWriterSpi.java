@@ -29,7 +29,6 @@
 package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
@@ -43,16 +42,16 @@ public final class PAMImageWriterSpi extends ImageWriterSpi {
      * Creates a {@code PAMImageWriterSpi}.
      */
     public PAMImageWriterSpi() {
-        this(IIOUtil.getProviderInfo(PAMImageWriterSpi.class));
+        this(new PNMProviderInfo());
     }
 
     private PAMImageWriterSpi(final ProviderInfo pProviderInfo) {
         super(
                 pProviderInfo.getVendorName(),
                 pProviderInfo.getVersion(),
-                new String[]{"pam", "PAM"},
-                new String[]{"pam"},
-                new String[]{
+                new String[] {"pam", "PAM"},
+                new String[] {"pam"},
+                new String[] {
                         // No official IANA record exists, these are conventional
                         "image/x-portable-arbitrarymap" // PAM
                 },
@@ -73,7 +72,8 @@ public final class PAMImageWriterSpi extends ImageWriterSpi {
         return new PNMImageWriter(this);
     }
 
-    @Override public String getDescription(final Locale locale) {
+    @Override
+    public String getDescription(final Locale locale) {
         return "NetPBM Portable Arbitrary Map (PAM) image writer";
     }
 }

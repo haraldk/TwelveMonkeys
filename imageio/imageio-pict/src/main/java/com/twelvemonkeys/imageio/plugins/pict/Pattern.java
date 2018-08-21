@@ -29,9 +29,9 @@
 package com.twelvemonkeys.imageio.plugins.pict;
 
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.awt.geom.AffineTransform;
-import java.awt.image.*;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.ColorModel;
 import java.util.Collections;
 
 /**
@@ -42,7 +42,7 @@ import java.util.Collections;
  * @version $Id: Pattern.java,v 1.0 Oct 9, 2007 1:21:38 AM haraldk Exp$
  */
 abstract class Pattern implements Paint {
-    private final Paint paint;
+    protected final Paint paint;
     
     Pattern(final Paint pPaint) {
         paint = pPaint;
@@ -60,5 +60,7 @@ abstract class Pattern implements Paint {
 
     public int getTransparency() {
         return paint.getTransparency();
-    }    
+    }
+
+    public abstract Pattern derive(Color foreground, Color background);
 }

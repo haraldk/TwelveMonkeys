@@ -56,9 +56,10 @@ import static org.junit.Assert.*;
 public class JPEGSegmentImageInputStreamTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
+        ImageIO.setUseCache(false);
     }
 
-    protected URL getClassLoaderResource(final String pName) {
+    private URL getClassLoaderResource(final String pName) {
         return getClass().getResource(pName);
     }
 
@@ -71,6 +72,24 @@ public class JPEGSegmentImageInputStreamTest {
     public void testStreamNonJPEG() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[] {42, 42, 0, 0, 77, 99})));
         stream.read();
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamNonJPEGArray() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[] {42, 42, 0, 0, 77, 99})));
+        stream.readFully(new byte[1]);
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamEmpty() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
+        stream.read();
+    }
+
+    @Test(expected = IIOException.class)
+    public void testStreamEmptyArray() throws IOException {
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
+        stream.readFully(new byte[1]);
     }
 
     @Test
@@ -100,7 +119,7 @@ public class JPEGSegmentImageInputStreamTest {
             length++;
         }
 
-        assertThat(length, new LessOrEqual<Long>(10203l)); // In no case should length increase
+        assertThat(length, new LessOrEqual<>(10203L)); // In no case should length increase
 
         assertEquals(9607L, length); // May change, if more chunks are passed to reader...
     }
@@ -130,7 +149,7 @@ public class JPEGSegmentImageInputStreamTest {
             length++;
         }
 
-        assertEquals(9281L, length); // Sanity check: same as file size
+        assertEquals(9281L, length); // Sanity check: same as file size, except..?
     }
 
     @Test
@@ -143,7 +162,7 @@ public class JPEGSegmentImageInputStreamTest {
         assertEquals(JPEG.APP1, appSegments.get(0).marker());
         assertEquals("Exif", appSegments.get(0).identifier());
 
-        stream.seek(0l);
+        stream.seek(0L);
 
         long length = 0;
         while (stream.read() != -1) {
@@ -151,5 +170,29 @@ public class JPEGSegmentImageInputStreamTest {
         }
 
         assertEquals(1061L, length); // Sanity check: same as file size, except padding and the filtered ICC_PROFILE segment
+    }
+
+    @Test
+    public void testEOFExceptionInSegmentParsingShouldNotCreateBadState() throws IOException {
+        ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg")));
+
+        byte[] buffer = new byte[4096];
+
+        // NOTE: This is a simulation of how the native parts of com.sun...JPEGImageReader would read the image...
+        assertEquals(2, iis.read(buffer, 0, buffer.length));
+        assertEquals(2, iis.getStreamPosition());
+
+        iis.seek(0x2012); // bad segment length, should have been 0x0012, not 0x2012
+        assertEquals(0x2012, iis.getStreamPosition());
+
+        // So far, so good (but stream position is now really beyond EOF)...
+
+        // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(0x2012, iis.getStreamPosition());
+
+        // Again, should just continue returning -1 for ever
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(0x2012, iis.getStreamPosition());
     }
 }

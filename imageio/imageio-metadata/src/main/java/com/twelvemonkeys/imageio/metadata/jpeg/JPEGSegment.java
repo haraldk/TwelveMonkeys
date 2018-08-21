@@ -43,7 +43,7 @@ import java.util.Arrays;
 public final class JPEGSegment implements Serializable {
     final int marker;
     final byte[] data;
-    final int length;
+    private final int length;
 
     private transient String id;
 
@@ -53,9 +53,13 @@ public final class JPEGSegment implements Serializable {
         this.length = length;
     }
 
-    int segmentLength() {
+    public int segmentLength() {
         // This is the length field as read from the stream
         return length;
+    }
+
+    public InputStream segmentData() {
+        return data != null ? new ByteArrayInputStream(data) : null;
     }
 
     public int marker() {

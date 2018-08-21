@@ -4,13 +4,21 @@
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
-        <version>7</version>
+        <version>9</version>
     </parent>
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys</artifactId>
-    <version>3.1-SNAPSHOT</version>
+    <version>3.4-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Twelvemonkeys</name>
+
+    <licenses>
+        <license>
+            <name>The BSD License</name>
+            <url>https://github.com/haraldk/TwelveMonkeys#license</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <modules>
         <module>common</module>
@@ -18,6 +26,8 @@
         <module>imageio</module>
         <!--<module>swing</module>-->
         <!--<module>sandbox</module>-->
+        <module>contrib</module>
+        <module>bom</module>
     </modules>
 
     <developers>
@@ -41,7 +51,33 @@
                 <role>maven-guru</role>
             </roles>
         </contributor>
+        <contributor>
+            <name>Oliver Schmidtmer</name>
+            <email>mail@trek7891.de</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Jason Palmer</name>
+            <email>jpalmer@itemmaster.com</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Hermann Kroll</name>
+            <email>dev.hkroll@gmail.com</email>
+            <roles>
+                <role>contributor</role>
+            </roles>
+        </contributor>
     </contributors>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/haraldk/TwelveMonkeys/issues</url>
+    </issueManagement>
 
     <scm>
         <connection>scm:git:https://github.com/haraldk/TwelveMonkeys</connection>
@@ -94,7 +130,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.5</version>
+                    <version>2.7</version>
                     <configuration>
                         <encoding>UTF-8</encoding>
                     </configuration>
@@ -102,7 +138,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>2.6</version>
                     <inherited>true</inherited>
                     <executions>
                         <execution>
@@ -117,23 +153,23 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>2.10.3</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.2.1</version>
+                    <version>2.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>2.3.2</version>
+                    <version>3.3</version>
                     <inherited>true</inherited>
                     <configuration>
-                        <source>1.5</source>
-                        <target>1.5</target>
+                        <source>1.7</source>
+                        <target>1.7</target>
                         <showDeprecation>false</showDeprecation>
-                        <compilerArgument>-g:lines</compilerArgument>
+                        <debuglevel>source,lines</debuglevel>
                         <compilerArguments>
                             <encoding>iso-8859-1</encoding>
                         </compilerArguments>
@@ -143,7 +179,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.10</version>
+                    <version>2.18.1</version>
                     <configuration>
                         <systemProperties>
                             <property>
@@ -156,20 +192,8 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-idea-plugin</artifactId>
-                    <inherited>true</inherited>
-                    <version>2.2</version>
-                    <configuration>
-                        <jdkName>1.5</jdkName>
-                        <jdkLevel>1.5</jdkLevel>
-                        <downloadSources>true</downloadSources>
-                    </configuration>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.4.2</version>
+                    <version>2.5.2</version>
                     <dependencies>
                       <dependency>
                         <groupId>org.apache.maven.scm</groupId>
@@ -189,30 +213,30 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
+                <version>2.10.3</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>2.16</version>
+                <version>2.18.1</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>cobertura-maven-plugin</artifactId>
-                <version>2.6</version>
+                <version>2.7</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.4</version>
                 <configuration>
-                    <targetJdk>1.5</targetJdk>
+                    <targetJdk>1.7</targetJdk>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.10</version>
+                <version>2.15</version>
             </plugin>
         </plugins>
     </reporting>

@@ -459,6 +459,16 @@ public class XMLSerializer {
             pOut.print(pNode.getTagName());
             pOut.println(">");
         }
+        else if (pNode.getNodeValue() != null) {
+            // NOTE: This is NOT AS SPECIFIED, but we do this to support
+            // the weirdness that is the javax.imageio.metadata.IIOMetadataNode.
+            // According to the spec, the nodeValue of an Element is null.
+            pOut.print(">");
+            pOut.print(pNode.getNodeValue());
+            pOut.print("</");
+            pOut.print(pNode.getTagName());
+            pOut.println(">");
+        }
         else {
             pOut.println("/>");
         }

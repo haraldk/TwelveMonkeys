@@ -28,10 +28,11 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.iptc.IPTC;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.FilterIterator;
 import org.w3c.dom.Node;
@@ -52,7 +53,6 @@ import java.util.List;
  */
 public final class PSDMetadata extends AbstractMetadata {
 
-    // TODO: Decide on image/stream metadata...
     static final String NATIVE_METADATA_FORMAT_NAME = "com_twelvemonkeys_imageio_psd_image_1.0";
     static final String NATIVE_METADATA_FORMAT_CLASS_NAME = "com.twelvemonkeys.imageio.plugins.psd.PSDMetadataFormat";
     // TODO: Support TIFF metadata, based on EXIF/XMP + merge in PSD specifics
@@ -64,6 +64,7 @@ public final class PSDMetadata extends AbstractMetadata {
     PSDGlobalLayerMask globalLayerMask;
     List<PSDLayerInfo> layerInfo;
 
+    int layerCount;
     long imageResourcesStart;
     long layerAndMaskInfoStart;
     long layersStart;
@@ -92,8 +93,8 @@ public final class PSDMetadata extends AbstractMetadata {
 
     static final String[] PRINT_SCALE_STYLES = {"centered", "scaleToFit", "userDefined"};
 
-    protected PSDMetadata() {
-        // TODO: Allow XMP, EXIF and IPTC as extra formats?
+    PSDMetadata() {
+        // TODO: Allow XMP, EXIF (TIFF) and IPTC as extra formats?
         super(true, NATIVE_METADATA_FORMAT_NAME, NATIVE_METADATA_FORMAT_CLASS_NAME, null, null);
     }
 
@@ -112,7 +113,15 @@ public final class PSDMetadata extends AbstractMetadata {
         if (imageResources != null && !imageResources.isEmpty()) {
             root.appendChild(createImageResourcesNode());
         }
-        
+
+        if (layerInfo != null && !layerInfo.isEmpty()) {
+            root.appendChild(createLayerInfoNode());
+        }
+
+        if (globalLayerMask != null && globalLayerMask != PSDGlobalLayerMask.NULL_MASK) {
+            root.appendChild(createGlobalLayerMaskNode());
+        }
+
         return root;
     }
 
@@ -162,7 +171,7 @@ public final class PSDMetadata extends AbstractMetadata {
 
                 node = new IIOMetadataNode("DisplayInfo");
                 node.setAttribute("colorSpace", DISPLAY_INFO_CS[displayInfo.colorSpace]);
-                
+
                 StringBuilder builder = new StringBuilder();
 
                 for (short color : displayInfo.colors) {
@@ -282,32 +291,38 @@ public final class PSDMetadata extends AbstractMetadata {
 
                 node = new IIOMetadataNode("DirectoryResource");
                 node.setAttribute("type", "IPTC");
-                node.setUserObject(iptc.directory);
+                node.setUserObject(iptc.data);
 
-                appendEntries(node, "IPTC", iptc.directory);
+                if (iptc.getDirectory() != null) {
+                    appendEntries(node, "IPTC", iptc.getDirectory());
+                }
             }
             else if (imageResource instanceof PSDEXIF1Data) {
                 // TODO: Revise/rethink this...
                 PSDEXIF1Data exif = (PSDEXIF1Data) imageResource;
 
                 node = new IIOMetadataNode("DirectoryResource");
-                node.setAttribute("type", "EXIF");
+                node.setAttribute("type", "TIFF");
                 // TODO: Set byte[] data instead
-                node.setUserObject(exif.directory);
+                node.setUserObject(exif.data);
 
-                appendEntries(node, "EXIF", exif.directory);
+                if (exif.getDirectory() != null) {
+                    appendEntries(node, "EXIF", exif.getDirectory());
+                }
             }
             else if (imageResource instanceof PSDXMPData) {
                 // TODO: Revise/rethink this... Would it be possible to parse XMP as IIOMetadataNodes? Or is that just stupid...
-                // Or maybe use the Directory approach used by IPTC and EXIF.. 
+                // Or maybe use the Directory approach used by IPTC and EXIF..
                 PSDXMPData xmp = (PSDXMPData) imageResource;
 
                 node = new IIOMetadataNode("DirectoryResource");
                 node.setAttribute("type", "XMP");
-                appendEntries(node, "XMP", xmp.directory);
-
                 // Set the entire XMP document as user data
                 node.setUserObject(xmp.data);
+
+                if (xmp.getDirectory() != null) {
+                    appendEntries(node, "XMP", xmp.getDirectory());
+                }
             }
             else {
                 // Generic resource..
@@ -325,10 +340,6 @@ public final class PSDMetadata extends AbstractMetadata {
             node.setAttribute("resourceId", String.format("0x%04x", imageResource.id));
             resource.appendChild(node);
         }
-
-        // TODO: Layers and layer info
-
-        // TODO: Global mask etc..
 
         return resource;
     }
@@ -361,6 +372,84 @@ public final class PSDMetadata extends AbstractMetadata {
 
             node.appendChild(tag);
         }
+    }
+
+    private Node createLayerInfoNode() {
+        IIOMetadataNode layers = new IIOMetadataNode("Layers");
+
+        for (PSDLayerInfo psdLayerInfo : layerInfo) {
+            // TODO: Group in layer and use sub node for blend mode?
+            IIOMetadataNode node = new IIOMetadataNode("LayerInfo");
+            node.setAttribute("name", psdLayerInfo.getLayerName());
+            node.setAttribute("top", String.valueOf(psdLayerInfo.top));
+            node.setAttribute("left", String.valueOf(psdLayerInfo.left));
+            node.setAttribute("bottom", String.valueOf(psdLayerInfo.bottom));
+            node.setAttribute("right", String.valueOf(psdLayerInfo.right));
+
+            node.setAttribute("blendMode", PSDUtil.intToStr(psdLayerInfo.blendMode.blendMode));
+            node.setAttribute("opacity", String.valueOf(psdLayerInfo.blendMode.opacity)); // 0-255
+            node.setAttribute("clipping", getClippingValue(psdLayerInfo.blendMode.clipping)); // Enum: 0: Base, 1: Non-base, n: unknown
+            node.setAttribute("flags", String.valueOf(psdLayerInfo.blendMode.flags));
+
+            if ((psdLayerInfo.blendMode.flags & 0x01) != 0) {
+                node.setAttribute("transparencyProtected", "true");
+            }
+            if ((psdLayerInfo.blendMode.flags & 0x02) != 0) {
+                node.setAttribute("visible", "true");
+            }
+            if ((psdLayerInfo.blendMode.flags & 0x04) != 0) {
+                node.setAttribute("obsolete", "true");
+            }
+            if ((psdLayerInfo.blendMode.flags & 0x08) != 0 && (psdLayerInfo.blendMode.flags & 0x10) != 0) {
+                node.setAttribute("pixelDataIrrelevant", "true");
+            }
+
+            // Skip channelInfo
+            // Skip layerMaskData
+            // TODO: Consider adding psdLayerInfo.ranges as it may be useful for composing
+
+            layers.appendChild(node);
+        }
+
+        return layers;
+    }
+
+    private String getClippingValue(final int clipping) {
+        switch (clipping) {
+            case 0:
+                return "base";
+            case 1:
+                return "non-base";
+            default:
+        }
+
+        return String.valueOf(clipping);
+    }
+
+    private Node createGlobalLayerMaskNode() {
+        IIOMetadataNode globalLayerMaskNode = new IIOMetadataNode("GlobalLayerMask");
+
+        globalLayerMaskNode.setAttribute("colorSpace", String.valueOf(globalLayerMask.colorSpace));
+        globalLayerMaskNode.setAttribute("colors", toListString(globalLayerMask.colors));
+        globalLayerMaskNode.setAttribute("opacity", String.valueOf(globalLayerMask.opacity)); // 0-100
+        globalLayerMaskNode.setAttribute("kind", getGlobalLayerMaskKind(globalLayerMask.kind)); // (selected|protected|layer)
+
+        return globalLayerMaskNode;
+    }
+
+    private String getGlobalLayerMaskKind(final int kind) {
+        switch (kind) {
+            case 0:
+                return "selected";
+            case 1:
+                return "protected";
+            case 80: // Spec says 128 (which is 0x80, probably a bug in the implementation...)
+            case 0x80:
+                return "layer";
+            default:
+        }
+
+        return String.valueOf(kind);
     }
 
     /// Standard format support
@@ -488,9 +577,8 @@ public final class PSDMetadata extends AbstractMetadata {
         compressionNode.appendChild(compressionTypeName);
 
         if (compression != PSD.COMPRESSION_NONE) {
-            IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
-            lossless.setAttribute("value", "true");
-            compressionNode.appendChild(lossless);
+            compressionNode.appendChild(new IIOMetadataNode("Lossless"));
+            // "value" defaults to TRUE, all PSD compressions are lossless
         }
 
         return compressionNode;
@@ -546,7 +634,7 @@ public final class PSDMetadata extends AbstractMetadata {
 
         // TODO: If no PSDResolutionInfo, this might still be available in the EXIF data...
         Iterator<PSDResolutionInfo> resolutionInfos = getResources(PSDResolutionInfo.class);
-        if (!resolutionInfos.hasNext()) {
+        if (resolutionInfos.hasNext()) {
             PSDResolutionInfo resolutionInfo = resolutionInfos.next();
 
             node = new IIOMetadataNode("HorizontalPixelSize");
@@ -562,7 +650,7 @@ public final class PSDMetadata extends AbstractMetadata {
     }
 
     private static float asMM(final short unit, final float resolution) {
-        // Unit: 1 -> pixels per inch, 2 -> pixels pr cm   
+        // Unit: 1 -> pixels per inch, 2 -> pixels pr cm
         return (unit == 1 ? 25.4f : 10) / resolution;
     }
 
@@ -580,7 +668,7 @@ public final class PSDMetadata extends AbstractMetadata {
             PSDEXIF1Data data = exif.next();
 
             // Get the EXIF DateTime (aka ModifyDate) tag if present
-            Entry dateTime = data.directory.getEntryById(TIFF.TAG_DATE_TIME);
+            Entry dateTime = data.getDirectory().getEntryById(TIFF.TAG_DATE_TIME);
             if (dateTime != null) {
                 IIOMetadataNode imageCreationTime = new IIOMetadataNode("ImageCreationTime"); // As TIFF, but could just as well be ImageModificationTime
                 // Format: "YYYY:MM:DD hh:mm:ss"
@@ -620,16 +708,20 @@ public final class PSDMetadata extends AbstractMetadata {
         // TODO: Reader/writer (PSDVersionInfo)
 
         while (textResources.hasNext()) {
-            PSDImageResource textResource = textResources.next();
+            final PSDImageResource textResource = textResources.next();
 
             if (textResource instanceof PSDIPTCData) {
                 PSDIPTCData iptc = (PSDIPTCData) textResource;
 
-                appendTextEntriesFlat(text, iptc.directory, new FilterIterator.Filter<Entry>() {
+                appendTextEntriesFlat(text, iptc.getDirectory(), new FilterIterator.Filter<Entry>() {
                     public boolean accept(final Entry pEntry) {
                         Integer tagId = (Integer) pEntry.getIdentifier();
 
                         switch (tagId) {
+                            // Older PSD versions have only these, map to TIFF counterparts
+                            case IPTC.TAG_CAPTION: // Use if TIFF.TAG_IMAGE_DESCRIPTION is missing
+                            case IPTC.TAG_BY_LINE: // Use if TIFF.TAG_ARTIST is missing
+                            case IPTC.TAG_COPYRIGHT_NOTICE: // Use if TIFF.TAG_COPYRIGHT is missing
                             case IPTC.TAG_SOURCE:
                                 return true;
                             default:
@@ -641,7 +733,7 @@ public final class PSDMetadata extends AbstractMetadata {
             else if (textResource instanceof PSDEXIF1Data) {
                 PSDEXIF1Data exif = (PSDEXIF1Data) textResource;
 
-                appendTextEntriesFlat(text, exif.directory, new FilterIterator.Filter<Entry>() {
+                appendTextEntriesFlat(text, exif.getDirectory(), new FilterIterator.Filter<Entry>() {
                     public boolean accept(final Entry pEntry) {
                         Integer tagId = (Integer) pEntry.getIdentifier();
 
@@ -649,6 +741,7 @@ public final class PSDMetadata extends AbstractMetadata {
                             case TIFF.TAG_SOFTWARE:
                             case TIFF.TAG_ARTIST:
                             case TIFF.TAG_COPYRIGHT:
+                            case TIFF.TAG_IMAGE_DESCRIPTION:
                                 return true;
                             default:
                                 return false;
@@ -656,18 +749,19 @@ public final class PSDMetadata extends AbstractMetadata {
                     }
                 });
             }
-            else if (textResource instanceof PSDXMPData) {
+            //else if (textResource instanceof PSDXMPData) {
                 // TODO: Parse XMP (heavy) ONLY if we don't have required fields from IPTC/EXIF?
                 // TODO: Use XMP IPTC/EXIF/TIFF NativeDigest field to validate if the values are in sync..?
-                PSDXMPData xmp = (PSDXMPData) textResource;
-            }
+                // TODO: Use XMP IPTC/EXIF/TIFF NativeDigest field to validate if the values are in sync..?
+                //PSDXMPData xmp = (PSDXMPData) textResource;
+            //}
         }
 
         return text;
     }
 
     private void appendTextEntriesFlat(final IIOMetadataNode node, final Directory directory, final FilterIterator.Filter<Entry> filter) {
-        FilterIterator<Entry> entries = new FilterIterator<Entry>(directory.iterator(), filter);
+        FilterIterator<Entry> entries = new FilterIterator<>(directory.iterator(), filter);
 
         while (entries.hasNext()) {
             Entry entry = entries.next();
@@ -709,27 +803,30 @@ public final class PSDMetadata extends AbstractMetadata {
         return transparencyNode;
     }
 
-    private boolean hasAlpha() {
-        return header.mode == PSD.COLOR_MODE_RGB && header.channels > 3 ||
-                header.mode == PSD.COLOR_MODE_CMYK & header.channels > 4;
+    boolean hasAlpha() {
+        return layerCount < 0;
     }
 
-    <T extends PSDImageResource> Iterator<T> getResources(final Class<T> resourceType) {
+    int getLayerCount() {
+        return Math.abs(layerCount);
+    }
+
+    private <T extends PSDImageResource> Iterator<T> getResources(final Class<T> resourceType) {
         // NOTE: The cast here is wrong, strictly speaking, but it does not matter...
         @SuppressWarnings({"unchecked"})
         Iterator<T> iterator = (Iterator<T>) imageResources.iterator();
 
-        return new FilterIterator<T>(iterator, new FilterIterator.Filter<T>() {
+        return new FilterIterator<>(iterator, new FilterIterator.Filter<T>() {
             public boolean accept(final T pElement) {
                 return resourceType.isInstance(pElement);
             }
         });
     }
 
-    Iterator<PSDImageResource> getResources(final int... resourceTypes) {
+    private Iterator<PSDImageResource> getResources(final int... resourceTypes) {
         Iterator<PSDImageResource> iterator = imageResources.iterator();
 
-        return new FilterIterator<PSDImageResource>(iterator, new FilterIterator.Filter<PSDImageResource>() {
+        return new FilterIterator<>(iterator, new FilterIterator.Filter<PSDImageResource>() {
             public boolean accept(final PSDImageResource pResource) {
                 for (int type : resourceTypes) {
                     if (type == pResource.id) {

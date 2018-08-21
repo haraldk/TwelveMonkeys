@@ -42,7 +42,6 @@ import java.io.IOException;
  * @author last modified by $Author: haraldk$
  * @version $Id: ThumbnailReader.java,v 1.0 18.04.12 12:22 haraldk Exp$
  */
-// TODO: Get rid of the com.sun import!!
 abstract class ThumbnailReader {
 
     private final ThumbnailReadProgressListener progressListener;
@@ -56,37 +55,36 @@ abstract class ThumbnailReader {
     }
 
     protected final void processThumbnailStarted() {
-        progressListener.processThumbnailStarted(imageIndex, thumbnailIndex);
+        progressListener.thumbnailStarted(imageIndex, thumbnailIndex);
     }
 
     protected final void processThumbnailProgress(float percentageDone) {
-        progressListener.processThumbnailProgress(percentageDone);
+        progressListener.thumbnailProgress(percentageDone);
     }
 
     protected final void processThumbnailComplete() {
-        progressListener.processThumbnailComplete();
+        progressListener.thumbnailComplete();
     }
 
     static protected BufferedImage readJPEGThumbnail(final ImageReader reader, final ImageInputStream stream) throws IOException {
-//        try {
-//            try {
-                reader.setInput(stream);
+        reader.setInput(stream);
 
-                return reader.read(0);
-//            }
-//            finally {
-//                input.close();
-//            }
-//        }
-//        finally {
-//            reader.dispose();
-//        }
+        return reader.read(0);
     }
 
     static protected BufferedImage readRawThumbnail(final byte[] thumbnail, final int size, final int offset, int w, int h) {
         DataBufferByte buffer = new DataBufferByte(thumbnail, size, offset);
-        WritableRaster raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
-        ColorModel cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB),false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        WritableRaster raster;
+        ColorModel cm;
+
+        if (thumbnail.length == w * h) {
+            raster = Raster.createInterleavedRaster(buffer, w, h, w, 1, new int[] {0}, null);
+            cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        }
+        else {
+            raster = Raster.createInterleavedRaster(buffer, w, h, w * 3, 3, new int[] {0, 1, 2}, null);
+            cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_sRGB), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        }
 
         return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
     }
@@ -98,13 +96,16 @@ abstract class ThumbnailReader {
     public abstract int getHeight() throws IOException;
 
     private static class NullProgressListener implements ThumbnailReadProgressListener {
-        public void processThumbnailStarted(int imageIndex, int thumbnailIndex) {
+        @Override
+        public void thumbnailStarted(int imageIndex, int thumbnailIndex) {
         }
 
-        public void processThumbnailProgress(float percentageDone) {
+        @Override
+        public void thumbnailProgress(float percentageDone) {
         }
 
-        public void processThumbnailComplete() {
+        @Override
+        public void thumbnailComplete() {
         }
     }
 }

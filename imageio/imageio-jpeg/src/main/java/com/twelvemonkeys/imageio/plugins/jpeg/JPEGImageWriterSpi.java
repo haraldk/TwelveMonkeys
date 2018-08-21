@@ -28,8 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -37,11 +36,12 @@ import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Locale;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * JPEGImageWriterSpi
@@ -50,7 +50,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageWriterSpi.java,v 1.0 06.02.12 16:09 haraldk Exp$
  */
-public class JPEGImageWriterSpi extends ImageWriterSpi {
+public class JPEGImageWriterSpi extends ImageWriterSpiBase {
     private ImageWriterSpi delegateProvider;
 
     /**
@@ -58,22 +58,7 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
      * The instance created will not work without being properly registered.
      */
     public JPEGImageWriterSpi() {
-        this(IIOUtil.getProviderInfo(JPEGImageWriterSpi.class));
-    }
-
-    private JPEGImageWriterSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[]{"JPEG", "jpeg", "JPG", "jpg"},
-                new String[]{"jpg", "jpeg"},
-                new String[]{"image/jpeg"},
-                "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
-                new Class[] { ImageOutputStream.class },
-                new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new JPEGProviderInfo());
     }
 
     /**
@@ -82,23 +67,9 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
      * @param delegateProvider a {@code ImageWriterSpi} that can write JPEG.
      */
     protected JPEGImageWriterSpi(final ImageWriterSpi delegateProvider) {
-        this(IIOUtil.getProviderInfo(JPEGImageReaderSpi.class));
+        this();
 
         this.delegateProvider = Validate.notNull(delegateProvider);
-    }
-    
-    static ImageWriterSpi lookupDelegateProvider(final ServiceRegistry registry) {
-        Iterator<ImageWriterSpi> providers = registry.getServiceProviders(ImageWriterSpi.class, true);
-
-        while (providers.hasNext()) {
-            ImageWriterSpi provider = providers.next();
-
-            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi")) {
-                return provider;
-            }
-        }
-
-        return null;
     }
 
     @SuppressWarnings({"unchecked"})
@@ -106,16 +77,16 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         if (delegateProvider == null) {
             // Install delegate now
-            delegateProvider = lookupDelegateProvider(registry);
+            delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi", ImageWriterSpi.class);
         }
 
         if (delegateProvider != null) {
-            // Order before com.sun provider, to aid ImageIO in selecting our reader
+            // Order before com.sun provider, to aid ImageIO in selecting our writer
             registry.setOrdering((Class<ImageWriterSpi>) category, this, delegateProvider);
         }
         else {
             // Or, if no delegate is found, silently deregister from the registry
-            IIOUtil.deregisterProvider(registry, this, category);
+            deregisterProvider(registry, this, category);
         }
     }
 
@@ -130,23 +101,14 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
     }
 
     @Override
-    public ImageWriter createWriterInstance(Object extension) throws IOException {
+    public ImageWriter createWriterInstance(final Object extension) throws IOException {
         return new JPEGImageWriter(this, delegateProvider.createWriterInstance(extension));
     }
 
     @Override
     public String[] getFormatNames() {
+        // NOTE: Can't use super.getFormatNames() which includes JPEG-Lossless
         return delegateProvider.getFormatNames();
-    }
-
-    @Override
-    public String[] getFileSuffixes() {
-        return delegateProvider.getFileSuffixes();
-    }
-
-    @Override
-    public String[] getMIMETypes() {
-        return delegateProvider.getMIMETypes();
     }
 
     @Override
@@ -180,27 +142,27 @@ public class JPEGImageWriterSpi extends ImageWriterSpi {
     }
 
     @Override
-    public IIOMetadataFormat getStreamMetadataFormat(String formatName) {
+    public IIOMetadataFormat getStreamMetadataFormat(final String formatName) {
         return delegateProvider.getStreamMetadataFormat(formatName);
     }
 
     @Override
-    public IIOMetadataFormat getImageMetadataFormat(String formatName) {
+    public IIOMetadataFormat getImageMetadataFormat(final String formatName) {
         return delegateProvider.getImageMetadataFormat(formatName);
     }
 
     @Override
-    public boolean canEncodeImage(ImageTypeSpecifier type) {
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
         return delegateProvider.canEncodeImage(type);
     }
 
     @Override
-    public boolean canEncodeImage(RenderedImage im) {
+    public boolean canEncodeImage(final RenderedImage im) {
         return delegateProvider.canEncodeImage(im);
     }
 
     @Override
-    public String getDescription(Locale locale) {
+    public String getDescription(final Locale locale) {
         return delegateProvider.getDescription(locale);
     }
 

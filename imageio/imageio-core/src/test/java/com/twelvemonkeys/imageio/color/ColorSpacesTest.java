@@ -36,6 +36,7 @@ import java.awt.color.ICC_Profile;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * ColorSpacesTest
@@ -45,6 +46,26 @@ import static org.junit.Assert.*;
  * @version $Id: ColorSpacesTest.java,v 1.0 07.02.11 14.32 haraldk Exp$
  */
 public class ColorSpacesTest {
+    @Test
+    public void testAdobeRGB98AlwaysSame() {
+        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998);
+        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998));
+
+        assertTrue(cs instanceof ICC_ColorSpace);
+        ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
+        assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
+    }
+
+    @Test
+    public void testCMYKAlwaysSame() {
+        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
+
+        assumeTrue(cs instanceof ICC_ColorSpace); // NOTE: Ignores test on systems without CMYK profile
+        ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
+        assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
+    }
+
     @Test
     public void testCreateColorSpaceFromKnownProfileReturnsInternalCS_sRGB() {
         ICC_Profile profile = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
@@ -82,7 +103,10 @@ public class ColorSpacesTest {
 
     private ICC_Profile createBrokenProfile(ICC_Profile internal) {
         byte[] data = internal.getData();
-        data[ICC_Profile.icHdrRenderingIntent] = 1; // Intent: 1 == Relative Colormetric
+        data[ICC_Profile.icHdrRenderingIntent] = 1; // Intent: 1 == Relative Colormetric Little Endian
+        data[ICC_Profile.icHdrRenderingIntent + 1] = 0;
+        data[ICC_Profile.icHdrRenderingIntent + 2] = 0;
+        data[ICC_Profile.icHdrRenderingIntent + 3] = 0;
         return ICC_Profile.getInstance(data);
     }
 
@@ -131,20 +155,6 @@ public class ColorSpacesTest {
     }
 
     @Test
-    public void testAdobeRGB98AlwaysSame() {
-        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998);
-        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_ADOBE_RGB_1998));
-
-        if (cs instanceof ICC_ColorSpace) {
-            ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
-            assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
-        }
-        else {
-            System.err.println("WARNING: Not an ICC_ColorSpace: " + cs);
-        }
-    }
-
-    @Test
     public void testCMYKNotNull() {
         assertNotNull(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
     }
@@ -152,20 +162,6 @@ public class ColorSpacesTest {
     @Test
     public void testCMYKIsTypeCMYK() {
         assertEquals(ColorSpace.TYPE_CMYK, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK).getType());
-    }
-
-    @Test
-    public void testCMYKAlwaysSame() {
-        ColorSpace cs = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
-        assertSame(cs, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK));
-
-        if (cs instanceof ICC_ColorSpace) {
-            ICC_ColorSpace iccCs = (ICC_ColorSpace) cs;
-            assertSame(cs, ColorSpaces.createColorSpace(iccCs.getProfile()));
-        }
-        else {
-            System.err.println("Warning: Not an ICC_ColorSpace: " + cs);
-        }
     }
 
     @Test
@@ -187,13 +183,16 @@ public class ColorSpacesTest {
     }
 
     @Test
-    public void testCorbisRGBSpecialHandling() throws IOException {
-        ICC_Profile corbisRGB = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB.icc"));
-        ICC_Profile corbisRGBFixed = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB_fixed.icc"));
+    public void testEqualHeadersDifferentProfile() throws IOException {
+        // These profiles are extracted from various JPEGs, and have the exact same profile header...
+        ICC_Profile profile1 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        ICC_Profile profile2 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/color_match_rgb.icc"));
 
-        ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(corbisRGB);
+        assertNotSame(profile1, profile2); // Sanity
 
-        assertNotNull(colorSpace);
-        assertArrayEquals(colorSpace.getProfile().getData(), corbisRGBFixed.getData());
+        ICC_ColorSpace cs1 = ColorSpaces.createColorSpace(profile1);
+        ICC_ColorSpace cs2 = ColorSpaces.createColorSpace(profile2);
+
+        assertNotSame(cs1, cs2);
     }
 }

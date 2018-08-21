@@ -50,11 +50,11 @@ import java.lang.ref.SoftReference;
 final class JFXXThumbnailReader extends ThumbnailReader {
 
     private final ImageReader reader;
-    private final JFXXSegment segment;
+    private final JFXX segment;
 
     private transient SoftReference<BufferedImage> cachedThumbnail;
 
-    protected JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final JFXXSegment segment) {
+    JFXXThumbnailReader(final ThumbnailReadProgressListener progressListener, final ImageReader jpegReader, final int imageIndex, final int thumbnailIndex, final JFXX segment) {
         super(progressListener, imageIndex, thumbnailIndex);
         this.reader = Validate.notNull(jpegReader);
         this.segment = segment;
@@ -66,13 +66,13 @@ final class JFXXThumbnailReader extends ThumbnailReader {
 
         BufferedImage thumbnail;
         switch (segment.extensionCode) {
-            case JFXXSegment.JPEG:
+            case JFXX.JPEG:
                 thumbnail = readJPEGCached(true);
                 break;
-            case JFXXSegment.INDEXED:
+            case JFXX.INDEXED:
                 thumbnail = readIndexed();
                 break;
-            case JFXXSegment.RGB:
+            case JFXX.RGB:
                 thumbnail = readRGB();
                 break;
             default:
@@ -85,7 +85,7 @@ final class JFXXThumbnailReader extends ThumbnailReader {
         return thumbnail;
     }
 
-    public IIOMetadata readMetadata() throws IOException {
+    IIOMetadata readMetadata() throws IOException {
         ImageInputStream input = new ByteArrayImageInputStream(segment.thumbnail);
 
         try {
@@ -119,10 +119,10 @@ final class JFXXThumbnailReader extends ThumbnailReader {
     @Override
     public int getWidth() throws IOException {
         switch (segment.extensionCode) {
-            case JFXXSegment.RGB:
-            case JFXXSegment.INDEXED:
+            case JFXX.RGB:
+            case JFXX.INDEXED:
                 return segment.thumbnail[0] & 0xff;
-            case JFXXSegment.JPEG:
+            case JFXX.JPEG:
                 return readJPEGCached(false).getWidth();
             default:
                 throw new IIOException(String.format("Unsupported JFXX extension code: %d", segment.extensionCode));
@@ -132,10 +132,10 @@ final class JFXXThumbnailReader extends ThumbnailReader {
     @Override
     public int getHeight() throws IOException {
         switch (segment.extensionCode) {
-            case JFXXSegment.RGB:
-            case JFXXSegment.INDEXED:
+            case JFXX.RGB:
+            case JFXX.INDEXED:
                 return segment.thumbnail[1] & 0xff;
-            case JFXXSegment.JPEG:
+            case JFXX.JPEG:
                 return readJPEGCached(false).getHeight();
             default:
                 throw new IIOException(String.format("Unsupported JFXX extension code: %d", segment.extensionCode));

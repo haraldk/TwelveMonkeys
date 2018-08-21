@@ -28,8 +28,8 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
 /**
@@ -43,11 +43,11 @@ final class PSDLayerBlendMode {
     final int blendMode;
     final int opacity; // 0-255
     final int clipping; // 0: base, 1: non-base
-    final int flags;
+    final byte flags;
 
     public PSDLayerBlendMode(final ImageInputStream pInput) throws IOException {
         int blendModeSig = pInput.readInt();
-        if (blendModeSig != PSD.RESOURCE_TYPE) { // TODO: Is this really just a resource?
+        if (blendModeSig != PSD.RESOURCE_TYPE) {
             throw new IIOException("Illegal PSD Blend Mode signature, expected 8BIM: " + PSDUtil.intToStr(blendModeSig));
         }
 
@@ -55,7 +55,7 @@ final class PSDLayerBlendMode {
 
         opacity = pInput.readUnsignedByte();
         clipping = pInput.readUnsignedByte();
-        flags = pInput.readUnsignedByte();
+        flags = pInput.readByte();
 
         pInput.readByte(); // Pad
     }

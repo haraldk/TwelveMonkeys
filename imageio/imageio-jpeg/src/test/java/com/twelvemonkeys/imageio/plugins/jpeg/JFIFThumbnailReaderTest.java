@@ -36,13 +36,12 @@ import org.mockito.InOrder;
 
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 /**
  * JFIFThumbnailReaderTest
@@ -60,7 +59,8 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(segments);
         assertFalse(segments.isEmpty());
 
-        return new JFIFThumbnailReader(progressListener, imageIndex, thumbnailIndex, JFIFSegment.read(segments.get(0).data()));
+        JPEGSegment segment = segments.get(0);
+        return new JFIFThumbnailReader(progressListener, imageIndex, thumbnailIndex, JFIF.read(new DataInputStream(segment.segmentData()), segment.segmentLength()));
     }
 
     @Test
@@ -77,14 +77,28 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
     }
 
     @Test
+    public void testReadNonSpecGray() throws IOException {
+        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/jfif-grayscale-thumbnail.jpg"));
+
+        assertEquals(127, reader.getWidth());
+        assertEquals(76, reader.getHeight());
+
+        BufferedImage thumbnail = reader.read();
+        assertNotNull(thumbnail);
+        assertEquals(BufferedImage.TYPE_BYTE_GRAY, thumbnail.getType());
+        assertEquals(127, thumbnail.getWidth());
+        assertEquals(76, thumbnail.getHeight());
+    }
+
+    @Test
     public void testProgressListenerRaw() throws IOException {
         ThumbnailReadProgressListener listener = mock(ThumbnailReadProgressListener.class);
 
         createReader(listener, 0, 99, createStream("/jpeg/jfif-jfif-and-exif-thumbnail-sharpshot-iphone.jpg")).read();
 
         InOrder order = inOrder(listener);
-        order.verify(listener).processThumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).processThumbnailProgress(100f);
-        order.verify(listener).processThumbnailComplete();
+        order.verify(listener).thumbnailStarted(0, 99);
+        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
+        order.verify(listener).thumbnailComplete();
     }
 }

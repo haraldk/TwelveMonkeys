@@ -28,51 +28,22 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import org.w3c.dom.Node;
+import com.twelvemonkeys.imageio.AbstractMetadata;
 
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.*;
 import java.awt.image.DataBuffer;
 import java.nio.ByteOrder;
 
-final class PNMMetadata extends IIOMetadata {
-    // TODO: Clean up & extend AbstractMetadata (after moving from PSD -> Core)
-
+final class PNMMetadata extends AbstractMetadata {
     private final PNMHeader header;
 
     PNMMetadata(final PNMHeader header) {
         this.header = header;
-        standardFormatSupported = true;
     }
 
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    @Override public Node getAsTree(final String formatName) {
-        if (formatName.equals(IIOMetadataFormatImpl.standardMetadataFormatName)) {
-            return getStandardTree();
-        }
-        else {
-            throw new IllegalArgumentException("Unsupported metadata format: " + formatName);
-        }
-    }
-
-    @Override public void mergeTree(final String formatName, final Node root) {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override public void reset() {
-        if (isReadOnly()) {
-            throw new IllegalStateException("Metadata is read-only");
-        }
-    }
-
-    @Override protected IIOMetadataNode getStandardChromaNode() {
+    @Override
+    protected IIOMetadataNode getStandardChromaNode() {
         IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
         IIOMetadataNode csType = new IIOMetadataNode("ColorSpaceType");
@@ -105,7 +76,9 @@ final class PNMMetadata extends IIOMetadata {
         // TODO: Might make sense to set gamma?
 
         IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
-        blackIsZero.setAttribute("value", header.getTupleType() == TupleType.BLACKANDWHITE_WHITE_IS_ZERO ? "FALSE" : "TRUE");
+        blackIsZero.setAttribute("value", header.getTupleType() == TupleType.BLACKANDWHITE_WHITE_IS_ZERO
+                                          ? "FALSE"
+                                          : "TRUE");
         chroma.appendChild(blackIsZero);
 
         return chroma;
@@ -113,11 +86,14 @@ final class PNMMetadata extends IIOMetadata {
 
     // No compression
 
-    @Override protected IIOMetadataNode getStandardDataNode() {
+    @Override
+    protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode node = new IIOMetadataNode("Data");
 
         IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
-        sampleFormat.setAttribute("value", header.getTransferType() == DataBuffer.TYPE_FLOAT ? "Real" : "UnsignedIntegral");
+        sampleFormat.setAttribute("value", header.getTransferType() == DataBuffer.TYPE_FLOAT
+                                           ? "Real"
+                                           : "UnsignedIntegral");
         node.appendChild(sampleFormat);
 
         IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
@@ -128,7 +104,9 @@ final class PNMMetadata extends IIOMetadata {
         significantBitsPerSample.setAttribute("value", createListValue(header.getSamplesPerPixel(), Integer.toString(computeSignificantBits())));
         node.appendChild(significantBitsPerSample);
 
-        String msb = header.getByteOrder() == ByteOrder.BIG_ENDIAN ? "0" : Integer.toString(header.getBitsPerSample() - 1);
+        String msb = header.getByteOrder() == ByteOrder.BIG_ENDIAN
+                     ? "0"
+                     : Integer.toString(header.getBitsPerSample() - 1);
         IIOMetadataNode sampleMSB = new IIOMetadataNode("SampleMSB");
         sampleMSB.setAttribute("value", createListValue(header.getSamplesPerPixel(), msb));
 
@@ -166,7 +144,8 @@ final class PNMMetadata extends IIOMetadata {
         return buffer.toString();
     }
 
-    @Override protected IIOMetadataNode getStandardDimensionNode() {
+    @Override
+    protected IIOMetadataNode getStandardDimensionNode() {
         IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
         IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
@@ -178,7 +157,8 @@ final class PNMMetadata extends IIOMetadata {
 
     // No document node
 
-    @Override protected IIOMetadataNode getStandardTextNode() {
+    @Override
+    protected IIOMetadataNode getStandardTextNode() {
         if (!header.getComments().isEmpty()) {
             IIOMetadataNode text = new IIOMetadataNode("Text");
 
@@ -197,7 +177,8 @@ final class PNMMetadata extends IIOMetadata {
 
     // No tiling
 
-    @Override protected IIOMetadataNode getStandardTransparencyNode() {
+    @Override
+    protected IIOMetadataNode getStandardTransparencyNode() {
         IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
 
         IIOMetadataNode alpha = new IIOMetadataNode("Alpha");

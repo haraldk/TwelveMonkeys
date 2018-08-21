@@ -49,7 +49,7 @@ final class PSDAlphaChannelInfo extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        names = new ArrayList<String>();
+        names = new ArrayList<>();
 
         long left = size;
         while (left > 0) {

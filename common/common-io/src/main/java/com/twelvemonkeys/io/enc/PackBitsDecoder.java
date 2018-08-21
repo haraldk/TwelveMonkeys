@@ -66,7 +66,8 @@ import java.nio.ByteBuffer;
 public final class PackBitsDecoder implements Decoder {
     // TODO: Look at ICNSImageReader#unpackbits... What is this weirdness?
 
-    private final boolean disableNoop;
+    private final boolean disableNoOp;
+    private final byte[] sample;
 
     private int leftOfRun;
     private boolean splitRun;
@@ -74,7 +75,7 @@ public final class PackBitsDecoder implements Decoder {
 
     /** Creates a {@code PackBitsDecoder}. */
     public PackBitsDecoder() {
-        this(false);
+        this(1, false);
     }
 
     /**
@@ -84,10 +85,24 @@ public final class PackBitsDecoder implements Decoder {
      * a compressed run, instead of a no-op, it's possible to disable no-ops for compatibility.
      * Should be used with caution, even though, most known encoders never write no-ops in the compressed streams.
      *
-     * @param pDisableNoop {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
+     * @param disableNoOp {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
      */
-    public PackBitsDecoder(final boolean pDisableNoop) {
-        disableNoop = pDisableNoop;
+    public PackBitsDecoder(final boolean disableNoOp) {
+        this(1, disableNoOp);
+    }
+
+    /**
+     * Creates a {@code PackBitsDecoder}, with optional compatibility mode.
+     * <p/>
+     * As some implementations of PackBits-like encoders treat {@code -128} as length of
+     * a compressed run, instead of a no-op, it's possible to disable no-ops for compatibility.
+     * Should be used with caution, even though, most known encoders never write no-ops in the compressed streams.
+     *
+     * @param disableNoOp {@code true} if {@code -128} should be treated as a compressed run, and not a no-op
+     */
+    public PackBitsDecoder(int sampleSize, final boolean disableNoOp) {
+        this.sample = new byte[sampleSize];
+        this.disableNoOp = disableNoOp;
     }
 
     /**
@@ -138,15 +153,17 @@ public final class PackBitsDecoder implements Decoder {
             try {
                 if (n >= 0) {
                     // Copy next n + 1 bytes literally
-                    readFully(stream, buffer, n + 1);
+                    readFully(stream, buffer, sample.length * (n + 1));
                 }
                 // Allow -128 for compatibility, see above
-                else if (disableNoop || n != -128) {
+                else if (disableNoOp || n != -128) {
                     // Replicate the next byte -n + 1 times
-                    byte value = readByte(stream);
+                    for (int s = 0; s < sample.length; s++) {
+                        sample[s] = readByte(stream);
+                    }
 
                     for (int i = -n + 1; i > 0; i--) {
-                        buffer.put(value);
+                        buffer.put(sample);
                     }
                 }
                 // else NOOP (-128)

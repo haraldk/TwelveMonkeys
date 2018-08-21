@@ -31,8 +31,8 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.lang.StringUtil;
 
-import javax.imageio.stream.ImageInputStream;
 import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
@@ -163,8 +163,16 @@ public class PSDImageResource {
 
     public static PSDImageResource read(final ImageInputStream pInput) throws IOException {
         int type = pInput.readInt();
-        if (type != PSD.RESOURCE_TYPE) {
-            throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%s'", PSDUtil.intToStr(type)));
+        switch (type) {
+            case com.twelvemonkeys.imageio.metadata.psd.PSD.RESOURCE_TYPE_IMAGEREADY:
+            case com.twelvemonkeys.imageio.metadata.psd.PSD.RESOURCE_TYPE_PHOTODELUXE:
+            case com.twelvemonkeys.imageio.metadata.psd.PSD.RESOURCE_TYPE_LIGHTROOM:
+            case com.twelvemonkeys.imageio.metadata.psd.PSD.RESOURCE_TYPE_DCSR:
+                // TODO: Warning for these types!
+            case com.twelvemonkeys.imageio.metadata.psd.PSD.RESOURCE_TYPE:
+                break;
+            default:
+                throw new IIOException(String.format("Wrong image resource type, expected '8BIM': '%s'", PSDUtil.intToStr(type)));
         }
 
         // TODO: Have PSDImageResources defer actual parsing? (Just store stream offsets)

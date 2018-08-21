@@ -28,7 +28,7 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -39,11 +39,10 @@ import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * IFFImageReaderTestCase
@@ -52,7 +51,7 @@ import static org.junit.Assert.assertTrue;
  * @author last modified by $Author: haraldk$
  * @version $Id: IFFImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
-public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageReader> {
+public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> {
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // 32 bit - Ok
@@ -93,7 +92,7 @@ public class IFFImageReaderTest extends ImageReaderAbstractTestCase<IFFImageRead
     }
 
     protected List<String> getFormatNames() {
-        return Arrays.asList("iff");
+        return Collections.singletonList("iff");
     }
 
     protected List<String> getSuffixes() {

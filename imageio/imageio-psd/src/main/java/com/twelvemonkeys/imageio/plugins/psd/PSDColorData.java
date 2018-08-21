@@ -28,8 +28,6 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.image.InverseColorMapIndexColorModel;
-
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.DataBuffer;
@@ -66,7 +64,7 @@ final class PSDColorData {
     IndexColorModel getIndexColorModel() {
         if (colorModel == null) {
             int[] rgb = toInterleavedRGB(colors);
-            colorModel = new InverseColorMapIndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
+            colorModel = new IndexColorModel(8, rgb.length, rgb, 0, false, -1, DataBuffer.TYPE_BYTE);
         }
 
         return colorModel;

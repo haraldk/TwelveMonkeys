@@ -38,6 +38,8 @@ import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.HorizontalDifferencingStream.isValidBPS;
+
 /**
  * A decoder for data converted using "horizontal differencing predictor".
  *
@@ -65,21 +67,6 @@ final class HorizontalDeDifferencingStream extends InputStream {
 
         buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8).order(byteOrder);
         buffer.flip();
-    }
-
-    private boolean isValidBPS(final int bitsPerSample) {
-        switch (bitsPerSample) {
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-            case 16:
-            case 32:
-            case 64:
-                return true;
-            default:
-                return false;
-        }
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

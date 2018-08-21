@@ -32,8 +32,8 @@ import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
@@ -101,7 +101,7 @@ public final class DNGImageReader extends ImageReaderBase {
         if (IFDs == null) {
             imageInput.seek(0);
 
-            IFDs = (CompoundDirectory) new EXIFReader().read(imageInput); // NOTE: Sets byte order as a side effect
+            IFDs = (CompoundDirectory) new TIFFReader().read(imageInput); // NOTE: Sets byte order as a side effect
 
             // Pull up the sub-ifds now, as the DNG spec "recommends the use of SubIFD trees,
             // as described in the TIFF-EP specification. SubIFD chains are not supported".

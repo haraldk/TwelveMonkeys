@@ -28,13 +28,21 @@
 
 package com.twelvemonkeys.imageio.plugins.dcx;
 
-import java.awt.Dimension;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import org.junit.Test;
+
+import javax.imageio.ImageIO;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import javax.imageio.spi.ImageReaderSpi;
-
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * DCXImageReaderTest
@@ -43,10 +51,10 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTestCase;
  * @author last modified by $Author: haraldk$
  * @version $Id: DCXImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
-public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageReader> {
+public class DCXImageReaderTest extends ImageReaderAbstractTest<DCXImageReader> {
     @Override
     protected List<TestData> getTestData() {
-        return Arrays.asList(
+        return Collections.singletonList(
                 new TestData(getClassLoaderResource("/dcx/input.dcx"), new Dimension(70, 46)) // RLE encoded RGB (the only sample I've found)
         );
     }
@@ -73,7 +81,7 @@ public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageRead
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList("dcx");
+        return Collections.singletonList("dcx");
     }
 
     @Override
@@ -81,5 +89,21 @@ public class DCXImageReaderTest extends ImageReaderAbstractTestCase<DCXImageRead
         return Arrays.asList(
                 "image/dcx", "image/x-dcx"
         );
+    }
+
+    @Test
+    public void testCount() throws IOException {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/dcx/input.dcx"))) {
+            DCXImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertEquals(1, reader.getNumImages(true));
+            assertEquals(70, reader.getWidth(0));
+            assertEquals(46, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+        }
     }
 }

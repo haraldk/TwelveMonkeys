@@ -32,10 +32,10 @@ import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.exif.EXIFReader;
-import com.twelvemonkeys.imageio.metadata.exif.TIFF;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
 import javax.imageio.IIOException;
@@ -111,7 +111,7 @@ public final class CR2ImageReader extends ImageReaderBase {
 
             imageInput.seek(0);
 
-            IFDs = (CompoundDirectory) new EXIFReader().read(imageInput); // NOTE: Sets byte order as a side effect
+            IFDs = (CompoundDirectory) new TIFFReader().read(imageInput); // NOTE: Sets byte order as a side effect
 
             if (DEBUG) {
                 System.err.println("Byte order: " + imageInput.getByteOrder());
