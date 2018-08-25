@@ -30,32 +30,31 @@
 
 package com.twelvemonkeys.imageio.plugins.icns;
 
-import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+
+import javax.imageio.ImageTypeSpecifier;
+import java.util.Locale;
 
 /**
- * ICNSProviderInfo.
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: harald.kuhr$
- * @version $Id: ICNSProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
+ * ICNSImageWriterSpi
  */
-final class ICNSProviderInfo extends ReaderWriterProviderInfo {
-    ICNSProviderInfo() {
-        super(
-                ICNSProviderInfo.class,
-                new String[]{"icns", "ICNS"},
-                new String[]{"icns"},
-                new String[]{
-                        "image/x-apple-icons",               // Common extension MIME
-                },
-                "com.twelvemonkeys.imageio.plugins.icns.ICNSImageReader",
-                new String[] {"com.twelvemonkeys.imageio.plugins.icns.ICNSImageReaderSpi"},
-                "com.twelvemonkeys.imageio.plugins.icns.ICNSImageWriter",
-                new String[] {"com.twelvemonkeys.imageio.plugins.icns.ICNSImageWriterSpi"},
-                false, null, null,
-                null, null,
-                true, null,
-                null, null, null
-        );
+public final class ICNSImageWriterSpi extends ImageWriterSpiBase {
+    public ICNSImageWriterSpi() {
+        super(new ICNSProviderInfo());
+    }
+
+    @Override
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
+        return true;
+    }
+
+    @Override
+    public ICNSImageWriter createWriterInstance(final Object extension) {
+        return new ICNSImageWriter(this);
+    }
+
+    @Override
+    public String getDescription(final Locale locale) {
+        return "Apple Icon Image (icns) format Writer";
     }
 }
