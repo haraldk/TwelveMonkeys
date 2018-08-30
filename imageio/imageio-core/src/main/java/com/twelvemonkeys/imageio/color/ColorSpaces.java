@@ -101,8 +101,16 @@ public final class ColorSpaces {
     private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<>(10);
 
     static {
-        // Force invocation of ProfileDeferralMgr.activateProfiles() to avoid JDK-6986863
-        ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData();
+        try {
+            // Force invocation of ProfileDeferralMgr.activateProfiles() to avoid JDK-6986863
+            ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData();
+        }
+        catch (Throwable disasters) {
+            System.err.println("ICC Color Profile not properly activated due to the exception below.");
+            System.err.println("Expect to see JDK-6986863 in action, and consider filing a bug report to your JRE provider.");
+
+            disasters.printStackTrace();
+        }
     }
 
     private ColorSpaces() {}
