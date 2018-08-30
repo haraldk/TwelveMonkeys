@@ -39,9 +39,12 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageOutputStream;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
+import static java.lang.String.format;
 import static java.nio.ByteOrder.BIG_ENDIAN;
+import static java.util.Arrays.asList;
 
 /**
  * TIFFStreamMetadata.
@@ -113,7 +116,7 @@ public final class TIFFStreamMetadata extends IIOMetadata {
         }
     }
 
-    private ByteOrder getByteOrder(final String value) throws IIOInvalidTreeException {
+    private ByteOrder getByteOrder(final String value) {
         switch (value) {
             case "BIG_ENDIAN":
                 return ByteOrder.BIG_ENDIAN;
@@ -138,6 +141,11 @@ public final class TIFFStreamMetadata extends IIOMetadata {
         }
         else if (streamMetadata != null) {
             TIFFStreamMetadata metadata = new TIFFStreamMetadata();
+
+            Validate.isTrue(asList(streamMetadata.getMetadataFormatNames()).contains(metadata.nativeMetadataFormatName),
+                            format("Unsupported stream metadata format, expected %s: %s", metadata.nativeMetadataFormatName,
+                                   Arrays.toString(streamMetadata.getMetadataFormatNames())));
+
             // Will throw exception if stream format differs from native
             metadata.mergeTree(metadata.nativeMetadataFormatName, streamMetadata.getAsTree(metadata.nativeMetadataFormatName));
             imageOutput.setByteOrder(metadata.byteOrder);

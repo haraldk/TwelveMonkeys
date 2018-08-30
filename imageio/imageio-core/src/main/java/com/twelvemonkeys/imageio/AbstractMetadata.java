@@ -130,7 +130,7 @@ public abstract class AbstractMetadata extends IIOMetadata implements Cloneable 
         }
 
         throw new IllegalArgumentException(
-                String.format("Bad format name: \"%s\". Expected one of %s", formatName, Arrays.toString(metadataFormatNames))
+                String.format("Unsupported format name: \"%s\". Expected one of %s", formatName, Arrays.toString(metadataFormatNames))
         );
     }
 

@@ -40,6 +40,7 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageOutputStream;
 import java.nio.ByteOrder;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.SUN_NATIVE_STREAM_METADATA_FORMAT_NAME;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -85,14 +86,33 @@ public class TIFFStreamMetadataTest {
     }
 
     @Test
-    public void testConfigureStreamForegin() throws IIOInvalidTreeException {
+    public void testConfigureStreamForeign() throws IIOInvalidTreeException {
         ImageOutputStream stream = mock(ImageOutputStream.class);
         IIOMetadata metadata = mock(IIOMetadata.class);
+        when(metadata.getMetadataFormatNames()).thenReturn(new String[]{SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, "com_foo_supertiff_9.42"});
         when(metadata.getAsTree(eq(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME))).thenReturn(createForeignTree(LITTLE_ENDIAN));
 
         TIFFStreamMetadata.configureStreamByteOrder(metadata, stream);
 
         verify(stream, only()).setByteOrder(LITTLE_ENDIAN);
+    }
+
+    @Test
+    public void testConfigureStreamImageMetadata() throws IIOInvalidTreeException {
+        ImageOutputStream stream = mock(ImageOutputStream.class);
+        IIOMetadata metadata = mock(IIOMetadata.class);
+        when(metadata.getMetadataFormatNames()).thenReturn(new String[]{SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME});
+
+        try {
+            TIFFStreamMetadata.configureStreamByteOrder(metadata, stream);
+            fail("Expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            assertNotNull(expected.getMessage());
+            assertTrue(expected.getMessage().toLowerCase().contains("unsupported stream metadata format"));
+            assertTrue(expected.getMessage().contains("expected " + SUN_NATIVE_STREAM_METADATA_FORMAT_NAME));
+            assertTrue(expected.getMessage().contains(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME));
+        }
     }
 
     private IIOMetadataNode createForeignTree(ByteOrder order) {
