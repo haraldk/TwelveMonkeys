@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.bmp;
@@ -59,8 +61,8 @@ import java.util.Iterator;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: CURImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
- * @see com.twelvemonkeys.imageio.plugins.bmp.ICOImageReader
+ * @version $Id: BMPImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
+ * @see ICOImageReader
  */
 public final class BMPImageReader extends ImageReaderBase {
     private long pixelOffset;
@@ -214,11 +216,9 @@ public final class BMPImageReader extends ImageReaderBase {
 
             case 16:
                 if (header.hasMasks()) {
-                    int[] masks = getMasks();
-
                     return ImageTypeSpecifiers.createPacked(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0], masks[1], masks[2], masks[3],
+                            header.masks[0], header.masks[1], header.masks[2], header.masks[3],
                             DataBuffer.TYPE_USHORT, false
                     );
                 }
@@ -235,11 +235,9 @@ public final class BMPImageReader extends ImageReaderBase {
 
             case 32:
                 if (header.hasMasks()) {
-                    int[] masks = getMasks();
-
                     return ImageTypeSpecifiers.createPacked(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0], masks[1], masks[2], masks[3],
+                            header.masks[0], header.masks[1], header.masks[2], header.masks[3],
                             DataBuffer.TYPE_INT, false
                     );
                 }
@@ -254,38 +252,6 @@ public final class BMPImageReader extends ImageReaderBase {
             default:
                 throw new IIOException("Unsupported bit count: " + header.getBitCount());
         }
-    }
-
-    private int[] getMasks() throws IOException {
-        if (header.masks != null) {
-            // Get mask and create either 555, 565 or 444/4444 etc
-            return header.masks;
-        }
-
-        switch (header.getCompression()) {
-            case DIB.COMPRESSION_BITFIELDS:
-            case DIB.COMPRESSION_ALPHA_BITFIELDS:
-                // Consult BITFIELDS/ALPHA_BITFIELDS
-                return readBitFieldsMasks();
-            default:
-                return null;
-        }
-    }
-
-    private int[] readBitFieldsMasks() throws IOException {
-        long offset = DIB.BMP_FILE_HEADER_SIZE + header.getSize();
-
-        if (offset != imageInput.getStreamPosition()) {
-            imageInput.seek(offset);
-        }
-
-        int[] masks = DIBHeader.readMasks(imageInput);
-
-        if (header.getCompression() != DIB.COMPRESSION_ALPHA_BITFIELDS) {
-            masks[3] = 0;
-        }
-
-        return masks;
     }
 
     @Override
@@ -648,7 +614,7 @@ public final class BMPImageReader extends ImageReaderBase {
         }
 
         // Why, oh why..? Instead of accepting it's own native format as it should,
-        // The BMPImageWriter only accepts instances of com.sun.imageio.plugins.bmp.BMPMetadata...
+        // The DIBImageWriter only accepts instances of com.sun.imageio.plugins.bmp.BMPMetadata...
         // TODO: Consider reflectively construct a BMPMetadata and inject fields
         return new BMPMetadata(header, colors);
     }

@@ -4,32 +4,35 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
 import javax.imageio.IIOException;
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -104,17 +107,15 @@ abstract class DIBHeader {
             case DIB.OS2_V2_HEADER_SIZE:
                 return new BitmapCoreHeaderV2();
             case DIB.BITMAP_INFO_HEADER_SIZE:
+            case DIB.BITMAP_V2_INFO_HEADER_SIZE:
+            case DIB.BITMAP_V3_INFO_HEADER_SIZE:
                 // ICO and CUR always uses the Microsoft Windows 3.0 DIB header, which is 40 bytes.
                 // This is also the most common format for persistent BMPs.
                 return new BitmapInfoHeader();
-            case DIB.BITMAP_V3_INFO_HEADER_SIZE:
-                return new BitmapV3InfoHeader();
             case DIB.BITMAP_V4_INFO_HEADER_SIZE:
                 return new BitmapV4InfoHeader();
             case DIB.BITMAP_V5_INFO_HEADER_SIZE:
                 return new BitmapV5InfoHeader();
-            case DIB.BITMAP_V2_INFO_HEADER_SIZE:
-                throw new IIOException(String.format("Windows Bitmap Information Header (size: %s) not supported", pSize));
             default:
                 throw new IIOException(String.format("Unknown Bitmap Information Header (size: %s)", pSize));
         }
@@ -159,7 +160,7 @@ abstract class DIBHeader {
     }
 
     public int getColorsUsed() {
-        return colorsUsed != 0 ? colorsUsed : 1 << bitCount;
+        return colorsUsed != 0 ? colorsUsed : 1 << Math.min(24, bitCount);
     }
 
     public int getColorsImportant() {
@@ -187,9 +188,11 @@ abstract class DIBHeader {
         );
     }
 
-    static int[] readMasks(final DataInput pStream) throws IOException {
+    private static int[] readMasks(final DataInput pStream, final boolean hasAlphaMask) throws IOException {
+        int maskCount = hasAlphaMask ? 4 : 3;
         int[] masks = new int[4];
-        for (int i = 0; i < masks.length; i++) {
+
+        for (int i = 0; i < maskCount; i++) {
             masks[i] = pStream.readInt();
         }
 
@@ -288,14 +291,17 @@ abstract class DIBHeader {
      * This is the common format for persistent DIB structures, even if Windows
      * may use the later versions at run-time.
      * <p/>
+     * Note: Some variations that includes the mask fields into the header size exists,
+     * but is no longer part of the documented spec.
      *
      * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
      * @version $Id: DIBHeader.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
      * @see <a href="http://en.wikipedia.org/wiki/BMP_file_format">BMP file format (Wikipedia)</a>
+     * @see <a href="https://forums.adobe.com/message/3272950#3272950">BITMAPV3INFOHEADER</a>.
      */
     static final class BitmapInfoHeader extends DIBHeader {
         protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (pSize != DIB.BITMAP_INFO_HEADER_SIZE) {
+            if (!(pSize == DIB.BITMAP_INFO_HEADER_SIZE || pSize == DIB.BITMAP_V2_INFO_HEADER_SIZE || pSize == DIB.BITMAP_V3_INFO_HEADER_SIZE)) {
                 throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.BITMAP_INFO_HEADER_SIZE));
             }
 
@@ -320,51 +326,41 @@ abstract class DIBHeader {
 
             colorsUsed = pStream.readInt();
             colorsImportant = pStream.readInt();
+
+            // Read masks if we have V2 or V3
+            // or if we have compression BITFIELDS or ALPHA_BITFIELDS
+            if (size == DIB.BITMAP_V2_INFO_HEADER_SIZE || compression == DIB.COMPRESSION_BITFIELDS) {
+                masks = readMasks(pStream, false);
+            }
+            else if (size == DIB.BITMAP_V3_INFO_HEADER_SIZE || compression == DIB.COMPRESSION_ALPHA_BITFIELDS) {
+                masks = readMasks(pStream, true);
+            }
+        }
+
+        void write(final DataOutput stream) throws IOException {
+            stream.writeInt(DIB.BITMAP_INFO_HEADER_SIZE);
+
+            stream.writeInt(width);
+            stream.writeInt(topDown ? -height : height);
+
+            stream.writeShort(planes);
+            stream.writeShort(bitCount);
+            stream.writeInt(compression);
+
+            stream.writeInt(imageSize);
+
+            stream.writeInt(xPixelsPerMeter);
+            stream.writeInt(yPixelsPerMeter);
+
+            stream.writeInt(colorsUsed);
+            stream.writeInt(colorsImportant);
+
+            // TODO: Write masks, if bitfields
         }
 
         public String getBMPVersion() {
             // This is to be compatible with the native metadata of the original com.sun....BMPMetadata
             return compression == DIB.COMPRESSION_BITFIELDS ? "BMP v. 3.x NT" : "BMP v. 3.x";
-        }
-    }
-
-    /**
-     * Represents the semi-undocumented structure BITMAPV3INFOHEADER.
-     * @see <a href="https://forums.adobe.com/message/3272950#3272950">BITMAPV3INFOHEADER</a>
-     */
-    static final class BitmapV3InfoHeader extends DIBHeader {
-        protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (pSize != DIB.BITMAP_V3_INFO_HEADER_SIZE) {
-                throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.BITMAP_V3_INFO_HEADER_SIZE));
-            }
-
-            size = pSize;
-
-            width = pStream.readInt();
-            height = pStream.readInt();
-
-            if (height < 0) {
-                height = -height;
-                topDown = true;
-            }
-
-            planes = pStream.readUnsignedShort();
-            bitCount = pStream.readUnsignedShort();
-            compression = pStream.readInt();
-
-            imageSize = pStream.readInt();
-
-            xPixelsPerMeter = pStream.readInt();
-            yPixelsPerMeter = pStream.readInt();
-
-            colorsUsed = pStream.readInt();
-            colorsImportant = pStream.readInt();
-
-            masks = readMasks(pStream);
-        }
-
-        public String getBMPVersion() {
-            return "BMP v. 3.x Photoshop";
         }
     }
 
@@ -399,7 +395,7 @@ abstract class DIBHeader {
             colorsUsed = pStream.readInt();
             colorsImportant = pStream.readInt();
 
-            masks = readMasks(pStream);
+            masks = readMasks(pStream, true);
 
             colorSpaceType = pStream.readInt(); // Should be 0 for V4
             cieXYZEndpoints = new double[9];
@@ -451,7 +447,7 @@ abstract class DIBHeader {
             colorsUsed = pStream.readInt();
             colorsImportant = pStream.readInt();
 
-            masks = readMasks(pStream);
+            masks = readMasks(pStream, true);
 
             colorSpaceType = pStream.readInt();
 

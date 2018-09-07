@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Harald Kuhr
+ * Copyright (c) 2017, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,40 +30,20 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import javax.imageio.spi.ImageReaderSpi;
-import java.awt.*;
-import java.io.IOException;
+import javax.imageio.ImageWriteParam;
+import java.util.Locale;
 
 /**
- * ImageReader for Microsoft Windows CUR (cursor) format.
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: CURImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
- *
- * @see ICOImageReader
+ * ICOImageWriteParam
  */
-public final class CURImageReader extends DIBImageReader {
-    public CURImageReader() {
-        super(new CURImageReaderSpi());
-    }
+public final class ICOImageWriteParam extends ImageWriteParam {
+    public ICOImageWriteParam(final Locale locale) {
+        super(locale);
 
-    protected CURImageReader(final ImageReaderSpi pProvider) {
-        super(pProvider);
-    }
+        // The names are consistent with those from the BMPImageWriteParam
+        compressionTypes = new String[] {"BI_RGB", "BI_RLE8", "BI_RLE4", "BI_PNG"};
+        compressionType = compressionTypes[DIB.COMPRESSION_RGB];
 
-    /**
-     * Returns the hot spot location for the cursor.
-     *
-     * @param pImageIndex the index of the cursor in the current input.
-     * @return the hot spot location for the cursor
-     *
-     * @throws java.io.IOException if an I/O exception occurs during reading of image meta data
-     * @throws IndexOutOfBoundsException if {@code pImageIndex} is less than {@code 0} or greater than/equal to
-     *         the number of cursors in the file
-     */
-    public final Point getHotSpot(final int pImageIndex) throws IOException {
-        DirectoryEntry.CUREntry entry = (DirectoryEntry.CUREntry) getEntry(pImageIndex);
-        return entry.getHotspot();
+        canWriteCompressed = true;
     }
 }

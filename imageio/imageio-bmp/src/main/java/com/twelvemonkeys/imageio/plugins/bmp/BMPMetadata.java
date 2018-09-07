@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.bmp;
@@ -38,7 +40,7 @@ import javax.imageio.metadata.IIOMetadataNode;
  * BMPMetadata.
  */
 final class BMPMetadata extends AbstractMetadata {
-    /** We return metadata in the exact same form as the JRE built-in, to be compatible with the BMPImageWriter. */
+    /** We return metadata in the exact same form as the JRE built-in, to be compatible with the DIBImageWriter. */
     public static final String nativeMetadataFormatName = "javax_imageio_bmp_1.0";
 
     private final DIBHeader header;
@@ -168,85 +170,88 @@ final class BMPMetadata extends AbstractMetadata {
     protected IIOMetadataNode getStandardCompressionNode() {
         IIOMetadataNode compression = new IIOMetadataNode("Compression");
         IIOMetadataNode compressionTypeName = addChildNode(compression, "CompressionTypeName", null);
-        compressionTypeName.setAttribute("value", "NONE");
+
+        // TODO: Should the compression names always match the compression names used in the ImageWriteParam?
+        // OR should they be as standard as possible..?
+        // The built-in plugin uses "BI_RGB", "BI_RLE8", "BI_RLE4", "BI_BITFIELDS", "BI_JPEG and "BI_PNG"
+        switch (header.compression) {
+            case DIB.COMPRESSION_RLE4:
+            case DIB.COMPRESSION_RLE8:
+                compressionTypeName.setAttribute("value", "RLE");
+                break;
+            case DIB.COMPRESSION_JPEG:
+                compressionTypeName.setAttribute("value", "JPEG");
+                break;
+            case DIB.COMPRESSION_PNG:
+                compressionTypeName.setAttribute("value", "PNG");
+                break;
+            case DIB.COMPRESSION_RGB:
+            case DIB.COMPRESSION_BITFIELDS:
+            case DIB.COMPRESSION_ALPHA_BITFIELDS:
+            default:
+                compressionTypeName.setAttribute("value", "NONE");
+                break;
+        }
 
         return compression;
-//        switch (header.getImageType()) {
-//            case TGA.IMAGETYPE_COLORMAPPED_RLE:
-//            case TGA.IMAGETYPE_TRUECOLOR_RLE:
-//            case TGA.IMAGETYPE_MONOCHROME_RLE:
-//            case TGA.IMAGETYPE_COLORMAPPED_HUFFMAN:
-//            case TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE:
-//                IIOMetadataNode node = new IIOMetadataNode("Compression");
-//                IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
-//
-//                // Compression can be RLE4, RLE8, PNG, JPEG or NONE
-//                String value = header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN || header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE
-//                                ? "Uknown" : "RLE";
-//                compressionTypeName.setAttribute("value", value);
-//                node.appendChild(compressionTypeName);
-//
-//                IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
-//                lossless.setAttribute("value", "TRUE"); // TODO: Unless JPEG!
-//                node.appendChild(lossless);
-//
-//                return node;
-//            default:
-//                // No compression
-//                return null;
-//        }
     }
 
     @Override
     protected IIOMetadataNode getStandardDataNode() {
         IIOMetadataNode node = new IIOMetadataNode("Data");
 
-//        IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
-//        planarConfiguration.setAttribute("value", "PixelInterleaved");
-//        node.appendChild(planarConfiguration);
-
-//        IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
-//        switch (header.getImageType()) {
-//            case TGA.IMAGETYPE_COLORMAPPED:
-//            case TGA.IMAGETYPE_COLORMAPPED_RLE:
-//            case TGA.IMAGETYPE_COLORMAPPED_HUFFMAN:
-//            case TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE:
-//                sampleFormat.setAttribute("value", "Index");
-//                break;
-//            default:
-//                sampleFormat.setAttribute("value", "UnsignedIntegral");
-//                break;
-//        }
-
-//        node.appendChild(sampleFormat);
-
         IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
         switch (header.getBitCount()) {
+            // TODO: case 0: determined by embedded format (PNG/JPEG)
             case 1:
             case 2:
             case 4:
             case 8:
                 bitsPerSample.setAttribute("value", createListValue(1, Integer.toString(header.getBitCount())));
                 break;
+
             case 16:
-                // TODO: Consult masks here!
-                bitsPerSample.setAttribute("value", createListValue(4, Integer.toString(4)));
+                // Default is 555
+                bitsPerSample.setAttribute("value", header.hasMasks()
+                        ? createBitsPerSampleForBitMasks()
+                        : createListValue(3, Integer.toString(5)));
                 break;
+
             case 24:
                 bitsPerSample.setAttribute("value", createListValue(3, Integer.toString(8)));
                 break;
+
             case 32:
-                bitsPerSample.setAttribute("value", createListValue(4, Integer.toString(8)));
+                // Default is 888
+                bitsPerSample.setAttribute("value", header.hasMasks()
+                        ? createBitsPerSampleForBitMasks()
+                        : createListValue(3, Integer.toString(8)));
+
                 break;
         }
 
         node.appendChild(bitsPerSample);
 
-        // TODO: Do we need MSB?
-//        IIOMetadataNode sampleMSB = new IIOMetadataNode("SampleMSB");
-//        sampleMSB.setAttribute("value", createListValue(header.getChannels(), "0"));
-
         return node;
+    }
+
+    private String createBitsPerSampleForBitMasks() {
+        boolean hasAlpha = header.masks[3] != 0;
+
+        return createListValue(hasAlpha ? 4 : 3,
+                Integer.toString(countMaskBits(header.masks[0])), Integer.toString(countMaskBits(header.masks[1])),
+                Integer.toString(countMaskBits(header.masks[2])), Integer.toString(countMaskBits(header.masks[3])));
+    }
+
+    private int countMaskBits(int mask) {
+        // See https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+        int count;
+
+        for (count = 0; mask != 0; count++) {
+            mask &= mask - 1; // clear the least significant bit set
+        }
+
+        return count;
     }
 
     private String createListValue(final int itemCount, final String... values) {
@@ -265,28 +270,31 @@ final class BMPMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardDimensionNode() {
-        if (header.xPixelsPerMeter > 0 || header.yPixelsPerMeter > 0) {
-            IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
+        IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
-            addChildNode(dimension, "PixelAspectRatio", null);
-            addChildNode(dimension, "HorizontalPhysicalPixelSpacing", null);
-            addChildNode(dimension, "VerticalPhysicalPixelSpacing", null);
+        if (header.xPixelsPerMeter > 0 && header.yPixelsPerMeter > 0) {
+            float ratio = header.xPixelsPerMeter / (float) header.yPixelsPerMeter;
+            addChildNode(dimension, "PixelAspectRatio", null)
+                    .setAttribute("value", String.valueOf(ratio));
 
-//        IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
-//
-//        if (header.topDown) {
-//            imageOrientation.setAttribute("value", "FlipH");
-//        }
-//        else {
-//            imageOrientation.setAttribute("value", "Normal");
-//        }
-//
-//        dimension.appendChild(imageOrientation);
+            addChildNode(dimension, "HorizontalPixelSize", null)
+                    .setAttribute("value", String.valueOf(1f / header.xPixelsPerMeter * 1000));
+            addChildNode(dimension, "VerticalPixelSize", null)
+                    .setAttribute("value", String.valueOf(1f / header.yPixelsPerMeter * 1000));
 
-            return dimension;
+            // Hmmm.. The JRE version includes these for some reason, even if values seem to be same as default...
+            addChildNode(dimension, "HorizontalPhysicalPixelSpacing", null)
+                    .setAttribute("value", String.valueOf(0));
+            addChildNode(dimension, "VerticalPhysicalPixelSpacing", null)
+                    .setAttribute("value", String.valueOf(0));
         }
 
-        return null;
+        if (header.topDown) {
+            addChildNode(dimension, "ImageOrientation", null)
+                    .setAttribute("value", "FlipH"); // For BMP, bottom-up is "normal"...
+        }
+
+        return dimension;
     }
 
     // No document node
@@ -297,16 +305,15 @@ final class BMPMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardTransparencyNode() {
-        return null;
+        if (header.hasMasks() && header.masks[3] != 0) {
+            IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
+            IIOMetadataNode alpha = new IIOMetadataNode("Alpha");
+            alpha.setAttribute("value", "nonpremultiplied");
+            transparency.appendChild(alpha);
 
-//        IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
-//
-//        IIOMetadataNode alpha = new IIOMetadataNode("Alpha");
-//
-//        // TODO: Consult masks
-//        alpha.setAttribute("value", header.getBitCount() == 32 ? "nonpremultiplied" : "none");
-//        transparency.appendChild(alpha);
-//
-//        return transparency;
+            return transparency;
+        }
+
+        return null;
     }
 }
