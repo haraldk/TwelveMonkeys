@@ -68,10 +68,7 @@ final class JPEGLosslessDecoder {
     private int xLoc;
     private int yLoc;
     private int mask;
-    private int[] outputData;
-    private int[] outputRedData;
-    private int[] outputGreenData;
-    private int[] outputBlueData;
+    private int[][] outputData;
 
     private static final int IDCT_P[] = {
              0,  5, 40, 16, 45,  2,  7, 42,
@@ -148,8 +145,6 @@ final class JPEGLosslessDecoder {
 
     int[][] decode() throws IOException {
         int current, scanNum = 0;
-        final int pred[] = new int[10];
-        int[][] outputRef;
 
         xLoc = 0;
         yLoc = 0;
@@ -218,22 +213,19 @@ final class JPEGLosslessDecoder {
             xDim = frame.samplesPerLine;
             yDim = frame.lines;
 
-            outputRef = new int[numComp][];
+            outputData = new int[numComp][];
 
-            // TODO: Support 4 components (RGBA/YCCA/CMYK/YCCK), others?
-            if (numComp == 1) {
-                outputData = new int[xDim * yDim];
-                outputRef[0] = outputData;
+            for (int componentIndex = 0; componentIndex < numComp; ++componentIndex) {
+                // not a good use of memory, but I had trouble packing bytes into int.  some values exceeded 255.
+                outputData[componentIndex] = new int[xDim * yDim];
             }
-            else {
-                outputRedData = new int[xDim * yDim]; // not a good use of memory, but I had trouble packing bytes into int.  some values exceeded 255.
-                outputGreenData = new int[xDim * yDim];
-                outputBlueData = new int[xDim * yDim];
 
-                outputRef[0] = outputRedData;
-                outputRef[1] = outputGreenData;
-                outputRef[2] = outputBlueData;
+            final int firstValue[] = new int[numComp];
+            for (int i = 0; i < numComp; i++) {
+                firstValue[i] = (1 << (precision - 1));
             }
+
+            final int pred[] = new int[numComp];
 
             scanNum++;
 
@@ -241,9 +233,7 @@ final class JPEGLosslessDecoder {
                 int temp[] = new int[1]; // to store remainder bits
                 int index[] = new int[1];
 
-                for (int i = 0; i < 10; i++) {
-                    pred[i] = (1 << (precision - 1));
-                }
+                System.arraycopy(firstValue, 0, pred, 0, numComp);
 
                 if (restartInterval == 0) {
                     current = decode(pred, temp, index);
@@ -285,9 +275,10 @@ final class JPEGLosslessDecoder {
                 readNumber();
                 current = input.readUnsignedShort();
             }
+        // TODO oe: 05.05.2018 Is it correct loop? Content of outputData from previous iteration is always lost.
         } while ((current != JPEG.EOI) && ((xLoc < xDim) && (yLoc < yDim)) && (scanNum == 0));
 
-        return outputRef;
+        return outputData;
     }
 
     private void processWarningOccured(String warning) {
@@ -341,7 +332,7 @@ final class JPEGLosslessDecoder {
             return decodeRGB(prev, temp, index);
         }
         else {
-            return -1;
+            return decodeAny(prev, temp, index);
         }
     }
 
@@ -353,6 +344,7 @@ final class JPEGLosslessDecoder {
             prev[0] = (1 << (frame.samplePrecision - 1));
         }
         else {
+            final int[] outputData = this.outputData[0];
             switch (selection) {
                 case 2:
                     prev[0] = getPreviousY(outputData);
@@ -399,6 +391,9 @@ final class JPEGLosslessDecoder {
     }
 
     private int decodeRGB(final int prev[], final int temp[], final int index[]) throws IOException {
+        final int[] outputRedData = outputData[0];
+        final int[] outputGreenData = outputData[1];
+        final int[] outputBlueData = outputData[2];
         switch (selection) {
             case 2:
                 prev[0] = getPreviousY(outputRedData);
@@ -437,6 +432,43 @@ final class JPEGLosslessDecoder {
                 break;
         }
 
+        return decode0(prev, temp, index);
+    }
+
+    private int decodeAny(final int prev[], final int temp[], final int index[]) throws IOException {
+        for (int componentIndex = 0; componentIndex < outputData.length; ++componentIndex) {
+            final int[] outputData = this.outputData[componentIndex];
+            final int previous;
+            switch (selection) {
+                case 2:
+                    previous = getPreviousY(outputData);
+                    break;
+                case 3:
+                    previous = getPreviousXY(outputData);
+                    break;
+                case 4:
+                    previous = (getPreviousX(outputData) + getPreviousY(outputData)) - getPreviousXY(outputData);
+                    break;
+                case 5:
+                    previous = getPreviousX(outputData) + ((getPreviousY(outputData) - getPreviousXY(outputData)) >> 1);
+                    break;
+                case 6:
+                    previous = getPreviousY(outputData) + ((getPreviousX(outputData) - getPreviousXY(outputData)) >> 1);
+                    break;
+                case 7:
+                    previous = (int) (((long) getPreviousX(outputData) + getPreviousY(outputData)) / 2);
+                    break;
+                default:
+                    previous = getPreviousX(outputData);
+                    break;
+            }
+            prev[componentIndex] = previous;
+        }
+
+        return decode0(prev, temp, index);
+    }
+
+    private int decode0(int[] prev, int[] temp, int[] index) throws IOException {
         int value, actab[], dctab[];
         int qtab[];
 
@@ -694,14 +726,17 @@ final class JPEGLosslessDecoder {
         if (numComp == 1) {
             outputSingle(pred);
         }
-        else {
+        else if (numComp == 3) {
             outputRGB(pred);
+        }
+        else {
+            outputAny(pred);
         }
     }
 
     private void outputSingle(final int pred[]) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
-            outputData[(yLoc * xDim) + xLoc] = mask & pred[0];
+            outputData[0][(yLoc * xDim) + xLoc] = mask & pred[0];
             xLoc++;
 
             if (xLoc >= xDim) {
@@ -713,9 +748,25 @@ final class JPEGLosslessDecoder {
 
     private void outputRGB(final int pred[]) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
-            outputRedData[(yLoc * xDim) + xLoc] = pred[0];
-            outputGreenData[(yLoc * xDim) + xLoc] = pred[1];
-            outputBlueData[(yLoc * xDim) + xLoc] = pred[2];
+            final int index = (yLoc * xDim) + xLoc;
+            outputData[0][index] = pred[0];
+            outputData[1][index] = pred[1];
+            outputData[2][index] = pred[2];
+            xLoc++;
+
+            if (xLoc >= xDim) {
+                yLoc++;
+                xLoc = 0;
+            }
+        }
+    }
+
+    private void outputAny(final int pred[]) {
+        if ((xLoc < xDim) && (yLoc < yDim)) {
+            final int index = (yLoc * xDim) + xLoc;
+            for (int componentIndex = 0; componentIndex < outputData.length; ++componentIndex) {
+                outputData[componentIndex][index] = pred[componentIndex];
+            }
             xLoc++;
 
             if (xLoc >= xDim) {

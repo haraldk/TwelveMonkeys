@@ -202,36 +202,39 @@ public class TIFFUtilitiesTest {
     }
 
     @Test
-    public void testMergeBogusInterchangeFormatLength() throws IOException {
-        String[] testFiles = new String[] {
+    public void testOldStyleJPEGTransform() throws IOException {
+        String[] testFiles = new String[]{
                 "/tiff/old-style-jpeg-bogus-jpeginterchangeformatlength.tif", // InterchangeFormat before StripOffset, length not including StripOffset
                 "/tiff/old-style-jpeg-no-jpeginterchangeformatlength.tif", // missing JPEGInterChangeFormatLength and JPEGInterchangeFormat == StipOffset
-                "/tiff/old-style-jpeg-multiple-strips.tif" // InterchangeFormat with multiple strips
+                "/tiff/old-style-jpeg-multiple-strips.tif", // InterchangeFormat with multiple strips
+                "/contrib/tiff/old-style-jpeg-invalid-tables.tif", // AC/DC Tables are invalid (to long) and lie within the JPEGInterchangeFormat stream
+                "/contrib/tiff/smallliz.tif", // InterchangeFormat contains whole JPEG, ByteStrip only raw ImageData after SOS
+                "/contrib/tiff/WangJPEG.tif", // multiple strips, first strip contains SOS
+                "/contrib/tiff/zackthecat.tif" // No JPEGInterchangeFormat, ByteStrip contains only raw image data
         };
 
         for (String testFile : testFiles) {
-            File output = File.createTempFile("imageiotest", ".tif");
-            ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
-            InputStream inputStream1 = getClassLoaderResource(testFile).openStream();
-            ImageInputStream imageInput1 = ImageIO.createImageInputStream(inputStream1);
-            InputStream inputStream2 = getClassLoaderResource(testFile).openStream();
-            ImageInputStream imageInput2 = ImageIO.createImageInputStream(inputStream2);
-            ArrayList<TIFFUtilities.TIFFPage> pages = new ArrayList<>();
-            pages.addAll(TIFFUtilities.getPages(imageInput1));
-            pages.addAll(TIFFUtilities.getPages(imageInput2));
-            TIFFUtilities.writePages(outputStream, pages);
+            try {
+                File output = File.createTempFile("imageiotest", ".tif");
+                ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
+                InputStream inputStream = getClassLoaderResource(testFile).openStream();
+                ImageInputStream imageInput = ImageIO.createImageInputStream(inputStream);
+                List<TIFFUtilities.TIFFPage> pages = TIFFUtilities.getPages(imageInput);
+                TIFFUtilities.writePages(outputStream, pages);
 
-            ImageInputStream testOutput = ImageIO.createImageInputStream(output);
-            ImageReader reader = ImageIO.getImageReaders(testOutput).next();
-            reader.setInput(testOutput);
-            int numImages = reader.getNumImages(true);
-            for (int i = 0; i < numImages; i++) {
-                reader.read(i);
+                ImageInputStream testOutput = ImageIO.createImageInputStream(output);
+                ImageReader reader = ImageIO.getImageReaders(testOutput).next();
+                reader.setInput(testOutput);
+                int numImages = reader.getNumImages(true);
+                for (int i = 0; i < numImages; i++) {
+                    reader.read(i);
+                }
+
+                imageInput.close();
+                outputStream.close();
+            } catch (Exception exc) {
+                throw new IOException(testFile, exc);
             }
-
-            imageInput1.close();
-            imageInput2.close();
-            outputStream.close();
         }
     }
 
