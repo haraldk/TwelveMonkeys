@@ -2,7 +2,7 @@
 
 Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
 
-Latest release is TwelveMonkeys ImageIO [3.3.2](http://search.maven.org/#search%7Cga%7C1%7Cg%3Acom.twelvemonkeys*%20AND%20v%3A%223.3.2%22) (Feb. 2nd, 2017).
+Latest release is TwelveMonkeys ImageIO [3.4](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio%20AND%20v:3.4) (Aug. 18th, 2018).
 [Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
 
 ## About
@@ -239,7 +239,7 @@ Other formats, using 3rd party libraries
 
 * Limited read-only support using Batik
 
-**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
+**Important note on using Batik:** *Please read [The Apache? XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
 either version 1.6.1, 1.7.1 or 1.8+.*
 
 
@@ -480,12 +480,22 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.3.2</version> <!-- Alternatively, build your own version -->
+            <version>3.4</version>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.3.2</version> <!-- Alternatively, build your own version -->
+            <version>3.4</version>
+        </dependency>
+
+        <!--
+        Optional dependency. Needed only if you deploy `ImageIO` plugins as part of a web app.
+        Make sure you add the `IIOProviderContextListener` to your `web.xml`, see above.
+        -->
+        <dependency>
+            <groupId>com.twelvemonkeys.servlet</groupId>
+            <artifactId>servlet</artifactId>
+            <version>3.4</version>
         </dependency>
     </dependencies>
 
@@ -493,52 +503,52 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.3.2.jar
-    twelvemonkeys-common-io-3.3.2.jar
-    twelvemonkeys-common-image-3.3.2.jar
-    twelvemonkeys-imageio-core-3.3.2.jar
-    twelvemonkeys-imageio-metadata-3.3.2.jar
-    twelvemonkeys-imageio-jpeg-3.3.2.jar
-    twelvemonkeys-imageio-tiff-3.3.2.jar
+    twelvemonkeys-common-lang-3.4.jar
+    twelvemonkeys-common-io-3.4.jar
+    twelvemonkeys-common-image-3.4.jar
+    twelvemonkeys-imageio-core-3.4.jar
+    twelvemonkeys-imageio-metadata-3.4.jar
+    twelvemonkeys-imageio-jpeg-3.4.jar
+    twelvemonkeys-imageio-tiff-3.4.jar
 
 ### Links to prebuilt binaries
 
-##### Latest version (3.2.x)
+##### Latest version (3.4)
 
 Requires Java 7 or later.
  
 Common dependencies
-* [common-lang-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.3.2/common-lang-3.3.2.jar)
-* [common-io-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.3.2/common-io-3.3.2.jar)
-* [common-image-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.3.2/common-image-3.3.2.jar)
+* [common-lang-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.4/common-lang-3.4.jar)
+* [common-io-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.4/common-io-3.4.jar)
+* [common-image-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.4/common-image-3.4.jar)
 
 ImageIO dependencies
-* [imageio-core-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.3.2/imageio-core-3.3.2.jar)
-* [imageio-metadata-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.3.2/imageio-metadata-3.3.2.jar)
+* [imageio-core-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.4/imageio-core-3.4.jar)
+* [imageio-metadata-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.4/imageio-metadata-3.4.jar)
 
 ImageIO plugins
-* [imageio-bmp-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.3.2/imageio-bmp-3.3.2.jar)
-* [imageio-jpeg-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.3.2/imageio-jpeg-3.3.2.jar)
-* [imageio-tiff-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.3.2/imageio-tiff-3.3.2.jar)
-* [imageio-pnm-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.3.2/imageio-pnm-3.3.2.jar)
-* [imageio-psd-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.3.2/imageio-psd-3.3.2.jar)
-* [imageio-hdr-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.3.2/imageio-hdr-3.3.2.jar)
-* [imageio-iff-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.3.2/imageio-iff-3.3.2.jar)
-* [imageio-pcx-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.3.2/imageio-pcx-3.3.2.jar)
-* [imageio-pict-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.3.2/imageio-pict-3.3.2.jar)
-* [imageio-sgi-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.3.2/imageio-sgi-3.3.2.jar)
-* [imageio-tga-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.3.2/imageio-tga-3.3.2.jar)
-* [imageio-icns-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.3.2/imageio-icns-3.3.2.jar)
-* [imageio-thumbsdb-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.3.2/imageio-thumbsdb-3.3.2.jar)
+* [imageio-bmp-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.4/imageio-bmp-3.4.jar)
+* [imageio-jpeg-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.4/imageio-jpeg-3.4.jar)
+* [imageio-tiff-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.4/imageio-tiff-3.4.jar)
+* [imageio-pnm-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.4/imageio-pnm-3.4.jar)
+* [imageio-psd-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.4/imageio-psd-3.4.jar)
+* [imageio-hdr-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.4/imageio-hdr-3.4.jar)
+* [imageio-iff-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.4/imageio-iff-3.4.jar)
+* [imageio-pcx-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.4/imageio-pcx-3.4.jar)
+* [imageio-pict-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.4/imageio-pict-3.4.jar)
+* [imageio-sgi-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.4/imageio-sgi-3.4.jar)
+* [imageio-tga-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.4/imageio-tga-3.4.jar)
+* [imageio-icns-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.4/imageio-icns-3.4.jar)
+* [imageio-thumbsdb-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.4/imageio-thumbsdb-3.4.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.3.2/imageio-batik-3.3.2.jar)
+* [imageio-batik-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.4/imageio-batik-3.4.jar)
 
 Photoshop Path support for ImageIO
-* [imageio-clippath-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.3.2/imageio-clippath-3.3.2.jar)
+* [imageio-clippath-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.4/imageio-clippath-3.4.jar)
 
 Servlet support
-* [servlet-3.3.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.3.2/servlet-3.3.2.jar)
+* [servlet-3.4.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.4/servlet-3.4.jar)
 
 ##### Old version (3.0.x)
 
@@ -575,35 +585,33 @@ Servlet support
 
 The project is distributed under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
 
-    Copyright (c) 2008-2015, Harald Kuhr
+    Copyright (c) 2008-2018, Harald Kuhr
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions are met:
 
-    o Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
+    o Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
 
-    o Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
+    o Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
 
-    o Neither the name "TwelveMonkeys" nor the
-      names of its contributors may be used to endorse or promote products
-      derived from this software without specific prior written permission.
+    o Neither the name of the copyright holder nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
 
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-    CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## FAQ
 
@@ -649,7 +657,7 @@ Native libs does not exist for several popular platforms/architectures, and furt
 Some environments may also prevent deployment of native libs, which brings us back to square one.
 
 
-q: What about JMagick or IM4Java? Can't you just use what´s already available?
+q: What about JMagick or IM4Java? Can't you just use what?s already available?
 
 a: While great libraries with a wide range of formats support, the ImageMagick-based libraries has some disadvantages
 compared to ImageIO.
