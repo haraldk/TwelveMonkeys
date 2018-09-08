@@ -38,7 +38,6 @@ import java.nio.channels.FileChannel;
  * and writing data in little endian byte order.
  * <p/>
  * <em>Warning:
- * <!-- Beware of little indians! -->
  * The {@code DataInput} and {@code DataOutput} interfaces
  * specifies big endian byte order in their documentation.
  * This means that this class is, strictly speaking, not a proper

@@ -186,7 +186,7 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
     }
 
     protected void closeImpl() throws IOException {
-        cache.flush(position);
+        cache.close();
         cache = null;
         stream.close();
     }
@@ -198,12 +198,12 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
      * @author last modified by $Author: haku $
      * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/AbstractCachedSeekableStream.java#2 $
      */
-    public static abstract class StreamCache {
+    static abstract class StreamCache {
 
         /**
          * Creates a {@code StreamCache}.
          */
-        protected StreamCache() {
+        StreamCache() {
         }
 
         /**
@@ -303,5 +303,7 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
          * @throws IOException if the position can't be determined because of a problem in the cache backing mechanism.
          */
         abstract long getPosition() throws IOException;
+
+        abstract void close() throws IOException;
     }
 }

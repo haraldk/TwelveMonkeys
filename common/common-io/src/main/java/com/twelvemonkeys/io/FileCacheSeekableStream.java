@@ -124,7 +124,9 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
 
     @Override
     protected void closeImpl() throws IOException {
+        // TODO: Close cache file
         super.closeImpl();
+
         buffer = null;
     }
 
@@ -194,39 +196,45 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
         return length;
     }
 
+    // TODO: We need to close the cache file!!! Otherwise we are leaking file descriptors
+
     final static class FileCache extends StreamCache {
-        private RandomAccessFile mCacheFile;
+        private RandomAccessFile cacheFile;
 
         public FileCache(final File pFile) throws FileNotFoundException {
             Validate.notNull(pFile, "file");
-            mCacheFile = new RandomAccessFile(pFile, "rw");
+            cacheFile = new RandomAccessFile(pFile, "rw");
         }
 
         public void write(final int pByte) throws IOException {
-            mCacheFile.write(pByte);
+            cacheFile.write(pByte);
         }
 
         @Override
         public void write(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
-            mCacheFile.write(pBuffer, pOffset, pLength);
+            cacheFile.write(pBuffer, pOffset, pLength);
         }
 
         public int read() throws IOException {
-            return mCacheFile.read();
+            return cacheFile.read();
         }
 
         @Override
         public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
-            return mCacheFile.read(pBuffer, pOffset, pLength);
+            return cacheFile.read(pBuffer, pOffset, pLength);
         }
 
         public void seek(final long pPosition) throws IOException {
-            mCacheFile.seek(pPosition);
+            cacheFile.seek(pPosition);
         }
 
         public long getPosition() throws IOException {
-            return mCacheFile.getFilePointer();
+            return cacheFile.getFilePointer();
+        }
+
+        @Override
+        void close() throws IOException {
+            cacheFile.close();
         }
     }
-
 }
