@@ -480,12 +480,22 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-jpeg</artifactId>
-            <version>3.4</version> <!-- Alternatively, build your own version -->
+            <version>3.4</version>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-tiff</artifactId>
-            <version>3.4</version> <!-- Alternatively, build your own version -->
+            <version>3.4</version>
+        </dependency>
+
+        <!--
+        Optional dependency. Needed only if you deploy `ImageIO` plugins as part of a web app.
+        Make sure you add the `IIOProviderContextListener` to your `web.xml`, see above.
+        -->
+        <dependency>
+            <groupId>com.twelvemonkeys.servlet</groupId>
+            <artifactId>servlet</artifactId>
+            <version>3.4</version>
         </dependency>
     </dependencies>
 
