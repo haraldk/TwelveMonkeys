@@ -2,7 +2,7 @@
 
 Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
 
-Latest release is TwelveMonkeys ImageIO [3.4.1](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio%20AND%20v:3.4.1) (Aug. 18th, 2018).
+Latest release is TwelveMonkeys ImageIO [3.4.1](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio%20AND%20v:3.4.1) (Sep. 7th, 2018).
 [Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
 
 ## About
