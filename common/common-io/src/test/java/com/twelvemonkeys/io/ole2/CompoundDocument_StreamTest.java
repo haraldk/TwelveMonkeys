@@ -33,12 +33,12 @@ package com.twelvemonkeys.io.ole2;
 import com.twelvemonkeys.io.InputStreamAbstractTest;
 import com.twelvemonkeys.io.LittleEndianDataOutputStream;
 import com.twelvemonkeys.io.MemoryCacheSeekableStream;
-import com.twelvemonkeys.io.SeekableInputStream;
 import org.junit.Test;
 
-import java.io.*;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
@@ -51,35 +51,7 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: CompoundDocument_StreamTestCase.java,v 1.0 13.10.11 12:01 haraldk Exp$
  */
-//@Ignore("Need proper in-memory creation of CompoundDocuments")
 public class CompoundDocument_StreamTest extends InputStreamAbstractTest {
-    private static final String SAMPLE_DATA = "/Thumbs-camera.db";
-
-    protected final CompoundDocument createTestDocument() throws IOException {
-        URL input = getClass().getResource(SAMPLE_DATA);
-
-        assertNotNull("Missing test resource!", input);
-        assertEquals("Test resource not a file:// resource", "file", input.getProtocol());
-
-        try {
-            return new CompoundDocument(new File(input.toURI()));
-        }
-        catch (URISyntaxException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    private SeekableInputStream createRealInputStream() {
-        try {
-            Entry first = createTestDocument().getRootEntry().getChildEntries().first();
-            assertNotNull(first);
-            return first.getInputStream();
-        }
-        catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
-
     @Override
     protected InputStream makeInputStream(byte[] data) {
         try {
@@ -182,15 +154,13 @@ public class CompoundDocument_StreamTest extends InputStreamAbstractTest {
         return pad;
     }
 
-//    @Ignore
     @Test
-    public void testDev() throws IOException {
+    public void testStreamRead() throws IOException {
         InputStream stream = makeInputStream(makeOrderedArray(32));
 
         int read;
         int count = 0;
         while ((read = stream.read()) >= 0) {
-//            System.out.printf("read %02d: 0x%02x%n", count, read & 0xFF);
             assertEquals(count, read);
             count++;
         }

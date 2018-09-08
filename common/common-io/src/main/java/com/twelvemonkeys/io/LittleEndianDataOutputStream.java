@@ -52,7 +52,6 @@ import java.io.*;
  * imitates uses big endian integers.
  * <p/>
  * <em>Warning:
- * <!-- Beware of little indians! -->
  * The {@code DataInput} and {@code DataOutput} interfaces
  * specifies big endian byte order in their documentation.
  * This means that this class is, strictly speaking, not a proper

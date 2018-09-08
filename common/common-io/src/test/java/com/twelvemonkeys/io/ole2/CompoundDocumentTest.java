@@ -72,64 +72,64 @@ public class CompoundDocumentTest {
 
     @Test
     public void testRoot() throws IOException {
-        CompoundDocument document = createTestDocument();
+        try (CompoundDocument document = createTestDocument()) {
+            Entry root = document.getRootEntry();
 
-        Entry root = document.getRootEntry();
-
-        assertNotNull(root);
-        assertEquals("Root Entry", root.getName());
-        assertTrue(root.isRoot());
-        assertFalse(root.isFile());
-        assertFalse(root.isDirectory());
-        assertEquals(0, root.length());
-        assertNull(root.getInputStream());
+            assertNotNull(root);
+            assertEquals("Root Entry", root.getName());
+            assertTrue(root.isRoot());
+            assertFalse(root.isFile());
+            assertFalse(root.isDirectory());
+            assertEquals(0, root.length());
+            assertNull(root.getInputStream());
+        }
     }
 
     @Test
     public void testContents() throws IOException {
-        CompoundDocument document = createTestDocument();
+        try (CompoundDocument document = createTestDocument()) {
+            Entry root = document.getRootEntry();
 
-        Entry root = document.getRootEntry();
+            assertNotNull(root);
 
-        assertNotNull(root);
+            SortedSet<Entry> children = new TreeSet<Entry>(root.getChildEntries());
+            assertEquals(25, children.size());
 
-        SortedSet<Entry> children = new TreeSet<Entry>(root.getChildEntries());
-        assertEquals(25, children.size());
-
-        // Weirdness in the file format, name is *written backwards* 1-24 + Catalog
-        for (String name : "1,2,3,4,5,6,7,8,9,01,02,11,12,21,22,31,32,41,42,51,61,71,81,91,Catalog".split(",")) {
-            assertEquals(name, children.first().getName());
-            children.remove(children.first());
+            // Weirdness in the file format, name is *written backwards* 1-24 + Catalog
+            for (String name : "1,2,3,4,5,6,7,8,9,01,02,11,12,21,22,31,32,41,42,51,61,71,81,91,Catalog".split(",")) {
+                assertEquals(name, children.first().getName());
+                children.remove(children.first());
+            }
         }
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testChildEntriesUnmodifiable() throws IOException {
-        CompoundDocument document = createTestDocument();
+        try (CompoundDocument document = createTestDocument()) {
+            Entry root = document.getRootEntry();
 
-        Entry root = document.getRootEntry();
+            assertNotNull(root);
 
-        assertNotNull(root);
+            SortedSet<Entry> children = root.getChildEntries();
 
-        SortedSet<Entry> children = root.getChildEntries();
-
-        // Should not be allowed, as it modifies the internal structure
-        children.remove(children.first());
+            // Should not be allowed, as it modifies the internal structure
+            children.remove(children.first());
+        }
     }
 
     @Test
     public void testReadThumbsCatalogFile() throws IOException {
-        CompoundDocument document = createTestDocument();
+        try (CompoundDocument document = createTestDocument()) {
+            Entry root = document.getRootEntry();
 
-        Entry root = document.getRootEntry();
+            assertNotNull(root);
+            assertEquals(25, root.getChildEntries().size());
 
-        assertNotNull(root);
-        assertEquals(25, root.getChildEntries().size());
+            Entry catalog = root.getChildEntry("Catalog");
 
-        Entry catalog = root.getChildEntry("Catalog");
-
-        assertNotNull(catalog);
-        assertNotNull("Input stream may not be null", catalog.getInputStream());
+            assertNotNull(catalog);
+            assertNotNull("Input stream may not be null", catalog.getInputStream());
+        }
     }
 
     @Test

@@ -67,7 +67,7 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
     final static class MemoryCache extends StreamCache {
         final static int BLOCK_SIZE = 1 << 13;
 
-        private final List<byte[]> cache = new ArrayList<byte[]>();
+        private final List<byte[]> cache = new ArrayList<>();
         private long length;
         private long position;
         private long start;
@@ -184,6 +184,11 @@ public final class MemoryCacheSeekableStream extends AbstractCachedSeekableStrea
             }
 
             start = pPosition;
+        }
+
+        @Override
+        void close() throws IOException {
+            cache.clear();
         }
 
         public long getPosition() {
