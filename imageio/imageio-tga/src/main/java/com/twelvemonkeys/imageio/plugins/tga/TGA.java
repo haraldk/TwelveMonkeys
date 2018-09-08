@@ -36,6 +36,8 @@ interface TGA {
     /** Fixed header size: 18.*/
     int HEADER_SIZE = 18;
 
+    int EXT_AREA_SIZE = 495;
+
     /** No color map included. */
     int COLORMAP_NONE = 0;
     /** Color map included. */

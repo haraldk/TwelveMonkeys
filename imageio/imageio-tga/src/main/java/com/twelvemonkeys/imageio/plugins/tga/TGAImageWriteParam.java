@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Harald Kuhr
+ * Copyright (c) 2017, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,26 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
-import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import javax.imageio.ImageWriteParam;
+import java.util.Locale;
 
 /**
- * SGIProviderInfo.
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: harald.kuhr$
- * @version $Id: SGIProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
+ * TGAImageWriteParam
  */
-final class TGAProviderInfo extends ReaderWriterProviderInfo {
-    protected TGAProviderInfo() {
-        super(
-                TGAProviderInfo.class,
-                new String[]{
-                        "tga", "TGA",
-                        "targa", "TARGA"
-                },
-                new String[]{"tga", "tpic"},
-                new String[]{
-                        // No official IANA record exists
-                        "image/tga", "image/x-tga",
-                        "image/targa", "image/x-targa",
-                },
-                "com.twelvemonkeys.imageio.plugins.tga.TGAImageReader",
-                new String[] {"com.twelvemonkeys.imageio.plugins.tga.TGAImageReaderSpi"},
-                "com.twelvemonkeys.imageio.plugins.tga.TGAImageWriter",
-                new String[] {"com.twelvemonkeys.imageio.plugins.tga.TGAImageWriterSpi"},
-                false, null, null, null, null,
-                true, null, null, null, null
-        );
+public final class TGAImageWriteParam extends ImageWriteParam {
+    @SuppressWarnings("unused")
+    public TGAImageWriteParam() {
+        this(null);
+    }
+
+    @SuppressWarnings("WeakerAccess")
+    public TGAImageWriteParam(final Locale locale) {
+        super(locale);
+
+        compressionTypes = new String[]{"None", "RLE"};
+    }
+
+    static boolean isRLE(final ImageWriteParam param) {
+        return param != null && param.getCompressionMode() == MODE_EXPLICIT && "RLE".equals(param.getCompressionType());
     }
 }

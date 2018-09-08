@@ -37,12 +37,14 @@ import java.awt.*;
 import java.awt.image.IndexColorModel;
 import java.util.Calendar;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 final class TGAMetadata extends AbstractMetadata {
     private final TGAHeader header;
     private final TGAExtensions extensions;
 
     TGAMetadata(final TGAHeader header, final TGAExtensions extensions) {
-        this.header = header;
+        this.header = notNull(header, "header");
         this.extensions = extensions;
     }
 
