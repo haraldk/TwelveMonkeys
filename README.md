@@ -56,9 +56,9 @@ Mainstream format support
   * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
   * Non-conforming combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
    "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
-* Extended write support in progress:
+* Extended write support:
   * CMYK JPEGs
-  * YCCK JPEGs
+  * YCCK JPEGs in progress
 
 #### JPEG-2000
 
@@ -206,6 +206,7 @@ Legacy formats
   * Uncompressed
   * RLE compressed
 * Standard metadata support
+* Write support
 
 Icon/other formats
 
@@ -215,6 +216,7 @@ Icon/other formats
   * All known "native" icon types
   * Large PNG encoded icons
   * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin or fallback to `sips` command line tool)
+* Write support for PNG encoded icons
 
 #### ICO & CUR - MS Windows Icon and Cursor Formats
 
@@ -223,6 +225,7 @@ Icon/other formats
   * ICO RGB, 16, 24 and 32 bit
   * CUR Indexed color, 1, 4 and 8 bit
   * CUR RGB, 16, 24 and 32 bit
+* Write support
 * *3.1* Note: These formats are now part of the BMP plugin
 
 #### Thumbs.db - MS Windows Thumbs DB
