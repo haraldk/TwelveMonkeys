@@ -498,7 +498,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                             return ImageTypeSpecifiers.createPackedGrayscale(cs, bitsPerSample, dataType);
                         }
                         else if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            return create(TIFFBaseline.PLANARCONFIG_CHUNKY, cs, dataType, significantSamples, samplesPerPixel, false, false);
+                            return createImageTypeSpecifier(TIFFBaseline.PLANARCONFIG_CHUNKY, cs, dataType, significantSamples, samplesPerPixel, false, false);
                         }
                         else if (bitsPerSample % 2 == 0) {
                             ColorModel colorModel = new ComponentColorModel(cs, new int[] {bitsPerSample}, false, false, Transparency.OPAQUE, dataType);
@@ -530,7 +530,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                         else if (/*bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 ||*/ bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             // TODO: Should use packed format for 1/2/4 chunky.
                             // TODO: For 1/2/4 bit planar, we might need to fix while reading... Look at IFFImageReader?
-                            return create(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, true, isAlphaPremultiplied);
+                            return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, true, isAlphaPremultiplied);
                         }
 
                         throw new IIOException(String.format("Unsupported BitsPerSample for Gray + Alpha TIFF (expected 8, 16 or 32): %d", bitsPerSample));
@@ -554,7 +554,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 switch (significantSamples) {
                     case 3:
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            return create(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, false, false);
+                            return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, false, false);
                         }
                         else if (bitsPerSample > 8 && bitsPerSample % 2 == 0) {
                             // TODO: Support variable bits/sample?
@@ -566,7 +566,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                         }
                     case 4:
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            return create(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, true, isAlphaPremultiplied);
+                            return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, true, isAlphaPremultiplied);
                         }
                         else if (significantSamples == 4 && bitsPerSample == 4) {
                             return ImageTypeSpecifiers.createPacked(cs, 0xF000, 0xF00, 0xF0, 0xF, DataBuffer.TYPE_USHORT, isAlphaPremultiplied);
@@ -621,7 +621,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                     case 4:
                     case 5:
                         if (bitsPerSample == 8 || bitsPerSample == 16) {
-                            return create(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, significantSamples == 5, isAlphaPremultiplied);
+                            return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, significantSamples == 5, isAlphaPremultiplied);
                         }
 
                     default:
@@ -637,7 +637,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 cs = ColorSpace.getInstance(ColorSpace.CS_sRGB);
                 switch (planarConfiguration) {
                     case TIFFBaseline.PLANARCONFIG_CHUNKY:
-                        return create(TIFFBaseline.PLANARCONFIG_CHUNKY, cs, dataType, 3, samplesPerPixel, false, false);
+                        return createImageTypeSpecifier(TIFFBaseline.PLANARCONFIG_CHUNKY, cs, dataType, 3, samplesPerPixel, false, false);
                     case TIFFExtension.PLANARCONFIG_PLANAR:
                         // TODO: Reading works fine, but we can't convert the Lab values properly yet. Need to rewrite normalizeColor
                         //return ImageTypeSpecifiers.createBanded(cs, new int[] {0, 1, 2}, new int[] {0, 0, 0}, dataType, false, false);
@@ -661,16 +661,20 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private ImageTypeSpecifier create(int planarConfiguration, ColorSpace cs, int dataType, int significantSamples, int samplesPerPixel, boolean alpha, boolean alphaPremultiplied) {
-        if (planarConfiguration != TIFFExtension.PLANARCONFIG_PLANAR) {
-            if (samplesPerPixel > significantSamples) {
-                return new ImageTypeSpecifier(
-                        new ExtraSamplesColorModel(cs, alpha, alphaPremultiplied, dataType, samplesPerPixel - significantSamples),
-                        new PixelInterleavedSampleModel(dataType, 1, 1, samplesPerPixel, samplesPerPixel, createOffsets(samplesPerPixel)));
-            }
-            return ImageTypeSpecifiers.createInterleaved(cs, createOffsets(significantSamples), dataType, alpha, alphaPremultiplied);
+    private ImageTypeSpecifier createImageTypeSpecifier(int planarConfiguration, ColorSpace cs, int dataType, int significantSamples, int samplesPerPixel, boolean alpha, boolean alphaPremultiplied) throws IIOException {
+        switch (planarConfiguration) {
+            case TIFFBaseline.PLANARCONFIG_CHUNKY:
+                if (samplesPerPixel > significantSamples) {
+                    return new ImageTypeSpecifier(
+                            new ExtraSamplesColorModel(cs, alpha, alphaPremultiplied, dataType, samplesPerPixel - significantSamples),
+                            new PixelInterleavedSampleModel(dataType, 1, 1, samplesPerPixel, samplesPerPixel, createOffsets(samplesPerPixel)));
+                }
+                return ImageTypeSpecifiers.createInterleaved(cs, createOffsets(significantSamples), dataType, alpha, alphaPremultiplied);
+            case TIFFExtension.PLANARCONFIG_PLANAR:
+                return ImageTypeSpecifiers.createBanded(cs, createOffsets(significantSamples), new int[significantSamples], dataType, alpha, alphaPremultiplied);
+            default:
+                throw new IIOException(String.format("Unsupported PlanarConfiguration (expected 1 or 2): %d", planarConfiguration));
         }
-        return ImageTypeSpecifiers.createBanded(cs, createOffsets(significantSamples), new int[significantSamples], dataType, alpha, alphaPremultiplied);
     }
 
     private static int[] createOffsets(int samplesPerPixel) {
