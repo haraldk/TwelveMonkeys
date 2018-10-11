@@ -153,6 +153,12 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
                 (raster.getNumBands() == 2) && ((1 << size) >= icm.getMapSize()));
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        return this == obj
+                || obj != null && getClass() == obj.getClass() && icm.equals(((DiscreteAlphaIndexColorModel) obj).icm);
+    }
+
     public String toString() {
         return "DiscreteAlphaIndexColorModel: #pixelBits = " + pixel_bits
                 + " numComponents = " + getNumComponents()
