@@ -34,18 +34,26 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImagingOpException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.*;
 
 /**
  * SVGImageReaderTest
@@ -145,5 +153,98 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         reader.setInput(blueSquare.getInputStream());
         BufferedImage imageBlue = reader.read(0, param);
         assertEquals(0x0000FF, imageBlue.getRGB(50, 50) & 0xFFFFFF);
+    }
+
+    @Test
+    public void testEmbeddedBaseURI() throws URISyntaxException, IOException {
+        URL resource = getClassLoaderResource("/svg/barChart.svg");
+
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setBaseURI(resource.toURI().toASCIIString());
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(450, image.getWidth());
+            assertEquals(500, image.getHeight());
+
+            // CSS and embedded resources all go!
+            verifyZeroInteractions(listener);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testEmbeddedBeforeBaseURI() throws URISyntaxException, IOException {
+        // Asking for metadata, width, height etc, before attempting to read using a param,
+        // will cause the document to be parsed without a base URI.
+        // This will work, but may not use the CSS...
+        URL resource = getClassLoaderResource("/svg/barChart.svg");
+
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
+
+            assertEquals(450, reader.getWidth(0));
+            assertEquals(500, reader.getHeight(0));
+
+            // Expect the warning about the missing CSS
+            verify(listener, atMost(1)).warningOccurred(any(ImageReader.class), anyString());
+            reset(listener);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setBaseURI(resource.toURI().toASCIIString());
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(450, image.getWidth());
+            assertEquals(500, image.getHeight());
+
+            // No more warnings now that the base URI is set
+            verifyZeroInteractions(listener);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testEmbeddedNoBaseURI() throws IOException {
+        // With no base URI, we will throw an exception, about the missing embedded resource
+        URL resource = getClassLoaderResource("/svg/barChart.svg");
+
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(450, image.getWidth());
+            assertEquals(500, image.getHeight());
+        }
+        catch (IIOException allowed) {
+            assertTrue(allowed.getMessage().contains("batikLogo.svg")); // The embedded resource we don't find
+        }
+        finally {
+            reader.dispose();
+        }
     }
 }
