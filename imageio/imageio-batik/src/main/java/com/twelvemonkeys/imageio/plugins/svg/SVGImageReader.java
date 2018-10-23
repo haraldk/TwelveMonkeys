@@ -48,17 +48,29 @@ import org.apache.batik.transcoder.image.ImageTranscoder;
 import org.apache.batik.util.ParsedURL;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
+import org.w3c.dom.svg.SVGDocument;
 import org.w3c.dom.svg.SVGSVGElement;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -104,6 +116,44 @@ public class SVGImageReader extends ImageReaderBase {
         if (imageInput != null) {
             TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
             rasterizer.setInput(input);
+        } else if (pInput instanceof SVGDocument) {
+            Document document = (Document) pInput;
+            TranscoderInput input = new TranscoderInput(document);
+            input.setURI(document.getBaseURI());
+            rasterizer.setInput(input);
+        } else if (pInput instanceof Document) {
+            try {
+	            // Get an ImageInputStream over Document
+	            imageInput = getDocumentInputStream((Document) pInput);
+            } catch (IOException | TransformerException ex) {
+	        }
+	    
+	        if (imageInput != null) {
+	            TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
+                input.setURI(((Document) pInput).getBaseURI());
+                rasterizer.setInput(input);
+	        }
+        }
+    }
+    
+    private static ImageInputStream getDocumentInputStream(Document svgXML) throws IOException, TransformerException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Result outputTarget = new StreamResult(outputStream);
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.VERSION, svgXML.getXmlVersion());
+            transformer.setOutputProperty(OutputKeys.STANDALONE, svgXML.getXmlStandalone() ? "yes" : "no");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            //transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            //transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            //transformer.setOutputProperty("{http://xml.apache.org/xalan}indent-amount", "2");
+
+            transformer.transform(new DOMSource(svgXML), outputTarget);
+            //System.out.println(new String(outputStream.toByteArray(), transformer.getOutputProperty(OutputKeys.ENCODING)));
+
+            return ImageIO.createImageInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
         }
     }
 
