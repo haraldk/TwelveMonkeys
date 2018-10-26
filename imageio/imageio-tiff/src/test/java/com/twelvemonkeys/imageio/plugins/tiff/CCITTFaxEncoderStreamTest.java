@@ -128,7 +128,7 @@ public class CCITTFaxEncoderStreamTest {
             reader.setInput(iis, true);
 
             ByteArrayOutputStream outputBuffer = new ByteArrayOutputStream();
-            ImageWriter writer = ImageIO.getImageWritersByFormatName("TIFF").next();
+            ImageWriter writer = new TIFFImageWriter(new TIFFImageWriterSpi());
             BufferedImage originalImage;
 
             try (ImageOutputStream output = ImageIO.createImageOutputStream(outputBuffer)) {
