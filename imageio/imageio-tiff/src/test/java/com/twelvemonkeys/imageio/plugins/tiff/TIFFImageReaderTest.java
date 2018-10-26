@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Test;
 
@@ -42,6 +43,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.color.ICC_ColorSpace;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -630,8 +632,15 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(160, image.getWidth());
             assertEquals(227, image.getHeight());
 
-            assertRGBEquals("Wrong RGB (0,0)", 0xff1E769D, image.getRGB(0, 0), 4);
-            assertRGBEquals("Wrong RGB (159,226)", 0xff1E769D, image.getRGB(159, 226), 4);
+            // This TIFF does not contain a ICC profile, making the RGB result depend on the platforms "Generic CMYK" profile
+            if (ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK) instanceof ICC_ColorSpace) {
+                assertRGBEquals("Wrong RGB (0,0)", 0xff1E769D, image.getRGB(0, 0), 4);
+                assertRGBEquals("Wrong RGB (159,226)", 0xff1E769D, image.getRGB(159, 226), 4);
+            }
+            else {
+                assertRGBEquals("Wrong RGB (0,0)", 0xff2896d9, image.getRGB(0, 0), 4);
+                assertRGBEquals("Wrong RGB (159,226)", 0xff2896d9, image.getRGB(159, 226), 4);
+            }
         }
     }
 
