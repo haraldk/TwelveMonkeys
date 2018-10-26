@@ -40,6 +40,8 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Locale;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+
 /**
  * TIFFImageReaderSpi
  *
@@ -51,6 +53,7 @@ public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
     /**
      * Creates a {@code TIFFImageReaderSpi}.
      */
+    @SuppressWarnings("WeakerAccess")
     public TIFFImageReaderSpi() {
         super(new TIFFProviderInfo());
     }
@@ -58,17 +61,13 @@ public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
     @SuppressWarnings("unchecked")
     @Override
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
-        // Make sure we're ordered before the Apple-provided TIFF reader on OS X
-        try {
-            Class<ImageReaderSpi> providerClass = (Class<ImageReaderSpi>) Class.forName("com.sun.imageio.plugins.tiff.TIFFImageReaderSpi");
-            ImageReaderSpi appleSpi = registry.getServiceProviderByClass(providerClass);
+        // Make sure we're ordered before the new JEP 262 JRE bundled TIFF plugin
+        // or the Apple-provided TIFF plugin on OS X (which both happen to have the same class name)...
+        ImageReaderSpi sunSpi = lookupProviderByName(registry, "com.sun.imageio.plugins.tiff.TIFFImageReaderSpi", ImageReaderSpi.class);
 
-            if (appleSpi != null && appleSpi.getVendorName() != null && appleSpi.getVendorName().startsWith("Apple")) {
-                registry.setOrdering((Class<ImageReaderSpi>) category, this, appleSpi);
-            }
-        }
-        catch (ClassNotFoundException ignore) {
-            // This is actually OK, now we don't have to do anything
+        if (sunSpi != null && sunSpi.getVendorName() != null
+                && (sunSpi.getVendorName().startsWith("Apple") || sunSpi.getVendorName().startsWith("Oracle"))) {
+            registry.setOrdering((Class<ImageReaderSpi>) category, this, sunSpi);
         }
     }
 
