@@ -611,6 +611,31 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadCMYKExtraSamples() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/cmyk-with-non-alpha-extra-channel.tiff"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+
+            BufferedImage image = null;
+            try {
+                image = reader.read(0, param);
+            }
+            catch (IOException e) {
+                failBecause("Image could not be read", e);
+            }
+
+            assertNotNull(image);
+            assertEquals(160, image.getWidth());
+            assertEquals(227, image.getHeight());
+
+            assertRGBEquals("Wrong RGB", 0xff1E769D, image.getRGB(0, 0), 4);
+            assertRGBEquals("Wrong RGB", 0xff1E769D, image.getRGB(159, 226), 4);
+        }
+    }
+
+    @Test
     public void testReadWithSubsampleParamPixelsJPEG() throws IOException {
         // Tiled "new style" JPEG
         ImageReader reader = createReader();
