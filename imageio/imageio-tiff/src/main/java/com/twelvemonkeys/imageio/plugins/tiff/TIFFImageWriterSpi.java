@@ -33,9 +33,11 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
-import java.io.IOException;
+import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.spi.ServiceRegistry;
 import java.util.Locale;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * TIFFImageWriterSpi
@@ -51,15 +53,25 @@ public final class TIFFImageWriterSpi extends ImageWriterSpiBase {
         super(new TIFFProviderInfo());
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
+        // Make sure we're ordered before the new JEP 262 JRE bundled TIFF plugin
+        ImageWriterSpi sunSpi = lookupProviderByName(registry, "com.sun.imageio.plugins.tiff.TIFFImageWriterSpi", ImageWriterSpi.class);
+
+        if (sunSpi != null && sunSpi.getVendorName() != null && sunSpi.getVendorName().startsWith("Oracle")) {
+            registry.setOrdering((Class<ImageWriterSpi>) category, this, sunSpi);
+        }
+    }
+
     @Override
     public boolean canEncodeImage(final ImageTypeSpecifier type) {
         // TODO: Test bit depths compatibility
-
         return true;
     }
 
     @Override
-    public ImageWriter createWriterInstance(final Object extension) throws IOException {
+    public TIFFImageWriter createWriterInstance(final Object extension) {
         return new TIFFImageWriter(this);
     }
 

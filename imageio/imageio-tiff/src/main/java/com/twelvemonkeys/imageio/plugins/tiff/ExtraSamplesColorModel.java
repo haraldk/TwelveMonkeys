@@ -54,27 +54,23 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
     // still thinks it has numComponents == cs.getNumComponents() + 1 for most operations
     private final int numComponents;
 
+    private final int componentSize;
+
     ExtraSamplesColorModel(ColorSpace cs, boolean hasAlpha, boolean isAlphaPremultiplied, int dataType, int extraComponents) {
-        super(cs, bitsArrayHelper(cs, dataType, extraComponents + (hasAlpha ? 1 : 0)), hasAlpha, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
+        super(cs, hasAlpha, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
         Validate.isTrue(extraComponents > 0, "Extra components must be > 0");
         this.numComponents = cs.getNumComponents() + (hasAlpha ? 1 : 0) + extraComponents;
-    }
-
-    private static int[] bitsArrayHelper(ColorSpace cs, int dataType, int extraComponents) {
-        int numBits = getDataTypeSize(dataType);
-        int numComponents = cs.getNumComponents() + extraComponents;
-        int[] bits = new int[numComponents];
-
-        for (int i = 0; i < numComponents; i++) {
-            bits[i] = numBits;
-        }
-
-        return bits;
+        this.componentSize = getDataTypeSize(dataType);
     }
 
     @Override
     public int getNumComponents() {
         return numComponents;
+    }
+
+    @Override
+    public int getComponentSize(int componentIdx) {
+        return componentSize;
     }
 
     @Override
