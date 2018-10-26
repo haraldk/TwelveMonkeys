@@ -630,8 +630,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(160, image.getWidth());
             assertEquals(227, image.getHeight());
 
-            assertRGBEquals("Wrong RGB", 0xff1E769D, image.getRGB(0, 0), 4);
-            assertRGBEquals("Wrong RGB", 0xff1E769D, image.getRGB(159, 226), 4);
+            assertRGBEquals("Wrong RGB (0,0)", 0xff1E769D, image.getRGB(0, 0), 4);
+            assertRGBEquals("Wrong RGB (159,226)", 0xff1E769D, image.getRGB(159, 226), 4);
         }
     }
 
