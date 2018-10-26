@@ -582,7 +582,6 @@ abstract class DIBImageReader extends ImageReaderBase {
 
         // Read directory
         directory = Directory.read(type, imageCount, imageInput);
-        System.err.println("directory: " + directory);
     }
 
     final DirectoryEntry getEntry(final int pImageIndex) throws IOException {
