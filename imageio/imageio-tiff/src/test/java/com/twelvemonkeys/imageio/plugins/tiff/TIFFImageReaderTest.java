@@ -609,6 +609,20 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(0xf5,  alphaRaster.getPixel(50, 50, alpha)[0]);
         }
     }
+	
+    @Test
+    public void testMinIsWhiteWithProfile() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/ccitt/min-is-white-with-profile.tif"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            assertEquals(0xFFFFFFFF, image.getRGB(0, 0));
+            assertEquals(0xFFFFFFFF, image.getRGB(50, 50));
+        }
+    }
 
     @Test
     public void testReadWithSubsampleParamPixelsJPEG() throws IOException {
