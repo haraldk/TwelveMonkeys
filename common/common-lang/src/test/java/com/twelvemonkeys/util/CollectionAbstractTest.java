@@ -1136,7 +1136,7 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
         verifyAll();
 
         try {
-            array = collection.toArray(null);
+            array = collection.toArray((Object[])null);
             fail("toArray(null) should raise NPE");
         } catch (NullPointerException e) {
             // expected
