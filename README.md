@@ -70,6 +70,14 @@ without success so far).
 
 Alternatively, if you have or know of a JPEG-2000 implementation in Java with a suitable license, get in touch. :-)
 
+#### PNG - Portable Network Graphics
+
+PNG support in ImageIO is built-in, and there is no need to replace it.  
+
+The problem with compression speed (the built-in `PNGImageWriter` always uses the highest/slowest compression)
+has been fixed in Java 9 version ([JDK-6488522](https://bugs.openjdk.java.net/browse/JDK-6488522), 
+with [backports available for Java 7 & 8](https://github.com/gredler/jdk9-png-writer-backport)).
+
 #### PNM - NetPBM Portable Any Map
 
 * Read support for the following file types:
