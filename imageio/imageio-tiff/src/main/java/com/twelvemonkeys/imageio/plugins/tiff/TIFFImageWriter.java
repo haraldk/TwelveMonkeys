@@ -317,8 +317,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
             long stripOffset = streamPosition + 4 +  ifdSize + 4;
             long stripByteCount = (renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7) / 8;
 
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
@@ -369,8 +369,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
 
