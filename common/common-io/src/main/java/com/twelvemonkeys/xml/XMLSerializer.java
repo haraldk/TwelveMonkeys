@@ -389,9 +389,10 @@ public class XMLSerializer {
     private void writeDocument(final PrintWriter pOut, final Node pNode, final SerializationContext pContext) {
         // Document fragments might not have child nodes...
         if (pNode.hasChildNodes()) {
-            NodeList nodes = pNode.getChildNodes();
-            for (int i = 0; i < nodes.getLength(); i++) {
-                writeNodeRecursive(pOut, nodes.item(i), pContext);
+            Node child = pNode.getFirstChild();
+            while (child != null) {
+                writeNodeRecursive(pOut, child, pContext);
+                child = child.getNextSibling();
             }
         }
     }
@@ -448,9 +449,10 @@ public class XMLSerializer {
                 pOut.println();
             }
 
-            NodeList children = pNode.getChildNodes();
-            for (int i = 0; i < children.getLength(); i++) {
-                writeNodeRecursive(pOut, children.item(i), pContext.push());
+            Node child = pNode.getFirstChild();
+            while (child != null) {
+                writeNodeRecursive(pOut, child, pContext.push());
+                child = child.getNextSibling();
             }
 
             if (!pContext.preserveSpace) {
