@@ -468,7 +468,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 // We need special case to preserve WhiteIsZero for CCITT 1 bit encodings
                 // as some software will treat black/white runs as-is, regardless of photometric.
                 // Special handling is also in the normalizeColor method
-                if (profile == null && significantSamples == 1 && bitsPerSample == 1) {
+                if (significantSamples == 1 && bitsPerSample == 1) {
                     byte[] lut = new byte[] {-1, 0};
                     return ImageTypeSpecifier.createIndexed(lut, lut, lut, null, bitsPerSample, dataType);
                 }
