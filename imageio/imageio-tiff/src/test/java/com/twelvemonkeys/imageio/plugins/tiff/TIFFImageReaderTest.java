@@ -43,10 +43,8 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
+import java.awt.color.ColorSpace;
+import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -108,6 +106,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/scan-mono-iccgray.tif"), new Dimension(2408, 3436)), // B/W, PackBits w/gray ICC profile
                 new TestData(getClassLoaderResource("/tiff/planar-striped-lzw.tif"), new Dimension(229, 229)), // RGB 8 bit/sample, planar, LZW compression
                 new TestData(getClassLoaderResource("/tiff/colormap-with-extrasamples.tif"), new Dimension(10, 10)), // Palette, 8 bit/sample, 2 samples/pixel, extra samples, LZW
+                new TestData(getClassLoaderResource("/tiff/indexed-unspecified-extrasamples.tif"), new Dimension(98, 106)), // Palette, 8 bit/sample, 2 samples/pixel, extra samples
                 new TestData(getClassLoaderResource("/tiff/packbits-fillorder-2.tif"), new Dimension(3508, 2481)), // B/W, PackBits, FillOrder 2
                 // CCITT
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
@@ -596,6 +595,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     @Test
     public void testAlphaRasterForMultipleExtraSamples() throws IOException {
         ImageReader reader = createReader();
+
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/extra-channels.tif"))) {
             reader.setInput(stream);
 
@@ -646,15 +646,14 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(160, image.getWidth());
             assertEquals(227, image.getHeight());
 
-            // This TIFF does not contain a ICC profile, making the RGB result depend on the platforms "Generic CMYK" profile
-            if (ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK) instanceof ICC_ColorSpace) {
-                assertRGBEquals("Wrong RGB (0,0)", 0xff1E769D, image.getRGB(0, 0), 4);
-                assertRGBEquals("Wrong RGB (159,226)", 0xff1E769D, image.getRGB(159, 226), 4);
-            }
-            else {
-                assertRGBEquals("Wrong RGB (0,0)", 0xff2896d9, image.getRGB(0, 0), 4);
-                assertRGBEquals("Wrong RGB (159,226)", 0xff2896d9, image.getRGB(159, 226), 4);
-            }
+            // This TIFF does not contain an ICC profile, making the RGB result depend on the platforms "Generic CMYK" profile
+            ColorSpace genericCMYK = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+            ComponentColorModel cmyk = new ComponentColorModel(genericCMYK, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+            // Input (0,0): -41, 104, 37, 1 (C, M, Y, K)
+            int expected = cmyk.getRGB(new byte[]{-41, 104, 37, 1});
+
+            assertRGBEquals("Wrong RGB (0,0)", expected, image.getRGB(0, 0), 4);
+            assertRGBEquals("Wrong RGB (159,226)", expected, image.getRGB(159, 226), 4);
         }
     }
 

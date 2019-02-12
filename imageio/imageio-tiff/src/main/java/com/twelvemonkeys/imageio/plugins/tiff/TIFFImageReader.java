@@ -55,11 +55,14 @@ import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.xml.XMLSerializer;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.IIORegistry;
@@ -71,6 +74,7 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -80,6 +84,7 @@ import java.util.zip.InflaterInputStream;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+import static java.util.Arrays.asList;
 
 /**
  * ImageReader implementation for Aldus/Adobe Tagged Image File Format (TIFF).
@@ -111,7 +116,8 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
  * </ul>
  *
  * @see <a href="http://partners.adobe.com/public/developer/tiff/index.html">Adobe TIFF developer resources</a>
- * @see <a href="http://en.wikipedia.org/wiki/Tagged_Image_File_Format">Wikipedia</a>
+ * @see <a href="http://www.alternatiff.com/resources/TIFF6.pdf">TIFF 6.0 specification</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Tagged_Image_File_Format">Wikipedia TIFF</a>
  * @see <a href="http://www.awaresystems.be/imaging/tiff.html">AWare Systems TIFF pages</a>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -121,10 +127,6 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 public final class TIFFImageReader extends ImageReaderBase {
     // TODOs ImageIO basic functionality:
     // TODO: Thumbnail support (what is a TIFF thumbnail anyway? Photoshop way? Or use subfiletype?)
-
-    // TODOs Full BaseLine support:
-    // TODO: Support ExtraSamples (an array, if multiple extra samples!)
-    //       (0: Unspecified (not alpha), 1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
 
     // TODOs ImageIO advanced functionality:
     // TODO: Tiling support (readTile, readTileRaster)
@@ -148,6 +150,8 @@ public final class TIFFImageReader extends ImageReaderBase {
     // Support ICCProfile
     // Support PlanarConfiguration 2
     // Support Compression 3 & 4 (CCITT T.4 & T.6)
+    // Support ExtraSamples (an array, if multiple extra samples!)
+    //       (0: Unspecified (not alpha), 1: Associated Alpha (pre-multiplied), 2: Unassociated Alpha (non-multiplied)
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
@@ -469,6 +473,10 @@ public final class TIFFImageReader extends ImageReaderBase {
                 // as some software will treat black/white runs as-is, regardless of photometric.
                 // Special handling is also in the normalizeColor method
                 if (significantSamples == 1 && bitsPerSample == 1) {
+                    if (profile != null) {
+                        processWarningOccurred("Ignoring embedded ICC color profile for Bi-level/Gray TIFF");
+                    }
+
                     byte[] lut = new byte[] {-1, 0};
                     return ImageTypeSpecifier.createIndexed(lut, lut, lut, null, bitsPerSample, dataType);
                 }
@@ -591,8 +599,8 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 IndexColorModel icm = createIndexColorModel(bitsPerSample, dataType, (int[]) colorMap.getValue());
 
-                if (hasAlpha) {
-                    return ImageTypeSpecifiers.createDiscreteAlphaIndexedFromIndexColorModel(icm);
+                if (extraSamples != null) {
+                    return ImageTypeSpecifiers.createDiscreteExtraSamplesIndexedFromIndexColorModel(icm, extraSamples.length, hasAlpha);
                 }
 
                 return ImageTypeSpecifiers.createFromIndexColorModel(icm);
@@ -921,6 +929,10 @@ public final class TIFFImageReader extends ImageReaderBase {
             if (stripTileByteCounts == null) {
                 processWarningOccurred("Missing TileByteCounts for tiled TIFF with compression: " + compression);
             }
+            else if (stripTileByteCounts.length == 0 || containsZero(stripTileByteCounts)) {
+                stripTileByteCounts = null;
+                processWarningOccurred("Ignoring all-zero TileByteCounts for tiled TIFF with compression: " + compression);
+            }
 
             stripTileWidth = getValueAsInt(TIFF.TAG_TILE_WIDTH, "TileWidth");
             stripTileHeight = getValueAsInt(TIFF.TAG_TILE_HEIGTH, "TileHeight");
@@ -930,6 +942,10 @@ public final class TIFFImageReader extends ImageReaderBase {
             stripTileByteCounts = getValueAsLongArray(TIFF.TAG_STRIP_BYTE_COUNTS, "StripByteCounts", false);
             if (stripTileByteCounts == null) {
                 processWarningOccurred("Missing StripByteCounts for TIFF with compression: " + compression);
+            }
+            else if (stripTileByteCounts.length == 0 || containsZero(stripTileByteCounts)) {
+                stripTileByteCounts = null;
+                processWarningOccurred("Ignoring all-zero StripByteCounts for TIFF with compression: " + compression);
             }
 
             // NOTE: This is really against the spec, but libTiff seems to handle it. TIFF 6.0 says:
@@ -1309,13 +1325,11 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 int len = stripTileByteCounts != null ? (int) stripTileByteCounts[i] : Integer.MAX_VALUE;
                                 imageInput.seek(stripTileOffsets != null ? stripTileOffsets[i] : realJPEGOffset);
 
-                                try (ImageInputStream stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
-                                        Arrays.asList(
-                                                new ByteArrayInputStream(jpegHeader),
-                                                createStreamAdapter(imageInput, len),
-                                                new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
-                                        )
-                                )))) {
+                                try (ImageInputStream stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(asList(
+                                        new ByteArrayInputStream(jpegHeader),
+                                        createStreamAdapter(imageInput, len),
+                                        new ByteArrayInputStream(new byte[]{(byte) 0xff, (byte) 0xd9}) // EOI
+                                ))))) {
                                     jpegReader.setInput(stream);
                                     jpegParam.setSourceRegion(new Rectangle(0, 0, colsInTile, rowsInTile));
                                     jpegParam.setSourceSubsampling(xSub, ySub, 0, 0);
@@ -1460,7 +1474,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 }
 
                                 try (ImageInputStream stream = ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
-                                        Arrays.asList(
+                                        asList(
                                                 createJFIFStream(destRaster.getNumBands(), stripTileWidth, stripTileHeight, qTables, dcTables, acTables, subsampling),
                                                 createStreamAdapter(imageInput, length),
                                                 new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
@@ -1536,6 +1550,16 @@ public final class TIFFImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    private boolean containsZero(long[] byteCounts) {
+        for (long byteCount : byteCounts) {
+            if (byteCount <= 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private IIOMetadata readJPEGMetadataSafe(final ImageReader jpegReader) throws IOException {
@@ -2026,7 +2050,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, byte[] data) throws IIOException {
+    private void normalizeColor(int photometricInterpretation, byte[] data) throws IOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // NOTE: Preserve WhiteIsZero for 1 bit monochrome, for CCITT compatibility
@@ -2543,6 +2567,13 @@ public final class TIFFImageReader extends ImageReaderBase {
 
             try {
                 ImageReadParam param = reader.getDefaultReadParam();
+
+                if (param.getClass().getName().equals("com.twelvemonkeys.imageio.plugins.svg.SVGReadParam")) {
+                    Method setBaseURI = param.getClass().getMethod("setBaseURI", String.class);
+                    String uri = file.getAbsoluteFile().toURI().toString();
+                    setBaseURI.invoke(param, uri);
+                }
+
                 int numImages = reader.getNumImages(true);
                 for (int imageNo = 0; imageNo < numImages; imageNo++) {
                     //            if (args.length > 1) {
@@ -2557,6 +2588,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 //                    int height = reader.getHeight(imageNo);
 //                    param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //                    param.setSourceRegion(new Rectangle(100, 300, 400, 400));
+//                    param.setSourceRegion(new Rectangle(95, 105, 100, 100));
 //                    param.setSourceRegion(new Rectangle(3, 3, 9, 9));
 //                    param.setDestinationOffset(new Point(50, 150));
 //                    param.setSourceSubsampling(2, 2, 0, 0);
@@ -2564,16 +2596,18 @@ public final class TIFFImageReader extends ImageReaderBase {
                         BufferedImage image = reader.read(imageNo, param);
                         System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 
-//                        IIOMetadata metadata = reader.getImageMetadata(imageNo);
-//                        if (metadata != null) {
-//                            if (metadata.getNativeMetadataFormatName() != null) {
-//                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(metadata.getNativeMetadataFormatName()), false);
-//                            }
-//                        /*else*/
-//                            if (metadata.isStandardMetadataFormatSupported()) {
-//                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
-//                            }
-//                        }
+                        IIOMetadata metadata = reader.getImageMetadata(imageNo);
+                        if (metadata != null) {
+                            if (metadata.getNativeMetadataFormatName() != null) {
+                                Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+                                replaceBytesWithUndefined((IIOMetadataNode) tree);
+                                new XMLSerializer(System.out, "UTF-8").serialize(tree, false);
+                            }
+                        /*else*/
+                            if (metadata.isStandardMetadataFormatSupported()) {
+                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                            }
+                        }
 
                         System.err.println("image: " + image);
 
@@ -2655,6 +2689,47 @@ public final class TIFFImageReader extends ImageReaderBase {
             }
             finally {
                 input.close();
+            }
+        }
+    }
+
+    // XMP Spec says "The field type should be UNDEFINED (7) or BYTE (1)"
+    // Adobe Photoshop® TIFF Technical Notes says (for Image Source Data): "Type: UNDEFINED"
+    private static final Set<String> BYTE_TO_UNDEFINED_NODES = new HashSet<>(asList(
+              "700", // XMP
+            "34377", // Photoshop Image Resources
+            "37724"  // Image Source Data
+    ));
+
+    private static void replaceBytesWithUndefined(IIOMetadataNode tree) {
+        // The output of the TIFFUndefined tag is just much more readable (or easier to skip)
+
+        NodeList nodes = tree.getElementsByTagName("TIFFBytes");
+        for (int i = 0; i < nodes.getLength(); i++) {
+            IIOMetadataNode node = (IIOMetadataNode) nodes.item(i);
+
+            IIOMetadataNode parentNode = (IIOMetadataNode) node.getParentNode();
+
+            NodeList childNodes = node.getChildNodes();
+            if (BYTE_TO_UNDEFINED_NODES.contains(parentNode.getAttribute("number")) && childNodes.getLength() > 16) {
+                IIOMetadataNode undefined = new IIOMetadataNode("TIFFUndefined");
+                StringBuilder values = new StringBuilder();
+
+                IIOMetadataNode child = (IIOMetadataNode) node.getFirstChild();
+                while (child != null) {
+                    if (values.length() > 0) {
+                        values.append(", ");
+                    }
+
+                    String value = child.getAttribute("value");
+                    values.append(value);
+
+                    child = (IIOMetadataNode) child.getNextSibling();
+                }
+
+                undefined.setAttribute("value", values.toString());
+
+                parentNode.replaceChild(undefined, node);
             }
         }
     }
