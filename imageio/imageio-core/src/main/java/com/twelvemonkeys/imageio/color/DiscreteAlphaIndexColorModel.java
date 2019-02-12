@@ -37,19 +37,25 @@ import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * This class represents a hybrid between an {@link IndexColorModel} and a {@link ComponentColorModel},
- * having both a color map and a full, discrete alpha channel.
+ * having both a color map and a full, discrete alpha channel and/or one or more "extra" channels.
  * The color map entries are assumed to be fully opaque and should have no transparent index.
  * <p>
  * ColorSpace will always be the default sRGB color space (as with {@code IndexColorModel}).
  * <p>
- * Component order is always P, A, where P is a palette index, and A is the alpha value.
+ * Component order is always I, A, X<sub>1</sub>, X<sub>2</sub>... X<sub>n</sub>,
+ * where I is a palette index, A is the alpha value and X<sub>n</sub> are extra samples (ignored for display).
  *
  * @see IndexColorModel
  * @see ComponentColorModel
  */
+// TODO: ExtraSamplesIndexColorModel might be a better name?
+// TODO: Allow specifying which channel is the transparency mask?
 public final class DiscreteAlphaIndexColorModel extends ColorModel {
     // Our IndexColorModel delegate
     private final IndexColorModel icm;
+
+    private final int samples;
+    private final boolean hasAlpha;
 
     /**
      * Creates a {@code DiscreteAlphaIndexColorModel}, delegating color map look-ups
@@ -59,13 +65,34 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
      *            fully opaque, any transparency or transparent index will be ignored.
      */
     public DiscreteAlphaIndexColorModel(final IndexColorModel icm) {
+        this(icm, 1, true);
+    }
+
+    /**
+     * Creates a {@code DiscreteAlphaIndexColorModel}, delegating color map look-ups
+     * to the given {@code IndexColorModel}.
+     *
+     * @param icm The {@code IndexColorModel} delegate. Color map entries are assumed to be
+     *            fully opaque, any transparency or transparent index will be ignored.
+     * @param extraSamples the number of extra samples in the color model.
+     * @param hasAlpha {@code true} if the extra samples contains alpha, otherwise {@code false}.
+     */
+    public DiscreteAlphaIndexColorModel(final IndexColorModel icm, int extraSamples, boolean hasAlpha) {
         super(
-                notNull(icm, "IndexColorModel").getPixelSize() * 2,
+                notNull(icm, "IndexColorModel").getPixelSize() * (1 + extraSamples),
                 new int[] {icm.getPixelSize(), icm.getPixelSize(), icm.getPixelSize(), icm.getPixelSize()},
-                icm.getColorSpace(), true, false, Transparency.TRANSLUCENT, icm.getTransferType()
+                icm.getColorSpace(), hasAlpha, false, hasAlpha ? Transparency.TRANSLUCENT : Transparency.OPAQUE,
+                icm.getTransferType()
         );
 
         this.icm = icm;
+        this.samples = 1 + extraSamples;
+        this.hasAlpha = hasAlpha;
+    }
+
+    @Override
+    public int getNumComponents() {
+        return samples;
     }
 
     @Override
@@ -85,7 +112,7 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
 
     @Override
     public final int getAlpha(final int pixel) {
-        return (int) ((((float) pixel) / ((1 << getComponentSize(3))-1)) * 255.0f + 0.5f);
+        return hasAlpha ? (int) ((((float) pixel) / ((1 << getComponentSize(3))-1)) * 255.0f + 0.5f) : 0xff;
     }
 
     private int getSample(final Object inData, final int index) {
@@ -128,17 +155,27 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
 
     @Override
     public final int getAlpha(final Object inData) {
-        return getAlpha(getSample(inData, 1));
+        return hasAlpha ? getAlpha(getSample(inData, 1)) : 0xff;
     }
 
     @Override
     public final SampleModel createCompatibleSampleModel(final int w, final int h) {
-        return new PixelInterleavedSampleModel(transferType, w, h, 2, w * 2, new int[] {0, 1});
+        return new PixelInterleavedSampleModel(transferType, w, h, samples, w * samples, createOffsets(samples));
+    }
+
+    private int[] createOffsets(int samples) {
+        int[] offsets = new int[samples];
+
+        for (int i = 0; i < samples; i++) {
+            offsets[i] = i;
+        }
+
+        return offsets;
     }
 
     @Override
     public final boolean isCompatibleSampleModel(final SampleModel sm) {
-        return sm instanceof PixelInterleavedSampleModel && sm.getNumBands() == 2;
+        return sm instanceof PixelInterleavedSampleModel && sm.getNumBands() == samples;
     }
 
     @Override
@@ -150,7 +187,7 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
     public final boolean isCompatibleRaster(final Raster raster) {
         int size = raster.getSampleModel().getSampleSize(0);
         return ((raster.getTransferType() == transferType) &&
-                (raster.getNumBands() == 2) && ((1 << size) >= icm.getMapSize()));
+                (raster.getNumBands() == samples) && ((1 << size) >= icm.getMapSize()));
     }
 
     @Override

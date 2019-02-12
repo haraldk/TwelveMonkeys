@@ -44,7 +44,7 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * Fixes some subtle bugs in {@code ImageTypeSpecifier}'s factory methods, but
  * in most cases, this class will delegate to the corresponding methods in {@link ImageTypeSpecifier}.
  *
- * @see javax.imageio.ImageTypeSpecifier
+ * @see ImageTypeSpecifier
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: ImageTypeSpecifiers.java,v 1.0 24.01.11 17.51 haraldk Exp$
@@ -184,6 +184,11 @@ public final class ImageTypeSpecifiers {
 
     public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel pColorModel) {
         ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel);
+        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+    }
+
+    public static ImageTypeSpecifier createDiscreteExtraSamplesIndexedFromIndexColorModel(final IndexColorModel pColorModel, int extraSamples, boolean hasAlpha) {
+        ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel, extraSamples, hasAlpha);
         return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
     }
 }
