@@ -275,7 +275,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 processWarningOccured(String.format("Duplicate component ID %d in SOF", id));
 
                 id++;
-                while (!componentIds.add(id) && componentIds.size() <= 16) {
+                while (!componentIds.add(id) && componentIds.size() < 4) {
                     id++;
                 }
 
