@@ -56,8 +56,8 @@ import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 import static org.junit.Assert.*;
@@ -1784,8 +1784,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     public void testReadSequenceInverse() throws IOException {
         JPEGImageReader reader = createReader();
 
-        try {
-            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-with-preview-as-second-image.jpg")));
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-with-preview-as-second-image.jpg"))) {
+            reader.setInput(stream);
 
             BufferedImage image = reader.read(1, null);
 
@@ -1835,7 +1835,29 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             assertNotNull(image);
             assertEquals(386, image.getWidth());
             assertEquals(396, image.getHeight());
-        } finally {
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadEmptyICCProfile() throws IOException {
+        JPEGImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-empty-icc-profile.jpeg"))) {
+            reader.setInput(stream);
+
+            assertEquals(612, reader.getWidth(0));
+            assertEquals(816, reader.getHeight(0));
+
+            BufferedImage image = reader.read(0, null);
+
+            assertNotNull(image);
+            assertEquals(612, image.getWidth());
+            assertEquals(816, image.getHeight());
+        }
+        finally {
             reader.dispose();
         }
     }
