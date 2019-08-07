@@ -42,6 +42,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
@@ -63,8 +64,8 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
@@ -1120,14 +1121,15 @@ public final class JPEGImageReader extends ImageReaderBase {
             List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
             if (!exifSegments.isEmpty()) {
                 Application exif = exifSegments.get(0);
-                InputStream data = exif.data();
 
-                if (data.read() == -1) {
-                    // Pad
+                // Identifier is "Exif\0" + 1 byte pad
+                int offset = exif.identifier.length() + 2;
+
+                if (exif.data.length <= offset) {
                     processWarningOccurred("Exif chunk has no data.");
                 }
                 else {
-                    ImageInputStream stream = new MemoryCacheImageInputStream(data);
+                    ImageInputStream stream = new ByteArrayImageInputStream(exif.data, offset, exif.data.length - offset);
                     CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
 
                     if (exifMetadata.directoryCount() == 2) {
