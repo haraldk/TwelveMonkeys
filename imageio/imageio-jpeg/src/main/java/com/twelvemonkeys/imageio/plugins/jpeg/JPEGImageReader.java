@@ -932,7 +932,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         return data;
     }
 
-    protected ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
+    ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
@@ -956,8 +956,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                 return null;
             }
 
-            int iccChunkDataSize = segment.data.length - segment.identifier.length() - 3; // ICC_PROFILE + null + chunk number + count
-            int iccSize = intFromBigEndian(segment.data, segment.identifier.length() + 3);
+            int segmentDataStart = segment.identifier.length() + 3; // ICC_PROFILE + null + chunk number + count
+            int iccChunkDataSize = segment.data.length - segmentDataStart;
+            int iccSize = segment.data.length < segmentDataStart + 4 ? 0 : intFromBigEndian(segment.data, segmentDataStart);
 
             return readICCProfileSafe(stream, allowBadIndexes, iccSize, iccChunkDataSize);
         }
@@ -1010,9 +1011,10 @@ public final class JPEGImageReader extends ImageReaderBase {
                 int index = badICC ? i : chunkNumber - 1;
                 streams[index] = stream;
 
-                iccChunkDataSize += segment.data.length - segment.identifier.length() - 3;
+                int segmentDataStart = segment.identifier.length() + 3; // ICC_PROFILE + null + chunk number + count
+                iccChunkDataSize += segment.data.length - segmentDataStart;
                 if (index == 0) {
-                    iccSize = intFromBigEndian(segment.data, segment.identifier.length() + 3);
+                    iccSize = intFromBigEndian(segment.data, segmentDataStart);
                 }
             }
 
