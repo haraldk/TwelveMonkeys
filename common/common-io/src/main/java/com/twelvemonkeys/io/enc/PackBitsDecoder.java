@@ -71,8 +71,6 @@ public final class PackBitsDecoder implements Decoder {
     private final boolean disableNoOp;
     private final byte[] sample;
 
-    private int leftOfRun;
-    private boolean splitRun;
     private boolean reachedEOF;
 
     /** Creates a {@code PackBitsDecoder}. */
@@ -114,65 +112,43 @@ public final class PackBitsDecoder implements Decoder {
      * @param buffer a byte array, minimum 128 (or 129 if no-op is disabled) bytes long
      * @return The number of bytes decoded
      *
-     * @throws java.io.IOException
+     * @throws java.io.IOException if a problem occurs during decoding.
      */
     public int decode(final InputStream stream, final ByteBuffer buffer) throws IOException {
         if (reachedEOF) {
             return -1;
         }
 
-        // TODO: Don't decode more than single runs, because some writers add pad bytes inside the stream...
-        while (buffer.hasRemaining()) {
-            int n;
-            
-            if (splitRun) {
-                // Continue run
-                n = leftOfRun;
-                splitRun = false;
-            }
-            else {
-                // Start new run
-                int b = stream.read();
-                if (b < 0) {
-                    reachedEOF = true;
-                    break;
-                }
-                n = (byte) b;
-            }
+        // NOTE: We don't decode more than single runs, because some writers add pad bytes inside the stream...
+        // Start new run
+        int b = stream.read();
+        if (b < 0) {
+            reachedEOF = true;
+            return 0;
+        }
 
-            // Split run at or before max
-            if (n >= 0 && n + 1 > buffer.remaining()) {
-                leftOfRun = n;
-                splitRun = true;
-                break;
-            }
-            else if (n < 0 && -n + 1 > buffer.remaining()) {
-                leftOfRun = n;
-                splitRun = true;
-                break;
-            }
+        int n = (byte) b;
 
-            try {
-                if (n >= 0) {
-                    // Copy next n + 1 bytes literally
-                    readFully(stream, buffer, sample.length * (n + 1));
+        try {
+            if (n >= 0) {
+                // Copy next n + 1 bytes literally
+                readFully(stream, buffer, sample.length * (n + 1));
+            }
+            // Allow -128 for compatibility, see above
+            else if (disableNoOp || n != -128) {
+                // Replicate the next byte -n + 1 times
+                for (int s = 0; s < sample.length; s++) {
+                    sample[s] = readByte(stream);
                 }
-                // Allow -128 for compatibility, see above
-                else if (disableNoOp || n != -128) {
-                    // Replicate the next byte -n + 1 times
-                    for (int s = 0; s < sample.length; s++) {
-                        sample[s] = readByte(stream);
-                    }
 
-                    for (int i = -n + 1; i > 0; i--) {
-                        buffer.put(sample);
-                    }
+                for (int i = -n + 1; i > 0; i--) {
+                    buffer.put(sample);
                 }
-                // else NOOP (-128)
             }
-            catch (IndexOutOfBoundsException e) {
-                throw new DecodeException("Error in PackBits decompression, data seems corrupt", e);
-            }
+            // else NOOP (-128)
+        }
+        catch (IndexOutOfBoundsException e) {
+            throw new DecodeException("Error in PackBits decompression, data seems corrupt", e);
         }
 
         return buffer.position();
