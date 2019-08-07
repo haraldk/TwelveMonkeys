@@ -322,4 +322,26 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
             assertEquals(15, directory.size());
         }
     }
+
+    @Test
+    public void testReadNestedExifWithoutOOME() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-nested-exif.jpg"))) {
+            stream.seek(30);
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 886));
+            assertEquals(1, directory.directoryCount());
+            assertEquals(10, directory.size());
+        }
+    }
+
+    @Test
+    public void testReadExifBogusCountWithoutOOME() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-oome-bogus-count.jpg"))) {
+            stream.seek(30);
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 3503));
+            assertEquals(2, directory.directoryCount());
+            assertEquals(12, directory.size());
+            assertEquals(9, directory.getDirectory(0).size());
+            assertEquals(3, directory.getDirectory(1).size());
+        }
+    }
 }
