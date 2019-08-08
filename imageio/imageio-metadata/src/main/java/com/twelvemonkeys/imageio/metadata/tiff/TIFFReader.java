@@ -395,10 +395,16 @@ public final class TIFFReader extends MetadataReader {
                 if (pCount == 0) {
                     return "";
                 }
+
+                // NOTE: This can actually be more than one string, each string ends with a NULL-terminator
                 byte[] ascii = new byte[pCount];
                 pInput.readFully(ascii);
                 int len = ascii[ascii.length - 1] == 0 ? ascii.length - 1 : ascii.length;
-                return StringUtil.decode(ascii, 0, len, "UTF-8"); // UTF-8 is ASCII compatible
+
+                String[] strings = new String(ascii, 0, len, StandardCharsets.UTF_8) // UTF-8 is ASCII compatible
+                        .split("\0"); // Split on NULL
+
+                return strings.length == 1 ? strings[0] : strings;
             case TIFF.TYPE_BYTE:
                 if (pCount == 1) {
                     return pInput.readUnsignedByte();
