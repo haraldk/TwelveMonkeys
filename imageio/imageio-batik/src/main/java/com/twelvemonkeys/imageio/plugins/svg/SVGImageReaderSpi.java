@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.lang.SystemUtil;
+import org.w3c.dom.Document;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
@@ -62,7 +63,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
+        return (pSource instanceof Document) || (pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource));
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

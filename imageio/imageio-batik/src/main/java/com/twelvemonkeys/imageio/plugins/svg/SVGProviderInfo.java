@@ -31,6 +31,9 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import org.w3c.dom.Document;
+
+import javax.imageio.stream.ImageInputStream;
 
 /**
  * SVGProviderInfo.
@@ -40,6 +43,13 @@ import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
  * @version $Id: SVGProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
 final class SVGProviderInfo extends ReaderWriterProviderInfo {
+    private final Class[] inputTypes = new Class[] {ImageInputStream.class, Document.class};
+    
+    @Override
+    public Class[] inputTypes() {
+        return inputTypes;
+    }
+    
     SVGProviderInfo() {
         super(
                 SVGProviderInfo.class,
