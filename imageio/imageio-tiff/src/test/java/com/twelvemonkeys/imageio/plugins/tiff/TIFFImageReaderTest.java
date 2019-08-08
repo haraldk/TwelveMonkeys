@@ -567,6 +567,57 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadBogusByteCounts() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/CCITT-G4-300dpi-StripByteCounts0.tif"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+
+            BufferedImage image = null;
+            try {
+                // Get the crop mark on the page
+                param.setSourceRegion(new Rectangle(95, 105, 100, 100));
+                image = reader.read(0, param);
+            }
+            catch (IOException e) {
+                failBecause("Image could not be read", e);
+            }
+
+            assertNotNull(image);
+            assertEquals(100, image.getWidth());
+            assertEquals(100, image.getHeight());
+
+            // We have cropped a crop mark, should be black on white
+            for (int y = 0; y < 26; y++) {
+                for (int x = 0; x < 67; x++) {
+                    assertRGBEquals("Expected black " + x + "," +  y, 0xff000000, image.getRGB(x, y), 0);
+                }
+                // Skip one column due to fuzzy edges
+                for (int x = 68; x < 100; x++) {
+                    assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
+                }
+            }
+            // Skip one row due to fuzzy edges
+            for (int y = 27; y < 71; y++) {
+                for (int x = 0; x < 23; x++) {
+                    assertRGBEquals("Expected black " + x + "," +  y, 0xff000000, image.getRGB(x, y), 0);
+                }
+                // Skip one column due to fuzzy edges
+                for (int x = 24; x < 100; x++) {
+                    assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
+                }
+            }
+            for (int y = 71; y < 100; y++) {
+                for (int x = 0; x < 100; x++) {
+                    assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testReadMultipleExtraSamples() throws IOException {
         ImageReader reader = createReader();
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/pack.tif"))) {
