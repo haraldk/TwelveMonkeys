@@ -81,6 +81,7 @@ public final class TIFFReader extends MetadataReader {
     private long length;
     private boolean longOffsets;
     private int offsetSize;
+    private Set<Long> parsedIFDs = new TreeSet<>();
 
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
@@ -125,32 +126,34 @@ public final class TIFFReader extends MetadataReader {
             throw new IIOException(String.format("Wrong TIFF magic in input data: %04x, expected: %04x", magic, TIFF.TIFF_MAGIC));
         }
 
-        length = getTIFFLength(input);
+        length = input.length();
 
         return readLinkedIFDs(input);
     }
 
-    private long getTIFFLength(final ImageInputStream input) throws IOException {
-        // TODO: Scan to end, if length is unknown?
-        //  Set to fixed size? 4 GB for TIFF, BigTIFF may be huge...
-        return input.length();
-    }
-
     private TIFFDirectory readLinkedIFDs(final ImageInputStream input) throws IOException {
-        long nextOffset = readOffset(input);
+        long ifdOffset = readOffset(input);
 
         List<IFD> ifds = new ArrayList<>();
 
         // Read linked IFDs
-        while (nextOffset != 0 && (length < 0 || length > nextOffset)) {
+        while (ifdOffset != 0) {
             try {
-                ifds.add(readIFD(input, nextOffset, VALID_TOP_LEVEL_IFDS));
+                if ((length > 0 && ifdOffset >= length) || !parsedIFDs.add(ifdOffset)) {
+                    // TODO: Issue warning
+                    if (DEBUG) {
+                        System.err.println("Bad IFD offset: " + ifdOffset);
+                    }
+                    break;
+                }
 
-                nextOffset = readOffset(input);
+                ifds.add(readIFD(input, ifdOffset, VALID_TOP_LEVEL_IFDS));
+
+                ifdOffset = readOffset(input);
             }
             catch (EOFException eof) {
                 // catch EOF here as missing EOF marker
-                nextOffset = 0;
+                ifdOffset = 0;
             }
         }
 
@@ -208,12 +211,20 @@ public final class TIFFReader extends MetadataReader {
 
             if (subIFDIds.contains(tagId)) {
                 try {
-                    long[] pointerOffsets = getPointerOffsets(entry);
-                    List<IFD> subIFDs = new ArrayList<>(pointerOffsets.length);
+                    long[] ifdOffsets = getPointerOffsets(entry);
+                    List<IFD> subIFDs = new ArrayList<>(ifdOffsets.length);
 
-                    for (long pointerOffset : pointerOffsets) {
+                    for (long ifdOffset : ifdOffsets) {
                         try {
-                            subIFDs.add(readIFD(input, pointerOffset, VALID_SUB_IFDS.get(tagId)));
+                            if ((length > 0 && ifdOffset >= length) || !parsedIFDs.add(ifdOffset)) {
+                                // TODO: Issue warning
+                                if (DEBUG) {
+                                    System.err.println("Bad IFD offset: " + ifdOffset);
+                                }
+                                break;
+                            }
+
+                            subIFDs.add(readIFD(input, ifdOffset, VALID_SUB_IFDS.get(tagId)));
                         }
                         catch (EOFException eof) {
                             // TODO: Issue warning
