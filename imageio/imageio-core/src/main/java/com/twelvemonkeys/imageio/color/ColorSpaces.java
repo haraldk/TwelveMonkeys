@@ -218,10 +218,14 @@ public final class ColorSpaces {
         }
     }
 
-    private static void validateColorSpace(ICC_ColorSpace cs) {
-        // Validate the color space, to avoid caching bad color spaces
+    private static void validateColorSpace(final ICC_ColorSpace cs) {
+        // Validate the color space, to avoid caching bad profiles/color spaces
         // Will throw IllegalArgumentException or CMMException if the profile is bad
-        cs.fromRGB(new float[] {1f, 0f, 0f});
+        cs.fromRGB(new float[] {0.999f, 0.5f, 0.001f});
+
+        // This breaks *some times* after validation of bad profiles,
+        // we'll let it blow up early in this case
+        cs.getProfile().getData();
     }
 
     /**
