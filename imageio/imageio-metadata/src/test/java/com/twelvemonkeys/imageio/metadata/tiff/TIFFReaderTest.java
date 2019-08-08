@@ -344,4 +344,15 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
             assertEquals(3, directory.getDirectory(1).size());
         }
     }
+
+    @Test(timeout = 500)
+    public void testReadCyclicExifWithoutLoopOrOOME() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/exif-loop.bin"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(1, directory.directoryCount());
+            assertEquals(12, directory.getDirectory(0).size());
+            assertEquals("Polarr Photo Editor", directory.getDirectory(0).getEntryById(TIFF.TAG_SOFTWARE).getValue());
+            assertEquals("2019:02:27 09:22:59", directory.getDirectory(0).getEntryById(TIFF.TAG_DATE_TIME).getValueAsString());
+        }
+    }
 }
