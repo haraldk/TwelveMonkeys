@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
 import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import org.junit.Test;
 
@@ -345,14 +346,113 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
         }
     }
 
-    @Test(timeout = 500)
+    @Test(timeout = 200)
     public void testReadCyclicExifWithoutLoopOrOOME() throws IOException {
+        // This EXIF segment has an interesting bug...
+        // The bits per sample value (0x 0008 0008 0008) overwrites half the IFD1 link offset (should be 0x00000000),
+        // effectively making it a loop back to the IFD0 at offset 0x0000008...
         try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/exif-loop.bin"))) {
             CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
             assertEquals(1, directory.directoryCount());
             assertEquals(12, directory.getDirectory(0).size());
             assertEquals("Polarr Photo Editor", directory.getDirectory(0).getEntryById(TIFF.TAG_SOFTWARE).getValue());
             assertEquals("2019:02:27 09:22:59", directory.getDirectory(0).getEntryById(TIFF.TAG_DATE_TIME).getValueAsString());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testIFDLoop() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                0, (byte) 259,  // compression
+                0, 3,           // SHORT
+                0, 0, 0, 1,     // count
+                0, 0, 0, 0,     //
+                0, 0, 0, 8,     // IFD1 pointer
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testIFDLoopNested() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 8,     // sub IFD pointer -> IFD0
+                0, 0, 0, 0,     // End of IFD chain
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testSubIFDLoop() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 26,    // SubIFD pointer
+                0, 0, 0, 0,     // End of IFD chain
+                // --- sub IFD
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 26,    // sub IFD pointer -> sub IFD
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testSubIFDLoopNested() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 26,    // SubIFD pointer
+                0, 0, 0, 0,     // End of IFD chain
+                // --- sub IFD
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 8,     // sub IFD pointer -> IFD0
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
         }
     }
 }
