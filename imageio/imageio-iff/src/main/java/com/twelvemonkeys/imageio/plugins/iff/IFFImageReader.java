@@ -56,13 +56,14 @@ import java.util.List;
  * format (Packed BitMap).
  * The IFF format (Interchange File Format) is the standard file format
  * supported by allmost all image software for the Amiga computer.
- * <p/>
+ * <p>
  * This reader supports the original palette-based 1-8 bit formats, including
  * EHB (Extra Half-Bright), HAM (Hold and Modify), and the more recent "deep"
  * formats, 8 bit gray, 24 bit RGB and 32 bit ARGB.
  * Uncompressed and ByteRun1 compressed (run length encoding) files are
  * supported.
- * <p/>
+ * </p>
+ * <p>
  * Palette based images are read as {@code BufferedImage} of
  * {@link BufferedImage#TYPE_BYTE_INDEXED TYPE_BYTE_INDEXED} or
  * {@link BufferedImage#TYPE_BYTE_BINARY BufferedImage#}
@@ -73,7 +74,8 @@ import java.util.List;
  * {@link BufferedImage#TYPE_3BYTE_BGR TYPE_3BYTE_BGR}.
  * 32 bit true-color images are read as
  * {@link BufferedImage#TYPE_4BYTE_ABGR TYPE_4BYTE_ABGR}.
- * <p/>
+ * </p>
+ * <p>
  * Issues: HAM and HAM8 (Hold and Modify) formats are converted to RGB (24 bit),
  * as it seems to be very hard to create an {@code IndexColorModel} subclass
  * that would correctly describe these formats.
@@ -82,10 +84,11 @@ import java.util.List;
  * HAM8 (8 bits) needs 18 bits storage/pixel, if unpacked to RGB (6 bits/gun).
  * See <a href="http://en.wikipedia.org/wiki/Hold_And_Modify">Wikipedia: HAM</a>
  * for more information.
- * <br/>
+ * <br>
  * EHB palette is expanded to an {@link IndexColorModel} with 64 entries.
  * See <a href="http://en.wikipedia.org/wiki/Extra_Half-Brite">Wikipedia: EHB</a>
  * for more information.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

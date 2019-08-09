@@ -50,10 +50,11 @@ import java.util.Properties;
 
 /**
  * A helper class for working with ICC color profiles and color spaces.
- * <p />
+ * <p>
  * Standard ICC color profiles are read from system-specific locations
  * for known operating systems.
- * <p />
+ * </p>
+ * <p>
  * Color profiles may be configured by placing a property-file
  * {@code com/twelvemonkeys/imageio/color/icc_profiles.properties}
  * on the classpath, specifying the full path to the profiles.
@@ -61,8 +62,10 @@ import java.util.Properties;
  * can be downloaded from
  * <a href="http://www.color.org/profiles2.xalter">ICC</a>,
  * <a href="http://www.adobe.com/downloads/">Adobe</a> or other places.
- * <p />
+ *  * </p>
+ * <p>
  * Example property file:
+ * </p>
  * <pre>
  * # icc_profiles.properties
  * ADOBE_RGB_1998=/path/to/Adobe RGB 1998.icc
@@ -117,9 +120,10 @@ public final class ColorSpaces {
 
     /**
      * Creates an ICC color space from the given ICC color profile.
-     * <p />
+     * <p>
      * For standard Java color spaces, the built-in instance is returned.
      * Otherwise, color spaces are looked up from cache and created on demand.
+     * </p>
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return an ICC color space
@@ -245,11 +249,12 @@ public final class ColorSpaces {
 
     /**
      * Tests whether an ICC color profile is known to cause problems for {@link java.awt.image.ColorConvertOp}.
-     * <p />
+     * <p>
      * <em>
      * Note that this method only tests if a color conversion using this profile is known to fail.
      * There's no guarantee that the color conversion will succeed even if this method returns {@code false}.
      * </em>
+     * </p>
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return {@code true} if known to be offending, {@code false} otherwise
@@ -277,11 +282,12 @@ public final class ColorSpaces {
     /**
      * Tests whether an ICC color profile is valid.
      * Invalid profiles are known to cause problems for {@link java.awt.image.ColorConvertOp}.
-     * <p />
+     * <p>
      * <em>
      * Note that this method only tests if a color conversion using this profile is known to fail.
      * There's no guarantee that the color conversion will succeed even if this method returns {@code false}.
      * </em>
+     * </p>
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return {@code profile} if valid.
@@ -298,9 +304,10 @@ public final class ColorSpaces {
 
     /**
      * Returns the color space specified by the given color space constant.
-     * <p />
+     * <p>
      * For standard Java color spaces, the built-in instance is returned.
      * Otherwise, color spaces are looked up from cache and created on demand.
+     * </p>
      *
      * @param colorSpace the color space constant.
      * @return the {@link ColorSpace} specified by the color space constant.

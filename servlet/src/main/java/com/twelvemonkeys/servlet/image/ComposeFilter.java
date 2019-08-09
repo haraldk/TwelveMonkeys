@@ -37,7 +37,6 @@ import java.io.IOException;
 
 /**
  * ComposeFilter
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ComposeFilter.java#1 $

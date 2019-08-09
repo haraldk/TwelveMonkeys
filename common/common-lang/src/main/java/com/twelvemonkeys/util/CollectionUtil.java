@@ -268,7 +268,7 @@ public final class CollectionUtil {
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null} or
      *         if {@code pArray} is not an array.
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     public static Object subArray(Object pArray, int pStart) {
         return subArray(pArray, pStart, -1);
@@ -279,13 +279,14 @@ public final class CollectionUtil {
      * If the sub array is same length as the original
      * ({@code pStart == 0}), the original array will be returned.
      *
+     * @param <T> the type of array
      * @param pArray the original array
      * @param pStart the start index of the original array
      * @return a subset of the original array, or the original array itself,
      *         if {@code pStart} is 0.
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     public static <T> T[] subArray(T[] pArray, int pStart) {
         return subArray(pArray, pStart, -1);
@@ -309,7 +310,7 @@ public final class CollectionUtil {
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null} or
      *         if {@code pArray} is not an array.
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     @SuppressWarnings({"SuspiciousSystemArraycopy"})
     public static Object subArray(Object pArray, int pStart, int pLength) {
@@ -363,6 +364,7 @@ public final class CollectionUtil {
      * If the sub array is same length as the original, the original array will
      * be returned.
      *
+     * @param <T> the type of array
      * @param pArray  the original array
      * @param pStart  the start index of the original array
      * @param pLength the length of the new array
@@ -371,7 +373,7 @@ public final class CollectionUtil {
      *         negative, or greater or equal to {@code pArray.length}.
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     @SuppressWarnings("unchecked")
     public static <T> T[] subArray(T[] pArray, int pStart, int pLength) {
@@ -424,8 +426,8 @@ public final class CollectionUtil {
      * @param pArray the array to iterate
      * @return a new {@link ListIterator}
      * @throws IllegalArgumentException if {@code pArray} is {@code null},
-     *         {@code pStart < 0}, or
-     *         {@code pLength > pArray.length - pStart}
+     *         {@code pStart &lt; 0}, or
+     *         {@code pLength &gt; pArray.length - pStart}
      */
     public static <E> ListIterator<E> iterator(final E[] pArray) {
         return iterator(pArray, 0, notNull(pArray).length);
@@ -439,8 +441,8 @@ public final class CollectionUtil {
      * @param pLength the number of elements to include in the iterator
      * @return a new {@link ListIterator}
      * @throws IllegalArgumentException if {@code pArray} is {@code null},
-     *         {@code pStart < 0}, or
-     *         {@code pLength > pArray.length - pStart}
+     *         {@code pStart &lt; 0}, or
+     *         {@code pLength &gt; pArray.length - pStart}
      */
     public static <E> ListIterator<E> iterator(final E[] pArray, final int pStart, final int pLength) {
         return new ArrayIterator<E>(pArray, pStart, pLength);

@@ -42,8 +42,9 @@ import java.util.Map;
 
 /**
  * A utility class with some useful bean-related functions.
- * <p/>
+ * <p>
  * <em>NOTE: This class is not considered part of the public API and may be changed without notice</em>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -66,13 +67,11 @@ public final class BeanUtil {
      *
      * @return A string containing the value of the given property, or {@code null}
      *         if it can not be found.
-     * @todo Remove System.err's... Create new Exception? Hmm..
      */
     public static Object getPropertyValue(Object pObject, String pProperty) {
-        //
+        // TODO: Remove System.err's... Create new Exception? Hmm..
         // TODO: Support get(Object) method of Collections!
         //       Handle lists and arrays with [] (index) operator
-        //
 
         if (pObject == null || pProperty == null || pProperty.length() < 1) {
             return null;
@@ -535,9 +534,10 @@ public final class BeanUtil {
      * a method named
      * {@code set + capitalize(entry.getKey())} is called on the bean,
      * with {@code entry.getValue()} as its argument.
-     * <p/>
+     * <p>
      * Properties that has no matching set-method in the bean, are simply
      * discarded.
+     * </p>
      *
      * @param pBean    The bean to configure
      * @param pMapping The mapping for the bean
@@ -560,12 +560,14 @@ public final class BeanUtil {
      * a method named
      * {@code set + capitalize(entry.getKey())} is called on the bean,
      * with {@code entry.getValue()} as its argument.
-     * <p/>
+     * <p>
      * Optionally, lisp-style names are allowed, and automatically converted
      * to Java-style camel-case names.
-     * <p/>
+     * </p>
+     * <p>
      * Properties that has no matching set-method in the bean, are simply
      * discarded.
+     * </p>
      *
      * @see StringUtil#lispToCamel(String)
      *

@@ -68,7 +68,6 @@ import java.util.Map;
 
 /**
  * Image reader for SVG document fragments.
- * <p/>
  *
  * @author Harald Kuhr
  * @author Inpspired by code from the Batik Team
@@ -255,9 +254,10 @@ public class SVGImageReader extends ImageReaderBase {
 
     /**
      * An image transcoder that stores the resulting image.
-     * <p/>
+     * <p>
      * NOTE: This class includes a lot of copy and paste code from the Batik classes
      * and needs major refactoring!
+     * </p>
      */
     private class Rasterizer extends SVGAbstractTranscoder /*ImageTranscoder*/ {
 

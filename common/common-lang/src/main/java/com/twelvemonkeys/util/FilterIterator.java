@@ -38,10 +38,11 @@ import java.util.NoSuchElementException;
  * element filtering. Each
  * element is filtered against the given {@code Filter}, and only elements
  * that are {@code accept}ed are returned by the {@code next} method.
- * <p/>
+ * <p>
  * The optional {@code remove} operation is implemented, but may throw
  * {@code UnsupportedOperationException} if the underlying iterator does not
  * support the remove operation.
+ * </p>
  *
  * @see FilterIterator.Filter
  * 

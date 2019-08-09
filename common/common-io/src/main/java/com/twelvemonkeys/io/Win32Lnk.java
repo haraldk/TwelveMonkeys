@@ -35,10 +35,11 @@ import java.util.Arrays;
 
 /**
  * A {@code File} implementation that resolves the Windows {@code .lnk} files as symbolic links.
- * <p/>
+ * <p>
  * This class is based on example code from
  * <a href="http://www.oreilly.com/catalog/swinghks/index.html">Swing Hacks</a>,
  * By Joshua Marinacci, Chris Adamson (O'Reilly, ISBN: 0-596-00907-0), Hack 30.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/Win32Lnk.java#2 $
@@ -324,9 +325,10 @@ final class Win32Lnk extends File {
 
     /**
      * Converts two bytes into a short.
-     * <p/>
+     * <p>
      * NOTE: this is little endian because it's for an
      * Intel only OS
+     * </p>
      *
      * @ param bytes
      * @ param off

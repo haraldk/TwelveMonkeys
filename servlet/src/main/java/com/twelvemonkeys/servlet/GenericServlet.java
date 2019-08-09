@@ -38,13 +38,14 @@ import java.lang.reflect.InvocationTargetException;
 
 /**
  * Defines a generic, protocol-independent servlet.
- * <p/>
+ * <p>
  * {@code GenericServlet} has an auto-init system, that automatically invokes
  * the method matching the signature {@code void setX(&lt;Type&gt;)},
  * for every init-parameter {@code x}. Both camelCase and lisp-style parameter
  * naming is supported, lisp-style names will be converted to camelCase.
  * Parameter values are automatically converted from string representation to
  * most basic types, if necessary.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -57,16 +58,18 @@ public abstract class GenericServlet extends javax.servlet.GenericServlet {
     /**
      * Called by the web container to indicate to a servlet that it is being
      * placed into service.
-     * <p/>
+     * <p>
      * This implementation stores the {@code ServletConfig} object it
      * receives from the servlet container for later use. When overriding this
      * form of the method, call {@code super.init(config)}.
-     * <p/>
+     * </p>
+     * <p>
      * This implementation will also set all configured key/value pairs, that
      * have a matching setter method annotated with {@link InitParam}.
+     * </p>
      *
      * @param pConfig the servlet config
-     * @throws ServletException
+     * @throws ServletException if the servlet could not be initialized.
      *
      * @see javax.servlet.GenericServlet#init
      * @see #init() init

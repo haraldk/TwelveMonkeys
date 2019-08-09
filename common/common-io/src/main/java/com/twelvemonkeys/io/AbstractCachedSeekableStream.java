@@ -218,9 +218,10 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
         /**
          * Writes a series of bytes at the current read/write position. The read/write position will be increased by
          * {@code pLength}.
-         * <p/>
+         * <p>
          * This implementation invokes {@link #write(int)} {@code pLength} times.
          * Subclasses may override this method for performance.
+         * </p>
          *
          * @param pBuffer the bytes to write.
          * @param pOffset the starting offset into the buffer.
@@ -246,9 +247,10 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
         /**
          * Writes a series of bytes at the current read/write position. The read/write position will be increased by
          * {@code pLength}.
-         * <p/>
+         * <p>
          * This implementation invokes {@link #read()} {@code pLength} times.
          * Subclasses may override this method for performance.
+         * </p>
          *
          * @param pBuffer the bytes to write
          * @param pOffset the starting offset into the buffer.
@@ -283,12 +285,14 @@ abstract class AbstractCachedSeekableStream extends SeekableInputStream {
 
         /**
          * Optionally flushes any data prior to the given position.
-         * <p/>
+         * <p>
          * Attempting to perform a seek operation, and/or a read or write operation to a position equal to or before
          * the flushed position may result in exceptions or undefined behaviour.
-         * <p/>
+         * </p>
+         * <p>
          * Subclasses should override this method for performance reasons, to avoid holding on to unnecessary resources.
          * This implementation does nothing.
+         * </p>
          *
          * @param pPosition the last position to flush.
          */

@@ -34,7 +34,6 @@ import java.io.IOException;
 
 /**
  * Thrown by {@code Decoder}s when encoded data can not be decoded.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/DecodeException.java#2 $

@@ -36,9 +36,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
- * An {@code InputStream} that provides on-the-fly decoding from an underlying
- * stream.
- * <p/>
+ * An {@code InputStream} that provides on-the-fly decoding from an underlying stream.
+ *
  * @see EncoderStream
  * @see Decoder
  *

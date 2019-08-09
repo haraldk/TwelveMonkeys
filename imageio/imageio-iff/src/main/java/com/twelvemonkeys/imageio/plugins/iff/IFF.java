@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.iff;
 
 /**
  * IFF format constants.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: IFF.java,v 1.0 07.mar.2006 15:31:48 haku Exp$

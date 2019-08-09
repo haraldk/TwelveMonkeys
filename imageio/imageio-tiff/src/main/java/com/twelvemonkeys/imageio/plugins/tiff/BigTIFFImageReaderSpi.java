@@ -38,9 +38,10 @@ import java.util.Locale;
 
 /**
  * BigTIFFImageReaderSpi.
- * <p/>
+ * <p>
  * This is a separate service provider for the BigTIFF format, to support
  * special cases where one does not want BigTIFF support.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$

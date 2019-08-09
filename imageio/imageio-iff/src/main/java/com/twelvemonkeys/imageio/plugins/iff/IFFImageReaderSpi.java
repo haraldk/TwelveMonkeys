@@ -39,7 +39,6 @@ import java.util.Locale;
 
 /**
  * IFFImageReaderSpi
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: IFFImageWriterSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$

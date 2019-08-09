@@ -35,8 +35,8 @@ package com.twelvemonkeys.util;
  * as an int, counting seconds.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @todo Milliseconds!
  */
+// TODO: Milliseconds!
 public class Time {
 
     private int time = -1;
@@ -140,13 +140,13 @@ public class Time {
      * <DD>m (or any multiple of m's)
      * <DT>the minutes part (padded with 0's, if number has less digits than
      * the number of m's)
-     * m -> 0,1,...,59,60,61,...
-     * mm -> 00,01,...,59,60,61,...
+     * m -&gt; 0,1,...,59,60,61,...
+     * mm -&gt; 00,01,...,59,60,61,...
      * <DD>s or ss
      * <DT>the seconds part (padded with 0's, if number has less digits than
      * the number of s's)
-     * s -> 0,1,...,59
-     * ss -> 00,01,...,59
+     * s -&gt; 0,1,...,59
+     * ss -&gt; 00,01,...,59
      * <DD>S
      * <DT>all seconds (including the ones above 59)
      * </DL>

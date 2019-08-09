@@ -36,8 +36,9 @@ import java.io.*;
 
 /**
  * A {@code SeekableInputStream} implementation that caches data in a temporary {@code File}.
- * <p/>
+ * <p>
  * Temporary files are created as specified in {@link File#createTempFile(String, String, java.io.File)}.
+ * </p>
  *
  * @see MemoryCacheSeekableStream
  * @see FileSeekableStream

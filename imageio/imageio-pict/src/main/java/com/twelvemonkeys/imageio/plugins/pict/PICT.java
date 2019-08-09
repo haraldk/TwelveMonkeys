@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 /**
  * PICT format constants.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICT.java,v 1.0 06.apr.2006 12:53:17 haku Exp$

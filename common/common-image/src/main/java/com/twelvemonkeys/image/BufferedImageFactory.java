@@ -44,14 +44,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * A faster, lighter and easier way to convert an {@code Image} to a
  * {@code BufferedImage} than using a {@code PixelGrabber}.
  * Clients may provide progress listeners to monitor conversion progress.
- * <p/>
+ * <p>
  * Supports source image subsampling and source region extraction.
  * Supports source images with 16 bit {@link ColorModel} and
  * {@link DataBuffer#TYPE_USHORT} transfer type, without converting to
  * 32 bit/TYPE_INT.
- * <p/>
+ * </p>
+ * <p>
  * NOTE: Does not support images with more than one {@code ColorModel} or
  * different types of pixel data. This is not very common.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/BufferedImageFactory.java#1 $

@@ -88,8 +88,9 @@ import static java.util.Arrays.asList;
 
 /**
  * ImageReader implementation for Aldus/Adobe Tagged Image File Format (TIFF).
- * <p/>
+ * <p>
  * The reader is supposed to be fully "Baseline TIFF" compliant, and supports the following image types:
+ * </p>
  * <ul>
  *     <li>Class B (Bi-level), all relevant compression types, 1 bit per sample</li>
  *     <li>Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer</li>

@@ -44,9 +44,9 @@ import java.awt.image.RenderedImage;
 /**
  * This Servlet is able to render a cropped part of an image.
  *
- * <P><HR><P>
+ * <hr>
  *
- * <A name="parameters"></A><STRONG>Parameters:</STRONG><BR>
+ * <a name="parameters"></a><strong>Parameters:</strong><br>
  * <DL>
  * <DT>{@code cropX}</DT>
  * <DD>integer, the new left edge of the image.
@@ -63,25 +63,24 @@ import java.awt.image.RenderedImage;
  * <DT>{@code cropUnits}</DT>
  * <DD>string, one of {@code PIXELS}, {@code PERCENT}.
  * {@code PIXELS} is default. -->
- *
- *
  * </DL>
  *
- * @example
+ * <p>
+ * Examples:
+ * <br>
  * JPEG:
- * &lt;IMG src="/scale/test.jpg?image=http://www.iconmedialab.com/images/random/home_image_12.jpg&width=500&uniform=true"&gt;
- *
+ * &lt;IMG src="/scale/test.jpg?image=http://www.iconmedialab.com/images/random/home_image_12.jpg&amp;width=500&amp;uniform=true"&gt;
+ * <br>
  * PNG:
- * &lt;IMG src="/scale/test.png?cache=false&image=http://www.iconmedialab.com/images/random/home_image_12.jpg&width=50&units=PERCENT"&gt;
- *
- * @todo Correct rounding errors, resulting in black borders when rotating 90
- *       degrees, and one of width or height is odd length...
+ * &lt;IMG src="/scale/test.png?cache=false&amp;image=http://www.iconmedialab.com/images/random/home_image_12.jpg&amp;width=50&amp;units=PERCENT"&gt;
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: RotateFilter.java#1 $
  */
-
+// TODO: Correct rounding errors, resulting in black borders when rotating 90
+//       degrees, and one of width or height is odd length...
 public class RotateFilter extends ImageFilter {
     /** {@code angle}*/
     protected final static String PARAM_ANGLE = "angle";

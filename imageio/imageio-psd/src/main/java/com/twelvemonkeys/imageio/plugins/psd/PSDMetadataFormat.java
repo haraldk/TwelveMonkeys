@@ -67,9 +67,10 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
 
     /**
      * Private constructor.
-     * <p/>
+     * <p>
      * The {@link javax.imageio.metadata.IIOMetadata} class will instantiate this class
      * by reflection, invoking the static {@code getInstance()} method.
+     * </p>
      *
      * @see javax.imageio.metadata.IIOMetadata#getMetadataFormat
      * @see #getInstance()

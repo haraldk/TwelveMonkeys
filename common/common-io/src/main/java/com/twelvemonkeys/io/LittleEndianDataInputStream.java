@@ -48,10 +48,11 @@ import java.io.*;
  * A little endian input stream reads two's complement,
  * little endian integers, floating point numbers, and characters
  * and returns them as Java primitive types.
- * <p/>
+ * <p>
  * The standard {@code java.io.DataInputStream} class
  * which this class imitates reads big endian quantities.
- * <p/>
+ * </p>
+ * <p>
  * <em>Warning:
  * The {@code DataInput} and {@code DataOutput} interfaces
  * specifies big endian byte order in their documentation.
@@ -59,6 +60,7 @@ import java.io.*;
  * implementation. However, I don't see a reason for the these interfaces to
  * specify the byte order of their underlying representations.
  * </em>
+ * </p>
  *
  * @see com.twelvemonkeys.io.LittleEndianRandomAccessFile
  * @see java.io.DataInputStream
@@ -380,12 +382,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * See the general contract of the {@code readFully}
-     * method of {@code DataInput}.
-     * <p/>
-     * Bytes
-     * for this operation are read from the contained
-     * input stream.
+     * See the general contract of the {@code readFully} method of {@code DataInput}.
+     * <p>
+     * Bytes for this operation are read from the contained input stream.
+     * </p>
      *
      * @param pBytes the buffer into which the data is read.
      * @throws EOFException if this input stream reaches the end before
@@ -398,12 +398,10 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
     }
 
     /**
-     * See the general contract of the {@code readFully}
-     * method of {@code DataInput}.
-     * <p/>
-     * Bytes
-     * for this operation are read from the contained
-     * input stream.
+     * See the general contract of the {@code readFully} method of {@code DataInput}.
+     * <p>
+     * Bytes for this operation are read from the contained input stream.
+     * </p>
      *
      * @param pBytes   the buffer into which the data is read.
      * @param pOffset the start offset of the data.
@@ -443,7 +441,6 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
      * @exception  IOException  if an I/O error occurs.
      * @see        java.io.BufferedReader#readLine()
      * @see        java.io.DataInputStream#readLine()
-     * @noinspection deprecation
      */
     public String readLine() throws IOException {
         DataInputStream ds = new DataInputStream(in);

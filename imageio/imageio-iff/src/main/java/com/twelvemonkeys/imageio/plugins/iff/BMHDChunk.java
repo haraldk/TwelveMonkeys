@@ -37,7 +37,6 @@ import java.io.IOException;
 
 /**
  * BMHDChunk
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BMHDChunk.java,v 1.0 28.feb.2006 00:04:32 haku Exp$

@@ -36,9 +36,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * An {@code OutputStream} that provides on-the-fly encoding to an underlying
- * stream.
- * <p/>
+ * An {@code OutputStream} that provides on-the-fly encoding to an underlying stream.
+ *
  * @see DecoderStream
  * @see Encoder
  *

@@ -39,15 +39,16 @@ import java.nio.charset.Charset;
 
 /**
  * Wraps a {@code Writer} in an {@code OutputStream}.
- * <p/>
+ * <p>
  * <em>Instances of this class are not thread-safe.</em>
- * <p/>
+ * </p>
+ * <p>
  * <em>NOTE: This class is probably not the right way of solving your problem,
  * however it might prove useful in JSPs etc.
  * If possible, it's always better to use the {@code Writer}'s underlying
  * {@code OutputStream}, or wrap it's native backing.
  * </em>
- * <p/>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/WriterOutputStream.java#2 $

@@ -46,7 +46,6 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * ThumbsDBImageReaderSpi
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ThumbsDBImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$

@@ -32,7 +32,6 @@ package com.twelvemonkeys.servlet.fileupload;
 
 /**
  * FileSizeExceededException
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: FileSizeExceededException.java#1 $

@@ -34,7 +34,6 @@ import java.io.StringReader;
 
 /**
  * EmptyReader
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

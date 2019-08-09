@@ -39,22 +39,24 @@ import java.util.Random;
 /**
  * This {@code BufferedImageOp/RasterOp} implements basic
  * Floyd-Steinberg error-diffusion algorithm for dithering.
- * <P/>
+ * <p>
  * The weights used are 7/16, 3/16, 5/16 and 1/16, distributed like this:
  * <!-- - -
  *  | |x|7|
  *  - - - -
  *  |3|5|1|
  *   - - -->
- * <P/>
- * <TABLE border="1" cellpadding="4" cellspacing="0">
- *  <TR><TD bgcolor="#000000">&nbsp;</TD><TD class="TableHeadingColor"
- *          align="center">X</TD><TD>7/16</TD></TR>
- *  <TR><TD>3/16</TD><TD>5/16</TD><TD>1/16</TD></TR>
- * </TABLE>
- * <P/>
+ * </p>
+ * <table border="1" cellpadding="4" cellspacing="0">
+ *     <caption>Floyd-Steinberg error-diffusion weights</caption>
+ *     <tr><td bgcolor="#000000">&nbsp;</td><td class="TableHeadingColor"
+ *          align="center">x</td><td>7/16</td></tr>
+ *     <tr><td>3/16</td><td>5/16</td><td>1/16</td></tr>
+ * </table>
+ * <p>
  * See <A href="http://www.awprofessional.com/bookstore/product.asp?isbn=0201848406&rl=1">Computer Graphics (Foley et al.)</a>
  * for more information.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

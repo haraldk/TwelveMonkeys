@@ -44,7 +44,6 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
 
 /**
  * SVGImageReaderSpi
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: SVGImageReaderSpi.java,v 1.1 2003/12/02 16:45:00 haku Exp $

@@ -47,10 +47,11 @@ import java.io.*;
 /**
  * A little endian output stream writes primitive Java numbers
  * and characters to an output stream in a little endian format.
- * <p/>
+ * <p>
  * The standard {@code java.io.DataOutputStream} class which this class
  * imitates uses big endian integers.
- * <p/>
+ * </p>
+ * <p>
  * <em>Warning:
  * The {@code DataInput} and {@code DataOutput} interfaces
  * specifies big endian byte order in their documentation.
@@ -58,6 +59,7 @@ import java.io.*;
  * implementation. However, I don't see a reason for the these interfaces to
  * specify the byte order of their underlying representations.
  * </em>
+ * <p>
  *
  * @see com.twelvemonkeys.io.LittleEndianRandomAccessFile
  * @see java.io.DataOutputStream

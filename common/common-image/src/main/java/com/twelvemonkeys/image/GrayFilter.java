@@ -34,8 +34,9 @@ import java.awt.image.RGBImageFilter;
 
 /**
  * This class can convert a color image to grayscale.
- * <P/>
+ * <p>
  * Uses ITU standard conversion: (222 * Red + 707 * Green + 71 * Blue) / 1000.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -64,7 +65,7 @@ public class GrayFilter extends RGBImageFilter {
      * pLow and pHigh.
      *
      * @param pLow float in the range  0..1
-     * @param pHigh float in the range 0..1 and >= pLow
+     * @param pHigh float in the range 0..1 and &gt;= pLow
      */
     public GrayFilter(float pLow, float pHigh) {
         if (pLow > pHigh) {
@@ -94,7 +95,7 @@ public class GrayFilter extends RGBImageFilter {
      * range between pLow and pHigh.
      *
      * @param pLow integer in the range 0..255
-     * @param pHigh inteeger in the range 0..255 and >= pLow
+     * @param pHigh integer in the range 0..255 and &gt;= pLow
      */
     public GrayFilter(int pLow, int pHigh) {
         this(pLow / 255f, pHigh / 255f);

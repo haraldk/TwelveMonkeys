@@ -37,7 +37,7 @@ import java.util.Stack;
 /**
  * Abstract base class for {@code OutputStream}s implementing the
  * {@code Seekable} interface.
- * <p/>
+ *
  * @see SeekableInputStream
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>

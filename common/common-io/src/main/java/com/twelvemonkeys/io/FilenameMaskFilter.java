@@ -41,18 +41,23 @@ import java.io.FilenameFilter;
  * The mask is given as a well-known DOS filename format, with '*' and '?' as
  * wildcards.
  * All other characters counts as ordinary characters.
- * <p/>
+ * <p>
  * The file name masks are used as a filter input and is given to the class via
- * the string array property:<br>
- * <dd>{@code filenameMasksForInclusion} - Filename mask for exclusion of
- * files (default if both properties are defined)
- * <dd>{@code filenameMasksForExclusion} - Filename mask for exclusion of
- * files.
- * <p/>
+ * the string array property:
+ * </p>
+ * <dl>
+ * <dt>{@code filenameMasksForInclusion}</dt>
+ * <dd>Filename mask for exclusion of
+ * files (default if both properties are defined).</dd>
+ * <dt>{@code filenameMasksForExclusion}</dt>
+ * <dd>Filename mask for exclusion of files.</dd>
+ * </dl>
+ * <p>
  * A recommended way of doing this is by referencing to the component which uses
  * this class for file listing. In this way all properties are set in the same
  * component and this utility component is kept in the background with only
  * initial configuration necessary.
+ * </p>
  *
  * @author <a href="mailto:eirik.torske@iconmedialab.no">Eirik Torske</a>
  * @see File#list(java.io.FilenameFilter) java.io.File.list

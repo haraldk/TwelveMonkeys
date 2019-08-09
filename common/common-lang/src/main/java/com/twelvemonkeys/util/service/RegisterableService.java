@@ -32,10 +32,11 @@ package com.twelvemonkeys.util.service;
 
 /**
  * An optional interface that may be implemented by service provider objects.
- * <p/>
+ * <p>
  * If this interface is implemented, the service provider objects will receive
  * notification of registration and deregistration from the
  * {@code ServiceRegistry}.
+ * </p>
  *
  * @see ServiceRegistry
  *

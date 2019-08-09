@@ -33,9 +33,10 @@ package com.twelvemonkeys.image;
 /**
  * Inverse Colormap to provide efficient lookup of any given input color
  * to the closest match to the given color map.
- * <p/>
+ * <p>
  * Based on "Efficient Inverse Color Map Computation" by Spencer W. Thomas
- * in "Graphics Gems Volume II"
+ * in "Graphics Gems Volume II".
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author Robin Luiten (Java port)

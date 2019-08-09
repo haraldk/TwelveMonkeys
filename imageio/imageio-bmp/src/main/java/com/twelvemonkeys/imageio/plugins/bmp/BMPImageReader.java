@@ -214,11 +214,9 @@ public final class BMPImageReader extends ImageReaderBase {
 
             case 16:
                 if (header.hasMasks()) {
-                    int[] masks = getMasks();
-
                     return ImageTypeSpecifiers.createPacked(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0], masks[1], masks[2], masks[3],
+                            header.masks[0], header.masks[1], header.masks[2], header.masks[3],
                             DataBuffer.TYPE_USHORT, false
                     );
                 }
@@ -235,11 +233,9 @@ public final class BMPImageReader extends ImageReaderBase {
 
             case 32:
                 if (header.hasMasks()) {
-                    int[] masks = getMasks();
-
                     return ImageTypeSpecifiers.createPacked(
                             ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0], masks[1], masks[2], masks[3],
+                            header.masks[0], header.masks[1], header.masks[2], header.masks[3],
                             DataBuffer.TYPE_INT, false
                     );
                 }
@@ -254,38 +250,6 @@ public final class BMPImageReader extends ImageReaderBase {
             default:
                 throw new IIOException("Unsupported bit count: " + header.getBitCount());
         }
-    }
-
-    private int[] getMasks() throws IOException {
-        if (header.masks != null) {
-            // Get mask and create either 555, 565 or 444/4444 etc
-            return header.masks;
-        }
-
-        switch (header.getCompression()) {
-            case DIB.COMPRESSION_BITFIELDS:
-            case DIB.COMPRESSION_ALPHA_BITFIELDS:
-                // Consult BITFIELDS/ALPHA_BITFIELDS
-                return readBitFieldsMasks();
-            default:
-                return null;
-        }
-    }
-
-    private int[] readBitFieldsMasks() throws IOException {
-        long offset = DIB.BMP_FILE_HEADER_SIZE + header.getSize();
-
-        if (offset != imageInput.getStreamPosition()) {
-            imageInput.seek(offset);
-        }
-
-        int[] masks = DIBHeader.readMasks(imageInput);
-
-        if (header.getCompression() != DIB.COMPRESSION_ALPHA_BITFIELDS) {
-            masks[3] = 0;
-        }
-
-        return masks;
     }
 
     @Override

@@ -39,8 +39,9 @@ import java.awt.image.*;
 
 /**
  * This class performs a pixel by pixel conversion of the source image, from CMYK to RGB.
- * <p/>
+ * <p>
  * The conversion is fast, but performed without any color space conversion.
+ *</p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$

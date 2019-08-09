@@ -36,7 +36,6 @@ import java.io.IOException;
 
 /**
  * IFFChunk
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: IFFChunk.java,v 1.0 28.feb.2006 00:00:45 haku Exp$

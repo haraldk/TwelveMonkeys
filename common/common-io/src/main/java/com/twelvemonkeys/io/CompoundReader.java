@@ -40,7 +40,6 @@ import java.util.List;
 
 /**
  * A Reader implementation that can read from multiple sources.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

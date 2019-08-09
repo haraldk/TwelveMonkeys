@@ -41,11 +41,12 @@ import java.util.List;
 
 /**
  * Takes care of registering and de-registering local ImageIO plugins (service providers) for the servlet context.
- * <p/>
+ * <p>
  * Registers all available plugins on {@code contextInitialized} event, using {@code ImageIO.scanForPlugins()}, to make
  * sure they are available to the current servlet context.
  * De-registers all plugins which have the {@link Thread#getContextClassLoader() current thread's context class loader}
  * as its class loader on {@code contextDestroyed} event, to avoid class/resource leak.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$

@@ -34,7 +34,7 @@ import java.io.IOException;
 
 /**
  * Interface for seekable streams.
- * <p/>
+ *
  * @see SeekableInputStream
  * @see SeekableOutputStream
  *
@@ -55,12 +55,14 @@ public interface Seekable {
     /**
      * Sets the current stream position to the desired location.
      * The next read will occur at this location.
-     * <p/>
+     * <p>
      * An {@code IndexOutOfBoundsException} will be thrown if pPosition is smaller
      * than the flushed position (as returned by {@link #getFlushedPosition()}).
-     * <p/>
+     * </p>
+     * <p>
      * It is legal to seek past the end of the file; an {@code EOFException}
      * will be thrown only if a read is performed.
+     * </p>
      *
      * @param pPosition a long containing the desired file pointer position.
      *
@@ -76,25 +78,29 @@ public interface Seekable {
      * Unlike a standard {@code InputStream}, all {@code Seekable}
      * streams upport marking. Additionally, calls to {@code mark} and
      * {@code reset} may be nested arbitrarily.
-     * <p/>
+     * <p>
      * Unlike the {@code mark} methods declared by the {@code Reader} or
      * {@code InputStream}
      * interfaces, no {@code readLimit} parameter is used. An arbitrary amount
      * of data may be read following the call to {@code mark}.
+     * </p>
      */
     void mark();
 
     /**
      * Returns the file pointer to its previous position,
      * at the time of the most recent unmatched call to mark.
-     * <p/>
+     * <p>
      * Calls to reset without a corresponding call to mark will either:
+     * </p>
      * <ul>
      * <li>throw an {@code IOException}</li>
      * <li>or, reset to the beginning of the stream.</li>
      * </ul>
+     * <p>
      * An {@code IOException} will be thrown if the previous marked position
      * lies in the discarded portion of the stream.
+     * </p>
      *
      * @throws IOException if an I/O error occurs.
      * @see java.io.InputStream#reset()
@@ -105,10 +111,11 @@ public interface Seekable {
      * Discards the initial portion of the stream prior to the indicated
      * postion. Attempting to seek to an offset within the flushed portion of
      * the stream will result in an {@code IndexOutOfBoundsException}.
-     * <p/>
+     * <p>
      * Calling {@code flushBefore} may allow classes implementing this
      * interface to free up resources such as memory or disk space that are
      * being used to store data from the stream.
+     * </p>
      *
      * @param pPosition a long containing the length of the file prefix that
      * may be flushed.

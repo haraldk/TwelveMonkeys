@@ -75,8 +75,9 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
 
     /**
      * Reads the {@code Catalog} entry from the given input stream.
-     * <p/>
+     * <p>
      * The data is assumed to be in little endian byte order.
+     * </p>
      *
      * @param pDataInput the input stream
      * @return a new {@code Catalog}

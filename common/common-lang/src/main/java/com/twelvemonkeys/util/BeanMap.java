@@ -41,9 +41,10 @@ import java.util.*;
 
 /**
  * A {@code Map} adapter for a Java Bean.
- * <p/>
+ * <p>
  * Ruthlessly stolen from
- * <a href="http://binkley.blogspot.com/2006/08/mapping-java-bean.html>Binkley's Blog</a>
+ * <a href="http://binkley.blogspot.com/2006/08/mapping-java-bean.html">Binkley's Blog</a>
+ * </p>
  */
 public final class BeanMap extends AbstractMap<String, Object> implements Serializable, Cloneable {
     private final Object bean;

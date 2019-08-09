@@ -32,9 +32,10 @@ package com.twelvemonkeys.imageio.plugins.pcx;
 
 /**
  * IFFUtil
- * <p/>
+ * <p>
  * Bit rotate methods based on Sue-Ken Yap, "A Fast 90-Degree Bitmap Rotator,"
  * in GRAPHICS GEMS II, James Arvo ed., Academic Press, 1991, ISBN 0-12-064480-0.
+ * </p>
  *
  * @author Unascribed (C version)
  * @author Harald Kuhr (Java port)

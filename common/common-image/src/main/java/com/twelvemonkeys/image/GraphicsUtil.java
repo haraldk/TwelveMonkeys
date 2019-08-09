@@ -43,10 +43,11 @@ public final class GraphicsUtil {
 
     /**
      * Enables anti-aliasing in the {@code Graphics} object.
-     * <p/>
+     * <p>
      * Anti-aliasing is enabled by casting to {@code Graphics2D} and setting
      * the rendering hint {@code RenderingHints.KEY_ANTIALIASING} to
      * {@code RenderingHints.VALUE_ANTIALIAS_ON}.
+     * </p>
      *
      * @param pGraphics the graphics object
      * @throws ClassCastException if {@code pGraphics} is not an instance of
@@ -62,10 +63,11 @@ public final class GraphicsUtil {
 
     /**
      * Sets the alpha in the {@code Graphics} object.
-     * <p/>
+     * <p>
      * Alpha is set by casting to {@code Graphics2D} and setting the composite
      * to the rule {@code AlphaComposite.SRC_OVER} multiplied by the given
      * alpha.
+     * </p>
      *
      * @param pGraphics the graphics object
      * @param pAlpha the alpha level, {@code alpha} must be a floating point

@@ -35,7 +35,6 @@ import java.util.TimeZone;
 
 /**
  * A utility class with useful date manipulation methods and constants.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/DateUtil.java#1 $

@@ -160,8 +160,9 @@ public abstract class ImageFilter extends GenericFilter {
 
     /**
      * Tests if the filter should do image filtering/processing.
-     * <P/>
+     * <p>
      * This default implementation uses {@link #triggerParams} to test if:
+     * </p>
      * <dl>
      *  <dt>{@code mTriggerParams == null}</dt>
      *  <dd>{@code return true}</dd>
@@ -171,7 +172,6 @@ public abstract class ImageFilter extends GenericFilter {
      *  <dt>Otherwise</dt>
      *  <dd>{@code return false}</dd>
      * </dl>
-     *
      *
      * @param pRequest the servlet request
      * @return {@code true} if the filter should do image filtering

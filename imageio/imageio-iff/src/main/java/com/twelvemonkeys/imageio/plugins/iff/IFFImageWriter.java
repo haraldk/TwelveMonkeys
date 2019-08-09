@@ -50,7 +50,6 @@ import java.io.OutputStream;
  * Writer for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) format.
  * The IFF format (Interchange File Format) is the standard file format
  * supported by almost all image software for the Amiga computer.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: IFFImageWriter.java,v 1.0 02.mar.2006 13:32:30 haku Exp$

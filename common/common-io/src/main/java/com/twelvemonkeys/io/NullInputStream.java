@@ -35,7 +35,6 @@ import java.io.InputStream;
 
 /**
  * An {@code InputStream} that contains no bytes.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/NullInputStream.java#2 $

@@ -46,13 +46,13 @@ import java.util.Vector;
  * <DD>m (or any multiple of m's)
  * <DT>the minutes part (padded with 0's, if number has less digits than 
  *     the number of m's)
- *     m -> 0,1,...,59,60,61,...
- *     mm -> 00,01,...,59,60,61,...
+ *     m -&gt; 0,1,...,59,60,61,...
+ *     mm -&gt; 00,01,...,59,60,61,...
  * <DD>s or ss
  * <DT>the seconds part (padded with 0's, if number has less digits than 
  *     the number of s's)
- *     s -> 0,1,...,59
- *     ss -> 00,01,...,59
+ *     s -&gt; 0,1,...,59
+ *     ss -&gt; 00,01,...,59
  * <DD>S
  * <DT>all seconds (including the ones above 59)
  * </DL>
@@ -60,11 +60,7 @@ import java.util.Vector;
  * May not handle all cases, and formats... ;-)
  * Safest is: Always delimiters between the minutes (m) and seconds (s) part.
  * <P>
- * TODO: 
- * Move to com.twelvemonkeys.text?
- * Milliseconds!
- * Fix bugs.
- * Known bugs: 
+ * Known bugs:
  * <P>
  * The last character in the formatString is not escaped, while it should be. 
  * The first character after an escaped character is escaped while is shouldn't
@@ -76,6 +72,10 @@ import java.util.Vector;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
+// TODO:
+//		Move to com.twelvemonkeys.text?
+//	 	Milliseconds!
+//	 	Fix bugs.
 public class TimeFormat extends Format {
     final static String MINUTE = "m";
     final static String SECOND = "s";

@@ -39,12 +39,13 @@ import java.util.Arrays;
 
 /**
  * LZWEncoder
- * <p/>
+ * <p>
  * Inspired by LZWTreeEncoder by <a href="mailto:yuwen_66@yahoo.com">Wen Yu</a> and the
  * <a href="http://gingko.homeip.net/docs/file_formats/lzwgif.html#bob">algorithm described by Bob Montgomery</a>
  * which
  * "[...] uses a tree method to search if a new string is already in the table,
  * which is much simpler, faster, and easier to understand than hashing."
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$

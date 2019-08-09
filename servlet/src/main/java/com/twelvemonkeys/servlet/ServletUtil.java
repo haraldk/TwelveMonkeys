@@ -147,9 +147,9 @@ public final class ServletUtil {
      *                                  non-{@code null} and not an instance of {@code pType}
      * @throws NullPointerException     if {@code pReq}, {@code pName} or
      *                                  {@code pType} is {@code null}.
-     * @todo Well, it's done. Need some thinking... We probably don't want default if conversion fails...
      * @see Converter#toObject
      */
+    // TODO: Well, it's done. Need some thinking... We probably don't want default if conversion fails...
     static <T> T getParameter(final ServletRequest pReq, final String pName, final Class<T> pType, final String pFormat, final T pDefault) {
         // Test if pDefault is either null or instance of pType
         if (pDefault != null && !pType.isInstance(pDefault)) {
@@ -331,7 +331,6 @@ public final class ServletUtil {
     /**
      * Builds a full-blown HTTP/HTTPS URL from a
      * {@code javax.servlet.http.HttpServletRequest} object.
-     * <p/>
      *
      * @param pRequest The HTTP servlet request object.
      * @return the reproduced URL
@@ -513,9 +512,9 @@ public final class ServletUtil {
      *
      * @param pRequest The HTTP servlet request object.
      * @return the script name.
-     * @todo Read the spec, seems to be a mismatch with the Servlet API...
      * @see javax.servlet.http.HttpServletRequest#getServletPath()
      */
+    // TODO: Read the spec, seems to be a mismatch with the Servlet API...
     static String getScriptName(final HttpServletRequest pRequest) {
         String requestURI = pRequest.getRequestURI();
         return StringUtil.getLastElement(requestURI, "/");
@@ -523,8 +522,10 @@ public final class ServletUtil {
 
     /**
      * Gets the request URI relative to the current context path.
-     * <p/>
-     * As an example: <pre>
+     * <p>
+     * As an example:
+     * </p>
+     * <pre>
      * requestURI = "/webapp/index.jsp"
      * contextPath = "/webapp"
      * </pre>

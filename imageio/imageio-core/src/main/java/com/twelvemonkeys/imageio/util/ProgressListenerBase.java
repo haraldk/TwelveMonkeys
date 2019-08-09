@@ -37,7 +37,6 @@ import javax.imageio.event.IIOWriteProgressListener;
 
 /**
  * ProgressListenerBase
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ProgressListenerBase.java,v 1.0 26.aug.2005 14:29:42 haku Exp$

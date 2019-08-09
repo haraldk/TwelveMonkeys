@@ -214,8 +214,9 @@ public final class Entry implements Comparable<Entry> {
      * The time is converted from its internal representation to standard Java
      * representation, milliseconds since the epoch
      * (00:00:00 GMT, January 1, 1970).
-     * <p/>
+     * <p>
      * Note that most applications leaves this value empty ({@code 0L}).
+     * </p>
      *
      * @return  A {@code long} value representing the time this entry was
      *          created, measured in milliseconds since the epoch
@@ -231,8 +232,9 @@ public final class Entry implements Comparable<Entry> {
      * The time is converted from its internal representation to standard Java
      * representation, milliseconds since the epoch
      * (00:00:00 GMT, January 1, 1970).
-     * <p/>
+     * <p>
      * Note that many applications leaves this value empty ({@code 0L}).
+     * </p>
      *
      * @return  A {@code long} value representing the time this entry was
      *          last modified, measured in milliseconds since the epoch
