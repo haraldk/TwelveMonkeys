@@ -310,8 +310,14 @@ public abstract class ImageReaderBase extends ImageReader {
         int destWidth = destRegion.x + destRegion.width;
         int destHeight = destRegion.y + destRegion.height;
 
-        if ((long) destWidth * destHeight > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException(String.format("destination width * height > Integer.MAX_VALUE: %d", (long) destWidth * destHeight));
+        long dimension = (long) destWidth * destHeight;
+        if (dimension > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(String.format("destination width * height > Integer.MAX_VALUE: %d", dimension));
+        }
+
+        long size = dimension * imageType.getSampleModel().getNumDataElements();
+        if (size > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(String.format("destination width * height * samplesPerPixel > Integer.MAX_VALUE: %d", size));
         }
 
         // Create a new image based on the type specifier

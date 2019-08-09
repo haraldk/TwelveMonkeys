@@ -42,7 +42,9 @@ import java.awt.image.DataBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.*;
 
 /**
@@ -218,8 +220,15 @@ public class ImageReaderBaseTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testGetDestinationExceedsIntegerMax() throws IIOException {
+    public void testGetDestinationDimensionExceedsIntegerMax() throws IIOException {
         ImageReaderBase.getDestination(null, TYPES.iterator(), 3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE); // 6 442 057 734 pixels
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetDestinationStorageExceedsIntegerMax() throws IIOException {
+        Set<ImageTypeSpecifier> byteTypes = singleton(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+        ImageReaderBase.getDestination(null, byteTypes.iterator(), Short.MAX_VALUE,  Short.MAX_VALUE); // 1 073 676 289 pixels
+        // => 3 221 028 867 bytes needed in continuous array, not possible
     }
 
     @Test
