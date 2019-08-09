@@ -242,7 +242,7 @@ Other formats, using 3rd party libraries
 
 * Limited read-only support using Batik
 
-**Important note on using Batik:** *Please read [The Apache? XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
+**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
 either version 1.6.1, 1.7.1 or 1.8+.*
 
 
@@ -672,7 +672,7 @@ Native libs does not exist for several popular platforms/architectures, and furt
 Some environments may also prevent deployment of native libs, which brings us back to square one.
 
 
-q: What about JMagick or IM4Java? Can't you just use what?s already available?
+q: What about JMagick or IM4Java? Can't you just use what's already available?
 
 a: While great libraries with a wide range of formats support, the ImageMagick-based libraries has some disadvantages
 compared to ImageIO.
