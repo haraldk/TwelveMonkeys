@@ -34,9 +34,10 @@ import java.awt.image.ReplicateScaleFilter;
 
 /**
  * An {@code ImageFilter} class for subsampling images.
- * <p/>
+ * <p>
  * It is meant to be used in conjunction with a {@code FilteredImageSource}
  * object to produce subsampled versions of existing images.
+ * </p>
  * 
  * @see java.awt.image.FilteredImageSource
  *

@@ -38,9 +38,10 @@ import java.io.InputStream;
 
 /**
  * IIOInputStreamAdapter
- * <p/>
+ * <p>
  * Note: You should always wrap this stream in a {@code BufferedInputStream}.
  * If not, performance may degrade significantly.
+ * </p>
 *
 * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
 * @author last modified by $Author: haraldk$

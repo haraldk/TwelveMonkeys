@@ -40,10 +40,11 @@ import java.util.Set;
  * An (immutable) empty {@link Map}, that supports all {@code Map} operations
  * without throwing exceptions (in contrast to {@link Collections#EMPTY_MAP}
  * that will throw exceptions on {@code put}/{@code remove}).
- * <p/>
+ * <p>
  * NOTE: This is not a general purpose {@code Map} implementation,
  * as the {@code put} and {@code putAll} methods will not modify the map.
  * Instances of this class will always be an empty map.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: com/twelvemonkeys/util/NullMap.java#2 $

@@ -77,9 +77,10 @@ import java.io.*;
 
 /**
  * Writer for Apple Mac Paint Picture (PICT) format.
- * <p/>
+ * <p>
  * Images are stored using the "opDirectBitsRect" opcode, which directly
  * stores RGB values (using PackBits run-length encoding).
+ * </p>
  *
  * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -100,12 +101,13 @@ public final class PICTImageWriter extends ImageWriterBase {
      * Constructs an {@code ImageWriter} and sets its
      * {@code originatingProvider} instance variable to the
      * supplied value.
-     * <p/>
-     * <p> Subclasses that make use of extensions should provide a
-     * constructor with signature {@code (ImageWriterSpi,
-     *Object)} in order to retrieve the extension object.  If
+     * <p>
+     * Subclasses that make use of extensions should provide a
+     * constructor with signature {@code (ImageWriterSpi, Object)}
+     * in order to retrieve the extension object.  If
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
+     * </p>
      *
      * @param pProvider the {@code ImageWriterSpi} that
      *                  is constructing this object, or {@code null}.

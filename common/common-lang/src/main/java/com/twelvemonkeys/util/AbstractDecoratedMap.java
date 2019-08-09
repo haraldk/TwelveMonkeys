@@ -35,7 +35,6 @@ import java.util.*;
 
 /**
  * AbstractDecoratedMap
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/AbstractDecoratedMap.java#2 $
@@ -59,9 +58,10 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     /**
      * Creates a {@code Map} backed by a {@code HashMap}, containing all
      * key/value mappings from the given {@code Map}.
-     * <p/>
+     * <p>
      * <small>This is constructor is here to comply with the reccomendations for
      * "standard" constructors in the {@code Map} interface.</small>
+     * </p>
      *
      * @see #AbstractDecoratedMap(java.util.Map, java.util.Map)
      *
@@ -75,9 +75,10 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     /**
      * Creates a {@code Map} backed by the given backing-{@code Map},
      * containing all key/value mappings from the given contents-{@code Map}.
-     * <p/>
+     * <p>
      * NOTE: The backing map is structuraly cahnged, and it should NOT be
      * accessed directly, after the wrapped map is created.
+     * </p>
      *
      * @param pBacking the backing map of this map. Must be either empty, or
      * the same map as {@code pContents}.
@@ -149,9 +150,10 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
      * specified pValue.  More formally, returns {@code true} if and only if
      * this map contains at least one mapping to a pValue {@code v} such that
      * {@code (pValue==null ? v==null : pValue.equals(v))}.
-     * <p/>
+     * <p>
      * This implementation requires time linear in the map size for this
      * operation.
+     * </p>
      *
      * @param pValue pValue whose presence in this map is to be tested.
      * @return {@code true} if this map maps one or more keys to the

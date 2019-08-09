@@ -36,9 +36,9 @@ import java.nio.ByteBuffer;
 
 /**
  * {@code Encoder} implementation for standard base64 encoding.
- * <p/>
+ *
  * @see <a href="http://tools.ietf.org/html/rfc1421">RFC 1421</a>
- * @see <a href="http://tools.ietf.org/html/rfc2045"RFC 2045</a>
+ * @see <a href="http://tools.ietf.org/html/rfc2045">RFC 2045</a>
  *
  * @see Base64Decoder
  *

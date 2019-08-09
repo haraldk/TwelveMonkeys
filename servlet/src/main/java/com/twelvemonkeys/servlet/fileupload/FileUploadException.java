@@ -34,7 +34,6 @@ import javax.servlet.ServletException;
 
 /**
  * FileUploadException
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: FileUploadException.java#1 $

@@ -52,15 +52,14 @@ import java.util.Map;
 /**
  * This filter implements server side content negotiation and transcoding for
  * images.
- *
- * @todo Add support for automatic recognition of known browsers, to avoid
- * unneccessary conversion (as IE supports PNG, the latests FireFox supports
- * JPEG and GIF, etc. even though they both don't explicitly list these formats
- * in their Accept headers).
- *
+ **
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ContentNegotiationFilter.java#1 $
  */
+// TODO: Add support for automatic recognition of known browsers, to avoid
+//  unneccessary conversion (as IE supports PNG, the latests FireFox supports
+//  JPEG and GIF, etc. even though they both don't explicitly list these formats
+//  in their Accept headers).
 public class ContentNegotiationFilter extends ImageFilter {
 
     private final static String MIME_TYPE_IMAGE_PREFIX = "image/";

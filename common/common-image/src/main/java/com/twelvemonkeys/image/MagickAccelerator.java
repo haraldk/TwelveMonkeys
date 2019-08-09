@@ -41,11 +41,11 @@ import java.awt.image.BufferedImageOp;
  * This class accelerates certain graphics operations, using
  * JMagick and ImageMagick, if available.
  * If those libraries are not installed, this class silently does nothing.
- * <p/>
+ * <p>
  * Set the system property {@code "com.twelvemonkeys.image.accel"} to
  * {@code false}, to disable, even if JMagick is installed.
  * Set the system property {@code "com.twelvemonkeys.image.magick.debug"} to
- * <p/>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/MagickAccelerator.java#3 $

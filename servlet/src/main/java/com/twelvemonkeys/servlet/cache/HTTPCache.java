@@ -47,22 +47,18 @@ import java.util.logging.Logger;
 
 /**
  * A "simple" HTTP cache.
- * <p/>
  *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: HTTPCache.java#4 $
- * @todo OMPTIMIZE: Cache parsed vary-info objects, not the properties-files
- * @todo BUG: Better filename handling, as some filenames become too long..
  * - Use a mix of parameters and hashcode + lenght with fixed (max) lenght?
  * (Hashcodes of Strings are constant).
  * - Store full filenames in .vary, instead of just extension, and use
  * short filenames? (and only one .vary per dir).
- * <p/>
+ * <p>
  * <!-- TODO: Fix the caching algortim
  * Squid-2 algorithm
- * <p/>
+ * <p>
  * For Squid-2 the refresh algorithm has been slightly modified to give the EXPIRES value a higher precedence, and the CONF_MIN value lower precedence:
- * <p/>
+ * </p>
+ * <p>
  * if (EXPIRES) {
  * if (EXPIRES <= NOW)
  * return STALE
@@ -83,15 +79,22 @@ import java.util.logging.Logger;
  * if (OBJ_AGE <= CONF_MIN)
  * return FRESH
  * return STALE
+ * </p>
  * -->
- * @todo TEST: Battle-testing using some URL-hammer tool and maybe a profiler
- * @todo ETag/Conditional (If-None-Match) support!
- * @todo Rewrite to use java.util.concurrent Locks (if possible) for performance
- *       Maybe use ConcurrentHashMap instead fo synchronized HashMap?
- * @todo Rewrite to use NIO for performance
- * @todo Allow no tempdir for in-memory only cache
- * @todo Specify max size of disk-cache
+ * </p>
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @version $Id: HTTPCache.java#4 $
  */
+// TODO: OMPTIMIZE: Cache parsed vary-info objects, not the properties-files
+// TODO: BUG: Better filename handling, as some filenames become too long..
+// TODO: TEST: Battle-testing using some URL-hammer tool and maybe a profiler
+// TODO: ETag/Conditional (If-None-Match) support!
+// TODO: Rewrite to use java.util.concurrent Locks (if possible) for performance
+//       Maybe use ConcurrentHashMap instead fo synchronized HashMap?
+// TODO: Rewrite to use NIO for performance
+// TODO: Allow no tempdir for in-memory only cache
+// TODO: Specify max size of disk-cache
 public class HTTPCache {
     /**
      * The HTTP header {@code "Cache-Control"}

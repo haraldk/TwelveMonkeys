@@ -40,7 +40,7 @@ import java.awt.image.RenderedImage;
 /**
  * This Servlet is able to render a cropped part of an image.
  *
- * <P><HR><P>
+ * <HR>
  *
  * <A name="parameters"></A><STRONG>Parameters:</STRONG><BR>
  * <DL>
@@ -84,12 +84,13 @@ import java.awt.image.RenderedImage;
  * {@code SCALE_DEFAULT} is default.
  *
  * </DL>
- *
- * @example
- * &lt;IMG src="/crop/test.jpg?image=http://www.iconmedialab.com/images/random/home_image_12.jpg&cropWidth=500&cropUniform=true"&gt;
- *
- * @example
- * &lt;IMG src="/crop/test.png?cache=false&image=http://www.iconmedialab.com/images/random/home_image_12.jpg&cropWidth=50&cropUnits=PERCENT"&gt;
+ * <p>
+ * Examples:
+ * <br>
+ * &lt;IMG src="/crop/test.jpg?image=http://www.iconmedialab.com/images/random/home_image_12.jpg&amp;cropWidth=500&amp;cropUniform=true"&gt;
+ * <br>
+ * &lt;IMG src="/crop/test.png?cache=false&amp;image=http://www.iconmedialab.com/images/random/home_image_12.jpg&amp;cropWidth=50&amp;cropUnits=PERCENT"&gt;
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

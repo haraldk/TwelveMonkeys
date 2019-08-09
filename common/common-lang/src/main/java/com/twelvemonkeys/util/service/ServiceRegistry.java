@@ -39,26 +39,32 @@ import java.util.*;
 
 /**
  * A registry for service provider objects.
- * <p/>
+ * <p>
  * Service providers are looked up from the classpath, under the path
  * {@code META-INF/services/}&lt;full-class-name&gt;.
- * <p/>
- * For example:<br/>
+ * </p>
+ * <p>
+ * For example:
+ * <br>
  * {@code META-INF/services/com.company.package.spi.MyService}.
- * <p/>
+ * </p>
+ * <p>
  * The file should contain a list of fully-qualified concrete class names,
  * one per line.
- * <p/>
+ * </p>
+ * <p>
  * The <em>full-class-name</em> represents an interface or (typically) an
  * abstract class, and is the same class used as the category for this registry.
  * Note that only one instance of a concrete subclass may be registered with a
  * specific category at a time.
- * <p/>
+ * </p>
+ * <p>
  * <small>Implementation detail: This class is a clean room implementation of
  * a service registry and does not use the proprietary {@code sun.misc.Service}
  * class that is referred to in the <em>JAR File specification</em>.
  * This class should work on any Java platform.
  * </small>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: com/twelvemonkeys/util/service/ServiceRegistry.java#2 $
@@ -80,9 +86,10 @@ public class ServiceRegistry {
     /**
      * Creates a {@code ServiceRegistry} instance with a set of categories
      * taken from the {@code pCategories} argument.
-     * <p/>
+     * <p>
      * The categories are constant during the lifetime of the registry, and may
      * not be changed after initial creation.
+     * </p>
      *
      * @param pCategories an {@code Iterator} containing
      *                    {@code Class} objects that defines this registry's categories.
@@ -187,15 +194,17 @@ public class ServiceRegistry {
     /**
      * Returns an {@code Iterator} containing all providers in the given
      * category.
-     * <p/>
+     * <p>
      * The iterator supports removal.
-     * <p/>
+     * </p>
+     * <p>
      * <small>
      * NOTE: Removing a provider from the iterator, deregisters the current
      * provider (as returned by the last invocation of {@code next()}) from
      * {@code pCategory}, it does <em>not</em> remove the provider
      * from other categories in the registry.
      * </small>
+     * </p>
      *
      * @param pCategory the category class
      * @return an {@code Iterator} containing all providers in the given
@@ -209,8 +218,9 @@ public class ServiceRegistry {
 
     /**
      * Returns an {@code Iterator} containing all categories in this registry.
-     * <p/>
+     * <p>
      * The iterator does not support removal.
+     * </p>
      *
      * @return an {@code Iterator} containing all categories in this registry.
      */
@@ -221,8 +231,9 @@ public class ServiceRegistry {
     /**
      * Returns an {@code Iterator} containing all categories in this registry
      * the given {@code pProvider} <em>may be registered with</em>.
-     * <p/>
+     * <p>
      * The iterator does not support removal.
+     * </p>
      *
      * @param pProvider the provider instance
      * @return an {@code Iterator} containing all categories in this registry
@@ -240,15 +251,17 @@ public class ServiceRegistry {
     /**
      * Returns an {@code Iterator} containing all categories in this registry
      * the given {@code pProvider} <em>is currently registered with</em>.
-     * <p/>
+     * <p>
      * The iterator supports removal.
-     * <p/>
+     * </p>
+     * <p>
      * <small>
      * NOTE: Removing a category from the iterator, de-registers
      * {@code pProvider} from the current category (as returned by the last
      * invocation of {@code next()}), it does <em>not</em> remove the category
      * itself from the registry.
      * </small>
+     * </p>
      *
      * @param pProvider the provider instance
      * @return an {@code Iterator} containing all categories in this registry

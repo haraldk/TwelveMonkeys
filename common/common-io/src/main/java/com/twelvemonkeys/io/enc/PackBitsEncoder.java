@@ -36,30 +36,36 @@ import java.nio.ByteBuffer;
 
 /**
  * Encoder implementation for Apple PackBits run-length encoding.
- * <p/>
- * From Wikipedia, the free encyclopedia<br/>
+ * <p>
+ * From Wikipedia, the free encyclopedia
+ * <br>
  * PackBits is a fast, simple compression scheme for run-length encoding of
  * data.
- * <p/>
+ * </p>
+ * <p>
  * Apple introduced the PackBits format with the release of MacPaint on the
  * Macintosh computer. This compression scheme is one of the types of
  * compression that can be used in TIFF-files.
- * <p/>
+ * </p>
+ * <p>
  * A PackBits data stream consists of packets of one byte of header followed by
  * data. The header is a signed byte; the data can be signed, unsigned, or
  * packed (such as MacPaint pixels).
- * <p/>
- * <table><tr><th>Header byte</th><th>Data</th></tr>
- * <tr><td>0 to 127</td>    <td>1 + <i>n</i> literal bytes of data</td></tr>
- * <tr><td>0 to -127</td>   <td>One byte of data, repeated 1 - <i>n</i> times in
- *                           the decompressed output</td></tr>
- * <tr><td>-128</td>        <td>No operation</td></tr></table>
- * <p/>
+ * </p>
+ * <table>
+ *     <caption>PackBits</caption>
+ *     <tr><th>Header byte</th><th>Data</th></tr>
+ *     <tr><td>0 to 127</td>    <td>1 + <i>n</i> literal bytes of data</td></tr>
+ *     <tr><td>0 to -127</td>   <td>One byte of data, repeated 1 - <i>n</i> times in     the decompressed output</td></tr>
+ *     <tr><td>-128</td>        <td>No operation</td></tr>
+ * </table>
+ * <p>
  * Note that interpreting 0 as positive or negative makes no difference in the
  * output. Runs of two bytes adjacent to non-runs are typically written as
  * literal data.
- * <p/>
- * See <a href="http://developer.apple.com/technotes/tn/tn1023.html">Understanding PackBits</a>
+ * </p>
+ *
+ * @see <a href="http://developer.apple.com/technotes/tn/tn1023.html">Understanding PackBits</a>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/PackBitsEncoder.java#1 $

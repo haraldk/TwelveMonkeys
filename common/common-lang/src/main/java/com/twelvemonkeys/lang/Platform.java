@@ -199,9 +199,10 @@ public final class Platform {
 
     /**
      * Enumeration of common System {@code Architecture}s.
-     * <p/>
+     * <p>
      * For {@link #Unknown unknown architectures}, {@code toString()} will return
      * the the same value as {@code System.getProperty("os.arch")}.
+     * </p>
      *
      * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
      * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/Platform.java#1 $
@@ -228,9 +229,10 @@ public final class Platform {
 
     /**
      * Enumeration of common {@code OperatingSystem}s.
-     * <p/>
+     * <p>
      * For {@link #Unknown unknown operating systems}, {@code getName()} will return
      * the the same value as {@code System.getProperty("os.name")}.
+     * </p>
      *
      * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
      * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/Platform.java#1 $

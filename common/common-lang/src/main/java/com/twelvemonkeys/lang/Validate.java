@@ -36,10 +36,11 @@ import java.util.Map;
 
 /**
  * Kind of like {@code org.apache.commons.lang.Validate}. Just smarter. ;-)
- * <p/>
+ * <p>
  * Uses type parameterized return values, thus making it possible to check
  * constructor arguments before
  * they are passed on to {@code super} or {@code this} type constructors.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

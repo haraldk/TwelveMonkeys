@@ -42,9 +42,9 @@ import java.util.*;
 /**
  * {@code ServletConfig} or {@code FilterConfig} adapter, that implements
  * the {@code Map} interface for interoperability with collection-based API's.
- * <p/>
+ * <p>
  * This {@code Map} is not synchronized.
- * <p/>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ServletConfigMapAdapter.java#2 $

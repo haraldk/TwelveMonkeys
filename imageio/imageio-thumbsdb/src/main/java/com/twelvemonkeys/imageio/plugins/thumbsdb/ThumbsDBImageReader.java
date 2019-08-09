@@ -62,7 +62,7 @@ import java.util.SortedSet;
  * @author last modified by $Author: haku$
  * @version $Id: ThumbsDBImageReader.java,v 1.0 22.jan.2007 18:49:38 haku Exp$
  * @see com.twelvemonkeys.io.ole2.CompoundDocument
- * @see <a href="http://en.wikipedia.org/wiki/Thumbs.db>Wikipedia: Thumbs.db</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Thumbs.db">Wikipedia: Thumbs.db</a>
  */
 public final class ThumbsDBImageReader extends ImageReaderBase {
     private static final int THUMBNAIL_OFFSET = 12;
@@ -107,10 +107,11 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
     /**
      * Instructs the reader wether it should read and cache alle thumbnails
      * in sequence, during the first read operation.
-     * <p/>
+     * <p>
      * This is useful mainly if you need to read all the thumbnails, and you
      * need them in random order, as it requires less repositioning in the
      * underlying stream.
+     * </p>
      *
      * @param pLoadEagerly {@code true} if the reader should read all thumbs on first read
      */

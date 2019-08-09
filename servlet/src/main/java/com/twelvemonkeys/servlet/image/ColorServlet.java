@@ -43,9 +43,10 @@ import java.util.zip.CRC32;
  * Creates a minimal 1 x 1 pixel PNG image, in a color specified by the
  * {@code "color"} parameter. The color is HTML-style #RRGGBB, with two
  * digits hex number for red, green and blue (the hash, '#', is optional).
- * <p/>
+ * <p>
  * The class does only byte manipulation, there is no server-side image
  * processing involving AWT ({@code Toolkit} class) of any kind.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

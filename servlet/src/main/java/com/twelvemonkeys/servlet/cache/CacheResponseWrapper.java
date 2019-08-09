@@ -42,11 +42,12 @@ import java.io.PrintWriter;
 
 /**
  * CacheResponseWrapper class description.
- * <p/>
+ * <p>
  * Based on ideas and code found in the ONJava article
  * <a href="http://www.onjava.com/pub/a/onjava/2003/11/19/filters.html">Two
  * Servlet Filters Every Web Application Should Have</a>
  * by Jayson Falkner.
+ * </p>
  *
  * @author Jayson Falkner
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>

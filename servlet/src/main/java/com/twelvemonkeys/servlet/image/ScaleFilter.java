@@ -46,10 +46,12 @@ import java.lang.reflect.Field;
  * given URL. The image can be output as a GIF, JPEG or PNG image
  * or similar<!--,
  * with optional caching of the rendered image files-->.
- * <P>
- * <P><HR><P>
- * <p/>
+ *
+ * <hr>
+ *
+ * <p>
  * <A name="parameters"></A><STRONG>Parameters:</STRONG><BR>
+ * </p>
  * <DL>
  * <DT>{@code scaleX}</DT>
  * <DD>integer, the new width of the image.
@@ -68,13 +70,18 @@ import java.lang.reflect.Field;
  * {@link java.awt.Image#getScaledInstance(int,int,int)}, {@link java.awt.Image}
  * for more details).
  * </DL>
+ * <p>
+ * Examples:
+ * </p>
+ * <pre>
+ * &lt;IMG src="/scale/test.jpg?scaleX=500&amp;scaleUniform=false"&gt;
+ * &lt;IMG src="/scale/test.png?scaleY=50&amp;scaleUnits=PERCENT"&gt;
+ * </pre>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: ScaleFilter.java#1 $
  *
- * @example &lt;IMG src="/scale/test.jpg?scaleX=500&scaleUniform=false"&gt;
- * @example &lt;IMG src="/scale/test.png?scaleY=50&scaleUnits=PERCENT"&gt;
  */
 public class ScaleFilter extends ImageFilter {
 

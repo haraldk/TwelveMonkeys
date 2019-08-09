@@ -43,9 +43,10 @@ import java.util.Map;
 
 /**
  * Converts strings to numbers and back.
- * <p/>
+ * <p>
  * <small>This class has a static cache of {@code NumberFormats}, to avoid
  * creation and  parsing of number formats every time one is used.</small>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

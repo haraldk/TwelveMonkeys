@@ -38,12 +38,13 @@ import java.lang.reflect.InvocationTargetException;
 
 /**
  * Converts strings to objects and back.
- * <p/>
+ * <p>
  * This converter first tries to create an object, using the class' single 
  * string argument constructor ({@code &lt;type&gt;(String)}) if found,
  * otherwise, an attempt to call
  * the class' static {@code valueOf(String)} method. If both fails, a
  * {@link ConversionException} is thrown.
+ * </p>
  *
  * @author <A href="haraldk@iconmedialab.no">Harald Kuhr</A>
  * @author last modified by $Author: haku $

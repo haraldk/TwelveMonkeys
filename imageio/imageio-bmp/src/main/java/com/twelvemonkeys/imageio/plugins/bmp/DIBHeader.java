@@ -231,10 +231,11 @@ abstract class DIBHeader {
 
     /**
      * OS/2 BitmapCoreHeader Version 2.
-     * <p/>
+     * <p>
      * NOTE: According to the docs this header is <em>variable size</em>.
      * However, it seems that the size is either 16, 40 or 64, which is covered
      * (40 is the size of the normal {@link BitmapInfoHeader}, and has the same layout).
+     * </p>
      *
      * @see <a href="http://www.fileformat.info/format/os2bmp/egff.htm">OS/2 Bitmap File Format Summary</a>
      */
@@ -290,9 +291,10 @@ abstract class DIBHeader {
      * Represents the DIB (Device Independent Bitmap) Windows 3.0 Bitmap Information header structure.
      * This is the common format for persistent DIB structures, even if Windows
      * may use the later versions at run-time.
-     * <p/>
+     * <p>
      * Note: Some variations that includes the mask fields into the header size exists,
      * but is no longer part of the documented spec.
+     * </p>
      *
      * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
      * @version $Id: DIBHeader.java,v 1.0 25.feb.2006 00:29:44 haku Exp$

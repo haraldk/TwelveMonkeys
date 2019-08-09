@@ -83,7 +83,6 @@ import java.util.List;
 
 /**
  * Reader for Apple Mac Paint Picture (PICT) format.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a> (original PICT/QuickDraw parsing)
@@ -91,7 +90,7 @@ import java.util.List;
  * @version $Id: PICTReader.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */
 /*
- * @todo New paint strategy: Need to have a PEN and a PEN MODE, in addition to BG and PATTERN and PATTERN MODE.
+ * TODO: New paint strategy: Need to have a PEN and a PEN MODE, in addition to BG and PATTERN and PATTERN MODE.
  *       - These must be set before each frame/paint/invert/erase/fill operation.
  *         This is because there isn't a one-to-one mapping, between Java and PICT drawing.
  *        - Subclass Graphics?
@@ -100,8 +99,8 @@ import java.util.List;
  *        - Or methods like frameRect(pen, penmode, penwidth, rect), frameOval(pen, penmode, penwidth, rect), etc?
  *        - Or methods like frameShape(pen, penmode, penwidth, shape), paintShape(pen, penmode, shape) etc??
  *      QuickDrawContext that wraps an AWT Grpahics, and with methods macthing opcodes, seems like the best fit ATM
- * @todo Some MAJOR clean up
- * @todo As we now have Graphics2D with more options, support more of the format?
+ * TODO: Some MAJOR clean up
+ * TODO: As we now have Graphics2D with more options, support more of the format?
  */
 public final class PICTImageReader extends ImageReaderBase {
 
@@ -328,8 +327,9 @@ public final class PICTImageReader extends ImageReaderBase {
      * Reads the PICT stream.
      * The contents of the stream will be drawn onto the supplied graphics 
      * object.
-     * <p/>
+     * <p>
      * If "DEBUG" is true, the elements read are listed on stdout.
+     * </p>
      *
      * @param pGraphics the graphics object to draw onto.
      *

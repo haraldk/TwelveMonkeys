@@ -56,9 +56,9 @@ import java.util.regex.PatternSyntaxException;
  * @author <A href="mailto:eirik.torske@twelvemonkeys.com">Eirik Torske</A>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/lang/StringUtil.java#2 $
- * @todo Consistency check: Method names, parameter sequence, Exceptions,
  * return values, null-value handling and parameter names (cosmetics).
  */
+// TODO: Consistency check: Method names, parameter sequence, Exceptions,
 public final class StringUtil {
 
     /**
@@ -798,10 +798,10 @@ public final class StringUtil {
      * @param pPrepend        The location of fill-ins, prepend (true),
      *                        or append (false)
      * @return a concatenated string.
-     * @todo What if source is allready longer than required length?
-     * @todo Consistency with cut
      * @see #cut(String,int,String)
      */
+    // TODO: What if source is allready longer than required length?
+    // TODO: Consistency with cut
     public static String pad(String pSource, int pRequiredLength, String pPadString, boolean pPrepend) {
         if (pPadString == null || pPadString.length() == 0) {
             throw new IllegalArgumentException("Pad string: \"" + pPadString + "\"");
@@ -873,10 +873,11 @@ public final class StringUtil {
      * @param pString the string to convert
      * @param pFormat the date format
      * @return the date
-     * @todo cache formats?
+     *
      * @see java.text.SimpleDateFormat
      * @see java.text.SimpleDateFormat#SimpleDateFormat(String)
      */
+    // TODO: cache formats?
     public static Date toDate(String pString, String pFormat) {
         // Get the format from cache, or create new and insert
         // Return new date
@@ -1203,14 +1204,15 @@ public final class StringUtil {
      * hexadecimal for red, green and blue values respectively.</LI>
      * <LI>{@code #AARRGGBB}, as above, with AA as alpha component.</LI>
      * </UL>
-     * <p/>
+     * <p>
      * Examlples: {@code toColorString(Color.red) == "#ff0000"},
      * {@code toColorString(new Color(0xcc, 0xcc, 0xcc)) == "#cccccc"}.
+     * </p>
      *
      * @param pColor the color
      * @return A String representation of the color on HTML/CSS form
-     * @todo Consider moving to ImageUtil?
      */
+    // TODO: Consider moving to ImageUtil?
     public static String toColorString(Color pColor) {
         // Not a color...
         if (pColor == null) {
@@ -1237,9 +1239,10 @@ public final class StringUtil {
      * Tests a string, to see if it is an number (element of <b>Z</b>).
      * Valid integers are positive natural numbers (1, 2, 3, ...),
      * their negatives (?1, ?2, ?3, ...) and the number zero.
-     * <p/>
+     * <p>
      * Note that there is no guarantees made, that this number can be
      * represented as either an int or a long.
+     * </p>
      *
      * @param pString The string to check.
      * @return true if the String is a natural number.
@@ -1356,9 +1359,10 @@ public final class StringUtil {
 
     /**
      * Ensures that a string includes a given substring at a given position.
-     * <p/>
+     * <p>
      * Extends the string with a given string if it is not already there.
      * E.g an URL "www.vg.no", to "http://www.vg.no".
+     * </p>
      *
      * @param pSource    The source string.
      * @param pSubstring The substring to include.
@@ -1384,9 +1388,10 @@ public final class StringUtil {
     /**
      * Ensures that a string does not include a given substring at a given
      * position.
-     * <p/>
+     * <p>
      * Removes a given substring from a string if it is there.
      * E.g an URL "http://www.vg.no", to "www.vg.no".
+     * </p>
      *
      * @param pSource    The source string.
      * @param pSubstring The substring to check and possibly remove.
@@ -1411,7 +1416,6 @@ public final class StringUtil {
 
     /**
      * Gets the first substring between the given string boundaries.
-     * <p/>
      *
      * @param pSource              The source string.
      * @param pBeginBoundaryString The string that marks the beginning.
@@ -1446,7 +1450,6 @@ public final class StringUtil {
 
     /**
      * Removes the first substring demarcated by the given string boundaries.
-     * <p/>
      *
      * @param pSource            The source string.
      * @param pBeginBoundaryChar The character that marks the beginning of the
@@ -1486,7 +1489,6 @@ public final class StringUtil {
 
     /**
      * Removes all substrings demarcated by the given string boundaries.
-     * <p/>
      *
      * @param pSource            The source string.
      * @param pBeginBoundaryChar The character that marks the beginning of the unwanted substring.
@@ -1520,13 +1522,12 @@ public final class StringUtil {
     /**
      * Gets the first element of a {@code String} containing string elements delimited by a given delimiter.
      * <i>NB - Straightforward implementation!</i>
-     * <p/>
      *
      * @param pSource    The source string.
      * @param pDelimiter The delimiter used in the source string.
      * @return The last string element.
-     * @todo This method should be re-implemented for more efficient execution.
      */
+     // TODO: This method should be re-implemented for more efficient execution.
     public static String getFirstElement(final String pSource, final String pDelimiter) {
         if (pDelimiter == null) {
             throw new IllegalArgumentException("delimiter == null");
@@ -1547,7 +1548,6 @@ public final class StringUtil {
      * Gets the last element of a {@code String} containing string elements
      * delimited by a given delimiter.
      * <i>NB - Straightforward implementation!</i>
-     * <p/>
      *
      * @param pSource    The source string.
      * @param pDelimiter The delimiter used in the source string.
@@ -1620,9 +1620,9 @@ public final class StringUtil {
      * @param pForceDeep {@code true} to force deep {@code toString}, even
      *                   if object overrides toString
      * @return a deep string representation of the given object
-     * @todo Array handling (print full type and length)
-     * @todo Register handlers for specific toDebugString handling? :-)
      */
+     // TODO: Array handling (print full type and length)
+     // TODO: Register handlers for specific toDebugString handling? :-)
     public static String deepToString(Object pObject, boolean pForceDeep, int pDepth) {
         // Null is null
         if (pObject == null) {
@@ -1761,11 +1761,11 @@ public final class StringUtil {
     /**
      * Tells whether or not the given string string matches the given regular
      * expression.
-     * <p/>
+     * <p>
      * An invocation of this method of the form
      * <tt>matches(<i>str</i>, <i>regex</i>)</tt> yields exactly the
      * same result as the expression
-     * <p/>
+     * </p>
      * <blockquote><tt> {@link Pattern}.
      * {@link Pattern#matches(String, CharSequence) matches}
      * (<i>regex</i>, <i>str</i>)</tt></blockquote>
@@ -1785,15 +1785,18 @@ public final class StringUtil {
     /**
      * Replaces the first substring of the given string that matches the given
      * regular expression with the given pReplacement.
-     * <p/>
+     * <p>
      * An invocation of this method of the form
-     * <tt>replaceFirst(<i>str</i>, </tt><i>regex</i>, <i>repl</i>)</tt>
-     * yields exactly the same result as the expression
-     * <p/>
+     * <tt>
+     *     replaceFirst(<i>str</i>, <i>regex</i>, <i>repl</i>)
+     * </tt>
+     * yields exactly the same result as the expression:
+     * </p>
      * <blockquote><tt>
-     * {@link Pattern}.{@link Pattern#compile compile}(<i>regex</i>).
+     * {@link Pattern}.{@link Pattern#compile(String) compile}(<i>regex</i>).
      * {@link Pattern#matcher matcher}(<i>str</i>).
-     * {@link java.util.regex.Matcher#replaceFirst replaceFirst}(<i>repl</i>)</tt></blockquote>
+     * {@link java.util.regex.Matcher#replaceFirst replaceFirst}(<i>repl</i>)
+     * </tt></blockquote>
      *
      * @param pString      the string
      * @param pRegex       the regular expression to which this string is to be matched
@@ -1810,15 +1813,16 @@ public final class StringUtil {
     /**
      * Replaces each substring of this string that matches the given
      * regular expression with the given pReplacement.
-     * <p/>
+     * <p>
      * An invocation of this method of the form
-     * <tt>replaceAll(<i>str</i>, <i>pRegex</i>, <i>repl</i><)</tt>
+     * <tt>replaceAll(<i>str</i>, <i>pRegex</i>, <i>repl</i>)</tt>
      * yields exactly the same result as the expression
-     * <p/>
+     * </p>
      * <blockquote><tt>
-     * {@link Pattern}.{@link Pattern#compile compile}(<i>pRegex</i>).
-     * {@link Pattern#matcher matcher}(</tt><i>str</i>{@code ).
-     * {@link java.util.regex.Matcher#replaceAll replaceAll}(}<i>repl</i>{@code )}</blockquote>
+     * {@link Pattern}.{@link Pattern#compile(String) compile}(<i>pRegex</i>).
+     * {@link Pattern#matcher matcher}(<i>str</i>{@code ).
+     * {@link java.util.regex.Matcher#replaceAll replaceAll}(}<i>repl</i>{@code )}
+     * </tt></blockquote>
      *
      * @param pString      the string
      * @param pRegex       the regular expression to which this string is to be matched
@@ -1834,14 +1838,15 @@ public final class StringUtil {
 
     /**
      * Splits this string around matches of the given regular expression.
-     * <p/>
+     * <p>
      * The array returned by this method contains each substring of this
      * string that is terminated by another substring that matches the given
      * expression or is terminated by the end of the string.  The substrings in
      * the array are in the order in which they occur in this string.  If the
      * expression does not match any part of the input then the resulting array
      * has just one element, namely this string.
-     * <p/>
+     * </p>
+     * <p>
      * The {@code pLimit} parameter controls the number of times the
      * pattern is applied and therefore affects the length of the resulting
      * array.  If the pLimit <i>n</i> is greater than zero then the pattern
@@ -1852,13 +1857,14 @@ public final class StringUtil {
      * possible and the array can have any length.  If <i>n</i> is zero then
      * the pattern will be applied as many times as possible, the array can
      * have any length, and trailing empty strings will be discarded.
-     * <p/>
+     * </p>
+     * <p>
      * An invocation of this method of the form
      * <tt>split(<i>str</i>, <i>regex</i>, <i>n</i>)</tt>
-     * yields the same result as the expression
-     * <p/>
+     * yields the same result as the expression:
+     * </p>
      * <blockquote>{@link Pattern}.
-     * {@link Pattern#compile compile}<tt>(<i>regex</i>).
+     * {@link Pattern#compile(String) compile}<tt>(<i>regex</i>).
      * {@link Pattern#split(CharSequence,int) split}(<i>str</i>, <i>n</i>)</tt>
      * </blockquote>
      *
@@ -1878,11 +1884,12 @@ public final class StringUtil {
 
     /**
      * Splits this string around matches of the given regular expression.
-     * <p/>
+     * <p>
      * This method works as if by invoking the two-argument
      * {@link  #split(String,String,int) split} method with the given
      * expression and a limit argument of zero.
      * Trailing empty strings are therefore not included in the resulting array.
+     * </p>
      *
      * @param pString the string
      * @param pRegex  the delimiting regular expression
@@ -1901,7 +1908,7 @@ public final class StringUtil {
      * from camel-style (Java in-fix) naming convention
      * to Lisp-style naming convention (hyphen delimitted, all lower case).
      * Other characters in the string are left untouched.
-     * <p/>
+     * <p>
      * Eg.
      * {@code "foo" => "foo"},
      * {@code "fooBar" => "foo-bar"},
@@ -1910,6 +1917,7 @@ public final class StringUtil {
      * {@code "HttpURLConnection" => "http-url-connection"}
      * {@code "my45Caliber" => "my-45-caliber"}
      * {@code "allready-lisp" => "allready-lisp"}
+     * </p>
      *
      * @param pString the camel-style input string
      * @return the string converted to lisp-style naming convention
@@ -2040,14 +2048,14 @@ public final class StringUtil {
      * from Lisp-style naming convention (hyphen delimitted, all lower case)
      * to camel-style (Java in-fix) naming convention.
      * Other characters in the string are left untouched.
-     * <p/>
+     * <p>
      * Eg.
      * {@code "foo" => "foo"},
      * {@code "foo-bar" => "fooBar"},
      * {@code "http-request-wrapper" => "httpRequestWrapper"}
      * {@code "my-45-caliber" => "my45Caliber"}
      * {@code "allreadyCamel" => "allreadyCamel"}
-     * <p/>
+     * </p>
      *
      * @param pString the lisp-style input string
      * @return the string converted to camel-style
@@ -2064,7 +2072,7 @@ public final class StringUtil {
      * from Lisp-style naming convention (hyphen delimitted, all lower case)
      * to camel-style (Java in-fix) naming convention.
      * Other characters in the string are left untouched.
-     * <p/>
+     * <p>
      * To create a string starting with a lower case letter
      * (like Java variable names, etc),
      * specify the {@code pFirstUpperCase} paramter to be {@code false}.
@@ -2072,14 +2080,15 @@ public final class StringUtil {
      * {@code "foo" => "foo"},
      * {@code "foo-bar" => "fooBar"},
      * {@code "allreadyCamel" => "allreadyCamel"}
-     * <p/>
+     * </p>
+     * <p>
      * To create a string starting with an upper case letter
      * (like Java class name, etc),
      * specify the {@code pFirstUpperCase} paramter to be {@code true}.
      * Eg.
      * {@code "http-request-wrapper" => "HttpRequestWrapper"}
-     * {@code "my-45-caliber" => "My45Caliber"}
-     * <p/>
+     * {@code "my-12-monkeys" => "My12Monkeys"}
+     * </p>
      *
      * @param pString         the lisp-style input string
      * @param pFirstUpperCase {@code true} if the first char should be

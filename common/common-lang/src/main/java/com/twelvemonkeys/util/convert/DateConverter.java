@@ -41,9 +41,10 @@ import java.util.Locale;
 
 /**
  * Converts strings to dates and back.
- * <p/>
+ * <p>
  * <small>This class has a static cache of {@code DateFormats}, to avoid
  * creation and  parsing of date formats every time one is used.</small>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

@@ -36,7 +36,6 @@ import java.io.IOException;
 
 /**
  * BODYChunk
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BODYChunk.java,v 1.0 28.feb.2006 01:25:49 haku Exp$

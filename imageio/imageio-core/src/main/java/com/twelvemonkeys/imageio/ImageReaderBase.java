@@ -72,12 +72,13 @@ public abstract class ImageReaderBase extends ImageReader {
     /**
      * Constructs an {@code ImageReader} and sets its
      * {@code originatingProvider} field to the supplied value.
-     * <p/>
-     * <p> Subclasses that make use of extensions should provide a
+     * <p>
+     * Subclasses that make use of extensions should provide a
      * constructor with signature {@code (ImageReaderSpi,
      * Object)} in order to retrieve the extension object.  If
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
+     * </p>
      *
      * @param provider the {@code ImageReaderSpi} that is invoking this constructor, or {@code null}.
      */
@@ -205,9 +206,10 @@ public abstract class ImageReaderBase extends ImageReader {
 
     /**
      * Returns the {@code BufferedImage} to which decoded pixel data should be written.
-     * <p/>
+     * <p>
      * As {@link javax.imageio.ImageReader#getDestination} but tests if the explicit destination
      * image (if set) is valid according to the {@code ImageTypeSpecifier}s given in {@code types}.
+     * </p>
      *
      * @param param an {@code ImageReadParam} to be used to get
      * the destination image or image type, or {@code null}.
@@ -328,9 +330,10 @@ public abstract class ImageReaderBase extends ImageReader {
      * Utility method for getting the area of interest (AOI) of an image.
      * The AOI is defined by the {@link javax.imageio.IIOParam#setSourceRegion(java.awt.Rectangle)}
      * method.
-     * <p/>
+     * <p>
      * Note: If it is possible for the reader to read the AOI directly, such a
      * method should be used instead, for efficiency.
+     * </p>
      *
      * @param pImage the image to get AOI from
      * @param pParam the param optionally specifying the AOI
@@ -348,12 +351,14 @@ public abstract class ImageReaderBase extends ImageReader {
      * The subsampling is defined by the
      * {@link javax.imageio.IIOParam#setSourceSubsampling(int, int, int, int)}
      * method.
-     * <p/>
+     * <p>
      * NOTE: This method does not take the subsampling offsets into
      * consideration.
-     * <p/>
+     * </p>
+     * <p>
      * Note: If it is possible for the reader to subsample directly, such a
      * method should be used instead, for efficiency.
+     * </p>
      *
      * @param pImage the image to subsample
      * @param pParam the param optionally specifying subsampling

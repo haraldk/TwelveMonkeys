@@ -43,7 +43,6 @@ import static com.twelvemonkeys.imageio.plugins.wmf.WMFProviderInfo.WMF_READER_A
 
 /**
  * WMFImageReaderSpi
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: WMFImageReaderSpi.java,v 1.1 2003/12/02 16:45:00 wmhakur Exp $

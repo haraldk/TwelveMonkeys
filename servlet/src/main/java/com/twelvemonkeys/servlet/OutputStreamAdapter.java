@@ -43,10 +43,12 @@ import java.io.OutputStream;
  * ByteArrayOutputStream buffer = new ByteArraOutputStream();
  * ServletOutputStream adapter = new OutputStreamAdapter(buffer);
  * </pre>
- * <p/>
+ * <p>
  * As a {@code ServletOutputStream} is itself an {@code OutputStream}, this
  * class may also be used as a superclass for wrappers of other
- * {@code ServletOutputStream}s, like this:<pre>
+ * {@code ServletOutputStream}s, like this:
+ * </p>
+ * <pre>
  * class FilterServletOutputStream extends OutputStreamAdapter {
  *    public FilterServletOutputStream(ServletOutputStream out) {
  *       super(out);
@@ -63,6 +65,7 @@ import java.io.OutputStream;
  * ServletOutputStream original = response.getOutputStream();
  * ServletOutputStream wrapper = new FilterServletOutputStream(original);
  * </pre>
+ *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author $Author: haku $
  * @version $Id: OutputStreamAdapter.java#1 $

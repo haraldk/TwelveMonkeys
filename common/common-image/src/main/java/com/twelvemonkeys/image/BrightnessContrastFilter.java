@@ -35,14 +35,15 @@ import java.awt.image.RGBImageFilter;
 
 /**
  * Adjusts the contrast and brightness of an image.
- * <p/>
+ * <p>
  * For brightness, the valid range is {@code -2.0,..,0.0,..,2.0}.
  * A value of {@code 0.0} means no change.
  * Negative values will make the pixels darker.
  * Maximum negative value ({@code -2}) will make all filtered pixels black.
  * Positive values will make the pixels brighter.
  * Maximum positive value ({@code 2}) will make all filtered pixels white.
- * <p/>
+ * </p>
+ * <p>
  * For contrast, the valid range is {@code -1.0,..,0.0,..,1.0}.
  * A value of {@code 0.0} means no change.
  * Negative values will reduce contrast.
@@ -51,15 +52,14 @@ import java.awt.image.RGBImageFilter;
  * Positive values will increase contrast.
  * Maximum positive value ({@code 1}) will make all filtered pixels primary
  * colors (either black, white, cyan, magenta, yellow, red, blue or green).
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  *
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/BrightnessContrastFilter.java#1 $
- *
- * @todo consider doing something similar to http://archives.java.sun.com/cgi-bin/wa?A2=ind0302&L=jai-interest&F=&S=&P=15947
  */
-
+// TODO: consider doing something similar to http://archives.java.sun.com/cgi-bin/wa?A2=ind0302&L=jai-interest&F=&S=&P=15947
 public class BrightnessContrastFilter extends RGBImageFilter {
 
     // TODO: Replace with RescaleOp?
@@ -76,8 +76,9 @@ public class BrightnessContrastFilter extends RGBImageFilter {
     /**
      * Creates a BrightnessContrastFilter with default values
      * ({@code brightness=0.3, contrast=0.3}).
-     * <p/>
+     * <p>
      * This will slightly increase both brightness and contrast.
+     * </p>
      */
     public BrightnessContrastFilter() {
         this(0.3f, 0.3f);
@@ -86,14 +87,15 @@ public class BrightnessContrastFilter extends RGBImageFilter {
     /**
      * Creates a BrightnessContrastFilter with the given values for brightness
      * and contrast.
-     * <p/>
+     * <p>
      * For brightness, the valid range is {@code -2.0,..,0.0,..,2.0}.
      * A value of {@code 0.0} means no change.
      * Negative values will make the pixels darker.
      * Maximum negative value ({@code -2}) will make all filtered pixels black.
      * Positive values will make the pixels brighter.
      * Maximum positive value ({@code 2}) will make all filtered pixels white.
-     * <p/>
+     * </p>
+     * <p>
      * For contrast, the valid range is {@code -1.0,..,0.0,..,1.0}.
      * A value of {@code 0.0} means no change.
      * Negative values will reduce contrast.
@@ -102,6 +104,7 @@ public class BrightnessContrastFilter extends RGBImageFilter {
      * Positive values will increase contrast.
      * Maximum positive value ({@code 1}) will make all filtered pixels primary
      * colors (either black, white, cyan, magenta, yellow, red, blue or green).
+     * </p>
      *
      * @param pBrightness adjust the brightness of the image, in the range
      * {@code -2.0,..,0.0,..,2.0}.

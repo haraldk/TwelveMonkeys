@@ -41,9 +41,10 @@ import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * A delegate for handling stream support in wrapped servlet responses.
- * <p/>
+ * <p>
  * Client code should delegate {@code getOutputStream}, {@code getWriter},
  * {@code flushBuffer} and {@code resetBuffer} methods from the servlet response.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -90,9 +91,10 @@ public class ServletResponseStreamDelegate {
      * Subclasses should override this method to provide a decorated output stream.
      * This method is guaranteed to be invoked only once for a request/response
      * (unless {@code resetBuffer} is invoked).
-     * <P/>
+     * <p>
      * This implementation simply returns the output stream from the wrapped
      * response.
+     * </p>
      *
      * @return the {@code OutputStream} to use for the response
      * @throws IOException if an I/O exception occurs

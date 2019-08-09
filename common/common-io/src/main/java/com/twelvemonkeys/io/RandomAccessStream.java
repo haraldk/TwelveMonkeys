@@ -38,7 +38,6 @@ import java.io.IOException;
 /**
  * A data stream that is both readable and writable, much like a
  * {@code RandomAccessFile}, except it may be backed by something other than a file.
- * <p/>
  *
  * @see java.io.RandomAccessFile
  *
@@ -114,8 +113,9 @@ public abstract class RandomAccessStream implements Seekable, DataInput, DataOut
     /**
      * Returns an input view of this {@code RandomAccessStream}.
      * Invoking this method several times, will return the same object.
-     * <p/>
+     * <p>
      * <em>Note that read access is NOT synchronized.</em>
+     * </p>
      *
      * @return a {@code SeekableInputStream} reading from this stream
      */
@@ -129,8 +129,9 @@ public abstract class RandomAccessStream implements Seekable, DataInput, DataOut
     /**
      * Returns an output view of this {@code RandomAccessStream}.
      * Invoking this method several times, will return the same object.
-     * <p/>
+     * <p>
      * <em>Note that write access is NOT synchronized.</em>
+     * </p>
      *
      * @return a {@code SeekableOutputStream} writing to this stream
      */

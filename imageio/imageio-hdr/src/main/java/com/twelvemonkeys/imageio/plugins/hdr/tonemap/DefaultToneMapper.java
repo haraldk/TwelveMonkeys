@@ -32,12 +32,15 @@ package com.twelvemonkeys.imageio.plugins.hdr.tonemap;
 
 /**
  * DefaultToneMapper.
- * <p/>
+ * <p>
  * Normalizes values to range [0...1] using:
- *
- * <p><em>V<sub>out</sub> =  V<sub>in</sub> / (V<sub>in</sub> + C)</em></p>
- *
+ * </p>
+ * <p>
+ *     <em>V<sub>out</sub> =  V<sub>in</sub> / (V<sub>in</sub> + C)</em>
+ * </p>
+ * <p>
  * Where <em>C</em> is constant.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$

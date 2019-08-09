@@ -40,8 +40,8 @@ import java.util.regex.PatternSyntaxException;
 /**
  * {@code StringTokenizer} replacement, that uses regular expressions to split
  * strings into tokens.
- * <p/>
- * @see java.util.regex.Pattern for pattern syntax.
+ *
+ *@see java.util.regex.Pattern for pattern syntax.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/regex/RegExTokenIterator.java#1 $

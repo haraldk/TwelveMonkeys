@@ -40,7 +40,6 @@ import java.util.Arrays;
 
 /**
  * Abstract base class for RLE decoding as specified by in the Windows BMP (aka DIB) file format.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: AbstractRLEDecoder.java#1 $

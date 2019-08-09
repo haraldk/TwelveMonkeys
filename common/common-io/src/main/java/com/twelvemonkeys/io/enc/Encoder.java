@@ -38,8 +38,9 @@ import java.nio.ByteBuffer;
  * Interface for encoders.
  * An {@code Encoder} may be used with an {@code EncoderStream}, to perform
  * on-the-fly encoding to an {@code OutputStream}.
- * <p/>
+ * <p>
  * Important note: Encoder implementations are typically not synchronized.
+ * </p>
  *
  * @see Decoder
  * @see EncoderStream

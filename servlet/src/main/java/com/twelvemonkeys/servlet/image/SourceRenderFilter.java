@@ -46,7 +46,7 @@ import java.io.IOException;
  * corresponding request attributes from {@link ImageServletResponse}.
  * Only affects how the image is decoded, and must be applied before any
  * other image filters in the chain.
- * <p/>
+ *
  * @see ImageServletResponse#ATTRIB_SIZE
  * @see ImageServletResponse#ATTRIB_AOI
  *

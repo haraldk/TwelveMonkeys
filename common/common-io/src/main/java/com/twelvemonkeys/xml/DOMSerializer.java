@@ -102,8 +102,9 @@ public final class DOMSerializer {
     /**
      * Specifies wether the serializer should use indentation and optimize for
      * readability.
-     * <p/>
-     * Note: This is a hint, and may be ignored by DOM implemenations. 
+     * <p>
+     * Note: This is a hint, and may be ignored by DOM implementations.
+     * </p>
      *
      * @param pPrettyPrint {@code true} to enable pretty printing
      */

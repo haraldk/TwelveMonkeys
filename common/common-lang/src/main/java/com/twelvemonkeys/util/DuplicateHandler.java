@@ -32,7 +32,6 @@ package com.twelvemonkeys.util;
 
 /**
  * DuplicateHandler
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/DuplicateHandler.java#2 $

@@ -36,9 +36,10 @@ import com.twelvemonkeys.util.TimeFormat;
 
 /**
  * Converts strings to times and back.
- * <p/>
+ * <p>
  * <small>This class has a static cache of {@code TimeFormats}, to avoid creation and
  * parsing of timeformats every time one is used.</small>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

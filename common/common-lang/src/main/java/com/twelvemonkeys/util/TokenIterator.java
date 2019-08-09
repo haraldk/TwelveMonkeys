@@ -35,7 +35,6 @@ import java.util.Iterator;
 
 /**
  * TokenIterator, Iterator-based replacement for StringTokenizer.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/TokenIterator.java#1 $

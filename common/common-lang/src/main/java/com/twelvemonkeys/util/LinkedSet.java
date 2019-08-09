@@ -39,7 +39,8 @@ import java.util.*;
  * <p>
  * Resembles {@code LinkedHashSet} from JDK 1.4+, but is backed by a generic
  * {@code LinkedMap}, rather than implementing a particular algoritm.
- * <p/>
+ * </p>
+ *
  * @see LinkedMap
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>

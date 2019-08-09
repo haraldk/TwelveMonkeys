@@ -38,9 +38,10 @@ import java.nio.ByteBuffer;
  * Interface for decoders.
  * A {@code Decoder} may be used with a {@code DecoderStream}, to perform
  * on-the-fly decoding from an {@code InputStream}.
- * <p/>
+ * <p>
  * Important note: Decoder implementations are typically not synchronized.
- * <p/>
+ * </p>
+ *
  * @see Encoder
  * @see DecoderStream
  *

@@ -48,12 +48,13 @@ import java.util.Map;
 
 /**
  * ThrottleFilter, a filter for easing server during heavy load.
- * <p/>
+ * <p>
  * Intercepts requests, and returns HTTP response code {@code 503 (Service Unavailable)},
  * if there are more than a given number of concurrent
  * requests, to avoid large backlogs. The number of concurrent requests and the
  * response messages sent to the user agent, is configurable from the web
  * descriptor.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -120,10 +121,10 @@ public class ThrottleFilter extends GenericFilter {
     /**
      * Sets the response message sent to the user agent, if the request is
      * rejected.
-     * <BR/>
+     * <br>
      * The format is {@code &lt;mime-type&gt;=&lt;filename&gt;,
      * &lt;mime-type&gt;=&lt;filename&gt;}.
-     * <BR/>
+     * <br>
      * Example: {@code &lt;text/vnd.wap.wmlgt;=&lt;/errors/503.wml&gt;,
      * &lt;text/html&gt;=&lt;/errors/503.html&gt;}
      *

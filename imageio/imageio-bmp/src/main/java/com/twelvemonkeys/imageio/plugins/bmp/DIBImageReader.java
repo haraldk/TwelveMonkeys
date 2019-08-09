@@ -48,14 +48,13 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * ImageReader for Microsoft Windows ICO (icon) format.
  * 1, 4, 8 bit palette support with bitmask transparency, and 16, 24 and 32 bit
  * true color support with alpha. Also supports Windows Vista PNG encoded icons.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ICOImageReader.java,v 1.0 25.feb.2006 00:29:44 haku Exp$

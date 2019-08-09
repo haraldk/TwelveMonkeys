@@ -36,13 +36,12 @@ import java.util.Map;
 
 /**
  * BeanMapTestCase
- * <p/>
- * @todo Extend with BeanMap specific tests
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/test/java/com/twelvemonkeys/util/BeanMapTestCase.java#2 $
  */
+// TODO: Extend with BeanMap specific tests
 public class BeanMapTest extends MapAbstractTest {
 
     public boolean isPutAddSupported() {

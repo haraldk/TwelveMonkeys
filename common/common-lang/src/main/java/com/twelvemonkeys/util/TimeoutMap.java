@@ -37,8 +37,9 @@ import java.util.*;
  * A {@code Map} implementation that removes (exipres) its elements after
  * a given period. The map is by default backed by a {@link java.util.HashMap},
  * or can be instantiated with any given {@code Map} as backing.
- * <P/>
+ * <p>
  * Notes to consider when using this map:
+ * </p>
  * <ul>
  *  <li>Elements may not expire on the exact millisecond as expected.</li>
  *  <li>The value returned by the {@code size()} method  of the map, or any of
@@ -52,14 +53,13 @@ import java.util.*;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/TimeoutMap.java#2 $
- *
- * @todo Consider have this Map extend LinkedMap.. That way the removeExpired
- * method only have to run from the first element, until it finds an element
- * that should not expire, as elements are in insertion order.
- * and next expiry time would be the time of the first element.
- * @todo Consider running the removeExpiredEntries method in a separate (deamon) thread
- * @todo - or document why it is not such a good idea.
  */
+ // TODO: Consider have this Map extend LinkedMap.. That way the removeExpired
+ //  method only have to run from the first element, until it finds an element
+ //  that should not expire, as elements are in insertion order.
+ //  and next expiry time would be the time of the first element.
+ // TODO: Consider running the removeExpiredEntries method in a separate (deamon) thread
+ // TODO: - or document why it is not such a good idea.
 public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements ExpiringMap<K, V>, Serializable, Cloneable {
     /**
      * Expiry time
@@ -73,9 +73,10 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     /**
      * Creates a {@code TimeoutMap} with the default expiry time of 1 minute.
      * This {@code TimeoutMap} will be backed by a new {@code HashMap} instance.
-     * <p/>
-     * <small>This is constructor is here to comply with the reccomendations for
+     * <p>
+     * <small>This is constructor is here to comply with the recommendations for
      * "standard" constructors in the {@code Map} interface.</small>
+     * </p>
      *
      * @see #TimeoutMap(long)
      */
@@ -88,9 +89,10 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * with the default expiry time of 1 minute.
      * This {@code TimeoutMap} will be backed by a new {@code HashMap} instance,
      * and <em>not</em> the map passed in as a paramter.
-     * <p/>
-     * <small>This is constructor is here to comply with the reccomendations for
+     * <p>
+     * <small>This is constructor is here to comply with the recommendations for
      * "standard" constructors in the {@code Map} interface.</small>
+     * </p>
      *
      * @param pContents the map whose mappings are to be placed in this map.
      * May be {@code null}.
@@ -115,10 +117,11 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     /**
      * Creates a {@code TimeoutMap} with the given expiry time (milliseconds).
      * This {@code TimeoutMap} will be backed by the given {@code Map}.
-     * <P/>
-     * <EM>Note that structurally modifying the backing map directly (not
+     * <p>
+     * <em>Note that structurally modifying the backing map directly (not
      * through this map or its collection views), is not allowed, and will
-     * produce undeterministic exceptions.</EM>
+     * produce undeterministic exceptions.</em>
+     * </p>
      *
      * @param pBacking the map that will be used as backing.
      * @param pContents the map whose mappings are to be placed in this map.
@@ -300,10 +303,9 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     /**
      * Okay, I guess this do resemble DCL...
      *
-     * @todo Write some exhausting multi-threaded unit-tests.
-     *
      * @param pTime now
      */
+    // TODO: Write some exhausting multi-threaded unit-tests.
     private synchronized void removeExpiredEntriesSynced(long pTime) {
         if (pTime > nextExpiryTime) {
             ////

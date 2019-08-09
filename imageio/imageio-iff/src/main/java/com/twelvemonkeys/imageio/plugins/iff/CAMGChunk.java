@@ -37,7 +37,6 @@ import java.io.IOException;
 
 /**
  * CAMGChunk
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CAMGChunk.java,v 1.0 28.feb.2006 02:10:07 haku Exp$

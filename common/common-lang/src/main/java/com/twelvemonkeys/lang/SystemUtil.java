@@ -43,9 +43,10 @@ import java.util.Properties;
 
 /**
  * A utility class with some useful system-related functions.
- * <p/>
+ * <p>
  * <em>NOTE: This class is not considered part of the public API and may be
  * changed without notice</em>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -200,12 +201,10 @@ public final class SystemUtil {
      * @see #loadProperties(Class)
      * @see java.lang.ClassLoader#getResourceAsStream
      * @see java.lang.ClassLoader#getSystemResourceAsStream
-     *
-     * @todo Reconsider ever using the System ClassLoader: http://www.javaworld.com/javaworld/javaqa/2003-06/01-qa-0606-load.html
-     * @todo Consider using Context Classloader instead?
      */
-    public static Properties loadProperties(Class pClass, String pName) throws IOException
-    {
+     // TODO: Reconsider ever using the System ClassLoader: http://www.javaworld.com/javaworld/javaqa/2003-06/01-qa-0606-load.html
+     // TODO: Consider using Context Classloader instead?
+    public static Properties loadProperties(Class pClass, String pName) throws IOException {
         // Convert to name the classloader understands
         String name = !StringUtil.isEmpty(pName) ? pName : pClass.getName().replace('.', '/');
 

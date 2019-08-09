@@ -48,22 +48,25 @@ import java.util.Enumeration;
 
 /**
  * A simple proxy servlet implementation. Supports HTTP and HTTPS.
- * <p/>
+ * <p>
  * Note: The servlet is not a true HTTP proxy as described in
  * <a href="http://www.w3.org/Protocols/rfc2616/rfc2616.html">RFC 2616</a>,
  * instead it passes on all incoming HTTP requests to the configured remote
  * server.
  * Useful for bypassing firewalls or to avoid exposing internal network
  * infrastructure to external clients.
- * <p/>
+ * </p>
+ * <p>
  * At the moment, no caching of content is implemented.
- * <p/>
+ * </p>
+ * <p>
  * If the {@code remoteServer} init parameter is not set, the servlet will
  * respond by sending a {@code 500 Internal Server Error} response to the client.
  * If the configured remote server is down, or unreachable, the servlet will
  * respond by sending a {@code 502 Bad Gateway} response to the client.
  * Otherwise, the response from the remote server will be tunneled unmodified
  * to the client.
+ * </p>
  * 
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

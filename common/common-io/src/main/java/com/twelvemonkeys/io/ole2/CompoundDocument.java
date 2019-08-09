@@ -45,11 +45,12 @@ import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * Represents a read-only OLE2 compound document.
- * <p/>
+ * <p>
  * <!-- TODO: Consider really detaching the entries, as this is hard for users to enforce... -->
  * <em>NOTE: This class is not synchronized. Accessing the document or its
  * entries from different threads, will need synchronization on the document
  * instance.</em>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.no">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -99,10 +100,11 @@ public final class CompoundDocument implements AutoCloseable {
 
     /**
      * Creates a (for now) read only {@code CompoundDocument}.
-     * <p/>
+     * <p>
      * <em>Warning! You must invoke {@link #close()} on the compound document
      * created from this constructor when done, to avoid leaking file
      * descriptors.</em>
+     * </p>
      *
      * @param file the file to read from
      *
@@ -641,9 +643,10 @@ public final class CompoundDocument implements AutoCloseable {
      * milliseconds since January 1, 1970.
      * The time stamp parameter is assumed to be in units of
      * 100 nano seconds since January 1, 1601.
-     * <p/>
+     * <p>
      * If the timestamp is {@code 0L} (meaning not specified), no conversion
      * is done, to behave like {@code java.io.File}.
+     * </p>
      *
      * @param pMSTime an unsigned long value representing the time stamp (in
      * units of 100 nano seconds since January 1, 1601).

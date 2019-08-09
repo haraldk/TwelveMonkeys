@@ -48,7 +48,7 @@ import java.nio.charset.Charset;
 public final class XMPScanner {
     /**
      * {@code &lt;?xpacket begin=}
-     * <p/>
+     * <p>
      * <ul>
      * <li>
      * 8-bit (UTF-8):
@@ -63,6 +63,7 @@ public final class XMPScanner {
      * <li>32-bit encoding (UCS-4):
      * As 16 bit UCS2, with three 0x00 instead of one.</li>
      * </ul>
+     * </p>
      */
     private static final byte[] XMP_PACKET_BEGIN = {
             0x3C, 0x3F, 0x78, 0x70, 0x61, 0x63, 0x6B, 0x65, 0x74, 0x20,
@@ -81,11 +82,13 @@ public final class XMPScanner {
      * Scans the given input for an XML metadata packet.
      * The scanning process involves reading every byte in the file, while searching for an XMP packet.
      * This process is very inefficient, compared to reading a known file format.
-     * <p/>
+     * <p>
      * <em>NOTE: The XMP Specification says this method of reading an XMP packet
-     * should be considered a last resort.</em><br/>
+     * should be considered a last resort.</em>
+     * <br>
      * This is because files may contain multiple XMP packets, some which may be related to embedded resources,
      * some which may be obsolete (or even incomplete).
+     * </p>
      *
      * @param pInput the input to scan. The input may be an {@link javax.imageio.stream.ImageInputStream} or
      * any object that can be passed to {@link ImageIO#createImageInputStream(Object)}.

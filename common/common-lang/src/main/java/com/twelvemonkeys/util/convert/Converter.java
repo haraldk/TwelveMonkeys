@@ -39,12 +39,13 @@ import java.util.Map;
 /**
  * The converter (singleton). Converts strings to objects and back. 
  * This is the entry point to the converter framework.
- * <p/>
+ * <p>
  * By default, converters for {@link com.twelvemonkeys.util.Time}, {@link Date}
  * and {@link Object}
  * (the {@link DefaultConverter}) are registered by this class' static
  * initializer. You might remove them using the 
  * {@code unregisterConverter} method.
+ * </p>
  *
  * @see #registerConverter(Class, PropertyConverter)
  * @see #unregisterConverter(Class)
@@ -105,12 +106,13 @@ public abstract class Converter implements PropertyConverter {
      * Registers a converter for a given type.
      * This converter will also be used for all subclasses, unless a more
      * specific version is registered.
-     * </p>
+     * <p>
      * By default, converters for {@link com.twelvemonkeys.util.Time}, {@link Date}
      * and {@link Object}
      * (the {@link DefaultConverter}) are registered by this class' static
      * initializer. You might remove them using the 
      * {@code unregisterConverter} method.
+     * </p>
      *
      * @param pType the (super) type to register a converter for
      * @param pConverter the converter

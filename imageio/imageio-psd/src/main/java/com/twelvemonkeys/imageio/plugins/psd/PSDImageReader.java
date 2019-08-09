@@ -50,8 +50,8 @@ import java.awt.image.*;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * ImageReader for Adobe Photoshop Document (PSD) format.
@@ -59,8 +59,8 @@ import java.util.List;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: PSDImageReader.java,v 1.0 Apr 29, 2008 4:45:52 PM haraldk Exp$
- * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/">Adobe Photoshop File Formats Specification<a>
- * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary<a>
+ * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/">Adobe Photoshop File Formats Specification</a>
+ * @see <a href="http://www.fileformat.info/format/psd/egff.htm">Adobe Photoshop File Format Summary</a>
  */
 // TODO: Implement ImageIO meta data interface
 // TODO: Figure out of we should assume Adobe RGB (1998) color model, if no embedded profile?

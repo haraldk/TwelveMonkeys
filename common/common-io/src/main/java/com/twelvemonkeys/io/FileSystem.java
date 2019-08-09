@@ -37,7 +37,6 @@ import java.io.InputStreamReader;
 
 /**
  * FileSystem
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: FileSystem.java#1 $

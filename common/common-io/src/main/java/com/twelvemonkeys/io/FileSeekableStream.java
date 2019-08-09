@@ -37,7 +37,7 @@ import java.io.RandomAccessFile;
 
 /**
  * A {@code SeekableInputStream} implementation that uses random access directly to a {@code File}.
- * <p/>
+
  * @see FileCacheSeekableStream
  * @see MemoryCacheSeekableStream
  * @see RandomAccessFile

@@ -345,8 +345,6 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
     }
 
     /**
-     * @todo
-     *
      * @return a copy of this map, with the same order and same key/value pairs.
      */
     public Object clone() throws CloneNotSupportedException {
@@ -375,7 +373,7 @@ public class LinkedMap<K, V> extends AbstractDecoratedMap<K, V> implements Seria
      *     private static final int MAX_ENTRIES = 100;
      *
      *     protected boolean removeEldestEntry(Map.Entry eldest) {
-     *        return size() > MAX_ENTRIES;
+     *        return size() &gt; MAX_ENTRIES;
      *     }
      * </pre>
      *

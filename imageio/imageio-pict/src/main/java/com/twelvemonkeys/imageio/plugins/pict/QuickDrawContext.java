@@ -40,7 +40,6 @@ import static java.lang.Math.sqrt;
 
 /**
  * Emulates an Apple QuickDraw rendering context, backed by a Java {@link Graphics2D}.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: QuickDrawContext.java,v 1.0 Oct 3, 2007 1:24:35 AM haraldk Exp$
@@ -921,8 +920,9 @@ class QuickDrawContext {
 
     /**
      * CopyBits.
-     * <p/>
+     * <p>
      * Note that the destination is always {@code this}.
+     * </p>
      *
      * @param pSrcBitmap the source bitmap to copy pixels from
      * @param pSrcRect   the source rectangle

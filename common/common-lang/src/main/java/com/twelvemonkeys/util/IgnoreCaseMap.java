@@ -41,7 +41,6 @@ import java.util.Map;
  *  if the keys used are {@code Strings}. If the keys
  * used are not {@code String}s, it wil work as a normal
  * {@code java.util.Map}.
- * <p/>
  *
  * @see java.util.Map
  *
@@ -61,11 +60,12 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
      * Constructs a new {@code Map} with the same key-value mappings as the
      * given {@code Map}.
      * The backing map will be a {@link java.util.HashMap}
-     * <p/>
+     * <p>
      * NOTE: As the keys in the given map parameter will be converted to
      * uppercase (if they are strings), any duplicate key/value pair where
      * {@code key instanceof String && key.equalsIgnoreCase(otherKey)}
      * is true, will be lost.
+     * </p>
      *
      * @param pMap the map whose mappings are to be placed in this map.
      */
@@ -76,14 +76,16 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
     /**
      * Constructs a new {@code Map} with the same key-value mappings as the
      * given {@code Map}.
-     * <p/>
+     * <p>
      * NOTE: The backing map is structuraly cahnged, and it should NOT be
      * accessed directly, after the wrapped map is created.
-     * <p/>
+     * </p>
+     * <p>
      * NOTE: As the keys in the given map parameter will be converted to
      * uppercase (if they are strings), any duplicate key/value pair where
      * {@code key instanceof String && key.equalsIgnoreCase(otherKey)}
      * is true, will be lost.
+     * </p>
      *
      * @param pBacking the backing map of this map. Must be either empty, or
      * the same map as {@code pContents}.

@@ -36,7 +36,7 @@ import java.nio.channels.FileChannel;
 /**
  * A replacement for {@link java.io.RandomAccessFile} that is capable of reading
  * and writing data in little endian byte order.
- * <p/>
+ * <p>
  * <em>Warning:
  * The {@code DataInput} and {@code DataOutput} interfaces
  * specifies big endian byte order in their documentation.
@@ -44,6 +44,7 @@ import java.nio.channels.FileChannel;
  * implementation. However, I don't see a reason for the these interfaces to
  * specify the byte order of their underlying representations.
  * </em>
+ * </p>
  *
  * @see com.twelvemonkeys.io.LittleEndianDataInputStream
  * @see com.twelvemonkeys.io.LittleEndianDataOutputStream

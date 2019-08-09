@@ -32,13 +32,16 @@ package com.twelvemonkeys.imageio.plugins.hdr.tonemap;
 
 /**
  * GammaToneMapper.
- * <p/>
+ * <p>
  * Normalizes values to range [0...1] using:
- *
- * <p><em>V<sub>out</sub> = A V<sub>in</sub><sup>\u03b3</sup></em></p>
- *
+ * </p>
+ * <p>
+ *     <em>V<sub>out</sub> = A V<sub>in</sub><sup>\u03b3</sup></em>
+ * </p>
+ * <p>
  * Where <em>A</em> is constant and <em>\u03b3</em> is the gamma.
- * Values > 1 are clamped.
+ * Values &gt; 1 are clamped.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$

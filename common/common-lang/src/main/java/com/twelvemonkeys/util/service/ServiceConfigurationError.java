@@ -33,7 +33,7 @@ package com.twelvemonkeys.util.service;
 /**
  * Error thrown by the {@code ServiceRegistry} in case of a configuration
  * error.
- * <p/>
+ *
  * @see ServiceRegistry
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>

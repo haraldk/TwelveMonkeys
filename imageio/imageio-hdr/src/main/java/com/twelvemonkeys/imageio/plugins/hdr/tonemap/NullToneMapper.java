@@ -32,10 +32,11 @@ package com.twelvemonkeys.imageio.plugins.hdr.tonemap;
 
 /**
  * NullToneMapper.
- * <p/>
+ * <p>
  * This {@code ToneMapper} does *not* normalize or clamp values
  * to range [0...1], but leaves the values as-is.
  * Useful for applications that implements custom tone mapping.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$

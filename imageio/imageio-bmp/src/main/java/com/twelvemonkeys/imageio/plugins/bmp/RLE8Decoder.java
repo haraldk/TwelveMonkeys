@@ -36,7 +36,6 @@ import java.util.Arrays;
 
 /**
  * Implements 8 bit RLE decoding as specified by in the Windows BMP (aka DIB) file format.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: RLE8Decoder.java#1 $

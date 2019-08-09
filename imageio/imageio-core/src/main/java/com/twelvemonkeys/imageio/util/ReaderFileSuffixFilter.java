@@ -42,7 +42,6 @@ import java.util.Map;
 
 /**
  * ReaderFileSuffixFilter
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku$

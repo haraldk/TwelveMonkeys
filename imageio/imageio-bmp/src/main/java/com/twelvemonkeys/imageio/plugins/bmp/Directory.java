@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * Directory
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: Directory.java,v 1.0 25.feb.2006 00:29:44 haku Exp$

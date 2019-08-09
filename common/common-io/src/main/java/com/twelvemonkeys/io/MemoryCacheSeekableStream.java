@@ -37,7 +37,6 @@ import java.util.List;
 
 /**
  * A {@code SeekableInputStream} implementation that caches data in memory.
- * <p/>
  *
  * @see FileCacheSeekableStream
  *

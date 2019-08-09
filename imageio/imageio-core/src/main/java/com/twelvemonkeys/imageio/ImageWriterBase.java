@@ -60,12 +60,13 @@ public abstract class ImageWriterBase extends ImageWriter {
      * Constructs an {@code ImageWriter} and sets its
      * {@code originatingProvider} instance variable to the
      * supplied value.
-     * <p/>
-     * <p> Subclasses that make use of extensions should provide a
+     * <p>
+     * Subclasses that make use of extensions should provide a
      * constructor with signature {@code (ImageWriterSpi,
      * Object)} in order to retrieve the extension object.  If
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
+     * </p>
      *
      * @param provider the {@code ImageWriterSpi} that is constructing this object, or {@code null}.
      */
@@ -145,9 +146,10 @@ public abstract class ImageWriterBase extends ImageWriter {
      * Utility method for getting the area of interest (AOI) of an image.
      * The AOI is defined by the {@link javax.imageio.IIOParam#setSourceRegion(java.awt.Rectangle)}
      * method.
-     * <p/>
+     * <p>
      * Note: If it is possible for the writer to write the AOI directly, such a
      * method should be used instead, for efficiency.
+     * </p>
      *
      * @param pImage the image to get AOI from
      * @param pParam the param optionally specifying the AOI
@@ -165,12 +167,14 @@ public abstract class ImageWriterBase extends ImageWriter {
      * The subsampling is defined by the
      * {@link javax.imageio.IIOParam#setSourceSubsampling(int, int, int, int)}
      * method.
-     * <p/>
+     * <p>
      * NOTE: This method does not take the subsampling offsets into
      * consideration.
-     * <p/>
+     * </p>
+     * <p>
      * Note: If it is possible for the writer to subsample directly, such a
      * method should be used instead, for efficiency.
+     * </p>
      *
      * @param pImage the image to subsample
      * @param pParam the param optionally specifying subsampling
