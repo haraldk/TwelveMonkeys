@@ -165,6 +165,7 @@ public final class TIFFReader extends MetadataReader {
     }
 
     private IFD readIFD(final ImageInputStream pInput, final long pOffset, Collection<Integer> subIFDIds) throws IOException {
+        // TODO: Issue warning if IFD offset is not on word boundary (pOffset % 2 != 0)
         pInput.seek(pOffset);
 
         long entryCount = readEntryCount(pInput);
