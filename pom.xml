@@ -84,7 +84,7 @@
 
     <scm>
         <connection>scm:git:https://github.com/haraldk/TwelveMonkeys</connection>
-        <developerConnection>scm:git:ssh://github.com/haraldk/TwelveMonkeys</developerConnection>
+        <developerConnection>scm:git:ssh://git@github.com/haraldk/TwelveMonkeys</developerConnection>
         <url>https://github.com/haraldk/TwelveMonkeys</url>
         <tag>twelvemonkeys-3.4</tag>
     </scm>
