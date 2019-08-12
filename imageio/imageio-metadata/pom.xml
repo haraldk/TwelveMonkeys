@@ -3,7 +3,7 @@
     <parent>
 	<groupId>com.twelvemonkeys.imageio</groupId>        
 	<artifactId>imageio</artifactId>        
-        <version>3.4.2</version>
+        <version>3.4.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>imageio-metadata</artifactId>
