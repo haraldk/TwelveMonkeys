@@ -35,6 +35,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.event.IIOReadWarningListener;
@@ -43,9 +44,12 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImagingOpException;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.Buffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -70,7 +74,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
                 new TestData(getClassLoaderResource("/svg/batikLogo.svg"), new Dimension(450, 500)),
                 new TestData(getClassLoaderResource("/svg/red-square.svg"), new Dimension(100, 100)),
                 new TestData(getClassLoaderResource("/svg/blue-square.svg"), new Dimension(100, 100)),
-                new TestData(getClassLoaderResource("/svg/Android_robot.svg"), new Dimension(400, 400))
+                new TestData(getClassLoaderResource("/svg/Android_robot.svg"), new Dimension(294, 345))
         );
     }
 
@@ -97,6 +101,57 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
 
     protected List<String> getMIMETypes() {
         return Collections.singletonList("image/svg+xml");
+    }
+
+    @Test
+    public void testScaleViewBox() throws IOException {
+        URL svgUrl = getClassLoaderResource("/svg/quadrants.svg");
+
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+
+        SVGImageReader reader = createReader();
+        SVGReadParam param = new SVGReadParam();
+
+        int[] sizes = new int[]{16, 32, 64, 128};
+        for (int size : sizes) {
+            try (InputStream svgStream = svgUrl.openStream(); ImageInputStream iis = ImageIO.createImageInputStream(svgStream)) {
+                reader.reset();
+                reader.setInput(iis);
+
+
+                param.setSourceRenderSize(new Dimension(size, size));
+                BufferedImage image = reader.read(0, param);
+                checkQuadrantColors(image);
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    private void checkQuadrantColors(BufferedImage image) {
+        int quadPoint = image.getWidth() / 2;
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                int current = image.getRGB(x, y);
+                if (x < quadPoint) {
+                    if (y < quadPoint) {
+                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFF0000FF, current);
+                    }
+                    else {
+                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFFFF0000, current);
+                    }
+                }
+                else {
+                    if (y < quadPoint) {
+                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFF00FF00, current);
+                    }
+                    else {
+                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFF000000, current);
+                    }
+                }
+            }
+        }
     }
 
     @Test
