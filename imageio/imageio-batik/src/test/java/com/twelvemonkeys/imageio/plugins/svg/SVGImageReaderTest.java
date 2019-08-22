@@ -74,7 +74,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
                 new TestData(getClassLoaderResource("/svg/batikLogo.svg"), new Dimension(450, 500)),
                 new TestData(getClassLoaderResource("/svg/red-square.svg"), new Dimension(100, 100)),
                 new TestData(getClassLoaderResource("/svg/blue-square.svg"), new Dimension(100, 100)),
-                new TestData(getClassLoaderResource("/svg/Android_robot.svg"), new Dimension(400, 400))
+                new TestData(getClassLoaderResource("/svg/Android_robot.svg"), new Dimension(294, 345))
         );
     }
 
