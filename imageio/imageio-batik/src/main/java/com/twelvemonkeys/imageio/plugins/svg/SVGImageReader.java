@@ -46,6 +46,7 @@ import org.apache.batik.gvt.renderer.ImageRendererFactory;
 import org.apache.batik.transcoder.*;
 import org.apache.batik.transcoder.image.ImageTranscoder;
 import org.apache.batik.util.ParsedURL;
+import org.apache.batik.util.SVGConstants;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.svg.SVGSVGElement;
@@ -326,13 +327,21 @@ public class SVGImageReader extends ImageReaderBase {
 
             // get the 'width' and 'height' attributes of the SVG document
             Dimension2D docSize = ctx.getDocumentSize();
-            if (docSize != null)  {
+            if (docSize != null) {
                 defaultWidth = (float) docSize.getWidth();
                 defaultHeight = (float) docSize.getHeight();
             }
             else {
                 defaultWidth = 200;
                 defaultHeight = 200;
+            }
+            SVGSVGElement rootElement = svgDoc.getRootElement();
+            String viewBoxStr = rootElement.getAttributeNS
+                    (null, SVGConstants.SVG_VIEW_BOX_ATTRIBUTE);
+            if (viewBoxStr.length() != 0) {
+                float[] rect = ViewBox.parseViewBoxAttribute(rootElement, viewBoxStr, null);
+                defaultWidth = rect[2];
+                defaultHeight = rect[3];
             }
 
             // Hack to work around exception above
