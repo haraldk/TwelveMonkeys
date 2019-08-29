@@ -2481,12 +2481,74 @@ public final class TIFFImageReader extends ImageReaderBase {
         return read(imageIndex, param).getData();
     }
 
-    // TODO: Tiling support
-    // isImageTiled
-    // getTileWidth
-    // getTileHeight
-    // readTile
-    // readTileRaster
+    /// Tiling support
+    @Override
+    public boolean isImageTiled(int imageIndex) throws IOException {
+        readIFD(imageIndex);
+
+        // TODO: Treat strips as tiles? (TIFF.TAG_ROWS_PER_STRIP)
+        return currentIFD.getEntryById(TIFF.TAG_TILE_WIDTH) != null
+                && currentIFD.getEntryById(TIFF.TAG_TILE_HEIGTH) != null;
+    }
+
+    @Override
+    public int getTileWidth(int imageIndex) throws IOException {
+        readIFD(imageIndex);
+
+        int tileWidth = getValueAsIntWithDefault(TIFF.TAG_TILE_WIDTH, -1);
+        if (tileWidth > 0) {
+            return tileWidth;
+        }
+
+        return getWidth(imageIndex);
+    }
+
+    @Override
+    public int getTileHeight(int imageIndex) throws IOException {
+        readIFD(imageIndex);
+
+        int tileHeight = getValueAsIntWithDefault(TIFF.TAG_TILE_HEIGTH, -1);
+        if (tileHeight > 0) {
+            return tileHeight;
+        }
+
+        return getHeight(imageIndex);
+    }
+
+    private Rectangle computeTileRegion(int imageIndex, int tileX, int tileY) throws IOException {
+        int tileWidth = getTileWidth(imageIndex);
+        int tileHeight = getTileHeight(imageIndex);
+        int width = getWidth(imageIndex);
+        int height = getHeight(imageIndex);
+
+        int xOffset = tileX * tileWidth;
+        int yOffset = tileY * tileHeight;
+        int regionWidth = Math.min(tileWidth, width - xOffset);
+        int regionHeight = Math.min(tileHeight, height - yOffset);
+
+        if (tileX < 0 || tileY < 0 || regionWidth < 0 || regionHeight < 0) {
+            // NOTE: The readTileXxx methods specification requires this to be IllegalArgument, not OutOfBounds...
+            throw new IllegalArgumentException("Tile [" + tileX + "," + tileY + "] out of bounds");
+        }
+
+        return new Rectangle(xOffset, yOffset, regionWidth, regionHeight);
+    }
+
+    @Override
+    public BufferedImage readTile(int imageIndex, int tileX, int tileY) throws IOException {
+        ImageReadParam param = getDefaultReadParam();
+        param.setSourceRegion(computeTileRegion(imageIndex, tileX, tileY));
+
+        return read(imageIndex, param);
+    }
+
+    @Override
+    public Raster readTileRaster(int imageIndex, int tileX, int tileY) throws IOException {
+        ImageReadParam param = getDefaultReadParam();
+        param.setSourceRegion(computeTileRegion(imageIndex, tileX, tileY));
+
+        return readRaster(imageIndex, param);
+    }
 
     // TODO: Thumbnail support
 
