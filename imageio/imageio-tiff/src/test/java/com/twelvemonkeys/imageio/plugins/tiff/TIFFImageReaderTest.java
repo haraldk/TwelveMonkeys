@@ -709,6 +709,29 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadWithSubsampleParamPixelsBinary() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d.tif"), new Dimension(6, 4));
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
+
+    @Test
     public void testReadWithSubsampleParamPixelsJPEG() throws IOException {
         // Tiled "new style" JPEG
         ImageReader reader = createReader();
