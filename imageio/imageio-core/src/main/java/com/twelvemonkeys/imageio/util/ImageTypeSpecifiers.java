@@ -54,6 +54,28 @@ public final class ImageTypeSpecifiers {
     private ImageTypeSpecifiers() {}
 
     public static ImageTypeSpecifier createFromBufferedImageType(final int bufferedImageType) {
+        switch (bufferedImageType) {
+            // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for the USHORT types
+            case BufferedImage.TYPE_USHORT_565_RGB:
+                return createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                        0xF800,
+                        0x07E0,
+                        0x001F,
+                        0x0,
+                        DataBuffer.TYPE_USHORT,
+                        false);
+
+            case BufferedImage.TYPE_USHORT_555_RGB:
+                return createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                        0x7C00,
+                        0x03E0,
+                        0x001F,
+                        0x0,
+                        DataBuffer.TYPE_USHORT,
+                        false);
+            default:
+        }
+
         return ImageTypeSpecifier.createFromBufferedImageType(bufferedImageType);
     }
 
@@ -147,21 +169,21 @@ public final class ImageTypeSpecifiers {
 
         int numEntries = 1 << bits;
 
-        byte[] arr = new byte[numEntries];
-        byte[] arg = new byte[numEntries];
-        byte[] arb = new byte[numEntries];
+        byte[] r = new byte[numEntries];
+        byte[] g = new byte[numEntries];
+        byte[] b = new byte[numEntries];
 
         // Scale array values according to color profile..
         for (int i = 0; i < numEntries; i++) {
             float[] gray = new float[]{i / (float) (numEntries - 1)};
             float[] rgb = colorSpace.toRGB(gray);
 
-            arr[i] = (byte) (rgb[0] * 255);
-            arg[i] = (byte) (rgb[1] * 255);
-            arb[i] = (byte) (rgb[2]* 255);
+            r[i] = (byte) (rgb[0] * 255);
+            g[i] = (byte) (rgb[1] * 255);
+            b[i] = (byte) (rgb[2] * 255);
         }
 
-        ColorModel colorModel = new IndexColorModel(bits, numEntries, arr, arg, arb);
+        ColorModel colorModel = new IndexColorModel(bits, numEntries, r, g, b);
         SampleModel sampleModel = new MultiPixelPackedSampleModel(dataType, 1, 1, bits);
 
         return new ImageTypeSpecifier(colorModel, sampleModel);
