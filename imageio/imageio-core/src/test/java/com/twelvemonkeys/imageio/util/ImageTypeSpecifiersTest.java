@@ -61,10 +61,21 @@ public class ImageTypeSpecifiersTest {
     @Test
     public void testCreateFromBufferedImageType() {
         for (int type = BufferedImage.TYPE_INT_RGB; type < BufferedImage.TYPE_BYTE_INDEXED; type++) {
-            assertEquals(
-                    ImageTypeSpecifier.createFromBufferedImageType(type),
-                    ImageTypeSpecifiers.createFromBufferedImageType(type)
-            );
+            ImageTypeSpecifier expected;
+
+            switch (type) {
+                // Special handling for USHORT_565 and 555, due to bug in ImageTypeSpecifier for these types (DirectColorModel is 32 bits)
+                case BufferedImage.TYPE_USHORT_565_RGB:
+                    expected = createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false);
+                    break;
+                case BufferedImage.TYPE_USHORT_555_RGB:
+                    expected = createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false);
+                    break;
+                default:
+                    expected = ImageTypeSpecifier.createFromBufferedImageType(type);
+            }
+
+            assertEquals(expected, ImageTypeSpecifiers.createFromBufferedImageType(type));
         }
     }
 
@@ -119,7 +130,7 @@ public class ImageTypeSpecifiersTest {
 
         // Extra: Make sure color models bits is actually 16 (ImageTypeSpecifier equivalent returns 32)
         assertEquals(16, ImageTypeSpecifiers.createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false).getColorModel().getPixelSize());
-   }
+    }
 
     @Test
     public void testCreatePacked8() {
@@ -531,6 +542,7 @@ public class ImageTypeSpecifiersTest {
 
     @Test
     public void testCreatePackedGrayscale1() {
+        // TODO: Fails on Java 11, because IndexColorModel now has an overloaded equals that actually tests the color entries
         assertEquals(
                 ImageTypeSpecifier.createGrayscale(1, DataBuffer.TYPE_BYTE, false),
                 ImageTypeSpecifiers.createPackedGrayscale(GRAY, 1, DataBuffer.TYPE_BYTE)
@@ -539,6 +551,7 @@ public class ImageTypeSpecifiersTest {
 
     @Test
     public void testCreatePackedGrayscale2() {
+        // TODO: Fails on Java 11, because IndexColorModel now has an overloaded equals that actually tests the color entries
         assertEquals(
                 ImageTypeSpecifier.createGrayscale(2, DataBuffer.TYPE_BYTE, false),
                 ImageTypeSpecifiers.createPackedGrayscale(GRAY, 2, DataBuffer.TYPE_BYTE)
@@ -546,7 +559,8 @@ public class ImageTypeSpecifiersTest {
     }
 
     @Test
-    public void testCreatePackedGrayscale4() {
+    public void testCreatePackedGrayscale4() throws Exception {
+        // TODO: Fails on Java 11, because IndexColorModel now has an overloaded equals that actually tests the color entries
         assertEquals(
                 ImageTypeSpecifier.createGrayscale(4, DataBuffer.TYPE_BYTE, false),
                 ImageTypeSpecifiers.createPackedGrayscale(GRAY, 4, DataBuffer.TYPE_BYTE)
