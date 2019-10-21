@@ -922,7 +922,7 @@ public final class FileUtil {
             // A URL should never be able to represent an opaque URI, test anyway
             throw new IllegalArgumentException("URI is not hierarchical");
         }
-        if (path.equals("")) {
+        if (path.isEmpty()) {
             throw new IllegalArgumentException("URI path component is empty");
         }
 

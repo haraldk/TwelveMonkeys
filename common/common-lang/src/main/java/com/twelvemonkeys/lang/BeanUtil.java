@@ -88,7 +88,7 @@ public final class BeanUtil {
 
         while (begIdx < pProperty.length() && begIdx >= 0) {
 
-            endIdx = pProperty.indexOf(".", endIdx + 1);
+            endIdx = pProperty.indexOf('.', endIdx + 1);
             if (endIdx > 0) {
                 subProp = pProperty.substring(begIdx, endIdx);
                 begIdx = endIdx + 1;
@@ -106,7 +106,7 @@ public final class BeanUtil {
             Class[] paramClass = new Class[0];
 
             int begBracket;
-            if ((begBracket = subProp.indexOf("[")) > 0) {
+            if ((begBracket = subProp.indexOf('[')) > 0) {
                 // An error if there is no matching bracket
                 if (!subProp.endsWith("]")) {
                     return null;
