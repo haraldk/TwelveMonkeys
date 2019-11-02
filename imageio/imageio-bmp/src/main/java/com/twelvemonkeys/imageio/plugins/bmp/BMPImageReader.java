@@ -54,7 +54,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -197,7 +196,7 @@ public final class BMPImageReader extends ImageReaderBase {
         checkBounds(pImageIndex);
 
         // TODO: Better implementation, include INT_RGB types for 3BYTE_BGR and 4BYTE_ABGR for INT_ARGB
-        return Collections.singletonList(getRawImageType(pImageIndex)).iterator();
+        return Arrays.asList(getRawImageType(pImageIndex)).iterator();
     }
 
     @Override
