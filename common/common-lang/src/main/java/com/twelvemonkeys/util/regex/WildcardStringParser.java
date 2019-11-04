@@ -622,7 +622,7 @@ public class WildcardStringParser {
             buffer.append("\n");
             buffer.append("      Format: <state index>: <character> (<last free state>)");
             buffer.append("\n");
-            buffer.append("      Number of strings parsed: " + totalNumberOfStringsParsed);
+            buffer.append("      Number of strings parsed: ").append(totalNumberOfStringsParsed);
             buffer.append("\n");
         }
         return buffer.toString();
