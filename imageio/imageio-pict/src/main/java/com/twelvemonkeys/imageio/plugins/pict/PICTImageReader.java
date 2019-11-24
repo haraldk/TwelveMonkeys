@@ -78,7 +78,6 @@ import java.awt.image.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -182,7 +181,7 @@ public final class PICTImageReader extends ImageReaderBase {
             readPICTHeader0(pStream);
         }
     }
-
+    
     private void readPICTHeader0(final ImageInputStream pStream) throws IOException {
         // Get size
         picSize = pStream.readUnsignedShort();
@@ -326,7 +325,7 @@ public final class PICTImageReader extends ImageReaderBase {
 
     /**
      * Reads the PICT stream.
-     * The contents of the stream will be drawn onto the supplied graphics
+     * The contents of the stream will be drawn onto the supplied graphics 
      * object.
      * <p>
      * If "DEBUG" is true, the elements read are listed on stdout.
@@ -511,7 +510,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         ovSize.setLocation(x, y);
                         /*
                         ovSize.x *= 2;// Don't know why, but has to be multiplied by 2
-
+                        
                         ovSize.y *= 2;
                         */
                         if (DEBUG) {
@@ -2046,10 +2045,10 @@ public final class PICTImageReader extends ImageReaderBase {
         // Read in the RGB arrays
         byte[] dstBytes;
         if (packType == 1 || packType == 2 || packType == 3) {
-            dstBytes = new byte[rowBytes];
+            dstBytes = new byte[dstRect.width];
         }
         else if (packType == 4) {
-            dstBytes = new byte[cmpCount * rowBytes / 4];
+            dstBytes = new byte[cmpCount * dstRect.width];
         }
         else {
             throw new IIOException("Unknown pack type: " + packType);
@@ -2058,10 +2057,10 @@ public final class PICTImageReader extends ImageReaderBase {
         int[] pixArray = null;
         short[] shortArray = null;
         if (packType == 3) {
-            shortArray = new short[srcRect.height * (rowBytes + 1) / 2];
+            shortArray = new short[srcRect.height * (srcRect.width + 1)];
         }
         else {
-            pixArray = new int[srcRect.height * (rowBytes + 3) / 4];
+            pixArray = new int[srcRect.height * (srcRect.width + 3)];
         }
 
         int pixBufOffset = 0;
@@ -2628,7 +2627,7 @@ public final class PICTImageReader extends ImageReaderBase {
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         // TODO: The images look slightly different in Preview.. Could indicate the color space is wrong...
-        return Collections.singletonList(
+        return Arrays.asList(
                 ImageTypeSpecifiers.createPacked(
                         ColorSpace.getInstance(ColorSpace.CS_sRGB),
                         0xff0000, 0xff00, 0xff, 0xff000000, DataBuffer.TYPE_INT, false
