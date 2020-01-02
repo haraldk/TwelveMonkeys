@@ -91,7 +91,7 @@ public final class AdobePathWriter {
                     if (initial.apx != prev.apx || initial.apy != prev.apy) {
                         // TODO: Line back to initial if last anchor point does not equal initial anchor?
 //                        subpath.add(new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, 0, 0));
-                        System.err.println("FOO!");
+                        throw new AssertionError("Not a closed path");
                     }
                     subpath.set(0, new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, initial.apy, initial.apx, initial.cply, initial.cplx));
 

@@ -86,7 +86,7 @@ final class AdobePathSegment {
     }
 
     AdobePathSegment(int fillRuleSelector) {
-        this(isTrue(fillRuleSelector == PATH_FILL_RULE_RECORD, fillRuleSelector, "Expected fill rule record (6): %s"),
+        this(isTrue(fillRuleSelector == PATH_FILL_RULE_RECORD || fillRuleSelector == INITIAL_FILL_RULE_RECORD, fillRuleSelector, "Expected fill rule record (6 or 8): %s"),
              0, -1, -1, -1, -1, -1, -1);
     }
 
@@ -190,7 +190,6 @@ final class AdobePathSegment {
             default:
                 // fall-through
         }
-
         return String.format("Pt(pre=(%.3f, %.3f), knot=(%.3f, %.3f), post=(%.3f, %.3f), selector=%s)", cppx, cppy, apx, apy, cplx, cply, SELECTOR_NAMES[selector]);
     }
 }

@@ -57,8 +57,8 @@ public final class AdobePathReader {
     private final DataInput data;
 
     /**
-     * Creates a path builder that will read its data from a {@code DataInput}, such as an
-     * {@code ImageInputStream}.
+     * Creates a path reader that will read its data from a {@code DataInput},
+     * such as an {@code ImageInputStream}.
      * The data length is assumed to be a multiple of 26.
      *
      * @param data the input to read data from.
@@ -70,7 +70,7 @@ public final class AdobePathReader {
     }
 
     /**
-     * Creates a path builder that will read its data from a {@code byte} array.
+     * Creates a path reader that will read its data from a {@code byte} array.
      * The array length must be a multiple of 26, and greater than 0.
      *
      * @param data the array to read data from.
@@ -84,14 +84,14 @@ public final class AdobePathReader {
     }
 
     /**
-     * Builds the path.
+     * Builds the path by reading from the supplied input.
      *
      * @return the path
      * @throws javax.imageio.IIOException if the input contains a bad path data.
      * @throws IOException if a general I/O exception occurs during reading.
      */
     public Path2D path() throws IOException {
-        List<List<AdobePathSegment>> subPaths = new ArrayList<List<AdobePathSegment>>();
+        List<List<AdobePathSegment>> subPaths = new ArrayList<>();
         List<AdobePathSegment> currentPath = null;
         int currentPathLength = 0;
 
@@ -110,7 +110,7 @@ public final class AdobePathReader {
                     subPaths.add(currentPath);
                 }
 
-                currentPath = new ArrayList<AdobePathSegment>(segment.length);
+                currentPath = new ArrayList<>(segment.length);
                 currentPathLength = segment.length;
             }
             else if (segment.selector == AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED
@@ -137,7 +137,7 @@ public final class AdobePathReader {
             subPaths.add(currentPath);
         }
 
-        // now we have collected the PathPoints now create a Shape.
+        // We have collected the Path points, now create a Shape
         return pathToShape(subPaths);
     }
 
@@ -199,6 +199,8 @@ public final class AdobePathReader {
 
                         break;
                     }
+                    default:
+                        throw new AssertionError();
                 }
             }
         }
