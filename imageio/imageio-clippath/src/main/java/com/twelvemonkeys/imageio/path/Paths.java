@@ -69,7 +69,7 @@ import static java.util.Collections.singletonList;
  * </ul>
  *
  * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_17587">Adobe Photoshop Path resource format</a>
- * @see com.twelvemonkeys.imageio.path.AdobePathBuilder
+ * @see AdobePathReader
  * @author <a href="mailto:jpalmer@itemmaster.com">Jason Palmer, itemMaster LLC</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
@@ -90,7 +90,7 @@ public final class Paths {
      * @throws javax.imageio.IIOException if the input contains a bad path data.
      * @throws java.lang.IllegalArgumentException is {@code stream} is {@code null}.
      *
-     * @see com.twelvemonkeys.imageio.path.AdobePathBuilder
+     * @see AdobePathReader
      */
     public static Path2D readPath(final ImageInputStream stream) throws IOException {
         notNull(stream, "stream");
@@ -99,7 +99,7 @@ public final class Paths {
 
         if (magic == PSD.RESOURCE_TYPE) {
             // This is a PSD Image Resource Block, we can parse directly
-            return buildPathFromPhotoshopResources(stream);
+            return readPathFromPhotoshopResources(stream);
         }
         else if (magic == PSD.SIGNATURE_8BPS) {
             // PSD version
@@ -115,7 +115,7 @@ public final class Paths {
             long imageResourcesLen = stream.readUnsignedInt();
 
             // Image resources
-            return buildPathFromPhotoshopResources(new SubImageInputStream(stream, imageResourcesLen));
+            return readPathFromPhotoshopResources(new SubImageInputStream(stream, imageResourcesLen));
         }
         else if (magic >>> 16 == JPEG.SOI && (magic & 0xff00) == 0xff00) {
             // JPEG version
@@ -125,7 +125,7 @@ public final class Paths {
             List<JPEGSegment> photoshop = JPEGSegmentUtil.readSegments(stream, segmentIdentifiers);
 
             if (!photoshop.isEmpty()) {
-                return buildPathFromPhotoshopResources(new MemoryCacheImageInputStream(photoshop.get(0).data()));
+                return readPathFromPhotoshopResources(new MemoryCacheImageInputStream(photoshop.get(0).data()));
             }
         }
         else if (magic >>> 16 == TIFF.BYTE_ORDER_MARK_BIG_ENDIAN && (magic & 0xffff) == TIFF.TIFF_MAGIC
@@ -137,7 +137,7 @@ public final class Paths {
             Entry photoshop = directory.getEntryById(TIFF.TAG_PHOTOSHOP);
 
             if (photoshop != null) {
-                return buildPathFromPhotoshopResources(new ByteArrayImageInputStream((byte[]) photoshop.getValue()));
+                return readPathFromPhotoshopResources(new ByteArrayImageInputStream((byte[]) photoshop.getValue()));
             }
         }
 
@@ -156,17 +156,17 @@ public final class Paths {
         }
     }
 
-    private static Path2D buildPathFromPhotoshopResources(final ImageInputStream stream) throws IOException {
+    private static Path2D readPathFromPhotoshopResources(final ImageInputStream stream) throws IOException {
         Directory resourceBlocks = new PSDReader().read(stream);
 
-        if (AdobePathBuilder.DEBUG) {
+        if (AdobePathReader.DEBUG) {
             System.out.println("resourceBlocks: " + resourceBlocks);
         }
 
         Entry resourceBlock = resourceBlocks.getEntryById(PSD.RES_CLIPPING_PATH);
 
         if (resourceBlock != null) {
-            return new AdobePathBuilder((byte[]) resourceBlock.getValue()).path();
+            return new AdobePathReader((byte[]) resourceBlock.getValue()).path();
         }
 
         return null;
@@ -256,7 +256,19 @@ public final class Paths {
 
     // Test code
     public static void main(final String[] args) throws IOException, InterruptedException {
-        BufferedImage destination = readClipped(ImageIO.createImageInputStream(new File(args[0])));
+        BufferedImage destination;
+        if (args.length == 1) {
+            // Embedded path
+            try (ImageInputStream input = ImageIO.createImageInputStream(new File(args[0]))) {
+                destination = readClipped(input);
+            }
+        }
+        else {
+            // Separate path and image
+            try (ImageInputStream input = ImageIO.createImageInputStream(new File(args[1]))) {
+                destination = applyClippingPath(readPath(input), ImageIO.read(new File(args[0])));
+            }
+        }
 
         File tempFile = File.createTempFile("clipped-", ".png");
         tempFile.deleteOnExit();
