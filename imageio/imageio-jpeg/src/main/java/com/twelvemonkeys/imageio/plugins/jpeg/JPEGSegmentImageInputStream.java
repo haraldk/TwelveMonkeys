@@ -37,7 +37,7 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,12 +58,12 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     // TODO: Rewrite JPEGSegment (from metadata) to store stream pos/length, and be able to replay data, and use instead of Segment?
     // TODO: Support multiple JPEG streams (SOI...EOI, SOI...EOI, ...) in a single file
 
-    final private ImageInputStream stream;
-    final private JPEGSegmentStreamWarningListener warningListener;
+    private final ImageInputStream stream;
+    private final JPEGSegmentStreamWarningListener warningListener;
 
-    final private ComponentIdSet componentIds = new ComponentIdSet();
+    private final ComponentIdSet componentIds = new ComponentIdSet();
 
-    private final List<Segment> segments = new ArrayList<Segment>(64);
+    private final List<Segment> segments = new ArrayList<>(64);
     private int currentSegment = -1;
     private Segment segment;
 
@@ -275,7 +275,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 processWarningOccured(String.format("Duplicate component ID %d in SOF", id));
 
                 id++;
-                while (!componentIds.add(id) && componentIds.size() <= 16) {
+                while (componentIds.size() < 4 && !componentIds.add(id) && id < 255) {
                     id++;
                 }
 
@@ -330,7 +330,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     static String asAsciiString(final byte[] data, final int offset, final int length) {
-        return new String(data, offset, length, Charset.forName("ascii"));
+        return new String(data, offset, length, StandardCharsets.US_ASCII);
     }
 
     private void streamInit() throws IOException {
@@ -443,8 +443,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     @SuppressWarnings({"FinalizeDoesntCallSuperFinalize"})
+    @Deprecated
     @Override
-    protected void finalize() throws Throwable {
+    protected void finalize() {
         // Empty finalizer (for improved performance; no need to call super.finalize() in this case)
     }
 
@@ -585,7 +586,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     static final class ComponentIdSet {
-        final int[] values = new int[4]; // The native code don't support more than 4 components
+        final int[] values = new int[4]; // The native code doesn't support more than 4 components
         int size;
 
         boolean add(final int value) {
