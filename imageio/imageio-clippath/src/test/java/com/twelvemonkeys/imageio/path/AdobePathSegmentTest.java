@@ -195,11 +195,11 @@ public class AdobePathSegmentTest {
 
     @Test
     public void testToStringRule() {
-        String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD, 2).toString();
+        String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD).toString();
         assertTrue(string, string.startsWith("Rule"));
         assertTrue(string, string.contains("Initial"));
         assertTrue(string, string.contains("fill"));
-        assertTrue(string, string.contains("rule=2"));
+        assertTrue(string, string.contains("rule=0"));
     }
 
     @Test
@@ -208,13 +208,13 @@ public class AdobePathSegmentTest {
         assertTrue(string, string.startsWith("Len"));
         assertTrue(string, string.contains("Closed"));
         assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("totalPoints=2"));
+        assertTrue(string, string.contains("length=2"));
 
         string = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, 42).toString();
         assertTrue(string, string.startsWith("Len"));
         assertTrue(string, string.contains("Open"));
         assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("totalPoints=42"));
+        assertTrue(string, string.contains("length=42"));
     }
 
     @Test
