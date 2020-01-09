@@ -53,6 +53,9 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  */
 public final class AdobePathWriter {
 
+    // TODO: Might need to get hold of more real Photoshop samples to tune this threshold...
+    private static final double COLLINEARITY_THRESHOLD = 0.00000001;
+
     private final List<AdobePathSegment> segments;
 
     /**
@@ -97,9 +100,8 @@ public final class AdobePathWriter {
                 System.err.println("coords: " + Arrays.toString(coords));
             }
 
-            // TODO: We need to support unlinked segments!
-
-            boolean collinear;
+            // We write collinear points as linked segments
+            boolean collinear = isCollinear(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
 
             switch (segmentType) {
                 case PathIterator.SEG_MOVETO:
@@ -110,22 +112,16 @@ public final class AdobePathWriter {
                     break;
 
                 case PathIterator.SEG_LINETO:
-                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
-                    System.out.println("isCollinear? " + collinear);
                     subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
                     prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, coords[1], coords[0], coords[1], coords[0], 0, 0);
                     break;
 
                 case PathIterator.SEG_QUADTO:
-                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
-                    System.out.println("isCollinear? " + collinear);
                     subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
                     prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, coords[3], coords[2], coords[3], coords[2], 0, 0);
                     break;
 
                 case PathIterator.SEG_CUBICTO:
-                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
-                    System.out.println("isCollinear? " + collinear);
                     subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
                     prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, coords[3], coords[2], coords[5], coords[4], 0, 0);
                     break;
@@ -139,8 +135,7 @@ public final class AdobePathWriter {
                         throw new AssertionError("Not a closed path");
                     }
 
-                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.cplx, initial.cply);
-                    System.out.println("isCollinear? " + collinear);
+                    collinear = isCollinear(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.cplx, initial.cply);
                     subpath.set(0, new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, initial.apy, initial.apx, initial.cply, initial.cplx));
 
                     // Add to full path
@@ -158,20 +153,12 @@ public final class AdobePathWriter {
         return segments;
     }
 
-    private static final double COLLINEARITY_THRESHOLD = 0.035;
-
-    private static boolean isCollinearAndSameDistance(double x1, double y1, double x2, double y2, double x3, double y3) {
-//        return (y3 - y2) * (x2 - x1) == (y2 - y1) * (x3 - x2); // Collinear Slope
-//        return x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2) == 0; // Collinear (Double) Area
-
-//        return Math.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) <= 0.0005; // With some slack...
-
-//        return Math.abs(Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)) - Math.sqrt(Math.pow(x3 - x2, 2) + Math.pow(y3 - y2, 2))) <= 0.01;
-
-        // TODO: Get hold of a real Photoshop sample... The current data may be wrong.
-        // TODO: If correct, PS writes linked if all points are the same...
+    private static boolean isCollinear(double x1, double y1, double x2, double y2, double x3, double y3) {
+        // PS seems to write as linked if all points are the same....
         return (x1 == x2 && x2 == x3 && y1 == y2 && y2 == y3) ||
-                (x1 != x2 || y1 != y2) && (x2 != x3 || y2 != y3) && Math.abs((x2 - x1) - (x3 - x2)) <= COLLINEARITY_THRESHOLD && Math.abs((y2 - y1) - (y3 - y2)) <= COLLINEARITY_THRESHOLD;
+                (x1 != x2 || y1 != y2) && (x2 != x3 || y2 != y3) &&
+                 Math.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) <= COLLINEARITY_THRESHOLD; // With some slack...
+
     }
 
     void writePathResource(final DataOutput output) throws IOException {

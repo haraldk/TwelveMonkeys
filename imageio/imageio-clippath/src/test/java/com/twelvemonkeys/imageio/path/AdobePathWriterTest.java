@@ -245,13 +245,25 @@ public class AdobePathWriterTest {
 
         assertEquals(data.length, bytes.length);
 
-        // TODO: We currently write all points as linked, this is probably wrong
-        //  Also... Photoshop does write "something" undocumented in the filler bytes for the length records, which may or may not be important...
-//        assertEquals(formatSegments(data), formatSegments(bytes));
-//        assertArrayEquals(data, bytes);
+        // Path segment 3 contains some unknown bits in the filler bytes, we'll ignore those...
+        cleanLengthRecords(data);
+
+        assertEquals(formatSegments(data), formatSegments(bytes));
+        assertArrayEquals(data, bytes);
     }
 
-    static String formatSegments(byte[] data) {
+    private static void cleanLengthRecords(byte[] data) {
+        for (int i = 0; i < data.length; i += 26) {
+            if (data[i + 1] == CLOSED_SUBPATH_LENGTH_RECORD) {
+                // Clean everything after record type and length field
+                for (int j = 4; j < 26; j++) {
+                    data[i + j] = 0;
+                }
+            }
+        }
+    }
+
+    private static String formatSegments(byte[] data) {
         StringBuilder builder = new StringBuilder(data.length * 5);
 
         for (int i = 0; i < data.length; i += 26) {
@@ -282,9 +294,10 @@ public class AdobePathWriterTest {
 
         assertEquals(data.length, bytes.length);
 
-        // TODO: We currently write all points as linked, this is probably wrong
-        //  Also... Photoshop does write "something" undocumented in the filler bytes for the length records, which may or may not be important...
-//        assertEquals(formatSegments(data), formatSegments(bytes));
-//        assertArrayEquals(data, bytes);
+        // Path segment 3 and 48 contains some unknown bits in the filler bytes, we'll ignore that:
+        cleanLengthRecords(data);
+
+        assertEquals(formatSegments(data), formatSegments(bytes));
+        assertArrayEquals(data, bytes);
     }
 }
