@@ -28,9 +28,9 @@ public final class AdobePathBuilder {
     }
 
     /**
-     * @see AdobePathReader#path()
+     * @see AdobePathReader#readPath()
      */
     public Path2D path() throws IOException {
-        return delegate.path();
+        return delegate.readPath();
     }
 }

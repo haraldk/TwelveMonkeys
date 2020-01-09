@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2020 Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.path;
 
 import com.twelvemonkeys.imageio.metadata.psd.PSD;
@@ -13,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.path.AdobePathReader.DEBUG;
 import static com.twelvemonkeys.imageio.path.AdobePathSegment.*;
 import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
@@ -27,10 +58,10 @@ public final class AdobePathWriter {
     /**
      * Creates an AdobePathWriter for the given path.
      * <p>
- *     NOTE: Photoshop paths are stored with the coordinates
-     *     (0,0) representing the top left corner of the image,
-     *     and (1,1) representing the bottom right corner,
-     *     regardless of image dimensions.
+     * NOTE: Photoshop paths are stored with the coordinates
+     * (0,0) representing the top left corner of the image,
+     * and (1,1) representing the bottom right corner,
+     * regardless of image dimensions.
      * </p>
      *
      * @param path A {@code Path2D} instance that has {@link Path2D#WIND_EVEN_ODD WIND_EVEN_ODD} rule
@@ -51,16 +82,24 @@ public final class AdobePathWriter {
     // TODO: Look at the API so that conversion both ways are aligned. The read part builds a path from List<List<AdobePathSegment>...
     private static List<AdobePathSegment> pathToSegments(final PathIterator pathIterator) {
         double[] coords = new double[6];
-        AdobePathSegment prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, 0, 0, 0,0, 0, 0);
+        AdobePathSegment prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, 0, 0, 0, 0, 0, 0);
 
         List<AdobePathSegment> subpath = new ArrayList<>();
         List<AdobePathSegment> segments = new ArrayList<>();
-        segments.add(new AdobePathSegment(PATH_FILL_RULE_RECORD));
+        segments.add(new AdobePathSegment(PATH_FILL_RULE_RECORD, 0));
+        segments.add(new AdobePathSegment(INITIAL_FILL_RULE_RECORD, 0));
 
         while (!pathIterator.isDone()) {
             int segmentType = pathIterator.currentSegment(coords);
-            System.out.println("segmentType: " + segmentType);
-            System.err.println("coords: " + Arrays.toString(coords));
+
+            if (DEBUG) {
+                System.out.println("segmentType: " + segmentType);
+                System.err.println("coords: " + Arrays.toString(coords));
+            }
+
+            // TODO: We need to support unlinked segments!
+
+            boolean collinear;
 
             switch (segmentType) {
                 case PathIterator.SEG_MOVETO:
@@ -71,17 +110,23 @@ public final class AdobePathWriter {
                     break;
 
                 case PathIterator.SEG_LINETO:
-                    subpath.add(new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
+                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
+                    System.out.println("isCollinear? " + collinear);
+                    subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
                     prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, coords[1], coords[0], coords[1], coords[0], 0, 0);
                     break;
 
                 case PathIterator.SEG_QUADTO:
-                    subpath.add(new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
+                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
+                    System.out.println("isCollinear? " + collinear);
+                    subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
                     prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, coords[3], coords[2], coords[3], coords[2], 0, 0);
                     break;
 
                 case PathIterator.SEG_CUBICTO:
-                    subpath.add(new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
+                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, prev.apx, prev.apy, coords[0], coords[1]);
+                    System.out.println("isCollinear? " + collinear);
+                    subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, coords[1], coords[0]));
                     prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, coords[3], coords[2], coords[5], coords[4], 0, 0);
                     break;
 
@@ -93,7 +138,10 @@ public final class AdobePathWriter {
 //                        subpath.add(new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, 0, 0));
                         throw new AssertionError("Not a closed path");
                     }
-                    subpath.set(0, new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, initial.apy, initial.apx, initial.cply, initial.cplx));
+
+                    collinear = isCollinearAndSameDistance(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.cplx, initial.cply);
+                    System.out.println("isCollinear? " + collinear);
+                    subpath.set(0, new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, initial.apy, initial.apx, initial.cply, initial.cplx));
 
                     // Add to full path
                     segments.add(new AdobePathSegment(CLOSED_SUBPATH_LENGTH_RECORD, subpath.size()));
@@ -110,17 +158,38 @@ public final class AdobePathWriter {
         return segments;
     }
 
-    public void writePath(final DataOutput output) throws IOException {
-        System.err.println("segments: " + segments.size());
+    private static final double COLLINEARITY_THRESHOLD = 0.035;
 
+    private static boolean isCollinearAndSameDistance(double x1, double y1, double x2, double y2, double x3, double y3) {
+//        return (y3 - y2) * (x2 - x1) == (y2 - y1) * (x3 - x2); // Collinear Slope
+//        return x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2) == 0; // Collinear (Double) Area
+
+//        return Math.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) <= 0.0005; // With some slack...
+
+//        return Math.abs(Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)) - Math.sqrt(Math.pow(x3 - x2, 2) + Math.pow(y3 - y2, 2))) <= 0.01;
+
+        // TODO: Get hold of a real Photoshop sample... The current data may be wrong.
+        // TODO: If correct, PS writes linked if all points are the same...
+        return (x1 == x2 && x2 == x3 && y1 == y2 && y2 == y3) ||
+                (x1 != x2 || y1 != y2) && (x2 != x3 || y2 != y3) && Math.abs((x2 - x1) - (x3 - x2)) <= COLLINEARITY_THRESHOLD && Math.abs((y2 - y1) - (y3 - y2)) <= COLLINEARITY_THRESHOLD;
+    }
+
+    void writePathResource(final DataOutput output) throws IOException {
         output.writeInt(PSD.RESOURCE_TYPE);
         output.writeShort(PSD.RES_CLIPPING_PATH);
         output.writeShort(0); // Path name (Pascal string) empty + pad
         output.writeInt(segments.size() * 26); // Resource size
 
+        writePath(output);
+    }
+
+    public void writePath(final DataOutput output) throws IOException {
+        if (DEBUG) {
+            System.err.println("segments: " + segments.size());
+            System.err.println(segments);
+        }
 
         for (AdobePathSegment segment : segments) {
-            System.err.println(segment);
             switch (segment.selector) {
                 case PATH_FILL_RULE_RECORD:
                 case INITIAL_FILL_RULE_RECORD:
@@ -132,7 +201,7 @@ public final class AdobePathWriter {
                 case OPEN_SUBPATH_LENGTH_RECORD:
                 case CLOSED_SUBPATH_LENGTH_RECORD:
                     output.writeShort(segment.selector);
-                    output.writeShort(segment.length); // Subpath length
+                    output.writeShort(segment.lengthOrRule); // Subpath length
                     output.write(new byte[22]);
                     break;
                 default:
@@ -148,13 +217,15 @@ public final class AdobePathWriter {
         }
     }
 
-    public byte[] createPath() {
+    // TODO: Better name?
+    public byte[] writePath() {
         // TODO: Do we need to care about endianness for TIFF files?
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         try (DataOutputStream stream = new DataOutputStream(bytes)) {
             writePath(stream);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new AssertionError("Should never.. uh.. Oh well. It happened.", e);
         }
 

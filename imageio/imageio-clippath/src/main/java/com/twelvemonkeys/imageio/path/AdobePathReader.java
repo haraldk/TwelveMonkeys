@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2014-2020, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,6 @@ package com.twelvemonkeys.imageio.path;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 
 import javax.imageio.IIOException;
-import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.io.DataInput;
 import java.io.EOFException;
@@ -90,7 +89,7 @@ public final class AdobePathReader {
      * @throws javax.imageio.IIOException if the input contains a bad path data.
      * @throws IOException if a general I/O exception occurs during reading.
      */
-    public Path2D path() throws IOException {
+    public Path2D readPath() throws IOException {
         List<List<AdobePathSegment>> subPaths = new ArrayList<>();
         List<AdobePathSegment> currentPath = null;
         int currentPathLength = 0;
@@ -110,8 +109,8 @@ public final class AdobePathReader {
                     subPaths.add(currentPath);
                 }
 
-                currentPath = new ArrayList<>(segment.length);
-                currentPathLength = segment.length;
+                currentPath = new ArrayList<>(segment.lengthOrRule);
+                currentPathLength = segment.lengthOrRule;
             }
             else if (segment.selector == AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED
                     || segment.selector == AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED
@@ -149,8 +148,8 @@ public final class AdobePathReader {
      * closePath()
      */
     private Path2D pathToShape(final List<List<AdobePathSegment>> paths) {
-        GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD, paths.size());
-        GeneralPath subpath = null;
+        Path2D path = new Path2D.Float(Path2D.WIND_EVEN_ODD, paths.size());
+        Path2D subpath = null;
 
         for (List<AdobePathSegment> points : paths) {
             int length = points.size();
@@ -163,7 +162,7 @@ public final class AdobePathReader {
                 switch (step) {
                     // Begin
                     case 0: {
-                        subpath = new GeneralPath(Path2D.WIND_EVEN_ODD, length);
+                        subpath = new Path2D.Float(Path2D.WIND_EVEN_ODD, length);
                         subpath.moveTo(current.apx, current.apy);
 
                         if (length > 1) {
@@ -222,14 +221,12 @@ public final class AdobePathReader {
         switch (selector) {
             case AdobePathSegment.INITIAL_FILL_RULE_RECORD:
             case AdobePathSegment.PATH_FILL_RULE_RECORD:
-                // Spec says Fill rule is ignored by Photoshop
-                data.skipBytes(24);
-                return new AdobePathSegment(selector);
+                // Spec says Fill rule is ignored by Photoshop, we'll read it anyway
             case AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD:
             case AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD:
-                int size = data.readUnsignedShort();
+                int lengthOrRule = data.readUnsignedShort();
                 data.skipBytes(22);
-                return new AdobePathSegment(selector, size);
+                return new AdobePathSegment(selector, lengthOrRule);
             default:
                 return new AdobePathSegment(
                         selector,

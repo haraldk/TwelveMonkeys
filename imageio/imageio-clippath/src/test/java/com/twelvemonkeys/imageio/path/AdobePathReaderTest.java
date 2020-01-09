@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2020 Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,6 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 package com.twelvemonkeys.imageio.path;
 
 import org.junit.Test;
@@ -43,42 +44,41 @@ import static com.twelvemonkeys.imageio.path.PathsTest.assertPathEquals;
 import static com.twelvemonkeys.imageio.path.PathsTest.readExpectedPath;
 import static org.junit.Assert.assertNotNull;
 
-@SuppressWarnings("deprecation")
-public class AdobePathBuilderTest {
+public class AdobePathReaderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateNullBytes() {
-        new AdobePathBuilder((byte[]) null);
+        new AdobePathReader((byte[]) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateNull() {
-        new AdobePathBuilder((DataInput) null);
+        new AdobePathReader((DataInput) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateEmpty() {
-        new AdobePathBuilder(new byte[0]);
+        new AdobePathReader(new byte[0]);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateShortPath() {
-        new AdobePathBuilder(new byte[3]);
+        new AdobePathReader(new byte[3]);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testCreateImpossiblePath() {
-        new AdobePathBuilder(new byte[7]);
+        new AdobePathReader(new byte[7]);
     }
 
     @Test
     public void testCreate() {
-        new AdobePathBuilder(new byte[52]);
+        new AdobePathReader(new byte[52]);
     }
 
     @Test
     public void testNoPath() throws IOException {
-        Path2D path = new AdobePathBuilder(new byte[26]).path();
+        Path2D path = new AdobePathReader(new byte[26]).readPath();
         assertNotNull(path);
     }
 
@@ -89,7 +89,7 @@ public class AdobePathBuilderTest {
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD);
         buffer.putShort((short) 1);
 
-        Path2D path = new AdobePathBuilder(data).path();
+        Path2D path = new AdobePathReader(data).readPath();
         assertNotNull(path);
     }
 
@@ -102,7 +102,7 @@ public class AdobePathBuilderTest {
         buffer.position(buffer.position() + 22);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED);
 
-        Path2D path = new AdobePathBuilder(data).path();
+        Path2D path = new AdobePathReader(data).readPath();
         assertNotNull(path);
     }
 
@@ -117,7 +117,7 @@ public class AdobePathBuilderTest {
         buffer.position(buffer.position() + 24);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED);
 
-        Path2D path = new AdobePathBuilder(data).path();
+        Path2D path = new AdobePathReader(data).readPath();
         assertNotNull(path);
     }
 
@@ -127,7 +127,7 @@ public class AdobePathBuilderTest {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED);
 
-        Path2D path = new AdobePathBuilder(data).path();
+        Path2D path = new AdobePathReader(data).readPath();
         assertNotNull(path);
     }
 
@@ -141,7 +141,7 @@ public class AdobePathBuilderTest {
         byte[] data = new byte[1248];
         stream.readFully(data);
 
-        Path2D path = new AdobePathBuilder(data).path();
+        Path2D path = new AdobePathReader(data).readPath();
 
         assertNotNull(path);
         assertPathEquals(path, readExpectedPath("/ser/grape-path.ser"));
@@ -157,7 +157,7 @@ public class AdobePathBuilderTest {
         byte[] data = new byte[1534];
         stream.readFully(data);
 
-        Path2D path = new AdobePathBuilder(data).path();
+        Path2D path = new AdobePathReader(data).readPath();
 
         assertNotNull(path);
         assertPathEquals(path, readExpectedPath("/ser/multiple-clips.ser"));

@@ -83,7 +83,6 @@ public final class PSDReader extends MetadataReader {
 
                 PSDResource resource = new PSDResource(id, input);
                 entries.add(new PSDEntry(id, resource.name(), resource.data()));
-
             }
             catch (EOFException e) {
                 break;

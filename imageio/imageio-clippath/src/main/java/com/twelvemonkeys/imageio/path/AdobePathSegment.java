@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2014-2020, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ final class AdobePathSegment {
     };
 
     final int selector;
-    final int length;
+    final int lengthOrRule;
 
     // TODO: Consider keeping these in 8.24FP format
     // Control point preceding knot
@@ -85,18 +85,14 @@ final class AdobePathSegment {
         this(selector, -1, cppy, cppx, apy, apx, cply, cplx);
     }
 
-    AdobePathSegment(int fillRuleSelector) {
-        this(isTrue(fillRuleSelector == PATH_FILL_RULE_RECORD || fillRuleSelector == INITIAL_FILL_RULE_RECORD, fillRuleSelector, "Expected fill rule record (6 or 8): %s"),
-             0, -1, -1, -1, -1, -1, -1);
-    }
-
-    AdobePathSegment(final int lengthSelector, final int length) {
-        this(isTrue(lengthSelector == CLOSED_SUBPATH_LENGTH_RECORD || lengthSelector == OPEN_SUBPATH_LENGTH_RECORD, lengthSelector, "Expected path length record (0 or 3): %s"),
-             length,
+    AdobePathSegment(final int selector, final int lengthOrRule) {
+        this(isTrue(selector == CLOSED_SUBPATH_LENGTH_RECORD || selector == OPEN_SUBPATH_LENGTH_RECORD
+                        || selector == PATH_FILL_RULE_RECORD || selector == INITIAL_FILL_RULE_RECORD, selector, "Expected path length or fill rule record (0/3 or 6/8): %s"),
+             lengthOrRule,
              -1, -1, -1, -1, -1, -1);
     }
 
-    private AdobePathSegment(final int selector, final int length,
+    private AdobePathSegment(final int selector, final int lengthOrRule,
                              final double cppy, final double cppx,
                              final double apy, final double apx,
                              final double cply, final double cplx) {
@@ -104,7 +100,7 @@ final class AdobePathSegment {
         switch (selector) {
             case CLOSED_SUBPATH_LENGTH_RECORD:
             case OPEN_SUBPATH_LENGTH_RECORD:
-                isTrue(length >= 0, length, "Expected positive length: %d");
+                isTrue(lengthOrRule >= 0, lengthOrRule, "Expected positive length: %d");
                 break;
             case CLOSED_SUBPATH_BEZIER_LINKED:
             case CLOSED_SUBPATH_BEZIER_UNLINKED:
@@ -116,15 +112,17 @@ final class AdobePathSegment {
                 );
                 break;
             case PATH_FILL_RULE_RECORD:
-            case CLIPBOARD_RECORD:
             case INITIAL_FILL_RULE_RECORD:
+                isTrue(lengthOrRule == 0 || lengthOrRule == 1, lengthOrRule, "Expected rule (1 or 0): %d");
+                break;
+            case CLIPBOARD_RECORD:
                 break;
             default:
                 throw new IllegalArgumentException("Unknown selector: " + selector);
         }
 
         this.selector = selector;
-        this.length = length;
+        this.lengthOrRule = lengthOrRule;
         this.cppy = cppy;
         this.cppx = cppx;
         this.apy = apy;
@@ -152,7 +150,7 @@ final class AdobePathSegment {
                 && Double.compare(that.cppx, cppx) == 0
                 && Double.compare(that.cppy, cppy) == 0
                 && selector == that.selector
-                && length == that.length;
+                && lengthOrRule == that.lengthOrRule;
 
     }
 
@@ -161,7 +159,7 @@ final class AdobePathSegment {
         long tempBits;
 
         int result = selector;
-        result = 31 * result + length;
+        result = 31 * result + lengthOrRule;
         tempBits = Double.doubleToLongBits(cppy);
         result = 31 * result + (int) (tempBits ^ (tempBits >>> 32));
         tempBits = Double.doubleToLongBits(cppx);
@@ -183,10 +181,10 @@ final class AdobePathSegment {
         switch (selector) {
             case INITIAL_FILL_RULE_RECORD:
             case PATH_FILL_RULE_RECORD:
-                return String.format("Rule(selector=%s, rule=%d)", SELECTOR_NAMES[selector], length);
+                return String.format("Rule(selector=%s, rule=%d)", SELECTOR_NAMES[selector], lengthOrRule);
             case CLOSED_SUBPATH_LENGTH_RECORD:
             case OPEN_SUBPATH_LENGTH_RECORD:
-                return String.format("Len(selector=%s, length=%d)", SELECTOR_NAMES[selector], length);
+                return String.format("Len(selector=%s, length=%d)", SELECTOR_NAMES[selector], lengthOrRule);
             default:
                 // fall-through
         }

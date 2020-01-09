@@ -125,12 +125,12 @@ public class PathsTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testApplyClippingPathNullPath() throws IOException {
+    public void testApplyClippingPathNullPath() {
         Paths.applyClippingPath(null, new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testApplyClippingPathNullSource() throws IOException {
+    public void testApplyClippingPathNullSource() {
         Paths.applyClippingPath(new GeneralPath(), null);
     }
 
@@ -147,7 +147,7 @@ public class PathsTest {
         assertEquals(source.getWidth(), image.getWidth());
         assertEquals(source.getHeight(), image.getHeight());
         // Transparent
-        assertTrue(image.getColorModel().getTransparency() == Transparency.TRANSLUCENT);
+        assertEquals(Transparency.TRANSLUCENT, image.getColorModel().getTransparency());
 
         // Corners (at least) should be transparent
         assertEquals(0, image.getRGB(0, 0));
@@ -161,8 +161,9 @@ public class PathsTest {
         // TODO: Mor sophisticated test that tests all pixels outside path...
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = IllegalArgumentException.class)
-    public void testApplyClippingPathNullDestination() throws IOException {
+    public void testApplyClippingPathNullDestination() {
         Paths.applyClippingPath(new GeneralPath(), new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), null);
     }
 
@@ -209,7 +210,7 @@ public class PathsTest {
         assertEquals(857, image.getWidth());
         assertEquals(1800, image.getHeight());
         // Transparent
-        assertTrue(image.getColorModel().getTransparency() == Transparency.TRANSLUCENT);
+        assertEquals(Transparency.TRANSLUCENT, image.getColorModel().getTransparency());
 
         // Corners (at least) should be transparent
         assertEquals(0, image.getRGB(0, 0));
@@ -230,34 +231,34 @@ public class PathsTest {
     }
 
     static Path2D readExpectedPath(final String resource) throws IOException {
-        ObjectInputStream ois = new ObjectInputStream(PathsTest.class.getResourceAsStream(resource));
-
-        try {
+        try (ObjectInputStream ois = new ObjectInputStream(PathsTest.class.getResourceAsStream(resource))) {
             return (Path2D) ois.readObject();
         }
         catch (ClassNotFoundException e) {
             throw new IOException(e);
-        }
-        finally {
-            ois.close();
         }
     }
 
     static void assertPathEquals(final Path2D expectedPath, final Path2D actualPath) {
         PathIterator expectedIterator = expectedPath.getPathIterator(null);
         PathIterator actualIterator = actualPath.getPathIterator(null);
+
         float[] expectedCoords = new float[6];
         float[] actualCoords = new float[6];
 
-        while(!actualIterator.isDone()) {
+        while(!expectedIterator.isDone()) {
+            assertFalse("Less points than expected", actualIterator.isDone());
+
             int expectedType = expectedIterator.currentSegment(expectedCoords);
             int actualType = actualIterator.currentSegment(actualCoords);
 
-            assertEquals(expectedType, actualType);
-            assertArrayEquals(expectedCoords, actualCoords, 0);
+            assertEquals("Unexpected segment type", expectedType, actualType);
+            assertArrayEquals("Unexpected coordinates", expectedCoords, actualCoords, 0);
 
             actualIterator.next();
             expectedIterator.next();
         }
+
+        assertTrue("More points than expected", actualIterator.isDone());
     }
 }

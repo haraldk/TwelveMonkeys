@@ -163,10 +163,10 @@ public final class Paths {
             System.out.println("resourceBlocks: " + resourceBlocks);
         }
 
-        Entry resourceBlock = resourceBlocks.getEntryById(PSD.RES_CLIPPING_PATH);
+        Entry pathResource = resourceBlocks.getEntryById(PSD.RES_CLIPPING_PATH);
 
-        if (resourceBlock != null) {
-            return new AdobePathReader((byte[]) resourceBlock.getValue()).path();
+        if (pathResource != null) {
+            return new AdobePathReader((byte[]) pathResource.getValue()).readPath();
         }
 
         return null;
@@ -259,9 +259,7 @@ public final class Paths {
         BufferedImage destination;
         if (args.length == 1) {
             // Embedded path
-            try (ImageInputStream input = ImageIO.createImageInputStream(new File(args[0]))) {
-                destination = readClipped(input);
-            }
+            destination = readClipped(ImageIO.createImageInputStream(new File(args[0])));
         }
         else {
             // Separate path and image
@@ -282,5 +280,4 @@ public final class Paths {
             System.err.printf("%s not deleted\n", tempFile);
         }
     }
-
 }
