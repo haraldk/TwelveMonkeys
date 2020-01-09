@@ -131,6 +131,14 @@ final class AdobePathSegment {
         this.cplx = cplx;
     }
 
+    static int toFixedPoint(final double value) {
+        return (int) Math.round(value * 0x1000000);
+    }
+
+    static double fromFixedPoint(final int fixed) {
+        return ((double) fixed / 0x1000000);
+    }
+
     @Override
     public boolean equals(final Object other) {
         if (this == other) {

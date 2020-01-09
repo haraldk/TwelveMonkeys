@@ -219,8 +219,4 @@ public final class AdobePathWriter {
         return bytes.toByteArray();
     }
 
-    // TODO: Move to AdobePathSegment
-    private static int toFixedPoint(final double value) {
-        return (int) Math.round(value * 0x1000000);
-    }
 }

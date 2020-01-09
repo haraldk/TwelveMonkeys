@@ -230,18 +230,14 @@ public final class AdobePathReader {
             default:
                 return new AdobePathSegment(
                         selector,
-                        toFixedPoint(data.readInt()),
-                        toFixedPoint(data.readInt()),
-                        toFixedPoint(data.readInt()),
-                        toFixedPoint(data.readInt()),
-                        toFixedPoint(data.readInt()),
-                        toFixedPoint(data.readInt())
+                        AdobePathSegment.fromFixedPoint(data.readInt()),
+                        AdobePathSegment.fromFixedPoint(data.readInt()),
+                        AdobePathSegment.fromFixedPoint(data.readInt()),
+                        AdobePathSegment.fromFixedPoint(data.readInt()),
+                        AdobePathSegment.fromFixedPoint(data.readInt()),
+                        AdobePathSegment.fromFixedPoint(data.readInt())
                 );
         }
     }
 
-    // TODO: Move to AdobePathSegment
-    private static double toFixedPoint(final int fixed) {
-        return ((double) fixed / 0x1000000);
-    }
 }
