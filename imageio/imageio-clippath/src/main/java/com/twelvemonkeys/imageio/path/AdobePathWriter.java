@@ -97,7 +97,7 @@ public final class AdobePathWriter {
 
             if (DEBUG) {
                 System.out.println("segmentType: " + segmentType);
-                System.err.println("coords: " + Arrays.toString(coords));
+                System.out.println("coords: " + Arrays.toString(coords));
             }
 
             // We write collinear points as linked segments
@@ -172,8 +172,8 @@ public final class AdobePathWriter {
 
     public void writePath(final DataOutput output) throws IOException {
         if (DEBUG) {
-            System.err.println("segments: " + segments.size());
-            System.err.println(segments);
+            System.out.println("segments: " + segments.size());
+            System.out.println(segments);
         }
 
         for (AdobePathSegment segment : segments) {
