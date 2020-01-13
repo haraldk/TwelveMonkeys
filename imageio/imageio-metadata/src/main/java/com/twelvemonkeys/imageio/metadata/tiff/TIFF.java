@@ -144,6 +144,7 @@ public interface TIFF {
     int TAG_ROWS_PER_STRIP = 278;
     int TAG_STRIP_BYTE_COUNTS = 279;
     int TAG_FREE_OFFSETS = 288; // "Not recommended for general interchange."
+    int TAG_FREE_BYTE_COUNTS = 289;
     // "Old-style" JPEG (still used as EXIF thumbnail)
     int TAG_JPEG_INTERCHANGE_FORMAT = 513;
     int TAG_JPEG_INTERCHANGE_FORMAT_LENGTH = 514;
