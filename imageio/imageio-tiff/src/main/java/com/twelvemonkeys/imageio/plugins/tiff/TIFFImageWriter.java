@@ -314,8 +314,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
             long streamPosition = imageOutput.getStreamPosition();
 
             long ifdSize = tiffWriter.computeIFDSize(entries.values());
-            long stripOffset = streamPosition + 4 +  ifdSize + 4;
-            long stripByteCount = (renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7) / 8;
+            long stripOffset = streamPosition + 4 + ifdSize + 4;
+            long stripByteCount = ((long) renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7L) / 8L;
 
             entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
