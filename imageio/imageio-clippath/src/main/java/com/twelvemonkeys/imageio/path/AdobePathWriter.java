@@ -67,16 +67,14 @@ public final class AdobePathWriter {
      * regardless of image dimensions.
      * </p>
      *
-     * @param path A {@code Path2D} instance that has {@link Path2D#WIND_EVEN_ODD WIND_EVEN_ODD} rule
+     * @param path A {@code Shape} instance that has {@link Path2D#WIND_EVEN_ODD WIND_EVEN_ODD} rule
      *             and is contained within the rectangle [x=0.0,y=0.0,w=1.0,h=1.0].
      * @throws IllegalArgumentException if {@code path} is {@code null},
      *                                  the paths winding rule is not @link Path2D#WIND_EVEN_ODD} or
      *                                  the paths bounding box is outside [x=0.0,y=0.0,w=1.0,h=1.0].
      */
-    public AdobePathWriter(final Path2D path) {
+    public AdobePathWriter(final Shape path) {
         notNull(path, "path");
-        // TODO: Test if PS really ignores winding rule as documented... Otherwise we could support writing non-zero too.
-        isTrue(path.getWindingRule() == Path2D.WIND_EVEN_ODD, path.getWindingRule(), "Only even/odd winding rule supported: %d");
         isTrue(new Rectangle(0, 0, 1, 1).contains(path.getBounds2D()), path.getBounds2D(), "Path bounds must be within [x=0,y=0,w=1,h=1]: %s");
 
         segments = pathToSegments(path.getPathIterator(null));
@@ -84,6 +82,9 @@ public final class AdobePathWriter {
 
     // TODO: Look at the API so that conversion both ways are aligned. The read part builds a path from List<List<AdobePathSegment>...
     private static List<AdobePathSegment> pathToSegments(final PathIterator pathIterator) {
+        // TODO: Test if PS really ignores winding rule as documented... Otherwise we could support writing non-zero too.
+        isTrue(pathIterator.getWindingRule() == Path2D.WIND_EVEN_ODD, pathIterator.getWindingRule(), "Only even/odd winding rule supported: %d");
+
         double[] coords = new double[6];
         AdobePathSegment prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, 0, 0, 0, 0, 0, 0);
 
@@ -154,13 +155,19 @@ public final class AdobePathWriter {
     }
 
     private static boolean isCollinear(double x1, double y1, double x2, double y2, double x3, double y3) {
-        // PS seems to write as linked if all points are the same....
+        // Photoshop seems to write as linked if all points are the same....
         return (x1 == x2 && x2 == x3 && y1 == y2 && y2 == y3) ||
                 (x1 != x2 || y1 != y2) && (x2 != x3 || y2 != y3) &&
                  Math.abs(x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) <= COLLINEARITY_THRESHOLD; // With some slack...
 
     }
 
+    /**
+     * Writes the path as a complete Photoshop clipping path resource to the given stream.
+     *
+     * @param output the stream to write to.
+     * @throws IOException if an I/O exception happens during writing.
+     */
     void writePathResource(final DataOutput output) throws IOException {
         output.writeInt(PSD.RESOURCE_TYPE);
         output.writeShort(PSD.RES_CLIPPING_PATH);
@@ -170,6 +177,12 @@ public final class AdobePathWriter {
         writePath(output);
     }
 
+    /**
+     * Writes the path as a set of Adobe path segments to the given stream.
+     *
+     * @param output the stream to write to.
+     * @throws IOException if an I/O exception happens during writing.
+     */
     public void writePath(final DataOutput output) throws IOException {
         if (DEBUG) {
             System.out.println("segments: " + segments.size());
@@ -204,16 +217,29 @@ public final class AdobePathWriter {
         }
     }
 
+    // TODO: Do we need to care about endianness for TIFF files?
     // TODO: Better name?
+    byte[] writePathResource() {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (DataOutputStream stream = new DataOutputStream(bytes)) {
+            writePathResource(stream);
+        }
+        catch (IOException e) {
+            throw new AssertionError("ByteArrayOutputStream threw IOException", e);
+        }
+
+        return bytes.toByteArray();
+    }
+
     public byte[] writePath() {
-        // TODO: Do we need to care about endianness for TIFF files?
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         try (DataOutputStream stream = new DataOutputStream(bytes)) {
             writePath(stream);
         }
         catch (IOException e) {
-            throw new AssertionError("Should never.. uh.. Oh well. It happened.", e);
+            throw new AssertionError("ByteArrayOutputStream threw IOException", e);
         }
 
         return bytes.toByteArray();
