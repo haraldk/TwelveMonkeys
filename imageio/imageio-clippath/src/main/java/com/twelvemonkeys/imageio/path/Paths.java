@@ -62,6 +62,7 @@ import java.util.Map;
 
 import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 
@@ -279,6 +280,7 @@ public final class Paths {
 
                 ImageWriteParam param = writer.getDefaultWriteParam();
                 IIOMetadata metadata = writer.getDefaultImageMetadata(type, param);
+                List<String> metadataFormats = asList(metadata.getMetadataFormatNames());
 
                 byte[] pathResource = new AdobePathWriter(clipPath).writePathResource();
 
@@ -286,7 +288,10 @@ public final class Paths {
                     param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
                     param.setCompressionType("Deflate");
 
-                    String metadataFormat = "com_sun_media_imageio_plugins_tiff_image_1.0";
+                    // Check if the format is that of the bundled TIFF writer, otherwise use JAI format
+                    String metadataFormat = metadataFormats.contains("javax_imageio_tiff_image_1.0")
+                                            ? "javax_imageio_tiff_image_1.0"
+                                            : "com_sun_media_imageio_plugins_tiff_image_1.0"; // Fails in mergeTree, if not supported
                     IIOMetadataNode root = new IIOMetadataNode(metadataFormat);
                     IIOMetadataNode ifd = new IIOMetadataNode("TIFFIFD");
 
@@ -350,7 +355,7 @@ public final class Paths {
                 return builder.toString();
             }
 
-            builder.append(", ");
+            builder.append(","); // NOTE: The javax_imageio_tiff_image_1.0 format does not allow whitespace here...
         }
     }
 
