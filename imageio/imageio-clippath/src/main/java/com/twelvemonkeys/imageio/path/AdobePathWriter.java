@@ -131,9 +131,10 @@ public final class AdobePathWriter {
                     // Replace initial point.
                     AdobePathSegment initial = subpath.get(0);
                     if (initial.apx != prev.apx || initial.apy != prev.apy) {
-                        // TODO: Line back to initial if last anchor point does not equal initial anchor?
-//                        subpath.add(new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, 0, 0));
-                        throw new AssertionError("Not a closed path");
+                        // Line back to initial if last anchor point does not equal initial anchor
+                        collinear = isCollinear(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.apx, initial.apy);
+                        subpath.add(new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, prev.apy, prev.apx, initial.apy, initial.apx));
+                        prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, initial.apy, initial.apx, initial.apy, initial.apx, 0, 0);
                     }
 
                     collinear = isCollinear(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.cplx, initial.cply);
@@ -150,6 +151,9 @@ public final class AdobePathWriter {
 
             pathIterator.next();
         }
+
+        // TODO: If subpath is not empty at this point, there was no close segment...
+        // Either wrap up (if coordinates match), or throw exception (otherwise)
 
         return segments;
     }

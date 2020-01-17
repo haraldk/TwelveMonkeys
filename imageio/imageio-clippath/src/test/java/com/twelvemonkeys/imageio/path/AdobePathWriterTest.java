@@ -44,8 +44,7 @@ import java.util.Arrays;
 
 import static com.twelvemonkeys.imageio.path.AdobePathSegment.*;
 import static com.twelvemonkeys.imageio.path.PathsTest.assertPathEquals;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * AdobePathWriterTest.
@@ -91,6 +90,46 @@ public class AdobePathWriterTest {
                 .getPathIterator(AffineTransform.getScaleInstance(1 / 2.0, 1 / 2.0)), false);
 
         new AdobePathWriter(path);
+    }
+
+    @Test
+    public void testCreateClosed() {
+        GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD);
+        path.moveTo(.5, .5);
+        path.lineTo(1, .5);
+        path.curveTo(1, 1, 1, 1, .5, 1);
+        path.closePath();
+
+        new AdobePathWriter(path).writePath();
+
+        fail("Test that we have 4 segments");
+    }
+
+    @Test
+    public void testCreateImplicitClosed() {
+        GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD);
+        path.moveTo(.5, .5);
+        path.lineTo(1, .5);
+        path.curveTo(1, 1, 1, 1, .5, 1);
+        path.lineTo(.5, .5);
+
+        new AdobePathWriter(path).writePath(); // TODO: Should we allow this?
+
+        fail("Test that we have 4 segments, and that it is equal to the one above");
+    }
+
+    @Test
+    public void testCreateDoubleClosed() {
+        GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD);
+        path.moveTo(.5, .5);
+        path.lineTo(1, .5);
+        path.curveTo(1, 1, 1, 1, .5, 1);
+        path.lineTo(.5, .5);
+        path.closePath();
+
+        new AdobePathWriter(path).writePath();
+
+        fail("Test that we have 4 segments, and that it is equal to the one above");
     }
 
     @Test
@@ -168,7 +207,7 @@ public class AdobePathWriterTest {
         AdobePathWriter pathCreator = new AdobePathWriter(path);
 
         byte[] bytes = pathCreator.writePath();
-        System.err.println(Arrays.toString(bytes));
+//        System.err.println(Arrays.toString(bytes));
 
         assertEquals(12 * 26, bytes.length);
 
