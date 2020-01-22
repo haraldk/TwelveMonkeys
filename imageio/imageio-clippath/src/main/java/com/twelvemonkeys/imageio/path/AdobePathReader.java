@@ -44,7 +44,7 @@ import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
- * Creates a {@code Shape} object from an Adobe Photoshop Path resource.
+ * Reads a {@code Shape} object from an Adobe Photoshop Path resource.
  *
  * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_17587">Adobe Photoshop Path resource format</a>
  * @author <a href="mailto:jpalmer@itemmaster.com">Jason Palmer, itemMaster LLC</a>

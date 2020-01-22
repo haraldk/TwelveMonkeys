@@ -260,7 +260,7 @@ public final class Paths {
     }
 
     /**
-     * Writes the image along with a clipping path resource, in the given format to the supplied output.
+     * Writes the image along with a clipping path resource, in the given format, to the supplied output.
      * The image is written to the
      * {@code ImageOutputStream} starting at the current stream
      * pointer, overwriting existing stream data from that point
@@ -269,6 +269,11 @@ public final class Paths {
      * Note: As {@link ImageIO#write(RenderedImage, String, ImageOutputStream)}, this method does
      * <em>not</em> close the output stream.
      * It is the responsibility of the caller to close the stream, if desired.
+     * </p>
+     * <p>
+     * Implementation note: Only JPEG (using the "javax_imageio_jpeg_image_1.0" metadata format) and
+     * TIFF (using the "javax_imageio_tiff_image_1.0" or "com_sun_media_imageio_plugins_tiff_image_1.0" metadata formats)
+     * formats are currently supported.
      * </p>
      *
      * @param image the image to be written, may not be {@code null}.
@@ -303,7 +308,7 @@ public final class Paths {
             IIOMetadata metadata = writer.getDefaultImageMetadata(type, param);
             List<String> metadataFormats = asList(metadata.getMetadataFormatNames());
 
-            byte[] pathResource = new AdobePathWriter(clipPath).writePathResource();
+            byte[] pathResource = new AdobePathWriter(clipPath).writePathResource(PSD.RES_CLIPPING_PATH);
 
             if (metadataFormats.contains("javax_imageio_tiff_image_1.0") || metadataFormats.contains("com_sun_media_imageio_plugins_tiff_image_1.0")) {
                 param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);

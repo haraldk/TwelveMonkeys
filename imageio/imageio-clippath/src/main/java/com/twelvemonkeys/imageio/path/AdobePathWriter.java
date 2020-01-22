@@ -49,7 +49,10 @@ import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
- * AdobePathWriter
+ * Writes a {@code Shape} object to an Adobe Photoshop Path or Path resource.
+ *
+ * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_17587">Adobe Photoshop Path resource format</a>
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 public final class AdobePathWriter {
 
@@ -181,14 +184,15 @@ public final class AdobePathWriter {
     }
 
     /**
-     * Writes the path as a complete Photoshop clipping path resource to the given stream.
+     * Writes the path as a complete Adobe Photoshop clipping path resource to the given stream.
      *
      * @param output the stream to write to.
+     * @param resourceId the resource id, typically {@link PSD#RES_CLIPPING_PATH} (0x07D0).
      * @throws IOException if an I/O exception happens during writing.
      */
-    void writePathResource(final DataOutput output) throws IOException {
+    public void writePathResource(final DataOutput output, int resourceId) throws IOException {
         output.writeInt(PSD.RESOURCE_TYPE);
-        output.writeShort(PSD.RES_CLIPPING_PATH);
+        output.writeShort(resourceId);
         output.writeShort(0); // Path name (Pascal string) empty + pad
         output.writeInt(segments.size() * 26); // Resource size
 
@@ -196,7 +200,7 @@ public final class AdobePathWriter {
     }
 
     /**
-     * Writes the path as a set of Adobe path segments to the given stream.
+     * Writes the path as a set of Adobe Photoshop path segments to the given stream.
      *
      * @param output the stream to write to.
      * @throws IOException if an I/O exception happens during writing.
@@ -235,13 +239,17 @@ public final class AdobePathWriter {
         }
     }
 
-    // TODO: Do we need to care about endianness for TIFF files?
-    // TODO: Better name?
-    byte[] writePathResource() {
+    /**
+     * Transforms the path to a byte array, containing a complete Adobe Photoshop path resource.
+     *
+     * @param resourceId the resource id, typically {@link PSD#RES_CLIPPING_PATH} (0x07D0).
+     * @return a new byte array, containing the clipping path resource.
+     */
+    public byte[] writePathResource(int resourceId) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         try (DataOutputStream stream = new DataOutputStream(bytes)) {
-            writePathResource(stream);
+            writePathResource(stream, resourceId);
         }
         catch (IOException e) {
             throw new AssertionError("ByteArrayOutputStream threw IOException", e);
@@ -250,6 +258,11 @@ public final class AdobePathWriter {
         return bytes.toByteArray();
     }
 
+    /**
+     * Transforms the path to a byte array, containing a set of Adobe Photoshop path segments.
+     *
+     * @return a new byte array, containing the path segments.
+     */
     public byte[] writePath() {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
