@@ -53,6 +53,7 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -258,7 +259,30 @@ public final class Paths {
         return applyClippingPath(clip, image);
     }
 
-    public static boolean writeClipped(final BufferedImage image, Shape clipPath, final String formatName, final ImageOutputStream output) throws IOException {
+    /**
+     * Writes the image along with a clipping path resource, in the given format to the supplied output.
+     * The image is written to the
+     * {@code ImageOutputStream} starting at the current stream
+     * pointer, overwriting existing stream data from that point
+     * forward, if present.
+     * <p>
+     * Note: As {@link ImageIO#write(RenderedImage, String, ImageOutputStream)}, this method does
+     * <em>not</em> close the output stream.
+     * It is the responsibility of the caller to close the stream, if desired.
+     * </p>
+     *
+     * @param image the image to be written, may not be {@code null}.
+     * @param clipPath the clip path, may not be {@code null}.
+     * @param formatName the informal format name, may not be {@code null}.
+     * @param output the stream to write to, may not be {@code null}.
+     *
+     * @return {@code true} if the image was written,
+     *         otherwise {@code false} (ie. no writer was found for the specified format).
+     *
+     * @exception IllegalArgumentException if any parameter is {@code null}.
+     * @exception IOException if an error occurs during writing.
+     */
+    public static boolean writeClipped(final RenderedImage image, Shape clipPath, final String formatName, final ImageOutputStream output) throws IOException {
         if (image == null) {
             throw new IllegalArgumentException("image == null!");
         }
@@ -269,74 +293,75 @@ public final class Paths {
             throw new IllegalArgumentException("output == null!");
         }
 
-        String format = "JPG".equalsIgnoreCase(formatName) ? "JPEG" : formatName.toUpperCase();
+        ImageTypeSpecifier type = ImageTypeSpecifier.createFromRenderedImage(image);
+        Iterator<ImageWriter> writers = ImageIO.getImageWriters(type, formatName);
 
-        if ("TIFF".equals(format) || "JPEG".equals(format)) {
-            ImageTypeSpecifier type = ImageTypeSpecifier.createFromRenderedImage(image);
-            Iterator<ImageWriter> writers = ImageIO.getImageWriters(type, formatName);
+        if (writers.hasNext()) {
+            ImageWriter writer = writers.next();
 
-            if (writers.hasNext()) {
-                ImageWriter writer = writers.next();
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            IIOMetadata metadata = writer.getDefaultImageMetadata(type, param);
+            List<String> metadataFormats = asList(metadata.getMetadataFormatNames());
 
-                ImageWriteParam param = writer.getDefaultWriteParam();
-                IIOMetadata metadata = writer.getDefaultImageMetadata(type, param);
-                List<String> metadataFormats = asList(metadata.getMetadataFormatNames());
+            byte[] pathResource = new AdobePathWriter(clipPath).writePathResource();
 
-                byte[] pathResource = new AdobePathWriter(clipPath).writePathResource();
+            if (metadataFormats.contains("javax_imageio_tiff_image_1.0") || metadataFormats.contains("com_sun_media_imageio_plugins_tiff_image_1.0")) {
+                param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+                param.setCompressionType("Deflate");
 
-                if ("TIFF".equals(format)) {
-                    param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                    param.setCompressionType("Deflate");
+                // Check if the format is that of the bundled TIFF writer, otherwise use JAI format
+                String metadataFormat = metadataFormats.contains("javax_imageio_tiff_image_1.0")
+                                        ? "javax_imageio_tiff_image_1.0"
+                                        : "com_sun_media_imageio_plugins_tiff_image_1.0"; // Fails in mergeTree, if not supported
+                IIOMetadataNode root = new IIOMetadataNode(metadataFormat);
+                IIOMetadataNode ifd = new IIOMetadataNode("TIFFIFD");
 
-                    // Check if the format is that of the bundled TIFF writer, otherwise use JAI format
-                    String metadataFormat = metadataFormats.contains("javax_imageio_tiff_image_1.0")
-                                            ? "javax_imageio_tiff_image_1.0"
-                                            : "com_sun_media_imageio_plugins_tiff_image_1.0"; // Fails in mergeTree, if not supported
-                    IIOMetadataNode root = new IIOMetadataNode(metadataFormat);
-                    IIOMetadataNode ifd = new IIOMetadataNode("TIFFIFD");
+                IIOMetadataNode pathField = new IIOMetadataNode("TIFFField");
+                pathField.setAttribute("number", String.valueOf(TIFF.TAG_PHOTOSHOP));
+                IIOMetadataNode pathValue = new IIOMetadataNode("TIFFUndefined");  // Use undefined for simplicity, could also use bytes
+                pathValue.setAttribute("value", arrayAsString(pathResource));
 
-                    IIOMetadataNode pathField = new IIOMetadataNode("TIFFField");
-                    pathField.setAttribute("number", String.valueOf(TIFF.TAG_PHOTOSHOP));
-                    IIOMetadataNode pathValue = new IIOMetadataNode("TIFFUndefined");  // Use undefined for simplicity, could also use bytes
-                    pathValue.setAttribute("value", arrayAsString(pathResource));
+                pathField.appendChild(pathValue);
+                ifd.appendChild(pathField);
+                root.appendChild(ifd);
 
-                    pathField.appendChild(pathValue);
-                    ifd.appendChild(pathField);
-                    root.appendChild(ifd);
-
-                    metadata.mergeTree(metadataFormat, root);
-                }
-                else if ("JPEG".equals(format)) {
-                    String metadataFormat = "javax_imageio_jpeg_image_1.0";
-                    IIOMetadataNode root = new IIOMetadataNode(metadataFormat);
-
-                    root.appendChild(new IIOMetadataNode("JPEGvariety"));
-
-                    IIOMetadataNode sequence = new IIOMetadataNode("markerSequence");
-
-                    // App13/Photshop 3.0
-                    IIOMetadataNode unknown = new IIOMetadataNode("unknown");
-                    unknown.setAttribute("MarkerTag", Integer.toString(JPEG.APP13 & 0xFF));
-
-                    byte[] identfier = "Photoshop 3.0".getBytes(StandardCharsets.US_ASCII);
-                    byte[] data = new byte[identfier.length + 1 + pathResource.length];
-                    System.arraycopy(identfier, 0, data, 0, identfier.length);
-                    System.arraycopy(pathResource, 0, data, identfier.length + 1, pathResource.length);
-
-                    unknown.setUserObject(data);
-
-                    sequence.appendChild(unknown);
-                    root.appendChild(sequence);
-
-                    metadata.mergeTree(metadataFormat, root);
-                }
-                // TODO: Else if PSD... Requires PSD write + new metadata format...
+                metadata.mergeTree(metadataFormat, root);
 
                 writer.setOutput(output);
                 writer.write(null, new IIOImage(image, null, metadata), param);
 
                 return true;
             }
+            else if (metadataFormats.contains("javax_imageio_jpeg_image_1.0")) {
+                String metadataFormat = "javax_imageio_jpeg_image_1.0";
+                IIOMetadataNode root = new IIOMetadataNode(metadataFormat);
+
+                root.appendChild(new IIOMetadataNode("JPEGvariety"));
+
+                IIOMetadataNode sequence = new IIOMetadataNode("markerSequence");
+
+                // App13/Photshop 3.0
+                IIOMetadataNode unknown = new IIOMetadataNode("unknown");
+                unknown.setAttribute("MarkerTag", Integer.toString(JPEG.APP13 & 0xFF));
+
+                byte[] identfier = "Photoshop 3.0".getBytes(StandardCharsets.US_ASCII);
+                byte[] data = new byte[identfier.length + 1 + pathResource.length];
+                System.arraycopy(identfier, 0, data, 0, identfier.length);
+                System.arraycopy(pathResource, 0, data, identfier.length + 1, pathResource.length);
+
+                unknown.setUserObject(data);
+
+                sequence.appendChild(unknown);
+                root.appendChild(sequence);
+
+                metadata.mergeTree(metadataFormat, root);
+
+                writer.setOutput(output);
+                writer.write(null, new IIOImage(image, null, metadata), param);
+
+                return true;
+            }
+            // TODO: Else if PSD... Requires PSD write + new metadata format...
         }
 
         return false;

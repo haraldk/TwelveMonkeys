@@ -38,15 +38,18 @@ import org.junit.Test;
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * PathsTest.
@@ -240,6 +243,9 @@ public class PathsTest {
     }
 
     static void assertPathEquals(final Path2D expectedPath, final Path2D actualPath) {
+        assertNotNull("Expected path is null, check your tests...", expectedPath);
+        assertNotNull(actualPath);
+
         PathIterator expectedIterator = expectedPath.getPathIterator(null);
         PathIterator actualIterator = actualPath.getPathIterator(null);
 
@@ -260,5 +266,38 @@ public class PathsTest {
         }
 
         assertTrue("More points than expected", actualIterator.isDone());
+    }
+
+    @Test
+    public void testWriteJPEG() throws IOException {
+        Path2D originalPath = readExpectedPath("/ser/multiple-clips.ser");
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_3BYTE_BGR);
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(bytes)) {
+            boolean written = Paths.writeClipped(image, originalPath, "JPEG", stream);
+            assertTrue(written);
+        }
+        assertTrue(bytes.size() > 1024); // Actual size may be plugin specific...
+
+        Path2D actualPath = Paths.readPath(new ByteArrayImageInputStream(bytes.toByteArray()));
+        assertPathEquals(originalPath, actualPath);
+    }
+
+    @Test
+    public void testWriteTIFF() throws IOException {
+        Path2D originalPath = readExpectedPath("/ser/grape-path.ser");
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(bytes)) {
+            boolean written = Paths.writeClipped(image, originalPath, "TIFF", stream);
+            assumeTrue(written); // TIFF support is optional
+        }
+
+        assertTrue(bytes.size() > 1024); // Actual size may be plugin specific...
+
+        Path2D actualPath = Paths.readPath(new ByteArrayImageInputStream(bytes.toByteArray()));
+        assertPathEquals(originalPath, actualPath);
     }
 }

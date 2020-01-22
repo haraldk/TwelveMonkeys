@@ -67,11 +67,12 @@ public final class AdobePathWriter {
      * regardless of image dimensions.
      * </p>
      *
-     * @param path A {@code Shape} instance that has {@link Path2D#WIND_EVEN_ODD WIND_EVEN_ODD} rule
-     *             and is contained within the rectangle [x=0.0,y=0.0,w=1.0,h=1.0].
+     * @param path A {@code Shape} instance that has {@link Path2D#WIND_EVEN_ODD WIND_EVEN_ODD} rule,
+     *             is contained within the rectangle [x=0.0,y=0.0,w=1.0,h=1.0], and is closed.
      * @throws IllegalArgumentException if {@code path} is {@code null},
      *                                  the paths winding rule is not @link Path2D#WIND_EVEN_ODD} or
-     *                                  the paths bounding box is outside [x=0.0,y=0.0,w=1.0,h=1.0].
+     *                                  the paths bounding box is outside [x=0.0,y=0.0,w=1.0,h=1.0] or
+     *                                  the path is not closed.
      */
     public AdobePathWriter(final Shape path) {
         notNull(path, "path");
@@ -128,8 +129,8 @@ public final class AdobePathWriter {
                     break;
 
                 case PathIterator.SEG_CLOSE:
-                    // Replace initial point.
                     AdobePathSegment initial = subpath.get(0);
+
                     if (initial.apx != prev.apx || initial.apy != prev.apy) {
                         // Line back to initial if last anchor point does not equal initial anchor
                         collinear = isCollinear(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.apx, initial.apy);
@@ -137,13 +138,7 @@ public final class AdobePathWriter {
                         prev = new AdobePathSegment(CLOSED_SUBPATH_BEZIER_LINKED, initial.apy, initial.apx, initial.apy, initial.apx, 0, 0);
                     }
 
-                    collinear = isCollinear(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.cplx, initial.cply);
-                    subpath.set(0, new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, initial.apy, initial.apx, initial.cply, initial.cplx));
-
-                    // Add to full path
-                    segments.add(new AdobePathSegment(CLOSED_SUBPATH_LENGTH_RECORD, subpath.size()));
-                    segments.addAll(subpath);
-
+                    close(initial, prev, subpath, segments);
                     subpath.clear();
 
                     break;
@@ -152,10 +147,29 @@ public final class AdobePathWriter {
             pathIterator.next();
         }
 
-        // TODO: If subpath is not empty at this point, there was no close segment...
-        // Either wrap up (if coordinates match), or throw exception (otherwise)
+        // If subpath is not empty at this point, there was no close segment...
+        // Wrap up if coordinates match, otherwise throw exception
+        if (!subpath.isEmpty()) {
+            AdobePathSegment initial = subpath.get(0);
+
+            if (initial.apx != prev.apx || initial.apy != prev.apy) {
+                throw new IllegalArgumentException("Path must be closed");
+            }
+
+            close(initial, prev, subpath, segments);
+        }
 
         return segments;
+    }
+
+    private static void close(AdobePathSegment initial, AdobePathSegment prev, List<AdobePathSegment> subpath, List<AdobePathSegment> segments) {
+        // Replace initial point.
+        boolean collinear = isCollinear(prev.cppx, prev.cppy, initial.apx, initial.apy, initial.cplx, initial.cply);
+        subpath.set(0, new AdobePathSegment(collinear ? CLOSED_SUBPATH_BEZIER_LINKED : CLOSED_SUBPATH_BEZIER_UNLINKED, prev.cppy, prev.cppx, initial.apy, initial.apx, initial.cply, initial.cplx));
+
+        // Add to full path
+        segments.add(new AdobePathSegment(CLOSED_SUBPATH_LENGTH_RECORD, subpath.size()));
+        segments.addAll(subpath);
     }
 
     private static boolean isCollinear(double x1, double y1, double x2, double y2, double x3, double y3) {
@@ -248,5 +262,4 @@ public final class AdobePathWriter {
 
         return bytes.toByteArray();
     }
-
 }

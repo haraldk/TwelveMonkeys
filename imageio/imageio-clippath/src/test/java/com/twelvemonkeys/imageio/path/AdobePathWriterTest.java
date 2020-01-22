@@ -44,7 +44,8 @@ import java.util.Arrays;
 
 import static com.twelvemonkeys.imageio.path.AdobePathSegment.*;
 import static com.twelvemonkeys.imageio.path.PathsTest.assertPathEquals;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * AdobePathWriterTest.
@@ -92,6 +93,16 @@ public class AdobePathWriterTest {
         new AdobePathWriter(path);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateNotClosed() {
+        GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD);
+        path.moveTo(.5, .5);
+        path.lineTo(1, .5);
+        path.curveTo(1, 1, 1, 1, .5, 1);
+
+        new AdobePathWriter(path).writePath();
+    }
+
     @Test
     public void testCreateClosed() {
         GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD);
@@ -100,9 +111,30 @@ public class AdobePathWriterTest {
         path.curveTo(1, 1, 1, 1, .5, 1);
         path.closePath();
 
-        new AdobePathWriter(path).writePath();
+        byte[] bytes = new AdobePathWriter(path).writePath();
 
-        fail("Test that we have 4 segments");
+        assertEquals(6 * 26, bytes.length);
+
+        int off = 0;
+
+        // Path/initial fill rule: Even-Odd (0)
+        assertArrayEquals(new byte[] {0, PATH_FILL_RULE_RECORD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, INITIAL_FILL_RULE_RECORD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+
+        // Rectangle 1: 0, 0, 1, .5
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_LENGTH_RECORD, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 1, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 0, -128, 0, 0, 1, 0, 0, 0, 0, -128, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+
+        // Sanity
+        assertEquals(bytes.length, off);
     }
 
     @Test
@@ -113,9 +145,31 @@ public class AdobePathWriterTest {
         path.curveTo(1, 1, 1, 1, .5, 1);
         path.lineTo(.5, .5);
 
-        new AdobePathWriter(path).writePath(); // TODO: Should we allow this?
+        byte[] bytes = new AdobePathWriter(path).writePath();
 
-        fail("Test that we have 4 segments, and that it is equal to the one above");
+        assertEquals(6 * 26, bytes.length);
+
+        int off = 0;
+
+        // Path/initial fill rule: Even-Odd (0)
+        assertArrayEquals(new byte[] {0, PATH_FILL_RULE_RECORD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, INITIAL_FILL_RULE_RECORD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+
+        // Rectangle 1: 0, 0, 1, .5
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_LENGTH_RECORD, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 1, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 0, -128, 0, 0, 1, 0, 0, 0, 0, -128, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+
+        // Sanity
+        assertEquals(bytes.length, off);
+
     }
 
     @Test
@@ -127,9 +181,30 @@ public class AdobePathWriterTest {
         path.lineTo(.5, .5);
         path.closePath();
 
-        new AdobePathWriter(path).writePath();
+        byte[] bytes = new AdobePathWriter(path).writePath();
 
-        fail("Test that we have 4 segments, and that it is equal to the one above");
+        assertEquals(6 * 26, bytes.length);
+
+        int off = 0;
+
+        // Path/initial fill rule: Even-Odd (0)
+        assertArrayEquals(new byte[] {0, PATH_FILL_RULE_RECORD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, INITIAL_FILL_RULE_RECORD, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+
+        // Rectangle 1: 0, 0, 1, .5
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_LENGTH_RECORD, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 1, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 0, -128, 0, 0, 1, 0, 0, 0, 0, -128, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+        assertArrayEquals(new byte[] {0, CLOSED_SUBPATH_BEZIER_UNLINKED, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0, 0, -128, 0, 0},
+                Arrays.copyOfRange(bytes, off, off += 26));
+
+        // Sanity
+        assertEquals(bytes.length, off);
     }
 
     @Test
@@ -207,7 +282,6 @@ public class AdobePathWriterTest {
         AdobePathWriter pathCreator = new AdobePathWriter(path);
 
         byte[] bytes = pathCreator.writePath();
-//        System.err.println(Arrays.toString(bytes));
 
         assertEquals(12 * 26, bytes.length);
 
