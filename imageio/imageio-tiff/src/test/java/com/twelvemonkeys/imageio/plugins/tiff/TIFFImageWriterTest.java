@@ -616,7 +616,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
             int maxH = Math.min(300, image.getHeight());
             for (int y = 0; y < maxH; y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
-                    assertRGBEquals("Pixel differ: ", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                    assertRGBEquals(String.format("Pixel differ: @%d,%d", x, y), orig.getRGB(x, y), image.getRGB(x, y), 0);
                 }
             }
 
@@ -654,7 +654,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
         assumeNotNull(original);
 
-        // Write it back, using same compression (copied from metadata)
+        // Write it back, using deflate compression
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
@@ -718,7 +718,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
         assumeNotNull(original);
 
-        // Write it back, using same compression (copied from metadata)
+        // Write it back, no compression
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {

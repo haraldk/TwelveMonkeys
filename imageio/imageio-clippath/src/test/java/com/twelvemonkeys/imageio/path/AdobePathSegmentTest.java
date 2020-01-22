@@ -63,7 +63,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, 42);
 
         assertEquals(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, segment.selector);
-        assertEquals(42, segment.length);
+        assertEquals(42, segment.lengthOrRule);
         assertEquals(-1, segment.cppx, 0);
         assertEquals(-1, segment.cppy, 0);
         assertEquals(-1, segment.apx, 0);
@@ -82,7 +82,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, 27);
 
         assertEquals(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, segment.selector);
-        assertEquals(27, segment.length);
+        assertEquals(27, segment.lengthOrRule);
         assertEquals(-1, segment.cppx, 0);
         assertEquals(-1, segment.cppy, 0);
         assertEquals(-1, segment.apx, 0);
@@ -98,7 +98,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -122,7 +122,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -149,7 +149,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -173,7 +173,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -195,11 +195,11 @@ public class AdobePathSegmentTest {
 
     @Test
     public void testToStringRule() {
-        String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD, 2).toString();
+        String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD, 0).toString();
         assertTrue(string, string.startsWith("Rule"));
         assertTrue(string, string.contains("Initial"));
         assertTrue(string, string.contains("fill"));
-        assertTrue(string, string.contains("rule=2"));
+        assertTrue(string, string.contains("rule=0"));
     }
 
     @Test
@@ -208,13 +208,13 @@ public class AdobePathSegmentTest {
         assertTrue(string, string.startsWith("Len"));
         assertTrue(string, string.contains("Closed"));
         assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("totalPoints=2"));
+        assertTrue(string, string.contains("length=2"));
 
         string = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, 42).toString();
         assertTrue(string, string.startsWith("Len"));
         assertTrue(string, string.contains("Open"));
         assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("totalPoints=42"));
+        assertTrue(string, string.contains("length=42"));
     }
 
     @Test
