@@ -73,6 +73,7 @@ import static java.util.Collections.singletonMap;
  * <li>Extract a path from an image input stream, {@link #readPath}</li>
  * <li>Apply a given path to a given {@code BufferedImage} {@link #applyClippingPath}</li>
  * <li>Read an image with path applied {@link #readClipped}</li>
+ * <li>Write an image with embedded path {@link #writeClipped}</li>
  * </ul>
  *
  * @see <a href="http://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_17587">Adobe Photoshop Path resource format</a>
