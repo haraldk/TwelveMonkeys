@@ -186,11 +186,11 @@ public final class AdobePathWriter {
     /**
      * Writes the path as a complete Adobe Photoshop clipping path resource to the given stream.
      *
-     * @param output the stream to write to.
      * @param resourceId the resource id, typically {@link PSD#RES_CLIPPING_PATH} (0x07D0).
+     * @param output the stream to write to.
      * @throws IOException if an I/O exception happens during writing.
      */
-    public void writePathResource(final DataOutput output, int resourceId) throws IOException {
+    public void writePathResource(int resourceId, final DataOutput output) throws IOException {
         output.writeInt(PSD.RESOURCE_TYPE);
         output.writeShort(resourceId);
         output.writeShort(0); // Path name (Pascal string) empty + pad
@@ -249,7 +249,7 @@ public final class AdobePathWriter {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         try (DataOutputStream stream = new DataOutputStream(bytes)) {
-            writePathResource(stream, resourceId);
+            writePathResource(resourceId, stream);
         }
         catch (IOException e) {
             throw new AssertionError("ByteArrayOutputStream threw IOException", e);
