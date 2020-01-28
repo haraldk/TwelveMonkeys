@@ -129,8 +129,7 @@ public class Time {
      * @see #toString(String)
      */
     public String toString() {
-        return "" + getMinutes() + ":"
-                + (getSeconds() < 10 ? "0" : "") + getSeconds();
+        return getMinutes() + ":" + (getSeconds() < 10 ? "0" : "") + getSeconds();
     }
 
     /**

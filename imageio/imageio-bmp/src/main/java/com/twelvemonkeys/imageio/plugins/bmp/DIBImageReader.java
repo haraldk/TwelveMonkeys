@@ -84,7 +84,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
     protected void resetMembers() {
         directory = null;
-        
+
         headers.clear();
         descriptors.clear();
 
@@ -551,7 +551,7 @@ abstract class DIBImageReader extends ImageReaderBase {
             if (abortRequested()) {
                 processReadAborted();
                 break;
-            }            
+            }
             processImageProgress(100 * y / (float) pBitmap.getHeight());
         }
 
@@ -591,7 +591,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
         return directory.getEntry(pImageIndex);
     }
-    
+
     /// Test code below, ignore.. :-)
     public static void main(final String[] pArgs) throws IOException {
         if (pArgs.length == 0) {
@@ -701,10 +701,10 @@ abstract class DIBImageReader extends ImageReaderBase {
             }
         });
 
-        button.setText("" + image.getWidth() + "x" +
+        button.setText(image.getWidth() + "x" +
                 image.getHeight() + ": "
                 + ((image.getColorModel() instanceof IndexColorModel) ?
-                "" + ((IndexColorModel) image.getColorModel()).getMapSize() :
+                String.valueOf(((IndexColorModel) image.getColorModel()).getMapSize()) :
                 "TrueColor"));
 
         pParent.add(button);
