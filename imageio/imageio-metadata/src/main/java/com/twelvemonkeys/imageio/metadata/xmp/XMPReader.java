@@ -144,7 +144,7 @@ public final class XMPReader extends MetadataReader {
                     parseAttributesForKnownElements(subsubdirs, node);
 
                     if (!subsubdirs.isEmpty()) {
-                        List<Entry> entries = new ArrayList<Entry>();
+                        List<Entry> entries = new ArrayList<>(subsubdirs.size());
 
                         for (Map.Entry<String, List<Entry>> entry : subsubdirs.entrySet()) {
                             entries.addAll(entry.getValue());
@@ -161,7 +161,7 @@ public final class XMPReader extends MetadataReader {
             }
         }
 
-        List<Directory> entries = new ArrayList<Directory>();
+        List<Directory> entries = new ArrayList<Directory>(subdirs.size());
 
         // TODO: Should we still allow asking for a subdirectory by item id?
         for (Map.Entry<String, List<Entry>> entry : subdirs.entrySet()) {

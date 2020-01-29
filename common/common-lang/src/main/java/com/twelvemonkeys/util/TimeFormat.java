@@ -44,12 +44,12 @@ import java.util.Vector;
  * The format is expressed in a string as follows:
  * <DL>
  * <DD>m (or any multiple of m's)
- * <DT>the minutes part (padded with 0's, if number has less digits than 
+ * <DT>the minutes part (padded with 0's, if number has less digits than
  *     the number of m's)
  *     m -&gt; 0,1,...,59,60,61,...
  *     mm -&gt; 00,01,...,59,60,61,...
  * <DD>s or ss
- * <DT>the seconds part (padded with 0's, if number has less digits than 
+ * <DT>the seconds part (padded with 0's, if number has less digits than
  *     the number of s's)
  *     s -&gt; 0,1,...,59
  *     ss -&gt; 00,01,...,59
@@ -62,7 +62,7 @@ import java.util.Vector;
  * <P>
  * Known bugs:
  * <P>
- * The last character in the formatString is not escaped, while it should be. 
+ * The last character in the formatString is not escaped, while it should be.
  * The first character after an escaped character is escaped while is shouldn't
  * be.
  * <P>
@@ -81,15 +81,15 @@ public class TimeFormat extends Format {
     final static String SECOND = "s";
     final static String TIME = "S";
     final static String ESCAPE = "\\";
-    
+
     /**
-     * The default time format 
+     * The default time format
      */
 
     private final static TimeFormat DEFAULT_FORMAT = new TimeFormat("m:ss");
     protected String formatString = null;
-    
-    /** 
+
+    /**
      * Main method for testing ONLY
      */
 
@@ -122,7 +122,7 @@ public class TimeFormat extends Format {
 	}
 	else
 	    time = new Time();
-	
+
 	System.out.println("Time is \"" +  out.format(time) +
 			   "\" according to format \"" + out.formatString + "\"");
     }
@@ -147,18 +147,18 @@ public class TimeFormat extends Format {
 	String previous = null;
 	String current = null;
 	int previousCount = 0;
-	
+
 	while (tok.hasMoreElements()) {
 	    current = tok.nextToken();
 
 	    if (previous != null && previous.equals(ESCAPE)) {
 		// Handle escaping of s, S or m
-		current = ((current != null) ? current : "") 
+		current = ((current != null) ? current : "")
 		    + (tok.hasMoreElements() ? tok.nextToken() : "");
 		previous = null;
 		previousCount = 0;
 	    }
-	    
+
 	    // Skip over first,
 	    // or if current is the same, increase count, and try again
 	    if (previous == null || previous.equals(current)) {
@@ -173,12 +173,12 @@ public class TimeFormat extends Format {
 		    formatter.add(new SecondsFormatter(previousCount));
 		else if (previous.equals(TIME))
 		    formatter.add(new SecondsFormatter(-1));
-		else 
+		else
 		    formatter.add(new TextFormatter(previous));
 
 		previousCount = 1;
 		previous = current;
-		
+
 	    }
 	}
 
@@ -197,7 +197,7 @@ public class TimeFormat extends Format {
 	// Debug
 	/*
 	for (int i = 0; i < formatter.size(); i++) {
-	    System.out.println("Formatter " + formatter.get(i).getClass() 
+	    System.out.println("Formatter " + formatter.get(i).getClass()
 			       + ": length=" + ((TimeFormatter) formatter.get(i)).digits);
 	}
 	*/
@@ -206,7 +206,7 @@ public class TimeFormat extends Format {
 
     }
 
-    /** 
+    /**
      * DUMMY IMPLEMENTATION!!
      * Not locale specific.
      */
@@ -259,9 +259,9 @@ public class TimeFormat extends Format {
     /** DUMMY IMPLEMENTATION!! */
     public Object parseObject(String pStr, ParsePosition pStatus) {
 	Time t = parse(pStr);
-	
+
 	pStatus.setIndex(pStr.length()); // Not 100%
-	
+
 	return t;
     }
 
@@ -270,7 +270,7 @@ public class TimeFormat extends Format {
      * <p>
      * Will bug on some formats. It's safest to always use delimiters between
      * the minutes (m) and seconds (s) part.
-     * 
+     *
      */
     public Time parse(String pStr) {
 	Time time = new Time();
@@ -286,7 +286,7 @@ public class TimeFormat extends Format {
 		 && (pos + skip < pStr.length()) ; i++) {
 	    // Go to next offset
 	    pos += skip;
-	    
+
 	    if (formatter[i] instanceof MinutesFormatter) {
 		// Parse MINUTES
 		if ((i + 1) < formatter.length
@@ -327,9 +327,9 @@ public class TimeFormat extends Format {
 		    else {
 			// Cannot possibly know how long?
 			skip = 0;
-			continue;					    
+			continue;
 		    }
-		    
+
 		    // Get seconds
 		    sec = Integer.parseInt(pStr.substring(pos, skip));
 		    //		    System.out.println("Only seconds: " + sec);
@@ -343,7 +343,7 @@ public class TimeFormat extends Format {
 			&& formatter[i + 1] instanceof TextFormatter) {
 			// Skip until next format element
 			skip = pStr.indexOf(((TextFormatter) formatter[i + 1]).text, pos);
-			
+
 		    }
 		    else if ((i + 1) >= formatter.length) {
 			// Skip until end of string
@@ -359,7 +359,7 @@ public class TimeFormat extends Format {
 	    else if (formatter[i] instanceof TextFormatter) {
 		skip = formatter[i].digits;
 	    }
-	    
+
 	}
 
 	// Set the minutes part if we should
@@ -390,7 +390,7 @@ class SecondsFormatter extends TimeFormatter {
     SecondsFormatter(int pDigits) {
 	digits = pDigits;
     }
-    
+
     String format(Time t) {
 	// Negative number of digits, means all seconds, no padding
 	if (digits < 0) {
@@ -404,7 +404,7 @@ class SecondsFormatter extends TimeFormatter {
 
         // Else return it with leading 0's
 	//return StringUtil.formatNumber(t.getSeconds(), digits);
-        return StringUtil.pad("" + t.getSeconds(), digits, "0", true);
+        return StringUtil.pad(String.valueOf(t.getSeconds()), digits, "0", true);
     }
 }
 
@@ -425,7 +425,7 @@ class MinutesFormatter extends TimeFormatter {
 
         // Else return it with leading 0's
 	//return StringUtil.formatNumber(t.getMinutes(), digits);
-        return StringUtil.pad("" + t.getMinutes(), digits, "0", true);
+        return StringUtil.pad(String.valueOf(t.getMinutes()), digits, "0", true);
     }
 }
 

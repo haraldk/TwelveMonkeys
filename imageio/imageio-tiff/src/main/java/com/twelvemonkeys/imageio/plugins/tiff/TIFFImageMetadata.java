@@ -1144,10 +1144,11 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             throw new IIOInvalidTreeException("Expected \"TIFFIFD\" node", ifdNode);
         }
 
-        List<Entry> entries = new ArrayList<>();
         NodeList nodes = ifdNode.getChildNodes();
 
-        for (int i = 0; i < nodes.getLength(); i++) {
+        final int size = nodes.getLength();
+        List<Entry> entries = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
             entries.add(toEntry(nodes.item(i)));
         }
 

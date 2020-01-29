@@ -340,7 +340,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
         // TODO: Rethink this...
         // Seems to be up to Windows and the installed programs what formats
         // are supported...
-        // Some thumbs are just icons, and it might be better to use ImageIO to create thumbs for these... :-/ 
+        // Some thumbs are just icons, and it might be better to use ImageIO to create thumbs for these... :-/
         // At least this seems fine for now
         String extension = FileUtil.getExtension(pFileName);
         if (StringUtil.isEmpty(extension)) {
@@ -351,7 +351,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
         return !"psd".equals(extension) && !"svg".equals(extension) && catalog != null && catalog.getIndex(pFileName) != -1;
     }
 
-    /// Test code below 
+    /// Test code below
 
     public static void main(String[] pArgs) throws IOException {
         ThumbsDBImageReader reader = new ThumbsDBImageReader();
@@ -421,7 +421,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
                 return SIZE;
             }
         });
-        label.setText("" + image.getWidth() + "x" + image.getHeight() + ": " + pName);
+        label.setText(image.getWidth() + "x" + image.getHeight() + ": " + pName);
         label.setToolTipText(image.toString());
         pParent.add(label);
     }

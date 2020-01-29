@@ -200,11 +200,10 @@ public final class TIFFUtilities {
     }
 
     public static List<TIFFPage> getPages(ImageInputStream imageInput) throws IOException {
-        ArrayList<TIFFPage> pages = new ArrayList<TIFFPage>();
-
         CompoundDirectory IFDs = (CompoundDirectory) new TIFFReader().read(imageInput);
 
-        int pageCount = IFDs.directoryCount();
+        final int pageCount = IFDs.directoryCount();
+        List<TIFFPage> pages = new ArrayList<>(pageCount);
         for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
             pages.add(new TIFFPage(IFDs.getDirectory(pageIndex), imageInput));
         }

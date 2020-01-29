@@ -60,10 +60,10 @@ public abstract class AbstractEntry implements Entry {
     }
 
     /**
-     * Returns a format-native identifier. 
-     * For example {@code "2:00"} for IPTC "Record Version" field, or {@code "0x040c"} for PSD "Thumbnail" resource. 
+     * Returns a format-native identifier.
+     * For example {@code "2:00"} for IPTC "Record Version" field, or {@code "0x040c"} for PSD "Thumbnail" resource.
      * This default implementation simply returns {@code String.valueOf(getIdentifier())}.
-     * 
+     *
      * @return a format-native identifier.
      */
     protected String getNativeIdentifier() {
@@ -174,7 +174,7 @@ public abstract class AbstractEntry implements Entry {
         }
 
         AbstractEntry other = (AbstractEntry) pOther;
-        
+
         return identifier.equals(other.identifier) && (
                 value == null && other.value == null || value != null && valueEquals(other)
         );
