@@ -1073,6 +1073,45 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
     }
 
     @Test
+    public void testMergeTreeARGB() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ImageWriteParam writeParam = writer.getDefaultWriteParam();
+        writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        writeParam.setCompressionType("LZW");
+
+        IIOMetadata metadata = writer.getDefaultImageMetadata(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR), writeParam);
+
+        IIOMetadataNode tiffTree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
+        metadata.setFromTree(metadata.getNativeMetadataFormatName(), tiffTree);
+    }
+
+    @Test
+    public void testMergeTreeGray() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ImageWriteParam writeParam = writer.getDefaultWriteParam();
+        writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        writeParam.setCompressionType("LZW");
+
+        IIOMetadata metadata = writer.getDefaultImageMetadata(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY), writeParam);
+
+        IIOMetadataNode tiffTree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
+        metadata.setFromTree(metadata.getNativeMetadataFormatName(), tiffTree);
+    }
+
+    @Test
+    public void testMergeTreeBW() throws IOException {
+        ImageWriter writer = createImageWriter();
+        ImageWriteParam writeParam = writer.getDefaultWriteParam();
+        writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        writeParam.setCompressionType("CCITT T.6");
+
+        IIOMetadata metadata = writer.getDefaultImageMetadata(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY), writeParam);
+
+        IIOMetadataNode tiffTree = (IIOMetadataNode) metadata.getAsTree(metadata.getNativeMetadataFormatName());
+        metadata.setFromTree(metadata.getNativeMetadataFormatName(), tiffTree);
+    }
+
+    @Test
     public void testRewrite() throws IOException {
         ImageWriter writer = createImageWriter();
         ImageReader reader = ImageIO.getImageReader(writer);

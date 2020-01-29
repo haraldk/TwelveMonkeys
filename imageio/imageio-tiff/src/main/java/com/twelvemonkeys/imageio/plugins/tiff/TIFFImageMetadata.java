@@ -144,7 +144,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                     IIOMetadataNode valueNode = new IIOMetadataNode("TIFFUndefined");
                     tagNode.appendChild(valueNode);
 
-                    if (count == 1) {
+                    if (count == 1 && (value == null || !value.getClass().isArray())) {
                         valueNode.setAttribute("value", String.valueOf(value));
                     }
                     else {
@@ -160,7 +160,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                     String typeName = getMetadataType(tag);
 
                     // NOTE: ASCII/Strings have count 1, always. This seems consistent with the JAI ImageIO version.
-                    if (count == 1) {
+                    if (count == 1 && (value == null || !value.getClass().isArray())) {
                         IIOMetadataNode elementNode = new IIOMetadataNode(typeName);
                         valueNode.appendChild(elementNode);
 
@@ -915,7 +915,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
     public void setFromTree(final String formatName, final Node root) throws IIOInvalidTreeException {
         // Standard validation
-        super.mergeTree(formatName, root);
+        super.setFromTree(formatName, root);
 
         // Set by "merging" with empty map
         LinkedHashMap<Integer, Entry> entries = new LinkedHashMap<>();
