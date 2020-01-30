@@ -330,25 +330,50 @@ public class SVGImageReader extends ImageReaderBase {
             SVGSVGElement rootElement = svgDoc.getRootElement();
 
             // get the 'width' and 'height' attributes of the SVG document
+            UnitProcessor.Context uctx
+                    = UnitProcessor.createContext(ctx, rootElement);
             String widthStr = rootElement.getAttributeNS(null, SVGConstants.SVG_WIDTH_ATTRIBUTE);
             String heightStr = rootElement.getAttributeNS(null, SVGConstants.SVG_HEIGHT_ATTRIBUTE);
-            if (!StringUtil.isEmpty(widthStr) && !StringUtil.isEmpty(heightStr)) {
-                UnitProcessor.Context uctx
-                        = UnitProcessor.createContext(ctx, rootElement);
+            if (!StringUtil.isEmpty(widthStr)) {
                 defaultWidth = UnitProcessor.svgToUserSpace(widthStr, SVGConstants.SVG_WIDTH_ATTRIBUTE, UnitProcessor.HORIZONTAL_LENGTH, uctx);
+            }
+            if(!StringUtil.isEmpty(heightStr)){
                 defaultHeight = UnitProcessor.svgToUserSpace(heightStr, SVGConstants.SVG_HEIGHT_ATTRIBUTE, UnitProcessor.VERTICAL_LENGTH, uctx);
             }
-            else {
+
+            boolean hasWidth = defaultWidth > 0.0;
+            boolean hasHeight = defaultHeight > 0.0;
+
+            if (!hasWidth || !hasHeight) {
                 String viewBoxStr = rootElement.getAttributeNS
                         (null, SVGConstants.SVG_VIEW_BOX_ATTRIBUTE);
                 if (viewBoxStr.length() != 0) {
                     float[] rect = ViewBox.parseViewBoxAttribute(rootElement, viewBoxStr, null);
-                    defaultWidth = rect[2];
-                    defaultHeight = rect[3];
+                    // if one dimension is given, calculate other by aspect ratio in viewBox
+                    // or use viewBox if no dimension is given
+                    if (hasWidth) {
+                        defaultHeight = defaultWidth * rect[3] / rect[2];
+                    }
+                    else if (hasHeight) {
+                        defaultWidth = defaultHeight * rect[2] / rect[3];
+                    }
+                    else {
+                        defaultWidth = rect[2];
+                        defaultHeight = rect[3];
+                    }
                 }
                 else {
-                    defaultWidth = 200;
-                    defaultHeight = 200;
+                    if (hasHeight) {
+                        defaultWidth = defaultHeight;
+                    }
+                    else if (hasWidth) {
+                        defaultHeight = defaultWidth;
+                    }
+                    else {
+                        // fallback to batik default sizes
+                        defaultWidth = 400;
+                        defaultHeight = 400;
+                    }
                 }
             }
 
