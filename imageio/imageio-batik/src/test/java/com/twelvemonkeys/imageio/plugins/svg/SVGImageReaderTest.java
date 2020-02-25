@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.Buffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +66,7 @@ import static org.mockito.Mockito.*;
  * @version $Id: SVGImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> {
+
     private SVGImageReaderSpi provider = new SVGImageReaderSpi();
 
     protected List<TestData> getTestData() {
@@ -301,6 +301,28 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         }
         catch (IIOException allowed) {
             assertTrue(allowed.getMessage().contains("batikLogo.svg")); // The embedded resource we don't find
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = SecurityException.class)
+    public void testDisallowedExternalResources() throws URISyntaxException, IOException {
+        URL resource = getClassLoaderResource("/svg/barChart.svg");
+
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setBaseURI(resource.toURI().toASCIIString());
+            param.allowExternalResources(false);
+            // `reader.read` for `/svg/barChart.svg` should raise
+            // a SecurityException when External Resources are blocked
+            reader.read(0, param);
         }
         finally {
             reader.dispose();

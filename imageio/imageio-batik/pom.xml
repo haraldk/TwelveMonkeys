@@ -88,6 +88,6 @@
     </dependencies>
 
     <properties>
-        <batik.version>1.9</batik.version>
+        <batik.version>1.12</batik.version>
     </properties>
 </project>

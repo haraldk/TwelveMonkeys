@@ -80,6 +80,7 @@ import java.util.Map;
  */
 public class SVGImageReader extends ImageReaderBase {
     private Rasterizer rasterizer;
+    private boolean allowExternalResources;
 
     /**
      * Creates an {@code SVGImageReader}.
@@ -88,6 +89,7 @@ public class SVGImageReader extends ImageReaderBase {
      */
     public SVGImageReader(final ImageReaderSpi pProvider) {
         super(pProvider);
+        allowExternalResources = true;
     }
 
     protected void resetMembers() {
@@ -115,6 +117,9 @@ public class SVGImageReader extends ImageReaderBase {
 
         if (pParam instanceof SVGReadParam) {
             SVGReadParam svgParam = (SVGReadParam) pParam;
+
+            // set the external-resource-resolution preference
+            allowExternalResources = svgParam.shouldAllowExternalResources();
 
             // Get the base URI
             // This must be done before converting the params to hints
@@ -640,6 +645,14 @@ public class SVGImageReader extends ImageReaderBase {
             @Override
             public void displayMessage(String message) {
                 processWarningOccurred(message.replaceAll("[\\r\\n]+", " "));
+            }
+
+            @Override
+            public ExternalResourceSecurity getExternalResourceSecurity(ParsedURL resourceURL, ParsedURL docURL) {
+                if (allowExternalResources) {
+                    return super.getExternalResourceSecurity(resourceURL, docURL);
+                }
+                return new NoLoadExternalResourceSecurity();
             }
         }
     }
