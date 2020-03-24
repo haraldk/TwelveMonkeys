@@ -79,8 +79,12 @@ import java.util.Map;
  * @see <A href="http://www.mail-archive.com/batik-dev@xml.apache.org/msg00992.html">batik-dev</A>
  */
 public class SVGImageReader extends ImageReaderBase {
+
+    static String ALLOW_EXTERNAL_RESOURCES_SYSTEM_PROP = "com.twelvemonkeys.imageio.plugins.svg.allowexternalresources";
+
     private Rasterizer rasterizer;
-    private boolean allowExternalResources;
+    private boolean allowExternalResources =
+            "true".equalsIgnoreCase(System.getProperty(ALLOW_EXTERNAL_RESOURCES_SYSTEM_PROP));
 
     /**
      * Creates an {@code SVGImageReader}.
@@ -89,7 +93,6 @@ public class SVGImageReader extends ImageReaderBase {
      */
     public SVGImageReader(final ImageReaderSpi pProvider) {
         super(pProvider);
-        allowExternalResources = true;
     }
 
     protected void resetMembers() {
@@ -119,7 +122,7 @@ public class SVGImageReader extends ImageReaderBase {
             SVGReadParam svgParam = (SVGReadParam) pParam;
 
             // set the external-resource-resolution preference
-            allowExternalResources = svgParam.shouldAllowExternalResources();
+            allowExternalResources = svgParam.isAllowExternalResources();
 
             // Get the base URI
             // This must be done before converting the params to hints

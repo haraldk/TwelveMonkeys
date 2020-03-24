@@ -41,11 +41,11 @@ import java.awt.*;
 public class SVGReadParam extends ImageReadParam {
     private Paint background;
     private String baseURI;
-    private boolean allowExternalResources;
+    private boolean allowExternalResources = false;
+    private boolean isAllowExternalResourcesSetExplicitly = false;
 
     public SVGReadParam() {
         super();
-        allowExternalResources = true;
     }
 
     public Paint getBackgroundColor() {
@@ -64,12 +64,18 @@ public class SVGReadParam extends ImageReadParam {
         baseURI = pBaseURI;
     }
 
-    public void allowExternalResources(boolean bAllow) {
-        allowExternalResources = bAllow;
+    public void setAllowExternalResources(boolean allow) {
+        allowExternalResources = allow;
+        isAllowExternalResourcesSetExplicitly = true;
     }
 
-    public boolean shouldAllowExternalResources() {
-        return allowExternalResources;
+    public boolean isAllowExternalResources() {
+        if (isAllowExternalResourcesSetExplicitly) {
+            return allowExternalResources;
+        } else {
+            // prefer the explicitly set value if invoked, read the system prop as a fallback if it wasn't
+            return "true".equals(System.getProperty(SVGImageReader.ALLOW_EXTERNAL_RESOURCES_SYSTEM_PROP));
+        }
     }
 
     @Override

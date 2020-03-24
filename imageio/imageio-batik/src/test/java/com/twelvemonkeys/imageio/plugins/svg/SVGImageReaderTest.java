@@ -228,6 +228,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             reader.addIIOReadWarningListener(listener);
 
             SVGReadParam param = reader.getDefaultReadParam();
+            param.setAllowExternalResources(true);
             param.setBaseURI(resource.toURI().toASCIIString());
             BufferedImage image = reader.read(0, param);
 
@@ -244,47 +245,82 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
     }
 
     @Test
-    public void testEmbeddedBeforeBaseURI() throws URISyntaxException, IOException {
+    public void testEmbeddedBeforeBaseURI_withSystemProperty() throws URISyntaxException, IOException {
         // Asking for metadata, width, height etc, before attempting to read using a param,
         // will cause the document to be parsed without a base URI.
         // This will work, but may not use the CSS...
+        // since the param is not available before the read operation is invoked,
+        // this test-case MUST use the system-property for backwards compatibility
         URL resource = getClassLoaderResource("/svg/barChart.svg");
 
-        SVGImageReader reader = createReader();
+        try {
+            System.setProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources", "true");
+            SVGImageReader reader = createReader();
 
-        TestData data = new TestData(resource, (Dimension) null);
-        try (ImageInputStream stream = data.getInputStream()) {
-            reader.setInput(stream);
+            TestData data = new TestData(resource, (Dimension) null);
+            try (ImageInputStream stream = data.getInputStream()) {
+                reader.setInput(stream);
 
-            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
-            reader.addIIOReadWarningListener(listener);
+                IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+                reader.addIIOReadWarningListener(listener);
 
-            assertEquals(450, reader.getWidth(0));
-            assertEquals(500, reader.getHeight(0));
+                assertEquals(450, reader.getWidth(0));
+                assertEquals(500, reader.getHeight(0));
 
-            // Expect the warning about the missing CSS
-            verify(listener, atMost(1)).warningOccurred(any(ImageReader.class), anyString());
-            reset(listener);
+                // Expect the warning about the missing CSS
+                verify(listener, atMost(1)).warningOccurred(any(ImageReader.class), anyString());
+                reset(listener);
 
-            SVGReadParam param = reader.getDefaultReadParam();
-            param.setBaseURI(resource.toURI().toASCIIString());
-            BufferedImage image = reader.read(0, param);
+                SVGReadParam param = reader.getDefaultReadParam();
+                param.setBaseURI(resource.toURI().toASCIIString());
+                BufferedImage image = reader.read(0, param);
 
-            assertNotNull(image);
-            assertEquals(450, image.getWidth());
-            assertEquals(500, image.getHeight());
+                assertNotNull(image);
+                assertEquals(450, image.getWidth());
+                assertEquals(500, image.getHeight());
 
-            // No more warnings now that the base URI is set
-            verifyZeroInteractions(listener);
-        }
-        finally {
-            reader.dispose();
+                // No more warnings now that the base URI is set
+                verifyZeroInteractions(listener);
+            }
+            finally {
+                reader.dispose();
+            }
+        } finally {
+            System.clearProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources");
         }
     }
 
     @Test
-    public void testEmbeddedNoBaseURI() throws IOException {
+    public void testEmbeddedNoBaseURI_withSystemProperty() throws IOException {
         // With no base URI, we will throw an exception, about the missing embedded resource
+        URL resource = getClassLoaderResource("/svg/barChart.svg");
+
+        try {
+            System.setProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources", "true");
+
+            SVGImageReader reader = createReader();
+
+            TestData data = new TestData(resource, (Dimension) null);
+            try (ImageInputStream stream = data.getInputStream()) {
+                reader.setInput(stream);
+
+                reader.read(0);
+
+                assertTrue("reader.read should've thrown an exception, but didn't", false);
+            }
+            catch (IIOException allowed) {
+                assertTrue(allowed.getMessage().contains("batikLogo.svg")); // The embedded resource we don't find
+            }
+            finally {
+                reader.dispose();
+            }
+        } finally {
+            System.clearProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources");
+        }
+    }
+
+    @Test(expected = SecurityException.class)
+    public void testDefaultDisallowedExternalResources() throws URISyntaxException, IOException {
         URL resource = getClassLoaderResource("/svg/barChart.svg");
 
         SVGImageReader reader = createReader();
@@ -293,14 +329,11 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         try (ImageInputStream stream = data.getInputStream()) {
             reader.setInput(stream);
 
-            BufferedImage image = reader.read(0);
-
-            assertNotNull(image);
-            assertEquals(450, image.getWidth());
-            assertEquals(500, image.getHeight());
-        }
-        catch (IIOException allowed) {
-            assertTrue(allowed.getMessage().contains("batikLogo.svg")); // The embedded resource we don't find
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setBaseURI(resource.toURI().toASCIIString());
+            // `reader.read` for `/svg/barChart.svg` should raise
+            // a SecurityException when External Resources are blocked
+            reader.read(0, param);
         }
         finally {
             reader.dispose();
@@ -308,24 +341,30 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
     }
 
     @Test(expected = SecurityException.class)
-    public void testDisallowedExternalResources() throws URISyntaxException, IOException {
+    public void testDisallowedExternalResources_withSystemProperty() throws URISyntaxException, IOException {
         URL resource = getClassLoaderResource("/svg/barChart.svg");
+        try {
+            System.setProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources", "true");
+            SVGImageReader reader = createReader();
 
-        SVGImageReader reader = createReader();
+            TestData data = new TestData(resource, (Dimension) null);
+            try (ImageInputStream stream = data.getInputStream()) {
+                reader.setInput(stream);
 
-        TestData data = new TestData(resource, (Dimension) null);
-        try (ImageInputStream stream = data.getInputStream()) {
-            reader.setInput(stream);
-
-            SVGReadParam param = reader.getDefaultReadParam();
-            param.setBaseURI(resource.toURI().toASCIIString());
-            param.allowExternalResources(false);
-            // `reader.read` for `/svg/barChart.svg` should raise
-            // a SecurityException when External Resources are blocked
-            reader.read(0, param);
-        }
-        finally {
-            reader.dispose();
+                SVGReadParam param = reader.getDefaultReadParam();
+                param.setBaseURI(resource.toURI().toASCIIString());
+                param.setAllowExternalResources(false);
+                // even when the system-property is set to true,
+                // `reader.read` for `/svg/barChart.svg` should raise
+                // a SecurityException when External Resources are blocked
+                // because the API invocation gets preference
+                reader.read(0, param);
+            }
+            finally {
+                reader.dispose();
+            }
+        } finally {
+            System.clearProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources");
         }
     }
 }
