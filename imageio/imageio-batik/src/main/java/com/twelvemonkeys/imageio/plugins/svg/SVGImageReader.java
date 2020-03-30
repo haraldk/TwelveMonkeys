@@ -80,11 +80,11 @@ import java.util.Map;
  */
 public class SVGImageReader extends ImageReaderBase {
 
-    static String ALLOW_EXTERNAL_RESOURCES_SYSTEM_PROP = "com.twelvemonkeys.imageio.plugins.svg.allowexternalresources";
+    final static boolean DEFAULT_ALLOW_EXTERNAL_RESOURCES =
+            "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources"));
 
     private Rasterizer rasterizer;
-    private boolean allowExternalResources =
-            "true".equalsIgnoreCase(System.getProperty(ALLOW_EXTERNAL_RESOURCES_SYSTEM_PROP));
+    private boolean allowExternalResources = DEFAULT_ALLOW_EXTERNAL_RESOURCES;
 
     /**
      * Creates an {@code SVGImageReader}.

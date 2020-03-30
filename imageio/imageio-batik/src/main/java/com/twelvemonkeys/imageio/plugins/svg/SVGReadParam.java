@@ -41,8 +41,7 @@ import java.awt.*;
 public class SVGReadParam extends ImageReadParam {
     private Paint background;
     private String baseURI;
-    private boolean allowExternalResources =
-            "true".equals(System.getProperty(SVGImageReader.ALLOW_EXTERNAL_RESOURCES_SYSTEM_PROP));
+    private boolean allowExternalResources = SVGImageReader.DEFAULT_ALLOW_EXTERNAL_RESOURCES;
 
     public SVGReadParam() {
         super();
