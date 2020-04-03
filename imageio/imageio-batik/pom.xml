@@ -14,6 +14,21 @@
         See the <a href="http://xmlgraphics.apache.org/batik/">Batik Home page</a>
         for more information.]]>
     </description>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <com.twelvemonkeys.imageio.plugins.svg.allowexternalresources>
+                            true
+                        </com.twelvemonkeys.imageio.plugins.svg.allowexternalresources>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -88,6 +103,6 @@
     </dependencies>
 
     <properties>
-        <batik.version>1.9</batik.version>
+        <batik.version>1.12</batik.version>
     </properties>
 </project>

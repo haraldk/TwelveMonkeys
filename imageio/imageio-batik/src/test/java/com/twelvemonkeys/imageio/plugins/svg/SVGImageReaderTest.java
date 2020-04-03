@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.Buffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +66,7 @@ import static org.mockito.Mockito.*;
  * @version $Id: SVGImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> {
+
     private SVGImageReaderSpi provider = new SVGImageReaderSpi();
 
     protected List<TestData> getTestData() {
@@ -228,6 +228,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             reader.addIIOReadWarningListener(listener);
 
             SVGReadParam param = reader.getDefaultReadParam();
+            param.setAllowExternalResources(true);
             param.setBaseURI(resource.toURI().toASCIIString());
             BufferedImage image = reader.read(0, param);
 
@@ -248,6 +249,8 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         // Asking for metadata, width, height etc, before attempting to read using a param,
         // will cause the document to be parsed without a base URI.
         // This will work, but may not use the CSS...
+        // since the param is not available before the read operation is invoked,
+        // this test-case MUST use the system-property for backwards compatibility
         URL resource = getClassLoaderResource("/svg/barChart.svg");
 
         SVGImageReader reader = createReader();
@@ -286,21 +289,44 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
     public void testEmbeddedNoBaseURI() throws IOException {
         // With no base URI, we will throw an exception, about the missing embedded resource
         URL resource = getClassLoaderResource("/svg/barChart.svg");
-
         SVGImageReader reader = createReader();
 
         TestData data = new TestData(resource, (Dimension) null);
         try (ImageInputStream stream = data.getInputStream()) {
             reader.setInput(stream);
 
-            BufferedImage image = reader.read(0);
+            SVGReadParam params = reader.getDefaultReadParam();
+            params.setAllowExternalResources(true);
+            reader.read(0, params);
 
-            assertNotNull(image);
-            assertEquals(450, image.getWidth());
-            assertEquals(500, image.getHeight());
+            assertTrue("reader.read should've thrown an exception, but didn't", false);
         }
         catch (IIOException allowed) {
             assertTrue(allowed.getMessage().contains("batikLogo.svg")); // The embedded resource we don't find
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = SecurityException.class)
+    public void testDisallowedExternalResources() throws URISyntaxException, IOException {
+        // system-property set to true in surefire-plugin-settings in the pom
+        URL resource = getClassLoaderResource("/svg/barChart.svg");
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setBaseURI(resource.toURI().toASCIIString());
+            param.setAllowExternalResources(false);
+            // even when the system-property is set to true,
+            // `reader.read` for `/svg/barChart.svg` should raise
+            // a SecurityException when External Resources are blocked
+            // because the API invocation gets preference
+            reader.read(0, param);
         }
         finally {
             reader.dispose();
