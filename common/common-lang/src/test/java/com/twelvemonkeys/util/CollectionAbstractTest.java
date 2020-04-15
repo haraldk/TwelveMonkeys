@@ -1117,18 +1117,19 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
     /**
      *  Tests {@link Collection#toArray(Object[])}.
      */
+    @SuppressWarnings({"SuspiciousToArrayCall", "RedundantCast"})
     @Test
     public void testCollectionToArray2() {
         resetEmpty();
         Object[] a = new Object[] { new Object(), null, null };
         Object[] array = collection.toArray(a);
         assertArrayEquals("Given array shouldn't shrink", array, a);
-        assertEquals("Last element should be set to null", a[0], null);
+        assertNull("Last element should be set to null", a[0]);
         verifyAll();
 
         resetFull();
         try {
-            array = collection.toArray(new Void[0]);
+            collection.toArray(new Void[0]);
             fail("toArray(new Void[0]) should raise ArrayStore");
         } catch (ArrayStoreException e) {
             // expected
@@ -1136,7 +1137,7 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
         verifyAll();
 
         try {
-            array = collection.toArray(null);
+            collection.toArray((Object[]) null);
             fail("toArray(null) should raise NPE");
         } catch (NullPointerException e) {
             // expected
@@ -1150,13 +1151,13 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
 
         // Figure out if they're all the same class
         // TODO: It'd be nicer to detect a common superclass
-        HashSet classes = new HashSet();
+        HashSet<Class<?>> classes = new HashSet<>();
         for (int i = 0; i < array.length; i++) {
             classes.add((array[i] == null) ? null : array[i].getClass());
         }
         if (classes.size() > 1) return;
 
-        Class cl = (Class)classes.iterator().next();
+        Class<?> cl = (Class<?>)classes.iterator().next();
         if (Map.Entry.class.isAssignableFrom(cl)) {  // check needed for protective cases like Predicated/Unmod map entrySet
             cl = Map.Entry.class;
         }

@@ -250,12 +250,12 @@ public class CollectionUtilTest {
         assertCorrectListIterator(new ArrayList<String>(Arrays.asList(new String[] {"foo", "bar", "baz", "boo"})).subList(1, 3).listIterator(0), new String[] {"bar", "baz"}, true, true);
     }
 
-    private void assertCorrectListIterator(ListIterator<String> iterator, final Object[] elements) {
+    private static void assertCorrectListIterator(ListIterator<String> iterator, final Object[] elements) {
         assertCorrectListIterator(iterator, elements, false, false);
     }
 
     // NOTE: The test is can only test list iterators with a starting index == 0
-    private void assertCorrectListIterator(ListIterator<String> iterator, final Object[] elements, boolean skipRemove, boolean skipAdd) {
+    private static void assertCorrectListIterator(ListIterator<String> iterator, final Object[] elements, boolean skipRemove, boolean skipAdd) {
         // Index is now "before 0"
         assertEquals(-1, iterator.previousIndex());
         assertEquals(0, iterator.nextIndex());
