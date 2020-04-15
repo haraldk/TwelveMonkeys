@@ -89,16 +89,10 @@ final class TGAImageWriter extends ImageWriterBase {
         processImageStarted(0);
 
         WritableRaster rowRaster = header.getPixelDepth() == 32
-                ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, false)
-                .createBufferedImage(renderedImage.getWidth(), 1)
-                .getRaster()
-                : renderedImage.getSampleModel().getTransferType() == DataBuffer.TYPE_INT
-                ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[]{2, 1, 0}, DataBuffer.TYPE_BYTE, false, false)
-                .createBufferedImage(renderedImage.getWidth(), 1)
-                .getRaster()
-                : ImageTypeSpecifier.createFromRenderedImage(renderedImage)
-                .createBufferedImage(renderedImage.getWidth(), 1)
-                .getRaster();
+                                   ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, false).createBufferedImage(renderedImage.getWidth(), 1).getRaster()
+                                   : renderedImage.getSampleModel().getTransferType() == DataBuffer.TYPE_INT
+                                     ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, false, false).createBufferedImage(renderedImage.getWidth(), 1).getRaster()
+                                     : ImageTypeSpecifier.createFromRenderedImage(renderedImage).createBufferedImage(renderedImage.getWidth(), 1).getRaster();
 
         DataBuffer buffer = rowRaster.getDataBuffer();
 
@@ -142,17 +136,14 @@ final class TGAImageWriter extends ImageWriterBase {
 
     }
 
-    // Vi kan lage en DataBuffer wrapper-klasse,
-    // som gjør TYPE_INT_RGB/INT_ARGB/INT_ARGB_PRE/INT_BGR til tilsvarende TYPE_xBYTE-klasser.
-    // Ytelse er ikke viktig her, siden vi uansett må konvertere når vi skal skrive/lese.
-    // TODO: Refactore dette til felles lag?
-    // TODO: Implementere writable også, slik at vi kan bruke i lesing?
+    // TODO: Refactor to common util
+    // TODO: Implement WritableRaster too, for use in reading
     private Raster asByteRaster(final Raster raster, ColorModel colorModel) {
         switch (raster.getTransferType()) {
             case DataBuffer.TYPE_BYTE:
                 return raster;
             case DataBuffer.TYPE_USHORT:
-                return raster; // TODO: we handle ushort especially for now..
+                return raster; // TODO: We handle USHORT especially for now..
             case DataBuffer.TYPE_INT:
                 final int bands = colorModel.getNumComponents();
                 final DataBufferInt buffer = (DataBufferInt) raster.getDataBuffer();
