@@ -1293,21 +1293,22 @@ public final class TIFFImageReader extends ImageReaderBase {
                         imageInput.seek(stripTileOffsets[0]);
 
                         if ((short) (imageInput.readByte() << 8 | imageInput.readByte()) == (short) JPEG.SOS) {
-                            int len = 2 + (imageInput.readByte() << 8 | imageInput.readByte());
+                            processWarningOccurred("Incorrect StripOffsets/TileOffsets, points to SOS marker, ignoring offsets/byte counts.");
+                            int len = 2 + (imageInput.readUnsignedByte() << 8 | imageInput.readUnsignedByte());
                             stripTileOffsets[0] += len;
                             stripTileByteCounts[0] -= len;
                         }
 
                         // We'll prepend each tile with a JFIF "header" (SOI...SOS)
                         imageInput.seek(realJPEGOffset);
-                        jpegHeader = new byte[(int) (stripTileOffsets[0] - realJPEGOffset)];
+                        jpegHeader = new byte[Math.max(0, (int) (stripTileOffsets[0] - realJPEGOffset))];
                         imageInput.readFully(jpegHeader);
                     }
 
                     // In case of single tile, make sure we read the entire JFIF stream
-                    if (stripTileByteCounts != null && stripTileByteCounts.length == 1) {
-                        // TODO: Consider issue warning here!
-                        stripTileByteCounts[0] = Math.max(stripTileByteCounts[0], jpegLength);
+                    if (stripTileByteCounts != null && stripTileByteCounts.length == 1 && stripTileByteCounts[0] < jpegLength) {
+                        processWarningOccurred("Incorrect StripByteCounts/TileByteCounts for single tile, using JPEGInterchangeFormatLength instead.");
+                        stripTileByteCounts[0] = jpegLength;
                     }
 
                     // Read data

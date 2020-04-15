@@ -308,6 +308,27 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Incorrect StripOffsets/TileOffsets"), contains("SOS marker")));
+        }
+    }
+
+    @Test
+    public void testReadOldStyleWangMultiStrip2() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/662260-color.tif"), new Dimension(1600, 1200));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(1);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Incorrect StripOffsets/TileOffsets"), contains("SOS marker")));
         }
     }
 
