@@ -91,11 +91,10 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         super(Validate.notNull(stream, "stream"));
 
         this.columns = Validate.isTrue(columns > 0, columns, "width must be greater than 0");
-        this.type = Validate.isTrue(
-                type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE ||
-                        type == TIFFExtension.COMPRESSION_CCITT_T4 || type == TIFFExtension.COMPRESSION_CCITT_T6,
-                type, "Only CCITT Modified Huffman RLE compression (2), CCITT T4 (3) or CCITT T6 (4) supported: %s"
-        );
+        this.type = Validate.isTrue(type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE ||
+                        type == TIFFExtension.COMPRESSION_CCITT_T4 ||
+                        type == TIFFExtension.COMPRESSION_CCITT_T6,
+                type, "Only CCITT Modified Huffman RLE compression (2), CCITT T4 (3) or CCITT T6 (4) supported: %s");
         this.fillOrder = Validate.isTrue(
                 fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT || fillOrder == TIFFExtension.FILL_RIGHT_TO_LEFT,
                 fillOrder, "Expected fill order 1  or 2: %s"
@@ -148,6 +147,46 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
                                  final long options) {
         this(stream, columns, type, fillOrder, options, type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
+    }
+
+    static int findCompressionType(final int type, final InputStream in) throws IOException {
+        // Discover possible incorrect type, revert to RLE
+        if (type == TIFFExtension.COMPRESSION_CCITT_T4 && in.markSupported()) {
+            byte[] streamData = new byte[20];
+
+            try {
+                in.mark(streamData.length);
+
+                int offset = 0;
+                while (offset < streamData.length) {
+                    int read = in.read(streamData, offset, streamData.length - offset);
+                    if (read <= 0) {
+                        break;
+                    }
+
+                    offset += read;
+                }
+            }
+            finally {
+                in.reset();
+            }
+
+            if (streamData[0] != 0 || (streamData[1] >> 4 != 1 && streamData[1] != 1)) {
+                // Leading EOL (0b000000000001) not found, search further and try RLE if not found
+                short b = (short) (((streamData[0] << 8) + streamData[1]) >> 4);
+                for (int i = 12; i < 160; i++) {
+                    b = (short) ((b << 1) + ((streamData[(i / 8)] >> (7 - (i % 8))) & 0x01));
+
+                    if ((b & 0xFFF) == 1) {
+                        return TIFFExtension.COMPRESSION_CCITT_T4;
+                    }
+                }
+
+                return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+            }
+        }
+
+        return type;
     }
 
     private void fetch() throws IOException {

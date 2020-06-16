@@ -639,6 +639,25 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadIncorrectCompressionRLEAsG3() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/incorrect-compression-rle-as-g3.tif"), new Dimension(1700, 32));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("compression type"), contains("does not match")));
+        }
+    }
+
+    @Test
     public void testReadMultipleExtraSamples() throws IOException {
         ImageReader reader = createReader();
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/pack.tif"))) {

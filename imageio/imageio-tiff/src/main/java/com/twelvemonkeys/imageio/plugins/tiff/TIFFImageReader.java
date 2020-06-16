@@ -2308,10 +2308,20 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
             case TIFFExtension.COMPRESSION_CCITT_T6:
-                return new CCITTFaxDecoderStream(stream, width, compression, fillOrder, getCCITTOptions(compression));
+                return new CCITTFaxDecoderStream(stream, width, findCCITTType(compression, stream), fillOrder, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
         }
+    }
+
+    private int findCCITTType(final int encodedCompression, final InputStream stream) throws IOException {
+        int compressionType = CCITTFaxDecoderStream.findCompressionType(encodedCompression, stream);
+
+        if (compressionType != encodedCompression) {
+            processWarningOccurred(String.format("Detected compression type %d, does not match encoded compression type: %d", compressionType, encodedCompression));
+        }
+
+        return compressionType;
     }
 
     private InputStream createFillOrderStream(final int fillOrder, final InputStream stream) {
