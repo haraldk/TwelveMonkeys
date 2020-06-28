@@ -129,7 +129,7 @@ public abstract class ImageWriterAbstractTest {
                 writer.write(drawSomething((BufferedImage) testData));
             }
             catch (IOException e) {
-                fail(e.getMessage());
+                throw new AssertionError(e.getMessage(), e);
             }
 
             assertTrue("No image data written", buffer.size() > 0);
@@ -149,10 +149,10 @@ public abstract class ImageWriterAbstractTest {
         catch(IllegalArgumentException ignore) {
         }
         catch (IOException e) {
-            fail(e.getMessage());
+            throw new AssertionError(e.getMessage(), e);
         }
 
-        assertTrue("Image data written", buffer.size() == 0);
+        assertEquals("Image data written", 0, buffer.size());
     }
 
     @Test(expected = IllegalStateException.class)

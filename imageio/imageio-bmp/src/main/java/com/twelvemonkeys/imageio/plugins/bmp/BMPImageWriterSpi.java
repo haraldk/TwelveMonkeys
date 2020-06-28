@@ -33,8 +33,12 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
-import java.io.IOException;
+import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.spi.ServiceRegistry;
+import java.awt.image.BufferedImage;
 import java.util.Locale;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * BMPImageWriterSpi
@@ -45,17 +49,28 @@ public final class BMPImageWriterSpi extends ImageWriterSpiBase {
     }
 
     @Override
-    public boolean canEncodeImage(final ImageTypeSpecifier type) {
-        return true;
+    public void onRegistration(ServiceRegistry registry, Class<?> category) {
+        // Make sure we register BEHIND the built-in BMP writer
+        ImageWriterSpi sunSpi = lookupProviderByName(registry, "com.sun.imageio.plugins.bmp.BMPImageWriterSpi", ImageWriterSpi.class);
+
+        if (sunSpi != null && sunSpi.getVendorName() != null) {
+            registry.setOrdering((Class<ImageWriterSpi>) category, sunSpi, this);
+        }
     }
 
     @Override
-    public BMPImageWriter createWriterInstance(final Object extension) throws IOException {
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
+        // TODO: Support more types, as time permits.
+        return type.getBufferedImageType() == BufferedImage.TYPE_4BYTE_ABGR;
+    }
+
+    @Override
+    public BMPImageWriter createWriterInstance(final Object extension) {
         return new BMPImageWriter(this);
     }
 
     @Override
     public String getDescription(final Locale locale) {
-        return "Windows Device Independent Bitmap Format (BMP) Reader";
+        return "Windows Device Independent Bitmap Format (BMP) Writer";
     }
 }

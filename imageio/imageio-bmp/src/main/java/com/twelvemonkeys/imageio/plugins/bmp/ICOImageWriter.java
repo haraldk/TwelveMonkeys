@@ -143,7 +143,7 @@ public final class ICOImageWriter extends DIBImageWriter {
         }
 
         if (image.hasRaster()) {
-            throw new UnsupportedOperationException("image has a Raster");
+            throw new UnsupportedOperationException("Raster not supported");
         }
 
         if (sequenceIndex >= INITIAL_ENTRY_COUNT) {
@@ -155,7 +155,7 @@ public final class ICOImageWriter extends DIBImageWriter {
         ColorModel colorModel = image.getRenderedImage().getColorModel();
 
         // TODO: The output size may depend on the param (subsampling, source region, etc)
-        if (width > ICO_MAX_DIMENSION && height > ICO_MAX_DIMENSION) {
+        if (width > ICO_MAX_DIMENSION || height > ICO_MAX_DIMENSION) {
             throw new IIOException(String.format("ICO maximum width or height (%d) exceeded", ICO_MAX_DIMENSION));
         }
 

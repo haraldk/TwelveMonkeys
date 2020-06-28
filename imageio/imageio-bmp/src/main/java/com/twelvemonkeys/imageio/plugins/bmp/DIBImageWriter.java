@@ -43,6 +43,7 @@ import java.nio.ByteOrder;
  * DIBImageWriter
  */
 abstract class DIBImageWriter extends ImageWriterBase {
+
     DIBImageWriter(ImageWriterSpi provider) {
         super(provider);
     }
@@ -50,7 +51,9 @@ abstract class DIBImageWriter extends ImageWriterBase {
     @Override
     public void setOutput(Object output) {
         super.setOutput(output);
-        imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        if (imageOutput != null) {
+            imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        }
     }
 
     void writeDIBHeader(int infoHeaderSize, int width, int height, boolean isTopDown, int pixelSize, int compression) throws IOException {
@@ -82,9 +85,8 @@ abstract class DIBImageWriter extends ImageWriterBase {
     }
 
     void writeUncompressed(boolean isTopDown, BufferedImage img, int height, int width) throws IOException {
-        // TODO: Fix
         if (img.getType() != BufferedImage.TYPE_4BYTE_ABGR) {
-            throw new IIOException("Blows!");
+            throw new IIOException("Only TYPE_4BYTE_ABGR supported");
         }
 
         // Support
@@ -93,12 +95,13 @@ abstract class DIBImageWriter extends ImageWriterBase {
         // - TODO: Packed/DirectColorModel (16 and 32 bit, BI_BITFIELDS, BI_PNG? BI_JPEG?)
 
         Raster raster = img.getRaster();
-        WritableRaster rowRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, 1, width * 4, 4, new int[]{2, 1, 0, 3}, null);
+        WritableRaster rowRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, 1, width * 4, 4, new int[] {2, 1, 0, 3}, null);
         byte[] row = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+        final int[] bandList = {2, 1, 0, 3};
 
         for (int i = 0; i < height; i++) {
             int line = isTopDown ? i : height - 1 - i;
-            rowRaster.setDataElements(0, 0, raster.createChild(0, line, width, 1, 0, 0, new int[]{2, 1, 0, 3}));
+            rowRaster.setDataElements(0, 0, raster.createChild(0, line, width, 1, 0, 0, bandList));
 
             imageOutput.write(row);
 

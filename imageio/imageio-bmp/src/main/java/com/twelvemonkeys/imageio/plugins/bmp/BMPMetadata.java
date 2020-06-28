@@ -40,7 +40,7 @@ import javax.imageio.metadata.IIOMetadataNode;
  * BMPMetadata.
  */
 final class BMPMetadata extends AbstractMetadata {
-    /** We return metadata in the exact same form as the JRE built-in, to be compatible with the DIBImageWriter. */
+    /** We return metadata in the exact same form as the JRE built-in, to be compatible with the BMPImageWriter. */
     public static final String nativeMetadataFormatName = "javax_imageio_bmp_1.0";
 
     private final DIBHeader header;

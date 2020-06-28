@@ -33,7 +33,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
-import java.io.IOException;
+import java.awt.image.BufferedImage;
 import java.util.Locale;
 
 /**
@@ -46,11 +46,13 @@ public final class ICOImageWriterSpi extends ImageWriterSpiBase {
 
     @Override
     public boolean canEncodeImage(final ImageTypeSpecifier type) {
-        return true;
+        // TODO: Support more types, as time permits.
+        // NOTE: We do support more types, if writing using PNG compression
+        return type.getBufferedImageType() == BufferedImage.TYPE_4BYTE_ABGR;
     }
 
     @Override
-    public ICOImageWriter createWriterInstance(final Object extension) throws IOException {
+    public ICOImageWriter createWriterInstance(final Object extension) {
         return new ICOImageWriter(this);
     }
 
