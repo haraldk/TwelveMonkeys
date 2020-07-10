@@ -9,7 +9,7 @@
 
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys</artifactId>
-    <version>3.6-SNAPSHOT</version>
+    <version>3.6</version>
     <packaging>pom</packaging>
     <name>Twelvemonkeys</name>
 
@@ -86,7 +86,7 @@
         <connection>scm:git:https://github.com/haraldk/TwelveMonkeys</connection>
         <developerConnection>scm:git:ssh://git@github.com/haraldk/TwelveMonkeys</developerConnection>
         <url>https://github.com/haraldk/TwelveMonkeys</url>
-        <tag>HEAD</tag>
+        <tag>twelvemonkeys-3.6</tag>
     </scm>
 
     <properties>
