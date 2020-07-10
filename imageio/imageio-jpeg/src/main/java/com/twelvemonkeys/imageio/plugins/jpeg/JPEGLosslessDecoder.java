@@ -39,6 +39,7 @@ import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 final class JPEGLosslessDecoder {
@@ -51,12 +52,12 @@ final class JPEGLosslessDecoder {
     private final QuantizationTable quantTable;
     private Scan scan;
 
-    private final int HuffTab[][][] = new int[4][2][MAX_HUFFMAN_SUBTREE * 256];
-    private final int IDCT_Source[] = new int[64];
-    private final int nBlock[] = new int[10]; // number of blocks in the i-th Comp in a scan
-    private final int[] acTab[] = new int[10][]; // ac HuffTab for the i-th Comp in a scan
-    private final int[] dcTab[] = new int[10][]; // dc HuffTab for the i-th Comp in a scan
-    private final int[] qTab[] = new int[10][]; // quantization table for the i-th Comp in a scan
+    private final int[][][] HuffTab = new int[4][2][MAX_HUFFMAN_SUBTREE * 256];
+    private final int[] IDCT_Source = new int[64];
+    private final int[] nBlock = new int[10]; // number of blocks in the i-th Comp in a scan
+    private final int[][] acTab = new int[10][]; // ac HuffTab for the i-th Comp in a scan
+    private final int[][] dcTab = new int[10][]; // dc HuffTab for the i-th Comp in a scan
+    private final int[][] qTab = new int[10][]; // quantization table for the i-th Comp in a scan
 
     private boolean restarting;
     private int marker;
@@ -70,7 +71,7 @@ final class JPEGLosslessDecoder {
     private int mask;
     private int[][] outputData;
 
-    private static final int IDCT_P[] = {
+    private static final int[] IDCT_P = {
              0,  5, 40, 16, 45,  2,  7, 42,
             21, 56,  8, 61, 18, 47,  1,  4,
             41, 23, 58, 13, 32, 24, 37, 10,
@@ -79,16 +80,6 @@ final class JPEGLosslessDecoder {
             60, 19, 46, 22, 59, 12, 33, 31,
             50, 55, 25, 36, 11, 62, 14, 35,
             28, 49, 52, 27, 38, 30, 51, 54
-    };
-    private static final int TABLE[] = {
-             0,  1,  5,  6, 14, 15, 27, 28,
-             2,  4,  7, 13, 16, 26, 29, 42,
-             3,  8, 12, 17, 25, 30, 41, 43,
-             9, 11, 18, 24, 31, 40, 44, 53,
-            10, 19, 23, 32, 39, 45, 52, 54,
-            20, 22, 33, 38, 46, 51, 55, 60,
-            21, 34, 37, 47, 50, 56, 59, 61,
-            35, 36, 48, 49, 57, 58, 62, 63
     };
 
     private static final int RESTART_MARKER_BEGIN = 0xFFD0;
@@ -158,7 +149,7 @@ final class JPEGLosslessDecoder {
             huffTable.buildHuffTables(HuffTab);
         }
 
-        quantTable.enhanceTables(TABLE);
+        quantTable.enhanceTables();
 
         current = input.readUnsignedShort();
 
@@ -185,11 +176,10 @@ final class JPEGLosslessDecoder {
             selection = scan.spectralSelStart;
 
             final Scan.Component[] scanComps = scan.components;
-            final int[][] quantTables = quantTable.quantTables;
 
             for (int i = 0; i < numComp; i++) {
                 Frame.Component component = getComponentSpec(components, scanComps[i].scanCompSel);
-                qTab[i] = quantTables[component.qtSel];
+                qTab[i] = quantTable.qTable(component.qtSel);
                 nBlock[i] = component.vSub * component.hSub;
 
                 int dcTabSel = scanComps[i].dcTabSel;
@@ -220,18 +210,18 @@ final class JPEGLosslessDecoder {
                 outputData[componentIndex] = new int[xDim * yDim];
             }
 
-            final int firstValue[] = new int[numComp];
+            final int[] firstValue = new int[numComp];
             for (int i = 0; i < numComp; i++) {
                 firstValue[i] = (1 << (precision - 1));
             }
 
-            final int pred[] = new int[numComp];
+            final int[] pred = new int[numComp];
 
             scanNum++;
 
             while (true) { // Decode one scan
-                int temp[] = new int[1]; // to store remainder bits
-                int index[] = new int[1];
+                int[] temp = new int[1]; // to store remainder bits
+                int[] index = new int[1];
 
                 System.arraycopy(firstValue, 0, pred, 0, numComp);
 
@@ -288,7 +278,7 @@ final class JPEGLosslessDecoder {
     private boolean useACForDC(final int dcTabSel) {
         if (isLossless()) {
             for (HuffmanTable huffTable : huffTables) {
-                if (huffTable.tc[dcTabSel][0] == 0 && huffTable.tc[dcTabSel][1] != 0) {
+                if (!huffTable.isPresent(dcTabSel, 0) && huffTable.isPresent(dcTabSel, 1)) {
                     return true;
                 }
             }
@@ -324,7 +314,7 @@ final class JPEGLosslessDecoder {
         return Scan.read(input, length);
     }
 
-    private int decode(final int prev[], final int temp[], final int index[]) throws IOException {
+    private int decode(final int[] prev, final int[] temp, final int[] index) throws IOException {
         if (numComp == 1) {
             return decodeSingle(prev, temp, index);
         }
@@ -336,7 +326,7 @@ final class JPEGLosslessDecoder {
         }
     }
 
-    private int decodeSingle(final int prev[], final int temp[], final int index[]) throws IOException {
+    private int decodeSingle(final int[] prev, final int[] temp, final int[] index) throws IOException {
         // At the beginning of the first line and
         // at the beginning of each restart interval the prediction value of 2P – 1 is used, where P is the input precision.
         if (restarting) {
@@ -390,7 +380,7 @@ final class JPEGLosslessDecoder {
         return 0;
     }
 
-    private int decodeRGB(final int prev[], final int temp[], final int index[]) throws IOException {
+    private int decodeRGB(final int[] prev, final int[] temp, final int[] index) throws IOException {
         final int[] outputRedData = outputData[0];
         final int[] outputGreenData = outputData[1];
         final int[] outputBlueData = outputData[2];
@@ -435,7 +425,7 @@ final class JPEGLosslessDecoder {
         return decode0(prev, temp, index);
     }
 
-    private int decodeAny(final int prev[], final int temp[], final int index[]) throws IOException {
+    private int decodeAny(final int[] prev, final int[] temp, final int[] index) throws IOException {
         for (int componentIndex = 0; componentIndex < outputData.length; ++componentIndex) {
             final int[] outputData = this.outputData[componentIndex];
             final int previous;
@@ -469,17 +459,17 @@ final class JPEGLosslessDecoder {
     }
 
     private int decode0(int[] prev, int[] temp, int[] index) throws IOException {
-        int value, actab[], dctab[];
-        int qtab[];
+        int value;
+        int[] actab;
+        int[] dctab;
+        int[] qtab;
 
         for (int ctrC = 0; ctrC < numComp; ctrC++) {
             qtab = qTab[ctrC];
             actab = acTab[ctrC];
             dctab = dcTab[ctrC];
             for (int i = 0; i < nBlock[ctrC]; i++) {
-                for (int k = 0; k < IDCT_Source.length; k++) {
-                    IDCT_Source[k] = 0;
-                }
+                Arrays.fill(IDCT_Source, 0);
 
                 value = getHuffmanValue(dctab, temp, index);
 
@@ -545,7 +535,7 @@ final class JPEGLosslessDecoder {
     //	        and marker_index=9
     //	      If marker_index=9 then index is always > 8, or HuffmanValue()
     //	        will not be called
-    private int getHuffmanValue(final int table[], final int temp[], final int index[]) throws IOException {
+    private int getHuffmanValue(final int[] table, final int[] temp, final int[] index) throws IOException {
         int code, input;
         final int mask = 0xFFFF;
 
@@ -603,7 +593,7 @@ final class JPEGLosslessDecoder {
         return code & 0xFF;
     }
 
-    private int getn(final int[] pred, final int n, final int temp[], final int index[]) throws IOException {
+    private int getn(final int[] pred, final int n, final int[] temp, final int[] index) throws IOException {
         int result;
         final int one = 1;
         final int n_one = -1;
@@ -688,7 +678,7 @@ final class JPEGLosslessDecoder {
         return result;
     }
 
-    private int getPreviousX(final int data[]) {
+    private int getPreviousX(final int[] data) {
         if (xLoc > 0) {
             return data[((yLoc * xDim) + xLoc) - 1];
         }
@@ -700,7 +690,7 @@ final class JPEGLosslessDecoder {
         }
     }
 
-    private int getPreviousXY(final int data[]) {
+    private int getPreviousXY(final int[] data) {
         if ((xLoc > 0) && (yLoc > 0)) {
             return data[(((yLoc - 1) * xDim) + xLoc) - 1];
         }
@@ -709,7 +699,7 @@ final class JPEGLosslessDecoder {
         }
     }
 
-    private int getPreviousY(final int data[]) {
+    private int getPreviousY(final int[] data) {
         if (yLoc > 0) {
             return data[((yLoc - 1) * xDim) + xLoc];
         }
@@ -722,7 +712,7 @@ final class JPEGLosslessDecoder {
         return (xLoc == (xDim - 1)) && (yLoc == (yDim - 1));
     }
 
-    private void output(final int pred[]) {
+    private void output(final int[] pred) {
         if (numComp == 1) {
             outputSingle(pred);
         }
@@ -734,7 +724,7 @@ final class JPEGLosslessDecoder {
         }
     }
 
-    private void outputSingle(final int pred[]) {
+    private void outputSingle(final int[] pred) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
             outputData[0][(yLoc * xDim) + xLoc] = mask & pred[0];
             xLoc++;
@@ -746,7 +736,7 @@ final class JPEGLosslessDecoder {
         }
     }
 
-    private void outputRGB(final int pred[]) {
+    private void outputRGB(final int[] pred) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
             final int index = (yLoc * xDim) + xLoc;
             outputData[0][index] = pred[0];
@@ -761,7 +751,7 @@ final class JPEGLosslessDecoder {
         }
     }
 
-    private void outputAny(final int pred[]) {
+    private void outputAny(final int[] pred) {
         if ((xLoc < xDim) && (yLoc < yDim)) {
             final int index = (yLoc * xDim) + xLoc;
             for (int componentIndex = 0; componentIndex < outputData.length; ++componentIndex) {

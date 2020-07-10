@@ -113,9 +113,6 @@ public final class JPEGImageReader extends ImageReaderBase {
     /** Internal constant for referring all APP segments */
     static final int ALL_APP_MARKERS = -1;
 
-    /** Segment identifiers for the JPEG segments we care about reading. */
-    private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = JPEGSegmentUtil.ALL_SEGMENTS;
-
     /** Our JPEG reading delegate */
     private final ImageReader delegate;
 
@@ -534,7 +531,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         return image;
     }
 
-    private JPEGColorSpace getSourceCSType(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame) throws IIOException {
+    static JPEGColorSpace getSourceCSType(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame) throws IIOException {
         // Adapted from libjpeg jdapimin.c:
         // Guess the input colorspace
         // (Wish JPEG committee had provided a real way to specify this...)
@@ -717,7 +714,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     private void initHeader(final int imageIndex) throws IOException {
         if (imageIndex < 0) {
-            throw new IllegalArgumentException("imageIndex < 0: " + imageIndex);
+            throw new IndexOutOfBoundsException("imageIndex < 0: " + imageIndex);
         }
 
         if (imageIndex == currentStreamIndex) {
@@ -837,7 +834,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         try {
             imageInput.seek(streamOffsets.get(currentStreamIndex));
 
-            return JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
+            return JPEGSegmentUtil.readSegments(imageInput, JPEGSegmentUtil.ALL_SEGMENTS);
         }
         catch (IIOException | IllegalArgumentException ignore) {
             if (DEBUG) {
@@ -1218,38 +1215,9 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        // checkBounds needed, as we catch the IndexOutOfBoundsException below.
-        checkBounds(imageIndex);
         initHeader(imageIndex);
 
-        IIOMetadata imageMetadata;
-
-        if (isLossless()) {
-            return new JPEGImage10Metadata(segments);
-        }
-        else {
-            try {
-                imageMetadata = delegate.getImageMetadata(0);
-            }
-            catch (IndexOutOfBoundsException knownIssue) {
-                // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
-                throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
-            }
-            catch (NegativeArraySizeException knownIssue) {
-                // Most likely from com.sun.imageio.plugins.jpeg.SOSMarkerSegment
-                throw new IIOException("Corrupt JPEG data: Bad component count", knownIssue);
-            }
-
-            if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
-                if (metadataCleaner == null) {
-                    metadataCleaner = new JPEGImage10MetadataCleaner(this);
-                }
-
-                return metadataCleaner.cleanMetadata(imageMetadata);
-            }
-        }
-
-        return imageMetadata;
+        return new JPEGImage10Metadata(segments, getSOF(), getJFIF(), getJFXX(), getEmbeddedICCProfile(true), getAdobeDCT(), getExif());
     }
 
     @Override

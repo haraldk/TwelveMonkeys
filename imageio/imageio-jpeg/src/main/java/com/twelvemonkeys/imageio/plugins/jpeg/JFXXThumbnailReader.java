@@ -113,7 +113,7 @@ final class JFXXThumbnailReader extends ThumbnailReader {
             }
         }
 
-        cachedThumbnail = pixelsExposed ? null : new SoftReference<BufferedImage>(thumbnail);
+        cachedThumbnail = pixelsExposed ? null : new SoftReference<>(thumbnail);
 
         return thumbnail;
     }
