@@ -113,8 +113,13 @@ public class AdobePathSegmentTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateOpenLinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateOpenLinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, -16.1, -16.1, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateOpenLinkedRecordOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 16.1, 16.1, 0, 0, 1, 1);
     }
 
     @Test
@@ -138,8 +143,13 @@ public class AdobePathSegmentTest {
 
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateOpenUnlinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateOpenUnlinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, -16.5, 0, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateOpenUnlinkedRecorOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, 0, -17, 0, 0, 16.5, 1);
     }
 
     /// Closed subpath
@@ -164,8 +174,13 @@ public class AdobePathSegmentTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateClosedLinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateClosedLinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, -16.5, -.5, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateClosedLinkedRecordOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, .5, 16.5, 0, 0, 1, 1);
     }
 
     @Test
@@ -189,8 +204,13 @@ public class AdobePathSegmentTest {
 
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateClosedUnlinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateClosedUnlinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, -.5, -16.5, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateClosedUnlinkedRecordOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, 16.5, .5, 0, 0, 1, 1);
     }
 
     @Test

@@ -107,8 +107,8 @@ final class AdobePathSegment {
             case OPEN_SUBPATH_BEZIER_LINKED:
             case OPEN_SUBPATH_BEZIER_UNLINKED:
                 isTrue(
-                        cppx >= 0 && cppx <= 1 && cppy >= 0 && cppy <= 1,
-                        String.format("Expected point in range [0...1]: (%f, %f)", cppx ,cppy)
+                        cppx >= -16 && cppx <= 16 && cppy >= -16 && cppy <= 16,
+                        String.format("Expected point in range [-16...16]: (%f, %f)", cppx ,cppy)
                 );
                 break;
             case PATH_FILL_RULE_RECORD:
