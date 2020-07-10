@@ -718,6 +718,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
 
         if (imageIndex == currentStreamIndex) {
+            initHeader();
             return;
         }
 

@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.xml.XMLSerializer;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 import org.mockito.internal.matchers.GreaterThan;
@@ -1383,8 +1382,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         // Assume that the aspect ratio is 1 if both x/y density is 0.
         IIOMetadataNode tree = (IIOMetadataNode) imageMetadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
 
-        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
-        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
+//        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(imageMetadata.getNativeMetadataFormatName()), false);
+//        new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
         NodeList dimensions = tree.getElementsByTagName("Dimension");
         assertEquals(1, dimensions.getLength());
         assertEquals("PixelAspectRatio", dimensions.item(0).getFirstChild().getNodeName());
