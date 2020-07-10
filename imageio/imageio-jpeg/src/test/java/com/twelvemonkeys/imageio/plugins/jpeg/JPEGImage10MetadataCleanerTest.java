@@ -85,12 +85,12 @@ public class JPEGImage10MetadataCleanerTest {
                 reader.setInput(input);
 
                 IIOMetadata original = origReader.getImageMetadata(0);
-                IIOMetadataNode origTree = (IIOMetadataNode) original.getAsTree(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+                IIOMetadataNode origTree = (IIOMetadataNode) original.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
 
                 JPEGImage10MetadataCleaner cleaner = new JPEGImage10MetadataCleaner((JPEGImageReader) reader);
                 IIOMetadata cleaned = cleaner.cleanMetadata(origReader.getImageMetadata(0));
 
-                IIOMetadataNode cleanTree = (IIOMetadataNode) cleaned.getAsTree(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+                IIOMetadataNode cleanTree = (IIOMetadataNode) cleaned.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
 
                 NodeList origDHT = origTree.getElementsByTagName("dht");
                 assertEquals(1, origDHT.getLength());

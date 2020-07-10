@@ -51,6 +51,11 @@ import java.util.List;
  */
 class JPEGImage10Metadata extends AbstractMetadata {
 
+    /**
+     * Native metadata format name
+     */
+    static final String JAVAX_IMAGEIO_JPEG_IMAGE_1_0 = "javax_imageio_jpeg_image_1.0";
+
     // TODO: Create our own native format, which is simply markerSequence from the Sun format, with the segments as-is, in sequence...
     //  + add special case for app segments, containing appXX + identifier (ie. <app0JFIF /> to  <app0 identifier="JFIF" /> or <app app="0" identifier="JFIF" />
 
@@ -66,7 +71,7 @@ class JPEGImage10Metadata extends AbstractMetadata {
 
     // TODO: Consider moving all the metadata stuff from the reader, over here...
     JPEGImage10Metadata(final List<Segment> segments, Frame frame, JFIF jfif, JFXX jfxx, ICC_Profile embeddedICCProfile, AdobeDCT adobeDCT, final CompoundDirectory exif) {
-        super(true, JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0, null, null, null);
+        super(true, JAVAX_IMAGEIO_JPEG_IMAGE_1_0, null, null, null);
 
         this.segments = segments;
         this.frame = frame;
@@ -79,7 +84,7 @@ class JPEGImage10Metadata extends AbstractMetadata {
 
     @Override
     protected Node getNativeTree() {
-        IIOMetadataNode root = new IIOMetadataNode(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+        IIOMetadataNode root = new IIOMetadataNode(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
 
         IIOMetadataNode jpegVariety = new IIOMetadataNode("JPEGvariety");
         boolean isJFIF = jfif != null;

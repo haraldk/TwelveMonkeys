@@ -52,11 +52,6 @@ import java.util.List;
  */
 final class JPEGImage10MetadataCleaner {
 
-    /**
-     * Native metadata format name
-     */
-    static final String JAVAX_IMAGEIO_JPEG_IMAGE_1_0 = "javax_imageio_jpeg_image_1.0";
-
     private final JPEGImageReader reader;
 
     JPEGImage10MetadataCleaner(final JPEGImageReader reader) {
@@ -93,7 +88,7 @@ final class JPEGImage10MetadataCleaner {
         the version to the method/constructor used to obtain an IIOMetadata object.)
          */
 
-        IIOMetadataNode tree = (IIOMetadataNode) imageMetadata.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+        IIOMetadataNode tree = (IIOMetadataNode) imageMetadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
         IIOMetadataNode jpegVariety = (IIOMetadataNode) tree.getElementsByTagName("JPEGvariety").item(0);
         IIOMetadataNode markerSequence = (IIOMetadataNode) tree.getElementsByTagName("markerSequence").item(0);
 
@@ -145,7 +140,7 @@ final class JPEGImage10MetadataCleaner {
                             jfifThumb = new IIOMetadataNode("JFIFthumbJPEG");
                             // Contains it's own "markerSequence" with full DHT, DQT, SOF etc...
                             IIOMetadata thumbMeta = thumbnailReader.readMetadata();
-                            Node thumbTree = thumbMeta.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+                            Node thumbTree = thumbMeta.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
                             jfifThumb.appendChild(thumbTree.getLastChild());
                             app0JFXX.appendChild(jfifThumb);
                             break;
@@ -307,11 +302,11 @@ final class JPEGImage10MetadataCleaner {
         }
 
         try {
-            imageMetadata.setFromTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0, tree);
+            imageMetadata.setFromTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0, tree);
         }
         catch (IIOInvalidTreeException e) {
             if (JPEGImageReader.DEBUG) {
-                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0), false);
+                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0), false);
                 System.out.println("-- 8< --");
                 new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
             }
