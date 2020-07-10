@@ -51,7 +51,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 
-import static com.twelvemonkeys.imageio.plugins.jpeg.JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0;
+import static com.twelvemonkeys.imageio.plugins.jpeg.JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0;
 
 /**
  * JPEGImageWriter
@@ -159,6 +159,17 @@ public final class JPEGImageWriter extends ImageWriterBase {
             writeCMYK(streamMetadata, image, param);
         }
         else {
+            // If the image metadata is our substitute, convert it back to native com.sun format
+            if (image.getMetadata() instanceof JPEGImage10Metadata) {
+                ImageTypeSpecifier type = image.hasRaster() ? null : ImageTypeSpecifier.createFromRenderedImage(image.getRenderedImage());
+                IIOMetadata nativeMetadata = delegate.getDefaultImageMetadata(type, param);
+
+                JPEGImage10Metadata metadata = (JPEGImage10Metadata) image.getMetadata();
+                nativeMetadata.setFromTree(metadata.getNativeMetadataFormatName(), metadata.getNativeTree());
+
+                image.setMetadata(nativeMetadata);
+            }
+
             delegate.write(streamMetadata, image, param);
         }
     }
