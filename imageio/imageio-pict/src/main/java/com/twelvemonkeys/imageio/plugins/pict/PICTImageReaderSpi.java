@@ -61,8 +61,8 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
 
         ImageInputStream stream = (ImageInputStream) pSource;
 
-        // As PICT format don't have good magic and our method often gives false positives,
-        // so we'll need to check for other known formats (BMP, GIF, JPEG, PNG, PSD, TIFF) first
+        // PICT format don't have good magic and our method often gives false positives,
+        // We'll check for other known formats (BMP, GIF, JPEG, PNG, PSD, TIFF) first
         if (isOtherFormat(stream)) {
             return false;
         }
