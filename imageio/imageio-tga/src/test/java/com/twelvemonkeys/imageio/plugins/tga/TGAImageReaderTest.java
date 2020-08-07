@@ -76,7 +76,9 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
                 new TestData(getClassLoaderResource("/tga/XING_B32.TGA"), new Dimension(240, 164)), // Uncompressed 32 bit BGRA bottom/up
                 new TestData(getClassLoaderResource("/tga/XING_T16.TGA"), new Dimension(240, 164)), // Uncompressed 16 bit BGR top/down
                 new TestData(getClassLoaderResource("/tga/XING_T24.TGA"), new Dimension(240, 164)), // Uncompressed 24 bit BGR top/down
-                new TestData(getClassLoaderResource("/tga/XING_T32.TGA"), new Dimension(240, 164))  // Uncompressed 32 bit BGRA top/down
+                new TestData(getClassLoaderResource("/tga/XING_T32.TGA"), new Dimension(240, 164)), // Uncompressed 32 bit BGRA top/down
+
+                new TestData(getClassLoaderResource("/tga/autodesk-3dsmax-extsize494.tga"), new Dimension(440, 200))  // RLE compressed 32 bit BGRA bottom/up
         );
     }
 

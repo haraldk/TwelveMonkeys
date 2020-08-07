@@ -72,8 +72,9 @@ final class TGAExtensions {
     static TGAExtensions read(final ImageInputStream stream) throws IOException {
         int extSize = stream.readUnsignedShort();
 
-        // Should always be 495 for version 2.0, no newer version exists...
-        if (extSize < EXT_AREA_SIZE) {
+        // Should always be 495 for version 2.0, no newer version exists.
+        // NOTE: Known AutoDesk 3ds Max issue, extension area size field is 494, but still good.
+        if (extSize < EXT_AREA_SIZE - 1) {
             throw new IIOException(String.format("TGA Extension Area size less than %d: %d", EXT_AREA_SIZE, extSize));
         }
 
@@ -89,10 +90,10 @@ final class TGAExtensions {
 
         // Software version (* 100) short + single byte ASCII (ie. 101 'b' for 1.01b)
         int softwareVersion = stream.readUnsignedShort();
-        int softwareLetter = stream.readByte();
+        char softwareLetter = (char) stream.readByte();
 
-        extensions.softwareVersion = softwareVersion != 0 && softwareLetter != ' '
-                                     ? String.format("%d.%d%d", softwareVersion / 100, softwareVersion % 100, softwareLetter).trim()
+        extensions.softwareVersion = softwareVersion != 0 || softwareLetter != ' '
+                                     ? String.format("%d.%d%s", softwareVersion / 100, softwareVersion % 100, softwareLetter).trim()
                                      : null;
 
         extensions.backgroundColor = stream.readInt(); // ARGB
