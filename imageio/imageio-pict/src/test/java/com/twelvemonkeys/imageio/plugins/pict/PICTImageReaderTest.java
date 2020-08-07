@@ -46,8 +46,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi.isOtherFormat;
+import static org.junit.Assert.*;
 
 /**
  * ICOImageReaderTestCase
@@ -116,6 +116,38 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         return Arrays.asList("image/pict", "image/x-pict");
     }
 
+    @Test
+    public void testIsOtherFormat() throws IOException {
+        assertFalse(isOtherFormat(new ByteArrayImageInputStream(new byte[8])));
+
+        // BMP
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'B', 'M', 0, 0, 0, 0, 0, 0})));
+
+        // GIF
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'G', 'I', 'F', '8', '7', 'a', 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'G', 'I', 'F', '8', '9', 'a', 0, 0})));
+
+        // JPEG (JFIF, EXIF, "raw")
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE1, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xDB, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xC4, 0, 0, 0, 0})));
+
+        // PNG
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A})));
+
+        // PSD
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'8', 'B', 'P', 'S', 0, 0, 0, 0})));
+
+        // TIFF (Little Endian, Big Endian)
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'I', 'I', 42, 0, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'M', 'M', 0, 42, 0, 0, 0, 0})));
+
+        // BigTIFF (Little Endian, Big Endian)
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'I', 'I', 43, 0, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'M', 'M', 0, 43, 0, 0, 0, 0})));
+    }
+
     @Ignore("Known issue")
     @Test
     @Override
@@ -147,6 +179,10 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         assertFalse(sProvider.canDecodeInput(
                 new TestData(getClassLoaderResource("/jpeg/R-7439-1151526181.jpeg"),
                 new Dimension(386, 396)
+        )));
+        assertFalse(sProvider.canDecodeInput(
+                new TestData(getClassLoaderResource("/jpeg/89497426-adc19a00-d7ff-11ea-8ad1-0cbcd727b62a.jpeg"),
+                new Dimension(640, 480)
         )));
     }
 
