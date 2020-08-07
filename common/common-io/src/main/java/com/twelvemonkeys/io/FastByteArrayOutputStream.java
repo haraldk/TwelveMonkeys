@@ -72,7 +72,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     }
 
     @Override
-    public void write(byte pBytes[], int pOffset, int pLength) {
+    public void write(byte[] pBytes, int pOffset, int pLength) {
         if ((pOffset < 0) || (pOffset > pBytes.length) || (pLength < 0) ||
                 ((pOffset + pLength) > pBytes.length) || ((pOffset + pLength) < 0)) {
             throw new IndexOutOfBoundsException();
@@ -98,7 +98,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     private void growIfNeeded(int pNewCount) {
         if (pNewCount > buf.length) {
             int newSize = Math.max(Math.min(buf.length << 1, buf.length + maxGrowSize), pNewCount);
-            byte newBuf[] = new byte[newSize];
+            byte[] newBuf = new byte[newSize];
             System.arraycopy(buf, 0, newBuf, 0, count);
             buf = newBuf;
         }
@@ -113,7 +113,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     // Non-synchronized version of toByteArray
     @Override
     public byte[] toByteArray() {
-        byte newBuf[] = new byte[count];
+        byte[] newBuf = new byte[count];
         System.arraycopy(buf, 0, newBuf, 0, count);
 
         return newBuf;
