@@ -101,9 +101,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     }
 
     protected static void failBecause(String message, Throwable exception) {
-        AssertionError error = new AssertionError(message);
-        error.initCause(exception);
-        throw error;
+        throw new AssertionError(message, exception);
     }
 
     protected void assertProviderInstalledForName(final String pFormat, final Class<? extends ImageReader> pReaderClass) {
@@ -530,6 +528,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     // TODO: Subsample all test data
     // TODO: Subsample with varying ratios and offsets
 
+    @SuppressWarnings("SameParameterValue")
     protected final void assertSubsampledImageDataEquals(String message, BufferedImage expected, BufferedImage actual, ImageReadParam param) throws IOException {
         assertNotNull("Expected image was null", expected);
         assertNotNull("Actual image was null!", actual);
@@ -626,36 +625,49 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     protected void assertReadWithSourceRegionParamEqualImage(final Rectangle r, final TestData data, final int imageIndex) throws IOException {
         ImageReader reader = createReader();
-        reader.setInput(data.getInputStream());
-        ImageReadParam param = reader.getDefaultReadParam();
+        try (ImageInputStream inputStream = data.getInputStream()) {
+            reader.setInput(inputStream);
+            ImageReadParam param = reader.getDefaultReadParam();
 
-        // Read full image and get sub image for comparison
-        final BufferedImage roi = reader.read(imageIndex, param).getSubimage(r.x, r.y, r.width, r.height);
+            // Read full image and get sub image for comparison
+            BufferedImage original = reader.read(imageIndex, param);
+            final BufferedImage roi = original.getSubimage(r.x, r.y, r.width, r.height);
 
-        param.setSourceRegion(r);
+            param.setSourceRegion(r);
 
-        final BufferedImage image = reader.read(imageIndex, param);
+            final BufferedImage image = reader.read(imageIndex, param);
 
-//        try {
-//            SwingUtilities.invokeAndWait(new Runnable() {
-//                public void run() {
-//                    JPanel panel = new JPanel(new FlowLayout());
-//                    panel.add(new JLabel(new BufferedImageIcon(roi, r.width * 10, r.height * 10, true)));
-//                    panel.add(new JLabel(new BufferedImageIcon(image, r.width * 10, r.height * 10, true)));
-//                    JOptionPane.showConfirmDialog(null, panel);
-//                }
-//            });
-//        }
-//        catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
+            assertNotNull("Image was null!", image);
+            assertEquals("Read image has wrong width: " + image.getWidth(), r.width, image.getWidth());
+            assertEquals("Read image has wrong height: " + image.getHeight(), r.height, image.getHeight());
 
-        assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(), r.width, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(), r.height, image.getHeight());
-        assertImageDataEquals("Images differ", roi, image);
+            try {
+                assertImageDataEquals("Images differ", roi, image);
+            }
+            catch (AssertionError e) {
+                File tempExpected = File.createTempFile("junit-expected-", ".png");
+                System.err.println("tempExpected.getAbsolutePath(): " + tempExpected.getAbsolutePath());
 
-        reader.dispose();
+                Graphics2D graphics = original.createGraphics();
+                try {
+                    graphics.setColor(Color.RED);
+                    graphics.draw(r);
+                }
+                finally {
+                    graphics.dispose();
+                }
+
+                ImageIO.write(original, "PNG", tempExpected);
+                File tempActual = File.createTempFile("junit-actual-", ".png");
+                System.err.println("tempActual.getAbsolutePath(): " + tempActual.getAbsolutePath());
+                ImageIO.write(image, "PNG", tempActual);
+
+                throw e;
+            }
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
@@ -1336,7 +1348,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         // Create a listener that just makes the reader abort immediately...
         IIOReadProgressListener abortingListener = mock(IIOReadProgressListener.class, "Aborter");
         Answer<Void> abort = new Answer<Void>() {
-            public Void answer(InvocationOnMock invocation) throws Throwable {
+            public Void answer(InvocationOnMock invocation) {
                 reader.abort();
                 return null;
             }
@@ -1569,9 +1581,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         reader.dispose();
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
-    public void testSetDestinationOffsetNull() throws IOException {
+    public void testSetDestinationOffsetNull() {
         final ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1620,7 +1631,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             assertEquals(expectedModel.getDataType(), resultModel.getDataType());
             assertEquals(expectedModel.getNumBands(), resultModel.getNumBands());
             assertEquals(expectedModel.getNumDataElements(), resultModel.getNumDataElements());
-            assertTrue(Arrays.equals(expectedModel.getSampleSize(), resultModel.getSampleSize()));
+            assertArrayEquals(expectedModel.getSampleSize(), resultModel.getSampleSize());
             assertEquals(expectedModel.getTransferType(), resultModel.getTransferType());
             for (int i = 0; i < expectedModel.getNumBands(); i++) {
                 assertEquals(expectedModel.getSampleSize(i), resultModel.getSampleSize(i));
@@ -1692,13 +1703,13 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     @Ignore("TODO: Implement")
     @Test
-    public void testSetDestinationBands() throws IOException {
+    public void testSetDestinationBands() {
         throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
     }
 
     @Ignore("TODO: Implement")
     @Test
-    public void testSetSourceBands() throws IOException {
+    public void testSetSourceBands() {
         throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
     }
 
@@ -1826,7 +1837,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + ": " + String.valueOf(input);
+            return String.format("%s: %s", getClass().getSimpleName(), input);
         }
     }
 }
