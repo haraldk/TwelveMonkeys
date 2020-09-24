@@ -55,7 +55,8 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
                 new TestData(getClassLoaderResource("/pgm/house.l.pgm"), new Dimension(367, 241)),  // P5 (PGM RAW)
                 new TestData(getClassLoaderResource("/ppm/lighthouse_rgb48.ppm"), new Dimension(768, 512)),  // P6 (PPM RAW, 16 bits/sample)
                 new TestData(getClassLoaderResource("/pam/lena.pam"), new Dimension(128, 128)),     // P7 RGB
-                new TestData(getClassLoaderResource("/pam/rgba.pam"), new Dimension(4, 2))          // P7 RGB_ALPHA
+                new TestData(getClassLoaderResource("/pam/rgba.pam"), new Dimension(4, 2)),         // P7 RGB_ALPHA
+                new TestData(getClassLoaderResource("/pfm/memorial.pfm"), new Dimension(512, 768))  // PF (32 bits/sample, floating point)
         );
     }
 
