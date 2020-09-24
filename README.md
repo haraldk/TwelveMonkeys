@@ -365,46 +365,6 @@ For more advanced usage, and information on how to use the ImageIO API, I sugges
 [Java Image I/O API Guide](http://docs.oracle.com/javase/7/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html)
 from Oracle.
 
-
-#### Deploying the plugins in a web app
-
-Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doesn't by default work well with
-servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
-Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins might never be available at all.
-
-In addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
-If you restart your application, old classes will by default remain in memory forever (because the next time
-`scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
-in the registry). If a read is attempted using one of the remaining "old" readers, weird exceptions
-(like `NullPointerException`s when accessing `static final` initialized fields or `NoClassDefFoundError`s 
-for uninitialized inner classes) may occur.
-
-To work around both the discovery problem and the resource leak,
-it is *strongly recommended* to use the `IIOProviderContextListener` that implements
-dynamic loading and unloading of ImageIO plugins for web applications.
-
-```xml
-    <web-app ...>
-
-    ...
-
-        <listener>
-            <display-name>ImageIO service provider loader/unloader</display-name>
-            <listener-class>com.twelvemonkeys.servlet.image.IIOProviderContextListener</listener-class>
-        </listener>
-
-    ...
-
-    </web-app>
-```
-
-Loading plugins from `WEB-INF/lib` without the context listener installed is unsupported and will not work correctly.
-
-The context listener has no dependencies to the TwelveMonkeys ImageIO plugins, and may be used with JAI ImageIO 
-or other ImageIO plugins as well.
-
-Another safe option, is to place the JAR files in the application server's shared or common lib folder. 
-
 #### Using the ResampleOp
 
 The library comes with a resampling (image resizing) operation, that contains many different algorithms
@@ -525,6 +485,68 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
     twelvemonkeys-imageio-metadata-3.6.jar
     twelvemonkeys-imageio-jpeg-3.6.jar
     twelvemonkeys-imageio-tiff-3.6.jar
+
+#### Deploying the plugins in a web app
+
+Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doesn't by default work well with
+servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
+Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins might never be available at all.
+
+In addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
+If you restart your application, old classes will by default remain in memory forever (because the next time
+`scanForPlugins` is called, it's another `ClassLoader` that scans/loads classes, and thus they will be new instances
+in the registry). If a read is attempted using one of the remaining "old" readers, weird exceptions
+(like `NullPointerException`s when accessing `static final` initialized fields or `NoClassDefFoundError`s 
+for uninitialized inner classes) may occur.
+
+To work around both the discovery problem and the resource leak,
+it is *strongly recommended* to use the `IIOProviderContextListener` that implements
+dynamic loading and unloading of ImageIO plugins for web applications.
+
+```xml
+    <web-app ...>
+
+    ...
+
+        <listener>
+            <display-name>ImageIO service provider loader/unloader</display-name>
+            <listener-class>com.twelvemonkeys.servlet.image.IIOProviderContextListener</listener-class>
+        </listener>
+
+    ...
+
+    </web-app>
+```
+
+Loading plugins from `WEB-INF/lib` without the context listener installed is unsupported and will not work correctly.
+
+The context listener has no dependencies to the TwelveMonkeys ImageIO plugins, and may be used with JAI ImageIO 
+or other ImageIO plugins as well.
+
+Another safe option, is to place the JAR files in the application server's shared or common lib folder. 
+
+#### Including the plugins in a "fat" JAR
+
+The recommended way to use the plugins, is just to include the JARs as-is in your project. 
+Re-packaging is not necessary, not recommended. 
+ 
+If you like to create a "fat" 
+JAR, or otherwise like to re-package the JARs for some reason, it's important to remember that automatic discovery of 
+the plugins by ImageIO depends on the 
+[Service Provider Interface (SPI)](https://docs.oracle.com/javase/tutorial/sound/SPI-intro.html) mechanism. 
+In short, each JAR contains a special folder, named `META-INF/services` containing one or more files, 
+typically `javax.imageio.spi.ImageReaderSpi` and `javax.imageio.spi.ImageWriterSpi`. 
+These files exist *with the same name in every JAR*, 
+so if you simply unpack everything to a single folder or create a JAR, files will be overwritten and behavior be 
+unspecified (most likely you will end up with a single plugin being installed). 
+
+The solution is to make sure all files with the same name, are merged to a single file, 
+containing all the SPI information of each type. If using the Maven Shade plugin, you should use the 
+[ServicesResourceTransformer](https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer)
+to properly merge these files. You may also want to use the 
+[ManifestResourceTransforme](https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ManifestResourceTransformer) 
+to get the correct vendor name, version info etc. 
+Other "fat" JAR bundlers will probably have similar mechanisms to merge entries with the same name.
 
 ### Links to prebuilt binaries
 
