@@ -65,6 +65,7 @@ public final class PNMImageWriter extends ImageWriterBase {
 
     @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
+        assertOutput();
         // TODO: Issue warning if streamMetadata is non-null?
         // TODO: Issue warning if IIOImage contains thumbnails or other data we can't store?
 
