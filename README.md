@@ -528,7 +528,7 @@ Another safe option, is to place the JAR files in the application server's share
 #### Including the plugins in a "fat" JAR
 
 The recommended way to use the plugins, is just to include the JARs as-is in your project. 
-Re-packaging is not necessary, not recommended. 
+Re-packaging is not necessary to use the library, and not recommended. 
  
 If you like to create a "fat" 
 JAR, or otherwise like to re-package the JARs for some reason, it's important to remember that automatic discovery of 
