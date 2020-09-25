@@ -151,7 +151,10 @@ final class PNMMetadata extends AbstractMetadata {
         IIOMetadataNode dimension = new IIOMetadataNode("Dimension");
 
         IIOMetadataNode imageOrientation = new IIOMetadataNode("ImageOrientation");
-        imageOrientation.setAttribute("value", "Normal");
+        imageOrientation.setAttribute("value",
+                header.getFileType() == PNM.PFM_GRAY || header.getFileType() == PNM.PFM_RGB
+                ? "FlipH"
+                : "Normal");
         dimension.appendChild(imageOrientation);
 
         return dimension;

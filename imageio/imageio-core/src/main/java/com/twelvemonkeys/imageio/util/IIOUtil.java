@@ -291,4 +291,21 @@ public final class IIOUtil {
             System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
         }
     }
+
+    public static void subsampleRow(float[] srcRow, int srcPos, int srcWidth,
+                                    float[] destRow, int destPos,
+                                    int samplesPerPixel, int bitsPerSample, int samplePeriod) {
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1"); // Period == 1 could be a no-op...
+        Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 32 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
+                "bitsPerSample must be > 0 and <= 32 and a power of 2");
+        Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
+        Validate.isTrue(samplesPerPixel * bitsPerSample <= 32 || samplesPerPixel * bitsPerSample % 32 == 0,
+                "samplesPerPixel * bitsPerSample must be < 32 or a multiple of 32 ");
+
+        int pixelStride = bitsPerSample * samplesPerPixel / 32;
+        for (int x = 0; x < srcWidth * pixelStride; x += samplePeriod * pixelStride) {
+            // System.arraycopy should be intrinsic, but consider using direct array access for pixelStride == 1
+            System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
+        }
+    }
 }
