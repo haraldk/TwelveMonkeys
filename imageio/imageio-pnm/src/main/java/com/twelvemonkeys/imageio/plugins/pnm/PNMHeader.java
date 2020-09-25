@@ -45,6 +45,7 @@ final class PNMHeader {
     private final TupleType tupleType;
     private final int width;
     private final int height;
+    private final float maxSampleFloat;
     private final int maxSample;
 
     private final List<String> comments;
@@ -57,6 +58,7 @@ final class PNMHeader {
         this.height = isTrue(height > 0, height, "height must be greater than: %d");
         isTrue(depth == tupleType.getSamplesPerPixel(), depth, String.format("incorrect depth for %s, expected %d: %d", tupleType, tupleType.getSamplesPerPixel(), depth));
         this.maxSample = isTrue(tupleType.isValidMaxSample(maxSample), maxSample, "maxSample out of range: %d");
+        this.maxSampleFloat = this.maxSample;
 
         this.comments = Collections.unmodifiableList(new ArrayList<String>(comments));
 
@@ -70,7 +72,8 @@ final class PNMHeader {
         this.height = isTrue(height > 0, height, "height must be greater than: %d");
         isTrue(depth == tupleType.getSamplesPerPixel(), depth, String.format("incorrect depth for %s, expected %d: %d", tupleType, tupleType.getSamplesPerPixel(), depth));
 
-        this.maxSample = -1;
+        this.maxSample = 1;
+        this.maxSampleFloat = maxSample;
         this.byteOrder = byteOrder;
 
         this.comments = Collections.unmodifiableList(new ArrayList<String>(comments));
@@ -118,11 +121,8 @@ final class PNMHeader {
         if (maxSample <= PNM.MAX_VAL_16BIT) {
             return 16;
         }
-        if ((maxSample & 0xffffffffL) <= PNM.MAX_VAL_32BIT) {
-            return 32;
-        }
 
-        throw new AssertionError("maxSample exceeds 32 bit");
+        return 32;
     }
 
     public int getTransferType() {
@@ -135,11 +135,8 @@ final class PNMHeader {
         if (maxSample <= PNM.MAX_VAL_16BIT) {
             return DataBuffer.TYPE_USHORT;
         }
-        if ((maxSample & 0xffffffffL) <= PNM.MAX_VAL_32BIT) {
-            return DataBuffer.TYPE_INT;
-        }
 
-        throw new AssertionError("maxSample exceeds 32 bit");
+        return DataBuffer.TYPE_INT;
     }
 
     public List<String> getComments() {

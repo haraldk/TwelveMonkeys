@@ -49,10 +49,12 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
 
 public final class PNMImageReader extends ImageReaderBase {
     // TODO: Allow reading unknown tuple types as Raster!
@@ -83,7 +85,7 @@ public final class PNMImageReader extends ImageReaderBase {
 
     static String asASCII(final short type) {
         byte[] asciiBytes = {(byte) ((type >> 8) & 0xff), (byte) (type & 0xff)};
-        return new String(asciiBytes, Charset.forName("ASCII"));
+        return new String(asciiBytes, StandardCharsets.US_ASCII);
     }
 
     @Override
@@ -150,7 +152,6 @@ public final class PNMImageReader extends ImageReaderBase {
 
             default:
                 // TODO: Allow reading unknown tuple types as Raster!
-
                 throw new AssertionError("Unknown PNM tuple type: " + header.getTupleType());
         }
     }
@@ -261,7 +262,7 @@ public final class PNMImageReader extends ImageReaderBase {
         for (int y = 0; y < height; y++) {
             switch (transferType) {
                 case DataBuffer.TYPE_BYTE:
-                    readRowByte(destRaster, clippedRow, colorConvert, rowDataByte, samplesPerPixel, input, y, srcRegion, xSub, ySub);
+                    readRowByte(destRaster, clippedRow, colorConvert, rowDataByte, header.getBitsPerSample(), samplesPerPixel, input, y, srcRegion, xSub, ySub);
                     break;
                 case DataBuffer.TYPE_USHORT:
                     readRowUShort(destRaster, clippedRow, rowDataUShort, samplesPerPixel, input, y, srcRegion, xSub, ySub);
@@ -339,7 +340,7 @@ public final class PNMImageReader extends ImageReaderBase {
                              Raster rowRaster,
                              final ColorConvertOp colorConvert,
                              final byte[] rowDataByte,
-                             final int samplesPerPixel,
+                             final int bitsPerSample, final int samplesPerPixel,
                              final DataInput input, final int y,
                              final Rectangle srcRegion,
                              final int xSub, final int ySub) throws IOException {
@@ -352,7 +353,9 @@ public final class PNMImageReader extends ImageReaderBase {
         input.readFully(rowDataByte);
 
         // Subsample (horizontal)
-        subsampleHorizontal(rowDataByte, rowDataByte.length, samplesPerPixel, xSub);
+        if (xSub > 1) {
+            subsampleRow(rowDataByte, srcRegion.x, srcRegion.width, rowDataByte, 0, samplesPerPixel, bitsPerSample, xSub);
+        }
 
         normalize(rowDataByte, 0, rowDataByte.length / xSub);
 
@@ -379,7 +382,9 @@ public final class PNMImageReader extends ImageReaderBase {
         readFully(input, rowDataUShort);
 
         // Subsample (horizontal)
-        subsampleHorizontal(rowDataUShort, rowDataUShort.length, samplesPerPixel, xSub);
+        if (xSub > 1) {
+            subsampleRow(rowDataUShort, srcRegion.x, srcRegion.width, rowDataUShort, 0, samplesPerPixel, 16, xSub);
+        }
 
         normalize(rowDataUShort);
 
@@ -402,11 +407,14 @@ public final class PNMImageReader extends ImageReaderBase {
         readFully(input, rowDataFloat);
 
         // Subsample (horizontal)
-        subsampleHorizontal(rowDataFloat, rowDataFloat.length, samplesPerPixel, xSub);
+        if (xSub > 1) {
+            subsampleRow(rowDataFloat, srcRegion.x, srcRegion.width, rowDataFloat, 0, samplesPerPixel, 32, xSub);
+        }
 
         normalize(rowDataFloat);
 
-        int destY = (y - srcRegion.y) / ySub;
+        // Note: PFM is stored bottom to top!
+        int destY = destRaster.getHeight() - 1 - (y - srcRegion.y) / ySub;
         // TODO: ColorConvertOp if needed
         destRaster.setDataElements(0, destY, rowRaster);
     }
@@ -434,19 +442,6 @@ public final class PNMImageReader extends ImageReaderBase {
             for (int i = 0; i < floats.length; i++) {
                 floats[i] = input.readFloat();
             }
-        }
-    }
-
-    @SuppressWarnings("SuspiciousSystemArraycopy")
-    private void subsampleHorizontal(final Object data, final int length, final int samplesPerPixel, final int xSub) {
-        if (xSub == 1) {
-            return;
-        }
-
-        // TODO: Super-special 1 bit subsampling handling for PBM
-
-        for (int x = 0; x < length / xSub; x += samplesPerPixel) {
-            System.arraycopy(data, x * xSub, data, x, samplesPerPixel);
         }
     }
 
@@ -484,13 +479,9 @@ public final class PNMImageReader extends ImageReaderBase {
     }
 
     private void normalize(final float[] rowData) {
-        // TODO: Do the real thing, find min/max and normalize to range 0...255? But only if not reading raster..? Only support reading as raster?
         // Normalize
         for (int i = 0; i < rowData.length; i++) {
-//            if (rowData[i] > 275f /*header.getMaxSampleFloat()*/) {
-//                System.out.println("rowData[" + i + "]: " + rowData[i]);
-//            }
-//            rowData[i] = rowData[i] / 275f /*header.getMaxSampleFloat()*/;
+            rowData[i] = Math.min(1, rowData[i]); // Clamp
         }
     }
 
