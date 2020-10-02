@@ -44,7 +44,6 @@
         <module>imageio-tga</module>
         <module>imageio-thumbsdb</module>
         <module>imageio-tiff</module>
-        <module>imageio-xwd</module>
 
         <!-- Wrappers for 3rd party libs  -->
         <module>imageio-batik</module>
