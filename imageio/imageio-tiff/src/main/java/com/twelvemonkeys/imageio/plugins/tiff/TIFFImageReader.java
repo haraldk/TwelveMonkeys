@@ -319,7 +319,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     System.err.println("input.getStreamPosition(): " + input.getStreamPosition());
 
                                     // TODO: More data here
-                                    System.err.println(TIFFReader.HexDump.dump(0, value, (int) (offset + input.getStreamPosition()), 64));;
+                                    System.err.println(TIFFReader.HexDump.dump(0, value, (int) (offset + input.getStreamPosition()), 64));
 
                                     input.seek(pos + layerExtraDataLength);
                                 }
@@ -331,7 +331,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 //                                int count = input.readUnsignedShort();
 //                                System.err.println("count: " + count);
 
-                                System.err.println(TIFFReader.HexDump.dump(0, value, (int) (offset + input.getStreamPosition()), 64));;
+                                System.err.println(TIFFReader.HexDump.dump(0, value, (int) (offset + input.getStreamPosition()), 64));
 
                             }
                             input.seek(streamPosition + resourceLengthPadded);
@@ -2474,8 +2474,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                 ICC_Profile profile = ICC_Profile.getInstance(new ByteArrayInputStream(value));
                 return ColorSpaces.validateProfile(profile);
             }
-            catch (CMMException | IllegalArgumentException ignore) {
-                processWarningOccurred("Ignoring broken/incompatible ICC profile: " + ignore.getMessage());
+            catch (CMMException | IllegalArgumentException e) {
+                processWarningOccurred("Ignoring broken/incompatible ICC profile: " + e.getMessage());
             }
         }
 
@@ -2601,7 +2601,7 @@ public final class TIFFImageReader extends ImageReaderBase {
             }
 
             ImageReader reader = readers.next();
-            System.err.println("Reading using: " + reader);
+            System.err.printf("Reading %s format (%s)%n", reader.getFormatName(), reader);
 
             reader.addIIOReadWarningListener(new IIOReadWarningListener() {
                 public void warningOccurred(ImageReader source, String warning) {
