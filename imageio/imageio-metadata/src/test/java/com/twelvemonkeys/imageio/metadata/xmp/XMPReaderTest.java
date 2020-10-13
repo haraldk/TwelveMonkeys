@@ -380,6 +380,7 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
         // photoshop|http://ns.adobe.com/photoshop/1.0/
         Directory photoshop = getDirectoryByNS(compound, XMP.NS_PHOTOSHOP);
 
+        assertNotNull(photoshop);
         assertEquals(3, photoshop.size());
         assertThat(photoshop.getEntryById("http://ns.adobe.com/photoshop/1.0/ColorMode"), hasValue("1"));
         assertThat(photoshop.getEntryById("http://ns.adobe.com/photoshop/1.0/ICCProfile"), hasValue("Dot Gain 20%"));
@@ -395,6 +396,8 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
 
         // xapMM|http://ns.adobe.com/xap/1.0/mm/
         Directory mm = getDirectoryByNS(compound, XMP.NS_XAP_MM);
+
+        assertNotNull(mm);
         assertEquals(3, mm.size());
         assertThat(directory.getEntryById("http://ns.adobe.com/xap/1.0/mm/DocumentID"), hasValue("uuid:6DCA50CC7D53DD119F20F5A7EA4C9BEC"));
         assertThat(directory.getEntryById("http://ns.adobe.com/xap/1.0/mm/InstanceID"), hasValue("uuid:6ECA50CC7D53DD119F20F5A7EA4C9BEC"));
@@ -419,6 +422,8 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
 
         // dc|http://purl.org/dc/elements/1.1/
         Directory dc = getDirectoryByNS(compound, XMP.NS_DC);
+
+        assertNotNull(dc);
         assertEquals(1, dc.size());
 
         assertThat(dc.getEntryById("http://purl.org/dc/elements/1.1/format"), hasValue("image/jpeg"));
@@ -433,6 +438,8 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
 
         // tiff|http://ns.adobe.com/tiff/1.0/
         Directory tiff = getDirectoryByNS(compound, XMP.NS_TIFF);
+
+        assertNotNull(tiff);
         assertEquals(5, tiff.size());
         assertThat(tiff.getEntryById("http://ns.adobe.com/tiff/1.0/Orientation"), hasValue("1"));
         assertThat(tiff.getEntryById("http://ns.adobe.com/tiff/1.0/XResolution"), hasValue("720000/10000"));
@@ -450,6 +457,8 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
 
         // xap|http://ns.adobe.com/xap/1.0/
         Directory xap = getDirectoryByNS(compound, XMP.NS_XAP);
+
+        assertNotNull(xap);
         assertEquals(4, xap.size());
         assertThat(xap.getEntryById("http://ns.adobe.com/xap/1.0/ModifyDate"), hasValue("2008-07-16T14:44:49-07:00"));
         assertThat(xap.getEntryById("http://ns.adobe.com/xap/1.0/CreatorTool"), hasValue("Adobe Photoshop CS3 Windows"));
@@ -466,6 +475,8 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
 
         // exif|http://ns.adobe.com/exif/1.0/
         Directory exif = getDirectoryByNS(compound, XMP.NS_EXIF);
+
+        assertNotNull(exif);
         assertEquals(4, exif.size());
         assertThat(exif.getEntryById("http://ns.adobe.com/exif/1.0/ColorSpace"), hasValue("-1")); // SIC. Same as unsigned short 65535, meaning "uncalibrated"?
         assertThat(exif.getEntryById("http://ns.adobe.com/exif/1.0/PixelXDimension"), hasValue("426"));

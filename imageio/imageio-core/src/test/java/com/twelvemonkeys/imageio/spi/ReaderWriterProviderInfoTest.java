@@ -31,8 +31,8 @@
 package com.twelvemonkeys.imageio.spi;
 
 import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
@@ -63,52 +63,52 @@ public abstract class ReaderWriterProviderInfoTest {
     }
 
     @Test
-    public void readerClassName() throws Exception {
+    public void readerClassName() {
         assertClassExists(providerInfo.readerClassName(), ImageReader.class);
     }
 
     @Test
-    public void readerSpiClassNames() throws Exception {
+    public void readerSpiClassNames() {
         assertClassesExist(providerInfo.readerSpiClassNames(), ImageReaderSpi.class);
     }
 
     @Test
-    public void inputTypes() throws Exception {
+    public void inputTypes() {
         assertNotNull(providerInfo.inputTypes());
     }
 
     @Test
-    public void writerClassName() throws Exception {
+    public void writerClassName() {
         assertClassExists(providerInfo.writerClassName(), ImageWriter.class);
     }
 
     @Test
-    public void writerSpiClassNames() throws Exception {
+    public void writerSpiClassNames() {
         assertClassesExist(providerInfo.writerSpiClassNames(), ImageWriterSpi.class);
     }
 
     @Test
-    public void outputTypes() throws Exception {
+    public void outputTypes() {
         assertNotNull(providerInfo.outputTypes());
     }
 
     @Test
-    public void nativeStreamMetadataFormatClassName() throws Exception {
+    public void nativeStreamMetadataFormatClassName() {
         assertClassExists(providerInfo.nativeStreamMetadataFormatClassName(), IIOMetadataFormat.class);
     }
 
     @Test
-    public void extraStreamMetadataFormatClassNames() throws Exception {
+    public void extraStreamMetadataFormatClassNames() {
         assertClassesExist(providerInfo.extraStreamMetadataFormatClassNames(), IIOMetadataFormat.class);
     }
 
     @Test
-    public void nativeImageMetadataFormatClassName() throws Exception {
+    public void nativeImageMetadataFormatClassName() {
         assertClassExists(providerInfo.nativeImageMetadataFormatClassName(), IIOMetadataFormat.class);
     }
 
     @Test
-    public void extraImageMetadataFormatClassNames() throws Exception {
+    public void extraImageMetadataFormatClassNames() {
         assertClassesExist(providerInfo.extraImageMetadataFormatClassNames(), IIOMetadataFormat.class);
     }
 
@@ -116,7 +116,7 @@ public abstract class ReaderWriterProviderInfoTest {
     public void formatNames() {
         String[] names = providerInfo.formatNames();
         assertNotNull(names);
-        assertFalse(names.length == 0);
+        assertNotEquals(0, names.length);
 
         List<String> list = asList(names);
 
@@ -133,7 +133,7 @@ public abstract class ReaderWriterProviderInfoTest {
     public void suffixes() {
         String[] suffixes = providerInfo.suffixes();
         assertNotNull(suffixes);
-        assertFalse(suffixes.length == 0);
+        assertNotEquals(0, suffixes.length);
 
         for (String suffix : suffixes) {
             assertNotNull(suffix);
@@ -145,7 +145,7 @@ public abstract class ReaderWriterProviderInfoTest {
     public void mimeTypes() {
         String[] mimeTypes = providerInfo.mimeTypes();
         assertNotNull(mimeTypes);
-        assertFalse(mimeTypes.length == 0);
+        assertNotEquals(0, mimeTypes.length);
 
         for (String mimeType : mimeTypes) {
             assertNotNull(mimeType);
