@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -46,7 +47,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * XMPReaderTest

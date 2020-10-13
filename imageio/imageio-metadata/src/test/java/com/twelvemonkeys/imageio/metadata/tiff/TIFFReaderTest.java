@@ -37,6 +37,7 @@ import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
 import com.twelvemonkeys.imageio.metadata.exif.EXIF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 /**

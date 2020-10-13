@@ -31,6 +31,7 @@
 package com.twelvemonkeys.servlet.cache;
 
 import com.twelvemonkeys.net.HTTPUtil;
+
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,6 +47,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -62,11 +64,10 @@ public class HTTPCacheTest {
     @Rule
     public final TestName name = new TestName();
 
-    // TODO: Replace with rule: TemporaryFolder
     @Rule
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-    private File getTempRoot() {
+    private File createTempRoot() throws IOException {
         return temporaryFolder.newFolder("cache-test");
     }
 
@@ -139,9 +140,11 @@ public class HTTPCacheTest {
     }
 
     @Test
-    public void testCreateNegativeValues() {
+    public void testCreateNegativeValues() throws IOException {
+        File tempRoot = createTempRoot();
+
         try {
-            new HTTPCache(getTempRoot(), -1, 0, 10, true);
+            new HTTPCache(tempRoot, -1, 0, 10, true);
             fail("Expected creation failure");
         }
         catch (IllegalArgumentException expected) {
@@ -151,7 +154,7 @@ public class HTTPCacheTest {
         }
 
         try {
-            new HTTPCache(getTempRoot(), 1000, -1, 10, false);
+            new HTTPCache(tempRoot, 1000, -1, 10, false);
             fail("Expected creation failure");
         }
         catch (IllegalArgumentException expected) {
@@ -161,7 +164,7 @@ public class HTTPCacheTest {
         }
 
         try {
-            new HTTPCache(getTempRoot(), 1000, 128, -1, true);
+            new HTTPCache(tempRoot, 1000, 128, -1, true);
             fail("Expected creation failure");
         }
         catch (IllegalArgumentException expected) {
@@ -172,23 +175,23 @@ public class HTTPCacheTest {
     }
 
     @Test
-    public void testCreate() {
-        new HTTPCache(getTempRoot(), 500, 0, 10, true);
+    public void testCreate() throws IOException {
+        new HTTPCache(createTempRoot(), 500, 0, 10, true);
     }
 
     @SuppressWarnings("deprecation")
     @Test
-    public void testCreateServletContext() {
+    public void testCreateServletContext() throws IOException {
         ServletContext mockContext = mock(ServletContext.class);
         // Currently context is used for tempdir and logging
-        when(mockContext.getAttribute(eq("javax.servlet.context.tempdir"))).thenReturn(getTempRoot());
+        when(mockContext.getAttribute(eq("javax.servlet.context.tempdir"))).thenReturn(createTempRoot());
         
         new HTTPCache("cache", mockContext, 500, 0, 10, true);
     }
 
     @Test
     public void testCacheableRequest() throws IOException, CacheException {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -198,7 +201,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(value)).when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
@@ -208,8 +211,8 @@ public class HTTPCacheTest {
         
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
         
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -223,10 +226,10 @@ public class HTTPCacheTest {
 
     @Test
     public void testCacheableRequestWithParameters() throws IOException, CacheException {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
-        Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+        Map<String, List<String>> parameters = new HashMap<>();
         parameters.put("foo", Collections.singletonList("bar"));
         parameters.put("params", Arrays.asList("une", "due", "tres"));
         CacheRequest request = configureRequest(mock(CacheRequest.class), "GET", createRequestURI(), parameters, null);
@@ -235,7 +238,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class, "MY-RESOLVER-1");
         doAnswer(new ResolveAnswer(value)).when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
@@ -245,8 +248,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -256,7 +259,8 @@ public class HTTPCacheTest {
 
     @Test
     public void testCacheablePersistentRepeatedRequest() throws IOException, CacheException {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        File tempRoot = createTempRoot();
+        HTTPCache cache = new HTTPCache(tempRoot, 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -265,7 +269,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class, "MY-RESOLVER-2");
         doAnswer(new ResolveAnswer(value)).when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
@@ -275,8 +279,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -288,13 +292,13 @@ public class HTTPCacheTest {
         when(response.getOutputStream()).thenReturn(result);
 
         // Test request again, make sure resolve is executed exactly once
-        HTTPCache cache2 = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache2 = new HTTPCache(tempRoot, 60000, 1024 * 1024, 10, true);
         cache2.doCached(request, response, resolver);
 
         // Test that second response is equal to first
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -304,7 +308,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testCacheableRepeatedRequest() throws IOException, CacheException {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -313,7 +317,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class, "MY-RESOLVER-3");
         doAnswer(new ResolveAnswer(value)).when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
@@ -323,8 +327,8 @@ public class HTTPCacheTest {
 
         // Verify that reponse is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -342,8 +346,8 @@ public class HTTPCacheTest {
 
         // Test that second response is equal to first
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -353,7 +357,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testNonCacheableRequestHeader() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), "GET", createRequestURI(), null, Collections.singletonMap("Cache-Control", Collections.singletonList("no-store")));
@@ -362,7 +366,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(value)).when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
@@ -373,8 +377,8 @@ public class HTTPCacheTest {
         // TODO: How do we know that the response was NOT cached?
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -384,7 +388,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testNonCacheableRequestHeaderRepeated() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
         String requestURI = createRequestURI();
 
         // Custom setup
@@ -395,7 +399,7 @@ public class HTTPCacheTest {
         when(response.getOutputStream()).thenReturn(result);
 
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(value)).when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
@@ -405,8 +409,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -428,8 +432,8 @@ public class HTTPCacheTest {
 
          // Verify that second response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -439,7 +443,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testNonCacheableResponseHeader() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -448,7 +452,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, Collections.singletonMap("Cache-Control", Collections.singletonList("no-cache"))))
@@ -459,8 +463,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -471,7 +475,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testNonCacheableResponseHeaderRepeated() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -480,7 +484,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, Collections.singletonMap("Cache-Control", Collections.singletonList("no-store"))))
@@ -491,8 +495,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -516,8 +520,8 @@ public class HTTPCacheTest {
 
         // Verify that reponse is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -529,7 +533,7 @@ public class HTTPCacheTest {
     // Test non-cacheable response
     @Test
     public void testNonCacheableResponse() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -538,7 +542,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, value, null))
@@ -549,8 +553,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -561,7 +565,7 @@ public class HTTPCacheTest {
     // Test non-cacheable response
     @Test
     public void testNonCacheableResponseRepeated() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -570,7 +574,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, value, null))
@@ -581,8 +585,8 @@ public class HTTPCacheTest {
 
         // Verify that reponse is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -604,8 +608,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         // Verify new resolve
         verify(response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -617,10 +621,10 @@ public class HTTPCacheTest {
     // Test that request headers are forwarded to resolver...
     @Test
     public void testRequestHeadersForwarded() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
-        final Map<String, List<String>> headers = new LinkedHashMap<String, List<String>>();
-        headers.put("Cache-Control", Arrays.asList("no-cache"));
+        final Map<String, List<String>> headers = new LinkedHashMap<>();
+        headers.put("Cache-Control", Collections.singletonList("no-cache"));
         headers.put("X-Custom", Arrays.asList("FOO", "BAR"));
 
         // Custom setup
@@ -629,7 +633,7 @@ public class HTTPCacheTest {
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new Answer<Void>() {
-            public Void answer(InvocationOnMock invocation) throws Throwable {
+            public Void answer(InvocationOnMock invocation) {
                 CacheRequest req = (CacheRequest) invocation.getArguments()[0];
 
                 Map<String, List<String>> reqHeaders = req.getHeaders();
@@ -657,7 +661,7 @@ public class HTTPCacheTest {
     // Test that response headers are preserved
     @Test
     public void testCacheablePreserveResponseHeaders() throws IOException, CacheException {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -666,7 +670,7 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        final byte[] value = "foobar".getBytes("UTF-8");
+        final byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new Answer<Void>() {
@@ -689,8 +693,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).setHeader(eq("Date"), anyString());
@@ -710,7 +714,7 @@ public class HTTPCacheTest {
     // Test Vary
     @Test
     public void testVaryMissingRequestHeader() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -719,13 +723,13 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        byte[] value = "foobar".getBytes("UTF-8");
+        byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
-        HashMap<String, List<String>> headers = new HashMap<String, List<String>>();
-        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Arrays.asList("x-foo/bar"));
-        headers.put("Vary", Arrays.asList("X-Foo"));
-        headers.put("X-Foo", Arrays.asList("foobar"));
-        headers.put("X-Other", Arrays.asList("don't care"));
+        HashMap<String, List<String>> headers = new HashMap<>();
+        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Collections.singletonList("x-foo/bar"));
+        headers.put("Vary", Collections.singletonList("X-Foo"));
+        headers.put("X-Foo", Collections.singletonList("foobar"));
+        headers.put("X-Other", Collections.singletonList("don't care"));
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
@@ -736,8 +740,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -760,8 +764,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -773,7 +777,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testVaryMissingRequestHeaderRepeated() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         String requestURI = createRequestURI();
@@ -783,12 +787,12 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        byte[] value = "foobar".getBytes("UTF-8");
+        byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
-        HashMap<String, List<String>> headers = new HashMap<String, List<String>>();
-        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Arrays.asList("x-foo/bar"));
-        headers.put("Vary", Arrays.asList("X-Foo"));
-        headers.put("X-Other", Arrays.asList("don't care"));
+        HashMap<String, List<String>> headers = new HashMap<>();
+        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Collections.singletonList("x-foo/bar"));
+        headers.put("Vary", Collections.singletonList("X-Foo"));
+        headers.put("X-Other", Collections.singletonList("don't care"));
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
@@ -799,8 +803,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -826,8 +830,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -840,7 +844,7 @@ public class HTTPCacheTest {
   
     @Test
     public void testVarySameResourceIsCached() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), "GET", createRequestURI(), null, Collections.singletonMap("X-Foo", Collections.singletonList("foobar value")));
@@ -850,12 +854,12 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        byte[] value = "foobar".getBytes("UTF-8");
+        byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
-        HashMap<String, List<String>> headers = new HashMap<String, List<String>>();
-        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Arrays.asList("x-foo/bar"));
-        headers.put("Vary", Arrays.asList("X-Foo"));
-        headers.put("X-Other", Arrays.asList("don't care"));
+        HashMap<String, List<String>> headers = new HashMap<>();
+        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Collections.singletonList("x-foo/bar"));
+        headers.put("Vary", Collections.singletonList("X-Foo"));
+        headers.put("X-Other", Collections.singletonList("don't care"));
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
@@ -866,8 +870,8 @@ public class HTTPCacheTest {
 
         // Verify that reponse is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -887,8 +891,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -900,7 +904,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testVaryDifferentResources() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         String requestURI = createRequestURI();
@@ -910,12 +914,12 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        byte[] value = "foobar".getBytes("UTF-8");
+        byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
-        HashMap<String, List<String>> headers = new HashMap<String, List<String>>();
-        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Arrays.asList("x-foo/bar"));
-        headers.put("Vary", Arrays.asList("X-Foo"));
-        headers.put("X-Other", Arrays.asList("don't care"));
+        HashMap<String, List<String>> headers = new HashMap<>();
+        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Collections.singletonList("x-foo/bar"));
+        headers.put("Vary", Collections.singletonList("X-Foo"));
+        headers.put("X-Other", Collections.singletonList("don't care"));
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
@@ -926,8 +930,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -943,7 +947,7 @@ public class HTTPCacheTest {
 
         // Reconfigure
         when(response.getOutputStream()).thenReturn(result);
-        headers.put("Cache-Control", Arrays.asList("no-store"));
+        headers.put("Cache-Control", Collections.singletonList("no-store"));
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
                 .when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
 
@@ -956,8 +960,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -970,7 +974,7 @@ public class HTTPCacheTest {
 
     @Test
     public void testVaryStarNonCached() throws Exception {
-        HTTPCache cache = new HTTPCache(getTempRoot(), 60000, 1024 * 1024, 10, true);
+        HTTPCache cache = new HTTPCache(createTempRoot(), 60000, 1024 * 1024, 10, true);
 
         // Custom setup
         CacheRequest request = configureRequest(mock(CacheRequest.class), createRequestURI());
@@ -979,11 +983,11 @@ public class HTTPCacheTest {
         CacheResponse response = mock(CacheResponse.class);
         when(response.getOutputStream()).thenReturn(result);
 
-        byte[] value = "foobar".getBytes("UTF-8");
+        byte[] value = "foobar".getBytes(StandardCharsets.UTF_8);
 
-        HashMap<String, List<String>> headers = new HashMap<String, List<String>>();
-        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Arrays.asList("x-foo/bar"));
-        headers.put("Vary", Arrays.asList("*"));
+        HashMap<String, List<String>> headers = new HashMap<>();
+        headers.put(HTTPCache.HEADER_CONTENT_TYPE, Collections.singletonList("x-foo/bar"));
+        headers.put("Vary", Collections.singletonList("*"));
 
         ResponseResolver resolver = mock(ResponseResolver.class);
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
@@ -994,8 +998,8 @@ public class HTTPCacheTest {
 
         // Verify that reponse is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();
@@ -1010,7 +1014,7 @@ public class HTTPCacheTest {
 
         // Reconfigure
         when(response.getOutputStream()).thenReturn(result);
-        headers.put("Cache-Control", Arrays.asList("no-store"));
+        headers.put("Cache-Control", Collections.singletonList("no-store"));
         doAnswer(new ResolveAnswer(HttpServletResponse.SC_OK, value, headers))
                 .when(resolver).resolve(any(CacheRequest.class), any(CacheResponse.class));
 
@@ -1021,8 +1025,8 @@ public class HTTPCacheTest {
 
         // Verify that response is ok
         assertEquals(value.length, result.size());
-        assertEquals(new String(value, "UTF-8"), new String(result.toByteArray(), "UTF-8"));
-        assertTrue(Arrays.equals(value, result.toByteArray()));
+        assertEquals(new String(value, StandardCharsets.UTF_8), new String(result.toByteArray(), StandardCharsets.UTF_8));
+        assertArrayEquals(value, result.toByteArray());
 
         verify(response).setStatus(HttpServletResponse.SC_OK);
         verify(response, atLeastOnce()).getOutputStream();

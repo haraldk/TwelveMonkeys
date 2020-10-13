@@ -35,6 +35,8 @@ import org.junit.Test;
 
 import java.awt.image.*;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 public class DiscreteAlphaIndexColorModelTest {
@@ -162,7 +164,7 @@ public class DiscreteAlphaIndexColorModelTest {
         assertEquals(2, sampleModel.getHeight());
 
         assertTrue(colorModel.isCompatibleSampleModel(sampleModel));
-        assertThat(sampleModel, CoreMatchers.is(PixelInterleavedSampleModel.class));
+        assertThat(sampleModel, instanceOf(PixelInterleavedSampleModel.class));
         assertThat(sampleModel.getDataType(), CoreMatchers.equalTo(DataBuffer.TYPE_BYTE));
     }
 
@@ -180,7 +182,7 @@ public class DiscreteAlphaIndexColorModelTest {
         assertEquals(2, sampleModel.getHeight());
 
         assertTrue(colorModel.isCompatibleSampleModel(sampleModel));
-        assertThat(sampleModel, CoreMatchers.is(PixelInterleavedSampleModel.class));
+        assertThat(sampleModel, instanceOf(PixelInterleavedSampleModel.class));
         assertThat(sampleModel.getDataType(), CoreMatchers.equalTo(DataBuffer.TYPE_USHORT));
     }
 

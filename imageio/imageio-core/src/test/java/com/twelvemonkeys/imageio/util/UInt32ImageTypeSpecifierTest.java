@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+
 import org.junit.Test;
 
 import javax.imageio.ImageTypeSpecifier;
@@ -39,7 +40,8 @@ import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.PixelInterleavedSampleModel;
 
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 public class UInt32ImageTypeSpecifierTest {
@@ -55,13 +57,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(1, spec.getNumComponents());
         assertEquals(32, spec.getBitsPerBand(0));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertFalse(spec.getColorModel().hasAlpha());
         assertFalse(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(1, spec.getColorModel().getNumComponents());
         assertEquals(1, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(1, spec.getSampleModel().getNumBands());
         assertEquals(1, spec.getSampleModel().getNumDataElements());
     }
@@ -74,13 +76,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(32, spec.getBitsPerBand(0));
         assertEquals(32, spec.getBitsPerBand(1));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertTrue(spec.getColorModel().hasAlpha());
         assertFalse(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(2, spec.getColorModel().getNumComponents());
         assertEquals(1, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(2, spec.getSampleModel().getNumBands());
         assertEquals(2, spec.getSampleModel().getNumDataElements());
     }
@@ -95,13 +97,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(32, spec.getBitsPerBand(1));
         assertEquals(32, spec.getBitsPerBand(2));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertFalse(spec.getColorModel().hasAlpha());
         assertFalse(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(3, spec.getColorModel().getNumComponents());
         assertEquals(3, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(3, spec.getSampleModel().getNumBands());
         assertEquals(3, spec.getSampleModel().getNumDataElements());
     }
@@ -116,13 +118,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(32, spec.getBitsPerBand(2));
         assertEquals(32, spec.getBitsPerBand(3));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertTrue(spec.getColorModel().hasAlpha());
         assertFalse(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(4, spec.getColorModel().getNumComponents());
         assertEquals(3, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(4, spec.getSampleModel().getNumBands());
         assertEquals(4, spec.getSampleModel().getNumDataElements());
     }
@@ -137,13 +139,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(32, spec.getBitsPerBand(2));
         assertEquals(32, spec.getBitsPerBand(3));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertTrue(spec.getColorModel().hasAlpha());
         assertTrue(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(4, spec.getColorModel().getNumComponents());
         assertEquals(3, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(4, spec.getSampleModel().getNumBands());
         assertEquals(4, spec.getSampleModel().getNumDataElements());
     }
@@ -159,13 +161,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(32, spec.getBitsPerBand(2));
         assertEquals(32, spec.getBitsPerBand(3));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertFalse(spec.getColorModel().hasAlpha());
         assertFalse(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(4, spec.getColorModel().getNumComponents());
         assertEquals(4, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(4, spec.getSampleModel().getNumBands());
         assertEquals(4, spec.getSampleModel().getNumDataElements());
     }
@@ -181,13 +183,13 @@ public class UInt32ImageTypeSpecifierTest {
         assertEquals(32, spec.getBitsPerBand(3));
         assertEquals(32, spec.getBitsPerBand(4));
 
-        assertThat(spec.getColorModel(), is(ComponentColorModel.class));
+        assertThat(spec.getColorModel(), instanceOf(ComponentColorModel.class));
         assertTrue(spec.getColorModel().hasAlpha());
         assertFalse(spec.getColorModel().isAlphaPremultiplied());
         assertEquals(5, spec.getColorModel().getNumComponents());
         assertEquals(4, spec.getColorModel().getNumColorComponents());
 
-        assertThat(spec.getSampleModel(), is(PixelInterleavedSampleModel.class));
+        assertThat(spec.getSampleModel(), instanceOf(PixelInterleavedSampleModel.class));
         assertEquals(5, spec.getSampleModel().getNumBands());
         assertEquals(5, spec.getSampleModel().getNumDataElements());
     }

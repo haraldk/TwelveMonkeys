@@ -44,7 +44,8 @@ import static com.twelvemonkeys.imageio.plugins.tiff.TIFFMedataFormat.SUN_NATIVE
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.SUN_NATIVE_STREAM_METADATA_FORMAT_NAME;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -163,11 +164,11 @@ public class TIFFStreamMetadataTest {
     public void testGetAsTreeNative() {
         Node root = new TIFFStreamMetadata().getAsTree(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME);
         assertNotNull(root);
-        assertThat(root, is(IIOMetadataNode.class));
+        assertThat(root, instanceOf(IIOMetadataNode.class));
         assertEquals(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, root.getNodeName());
         NodeList childNodes = root.getChildNodes();
         assertEquals(1, childNodes.getLength());
-        assertThat(childNodes.item(0), is(IIOMetadataNode.class));
+        assertThat(childNodes.item(0), instanceOf(IIOMetadataNode.class));
         IIOMetadataNode byteOrder = (IIOMetadataNode) childNodes.item(0);
         assertEquals("ByteOrder", byteOrder.getNodeName());
         assertEquals("BIG_ENDIAN", byteOrder.getAttribute("value"));
@@ -177,11 +178,11 @@ public class TIFFStreamMetadataTest {
     public void testGetAsTreeNativeII() {
         Node root = new TIFFStreamMetadata(LITTLE_ENDIAN).getAsTree(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME);
         assertNotNull(root);
-        assertThat(root, is(IIOMetadataNode.class));
+        assertThat(root, instanceOf(IIOMetadataNode.class));
         assertEquals(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, root.getNodeName());
         NodeList childNodes = root.getChildNodes();
         assertEquals(1, childNodes.getLength());
-        assertThat(childNodes.item(0), is(IIOMetadataNode.class));
+        assertThat(childNodes.item(0), instanceOf(IIOMetadataNode.class));
         IIOMetadataNode byteOrder = (IIOMetadataNode) childNodes.item(0);
         assertEquals("ByteOrder", byteOrder.getNodeName());
         assertEquals("LITTLE_ENDIAN", byteOrder.getAttribute("value"));
