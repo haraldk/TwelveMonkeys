@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.lang.StringUtil;
+
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 import org.mockito.internal.matchers.GreaterThan;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.*;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;

@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.IIOException;
@@ -52,9 +53,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
-import static org.junit.internal.matchers.StringContains.containsString;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
@@ -873,7 +875,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             try {
                 IIOMetadata streamMetadata = reader.getStreamMetadata();
                 assertNotNull(streamMetadata);
-                assertThat(streamMetadata, is(TIFFStreamMetadata.class));
+                assertThat(streamMetadata, instanceOf(TIFFStreamMetadata.class));
             }
             catch (Exception e) {
                 failBecause(String.format("Image %s could not be read: %s", data.getInput(), e), e);

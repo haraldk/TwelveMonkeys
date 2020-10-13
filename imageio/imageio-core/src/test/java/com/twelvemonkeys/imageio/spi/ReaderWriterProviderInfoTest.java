@@ -42,6 +42,7 @@ import javax.imageio.spi.ImageWriterSpi;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 /**

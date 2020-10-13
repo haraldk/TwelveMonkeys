@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+
 import org.junit.Test;
 import org.mockito.internal.matchers.LessOrEqual;
 
@@ -46,7 +47,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * JPEGSegmentImageInputStreamTest
