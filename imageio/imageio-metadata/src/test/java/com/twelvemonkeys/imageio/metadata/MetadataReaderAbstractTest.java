@@ -31,10 +31,11 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
@@ -58,7 +59,7 @@ public abstract class MetadataReaderAbstractTest {
         ImageIO.setUseCache(false);
     }
 
-    protected final URL getResource(final String name) throws IOException {
+    protected final URL getResource(final String name) {
         return getClass().getResource(name);
     }
 
