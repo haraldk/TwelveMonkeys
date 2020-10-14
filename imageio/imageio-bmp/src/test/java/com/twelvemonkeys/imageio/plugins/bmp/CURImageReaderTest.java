@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -53,6 +54,12 @@ import static org.junit.Assert.*;
  * @version $Id: CURImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class CURImageReaderTest extends ImageReaderAbstractTest<CURImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new CURImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/cur/hand.cur"), new Dimension(32, 32)),
@@ -60,27 +67,17 @@ public class CURImageReaderTest extends ImageReaderAbstractTest<CURImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return new CURImageReaderSpi();
-    }
-
     @Override
-    protected CURImageReader createReader() {
-        return new CURImageReader();
-    }
-
-    protected Class<CURImageReader> getReaderClass() {
-        return CURImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("cur");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Collections.singletonList("cur");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/vnd.microsoft.cursor", "image/cursor", "image/x-cursor");
     }
@@ -99,7 +96,7 @@ public class CURImageReaderTest extends ImageReaderAbstractTest<CURImageReader> 
             assertNotNull("Hotspot for cursor not present", hotspot);
 
             // Image weirdness
-            assertTrue("Hotspot for cursor undefined (java.awt.Image.UndefinedProperty)", Image.UndefinedProperty != hotspot);
+            assertNotSame("Hotspot for cursor undefined (java.awt.Image.UndefinedProperty)", Image.UndefinedProperty, hotspot);
 
             assertTrue(String.format("Hotspot not a java.awt.Point: %s", hotspot.getClass()), hotspot instanceof Point);
             assertEquals(pExpected, hotspot);

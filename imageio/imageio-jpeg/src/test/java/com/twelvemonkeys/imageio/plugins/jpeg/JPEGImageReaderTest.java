@@ -79,7 +79,10 @@ import static org.mockito.Mockito.*;
  */
 public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader> {
 
-    private static final JPEGImageReaderSpi SPI = new JPEGImageReaderSpi(lookupDelegateProvider());
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new JPEGImageReaderSpi(lookupDelegateProvider());
+    }
 
     private static ImageReaderSpi lookupDelegateProvider() {
         return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
@@ -136,26 +139,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Override
-    protected ImageReaderSpi createProvider() {
-        return SPI;
-    }
-
-    @Override
-    protected JPEGImageReader createReader() {
-        try {
-            return (JPEGImageReader) SPI.createReaderInstance();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    protected Class<JPEGImageReader> getReaderClass() {
-        return JPEGImageReader.class;
-    }
-
-    @Override
     protected boolean allowsNullRawImageType() {
         return true;
     }
@@ -207,7 +190,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         }
     }
 
-    private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, int actualOffset) {
+    private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, @SuppressWarnings("SameParameterValue") int actualOffset) {
         for (int i = 0; i < expected.length; i++) {
             assertEquals(String.format("Difference in pixel %d", i), expected[i], actual[i + actualOffset], 5);
         }
@@ -552,7 +535,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
-    public void testBrokenReadRasterAfterGetMetadataException() {
+    public void testBrokenReadRasterAfterGetMetadataException() throws IOException {
         // See issue #107, from PDFBox team
         JPEGImageReader reader = createReader();
 
@@ -587,7 +570,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     public void testSPIRecognizesBrokenJPEG() throws IOException {
         // TODO: There's a bug in com.sun.imageio.plugins.png.PNGImageReaderSpi.canDecode
         // causing files < 8 bytes to not be recognized as anything...
-        ImageReaderSpi provider = createProvider();
         for (TestData data : getBrokenTestData()) {
             assertTrue(data.toString(), provider.canDecodeInput(data.getInputStream()));
         }
@@ -596,7 +578,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     // TODO: Consider wrapping the delegate in JPEGImageReader with methods that don't throw
     // runtime exceptions, and instead throw IIOException?
     @Test
-    public void testBrokenGetRawImageType() {
+    public void testBrokenGetRawImageType() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -622,7 +604,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test(timeout = 200)
-    public void testBrokenGetRawImageTypeIgnoreMetadata() {
+    public void testBrokenGetRawImageTypeIgnoreMetadata() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -648,7 +630,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
-    public void testBrokenGetImageTypes() {
+    public void testBrokenGetImageTypes() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -674,7 +656,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test(timeout = 200)
-    public void testBrokenGetImageTypesIgnoreMetadata() {
+    public void testBrokenGetImageTypesIgnoreMetadata() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -700,7 +682,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
-    public void testBrokenRead() {
+    public void testBrokenRead() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -726,7 +708,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
-    public void testBrokenGetDimensions() {
+    public void testBrokenGetDimensions() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -755,7 +737,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
-    public void testBrokenGetImageMetadata() {
+    public void testBrokenGetImageMetadata() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
@@ -1506,9 +1488,9 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                         throw new AssertionError(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()), e);
                     }
                 }
-                catch (IIOException ignore) {
+                catch (IIOException warn) {
                     // The reference reader will fail on certain images, we'll just ignore that
-                    System.err.println(String.format("WARNING: Reading reference metadata failed for %s image %s: %s", testData, i, ignore.getMessage()));
+                    System.err.printf("WARNING: Reading reference metadata failed for %s image %s: %s%n", testData, i, warn.getMessage());
                 }
             }
         }

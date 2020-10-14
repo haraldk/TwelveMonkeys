@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.wmf;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -49,7 +50,10 @@ import java.util.List;
  * @version $Id: WMFImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class WMFImageReaderTest extends ImageReaderAbstractTest<WMFImageReader> {
-    private WMFImageReaderSpi provider = new WMFImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new WMFImageReaderSpi();
+    }
 
     protected List<TestData> getTestData() {
         return Collections.singletonList(
@@ -57,27 +61,17 @@ public class WMFImageReaderTest extends ImageReaderAbstractTest<WMFImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
     @Override
-    protected WMFImageReader createReader() {
-        return new WMFImageReader(createProvider());
-    }
-
-    protected Class<WMFImageReader> getReaderClass() {
-        return WMFImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("wmf");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Arrays.asList("wmf", "emf");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/x-wmf", "application/x-msmetafile");
     }

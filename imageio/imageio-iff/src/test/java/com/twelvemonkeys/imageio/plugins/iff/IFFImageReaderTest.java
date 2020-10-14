@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -54,6 +55,12 @@ import static org.junit.Assert.*;
  * @version $Id: IFFImageReaderTestCase.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new IFFImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // 32 bit - Ok
@@ -85,22 +92,17 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return new IFFImageReaderSpi();
-    }
-
-    protected Class<IFFImageReader> getReaderClass() {
-        return IFFImageReader.class;
-    }
-
+    @Override
     protected List<String> getFormatNames() {
         return Collections.singletonList("iff");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Arrays.asList("iff", "ilbm", "ham", "ham8", "lbm");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/iff", "image/x-iff");
     }

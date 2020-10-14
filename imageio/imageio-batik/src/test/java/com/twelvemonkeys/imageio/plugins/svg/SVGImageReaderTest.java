@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -44,7 +45,6 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImagingOpException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -67,7 +67,10 @@ import static org.mockito.Mockito.*;
  */
 public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> {
 
-    private SVGImageReaderSpi provider = new SVGImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new SVGImageReaderSpi();
+    }
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -80,19 +83,6 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
                 new TestData(getClassLoaderResource("/svg/sizes/h50_1to2.svg"), new Dimension(50, 100)),
                 new TestData(getClassLoaderResource("/svg/sizes/w50noview.svg"), new Dimension(50, 50))
         );
-    }
-
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
-    @Override
-    protected SVGImageReader createReader() {
-        return new SVGImageReader(createProvider());
-    }
-
-    protected Class<SVGImageReader> getReaderClass() {
-        return SVGImageReader.class;
     }
 
     protected List<String> getFormatNames() {
@@ -110,8 +100,6 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
     @Test
     public void testScaleViewBox() throws IOException {
         URL svgUrl = getClassLoaderResource("/svg/quadrants.svg");
-
-        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
 
         SVGImageReader reader = createReader();
         SVGReadParam param = new SVGReadParam();
@@ -160,11 +148,11 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
 
     @Test
     @Override
-    public void testReadWithSizeParam() {
+    public void testReadWithSizeParam() throws IOException {
         try {
             super.testReadWithSizeParam();
         }
-        catch (AssertionError failure) {
+        catch (AssertionError | IOException failure) {
             Throwable cause = failure;
 
             while (cause.getCause() != null) {
@@ -299,7 +287,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             params.setAllowExternalResources(true);
             reader.read(0, params);
 
-            assertTrue("reader.read should've thrown an exception, but didn't", false);
+            fail("reader.read should've thrown an exception, but didn't");
         }
         catch (IIOException allowed) {
             assertTrue(allowed.getMessage().contains("batikLogo.svg")); // The embedded resource we don't find

@@ -32,11 +32,11 @@ package com.twelvemonkeys.imageio.reference;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.lang.SystemUtil;
+
+import com.sun.imageio.plugins.jpeg.JPEGImageReader;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageReader;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -46,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
-import static org.junit.Assume.assumeNoException;
 
 /**
  * JPEGImageReaderTest
@@ -55,10 +54,13 @@ import static org.junit.Assume.assumeNoException;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageReaderTest.java,v 1.0 Oct 9, 2009 3:37:25 PM haraldk Exp$
  */
-public class JPEGImageReaderTest extends ImageReaderAbstractTest {
+public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader> {
     private static final boolean IS_JAVA_6_OR_LATER = SystemUtil.isClassAvailable("java.util.Deque");
-    
-    private final ImageReaderSpi provider = lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
+
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
+    }
 
     @Override
     protected List<TestData> getTestData() {
@@ -67,33 +69,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest {
         );
     }
 
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
-    @Override
-    protected Class getReaderClass() {
-        try {
-            return Class.forName("com.sun.imageio.plugins.jpeg.JPEGImageReader");
-        }
-        catch (ClassNotFoundException e) {
-            assumeNoException(e);
-        }
-
-        return null;
-    }
-
-    @Override
-    protected ImageReader createReader() {
-        try {
-            return provider.createReaderInstance();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
     // These are NOT correct implementations, but I don't really care here
     @Override
     protected List<String> getFormatNames() {
@@ -137,7 +112,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest {
     @Test
     @Ignore("Known issue")
     @Override
-    public void testReadAsRenderedImageIndexOutOfBounds() throws IIOException {
+    public void testReadAsRenderedImageIndexOutOfBounds() throws IOException {
         super.testReadAsRenderedImageIndexOutOfBounds();
     }
 

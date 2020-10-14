@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.xml.XMLSerializer;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -48,7 +49,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -68,6 +69,12 @@ import static org.mockito.Mockito.*;
  * @version $Id: BMPImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new BMPImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // BMP Suite "Good"
@@ -144,27 +151,17 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return new BMPImageReaderSpi();
-    }
-
     @Override
-    protected BMPImageReader createReader() {
-        return new BMPImageReader(createProvider());
-    }
-
-    protected Class<BMPImageReader> getReaderClass() {
-        return BMPImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("bmp");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Arrays.asList("bmp", "rle");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Collections.singletonList("image/bmp");
     }
@@ -273,7 +270,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     @Test
-    public void testAddIIOReadProgressListenerCallbacksJPEG() {
+    public void testAddIIOReadProgressListenerCallbacksJPEG() throws IOException {
         ImageReader reader = createReader();
         TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb24jpeg.bmp"), new Dimension(127, 64));
         reader.setInput(data.getInputStream());
@@ -296,7 +293,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     @Test
-    public void testAddIIOReadProgressListenerCallbacksPNG() {
+    public void testAddIIOReadProgressListenerCallbacksPNG() throws IOException {
         ImageReader reader = createReader();
         TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb24png.bmp"), new Dimension(127, 64));
         reader.setInput(data.getInputStream());
@@ -319,7 +316,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     @Test
-    public void testMetadataEqualsJRE() throws IOException, URISyntaxException {
+    public void testMetadataEqualsJRE() throws IOException {
         ImageReader jreReader;
         try {
             @SuppressWarnings("unchecked")
@@ -356,7 +353,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
             }
             IIOMetadata jreMetadata = jreReader.getImageMetadata(0);
 
-            assertEquals(true, metadata.isStandardMetadataFormatSupported());
+            assertTrue(metadata.isStandardMetadataFormatSupported());
             assertEquals(jreMetadata.getNativeMetadataFormatName(), metadata.getNativeMetadataFormatName());
             assertArrayEquals(jreMetadata.getExtraMetadataFormatNames(), metadata.getExtraMetadataFormatNames());
 
@@ -379,7 +376,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                     new XMLSerializer(expected, "UTF-8").serialize(expectedTree, false);
                     new XMLSerializer(actual, "UTF-8").serialize(actualTree, false);
 
-                    assertEquals(e.getMessage(), new String(expected.toByteArray(), "UTF-8"), new String(actual.toByteArray(), "UTF-8"));
+                    assertEquals(e.getMessage(), new String(expected.toByteArray(), StandardCharsets.UTF_8), new String(actual.toByteArray(), StandardCharsets.UTF_8));
 
                     throw e;
                 }

@@ -47,25 +47,15 @@ import java.util.List;
  */
 public class HDRImageReaderTest extends ImageReaderAbstractTest<HDRImageReader> {
     @Override
-    protected List<TestData> getTestData() {
-        return Arrays.asList(
-                new TestData(getClassLoaderResource("/hdr/memorial_o876.hdr"), new Dimension(512, 768))
-        );
-    }
-
-    @Override
     protected ImageReaderSpi createProvider() {
         return new HDRImageReaderSpi();
     }
 
     @Override
-    protected Class<HDRImageReader> getReaderClass() {
-        return HDRImageReader.class;
-    }
-
-    @Override
-    protected HDRImageReader createReader() {
-        return new HDRImageReader(createProvider());
+    protected List<TestData> getTestData() {
+        return Collections.singletonList(
+                new TestData(getClassLoaderResource("/hdr/memorial_o876.hdr"), new Dimension(512, 768))
+        );
     }
 
     @Override

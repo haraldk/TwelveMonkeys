@@ -27,10 +27,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageReader;
@@ -45,7 +45,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> {
-    @Override protected List<TestData> getTestData() {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new PNMImageReaderSpi();
+    }
+
+    @Override
+    protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/ppm/lena.ppm"), new Dimension(128, 128)),     // P6 (PPM RAW)
                 new TestData(getClassLoaderResource("/ppm/colors.ppm"), new Dimension(3, 2)),       // P3 (PPM PLAIN)
@@ -60,32 +66,23 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
         );
     }
 
-    @Override protected ImageReaderSpi createProvider() {
-        return new PNMImageReaderSpi();
-    }
-
-    @Override protected Class<PNMImageReader> getReaderClass() {
-        return PNMImageReader.class;
-    }
-
-    @Override protected PNMImageReader createReader() {
-        return new PNMImageReader(createProvider());
-    }
-
-    @Override protected List<String> getFormatNames() {
+    @Override
+    protected List<String> getFormatNames() {
         return Arrays.asList(
                 "pnm", "pbm", "pgm", "ppm", "pam",
                 "PNM", "PBM", "PGM", "PPM", "PAM"
         );
     }
 
-    @Override protected List<String> getSuffixes() {
+    @Override
+    protected List<String> getSuffixes() {
         return Arrays.asList(
                 "pbm", "pgm", "ppm", "pam"
         );
     }
 
-    @Override protected List<String> getMIMETypes() {
+    @Override
+    protected List<String> getMIMETypes() {
         return Arrays.asList(
                 "image/x-portable-pixmap",
                 "image/x-portable-anymap",
@@ -135,7 +132,6 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
 
     @Test
     public void testXVThumbNotIncorrectlyRecognizedAsPAM() throws IOException {
-        ImageReaderSpi provider = createProvider();
         assertTrue("Should recognize PAM format", provider.canDecodeInput(new TestData(getClassLoaderResource("/pam/rgba.pam"), new Dimension()).getInputStream())); // Sanity
         assertFalse("Should distinguish xv-thumbs from PAM format", provider.canDecodeInput(new TestData(getClassLoaderResource("/xv-thumb/xv-thumb.xvt"), new Dimension()).getInputStream()));
     }
