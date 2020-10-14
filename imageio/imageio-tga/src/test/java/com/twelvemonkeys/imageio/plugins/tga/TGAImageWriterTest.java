@@ -32,12 +32,14 @@ package com.twelvemonkeys.imageio.plugins.tga;
 
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.color.ColorSpace;
@@ -57,14 +59,12 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * TGAImageWriterTest
  */
-public class TGAImageWriterTest extends ImageWriterAbstractTest {
-
-    private static final TGAImageWriterSpi PROVIDER = new TGAImageWriterSpi();
+public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> {
     private static final ImageTypeSpecifier TYPE_USHORT_1555_ARGB = ImageTypeSpecifiers.createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB), 0x7C00, 0x03E0, 0x001F, 0x8000, DataBuffer.TYPE_USHORT, false);
 
     @Override
-    protected ImageWriter createImageWriter() {
-        return new TGAImageWriter(PROVIDER);
+    protected ImageWriterSpi createProvider() {
+        return new TGAImageWriterSpi();
     }
 
     @Override
@@ -86,7 +86,7 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteRead() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
         assumeNotNull(reader);

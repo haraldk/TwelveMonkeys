@@ -2,10 +2,10 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -15,18 +15,15 @@ import java.util.List;
  * @author last modified by : harald.kuhr$
  * @version : BMPImageWriterTest.java,v 1.0 25/06/2020 harald.kuhr Exp$
  */
-public class BMPImageWriterTest extends ImageWriterAbstractTest {
-
-    private final BMPImageWriterSpi provider = new BMPImageWriterSpi();
-
+public class BMPImageWriterTest extends ImageWriterAbstractTest<BMPImageWriter> {
     @Override
-    protected ImageWriter createImageWriter() {
-        return provider.createWriterInstance(null);
+    protected ImageWriterSpi createProvider() {
+        return new BMPImageWriterSpi();
     }
 
     @Override
     protected List<? extends RenderedImage> getTestData() {
-        return Arrays.asList(
+        return Collections.singletonList(
                 new BufferedImage(10, 10, BufferedImage.TYPE_4BYTE_ABGR)
         );
     }

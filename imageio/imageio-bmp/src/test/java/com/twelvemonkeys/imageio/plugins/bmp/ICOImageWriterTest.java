@@ -2,7 +2,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.util.Arrays;
@@ -15,12 +15,10 @@ import java.util.List;
  * @author last modified by : harald.kuhr$
  * @version : ICOImageWriterTest.java,v 1.0 25/06/2020 harald.kuhr Exp$
  */
-public class ICOImageWriterTest extends ImageWriterAbstractTest {
-    private final ICOImageWriterSpi provider = new ICOImageWriterSpi();
-
+public class ICOImageWriterTest extends ImageWriterAbstractTest<ICOImageWriter> {
     @Override
-    protected ImageWriter createImageWriter() {
-        return provider.createWriterInstance(null);
+    protected ImageWriterSpi createProvider() {
+        return new ICOImageWriterSpi();
     }
 
     @Override

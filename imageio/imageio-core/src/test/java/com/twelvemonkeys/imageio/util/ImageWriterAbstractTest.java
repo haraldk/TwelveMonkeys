@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+
 import org.junit.Test;
 import org.mockito.InOrder;
 
@@ -39,12 +40,14 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteProgressListener;
 import javax.imageio.spi.IIORegistry;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.List;
 
@@ -59,7 +62,7 @@ import static org.mockito.Mockito.*;
  * @author last modified by $Author: haku $
  * @version $Id: ImageReaderAbstractTestCase.java,v 1.0 18.nov.2004 17:38:33 haku Exp $
  */
-public abstract class ImageWriterAbstractTest {
+public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
 
     // TODO: Move static block + getClassLoaderResource to common superclass for reader/writer test cases or delegate.
 
@@ -68,7 +71,16 @@ public abstract class ImageWriterAbstractTest {
         ImageIO.setUseCache(false);
     }
 
-    protected abstract ImageWriter createImageWriter();
+    @SuppressWarnings("unchecked")
+    private final Class<T> writerClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+
+    protected final ImageWriterSpi provider = createProvider();
+
+    protected abstract ImageWriterSpi createProvider();
+
+    protected final T createWriter() throws IOException {
+        return writerClass.cast(provider.createWriterInstance(null));
+    }
 
     protected abstract List<? extends RenderedImage> getTestData();
 
@@ -104,22 +116,22 @@ public abstract class ImageWriterAbstractTest {
     @Test
     public void testSetOutput() throws IOException {
         // Should just pass with no exceptions
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         assertNotNull(writer);
         writer.setOutput(ImageIO.createImageOutputStream(new ByteArrayOutputStream()));
     }
 
     @Test
-    public void testSetOutputNull() {
+    public void testSetOutputNull() throws IOException {
         // Should just pass with no exceptions
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         assertNotNull(writer);
         writer.setOutput(null);
     }
 
     @Test
     public void testWrite() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         for (RenderedImage testData : getTestData()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -136,10 +148,9 @@ public abstract class ImageWriterAbstractTest {
         }
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void testWriteNull() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
@@ -156,8 +167,8 @@ public abstract class ImageWriterAbstractTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testWriteNoOutput() {
-        ImageWriter writer = createImageWriter();
+    public void testWriteNoOutput() throws IOException {
+        ImageWriter writer = createWriter();
 
         try {
             writer.write(getTestData(0));
@@ -168,8 +179,8 @@ public abstract class ImageWriterAbstractTest {
     }
 
     @Test
-    public void testGetDefaultWriteParam() {
-        ImageWriter writer = createImageWriter();
+    public void testGetDefaultWriteParam() throws IOException {
+        ImageWriter writer = createWriter();
         ImageWriteParam param = writer.getDefaultWriteParam();
         assertNotNull("Default ImageWriteParam is null", param);
     }
@@ -178,20 +189,20 @@ public abstract class ImageWriterAbstractTest {
     // TODO: Source region and subsampling at least
 
     @Test
-    public void testAddIIOWriteProgressListener() {
-        ImageWriter writer = createImageWriter();
+    public void testAddIIOWriteProgressListener() throws IOException {
+        ImageWriter writer = createWriter();
         writer.addIIOWriteProgressListener(mock(IIOWriteProgressListener.class));
     }
 
     @Test
-    public void testAddIIOWriteProgressListenerNull() {
-        ImageWriter writer = createImageWriter();
+    public void testAddIIOWriteProgressListenerNull() throws IOException {
+        ImageWriter writer = createWriter();
         writer.addIIOWriteProgressListener(null);
     }
 
     @Test
     public void testAddIIOWriteProgressListenerCallbacks() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
@@ -214,7 +225,7 @@ public abstract class ImageWriterAbstractTest {
 
     @Test
     public void testMultipleAddIIOWriteProgressListenerCallbacks() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
@@ -250,20 +261,20 @@ public abstract class ImageWriterAbstractTest {
     }
 
     @Test
-    public void testRemoveIIOWriteProgressListenerNull() {
-        ImageWriter writer = createImageWriter();
+    public void testRemoveIIOWriteProgressListenerNull() throws IOException {
+        ImageWriter writer = createWriter();
         writer.removeIIOWriteProgressListener(null);
     }
 
     @Test
-    public void testRemoveIIOWriteProgressListenerNone() {
-        ImageWriter writer = createImageWriter();
+    public void testRemoveIIOWriteProgressListenerNone() throws IOException {
+        ImageWriter writer = createWriter();
         writer.removeIIOWriteProgressListener(mock(IIOWriteProgressListener.class));
     }
 
     @Test
     public void testRemoveIIOWriteProgressListener() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
@@ -284,7 +295,7 @@ public abstract class ImageWriterAbstractTest {
 
     @Test
     public void testRemoveIIOWriteProgressListenerMultiple() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
@@ -316,7 +327,7 @@ public abstract class ImageWriterAbstractTest {
 
     @Test
     public void testRemoveAllIIOWriteProgressListeners() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 
@@ -339,7 +350,7 @@ public abstract class ImageWriterAbstractTest {
 
     @Test
     public void testRemoveAllIIOWriteProgressListenersMultiple() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         writer.setOutput(ImageIO.createImageOutputStream(buffer));
 

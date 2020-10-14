@@ -39,6 +39,7 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.NullOutputStream;
+
 import org.junit.Test;
 import org.w3c.dom.NodeList;
 
@@ -47,6 +48,7 @@ import javax.imageio.event.IIOWriteProgressListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.FileCacheImageOutputStream;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageInputStream;
@@ -74,13 +76,10 @@ import static org.mockito.Mockito.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFImageWriterTest.java,v 1.0 19.09.13 13:22 haraldk Exp$
  */
-public class TIFFImageWriterTest extends ImageWriterAbstractTest {
-
-    private static final TIFFImageWriterSpi PROVIDER = new TIFFImageWriterSpi();
-
+public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter> {
     @Override
-    protected ImageWriter createImageWriter() {
-        return new TIFFImageWriter(PROVIDER);
+    protected ImageWriterSpi createProvider() {
+        return new TIFFImageWriterSpi();
     }
 
     @Override
@@ -108,7 +107,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
         RenderedImage image = getTestData(0);
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
@@ -158,7 +157,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
         RenderedImage image = getTestData(0);
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
@@ -200,7 +199,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
         RenderedImage image = getTestData(0);
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
@@ -254,7 +253,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
         RenderedImage image = getTestData(0);
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
@@ -292,7 +291,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testWriteIncompatibleCompression() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
@@ -312,14 +311,14 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
     }
 
     @Test
-    public void testWriterCanWriteSequence() {
-        ImageWriter writer = createImageWriter();
+    public void testWriterCanWriteSequence() throws IOException {
+        ImageWriter writer = createWriter();
         assertTrue("Writer should support sequence writing", writer.canWriteSequence());
     }
 
     @Test(expected = IllegalStateException.class)
     public void testWriteSequenceWithoutPrepare() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
@@ -330,7 +329,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test(expected = IllegalStateException.class)
     public void testEndSequenceWithoutPrepare() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
@@ -356,7 +355,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
                              ? File.createTempFile("temp-", ".tif")
                              : new ByteArrayOutputStream(1024);
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         try (ImageOutputStream output = isFileDirect
                                         ? new FileImageOutputStream((File) destination)
                                         : new FileCacheImageOutputStream((OutputStream) destination, ImageIO.getCacheDirectory())) {
@@ -460,7 +459,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
             }
         }
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
             writer.setOutput(output);
@@ -519,7 +518,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
                 new BufferedImage(120, 100, BufferedImage.TYPE_INT_RGB)
         };
 
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         IIOWriteProgressListener progress = mock(IIOWriteProgressListener.class, "progress");
         writer.addIIOWriteProgressListener(progress);
 
@@ -557,7 +556,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteParamJPEGQuality() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(new NullOutputStream())) {
             writer.setOutput(output);
@@ -598,7 +597,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
-            ImageWriter writer = createImageWriter();
+            ImageWriter writer = createWriter();
             writer.setOutput(output);
 
             writer.write(original);
@@ -658,7 +657,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
-            ImageWriter writer = createImageWriter();
+            ImageWriter writer = createWriter();
             writer.setOutput(output);
 
             ImageWriteParam param = writer.getDefaultWriteParam();
@@ -722,7 +721,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
-            ImageWriter writer = createImageWriter();
+            ImageWriter writer = createWriter();
             writer.setOutput(output);
 
             ImageWriteParam param = writer.getDefaultWriteParam();
@@ -787,7 +786,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
-            ImageWriter writer = createImageWriter();
+            ImageWriter writer = createWriter();
             writer.setOutput(output);
 
             writer.write(original);
@@ -847,7 +846,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
-            ImageWriter writer = createImageWriter();
+            ImageWriter writer = createWriter();
             writer.setOutput(output);
 
             ImageWriteParam param = writer.getDefaultWriteParam();
@@ -911,7 +910,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
 
         try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
-            ImageWriter writer = createImageWriter();
+            ImageWriter writer = createWriter();
             writer.setOutput(output);
 
             ImageWriteParam param = writer.getDefaultWriteParam();
@@ -982,7 +981,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
             // Store cropped
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
-                ImageWriter imageWriter = createImageWriter();
+                ImageWriter imageWriter = createWriter();
                 imageWriter.setOutput(output);
                 imageWriter.write(subimage);
             }
@@ -1010,7 +1009,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteStreamMetadataDefaultMM() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
@@ -1026,7 +1025,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteStreamMetadataDefaultII() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
@@ -1042,7 +1041,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteStreamMetadataMM() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
@@ -1058,7 +1057,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteStreamMetadataII() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
@@ -1074,7 +1073,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testMergeTreeARGB() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageWriteParam writeParam = writer.getDefaultWriteParam();
         writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         writeParam.setCompressionType("LZW");
@@ -1087,7 +1086,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testMergeTreeGray() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageWriteParam writeParam = writer.getDefaultWriteParam();
         writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         writeParam.setCompressionType("LZW");
@@ -1100,7 +1099,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testMergeTreeBW() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageWriteParam writeParam = writer.getDefaultWriteParam();
         writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         writeParam.setCompressionType("CCITT T.6");
@@ -1113,7 +1112,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testRewrite() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
         List<URL> testData = Arrays.asList(
@@ -1244,7 +1243,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest {
         }
     }
 
-    private class ImageInfo {
+    private static class ImageInfo {
         final int width;
         final int height;
 

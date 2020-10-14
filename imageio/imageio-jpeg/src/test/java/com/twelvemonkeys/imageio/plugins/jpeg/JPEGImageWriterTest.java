@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+
 import org.junit.Test;
 import org.w3c.dom.NodeList;
 
@@ -66,22 +67,14 @@ import static org.junit.Assert.assertNotNull;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGImageWriterTest.java,v 1.0 06.02.12 17:05 haraldk Exp$
  */
-public class JPEGImageWriterTest extends ImageWriterAbstractTest {
-
-    private static final JPEGImageWriterSpi SPI = new JPEGImageWriterSpi(lookupDelegateProvider());
-
+public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter> {
     private static ImageWriterSpi lookupDelegateProvider() {
         return IIOUtil.lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi", ImageWriterSpi.class);
     }
 
     @Override
-    protected ImageWriter createImageWriter() {
-        try {
-            return SPI.createWriterInstance();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    protected ImageWriterSpi createProvider() {
+        return new JPEGImageWriterSpi(lookupDelegateProvider());
     }
 
     @Override
@@ -97,8 +90,8 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest {
     }
 
     @Test
-    public void testReaderForWriter() {
-        ImageWriter writer = createImageWriter();
+    public void testReaderForWriter() throws IOException {
+        ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
         assertNotNull(reader);
         assertEquals(writer.getClass().getPackage(), reader.getClass().getPackage());
@@ -140,7 +133,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testTranscodeWithMetadataRGBtoRGB() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
         ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"), writer, ColorSpace.TYPE_RGB);
@@ -155,7 +148,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testTranscodeWithMetadataCMYKtoCMYK() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
         ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), writer, ColorSpace.TYPE_CMYK);
