@@ -46,7 +46,11 @@ import java.util.List;
  * @version $Id: BigTIFFImageReaderTest.java,v 1.0 26/04/2017 harald.kuhr Exp$
  */
 public class BigTIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader> {
-    private static final BigTIFFImageReaderSpi SPI = new BigTIFFImageReaderSpi();
+
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new BigTIFFImageReaderSpi();
+    }
 
     @Override
     protected List<TestData> getTestData() {
@@ -60,21 +64,6 @@ public class BigTIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageRea
                 new TestData(getClassLoaderResource("/bigtiff/BigTIFFSubIFD4.tif"), new Dimension(64, 64)),
                 new TestData(getClassLoaderResource("/bigtiff/BigTIFFSubIFD8.tif"), new Dimension(64, 64))
         );
-    }
-
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return SPI;
-    }
-
-    @Override
-    protected Class<TIFFImageReader> getReaderClass() {
-        return TIFFImageReader.class;
-    }
-
-    @Override
-    protected TIFFImageReader createReader() {
-        return SPI.createReaderInstance(null);
     }
 
     @Override

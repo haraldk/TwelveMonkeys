@@ -71,7 +71,10 @@ import static org.mockito.Mockito.*;
  */
 public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader> {
 
-    private static final TIFFImageReaderSpi SPI = new TIFFImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new TIFFImageReaderSpi();
+    }
 
     @Override
     protected List<TestData> getTestData() {
@@ -181,20 +184,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-04.tif"), new Dimension(73, 43)) // RGB 4 bit/sample
         );
-    }
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return SPI;
-    }
-
-    @Override
-    protected Class<TIFFImageReader> getReaderClass() {
-        return TIFFImageReader.class;
-    }
-
-    @Override
-    protected TIFFImageReader createReader() {
-        return SPI.createReaderInstance(null);
     }
 
     @Override
@@ -844,7 +833,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
-    public void testReadUnsupported() {
+    public void testReadUnsupported() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getUnsupportedTestData()) {
@@ -866,7 +855,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
-    public void testStreamMetadataNonNull() {
+    public void testStreamMetadataNonNull() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getTestData()) {
@@ -906,7 +895,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
-    public void testReadRaster() {
+    public void testReadRaster() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getTestData()) {

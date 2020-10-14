@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.pict;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -62,7 +63,10 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         IIORegistry.getDefaultInstance().registerServiceProvider(new ByteArrayImageInputStreamSpi());
     }
 
-    static ImageReaderSpi sProvider = new PICTImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new PICTImageReaderSpi();
+    }
 
     // TODO: Should also test the clipboard format (without 512 byte header)
     protected List<TestData> getTestData() {
@@ -91,27 +95,17 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return sProvider;
-    }
-
     @Override
-    protected PICTImageReader createReader() {
-        return new PICTImageReader(sProvider);
-    }
-
-    protected Class<PICTImageReader> getReaderClass() {
-        return PICTImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("pict");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Arrays.asList("pct", "pict");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/pict", "image/x-pict");
     }
@@ -162,7 +156,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
             stream.mark();
             stream.seek(123);
 
-            sProvider.canDecodeInput(stream);
+            ((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(stream);
 
             assertEquals(123, stream.getStreamPosition());
             stream.reset();
@@ -176,39 +170,39 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     public void testProviderNotMatchJPEG() throws IOException {
         // This JPEG contains PICT magic bytes at locations a PICT would normally have them.
         // We should not claim to be able read it.
-        assertFalse(sProvider.canDecodeInput(
+        assertFalse(((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(
                 new TestData(getClassLoaderResource("/jpeg/R-7439-1151526181.jpeg"),
                 new Dimension(386, 396)
         )));
-        assertFalse(sProvider.canDecodeInput(
+        assertFalse(((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(
                 new TestData(getClassLoaderResource("/jpeg/89497426-adc19a00-d7ff-11ea-8ad1-0cbcd727b62a.jpeg"),
                 new Dimension(640, 480)
         )));
     }
 
     @Test
-    public void testDataExtV2() throws IOException, InterruptedException {
+    public void testDataExtV2() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_EXT_V2));
         reader.read(0);
     }
 
     @Test
-    public void testDataV2() throws IOException, InterruptedException {
+    public void testDataV2() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V2));
         reader.read(0);
     }
 
     @Test
-    public void testDataV1() throws IOException, InterruptedException {
+    public void testDataV1() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1));
         reader.read(0);
     }
 
     @Test
-    public void testDataV1OvalRect() throws IOException, InterruptedException {
+    public void testDataV1OvalRect() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_OVAL_RECT));
         reader.read(0);
@@ -229,7 +223,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     }
 
     @Test
-    public void testDataV1CopyBits() throws IOException, InterruptedException {
+    public void testDataV1CopyBits() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);

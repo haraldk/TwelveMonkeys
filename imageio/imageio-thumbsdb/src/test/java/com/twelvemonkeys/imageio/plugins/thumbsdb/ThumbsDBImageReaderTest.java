@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 import com.twelvemonkeys.lang.SystemUtil;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -60,13 +61,16 @@ import static org.junit.Assert.assertNotNull;
 public class ThumbsDBImageReaderTest extends ImageReaderAbstractTest<ThumbsDBImageReader> {
     private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
 
-    private ThumbsDBImageReaderSpi provider = new ThumbsDBImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new ThumbsDBImageReaderSpi();
+    }
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(
                         getClassLoaderResource("/thumbsdb/Thumbs.db"),
-                        new Dimension(96, 96), new Dimension(96, 96), new Dimension(16, 16), 
+                        new Dimension(96, 96), new Dimension(96, 96), new Dimension(16, 16),
                         new Dimension(96, 45), new Dimension(63, 96), new Dimension(96, 96),
                         new Dimension(96, 64), new Dimension(96, 96), new Dimension(96, 77)
                 ),
@@ -88,27 +92,17 @@ public class ThumbsDBImageReaderTest extends ImageReaderAbstractTest<ThumbsDBIma
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
     @Override
-    protected ThumbsDBImageReader createReader() {
-        return new ThumbsDBImageReader(provider);
-    }
-
-    protected Class<ThumbsDBImageReader> getReaderClass() {
-        return ThumbsDBImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("thumbs");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Collections.singletonList("db");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Collections.singletonList("image/x-thumbs-db");
     }

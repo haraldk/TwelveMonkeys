@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+
 import org.junit.Test;
 import org.w3c.dom.NodeList;
 
@@ -46,8 +47,8 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -59,9 +60,12 @@ import static org.junit.Assert.*;
  * @version $Id: PSDImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new PSDImageReaderSpi();
+    }
 
-    private static final ImageReaderSpi provider = new PSDImageReaderSpi();
-
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // 5 channel, RGB
@@ -72,7 +76,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 new TestData(getClassLoaderResource("/psd/escenic-liquid-logo.psd"), new Dimension(595, 420)),
                 // 3 channel RGB, "no composite layer"
                 new TestData(getClassLoaderResource("/psd/jugware-icon.psd"), new Dimension(128, 128)),
-                // 3 channel RGB, old data, no layer info/mask 
+                // 3 channel RGB, old data, no layer info/mask
                 new TestData(getClassLoaderResource("/psd/MARBLES.PSD"), new Dimension(1419, 1001)),
                 // 1 channel, indexed color
                 new TestData(getClassLoaderResource("/psd/coral_fish.psd"), new Dimension(800, 800)),
@@ -105,27 +109,17 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
     @Override
-    protected PSDImageReader createReader() {
-        return new PSDImageReader(provider);
-    }
-
-    protected Class<PSDImageReader> getReaderClass() {
-        return PSDImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("psd");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Collections.singletonList("psd");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList(
                 "image/vnd.adobe.photoshop",
@@ -135,7 +129,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     }
 
     @Test
-    public void testSupportsThumbnail() {
+    public void testSupportsThumbnail() throws IOException {
         PSDImageReader imageReader = createReader();
         assertTrue(imageReader.readerSupportsThumbnails());
     }
@@ -261,7 +255,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
             final List<Object> seqeunce = new ArrayList<>();
             imageReader.addIIOReadProgressListener(new ProgressListenerBase() {
-                private float mLastPercentageDone = 0;
+                private float lastPercentageDone = 0;
 
                 @Override
                 public void thumbnailStarted(final ImageReader pSource, final int pImageIndex, final int pThumbnailIndex) {
@@ -276,8 +270,9 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 @Override
                 public void thumbnailProgress(final ImageReader pSource, final float pPercentageDone) {
                     // Optional
-                    assertTrue("Listener invoked out of sequence", seqeunce.size() == 1);
-                    assertTrue(pPercentageDone >= mLastPercentageDone);
+                    assertEquals("Listener invoked out of sequence", 1, seqeunce.size());
+                    assertTrue(pPercentageDone >= lastPercentageDone);
+                    lastPercentageDone = pPercentageDone;
                 }
             });
 

@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.pcx;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
@@ -56,6 +57,11 @@ import static org.junit.Assert.assertNotNull;
  */
 public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> {
     @Override
+    protected ImageReaderSpi createProvider() {
+        return new PCXImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
@@ -77,21 +83,6 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
                 new TestData(getClassLoaderResource("/pcx/CGA_RGBI.PCX"), new Dimension(320, 200)), // RLE encoded indexed (CGA mode)
                 new TestData(getClassLoaderResource("/pcx/CGA_TST1.PCX"), new Dimension(320, 200)) // RLE encoded indexed (CGA mode)
         );
-    }
-
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return new PCXImageReaderSpi();
-    }
-
-    @Override
-    protected Class<PCXImageReader> getReaderClass() {
-        return PCXImageReader.class;
-    }
-
-    @Override
-    protected PCXImageReader createReader() {
-        return new PCXImageReader(createProvider());
     }
 
     @Override

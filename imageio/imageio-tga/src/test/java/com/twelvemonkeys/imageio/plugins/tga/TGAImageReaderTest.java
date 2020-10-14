@@ -46,6 +46,11 @@ import java.util.List;
  */
 public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> {
     @Override
+    protected ImageReaderSpi createProvider() {
+        return new TGAImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(getClassLoaderResource("/tga/MARBLES.TGA"), new Dimension(1419, 1001)), // Uncompressed BGR
@@ -80,21 +85,6 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
 
                 new TestData(getClassLoaderResource("/tga/autodesk-3dsmax-extsize494.tga"), new Dimension(440, 200))  // RLE compressed 32 bit BGRA bottom/up
         );
-    }
-
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return new TGAImageReaderSpi();
-    }
-
-    @Override
-    protected Class<TGAImageReader> getReaderClass() {
-        return TGAImageReader.class;
-    }
-
-    @Override
-    protected TGAImageReader createReader() {
-        return new TGAImageReader(createProvider());
     }
 
     @Override

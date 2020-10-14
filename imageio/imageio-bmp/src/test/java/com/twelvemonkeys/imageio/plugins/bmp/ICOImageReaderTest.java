@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -49,6 +50,12 @@ import java.util.List;
  * @version $Id: ICOImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new ICOImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(
@@ -75,27 +82,17 @@ public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return new ICOImageReaderSpi();
-    }
-
     @Override
-    protected ICOImageReader createReader() {
-        return new ICOImageReader();
-    }
-
-    protected Class<ICOImageReader> getReaderClass() {
-        return ICOImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("ico");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Collections.singletonList("ico");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/vnd.microsoft.icon", "image/ico", "image/x-icon");
     }

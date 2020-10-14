@@ -9,8 +9,10 @@ import java.util.Collections;
 import java.util.List;
 
 public class XWDImageReaderTest extends ImageReaderAbstractTest<XWDImageReader> {
-
-    private final XWDImageReaderSpi provider = new XWDImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new XWDImageReaderSpi();
+    }
 
     @Override
     protected List<TestData> getTestData() {
@@ -19,21 +21,6 @@ public class XWDImageReaderTest extends ImageReaderAbstractTest<XWDImageReader> 
                 new TestData(getClassLoaderResource("/xwd/brain.xwd"), new Dimension(520, 510)),
                 new TestData(getClassLoaderResource("/xwd/sample_640x426.xwd"), new Dimension(640, 426))
         );
-    }
-
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
-    @Override
-    protected Class<XWDImageReader> getReaderClass() {
-        return XWDImageReader.class;
-    }
-
-    @Override
-    protected XWDImageReader createReader() {
-        return provider.createReaderInstance(null);
     }
 
     @Override

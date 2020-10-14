@@ -47,25 +47,15 @@ import java.util.List;
  */
 public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> {
     @Override
-    protected List<TestData> getTestData() {
-        return Collections.singletonList(
-                new TestData(getClassLoaderResource("/sgi/MARBLES.SGI"), new Dimension(1419, 1001)) // RLE encoded RGB
-        );
-    }
-
-    @Override
     protected ImageReaderSpi createProvider() {
         return new SGIImageReaderSpi();
     }
 
     @Override
-    protected Class<SGIImageReader> getReaderClass() {
-        return SGIImageReader.class;
-    }
-
-    @Override
-    protected SGIImageReader createReader() {
-        return new SGIImageReader(createProvider());
+    protected List<TestData> getTestData() {
+        return Collections.singletonList(
+                new TestData(getClassLoaderResource("/sgi/MARBLES.SGI"), new Dimension(1419, 1001)) // RLE encoded RGB
+        );
     }
 
     @Override

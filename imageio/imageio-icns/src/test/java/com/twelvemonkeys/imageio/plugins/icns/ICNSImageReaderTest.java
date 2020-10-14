@@ -31,10 +31,10 @@
 package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
-import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
@@ -49,7 +49,12 @@ import java.util.List;
  * @author last modified by $Author: haraldk$
  * @version $Id: ICNSImageReaderTest.java,v 1.0 25.10.11 18:44 haraldk Exp$
  */
-public class ICNSImageReaderTest extends ImageReaderAbstractTest {
+public class ICNSImageReaderTest extends ImageReaderAbstractTest<ICNSImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new ICNSImageReaderSpi();
+    }
+
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -103,21 +108,6 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTest {
                         new Dimension(16, 16)                           // 32 bit interleaved
                 )
         );
-    }
-
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return new ICNSImageReaderSpi();
-    }
-
-    @Override
-    protected ImageReader createReader() {
-        return new ICNSImageReader();
-    }
-
-    @Override
-    protected Class getReaderClass() {
-        return ICNSImageReader.class;
     }
 
     @Override
