@@ -32,10 +32,12 @@ package com.twelvemonkeys.imageio.plugins.iff;
 
 import com.twelvemonkeys.image.MonochromeColorModel;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.color.ColorSpace;
@@ -56,12 +58,10 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEG2000ImageWriterTest.java,v 1.0 20.01.12 12:19 haraldk Exp$
  */
-public class IFFImageWriterTest extends ImageWriterAbstractTest {
-    private final IFFImageWriterSpi provider = new IFFImageWriterSpi();
-
+public class IFFImageWriterTest extends ImageWriterAbstractTest<IFFImageWriter> {
     @Override
-    protected ImageWriter createImageWriter() {
-        return new IFFImageWriter(provider);
+    protected ImageWriterSpi createProvider() {
+        return new IFFImageWriterSpi();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class IFFImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteReadCompare() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         List<? extends RenderedImage> testData = getTestData();
 
@@ -116,9 +116,7 @@ public class IFFImageWriterTest extends ImageWriterAbstractTest {
                 assertSameData(original, written);
             }
             catch (IOException e) {
-                AssertionError fail = new AssertionError("Failure writing test data " + i + " " + e);
-                fail.initCause(e);
-                throw fail;
+                throw new AssertionError("Failure writing test data " + i + " " + e, e);
             }
         }
     }

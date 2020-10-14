@@ -31,11 +31,13 @@
 package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
@@ -53,13 +55,11 @@ import static org.junit.Assert.assertTrue;
  * @author last modified by $Author: harald.kuhr$
  * @version $Id: ICNSImageWriterTest.java,v 1.0 25/08/2018 harald.kuhr Exp$
  */
-public class ICNSImageWriterTest extends ImageWriterAbstractTest {
-
-    private final ICNSImageWriterSpi provider = new ICNSImageWriterSpi();
+public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter> {
 
     @Override
-    protected ImageWriter createImageWriter() {
-        return provider.createWriterInstance(null);
+    protected ImageWriterSpi createProvider() {
+        return new ICNSImageWriterSpi();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
     @Test(expected = IllegalArgumentException.class)
     public void testWriteNonSquare() throws IOException {
         // ICNS only supports square icons (except some arcane 16x12 we don't currently support)
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
@@ -97,7 +97,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
     @Test(expected = IllegalArgumentException.class)
     public void testWriteBadSize() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
@@ -111,8 +111,8 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
     }
 
     @Test
-    public void testSequencesSupported() {
-        ImageWriter writer = createImageWriter();
+    public void testSequencesSupported() throws IOException {
+        ImageWriter writer = createWriter();
         try {
             assertTrue(writer.canWriteSequence());
         }
@@ -124,7 +124,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
     @Test(expected = IllegalStateException.class)
     public void testWriteSequenceNotStarted() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
@@ -141,7 +141,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
     @Test(expected = IllegalStateException.class)
     public void testEndSequenceNotStarted() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
@@ -155,7 +155,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
     @Test(expected = IllegalStateException.class)
     public void testPrepareSequenceAlreadyStarted() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
@@ -169,7 +169,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteSequence() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {

@@ -32,10 +32,12 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.color.ColorSpace;
@@ -55,12 +57,10 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: PICTImageWriterTest.java,v 1.0 20.01.12 12:26 haraldk Exp$
  */
-public class PICTImageWriterTest extends ImageWriterAbstractTest {
-    private final PICTImageWriterSpi provider = new PICTImageWriterSpi();
-
+public class PICTImageWriterTest extends ImageWriterAbstractTest<PICTImageWriter> {
     @Override
-    protected ImageWriter createImageWriter() {
-        return new PICTImageWriter(provider);
+    protected ImageWriterSpi createProvider() {
+        return new PICTImageWriterSpi();
     }
 
     @Override
@@ -79,7 +79,7 @@ public class PICTImageWriterTest extends ImageWriterAbstractTest {
 
     @Test
     public void testWriteReadCompare() throws IOException {
-        ImageWriter writer = createImageWriter();
+        ImageWriter writer = createWriter();
 
         List<? extends RenderedImage> testData = getTestData();
         for (int i = 0; i < testData.size(); i++) {

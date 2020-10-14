@@ -2,19 +2,16 @@ package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.util.Arrays;
 import java.util.List;
 
-public class PNMImageWriterTest extends ImageWriterAbstractTest {
-
-    private final PNMImageWriterSpi provider = new PNMImageWriterSpi();
-
+public class PNMImageWriterTest extends ImageWriterAbstractTest<PNMImageWriter> {
     @Override
-    protected ImageWriter createImageWriter() {
-        return provider.createWriterInstance(null);
+    protected ImageWriterSpi createProvider() {
+        return new PNMImageWriterSpi();
     }
 
     @Override
