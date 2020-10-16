@@ -162,6 +162,13 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
         reader.setInput(new ByteArrayImageInputStream(stream.toByteArray()));
         BufferedImage image = reader.read(0);
         assertNotNull(image);
+
+        // Test color space type RGB (encoded as YCbCr) in standard metadata
+        IIOMetadata metadata = reader.getImageMetadata(0);
+        IIOMetadataNode standard = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList colorSpaceType = standard.getElementsByTagName("ColorSpaceType");
+        assertEquals(1, colorSpaceType.getLength());
+        assertEquals("YCbCr", ((IIOMetadataNode) colorSpaceType.item(0)).getAttribute("name"));
     }
 
     @Test
