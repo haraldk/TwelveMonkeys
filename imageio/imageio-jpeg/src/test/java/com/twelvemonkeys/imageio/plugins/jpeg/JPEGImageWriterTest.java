@@ -48,17 +48,23 @@ import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
+import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
 import java.awt.image.RenderedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * JPEGImageWriterTest
@@ -98,6 +104,10 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
     }
 
     private ByteArrayOutputStream transcode(final ImageReader reader, final URL resource, final ImageWriter writer, int outCSType) throws IOException {
+        return transcode(reader, resource, writer, outCSType, true);
+    }
+
+    private ByteArrayOutputStream transcode(final ImageReader reader, final URL resource, final ImageWriter writer, int outCSType, boolean embedICCProfile) throws IOException {
         try (ImageInputStream input = ImageIO.createImageInputStream(resource)) {
             reader.setInput(input);
             ImageTypeSpecifier specifier = null;
@@ -117,6 +127,14 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
             readParam.setSourceRegion(new Rectangle(Math.min(100, reader.getWidth(0)), Math.min(100, reader.getHeight(0))));
             readParam.setDestinationType(specifier);
             IIOImage image = reader.readAll(0, readParam);
+
+            if (!embedICCProfile) {
+                // Get rid of the color model/icc profile
+                ColorSpace fakeCS = mock(ColorSpace.class);
+                when(fakeCS.getType()).thenReturn(ColorSpace.TYPE_CMYK);
+                when(fakeCS.getNumComponents()).thenReturn(4);
+                specifier = new ImageTypeSpecifier(new ComponentColorModel(fakeCS, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE), image.getRenderedImage().getSampleModel());
+            }
 
             // Write it back
             ByteArrayOutputStream bytes = new ByteArrayOutputStream(1024);
@@ -161,11 +179,65 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
         assertEquals(100, image.getWidth());
         assertEquals(100, image.getHeight());
 
+        // Test color space type CMYK in standard metadata
         IIOMetadata metadata = reader.getImageMetadata(0);
         IIOMetadataNode standard = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
         NodeList colorSpaceType = standard.getElementsByTagName("ColorSpaceType");
         assertEquals(1, colorSpaceType.getLength());
         assertEquals("CMYK", ((IIOMetadataNode) colorSpaceType.item(0)).getAttribute("name"));
+
+        // Test APP2/ICC_PROFILE segments form native metadata
+        IIOMetadataNode nativeMeta = (IIOMetadataNode) metadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+        NodeList unknown = nativeMeta.getElementsByTagName("unknown");
+        assertEquals(11, unknown.getLength()); // We write longer segments than the original, so we get less segments
+
+        ByteArrayOutputStream iccSegments = new ByteArrayOutputStream(1024 * 1024);
+
+        for (int i = 0; i < unknown.getLength(); i++) {
+            IIOMetadataNode node = (IIOMetadataNode) unknown.item(i);
+            byte[] data = (byte[]) node.getUserObject();
+
+            // 226 -> E2, FFE2 -> APP2 marker, ICC_PROFILE
+            String markerId = "ICC_PROFILE";
+            if (node.getAttribute("MarkerTag").equals("226")
+                    && markerId.equals(new String(data, 0, markerId.length(), StandardCharsets.US_ASCII))) {
+                int offset = markerId.length() + 3; // ICC_PROFILE + null + index + count
+                iccSegments.write(Arrays.copyOfRange(data, offset, data.length));
+            }
+        }
+
+        ICC_Profile profile = ICC_Profile.getInstance(iccSegments.toByteArray());
+        assertNotNull(profile); // Assumption, we either have a valid profile, or getInstance blew up...
+        assertEquals(ColorSpace.TYPE_CMYK, profile.getColorSpaceType());
+    }
+
+    @Test
+    public void testTranscodeWithMetadataCMYKtoCMYKNoProfile() throws IOException {
+        ImageWriter writer = createWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        // TODO: Add flag to allow removing the ICC profile from image
+        ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), writer, ColorSpace.TYPE_CMYK, false);
+
+        reader.reset();
+        reader.setInput(new ByteArrayImageInputStream(stream.toByteArray()));
+
+        BufferedImage image = reader.read(0);
+        assertNotNull(image);
+        assertEquals(100, image.getWidth());
+        assertEquals(100, image.getHeight());
+
+        // Test color space type CMYK in standard metadata
+        IIOMetadata metadata = reader.getImageMetadata(0);
+        IIOMetadataNode standard = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList colorSpaceType = standard.getElementsByTagName("ColorSpaceType");
+        assertEquals(1, colorSpaceType.getLength());
+        assertEquals("CMYK", ((IIOMetadataNode) colorSpaceType.item(0)).getAttribute("name"));
+
+        // Test APP2/ICC_PROFILE segments form native metadata
+        IIOMetadataNode nativeMeta = (IIOMetadataNode) metadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+        NodeList unknown = nativeMeta.getElementsByTagName("unknown");
+        assertEquals(0, unknown.getLength());
     }
 
     // TODO: YCCK
