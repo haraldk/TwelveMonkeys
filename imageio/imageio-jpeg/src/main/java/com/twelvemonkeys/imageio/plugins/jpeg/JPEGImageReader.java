@@ -123,8 +123,6 @@ public final class JPEGImageReader extends ImageReaderBase {
     private ImageReader thumbnailReader;
     private List<ThumbnailReader> thumbnails;
 
-    private JPEGImage10MetadataCleaner metadataCleaner;
-
     /** Cached list of JPEG segments we filter from the underlying stream */
     private List<Segment> segments;
 
@@ -157,8 +155,6 @@ public final class JPEGImageReader extends ImageReaderBase {
         if (thumbnailReader != null) {
             thumbnailReader.reset();
         }
-
-        metadataCleaner = null;
 
         installListeners();
     }
@@ -469,14 +465,11 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
 
         // We'll need a read param
-        Rectangle origSourceRegion;
         if (param == null) {
             param = delegate.getDefaultReadParam();
-            origSourceRegion = null;
         }
-        else {
-            origSourceRegion = param.getSourceRegion();
-        }
+
+        Rectangle origSourceRegion = param.getSourceRegion();
 
         Rectangle srcRegion = new Rectangle();
         Rectangle dstRegion = new Rectangle();
