@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2020, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,34 +33,33 @@ package com.twelvemonkeys.imageio.plugins.pnm;
 import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 
 /**
- * PNMProviderInfo.
+ * PAMProviderInfo.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
- * @version $Id: PNMProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
+ * @version $Id: PAMProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
-class PNMProviderInfo extends ReaderWriterProviderInfo {
-    public PNMProviderInfo() {
-        super(PNMProviderInfo.class,
+class PAMProviderInfo extends ReaderWriterProviderInfo {
+    public PAMProviderInfo() {
+        super(PAMProviderInfo.class,
                 new String[] {
-                        "pnm", "pbm", "pgm", "ppm","pfm",
-                        "PNM", "PBM", "PGM", "PPM", "PFM"
+                        "pam",
+                        "PAM"
                 },
-                new String[] {"pbm", "pgm", "ppm", "pfm"},
+                new String[] {"pam"},
                 new String[] {
                         // No official IANA record exists, these are conventional
-                        "image/x-portable-pixmap",
-                        "image/x-portable-anymap",
+                        "image/x-portable-arbitrarymap"
                 },
                 "com.twelvemonkeys.imageio.plugins.pnm.PNMImageReader",
                 new String[] {
-                        "com.twelvemonkeys.imageio.plugins.pnm.PNMImageReaderSpi",
-                        "com.twelvemonkeys.imageio.plugins.pnm.PAMImageReaderSpi"
+                        "com.twelvemonkeys.imageio.plugins.pnm.PAMImageReaderSpi",
+                        "com.twelvemonkeys.imageio.plugins.pnm.PNMImageReaderSpi"
                 },
                 "com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriter",
                 new String[] {
-                        "com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriterSpi",
-                        "com.twelvemonkeys.imageio.plugins.pnm.PAMImageWriterSpi"
+                        "com.twelvemonkeys.imageio.plugins.pnm.PAMImageWriterSpi",
+                        "com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriterSpi"
                 },
                 true, // supports standard stream metadata
                 null, null, // native stream format name and class

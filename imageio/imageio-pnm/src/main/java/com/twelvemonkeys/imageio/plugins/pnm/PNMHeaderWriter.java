@@ -35,6 +35,8 @@ import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 import java.io.IOException;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 final class PNMHeaderWriter extends HeaderWriter {
     public PNMHeaderWriter(final ImageOutputStream imageOutput) {
         super(imageOutput);
@@ -52,11 +54,11 @@ final class PNMHeaderWriter extends HeaderWriter {
         writeComments(image.getMetadata(), provider);
 
         // Dimensions (width/height)
-        imageOutput.write(String.format("%s %s\n", getWidth(image), getHeight(image)).getBytes(HeaderWriter.UTF8));
+        imageOutput.write(String.format("%s %s\n", getWidth(image), getHeight(image)).getBytes(UTF_8));
 
         // MaxSample
         if (type != PNM.PBM) {
-            imageOutput.write(String.format("%s\n", getMaxVal(image)).getBytes(HeaderWriter.UTF8));
+            imageOutput.write(String.format("%s\n", getMaxVal(image)).getBytes(UTF_8));
         }
     }
 }

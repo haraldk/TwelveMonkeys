@@ -43,6 +43,7 @@ final class Plain1BitDecoder extends InputStream {
         this.samplesPerRow = samplesPerRow;
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public int read() throws IOException {
         // Each 0 or 1 represents one bit, whitespace is ignored. Padded to byte boundary for each row.

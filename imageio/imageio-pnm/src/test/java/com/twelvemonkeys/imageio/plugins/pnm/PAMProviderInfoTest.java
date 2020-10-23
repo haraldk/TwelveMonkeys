@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2020, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,19 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest;
 
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
-import java.util.Locale;
-
-public final class PNMImageWriterSpi extends ImageWriterSpiBase {
-
-    // TODO: Consider one Spi for each sub-format, as it makes no sense for the writer to write PPM if client code requested PBM or PGM format.
-    // ...Then again, what if user asks for PNM? :-P
-
-    /**
-     * Creates a {@code PNMImageWriterSpi}.
-     */
-    public PNMImageWriterSpi() {
-        super(new PNMProviderInfo());
-    }
-
-    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
-        // TODO: FixMe: Support only 1 bit b/w, 8-16 bit gray and 8-16 bit/sample RGB
-        return true;
-    }
-
-    public ImageWriter createWriterInstance(final Object pExtension) {
-        return new PNMImageWriter(this);
-    }
-
+/**
+ * PAMProviderInfoTest.
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: harald.kuhr$
+ * @version $Id: PAMProviderInfoTest.java,v 1.0 02/06/16 harald.kuhr Exp$
+ */
+public class PAMProviderInfoTest extends ReaderWriterProviderInfoTest {
     @Override
-    public String getDescription(final Locale locale) {
-        return "NetPBM Portable Any Map (PNM) image writer";
+    protected ReaderWriterProviderInfo createProviderInfo() {
+        return new PAMProviderInfo();
     }
 }

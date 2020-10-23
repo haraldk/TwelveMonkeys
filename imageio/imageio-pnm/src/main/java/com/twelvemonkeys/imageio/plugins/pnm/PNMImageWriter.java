@@ -69,7 +69,7 @@ public final class PNMImageWriter extends ImageWriterBase {
         // TODO: Issue warning if streamMetadata is non-null?
         // TODO: Issue warning if IIOImage contains thumbnails or other data we can't store?
 
-        HeaderWriter.write(image, getOriginatingProvider(), imageOutput);
+        HeaderWriter.write(image, this, imageOutput);
 
         // TODO: Sub region
         // TODO: Subsampling

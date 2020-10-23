@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
+import com.twelvemonkeys.imageio.ImageWriterBase;
+
 import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOImage;
@@ -40,27 +42,30 @@ import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.DataBuffer;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.Locale;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 abstract class HeaderWriter {
-    protected static final Charset UTF8 = Charset.forName("UTF8");
     protected final ImageOutputStream imageOutput;
 
     protected HeaderWriter(final ImageOutputStream imageOutput) {
         this.imageOutput = imageOutput;
     }
 
-    public static void write(final IIOImage image, final ImageWriterSpi provider, final ImageOutputStream imageOutput) throws IOException {
-        // TODO: This is somewhat sketchy...
-        if (provider.getFormatNames()[0].equals("pam")) {
-            new PAMHeaderWriter(imageOutput).writeHeader(image, provider);
+    public static void write(final IIOImage image, final ImageWriterBase writer, final ImageOutputStream imageOutput) throws IOException {
+        createHeaderWriter(writer.getFormatName(), imageOutput).writeHeader(image, writer.getOriginatingProvider());
+    }
+
+    private static HeaderWriter createHeaderWriter(final String formatName, final ImageOutputStream imageOutput) {
+        if (formatName.equals("pam")) {
+            return new PAMHeaderWriter(imageOutput);
         }
-        else if (provider.getFormatNames()[0].equals("pnm")) {
-            new PNMHeaderWriter(imageOutput).writeHeader(image, provider);
+        else if (formatName.equals("pnm")) {
+            return new PNMHeaderWriter(imageOutput);
         }
         else {
-            throw new AssertionError("Unsupported provider: " + provider);
+            throw new AssertionError("Unsupported format: " + formatName);
         }
     }
 
@@ -101,7 +106,7 @@ abstract class HeaderWriter {
 
     protected final void writeComments(final IIOMetadata metadata, final ImageWriterSpi provider) throws IOException {
         // TODO: Only write creator if not already present
-        imageOutput.write(String.format("# CREATOR: %s %s\n", provider.getVendorName(), provider.getDescription(Locale.getDefault())).getBytes(UTF8));
+        imageOutput.write(String.format("# CREATOR: %s %s\n", provider.getVendorName(), provider.getDescription(Locale.getDefault())).getBytes(UTF_8));
 
         // Comments from metadata
         if (metadata != null && metadata.isStandardMetadataFormatSupported()) {
@@ -111,7 +116,7 @@ abstract class HeaderWriter {
             for (int i = 0; i < textEntries.getLength(); i++) {
                 // TODO: Write on the format "# KEYWORD: value" (if keyword != comment)?
                 IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
-                imageOutput.write(String.format("# %s", textEntry.getAttribute("value")).getBytes(UTF8));
+                imageOutput.write(String.format("# %s", textEntry.getAttribute("value")).getBytes(UTF_8));
             }
         }
     }

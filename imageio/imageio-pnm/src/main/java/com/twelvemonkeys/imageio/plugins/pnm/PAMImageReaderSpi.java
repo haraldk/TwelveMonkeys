@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2020, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,46 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import java.io.IOException;
 import java.util.Locale;
 
-public final class PNMImageWriterSpi extends ImageWriterSpiBase {
-
-    // TODO: Consider one Spi for each sub-format, as it makes no sense for the writer to write PPM if client code requested PBM or PGM format.
-    // ...Then again, what if user asks for PNM? :-P
+public final class PAMImageReaderSpi extends ImageReaderSpiBase {
 
     /**
-     * Creates a {@code PNMImageWriterSpi}.
+     * Creates a {@code PAMImageReaderSpi}.
      */
-    public PNMImageWriterSpi() {
-        super(new PNMProviderInfo());
+    public PAMImageReaderSpi() {
+        super(new PAMProviderInfo());
     }
 
-    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
-        // TODO: FixMe: Support only 1 bit b/w, 8-16 bit gray and 8-16 bit/sample RGB
-        return true;
+    @Override
+    public boolean canDecodeInput(final Object source) throws IOException {
+        if (!(source instanceof ImageInputStream)) {
+            return false;
+        }
+
+        ImageInputStream stream = (ImageInputStream) source;
+        stream.mark();
+
+        try {
+            return stream.readShort() == PNM.PAM && stream.readInt() != PNM.XV_THUMBNAIL_MAGIC;
+        }
+        finally {
+            stream.reset();
+        }
     }
 
-    public ImageWriter createWriterInstance(final Object pExtension) {
-        return new PNMImageWriter(this);
+    @Override
+    public ImageReader createReaderInstance(final Object extension) {
+        return new PNMImageReader(this);
     }
 
     @Override
     public String getDescription(final Locale locale) {
-        return "NetPBM Portable Any Map (PNM) image writer";
+        return "NetPBM Portable Arbitrary Map (PAM) image reader";
     }
 }

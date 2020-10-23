@@ -30,9 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertNotNull;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest;
 
 /**
  * PNMProviderInfoTest.
@@ -41,11 +40,9 @@ import static org.junit.Assert.assertNotNull;
  * @author last modified by $Author: harald.kuhr$
  * @version $Id: PNMProviderInfoTest.java,v 1.0 02/06/16 harald.kuhr Exp$
  */
-public class PNMProviderInfoTest {
-    @Test
-    public void vendorVersion() {
-        PNMProviderInfo providerInfo = new PNMProviderInfo();
-        assertNotNull(providerInfo.getVendorName());
-        assertNotNull(providerInfo.getVersion());
+public class PNMProviderInfoTest extends ReaderWriterProviderInfoTest {
+    @Override
+    protected ReaderWriterProviderInfo createProviderInfo() {
+        return new PNMProviderInfo();
     }
 }

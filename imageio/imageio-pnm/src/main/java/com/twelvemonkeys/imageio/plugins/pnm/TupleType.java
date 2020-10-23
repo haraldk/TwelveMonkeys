@@ -34,9 +34,9 @@ import java.awt.*;
 
 enum TupleType {
     // Official:
-    /** B/W, but uses 1 byte (8 bits) per pixel. Black is zero (oposite of PBM) */
+    /** B/W, but uses 1 byte (8 bits) per pixel. Black is zero (opposite of PBM) */
     BLACKANDWHITE(1, 1, PNM.MAX_VAL_1BIT, Transparency.OPAQUE),
-    /** B/W + bit mask, uses 2 bytes per pixel. Black is zero (oposite of PBM) */
+    /** B/W + bit mask, uses 2 bytes per pixel. Black is zero (opposite of PBM) */
     BLACKANDWHITE_ALPHA(2, PNM.MAX_VAL_1BIT, PNM.MAX_VAL_1BIT, Transparency.BITMASK),
     /** Grayscale, as PGM. */
     GRAYSCALE(1, 2, PNM.MAX_VAL_16BIT, Transparency.OPAQUE),
@@ -80,5 +80,4 @@ enum TupleType {
     public boolean isValidMaxSample(int maxSample) {
         return maxSample >= minMaxSample && maxSample <= maxMaxSample;
     }
-
 }

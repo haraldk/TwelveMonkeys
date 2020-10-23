@@ -170,7 +170,7 @@ public final class PNMImageReader extends ImageReaderBase {
     public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
-        List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> specifiers = new ArrayList<>();
 
         switch (header.getTupleType()) {
             case RGB:

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Harald Kuhr
+ * Copyright (c) 2020, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,35 +30,39 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+import org.junit.Test;
 
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
-import java.util.Locale;
+import javax.imageio.ImageReader;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.spi.ImageWriterSpi;
 
-public final class PNMImageWriterSpi extends ImageWriterSpiBase {
+import static com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest.assertClassExists;
+import static com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest.assertClassesExist;
+import static org.junit.Assert.assertNotNull;
 
-    // TODO: Consider one Spi for each sub-format, as it makes no sense for the writer to write PPM if client code requested PBM or PGM format.
-    // ...Then again, what if user asks for PNM? :-P
+/**
+ * PAMImageReaderSpiTest.
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: harald.kuhr$
+ * @version $Id: PAMImageReaderSpiTest.java,v 1.0 02/06/16 harald.kuhr Exp$
+ */
+public class PAMImageReaderSpiTest {
 
-    /**
-     * Creates a {@code PNMImageWriterSpi}.
-     */
-    public PNMImageWriterSpi() {
-        super(new PNMProviderInfo());
+    private final ImageReaderSpi spi = new PAMImageReaderSpi();
+
+    @Test
+    public void getPluginClassName() {
+        assertClassExists(spi.getPluginClassName(), ImageReader.class);
     }
 
-    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
-        // TODO: FixMe: Support only 1 bit b/w, 8-16 bit gray and 8-16 bit/sample RGB
-        return true;
+    @Test
+    public void getImageWriterSpiNames() {
+        assertClassesExist(spi.getImageWriterSpiNames(), ImageWriterSpi.class);
     }
 
-    public ImageWriter createWriterInstance(final Object pExtension) {
-        return new PNMImageWriter(this);
-    }
-
-    @Override
-    public String getDescription(final Locale locale) {
-        return "NetPBM Portable Any Map (PNM) image writer";
+    @Test
+    public void getInputTypes() {
+        assertNotNull(spi.getInputTypes());
     }
 }
