@@ -60,7 +60,7 @@ final class PNMHeader {
         this.maxSample = isTrue(tupleType.isValidMaxSample(maxSample), maxSample, "maxSample out of range: %d");
         this.maxSampleFloat = this.maxSample;
 
-        this.comments = Collections.unmodifiableList(new ArrayList<String>(comments));
+        this.comments = Collections.unmodifiableList(new ArrayList<>(comments));
 
         byteOrder = ByteOrder.BIG_ENDIAN;
     }
@@ -76,7 +76,7 @@ final class PNMHeader {
         this.maxSampleFloat = maxSample;
         this.byteOrder = byteOrder;
 
-        this.comments = Collections.unmodifiableList(new ArrayList<String>(comments));
+        this.comments = Collections.unmodifiableList(new ArrayList<>(comments));
     }
 
     private boolean isValidFileType(final short fileType) {

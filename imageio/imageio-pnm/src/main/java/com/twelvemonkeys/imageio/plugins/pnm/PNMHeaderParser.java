@@ -68,7 +68,7 @@ final class PNMHeaderParser extends HeaderParser {
         int height = 0;
         int maxSample = tupleType == TupleType.BLACKANDWHITE_WHITE_IS_ZERO ? 1 : 0; // PBM has no maxSample line
 
-        List<String> comments = new ArrayList<String>();
+        List<String> comments = new ArrayList<>();
 
         while (width == 0 || height == 0 || maxSample == 0) {
             String line = input.readLine();

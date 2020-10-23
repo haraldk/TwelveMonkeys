@@ -66,7 +66,7 @@ final class PAMHeaderParser extends HeaderParser {
         int depth = -1;
         int maxVal = -1;
         TupleType tupleType = null;
-        List<String> comments = new ArrayList<String>();
+        List<String> comments = new ArrayList<>();
 
         String line;
         while ((line = input.readLine()) != null && !line.startsWith(ENDHDR)) {

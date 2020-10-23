@@ -36,7 +36,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 final class Plain8BitDecoder extends InputStream {
     private final BufferedReader reader;
@@ -44,7 +44,7 @@ final class Plain8BitDecoder extends InputStream {
     private StringTokenIterator currentLine;
 
     public Plain8BitDecoder(final InputStream in) {
-        reader = new BufferedReader(new InputStreamReader(in, Charset.forName("ASCII")));
+        reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.US_ASCII));
     }
 
     @Override

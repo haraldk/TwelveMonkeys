@@ -122,12 +122,16 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         boolean found = false;
         while (pReaders.hasNext()) {
             ImageReader reader = pReaders.next();
-            if (reader.getClass() == pReaderClass) {
+            if (reader.getClass() == pReaderClass && isOurProvider(reader.getOriginatingProvider())) {
                 found = true;
             }
         }
 
-        assertTrue(String.format("%s not installed for %s", pReaderClass.getSimpleName(), pFormat), found);
+        assertTrue(String.format("%s not provided by %s for '%s'", pReaderClass.getSimpleName(), provider.getClass().getSimpleName(), pFormat), found);
+    }
+
+    private boolean isOurProvider(final ImageReaderSpi spi) {
+        return provider.getClass().isInstance(spi);
     }
 
     @Test

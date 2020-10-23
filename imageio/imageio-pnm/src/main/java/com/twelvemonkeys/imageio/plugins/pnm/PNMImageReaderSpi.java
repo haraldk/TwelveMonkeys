@@ -30,51 +30,20 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
 
-public final class PNMImageReaderSpi extends ImageReaderSpi {
+public final class PNMImageReaderSpi extends ImageReaderSpiBase {
 
     /**
      * Creates a {@code PNMImageReaderSpi}.
      */
     public PNMImageReaderSpi() {
-        this(new PNMProviderInfo());
-    }
-
-    private PNMImageReaderSpi(final ProviderInfo providerInfo) {
-        super(
-                providerInfo.getVendorName(),
-                providerInfo.getVersion(),
-                new String[] {
-                        "pnm", "pbm", "pgm", "ppm", "pam", "pfm",
-                        "PNM", "PBM", "PGM", "PPM", "PAM", "PFM"
-                },
-                new String[] {"pbm", "pgm", "ppm", "pam", "pfm"},
-                new String[] {
-                        // No official IANA record exists, these are conventional
-                        "image/x-portable-pixmap",
-                        "image/x-portable-anymap",
-                        "image/x-portable-arbitrarymap" // PAM
-                },
-                "com.twelvemonkeys.imageio.plugins.pnm.PNMImageReader",
-                new Class[] {ImageInputStream.class},
-                new String[] {
-                        "com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriterSpi",
-                        "com.twelvemonkeys.imageio.plugins.pnm.PAMImageWriterSpi"
-                },
-                true, // supports standard stream metadata
-                null, null, // native stream format name and class
-                null, null, // extra stream formats
-                true, // supports standard image metadata
-                null, null,
-                null, null // extra image metadata formats
-        );
+        super(new PNMProviderInfo());
     }
 
     @Override
@@ -100,8 +69,6 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
                 case PNM.PFM_GRAY:
                 case PNM.PFM_RGB:
                     return true;
-                case PNM.PAM:
-                    return stream.readInt() != PNM.XV_THUMBNAIL_MAGIC;
                 default:
                     return false;
             }
@@ -112,12 +79,12 @@ public final class PNMImageReaderSpi extends ImageReaderSpi {
     }
 
     @Override
-    public ImageReader createReaderInstance(final Object extension) throws IOException {
+    public ImageReader createReaderInstance(final Object extension) {
         return new PNMImageReader(this);
     }
 
     @Override
     public String getDescription(final Locale locale) {
-        return "NetPBM Portable Any Map (PNM and PAM) image reader";
+        return "NetPBM Portable Any Map (PNM) image reader";
     }
 }

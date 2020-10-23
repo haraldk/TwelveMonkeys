@@ -30,39 +30,19 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.spi.ProviderInfo;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-import javax.imageio.spi.ImageWriterSpi;
-import javax.imageio.stream.ImageOutputStream;
 import java.util.Locale;
 
-public final class PAMImageWriterSpi extends ImageWriterSpi {
+public final class PAMImageWriterSpi extends ImageWriterSpiBase {
 
     /**
      * Creates a {@code PAMImageWriterSpi}.
      */
     public PAMImageWriterSpi() {
-        this(new PNMProviderInfo());
-    }
-
-    private PAMImageWriterSpi(final ProviderInfo pProviderInfo) {
-        super(
-                pProviderInfo.getVendorName(),
-                pProviderInfo.getVersion(),
-                new String[] {"pam", "PAM"},
-                new String[] {"pam"},
-                new String[] {
-                        // No official IANA record exists, these are conventional
-                        "image/x-portable-arbitrarymap" // PAM
-                },
-                "com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriter",
-                new Class[] {ImageOutputStream.class},
-                new String[] {"com.twelvemonkeys.imageio.plugins.pnm.PNMImageReaderSpi"},
-                true, null, null, null, null,
-                true, null, null, null, null
-        );
+        super(new PAMProviderInfo());
     }
 
     public boolean canEncodeImage(final ImageTypeSpecifier pType) {
