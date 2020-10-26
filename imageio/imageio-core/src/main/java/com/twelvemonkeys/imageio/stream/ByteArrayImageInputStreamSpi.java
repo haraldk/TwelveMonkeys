@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.stream;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.File;
@@ -47,7 +49,11 @@ import java.util.Locale;
 public class ByteArrayImageInputStreamSpi extends ImageInputStreamSpi {
 
     public ByteArrayImageInputStreamSpi() {
-        super("TwelveMonkeys", "1.0 BETA", byte[].class);
+        this(new StreamProviderInfo());
+    }
+
+    private ByteArrayImageInputStreamSpi(ProviderInfo providerInfo) {
+        super(providerInfo.getVendorName(), providerInfo.getVersion(), byte[].class);
     }
 
     public ImageInputStream createInputStreamInstance(Object pInput, boolean pUseCache, File pCacheDir) throws IOException {
