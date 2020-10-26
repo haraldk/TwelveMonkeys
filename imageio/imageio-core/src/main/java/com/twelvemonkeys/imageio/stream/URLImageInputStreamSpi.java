@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.stream;
 
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
+
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.stream.FileCacheImageInputStream;
 import javax.imageio.stream.FileImageInputStream;
@@ -53,7 +55,11 @@ import java.util.Locale;
  // TODO: URI instead of URL?
 public class URLImageInputStreamSpi extends ImageInputStreamSpi {
     public URLImageInputStreamSpi() {
-        super("TwelveMonkeys", "1.0 BETA", URL.class);
+        this(new StreamProviderInfo());
+    }
+
+    private URLImageInputStreamSpi(ProviderInfo providerInfo) {
+        super(providerInfo.getVendorName(), providerInfo.getVersion(), URL.class);
     }
 
     // TODO: Create a URI or URLImageInputStream class, with a getUR[I|L] method, to allow for multiple file formats
