@@ -45,7 +45,7 @@ import static org.junit.Assert.*;
  */
 public class ProviderInfoTest {
     @Test
-    public void testCreateNorma() {
+    public void testCreateNormal() {
         new ProviderInfo(Package.getPackage("java.util"));
     }
 
