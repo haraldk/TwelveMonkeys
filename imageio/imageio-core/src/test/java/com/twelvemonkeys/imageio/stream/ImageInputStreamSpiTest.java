@@ -8,8 +8,7 @@ import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.Locale;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 abstract class ImageInputStreamSpiTest<T> {
     private final ImageInputStreamSpi provider = createProvider();
@@ -53,10 +52,14 @@ abstract class ImageInputStreamSpiTest<T> {
         provider.createInputStreamInstance(null, true, ImageIO.getCacheDirectory());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createCachedNullCache() throws IOException {
-        if (provider.canUseCacheFile() || provider.needsCacheFile()) {
+        try {
             provider.createInputStreamInstance(createInput(), true, null);
+        }
+        catch (IllegalArgumentException expected) {
+            // All good
+            assertFalse(provider.needsCacheFile());
         }
     }
 
