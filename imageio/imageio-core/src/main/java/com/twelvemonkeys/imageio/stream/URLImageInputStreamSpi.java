@@ -114,6 +114,11 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
         }
     }
 
+    @Override
+    public boolean canUseCacheFile() {
+        return true;
+    }
+
     public String getDescription(final Locale pLocale) {
         return "Service provider that instantiates an ImageInputStream from a URL";
     }
