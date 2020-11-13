@@ -35,7 +35,7 @@ public class EXIFUtilities {
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final URL input) throws IOException {
-        try (ImageInputStream stream = ImageIO.createImageOutputStream(input)) {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(input)) {
             return readWithOrientation(stream);
         }
     }
@@ -48,7 +48,7 @@ public class EXIFUtilities {
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final InputStream input) throws IOException {
-        try (ImageInputStream stream = ImageIO.createImageOutputStream(input)) {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(input)) {
             return readWithOrientation(stream);
         }
     }
@@ -61,7 +61,7 @@ public class EXIFUtilities {
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final File input) throws IOException {
-        try (ImageInputStream stream = ImageIO.createImageOutputStream(input)) {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(input)) {
             return readWithOrientation(stream);
         }
     }
