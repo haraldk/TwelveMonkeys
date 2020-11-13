@@ -1,6 +1,6 @@
-## Latest
+[![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys) [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/10)
 
-Master branch build status: [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys)
+## Latest
 
 Latest release is TwelveMonkeys ImageIO [3.6](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio%20AND%20v:3.6) (July. 10th, 2020).
 [Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
@@ -16,6 +16,8 @@ Support for formats is important, both to be able to read data found
 "in the wild", as well as to maintain access to data in legacy formats.
 Because there is lots of legacy data out there, we see the need for open implementations of readers for popular formats.
 The goal is to create a set of efficient and robust ImageIO plug-ins, that can be distributed independently.
+
+
 
 ----
 
