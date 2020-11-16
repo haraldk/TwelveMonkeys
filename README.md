@@ -25,18 +25,19 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 | Plugin | Format   | Description           | Read | Write | Metadata | Notes |
 | ------ | -------- | -----------           |:----:|:-----:| -------- | ----- |
-| Batik  | **SVG**  | Scalable Vector Graphics | ✔ | - | | Requires [Batik](https://xmlgraphics.apache.org/batik/)
-|        | WMF      | MS Windows Metafile      | ✔ | -   | Standard | Requires [Batik](https://xmlgraphics.apache.org/batik/)
+| Batik  | **SVG**  | Scalable Vector Graphics | ✔ |  -  | - | Requires [Batik](https://xmlgraphics.apache.org/batik/)
+|        | WMF      | MS Windows Metafile      | ✔ |  -  | - | Requires [Batik](https://xmlgraphics.apache.org/batik/)
 | [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  | MS Windows and IBM OS/2 Device Independent Bitmap | ✔  | ✔   | Native & Standard |
-|        | CUR      | MS Windows Cursor Format | ✔  | -   | Standard |
-|        | ICO      | MS Windows Icon Format | ✔  | ✔   | Standard | 
+|        | CUR      | MS Windows Cursor Format | ✔  | -   | - 
+ |
+|        | ICO      | MS Windows Icon Format | ✔  | ✔   | -  | 
 | [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
-| [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | Standard | 
-| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | Standard | 
+| [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | -  | 
+| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | - | 
 | [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard |  
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
 |        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 
-| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple Mac Paint Picture Format | ✔  | -   | Standard | 
+| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple Mac Paint Picture Format | ✔  | -   | - | 
 | [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | Standard | 
 |        | PBM      | NetPBM Portable Bit Map | ✔  | -     | Standard | 
 |        | PGM      | NetPBM Portable Grey Map | ✔  | -   | Standard | 
@@ -46,7 +47,7 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 |        |  PSB     | Adobe Photoshop Large Document | ✔  | - | Native & Standard | 
 | [SGI](https://github.com/haraldk/TwelveMonkeys/wiki/SGI-Plugin)    | SGI      | Silicon Graphics Image Format  | ✔  | -   | Standard | 
 | [TGA](https://github.com/haraldk/TwelveMonkeys/wiki/TGA-Plugin)    | TGA      | Truevision TGA Image Format  | ✔  | ✔   | Standard | 
-|ThumbsDB| Thumbs.db| MS Windows Thumbs DB | ✔  | -   | Standard | OLE2 Compound Documents based format only
+|ThumbsDB| Thumbs.db| MS Windows Thumbs DB | ✔  | -   | - | OLE2 Compound Document based format only
 | [TIFF](https://github.com/haraldk/TwelveMonkeys/wiki/TIFF-Plugin)   | **TIFF** | Aldus/Adobe Tagged Image File Format | ✔  | ✔ | Native & Standard | 
 |        | BigTIFF  |  | ✔  | - | Native & Standard |  
 | [WebP](https://github.com/haraldk/TwelveMonkeys/wiki/WebP-Plugin)   | **WebP** | Google WebP Format | ✔  | - | Standard |  In progress
