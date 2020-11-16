@@ -29,7 +29,7 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 |        | WMF      | MS Windows Metafile      | ✔ |  -  | - | Requires [Batik](https://xmlgraphics.apache.org/batik/)
 | [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  | MS Windows and IBM OS/2 Device Independent Bitmap | ✔  | ✔   | Native & Standard |
 |        | CUR      | MS Windows Cursor Format  | ✔  | -   | - |
-|        | ICO      | MS Windows Icon Format    | ✔  | ✔   | -  | 
+|        | ICO      | MS Windows Icon Format    | ✔  | ✔   | - | 
 | [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
 | [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | -  | 
 | [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | - | 
