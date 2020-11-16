@@ -1,11 +1,7 @@
 [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys) 
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys)
 [![StackOverflow](https://img.shields.io/badge/tag-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
-
-## Latest
-
-Latest release is TwelveMonkeys ImageIO [3.6](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio%20AND%20v:3.6) (July. 10th, 2020).
-[Release notes](https://github.com/haraldk/TwelveMonkeys/releases/latest).
 
 ## About
 
