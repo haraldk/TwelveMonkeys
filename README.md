@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys) [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/10)
+[![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys) 
+[![StackOverflow](https://img.shields.io/badge/tag-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
+[![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
 
 ## Latest
 
@@ -9,7 +11,7 @@ Latest release is TwelveMonkeys ImageIO [3.6](https://search.maven.org/search?q=
 
 TwelveMonkeys ImageIO is a collection of plugins and extensions for Java's ImageIO.
 
-These plugins extends the number of image file formats supported in Java, using the javax.imageio.* package.
+These plugins extend the number of image file formats supported in Java, using the `javax.imageio.*` package.
 The main purpose of this project is to provide support for formats not covered by the JRE itself.
 
 Support for formats is important, both to be able to read data found
@@ -17,250 +19,66 @@ Support for formats is important, both to be able to read data found
 Because there is lots of legacy data out there, we see the need for open implementations of readers for popular formats.
 The goal is to create a set of efficient and robust ImageIO plug-ins, that can be distributed independently.
 
-
-
 ----
 
-## Features
+## File formats supported
 
-Mainstream format support
+| Plugin | Format   | Description           | Read | Write | Metadata | Notes |
+| ------ | -------- | -----------           |:----:|:-----:| -------- | ----- |
+| Batik  | **SVG**  | Scalable Vector Graphics | ✔ | - | | Requires [Batik](https://xmlgraphics.apache.org/batik/)
+|        | WMF      | MS Windows Metafile      | ✔ | -   | Standard | Requires [Batik](https://xmlgraphics.apache.org/batik/)
+| | 
+| [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  |   
+|        | CUR      | MS Windows Cursor Format | ✔  | -   | Standard |
+|        | ICO      | MS Windows Icon Format | ✔  | ✔   | Standard | 
+| | 
+| [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
+| [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | Standard | 
+| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | Standard | 
+| [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard |  
+| [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
+|        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 
+| | 
+| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple Mac Paint Picture Format | ✔  | -   | Standard | 
+| [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | Standard | 
+|        | PBM      | NetPBM Portable Bit Map | ✔  | -     | Standard | 
+|        | PGM      | NetPBM Portable Grey Map | ✔  | -   | Standard | 
+|        | PPM      | NetPBM Portable Pix Map | ✔  | ✔   | Standard | 
+|        | PFM      | Portable Float Map | ✔  | -   | Standard | 
+| | 
+| [PSD](https://github.com/haraldk/TwelveMonkeys/wiki/PSD-Plugin)    | **PSD**  | Adobe Photoshop Document | ✔  | - | Native & Standard |  
+|        |  PSB     | Adobe Photoshop Large Document | ✔  | - | Native & Standard | 
+| | 
+| [SGI](https://github.com/haraldk/TwelveMonkeys/wiki/SGI-Plugin)    | SGI      | Silicon Graphics Image Format  | ✔  | -   | Standard | 
+| [TGA](https://github.com/haraldk/TwelveMonkeys/wiki/TGA-Plugin)    | TGA      | Truevision TGA Image Format  | ✔  | ✔   | Standard | 
+|ThumbsDB| Thumbs.db| MS Windows Thumbs DB | ✔  | -   | Standard | OLE2 Compound Documents based format only
+| [TIFF](https://github.com/haraldk/TwelveMonkeys/wiki/TIFF-Plugin)   | **TIFF** | Aldus/Adobe Tagged Image File Format | ✔  | ✔ | Native & Standard | 
+|        | BigTIFF  |  | ✔  | - | Native & Standard |  
+| | 
+| [WebP](https://github.com/haraldk/TwelveMonkeys/wiki/WebP-Plugin)   | **WebP** | Google WebP Format | ✔  | - | Standard |  In progress
+| XWD    | XWD      | X11 Window Dump Format | ✔  | -   | Standard | 
 
-#### BMP - MS Windows/IBM OS/2 Device Independent Bitmap
- 
-* Read support for all known versions of the DIB/BMP format
-  * Indexed color, 1, 4 and 8 bit, including 4 and 8 bit RLE
-  * RGB, 16, 24 and 32 bit
-  * Embedded PNG and JPEG data
-  * Windows and OS/2 versions
-* Native and standard metadata format
 
-#### JPEG
-
-* Read support for the following JPEG "flavors":
-  * All JFIF compliant JPEGs
-  * All Exif compliant JPEGs
-  * YCbCr JPEGs without JFIF segment (converted to RGB, using embedded ICC profile)
-  * CMYK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
-  * Adobe YCCK JPEGs (converted to RGB by default or as CMYK, using embedded ICC profile)
-  * JPEGs containing ICC profiles with interpretation other than 'Perceptual' or class other than 'Display'
-  * JPEGs containing ICC profiles that are incompatible with stream data, corrupted ICC profiles or corrupted `ICC_PROFILE` segments
-  * JPEGs using non-standard color spaces, unsupported by Java 2D
-  * JPEGs with APP14/Adobe segments with length other than 14 bytes
-  * 8 bit JPEGs with 16 bit DQT segments
-  * Issues warnings instead of throwing exceptions in cases of corrupted or non-conformant data where ever the image 
-  data can still be read in a reasonable way
-* Thumbnail support:
-  * JFIF thumbnails (even if stream contains "inconsistent metadata")
-  * JFXX thumbnails (JPEG, Indexed and RGB)
-  * EXIF thumbnails (JPEG, RGB and YCbCr)
-* Metadata support:
-  * JPEG metadata in both standard and native formats (even if stream contains "inconsistent metadata")
-  * `javax_imageio_jpeg_image_1.0` format (currently as native format, may change in the future)
-  * Non-conforming combinations of JFIF, Exif and Adobe markers, using "unknown" segments in the
-   "MarkerSequence" tag for the unsupported segments (for `javax_imageio_jpeg_image_1.0` format)
-* Extended write support:
-  * CMYK JPEGs
-  * YCCK JPEGs in progress
-
-#### JPEG-2000
-
-* Possibly coming in the future, pending some license issues.
-
-If you are one of the authors, or know one of the authors and/or the current license holders of either the original
-jj2000 package or the JAI ImageIO project, please contact me (I've tried to get in touch in various ways, 
-without success so far).
-
-Alternatively, if you have or know of a JPEG-2000 implementation in Java with a suitable license, get in touch. :-)
-
-#### PNM - NetPBM Portable Any Map
-
-* Read support for the following file types:
-  * PBM in 'P1' (ASCII) and 'P4' (binary) formats, 1 bit per pixel
-  * PGM in 'P2' (ASCII) and 'P5' (binary) formats, up to 16/32 bits per pixel
-  * PPM in 'P3' (ASCII) and 'P6' (binary) formats, up to 16/32 bits per pixel component
-  * PAM in 'P7' (binary) format up to 32 bits per pixel component
-  * Limited support for PFM in 'Pf' (gray) and 'PF' (RGB) formats, 32 bits floating point
-* Write support for the following formats:
-  * PPM in 'P6' (binary) format
-  * PAM in 'P7' (binary) format
-* Standard metadata support
-
-#### PSD - Adobe Photoshop Document
-
-* Read support for the following file types:
-  * Monochrome, 1 channel, 1 bit
-  * Indexed, 1 channel, 8 bit
-  * Gray, 1 channel, 8, 16 and 32 bit
-  * Duotone, 1 channel, 8, 16 and 32 bit
-  * RGB, 3-4 channels, 8, 16 and 32 bit
-  * CMYK, 4-5 channels, 8, 16 and 32 bit
-* Read support for the following compression types:
-  * Uncompressed
-  * RLE (PackBits)
-* Layer support
-  * Image layers only, in all of the above types
-* Thumbnail support
-  * JPEG
-  * RAW (RGB)
-* Support for "Large Document Format" (PSB)
-* Native and Standard metadata support
-
-#### TIFF - Aldus/Adobe Tagged Image File Format
-
-* Read support for the following "Baseline" TIFF file types:
-  * Class B (Bi-level), all relevant compression types, 1 bit per sample
-  * Class G (Gray), all relevant compression types, 2, 4, 8, 16 or 32 bits per sample, unsigned integer
-  * Class P (Palette/indexed color), all relevant compression types, 1, 2, 4, 8 or 16 bits per sample, unsigned integer
-  * Class R (RGB), all relevant compression types, 8 or 16 bits per sample, unsigned integer
-* Read support for the following TIFF extensions:
-  * Tiling
-  * Class F (Facsimile), CCITT Modified Huffman RLE, T4 and T6 (type 2, 3 and 4) compressions.
-  * LZW Compression (type 5)
-  * "Old-style" JPEG Compression (type 6), as a best effort, as the spec is not well-defined
-  * JPEG Compression (type 7)
-  * ZLib (aka Adobe-style Deflate) Compression (type 8)
-  * Deflate Compression (type 32946)
-  * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate and PackBits compression
-  * Alpha channel (ExtraSamples type 1/Associated Alpha and type 2/Unassociated Alpha)
-  * CMYK data (PhotometricInterpretation type 5/Separated)
-  * YCbCr data (PhotometricInterpretation type 6/YCbCr) for JPEG
-  * CIELab data in TIFF, ITU and ICC variants (PhotometricInterpretation type 9, 10 and 11)
-  * Planar data (PlanarConfiguration type 2/Planar)
-  * ICC profiles (ICCProfile)
-  * BitsPerSample values up to 16 for most PhotometricInterpretations
-  * Multiple images (pages) in one file
-* Write support for most "Baseline" TIFF options
-  * Uncompressed, PackBits, ZLib and Deflate 
-  * Additional support for CCITT T4 and and T6 compressions.
-  * Additional support for LZW and JPEG (type 7) compressions
-  * Horizontal differencing Predictor (type 2) for LZW, ZLib, Deflate
-* Native and Standard metadata support
-
-Legacy formats
-
-#### HDR - Radiance High Dynamic Range RGBE Format
-
-* Read support for the most common RGBE (.hdr) format
-* Samples are converted to 32 bit floating point (`float`) and normalized using a global tone mapper by default.
-  * Support for custom global tone mappers
-  * Alternatively, use a "null-tone mapper", for unnormalized data (allows local tone mapping)
-* Unconverted RGBE samples accessible using `readRaster`
-* Standard metadata support
-
-#### IFF - Commodore Amiga/Electronic Arts Interchange File Format
-
-* Legacy format, allows reading popular image format from the Commodore Amiga computer.
-* Read support for the following file types:
-  * ILBM Indexed color, 1-8 interleaved bit planes, including 6 bit EHB
-  * ILBM  Gray, 8 bit interleaved bit planes
-  * ILBM RGB, 24 and 32 bit interleaved bit planes
-  * ILBM HAM6 and HAM8
-  * PBM Indexed color, 1-8 bit,
-  * PBM Gray, 8 bit
-  * PBM RGB, 24 and 32 bit
-  * PBM HAM6 and HAM8
-* Write support
-  * ILBM Indexed color, 1-8 bits per sample, 8 bit gray, 24 and 32 bit true color.
-* Support for the following compression types (read/write):
-  * Uncompressed
-  * RLE (PackBits)
-
-#### PCX - ZSoft Paintbrush Format
-
-* Read support for the following file types:
-  * Indexed color, 1, 2, 4 or 8 bits per pixel, bit planes or interleaved
-  * Grayscale, 8 bits per pixel
-  * Color (RGB), 8 bits per pixel component
-* Read support for DCX (multi-page) fax format, containing any of the above types
-* Support for the following compression types:
-  * Uncompressed (experimental)
-  * RLE compressed
-* Standard metadata support
-
-#### PICT - Apple Mac Paint Picture Format
-
-* Legacy format, especially useful for reading OS X clipboard data.
-* Read support for the following file types:
-  * QuickDraw (format support is not complete, but supports most OS X clipboard data as well as RGB pixel data)
-  * QuickDraw bitmap
-  * QuickDraw pixmap
-  * QuickTime stills
-* Write support for RGB pixel data:
-  * QuickDraw pixmap
-
-#### SGI - Silicon Graphics Image Format
-
-* Read support for the following file types:
-  * 1, 2, 3 or 4 channel image data
-  * 8 or 16 bits per pixel component
-* Support for the following compression types:
-  * Uncompressed
-  * RLE compressed
-* Standard metadata support
-
-#### TGA - Truevision TGA Image Format
-
-* Read support for the following file types:
-  * ColorMapped
-  * Monochrome
-  * TrueColor
-* Support for the following compression types:
-  * Uncompressed
-  * RLE compressed
-* Standard metadata support
-* Write support
-
-Icon/other formats
-
-#### ICNS - Apple Icon Image
-
-* Read support for the following icon types:
-  * All known "native" icon types
-  * Large PNG encoded icons
-  * Large JPEG 2000 encoded icons (requires JPEG 2000 ImageIO plugin or fallback to `sips` command line tool)
-* Write support for PNG encoded icons
-
-#### ICO & CUR - MS Windows Icon and Cursor Formats
-
-* Read support for the following file types:
-  * ICO Indexed color, 1, 4 and 8 bit
-  * ICO RGB, 16, 24 and 32 bit
-  * CUR Indexed color, 1, 4 and 8 bit
-  * CUR RGB, 16, 24 and 32 bit
-* Write support
-* *3.1* Note: These formats are now part of the BMP plugin
-
-#### Thumbs.db - MS Windows Thumbs DB
-
-* Read support
-
-Other formats, using 3rd party libraries
-
-#### SVG - Scalable Vector Graphics
-
-* Read-only support using Batik
-
-#### WMF - MS Windows MetaFile
-
-* Limited read-only support using Batik
-
-**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), and make sure you use
-either version 1.6.1, 1.7.1 or 1.8+.*
-
+**Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), 
+and make sure you use either version 1.6.1, 1.7.1, 1.8+ or later.*
 
 ## Basic usage
 
 Most of the time, all you need to do is simply include the plugins in your project and write:
 
-    BufferedImage image = ImageIO.read(file);
+```java
+BufferedImage image = ImageIO.read(file);
+```
 
 This will load the first image of the file, entirely into memory.
 
 The basic and simplest form of writing is:
 
-    if (!ImageIO.write(image, format, file)) {
-       // Handle image not written case
-    }
+```java
+if (!ImageIO.write(image, format, file)) {
+   // Handle image not written case
+}
+```
 
 This will write the entire image into a single file, using the default settings for the given format.
 
@@ -271,50 +89,50 @@ The plugins are discovered automatically at run time. See the [FAQ](#faq) for mo
 If you need more control of read parameters and the reading process, the common idiom for reading is something like:
 
 ```java
-    // Create input stream
-    ImageInputStream input = ImageIO.createImageInputStream(file);
+// Create input stream
+ImageInputStream input = ImageIO.createImageInputStream(file);
+
+try {
+    // Get the reader
+    Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+
+    if (!readers.hasNext()) {
+        throw new IllegalArgumentException("No reader for: " + file);
+    }
+
+    ImageReader reader = readers.next();
 
     try {
-        // Get the reader
-        Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+        reader.setInput(input);
 
-        if (!readers.hasNext()) {
-            throw new IllegalArgumentException("No reader for: " + file);
-        }
+        // Optionally, listen for read warnings, progress, etc.
+        reader.addIIOReadWarningListener(...);
+        reader.addIIOReadProgressListener(...);
 
-        ImageReader reader = readers.next();
+        ImageReadParam param = reader.getDefaultReadParam();
 
-        try {
-            reader.setInput(input);
+        // Optionally, control read settings like sub sampling, source region or destination etc.
+        param.setSourceSubsampling(...);
+        param.setSourceRegion(...);
+        param.setDestination(...);
+        // ...
 
-            // Optionally, listen for read warnings, progress, etc.
-            reader.addIIOReadWarningListener(...);
-            reader.addIIOReadProgressListener(...);
+        // Finally read the image, using settings from param
+        BufferedImage image = reader.read(0, param);
 
-            ImageReadParam param = reader.getDefaultReadParam();
-
-            // Optionally, control read settings like sub sampling, source region or destination etc.
-            param.setSourceSubsampling(...);
-            param.setSourceRegion(...);
-            param.setDestination(...);
-            // ...
-
-            // Finally read the image, using settings from param
-            BufferedImage image = reader.read(0, param);
-
-            // Optionally, read thumbnails, meta data, etc...
-            int numThumbs = reader.getNumThumbnails(0);
-            // ...
-        }
-        finally {
-            // Dispose reader in finally block to avoid memory leaks
-            reader.dispose();
-        }
+        // Optionally, read thumbnails, meta data, etc...
+        int numThumbs = reader.getNumThumbnails(0);
+        // ...
     }
     finally {
-        // Close stream in finally block to avoid resource leaks
-        input.close();
+        // Dispose reader in finally block to avoid memory leaks
+        reader.dispose();
     }
+}
+finally {
+    // Close stream in finally block to avoid resource leaks
+    input.close();
+}
 ```
 
 Query the reader for source image dimensions using `reader.getWidth(n)` and `reader.getHeight(n)` without reading the
@@ -326,46 +144,62 @@ It's also possible to read multiple images from the same file in a loop, using `
 If you need more control of write parameters and the writing process, the common idiom for writing is something like:
 
 ```java
-    // Get the writer
-    Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(format);
+// Get the writer
+Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName(format);
 
-    if (!writers.hasNext()) {
-        throw new IllegalArgumentException("No writer for: " + format);
-    }
+if (!writers.hasNext()) {
+    throw new IllegalArgumentException("No writer for: " + format);
+}
 
-    ImageWriter writer = writers.next();
+ImageWriter writer = writers.next();
+
+try {
+    // Create output stream
+    ImageOutputStream output = ImageIO.createImageOutputStream(file);
 
     try {
-        // Create output stream
-        ImageOutputStream output = ImageIO.createImageOutputStream(file);
+        writer.setOutput(output);
 
-        try {
-            writer.setOutput(output);
+        // Optionally, listen to progress, warnings, etc.
 
-            // Optionally, listen to progress, warnings, etc.
+        ImageWriteParam param = writer.getDefaultWriteParam();
 
-            ImageWriteParam param = writer.getDefaultWriteParam();
+        // Optionally, control format specific settings of param (requires casting), or
+        // control generic write settings like sub sampling, source region, output type etc.
 
-            // Optionally, control format specific settings of param (requires casting), or
-            // control generic write settings like sub sampling, source region, output type etc.
-
-            // Optionally, provide thumbnails and image/stream metadata
-            writer.write(..., new IIOImage(..., image, ...), param);
-        }
-        finally {
-            // Close stream in finally block to avoid resource leaks
-            output.close();
-        }
+        // Optionally, provide thumbnails and image/stream metadata
+        writer.write(..., new IIOImage(..., image, ...), param);
     }
     finally {
-        // Dispose writer in finally block to avoid memory leaks
-        writer.dispose();
+        // Close stream in finally block to avoid resource leaks
+        output.close();
     }
+}
+finally {
+    // Dispose writer in finally block to avoid memory leaks
+    writer.dispose();
+}
 ```
 
 For more advanced usage, and information on how to use the ImageIO API, I suggest you read the
 [Java Image I/O API Guide](http://docs.oracle.com/javase/7/docs/technotes/guides/imageio/spec/imageio_guideTOC.fm.html)
 from Oracle.
+
+#### Adobe Clipping Path support
+
+```java
+import com.twelvemonkeys.imageio.path.Paths;
+
+...
+
+try (ImageInputStream stream = ImageIO.createImageInputStream(new File("image_with_path.jpg")) {
+    BufferedImage image = Paths.readClipped(stream);
+
+    // Do something with the clipped image...
+}
+```
+See [Adobe Clipping Path support on the Wiki](https://github.com/haraldk/TwelveMonkeys/wiki/Photoshop-Clipping-Path-support) for more details and example code.
+
 
 #### Using the ResampleOp
 
@@ -373,15 +207,15 @@ The library comes with a resampling (image resizing) operation, that contains ma
 to provide excellent results at reasonable speed.
 
 ```java
-    import com.twelvemonkeys.image.ResampleOp;
+import com.twelvemonkeys.image.ResampleOp;
 
-    ...
+...
 
-    BufferedImage input = ...; // Image to resample
-    int width, height = ...; // new width/height
+BufferedImage input = ...; // Image to resample
+int width, height = ...; // new width/height
 
-    BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS); // A good default filter, see class documentation for more info
-    BufferedImage output = resampler.filter(input, null);
+BufferedImageOp resampler = new ResampleOp(width, height, ResampleOp.FILTER_LANCZOS); // A good default filter, see class documentation for more info
+BufferedImage output = resampler.filter(input, null);
 ```
 
 #### Using the DiffusionDither
@@ -390,14 +224,14 @@ The library comes with a dithering operation, that can be used to convert `Buffe
 Floyd-Steinberg error-diffusion dither.
 
 ```java
-    import com.twelvemonkeys.image.DiffusionDither;
+import com.twelvemonkeys.image.DiffusionDither;
 
-    ...
+...
 
-    BufferedImage input = ...; // Image to dither
+BufferedImage input = ...; // Image to dither
 
-    BufferedImageOp ditherer = new DiffusionDither();
-    BufferedImage output = ditherer.filter(input, null);
+BufferedImageOp ditherer = new DiffusionDither();
+BufferedImage output = ditherer.filter(input, null);
 ```
 
 ## Building
@@ -435,10 +269,10 @@ The ImageIO registry and service lookup mechanism will make sure the plugins are
 To verify that the JPEG plugin is installed and used at run-time, you could use the following code:
 
 ```java
-    Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
-    while (readers.hasNext()) {
-        System.out.println("reader: " + readers.next());
-    }
+Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
+while (readers.hasNext()) {
+    System.out.println("reader: " + readers.next());
+}
 ```
 
 The first line should print:
@@ -450,30 +284,30 @@ The first line should print:
 To depend on the JPEG and TIFF plugin using Maven, add the following to your POM:
 
 ```xml
+...
+<dependencies>
     ...
-    <dependencies>
-        ...
-        <dependency>
-            <groupId>com.twelvemonkeys.imageio</groupId>
-            <artifactId>imageio-jpeg</artifactId>
-            <version>3.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.twelvemonkeys.imageio</groupId>
-            <artifactId>imageio-tiff</artifactId>
-            <version>3.6</version>
-        </dependency>
+    <dependency>
+        <groupId>com.twelvemonkeys.imageio</groupId>
+        <artifactId>imageio-jpeg</artifactId>
+        <version>3.6</version>
+    </dependency>
+    <dependency>
+        <groupId>com.twelvemonkeys.imageio</groupId>
+        <artifactId>imageio-tiff</artifactId>
+        <version>3.6</version>
+    </dependency>
 
-        <!--
-        Optional dependency. Needed only if you deploy `ImageIO` plugins as part of a web app.
-        Make sure you add the `IIOProviderContextListener` to your `web.xml`, see above.
-        -->
-        <dependency>
-            <groupId>com.twelvemonkeys.servlet</groupId>
-            <artifactId>servlet</artifactId>
-            <version>3.6</version>
-        </dependency>
-    </dependencies>
+    <!--
+    Optional dependency. Needed only if you deploy `ImageIO` plugins as part of a web app.
+    Make sure you add the `IIOProviderContextListener` to your `web.xml`, see above.
+    -->
+    <dependency>
+        <groupId>com.twelvemonkeys.servlet</groupId>
+        <artifactId>servlet</artifactId>
+        <version>3.6</version>
+    </dependency>
+</dependencies>
 ```
 
 #### Manual dependency example
@@ -506,18 +340,18 @@ it is *strongly recommended* to use the `IIOProviderContextListener` that implem
 dynamic loading and unloading of ImageIO plugins for web applications.
 
 ```xml
-    <web-app ...>
+<web-app ...>
 
-    ...
+...
 
-        <listener>
-            <display-name>ImageIO service provider loader/unloader</display-name>
-            <listener-class>com.twelvemonkeys.servlet.image.IIOProviderContextListener</listener-class>
-        </listener>
+    <listener>
+        <display-name>ImageIO service provider loader/unloader</display-name>
+        <listener-class>com.twelvemonkeys.servlet.image.IIOProviderContextListener</listener-class>
+    </listener>
 
-    ...
+...
 
-    </web-app>
+</web-app>
 ```
 
 Loading plugins from `WEB-INF/lib` without the context listener installed is unsupported and will not work correctly.
@@ -624,7 +458,7 @@ Servlet support
 
 The project is distributed under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
 
-    Copyright (c) 2008-2018, Harald Kuhr
+    Copyright (c) 2008-2020, Harald Kuhr
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
