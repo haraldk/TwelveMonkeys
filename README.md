@@ -27,34 +27,28 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 | ------ | -------- | -----------           |:----:|:-----:| -------- | ----- |
 | Batik  | **SVG**  | Scalable Vector Graphics | ✔ | - | | Requires [Batik](https://xmlgraphics.apache.org/batik/)
 |        | WMF      | MS Windows Metafile      | ✔ | -   | Standard | Requires [Batik](https://xmlgraphics.apache.org/batik/)
-| | 
-| [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  |   
+| [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  | MS Windows and IBM OS/2 Device Independent Bitmap | ✔  | ✔   | Native & Standard |
 |        | CUR      | MS Windows Cursor Format | ✔  | -   | Standard |
 |        | ICO      | MS Windows Icon Format | ✔  | ✔   | Standard | 
-| | 
 | [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
 | [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | Standard | 
 | [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | Standard | 
 | [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard |  
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
 |        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 
-| | 
 | [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple Mac Paint Picture Format | ✔  | -   | Standard | 
 | [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | Standard | 
 |        | PBM      | NetPBM Portable Bit Map | ✔  | -     | Standard | 
 |        | PGM      | NetPBM Portable Grey Map | ✔  | -   | Standard | 
 |        | PPM      | NetPBM Portable Pix Map | ✔  | ✔   | Standard | 
 |        | PFM      | Portable Float Map | ✔  | -   | Standard | 
-| | 
 | [PSD](https://github.com/haraldk/TwelveMonkeys/wiki/PSD-Plugin)    | **PSD**  | Adobe Photoshop Document | ✔  | - | Native & Standard |  
 |        |  PSB     | Adobe Photoshop Large Document | ✔  | - | Native & Standard | 
-| | 
 | [SGI](https://github.com/haraldk/TwelveMonkeys/wiki/SGI-Plugin)    | SGI      | Silicon Graphics Image Format  | ✔  | -   | Standard | 
 | [TGA](https://github.com/haraldk/TwelveMonkeys/wiki/TGA-Plugin)    | TGA      | Truevision TGA Image Format  | ✔  | ✔   | Standard | 
 |ThumbsDB| Thumbs.db| MS Windows Thumbs DB | ✔  | -   | Standard | OLE2 Compound Documents based format only
 | [TIFF](https://github.com/haraldk/TwelveMonkeys/wiki/TIFF-Plugin)   | **TIFF** | Aldus/Adobe Tagged Image File Format | ✔  | ✔ | Native & Standard | 
 |        | BigTIFF  |  | ✔  | - | Native & Standard |  
-| | 
 | [WebP](https://github.com/haraldk/TwelveMonkeys/wiki/WebP-Plugin)   | **WebP** | Google WebP Format | ✔  | - | Standard |  In progress
 | XWD    | XWD      | X11 Window Dump Format | ✔  | -   | Standard | 
 
