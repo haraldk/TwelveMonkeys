@@ -30,22 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-import com.twelvemonkeys.io.LittleEndianDataInputStream;
-import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.xml.XMLSerializer;
-
-import javax.imageio.*;
-import javax.imageio.event.IIOReadUpdateListener;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
@@ -55,6 +39,27 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Iterator;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.io.LittleEndianDataInputStream;
+import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 /**
  * ImageReader for Microsoft Windows Bitmap (BMP) format.
@@ -125,6 +130,10 @@ public final class BMPImageReader extends ImageReaderBase {
 
             // Read DIB header
             header = DIBHeader.read(imageInput);
+
+            if (pixelOffset < header.size + DIB.BMP_FILE_HEADER_SIZE) {
+                throw new IIOException("Invalid pixel offset: " + pixelOffset);
+            }
         }
     }
 

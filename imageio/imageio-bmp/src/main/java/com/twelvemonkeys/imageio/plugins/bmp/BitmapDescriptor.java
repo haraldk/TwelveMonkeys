@@ -29,9 +29,10 @@
  */
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.lang.Validate;
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 /**
  * Describes a bitmap structure.
@@ -47,14 +48,11 @@ abstract class BitmapDescriptor {
     protected BitmapMask mask;
 
     public BitmapDescriptor(final DirectoryEntry pEntry, final DIBHeader pHeader) {
-        Validate.notNull(pEntry, "entry");
-        Validate.notNull(pHeader, "header");
-        
-        entry = pEntry;
-        header = pHeader;
+        entry = notNull(pEntry, "entry");;
+        header = notNull(pHeader, "header");
     }
 
-    abstract public BufferedImage getImage();
+    abstract public BufferedImage getImage() throws IOException;
 
     public final int getWidth() {
         return entry.getWidth();

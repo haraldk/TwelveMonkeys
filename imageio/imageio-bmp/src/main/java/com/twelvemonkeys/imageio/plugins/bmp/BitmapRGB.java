@@ -46,6 +46,7 @@ class BitmapRGB extends BitmapDescriptor {
         super(pEntry, pHeader);
     }
 
+    @Override
     public BufferedImage getImage() {
         // Test is mask != null rather than hasMask(), as 32 bit (w/alpha)
         // might still have bitmask, but we don't read or use it.

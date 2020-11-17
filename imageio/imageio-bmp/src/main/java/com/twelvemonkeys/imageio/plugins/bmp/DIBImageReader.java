@@ -30,16 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.util.WeakWeakMap;
-
-import javax.imageio.*;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.event.WindowAdapter;
@@ -48,8 +38,26 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.swing.*;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.util.WeakWeakMap;
 
 /**
  * ImageReader for Microsoft Windows ICO (icon) format.
@@ -287,7 +295,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
             // TODO: Support this, it's already in the BMP reader, spec allows RLE4 and RLE8
             if (header.getCompression() != DIB.COMPRESSION_RGB) {
-                descriptor = new BitmapUnsupported(pEntry, String.format("Unsupported compression: %d", header.getCompression()));
+                descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported compression: %d", header.getCompression()));
             }
             else {
                 int bitCount = header.getBitCount();
@@ -315,7 +323,7 @@ abstract class DIBImageReader extends ImageReaderBase {
                         break;
 
                     default:
-                        descriptor = new BitmapUnsupported(pEntry, String.format("Unsupported bit count %d", bitCount));
+                        descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported bit count %d", bitCount));
                 }
             }
 
