@@ -465,13 +465,12 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmap16(final BitmapDescriptor pBitmap) throws IOException {
-        // TODO: No idea if this actually works..
         short[] pixels = new short[pBitmap.getWidth() * pBitmap.getHeight()];
 
         // TODO: Support TYPE_USHORT_565 and the RGB 444/ARGB 4444 layouts
         // Will create TYPE_USHORT_555
         DirectColorModel cm = new DirectColorModel(16, 0x7C00, 0x03E0, 0x001F);
-        DataBuffer buffer = new DataBufferShort(pixels, pixels.length);
+        DataBuffer buffer = new DataBufferUShort(pixels, pixels.length);
         WritableRaster raster = Raster.createPackedRaster(
                 buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
         );
