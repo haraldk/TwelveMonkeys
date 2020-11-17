@@ -30,20 +30,14 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
-import com.twelvemonkeys.xml.XMLSerializer;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.imageio.*;
-import javax.imageio.event.IIOReadProgressListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -55,11 +49,24 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNoException;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadProgressListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.ImageReaderSpi;
+
+import org.junit.Ignore;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 /**
  * BMPImageReaderTest
@@ -175,7 +182,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
             ImageTypeSpecifier rawType = reader.getRawImageType(0);
 
-            // As the JPEGImageReader we delegate to returns null for YCbCr, we'll have to do the same
+            // As the JPEGImageReader we delegate to may return null for YCbCr, we'll have to do the same
             if (rawType == null && data.getInput().toString().contains("jpeg")) {
                 continue;
             }

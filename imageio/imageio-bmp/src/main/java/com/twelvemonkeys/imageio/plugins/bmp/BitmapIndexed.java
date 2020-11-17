@@ -163,6 +163,7 @@ class BitmapIndexed extends BitmapDescriptor {
         return transparent;
     }
 
+    @Override
     public BufferedImage getImage() {
         if (image == null) {
             image = createImageIndexed();
