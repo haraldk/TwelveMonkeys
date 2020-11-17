@@ -30,20 +30,16 @@
 
 package com.twelvemonkeys.imageio;
 
-import com.twelvemonkeys.image.BufferedImageIcon;
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-
-import javax.imageio.*;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.File;
@@ -51,6 +47,20 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Iterator;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.swing.*;
+
+import com.twelvemonkeys.image.BufferedImageIcon;
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 
 /**
  * Abstract base class for image readers.
@@ -314,12 +324,12 @@ public abstract class ImageReaderBase extends ImageReader {
 
         long dimension = (long) destWidth * destHeight;
         if (dimension > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException(String.format("destination width * height > Integer.MAX_VALUE: %d", dimension));
+            throw new IIOException(String.format("destination width * height > Integer.MAX_VALUE: %d", dimension));
         }
 
         long size = dimension * imageType.getSampleModel().getNumDataElements();
         if (size > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException(String.format("destination width * height * samplesPerPixel > Integer.MAX_VALUE: %d", size));
+            throw new IIOException(String.format("destination width * height * samplesPerPixel > Integer.MAX_VALUE: %d", size));
         }
 
         // Create a new image based on the type specifier
