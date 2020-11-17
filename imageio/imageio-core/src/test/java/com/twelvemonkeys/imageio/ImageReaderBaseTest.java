@@ -30,11 +30,11 @@
 
 package com.twelvemonkeys.imageio;
 
-import org.junit.Test;
+import static java.util.Collections.singleton;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageTypeSpecifier;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -44,8 +44,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.Collections.singleton;
-import static org.junit.Assert.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
+
+import org.junit.Test;
 
 /**
  * ImageReaderBaseTest
@@ -212,19 +215,19 @@ public class ImageReaderBaseTest {
         assertEquals(TYPES.get(0).getBufferedImageType(), destination.getType());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IIOException.class)
     public void testGetDestinationParamDestinationExceedsIntegerMax() throws IIOException {
         ImageReadParam param = new ImageReadParam();
         param.setSourceRegion(new Rectangle(3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE)); // 6 442 057 734 pixels
         ImageReaderBase.getDestination(param, TYPES.iterator(), 6 * Short.MAX_VALUE, 4 * Short.MAX_VALUE); // 25 768 230 936 pixels
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IIOException.class)
     public void testGetDestinationDimensionExceedsIntegerMax() throws IIOException {
         ImageReaderBase.getDestination(null, TYPES.iterator(), 3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE); // 6 442 057 734 pixels
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IIOException.class)
     public void testGetDestinationStorageExceedsIntegerMax() throws IIOException {
         Set<ImageTypeSpecifier> byteTypes = singleton(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
         ImageReaderBase.getDestination(null, byteTypes.iterator(), Short.MAX_VALUE,  Short.MAX_VALUE); // 1 073 676 289 pixels
