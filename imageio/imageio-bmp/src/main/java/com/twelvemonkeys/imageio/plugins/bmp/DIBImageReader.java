@@ -363,7 +363,7 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmapIndexed1(final BitmapIndexed pBitmap, final boolean pAsMask) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth() >> 3);
+        int width = adjustToPadding((pBitmap.getWidth() + 7) >> 3);
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
@@ -397,7 +397,7 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmapIndexed4(final BitmapIndexed pBitmap) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth() >> 1);
+        int width = adjustToPadding((pBitmap.getWidth() + 1) >> 1);
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
