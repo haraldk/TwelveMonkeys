@@ -41,8 +41,8 @@ import java.util.Arrays;
  * @version $Id: RLE4Decoder.java#1 $
  */
 final class RLE4Decoder extends AbstractRLEDecoder {
-    final static int BIT_MASKS[] = {0xf0, 0x0f};
-    final static int BIT_SHIFTS[] = {4, 0};
+    final static int[] BIT_MASKS = {0xf0, 0x0f};
+    final static int[] BIT_SHIFTS = {4, 0};
 
     public RLE4Decoder(final int width) {
         super(width, 4);
@@ -94,7 +94,7 @@ final class RLE4Decoder extends AbstractRLEDecoder {
                         boolean paddingByte = (((byte2 + 1) / 2) % 2) != 0;
 
                         int packed = 0;
-                        for (int i = 0; i < byte2; i++) {
+                        for (int i = 0; i < byte2 && srcX / 2 < row.length; i++) {
                             if (i % 2 == 0) {
                                 packed = checkEOF(stream.read());
                             }
@@ -111,7 +111,7 @@ final class RLE4Decoder extends AbstractRLEDecoder {
             else {
                 // Encoded mode
                 // Replicate the two samples in byte2 as many times as byte1 says
-                for (int i = 0; i < byte1; i++) {
+                for (int i = 0; i < byte1 && srcX / 2 < row.length; i++) {
                     row[srcX / 2] |= (byte) (((byte2 & BIT_MASKS[i % 2]) >> BIT_SHIFTS[i % 2]) << BIT_SHIFTS[srcX % 2]);
                     srcX++;
                 }

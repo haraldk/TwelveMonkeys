@@ -216,50 +216,55 @@ public final class BMPImageReader extends ImageReaderBase {
             throw new IIOException("Multiple planes not supported");
         }
 
-        switch (header.getBitCount()) {
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-                return ImageTypeSpecifiers.createFromIndexColorModel(readColorMap());
+        try {
+            switch (header.getBitCount()) {
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    return ImageTypeSpecifiers.createFromIndexColorModel(readColorMap());
 
-            case 16:
-                if (header.hasMasks()) {
-                    return ImageTypeSpecifiers.createPacked(
-                            ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            header.masks[0], header.masks[1], header.masks[2], header.masks[3],
-                            DataBuffer.TYPE_USHORT, false
-                    );
-                }
+                case 16:
+                    if (header.hasMasks()) {
+                        return ImageTypeSpecifiers.createPacked(
+                                ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                                header.masks[0], header.masks[1], header.masks[2], header.masks[3],
+                                DataBuffer.TYPE_USHORT, false
+                        );
+                    }
 
-                // Default if no mask is 555
-                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
+                    // Default if no mask is 555
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
 
-            case 24:
-                if (header.getCompression() != DIB.COMPRESSION_RGB) {
-                    throw new IIOException("Unsupported compression for RGB: " + header.getCompression());
-                }
+                case 24:
+                    if (header.getCompression() != DIB.COMPRESSION_RGB) {
+                        throw new IIOException("Unsupported compression for RGB: " + header.getCompression());
+                    }
 
-                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
 
-            case 32:
-                if (header.hasMasks()) {
-                    return ImageTypeSpecifiers.createPacked(
-                            ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            header.masks[0], header.masks[1], header.masks[2], header.masks[3],
-                            DataBuffer.TYPE_INT, false
-                    );
-                }
+                case 32:
+                    if (header.hasMasks()) {
+                        return ImageTypeSpecifiers.createPacked(
+                                ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                                header.masks[0], header.masks[1], header.masks[2], header.masks[3],
+                                DataBuffer.TYPE_INT, false
+                        );
+                    }
 
-                // Default if no mask
-                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+                    // Default if no mask
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
 
-            case 0:
-                if (header.getCompression() == DIB.COMPRESSION_JPEG || header.getCompression() == DIB.COMPRESSION_PNG) {
-                    return initReaderDelegate(header.getCompression()).getRawImageType(0);
-                }
-            default:
-                throw new IIOException("Unsupported bit count: " + header.getBitCount());
+                case 0:
+                    if (header.getCompression() == DIB.COMPRESSION_JPEG || header.getCompression() == DIB.COMPRESSION_PNG) {
+                        return initReaderDelegate(header.getCompression()).getRawImageType(0);
+                    }
+                default:
+                    throw new IIOException("Unsupported bit count: " + header.getBitCount());
+            }
+        }
+        catch (IllegalArgumentException e) {
+            throw new IIOException(e.getMessage(), e);
         }
     }
 
