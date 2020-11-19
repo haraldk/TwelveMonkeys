@@ -30,6 +30,37 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.color.YCbCrConverter;
@@ -48,24 +79,6 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.xml.XMLSerializer;
-
-import javax.imageio.*;
-import javax.imageio.event.IIOReadUpdateListener;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.MemoryCacheImageInputStream;
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.*;
-import java.io.*;
-import java.util.List;
-import java.util.*;
 
 /**
  * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
@@ -896,16 +909,16 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         if (!exifSegments.isEmpty()) {
             Application exif = exifSegments.get(0);
-            InputStream data = exif.data();
+            int offset = exif.identifier.length() + 2; // Incl. pad
 
-            if (data.read() == -1) { // Read pad
+            if (exif.data.length <= offset) {
                 processWarningOccurred("Exif chunk has no data.");
             }
             else {
-                ImageInputStream stream = new MemoryCacheImageInputStream(data);
-                return (CompoundDirectory) new TIFFReader().read(stream);
-
-                // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the TIFFReader...
+                // TODO: Consider returning ByteArrayImageInputStream from Segment.data()
+                try (ImageInputStream stream = new ByteArrayImageInputStream(exif.data, offset, exif.data.length - offset)) {
+                    return (CompoundDirectory) new TIFFReader().read(stream);
+                }
             }
         }
 
