@@ -30,11 +30,11 @@
 
 package com.twelvemonkeys.imageio.metadata;
 
-import com.twelvemonkeys.lang.Validate;
-import com.twelvemonkeys.util.CollectionUtil;
-
 import java.lang.reflect.Array;
 import java.util.Arrays;
+
+import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.util.CollectionUtil;
 
 /**
  * AbstractEntry
@@ -84,17 +84,21 @@ public abstract class AbstractEntry implements Entry {
     }
 
     public String getValueAsString() {
-        if (valueCount() > 1) {
-            if (valueCount() < 16) {
+        int count = valueCount();
+
+        if (count == 0 && value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
+            return "";
+        }
+        if (count > 1) {
+            if (count < 16) {
                 return arrayToString(value);
             }
             else {
                 String first = arrayToString(CollectionUtil.subArray(value, 0, 4));
-                String last = arrayToString(CollectionUtil.subArray(value, valueCount() - 4, 4));
-                return String.format("%s ... %s (%d)", first.substring(0, first.length() - 1), last.substring(1), valueCount());
+                String last = arrayToString(CollectionUtil.subArray(value, count - 4, 4));
+                return String.format("%s ... %s (%d)", first.substring(0, first.length() - 1), last.substring(1), count);
             }
         }
-
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 1) {
             return String.valueOf(Array.get(value, 0));
         }
