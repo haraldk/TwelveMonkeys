@@ -94,7 +94,7 @@ final class RLE8Decoder extends AbstractRLEDecoder {
                         // an additional padding byte is in the stream and must be skipped
                         boolean paddingByte = (byte2 % 2) != 0;
 
-                        while (byte2-- > 0) {
+                        while (byte2-- > 0 && srcX < row.length) {
                             row[srcX++] = (byte) checkEOF(stream.read());
                         }
 
@@ -107,7 +107,7 @@ final class RLE8Decoder extends AbstractRLEDecoder {
                 // Encoded mode
                 // Replicate byte2 as many times as byte1 says
                 byte value = (byte) byte2;
-                while (byte1-- > 0) {
+                while (byte1-- > 0  && srcX < row.length) {
                     row[srcX++] = value;
                 }
             }

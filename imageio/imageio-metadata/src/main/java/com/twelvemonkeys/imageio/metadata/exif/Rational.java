@@ -41,7 +41,6 @@ package com.twelvemonkeys.imageio.metadata.exif;
  *
  * @deprecated Use com.twelvemonkeys.imageio.metadata.tiff.Rational instead.
  */
-@SuppressWarnings("deprecation")
 public final class Rational extends Number implements Comparable<Rational> {
     private final com.twelvemonkeys.imageio.metadata.tiff.Rational delegate;
 

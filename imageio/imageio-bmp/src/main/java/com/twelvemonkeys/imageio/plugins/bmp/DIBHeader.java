@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+
+import javax.imageio.IIOException;
 
 /**
  * Represents the DIB (Device Independent Bitmap) Information header structure.
@@ -213,7 +214,7 @@ abstract class DIBHeader {
 
             // NOTE: Unlike all other headers, width and height are unsigned SHORT values (16 bit)!
             width = pStream.readUnsignedShort();
-            height = pStream.readUnsignedShort();
+            height = pStream.readShort();
 
             if (height < 0) {
                 height = -height;
@@ -240,6 +241,7 @@ abstract class DIBHeader {
      * @see <a href="http://www.fileformat.info/format/os2bmp/egff.htm">OS/2 Bitmap File Format Summary</a>
      */
     static final class BitmapCoreHeaderV2 extends DIBHeader {
+        @SuppressWarnings("unused")
         protected void read(final int pSize, final DataInput pStream) throws IOException {
             if (pSize != DIB.OS2_V2_HEADER_SIZE && pSize != DIB.OS2_V2_HEADER_16_SIZE) {
                 throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.OS2_V2_HEADER_SIZE));

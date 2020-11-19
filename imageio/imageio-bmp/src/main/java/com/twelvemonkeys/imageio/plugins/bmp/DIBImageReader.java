@@ -30,16 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.util.WeakWeakMap;
-
-import javax.imageio.*;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.event.WindowAdapter;
@@ -48,8 +38,26 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.swing.*;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.util.WeakWeakMap;
 
 /**
  * ImageReader for Microsoft Windows ICO (icon) format.
@@ -287,7 +295,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
             // TODO: Support this, it's already in the BMP reader, spec allows RLE4 and RLE8
             if (header.getCompression() != DIB.COMPRESSION_RGB) {
-                descriptor = new BitmapUnsupported(pEntry, String.format("Unsupported compression: %d", header.getCompression()));
+                descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported compression: %d", header.getCompression()));
             }
             else {
                 int bitCount = header.getBitCount();
@@ -315,7 +323,7 @@ abstract class DIBImageReader extends ImageReaderBase {
                         break;
 
                     default:
-                        descriptor = new BitmapUnsupported(pEntry, String.format("Unsupported bit count %d", bitCount));
+                        descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported bit count %d", bitCount));
                 }
             }
 
@@ -355,7 +363,7 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmapIndexed1(final BitmapIndexed pBitmap, final boolean pAsMask) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth() >> 3);
+        int width = adjustToPadding((pBitmap.getWidth() + 7) >> 3);
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
@@ -389,7 +397,7 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmapIndexed4(final BitmapIndexed pBitmap) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth() >> 1);
+        int width = adjustToPadding((pBitmap.getWidth() + 1) >> 1);
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
@@ -457,13 +465,12 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmap16(final BitmapDescriptor pBitmap) throws IOException {
-        // TODO: No idea if this actually works..
         short[] pixels = new short[pBitmap.getWidth() * pBitmap.getHeight()];
 
         // TODO: Support TYPE_USHORT_565 and the RGB 444/ARGB 4444 layouts
         // Will create TYPE_USHORT_555
         DirectColorModel cm = new DirectColorModel(16, 0x7C00, 0x03E0, 0x001F);
-        DataBuffer buffer = new DataBufferShort(pixels, pixels.length);
+        DataBuffer buffer = new DataBufferUShort(pixels, pixels.length);
         WritableRaster raster = Raster.createPackedRaster(
                 buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
         );

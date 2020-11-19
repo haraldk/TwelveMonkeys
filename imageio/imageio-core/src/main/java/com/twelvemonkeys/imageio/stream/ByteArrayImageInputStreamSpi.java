@@ -35,7 +35,6 @@ import com.twelvemonkeys.imageio.spi.ProviderInfo;
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.io.File;
-import java.io.IOException;
 import java.util.Locale;
 
 /**
@@ -56,7 +55,7 @@ public class ByteArrayImageInputStreamSpi extends ImageInputStreamSpi {
         super(providerInfo.getVendorName(), providerInfo.getVersion(), byte[].class);
     }
 
-    public ImageInputStream createInputStreamInstance(Object pInput, boolean pUseCache, File pCacheDir) throws IOException {
+    public ImageInputStream createInputStreamInstance(Object pInput, boolean pUseCache, File pCacheDir) {
         if (pInput instanceof byte[]) {
             return new ByteArrayImageInputStream((byte[]) pInput);
         }

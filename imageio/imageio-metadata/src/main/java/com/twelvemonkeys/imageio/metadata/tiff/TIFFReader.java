@@ -30,15 +30,8 @@
 
 package com.twelvemonkeys.imageio.metadata.tiff;
 
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.MetadataReader;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.lang.Validate;
+import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +39,15 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataReader;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * TIFFReader
@@ -336,7 +337,8 @@ public final class TIFFReader extends MetadataReader {
         else {
             long valueOffset = readOffset(pInput); // This is the *value* iff the value size is <= offsetSize
 
-            if (length > 0 && length < valueOffset + valueLength) {
+            // Note: This a precaution
+            if (count >= Integer.MAX_VALUE || length > 0 && length < valueOffset + valueLength) {
                 value = new EOFException(String.format("TIFF value offset or size too large: %d/%d bytes (length: %d bytes)", valueOffset, valueLength, length));
             }
             else {
@@ -367,7 +369,7 @@ public final class TIFFReader extends MetadataReader {
         long pos = pInput.getStreamPosition();
         try {
             pInput.seek(pOffset);
-            return readValue(pInput, pType, pCount);
+            return readValue(pInput, pType, pCount, longOffsets);
         }
         catch (EOFException e) {
             // TODO: Add warning listener API and report problem to client code
@@ -379,10 +381,10 @@ public final class TIFFReader extends MetadataReader {
     }
 
     private Object readValueInLine(final ImageInputStream pInput, final short pType, final int pCount) throws IOException {
-        return readValue(pInput, pType, pCount);
+        return readValue(pInput, pType, pCount, longOffsets);
     }
 
-    private static Object readValue(final ImageInputStream pInput, final short pType, final int pCount) throws IOException {
+    private static Object readValue(final ImageInputStream pInput, final short pType, final int pCount, boolean bigTIFF) throws IOException {
         // TODO: Review value "widening" for the unsigned types. Right now it's inconsistent. Should we leave it to client code?
         // TODO: New strategy: Leave data as is, instead perform the widening in TIFFEntry.getValue.
         // TODO: Add getValueByte/getValueUnsignedByte/getValueShort/getValueUnsignedShort/getValueInt/etc... in API.
@@ -513,23 +515,23 @@ public final class TIFFReader extends MetadataReader {
             case TIFF.TYPE_LONG8:
             case TIFF.TYPE_SLONG8:
             case TIFF.TYPE_IFD8:
-                // TODO: Assert BigTiff (version == 43)
+                if (bigTIFF) {
+                    if (pCount == 1) {
+                        long val = pInput.readLong();
+                        if (pType != TIFF.TYPE_SLONG8 && val < 0) {
+                            throw new IIOException(String.format("Value > %s", Long.MAX_VALUE));
+                        }
 
-                if (pCount == 1) {
-                    long val = pInput.readLong();
-                    if (pType != TIFF.TYPE_SLONG8 && val < 0) {
-                        throw new IIOException(String.format("Value > %s", Long.MAX_VALUE));
+                        return val;
                     }
 
-                    return val;
-                }
+                    long[] longs = new long[pCount];
+                    for (int i = 0; i < pCount; i++) {
+                        longs[i] = pInput.readLong();
+                    }
 
-                long[] longs = new long[pCount];
-                for (int i = 0; i < pCount; i++) {
-                    longs[i] = pInput.readLong();
+                    return longs;
                 }
-
-                return longs;
 
             default:
                 // Spec says skip unknown values
