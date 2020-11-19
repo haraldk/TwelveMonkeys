@@ -143,7 +143,7 @@ public final class Rational extends Number implements Comparable<Rational> {
         double thisVal = doubleValue();
         double otherVal = pOther.doubleValue();
 
-        return thisVal < otherVal ? -1 : thisVal == otherVal ? 0 : 1;
+        return Double.compare(thisVal, otherVal);
     }
 
     /// Object overrides
