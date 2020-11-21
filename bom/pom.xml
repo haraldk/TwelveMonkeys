@@ -123,6 +123,11 @@
                 <artifactId>imageio-tiff</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-xwd</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- ImageIO 3rd party dependent plugins -->
             <dependency>
