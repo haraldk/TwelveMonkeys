@@ -30,21 +30,30 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.IndexColorModel;
+import java.awt.image.Raster;
+import java.awt.image.RenderedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageWriterSpi;
+
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
-
-import javax.imageio.*;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageWriterSpi;
-import java.awt.*;
-import java.awt.image.*;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * Writer for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) format.
@@ -57,24 +66,23 @@ import java.io.OutputStream;
  * @see <a href="http://en.wikipedia.org/wiki/Interchange_File_Format">Wikipedia: IFF</a>
  * @see <a href="http://en.wikipedia.org/wiki/ILBM">Wikipedia: IFF ILBM</a>
  */
-public class IFFImageWriter extends ImageWriterBase {
+public final class IFFImageWriter extends ImageWriterBase {
 
-    public IFFImageWriter() {
-        this(null);
-    }
-
-    protected IFFImageWriter(ImageWriterSpi pProvider) {
+    IFFImageWriter(ImageWriterSpi pProvider) {
         super(pProvider);
     }
 
+    @Override
     public IIOMetadata getDefaultImageMetadata(ImageTypeSpecifier imageType, ImageWriteParam param) {
         throw new UnsupportedOperationException("Method getDefaultImageMetadata not implemented");// TODO: Implement
     }
 
+    @Override
     public IIOMetadata convertImageMetadata(IIOMetadata inData, ImageTypeSpecifier imageType, ImageWriteParam param) {
         throw new UnsupportedOperationException("Method convertImageMetadata not implemented");// TODO: Implement
     }
 
+    @Override
     public void write(IIOMetadata pStreamMetadata, IIOImage pImage, ImageWriteParam pParam) throws IOException {
         assertOutput();
 
@@ -105,12 +113,8 @@ public class IFFImageWriter extends ImageWriterBase {
 
         // NOTE: This is much faster than imageOutput.write(pImageData.toByteArray())
         // as the data array is not duplicated
-        OutputStream adapter = IIOUtil.createStreamAdapter(imageOutput);
-        try {
+        try (OutputStream adapter = IIOUtil.createStreamAdapter(imageOutput)) {
             pImageData.writeTo(adapter);
-        }
-        finally {
-            adapter.close();
         }
 
         if (pImageData.size() % 2 == 0) {
@@ -180,7 +184,7 @@ public class IFFImageWriter extends ImageWriterBase {
 
     private void writeMeta(RenderedImage pImage, int pBodyLength) throws IOException {
         // Annotation ANNO chunk, 8 + annoData.length bytes
-        String annotation = "Written by " + getOriginatingProvider().getDescription(null) + " by " + getOriginatingProvider().getVendorName();
+        String annotation = String.format("Written by %s IFFImageWriter %s", getOriginatingProvider().getVendorName(), getOriginatingProvider().getVersion());
         GenericChunk anno = new GenericChunk(IFFUtil.toInt("ANNO".getBytes()), annotation.getBytes());
 
         ColorModel cm = pImage.getColorModel();

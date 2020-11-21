@@ -30,12 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+import java.io.IOException;
+import java.util.Locale;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-import java.io.IOException;
-import java.util.Locale;
+
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 /**
  * IFFImageWriterSpi
@@ -58,10 +59,12 @@ public class IFFImageWriterSpi extends ImageWriterSpiBase {
         return true;
     }
 
+    @Override
     public ImageWriter createWriterInstance(Object pExtension) throws IOException {
         return new IFFImageWriter(this);
     }
 
+    @Override
     public String getDescription(Locale pLocale) {
         return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image writer";
     }

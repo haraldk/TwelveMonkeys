@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+
+import javax.imageio.IIOException;
 
 /**
  * BMHDChunk
@@ -129,7 +130,8 @@ final class BMHDChunk extends IFFChunk {
         pageHeight = Math.min(pHeight, Short.MAX_VALUE);
     }
 
-    void readChunk(DataInput pInput) throws IOException {
+    @Override
+    void readChunk(final DataInput pInput) throws IOException {
         if (chunkLength != 20) {
             throw new IIOException("Unknown BMHD chunk length: " + chunkLength);
         }
@@ -148,7 +150,8 @@ final class BMHDChunk extends IFFChunk {
         pageHeight = pInput.readShort();
     }
 
-    void writeChunk(DataOutput pOutput) throws IOException {
+    @Override
+    void writeChunk(final DataOutput pOutput) throws IOException {
         pOutput.writeInt(chunkId);
         pOutput.writeInt(chunkLength);
 
@@ -167,6 +170,7 @@ final class BMHDChunk extends IFFChunk {
         pOutput.writeShort(pageHeight);
     }
 
+    @Override
     public String toString() {
         return super.toString()
                 + " {w=" + width + ", h=" + height

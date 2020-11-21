@@ -28,7 +28,7 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 |        | ICO      | MS Windows Icon Format    | ✔  | ✔   | - | 
 | [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
 | [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | -  | 
-| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | - | 
+| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | Standard | 
 | [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard |  
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
 |        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 

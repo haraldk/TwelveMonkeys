@@ -30,12 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import java.io.IOException;
+import java.util.Locale;
 
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.Locale;
+
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 /**
  * IFFImageReaderSpi
@@ -52,6 +53,7 @@ public final class IFFImageReaderSpi extends ImageReaderSpiBase {
         super(new IFFProviderInfo());
     }
 
+    @Override
     public boolean canDecodeInput(Object pSource) throws IOException {
         return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
     }
@@ -80,10 +82,12 @@ public final class IFFImageReaderSpi extends ImageReaderSpiBase {
         return false;
     }
 
+    @Override
     public ImageReader createReaderInstance(Object pExtension) throws IOException {
         return new IFFImageReader(this);
     }
 
+    @Override
     public String getDescription(Locale pLocale) {
         return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image reader";
     }

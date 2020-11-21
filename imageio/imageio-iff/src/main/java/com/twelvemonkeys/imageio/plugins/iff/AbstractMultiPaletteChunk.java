@@ -102,14 +102,15 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
     }
 
     @Override
-    void writeChunk(DataOutput pOutput) throws IOException {
+    void writeChunk(DataOutput pOutput) {
         throw new UnsupportedOperationException("Method writeChunk not implemented");
     }
 
 
+    @Override
     public ColorModel getColorModel(final IndexColorModel colorModel, final int rowIndex, final boolean laced) {
         if (rowIndex < lastRow || mutablePalette == null || originalPalette != null && originalPalette.get() != colorModel) {
-            originalPalette = new WeakReference<IndexColorModel>(colorModel);
+            originalPalette = new WeakReference<>(colorModel);
             mutablePalette = new MutableIndexColorModel(colorModel);
 
             if (initialChanges != null) {

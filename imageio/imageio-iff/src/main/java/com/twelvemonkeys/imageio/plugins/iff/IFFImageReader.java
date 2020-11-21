@@ -30,6 +30,26 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.*;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+
 import com.twelvemonkeys.image.ResampleOp;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
@@ -37,19 +57,6 @@ import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
-
-import javax.imageio.*;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Reader for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) and PBM
@@ -96,7 +103,7 @@ import java.util.List;
  * @see <a href="http://en.wikipedia.org/wiki/Interchange_File_Format">Wikipedia: IFF</a>
  * @see <a href="http://en.wikipedia.org/wiki/ILBM">Wikipedia: IFF ILBM</a>
  */
-public class IFFImageReader extends ImageReaderBase {
+public final class IFFImageReader extends ImageReaderBase {
     // http://home.comcast.net/~erniew/lwsdk/docs/filefmts/ilbm.html
     // http://www.fileformat.info/format/iff/spec/7866a9f0e53c42309af667c5da3bd426/view.htm
     //   - Contains definitions of some "new" chunks, as well as alternative FORM types
@@ -111,17 +118,14 @@ public class IFFImageReader extends ImageReaderBase {
     private GRABChunk grab;
     private CAMGChunk viewPort;
     private MultiPalette paletteChange;
+    private final List<GenericChunk> meta = new ArrayList<>();
     private int formType;
     private long bodyStart;
 
     private BufferedImage image;
     private DataInputStream byteRunStream;
 
-    public IFFImageReader() {
-        super(new IFFImageReaderSpi());
-    }
-
-    protected IFFImageReader(ImageReaderSpi pProvider) {
+    IFFImageReader(ImageReaderSpi pProvider) {
         super(pProvider);
     }
 
@@ -133,6 +137,7 @@ public class IFFImageReader extends ImageReaderBase {
         }
     }
 
+    @Override
     protected void resetMembers() {
         header = null;
         colorMap = null;
@@ -140,6 +145,7 @@ public class IFFImageReader extends ImageReaderBase {
         body = null;
         viewPort = null;
         formType = 0;
+        meta.clear();
 
         image = null;
         byteRunStream = null;
@@ -258,11 +264,6 @@ public class IFFImageReader extends ImageReaderBase {
 //                    System.out.println(ctbl);
                     break;
 
-                case IFF.CHUNK_JUNK:
-                    // Always skip junk chunks
-                    IFFChunk.skipData(imageInput, length, 0);
-                    break;
-
                 case IFF.CHUNK_BODY:
                     if (body != null) {
                         throw new IIOException("Multiple BODY chunks not allowed");
@@ -274,18 +275,32 @@ public class IFFImageReader extends ImageReaderBase {
                     // NOTE: We don't read the body here, it's done later in the read(int, ImageReadParam) method
                     // Done reading meta
                     return;
-                default:
-                    // TODO: We probably want to store ANNO, TEXT, AUTH, COPY etc chunks as Metadata
-                    // SHAM, ANNO, DEST, SPRT and more
-                    IFFChunk generic = new GenericChunk(chunkId, length);
+
+                case IFF.CHUNK_ANNO:
+                case IFF.CHUNK_AUTH:
+                case IFF.CHUNK_COPY:
+                case IFF.CHUNK_NAME:
+                case IFF.CHUNK_TEXT:
+                case IFF.CHUNK_UTF8:
+                    GenericChunk generic = new GenericChunk(chunkId, length);
                     generic.readChunk(imageInput);
+                    meta.add(generic);
 
 //                    System.out.println(generic);
+                    break;
+
+                case IFF.CHUNK_JUNK:
+                    // Always skip junk chunks
+                default:
+                    // TODO: SHAM, DEST, SPRT and more
+                    // Everything else, we'll just skip
+                    IFFChunk.skipData(imageInput, length, 0);
                     break;
             }
         }
     }
 
+    @Override
     public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
         init(pIndex);
 
@@ -314,16 +329,26 @@ public class IFFImageReader extends ImageReaderBase {
         return result;
     }
 
+    @Override
     public int getWidth(int pIndex) throws IOException {
         init(pIndex);
         return header.width;
     }
 
+    @Override
     public int getHeight(int pIndex) throws IOException {
         init(pIndex);
         return header.height;
     }
 
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        init(imageIndex);
+
+        return new IFFImageMetadata(formType, header, colorMap != null ? colorMap.getIndexColorModel(header, isEHB()) : null, viewPort, meta);
+    }
+
+    @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         init(pIndex);
 
@@ -363,12 +388,11 @@ public class IFFImageReader extends ImageReaderBase {
                     if (colorMap != null) {
                         IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
                         specifier = ImageTypeSpecifiers.createFromIndexColorModel(cm);
-                        break;
                     }
                     else {
                         specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
-                        break;
                     }
+                    break;
                 }
                 // NOTE: HAM modes falls through, as they are converted to RGB
             case 24:
@@ -786,7 +810,7 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     public static void main(String[] pArgs) throws IOException {
-        ImageReader reader = new IFFImageReader();
+        ImageReader reader = new IFFImageReader(new IFFImageReaderSpi());
 
         boolean scale = false;
         for (String arg : pArgs) {

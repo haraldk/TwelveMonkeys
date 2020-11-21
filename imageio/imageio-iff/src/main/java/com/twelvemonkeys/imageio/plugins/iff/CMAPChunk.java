@@ -30,7 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import javax.imageio.IIOException;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.awt.image.WritableRaster;
@@ -38,6 +37,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
+
+import javax.imageio.IIOException;
 
 /**
  * CMAPChunk
@@ -68,6 +69,7 @@ final class CMAPChunk extends IFFChunk {
         model = pModel;
     }
 
+    @Override
     void readChunk(final DataInput pInput) throws IOException {
         int numColors = chunkLength / 3;
 
@@ -95,6 +97,7 @@ final class CMAPChunk extends IFFChunk {
         }
     }
 
+    @Override
     void writeChunk(final DataOutput pOutput) throws IOException {
         pOutput.writeInt(chunkId);
         pOutput.writeInt(chunkLength);
@@ -112,6 +115,7 @@ final class CMAPChunk extends IFFChunk {
         }
     }
 
+    @Override
     public String toString() {
         return super.toString() + " {colorMap=" + model + "}";
     }

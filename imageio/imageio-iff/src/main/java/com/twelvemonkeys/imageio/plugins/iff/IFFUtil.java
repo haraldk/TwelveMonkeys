@@ -47,7 +47,7 @@ package com.twelvemonkeys.imageio.plugins.iff;
  * @author Harald Kuhr (Java port)
  * @version $Id: IFFUtil.java,v 1.0 06.mar.2006 13:31:35 haku Exp$
  */
-class IFFUtil {
+final class IFFUtil {
 
     /**
      * Creates a rotation table

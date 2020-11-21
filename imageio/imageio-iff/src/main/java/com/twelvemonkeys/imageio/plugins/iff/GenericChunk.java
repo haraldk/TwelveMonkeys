@@ -35,10 +35,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * UnknownChunk
+ * GenericChunk
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: UnknownChunk.java,v 1.0 28.feb.2006 00:53:47 haku Exp$
+ * @version $Id: GenericChunk.java,v 1.0 28.feb.2006 00:53:47 haku Exp$
  */
 final class GenericChunk extends IFFChunk {
 
@@ -46,7 +46,7 @@ final class GenericChunk extends IFFChunk {
 
     protected GenericChunk(int pChunkId, int pChunkLength) {
         super(pChunkId, pChunkLength);
-        data = new byte[pChunkLength <= 50 ? pChunkLength : 47];
+        data = new byte[chunkLength];
     }
 
     protected GenericChunk(int pChunkId, byte[] pChunkData) {
@@ -54,13 +54,15 @@ final class GenericChunk extends IFFChunk {
         data = pChunkData;
     }
 
-    void readChunk(DataInput pInput) throws IOException {
+    @Override
+    void readChunk(final DataInput pInput) throws IOException {
         pInput.readFully(data, 0, data.length);
 
         skipData(pInput, chunkLength, data.length);
     }
 
-    void writeChunk(DataOutput pOutput) throws IOException {
+    @Override
+    void writeChunk(final DataOutput pOutput) throws IOException {
         pOutput.writeInt(chunkId);
         pOutput.writeInt(chunkLength);
         pOutput.write(data, 0, data.length);
@@ -70,6 +72,7 @@ final class GenericChunk extends IFFChunk {
         }
     }
 
+    @Override
     public String toString() {
         return super.toString() + " {value=\""
                 + new String(data, 0, data.length <= 50 ? data.length : 47)

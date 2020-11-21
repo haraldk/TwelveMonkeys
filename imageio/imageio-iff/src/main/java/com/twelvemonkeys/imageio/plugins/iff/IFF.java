@@ -91,6 +91,12 @@ interface IFF {
     /** EA IFF 85 Generic Copyright text chunk */
     int CHUNK_COPY = ('(' << 24) + ('c' << 16) + (')' << 8) + ' ';
 
+    /** EA IFF 85 Generic annotation chunk (usually used for Software) */
+    int CHUNK_ANNO = ('A' << 24) + ('N' << 16) + ('N' << 8) + 'O';;
+
+    /** Third-party defined UTF-8 text. */
+    int CHUNK_UTF8 = ('U' << 24) + ('T' << 16) + ('F' << 8) + '8';
+
     /** color cycling */
     int CHUNK_CRNG = ('C' << 24) + ('R' << 16) + ('N' << 8) + 'G';
     /** color cycling */

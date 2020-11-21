@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+
+import javax.imageio.IIOException;
 
 /**
  * CAMGChunk
@@ -46,13 +47,14 @@ final class CAMGChunk extends IFFChunk {
     // #define CAMG_HAM 0x800   /* hold and modify */
     // #define CAMG_EHB 0x80    /* extra halfbrite */
 
-    private int camg;
+    int camg;
 
     public CAMGChunk(int pLength) {
         super(IFF.CHUNK_CAMG, pLength);
     }
 
-    void readChunk(DataInput pInput) throws IOException {
+    @Override
+    void readChunk(final DataInput pInput) throws IOException {
         if (chunkLength != 4) {
             throw new IIOException("Unknown CAMG chunk length: " + chunkLength);
         }
@@ -60,7 +62,8 @@ final class CAMGChunk extends IFFChunk {
         camg = pInput.readInt();
     }
 
-    void writeChunk(DataOutput pOutput) throws IOException {
+    @Override
+    void writeChunk(final DataOutput pOutput) {
         throw new InternalError("Not implemented: writeChunk()");
     }
 
@@ -80,6 +83,7 @@ final class CAMGChunk extends IFFChunk {
         return (camg & 0x80) != 0;
     }
 
+    @Override
     public String toString() {
         return super.toString() + " {mode=" + (isHAM() ? "HAM" : isEHB() ? "EHB" : "Normal") + "}";
     }

@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.iff;
 
 import java.io.DataInput;
 import java.io.DataOutput;
-import java.io.IOException;
 
 /**
  * BODYChunk
@@ -45,11 +44,13 @@ final class BODYChunk extends IFFChunk {
         super(IFF.CHUNK_BODY, pChunkLength);
     }
 
-    void readChunk(DataInput pInput) throws IOException {
+    @Override
+    void readChunk(final DataInput pInput) {
         throw new InternalError("BODY chunk should only be read from IFFImageReader");
     }
 
-    void writeChunk(DataOutput pOutput) throws IOException {
+    @Override
+    void writeChunk(final DataOutput pOutput)  {
         throw new InternalError("BODY chunk should only be written from IFFImageWriter");
     }
 }
