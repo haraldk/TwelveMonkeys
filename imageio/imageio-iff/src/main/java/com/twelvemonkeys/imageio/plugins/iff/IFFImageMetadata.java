@@ -1,13 +1,16 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.AbstractMetadata;
+
+import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.*;
 import java.awt.image.IndexColorModel;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import javax.imageio.metadata.IIOMetadataNode;
-
-import com.twelvemonkeys.imageio.AbstractMetadata;
+import static com.twelvemonkeys.imageio.plugins.iff.IFF.*;
+import static com.twelvemonkeys.lang.Validate.isTrue;
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 final class IFFImageMetadata extends AbstractMetadata {
     private final int formType;
@@ -17,11 +20,25 @@ final class IFFImageMetadata extends AbstractMetadata {
     private final List<GenericChunk> meta;
 
     IFFImageMetadata(int formType, BMHDChunk header, IndexColorModel colorMap, CAMGChunk viewPort, List<GenericChunk> meta) {
-        this.formType = formType;
-        this.header = header;
+        this.formType = isTrue(validFormType(formType), formType, "Unknown IFF Form type: %s");
+        this.header = notNull(header, "header");
         this.colorMap = colorMap;
         this.viewPort = viewPort;
         this.meta = meta;
+    }
+
+    private boolean validFormType(int formType) {
+        switch (formType) {
+            case TYPE_ACBM:
+            case TYPE_DEEP:
+            case TYPE_ILBM:
+            case TYPE_PBM:
+            case TYPE_RGB8:
+            case TYPE_RGBN:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override
@@ -128,10 +145,10 @@ final class IFFImageMetadata extends AbstractMetadata {
         // PlanarConfiguration
         IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
         switch (formType) {
-            case IFF.TYPE_PBM:
+            case TYPE_PBM:
                 planarConfiguration.setAttribute("value", "PixelInterleaved");
                 break;
-            case IFF.TYPE_ILBM:
+            case TYPE_ILBM:
                 planarConfiguration.setAttribute("value", "PlaneInterleaved");
                 break;
             default:
