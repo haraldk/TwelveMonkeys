@@ -31,6 +31,9 @@
 
 package com.twelvemonkeys.imageio.plugins.webp.vp8;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 final class Globals {
 
 	/* predict DC using row above and column to the left */
@@ -45,20 +48,21 @@ final class Globals {
 	static final int B_PRED = 4;
 
 	static String getModeAsString(int mode) {
-		switch (mode) {
-		case DC_PRED:
-			return "DC_PRED";
-		case V_PRED:
-			return "V_PRED";
-		case H_PRED:
-			return "H_PRED";
-		case TM_PRED:
-			return "TM_PRED";
-		case B_PRED:
-			return "B_PRED";
-		}
-		return "not found";
-	}
+        switch (mode) {
+            case DC_PRED:
+                return "DC_PRED";
+            case V_PRED:
+                return "V_PRED";
+            case H_PRED:
+                return "H_PRED";
+            case TM_PRED:
+                return "TM_PRED";
+            case B_PRED:
+                return "B_PRED";
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + mode);
+        }
+    }
 
 	/* intra_bmode */
 	static final int B_DC_PRED = 0; /*
@@ -88,29 +92,30 @@ final class Globals {
 	static final int B_HU_PRED = 9; /* ENE (horizontal up) "" */
 
 	static String getSubBlockModeAsString(int mode) {
-		switch (mode) {
-		case B_DC_PRED:
-			return "B_DC_PRED";
-		case B_TM_PRED:
-			return "B_TM_PRED";
-		case B_VE_PRED:
-			return "B_VE_PRED";
-		case B_HE_PRED:
-			return "B_HE_PRED";
-		case B_LD_PRED:
-			return "B_LD_PRED";
-		case B_RD_PRED:
-			return "B_RD_PRED";
-		case B_VR_PRED:
-			return "B_VR_PRED";
-		case B_VL_PRED:
-			return "B_VL_PRED";
-		case B_HD_PRED:
-			return "B_HD_PRED";
-		case B_HU_PRED:
-			return "B_HU_PRED";
-		}
-		return "not found";
+        switch (mode) {
+            case B_DC_PRED:
+                return "B_DC_PRED";
+            case B_TM_PRED:
+                return "B_TM_PRED";
+            case B_VE_PRED:
+                return "B_VE_PRED";
+            case B_HE_PRED:
+                return "B_HE_PRED";
+            case B_LD_PRED:
+                return "B_LD_PRED";
+            case B_RD_PRED:
+                return "B_RD_PRED";
+            case B_VR_PRED:
+                return "B_VR_PRED";
+            case B_VL_PRED:
+                return "B_VL_PRED";
+            case B_HD_PRED:
+                return "B_HD_PRED";
+            case B_HU_PRED:
+                return "B_HU_PRED";
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + mode);
+        }
 	}
 
 	static final int MAX_MB_SEGMENTS = 4;
@@ -814,9 +819,8 @@ final class Globals {
 		return String.format("%1$#x ", c);
 	}
 
-	// clamp between 0 and value
-	static int clamp(final int input, final int value) {
-		return input < 0 ? 0 : input > value ? value : input;
+	// clamp between 0 and max
+	static int clamp(final int input, final int max) {
+        return max(0, min(input, max));
 	}
-
 }

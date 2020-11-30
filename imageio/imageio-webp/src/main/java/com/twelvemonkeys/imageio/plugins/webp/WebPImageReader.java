@@ -32,6 +32,7 @@
 package com.twelvemonkeys.imageio.plugins.webp;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
@@ -48,11 +49,14 @@ import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
+import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -83,7 +87,15 @@ final class WebPImageReader extends ImageReaderBase {
 
     @Override
     public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
+        // TODO: Figure out why this makes the reader order of magnitudes faster (2-3x?)
+        //  ...or, how to make VP8 decoder make longer reads/make a better FileImageInputStream...
         super.setInput(input, seekForwardOnly, ignoreMetadata);
+//         try {
+//             super.setInput(new BufferedImageInputStream((ImageInputStream) input), seekForwardOnly, ignoreMetadata);
+//         }
+//         catch (IOException e) {
+//             throw new IOError(e);
+//         }
 
         lsbBitReader = new LSBBitReader(imageInput);
     }
@@ -240,7 +252,8 @@ final class WebPImageReader extends ImageReaderBase {
                         (byte) ((value & 0x0000ff00) >>   8),
                         (byte) ((value & 0x00ff0000) >>  16),
                         (byte) ((value & 0xff000000) >>> 24),
-                }
+                },
+                StandardCharsets.US_ASCII
         );
     }
 
@@ -270,7 +283,12 @@ final class WebPImageReader extends ImageReaderBase {
         // "alpha value is codified in bits 31..24, red in bits 23..16, green in bits 15..8 and blue in bits 7..0,
         // but implementations of the format are free to use another representation internally."
         // TODO: Doc says alpha flag is "hint only" :-P
-        // TODO: ICC profile?!
+        if (iccProfile != null && !ColorSpaces.isCS_sRGB(iccProfile)) {
+            ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(iccProfile);
+            int[] bandOffsets = header.containsALPH ? new int[] {0, 1, 2, 3} : new int[] {0, 1, 2};
+            return ImageTypeSpecifiers.createInterleaved(colorSpace, bandOffsets, DataBuffer.TYPE_BYTE, header.containsALPH, false);
+        }
+
         return ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR);
     }
 
@@ -296,13 +314,13 @@ final class WebPImageReader extends ImageReaderBase {
         switch (header.fourCC) {
             case WebP.CHUNK_VP8_:
                 imageInput.seek(header.offset);
-                readVP8(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()));
+                readVP8(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()), param);
 
                 break;
 
             case WebP.CHUNK_VP8L:
                 imageInput.seek(header.offset);
-                readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()));
+                readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()), param);
 
                 break;
 
@@ -344,7 +362,7 @@ final class WebPImageReader extends ImageReaderBase {
                                     break;
                                 case 1:
                                     opaqueAlpha(destination.getAlphaRaster()); // TODO: Remove when correctly implemented!
-                                    readVP8Lossless(destination.getAlphaRaster());
+                                    readVP8Lossless(destination.getAlphaRaster(), param);
                                     break;
                                 default:
                                     processWarningOccurred("Unknown WebP alpha compression: " + compression);
@@ -356,12 +374,12 @@ final class WebPImageReader extends ImageReaderBase {
 
                         case WebP.CHUNK_VP8_:
                             readVP8(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel())
-                                    .createWritableChild(0, 0, width, height, 0, 0, new int[]{0, 1, 2}));
+                                    .createWritableChild(0, 0, width, height, 0, 0, new int[]{0, 1, 2}), param);
 
                             break;
 
                         case WebP.CHUNK_VP8L:
-                            readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()));
+                            readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()), param);
 
                             break;
 
@@ -409,13 +427,13 @@ final class WebPImageReader extends ImageReaderBase {
         opaqueAlpha(alphaRaster);
     }
 
-    private void readVP8Lossless(final WritableRaster raster) throws IOException {
+    private void readVP8Lossless(final WritableRaster raster, final ImageReadParam param) throws IOException {
         VP8LDecoder decoder = new VP8LDecoder(imageInput);
         decoder.readVP8Lossless(raster, true);
     }
 
-    private void readVP8(final WritableRaster raster) throws IOException {
-        VP8Frame frame = new VP8Frame(imageInput);
+    private void readVP8(final WritableRaster raster, final ImageReadParam param) throws IOException {
+        VP8Frame frame = new VP8Frame(imageInput, DEBUG);
 
         frame.setProgressListener(new ProgressListenerBase() {
             @Override
@@ -424,9 +442,9 @@ final class WebPImageReader extends ImageReaderBase {
             }
         });
 
-        // TODO: Consider merging these operations...
-        if (frame.decodeFrame(false)) {
-            frame.copyTo(raster);
+        if (!frame.decode(raster, param)) {
+            // TODO: Does this make any sense? Only happens if frame type is not still (0)
+            processWarningOccurred("Nothing to decode");
         }
     }
 
@@ -435,9 +453,7 @@ final class WebPImageReader extends ImageReaderBase {
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         readHeader(imageIndex);
-        // TODO: Read possible EXIF and 'XMP ' chunks
         readMeta();
-
 
         return new WebPImageMetadata(header);
     }

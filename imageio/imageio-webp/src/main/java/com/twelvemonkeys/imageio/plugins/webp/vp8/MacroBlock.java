@@ -36,19 +36,19 @@ import java.io.IOException;
 final class MacroBlock {
 
     private int filterLevel;
-    private boolean keepDebugInfo = false;
+    private final boolean keepDebugInfo;
     private int segmentId;
     private int skipCoeff;
     private boolean skipInnerLoopFilter;
-    SubBlock[][] uSubBlocks;
+    final SubBlock[][] uSubBlocks;
     private int uVFilterLevel;
 
     private int uvMode;
-    SubBlock[][] vSubBlocks;
-    private int x, y;
-    SubBlock y2SubBlock;
+    final SubBlock[][] vSubBlocks;
+    private final int x, y;
+    final SubBlock y2SubBlock;
     private int yMode;
-    SubBlock[][] ySubBlocks;
+    final SubBlock[][] ySubBlocks;
 
     MacroBlock(int x, int y, boolean keepDebugInfo) {
         this.x = x - 1;
@@ -58,8 +58,8 @@ final class MacroBlock {
         ySubBlocks = new SubBlock[4][4];
         uSubBlocks = new SubBlock[2][2];
         vSubBlocks = new SubBlock[2][2];
-        SubBlock above = null;
-        SubBlock left = null;
+        SubBlock above;
+        SubBlock left;
 
         for (int i = 0; i < 4; i++) {
             for (int j = 0; j < 4; j++) {
@@ -72,7 +72,7 @@ final class MacroBlock {
                     above = ySubBlocks[j][i - 1];
                 }
                 ySubBlocks[j][i] = new SubBlock(this, above, left,
-                        SubBlock.PLANE.Y1);
+                        SubBlock.Plane.Y1);
             }
         }
 
@@ -87,7 +87,7 @@ final class MacroBlock {
                     above = uSubBlocks[j][i - 1];
                 }
                 uSubBlocks[j][i] = new SubBlock(this, above, left,
-                        SubBlock.PLANE.U);
+                        SubBlock.Plane.U);
             }
         }
 
@@ -101,12 +101,10 @@ final class MacroBlock {
                 if (i > 0) {
                     above = vSubBlocks[j][i - 1];
                 }
-                vSubBlocks[j][i] = new SubBlock(this, above, left,
-                        SubBlock.PLANE.V);
+                vSubBlocks[j][i] = new SubBlock(this, above, left, SubBlock.Plane.V);
             }
         }
-        y2SubBlock = new SubBlock(this, null, null, SubBlock.PLANE.Y2);
-
+        y2SubBlock = new SubBlock(this, null, null, SubBlock.Plane.Y2);
     }
 
     public void decodeMacroBlock(VP8Frame frame) throws IOException {
@@ -115,57 +113,51 @@ final class MacroBlock {
             if (mb.getYMode() != Globals.B_PRED) {
                 mb.skipInnerLoopFilter = true;
             }
-        } else if (mb.getYMode() != Globals.B_PRED) {
-            decodeMacroBlockTokens(frame, true);
-        } else {
-            decodeMacroBlockTokens(frame, false);
+        }
+        else {
+            decodeMacroBlockTokens(frame, mb.getYMode() != Globals.B_PRED);
         }
     }
 
-    private void decodeMacroBlockTokens(VP8Frame frame, boolean withY2)
-            throws IOException {
-        skipInnerLoopFilter = false;
+    private void decodeMacroBlockTokens(VP8Frame frame, boolean withY2) throws IOException {
         if (withY2) {
-            skipInnerLoopFilter = skipInnerLoopFilter
-                    | decodePlaneTokens(frame, 1, SubBlock.PLANE.Y2, false);
+            skipInnerLoopFilter = decodePlaneTokens(frame, 1, SubBlock.Plane.Y2, false);
         }
-        skipInnerLoopFilter = skipInnerLoopFilter
-                | decodePlaneTokens(frame, 4, SubBlock.PLANE.Y1, withY2);
-        skipInnerLoopFilter = skipInnerLoopFilter
-                | decodePlaneTokens(frame, 2, SubBlock.PLANE.U, false);
-        skipInnerLoopFilter = skipInnerLoopFilter
-                | decodePlaneTokens(frame, 2, SubBlock.PLANE.V, false);
+
+        skipInnerLoopFilter |= decodePlaneTokens(frame, 4, SubBlock.Plane.Y1, withY2);
+        skipInnerLoopFilter |= decodePlaneTokens(frame, 2, SubBlock.Plane.U, false);
+        skipInnerLoopFilter |= decodePlaneTokens(frame, 2, SubBlock.Plane.V, false);
+
         skipInnerLoopFilter = !skipInnerLoopFilter;
     }
 
     private boolean decodePlaneTokens(VP8Frame frame, int dimentions,
-            SubBlock.PLANE plane, boolean withY2) throws IOException {
+                                      SubBlock.Plane plane, boolean withY2) throws IOException {
         MacroBlock mb = this;
         boolean r = false;
+
         for (int y = 0; y < dimentions; y++) {
             for (int x = 0; x < dimentions; x++) {
                 int L = 0;
                 int A = 0;
                 int lc = 0;
+
                 SubBlock sb = mb.getSubBlock(plane, x, y);
                 SubBlock left = frame.getLeftSubBlock(sb, plane);
                 SubBlock above = frame.getAboveSubBlock(sb, plane);
-                if (left.hasNoZeroToken()) {
 
+                if (left.hasNoZeroToken()) {
                     L = 1;
                 }
 
                 lc += L;
 
                 if (above.hasNoZeroToken()) {
-
                     A = 1;
                 }
 
                 lc += A;
-                sb.decodeSubBlock(frame.getTokenBoolDecoder(),
-                        frame.getCoefProbs(), lc,
-                        SubBlock.planeToType(plane, withY2), withY2);
+                sb.decodeSubBlock(frame.getTokenBoolDecoder(), frame.getCoefProbs(), lc, SubBlock.planeToType(plane, withY2), withY2);
                 r = r | sb.hasNoZeroToken();
             }
         }
@@ -180,7 +172,7 @@ final class MacroBlock {
                     .getY2ac_delta_q();
             int dcQValue = frame.getSegmentQuants().getSegQuants()[this.getSegmentId()].getY2dc();
 
-            int input[] = new int[16];
+            int[] input = new int[16];
             input[0] = sb.getTokens()[0] * dcQValue;
 
             for (int x = 1; x < 16; x++) {
@@ -206,8 +198,8 @@ final class MacroBlock {
                 }
             }
             mb.recon_mb();
-
-        } else {
+        }
+        else {
             for (int j = 0; j < 4; j++) {
                 for (int i = 0; i < 4; i++) {
                     SubBlock sb = mb.getYSubBlock(i, j);
@@ -260,7 +252,7 @@ final class MacroBlock {
         return this.filterLevel;
     }
 
-    public SubBlock getBottomSubBlock(int x, SubBlock.PLANE plane) {
+    public SubBlock getBottomSubBlock(int x, SubBlock.Plane plane) {
         switch (plane) {
             case Y1:
                 return ySubBlocks[x][3];
@@ -275,7 +267,7 @@ final class MacroBlock {
         throw new IllegalArgumentException("Bad plane: " + plane);
     }
 
-    public SubBlock getLeftSubBlock(int y, SubBlock.PLANE plane) {
+    public SubBlock getLeftSubBlock(int y, SubBlock.Plane plane) {
         switch (plane) {
             case Y1:
                 return ySubBlocks[0][y];
@@ -290,7 +282,7 @@ final class MacroBlock {
         throw new IllegalArgumentException("Bad plane: " + plane);
     }
 
-    public SubBlock getRightSubBlock(int y, SubBlock.PLANE plane) {
+    public SubBlock getRightSubBlock(int y, SubBlock.Plane plane) {
         switch (plane) {
             case Y1:
                 return ySubBlocks[3][y];
@@ -309,7 +301,7 @@ final class MacroBlock {
         return skipCoeff;
     }
 
-    public SubBlock getSubBlock(SubBlock.PLANE plane, int i, int j) {
+    public SubBlock getSubBlock(SubBlock.Plane plane, int i, int j) {
         switch (plane) {
             case Y1:
                 return getYSubBlock(i, j);
@@ -325,7 +317,7 @@ final class MacroBlock {
     }
 
     public int getSubblockX(SubBlock sb) {
-        if (sb.getPlane() == SubBlock.PLANE.Y1) {
+        if (sb.getPlane() == SubBlock.Plane.Y1) {
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     if (ySubBlocks[x][y] == sb) {
@@ -333,7 +325,8 @@ final class MacroBlock {
                     }
                 }
             }
-        } else if (sb.getPlane() == SubBlock.PLANE.U) {
+        }
+        else if (sb.getPlane() == SubBlock.Plane.U) {
             for (int y = 0; y < 2; y++) {
                 for (int x = 0; x < 2; x++) {
                     if (uSubBlocks[x][y] == sb) {
@@ -341,7 +334,8 @@ final class MacroBlock {
                     }
                 }
             }
-        } else if (sb.getPlane() == SubBlock.PLANE.V) {
+        }
+        else if (sb.getPlane() == SubBlock.Plane.V) {
             for (int y = 0; y < 2; y++) {
                 for (int x = 0; x < 2; x++) {
                     if (vSubBlocks[x][y] == sb) {
@@ -349,16 +343,16 @@ final class MacroBlock {
                     }
                 }
             }
-        } else if (sb.getPlane() == SubBlock.PLANE.Y2) {
+        }
+        else if (sb.getPlane() == SubBlock.Plane.Y2) {
             return 0;
         }
 
         return -100;
-
     }
 
     public int getSubblockY(SubBlock sb) {
-        if (sb.getPlane() == SubBlock.PLANE.Y1) {
+        if (sb.getPlane() == SubBlock.Plane.Y1) {
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     if (ySubBlocks[x][y] == sb) {
@@ -366,7 +360,8 @@ final class MacroBlock {
                     }
                 }
             }
-        } else if (sb.getPlane() == SubBlock.PLANE.U) {
+        }
+        else if (sb.getPlane() == SubBlock.Plane.U) {
             for (int y = 0; y < 2; y++) {
                 for (int x = 0; x < 2; x++) {
                     if (uSubBlocks[x][y] == sb) {
@@ -374,7 +369,8 @@ final class MacroBlock {
                     }
                 }
             }
-        } else if (sb.getPlane() == SubBlock.PLANE.V) {
+        }
+        else if (sb.getPlane() == SubBlock.Plane.V) {
             for (int y = 0; y < 2; y++) {
                 for (int x = 0; x < 2; x++) {
                     if (vSubBlocks[x][y] == sb) {
@@ -382,7 +378,8 @@ final class MacroBlock {
                     }
                 }
             }
-        } else if (sb.getPlane() == SubBlock.PLANE.Y2) {
+        }
+        else if (sb.getPlane() == SubBlock.Plane.Y2) {
             return 0;
         }
 
@@ -445,8 +442,8 @@ final class MacroBlock {
                 boolean left_available = false;
                 int Uaverage = 0;
                 int Vaverage = 0;
-                int expected_udc = 0;
-                int expected_vdc = 0;
+                int expected_udc;
+                int expected_vdc;
                 if (x > 0) {
                     left_available = true;
                 }
@@ -486,19 +483,20 @@ final class MacroBlock {
 
                     expected_udc = (Uaverage + (1 << (shift - 1))) >> shift;
                     expected_vdc = (Vaverage + (1 << (shift - 1))) >> shift;
-                } else {
+                }
+                else {
                     expected_udc = 128;
                     expected_vdc = 128;
                 }
 
-                int ufill[][] = new int[4][4];
+                int[][] ufill = new int[4][4];
                 for (int y = 0; y < 4; y++) {
                     for (int x = 0; x < 4; x++) {
                         ufill[x][y] = expected_udc;
                     }
                 }
 
-                int vfill[][] = new int[4][4];
+                int[][] vfill = new int[4][4];
                 for (int y = 0; y < 4; y++) {
                     for (int x = 0; x < 4; x++) {
                         vfill[x][y] = expected_vdc;
@@ -529,8 +527,8 @@ final class MacroBlock {
                     for (int x = 0; x < 2; x++) {
                         SubBlock usb = uSubBlocks[y][x];
                         SubBlock vsb = vSubBlocks[y][x];
-                        int ublock[][] = new int[4][4];
-                        int vblock[][] = new int[4][4];
+                        int[][] ublock = new int[4][4];
+                        int[][] vblock = new int[4][4];
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
                                 ublock[j][i] = aboveUSb[y]
@@ -560,8 +558,8 @@ final class MacroBlock {
                     for (int x = 0; x < 2; x++) {
                         SubBlock usb = uSubBlocks[x][y];
                         SubBlock vsb = vSubBlocks[x][y];
-                        int ublock[][] = new int[4][4];
-                        int vblock[][] = new int[4][4];
+                        int[][] ublock = new int[4][4];
+                        int[][] vblock = new int[4][4];
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
                                 ublock[i][j] = leftUSb[y]
@@ -610,10 +608,8 @@ final class MacroBlock {
                                         + aboveVSb[d].getDest()[c][3] - alv;
                                 vpred = Globals.clamp(vpred, 255);
                                 vSubBlocks[d][b].setPixel(c, a, vpred);
-
                             }
                         }
-
                     }
                 }
 
@@ -635,7 +631,7 @@ final class MacroBlock {
                 boolean left_available = false;
 
                 int average = 0;
-                int expected_dc = 0;
+                int expected_dc;
                 if (x > 0) {
                     left_available = true;
                 }
@@ -671,11 +667,12 @@ final class MacroBlock {
                     }
 
                     expected_dc = (average + (1 << (shift - 1))) >> shift;
-                } else {
+                }
+                else {
                     expected_dc = 128;
                 }
 
-                int fill[][] = new int[4][4];
+                int[][] fill = new int[4][4];
                 for (int y = 0; y < 4; y++) {
                     for (int x = 0; x < 4; x++) {
                         fill[x][y] = expected_dc;
@@ -700,7 +697,7 @@ final class MacroBlock {
                 for (int y = 0; y < 4; y++) {
                     for (int x = 0; x < 4; x++) {
                         SubBlock sb = ySubBlocks[x][y];
-                        int block[][] = new int[4][4];
+                        int[][] block = new int[4][4];
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
                                 block[i][j] = aboveYSb[x].getPredict(
@@ -708,7 +705,6 @@ final class MacroBlock {
                             }
                         }
                         sb.setPredict(block);
-
                     }
                 }
 
@@ -725,7 +721,7 @@ final class MacroBlock {
                 for (int y = 0; y < 4; y++) {
                     for (int x = 0; x < 4; x++) {
                         SubBlock sb = ySubBlocks[x][y];
-                        int block[][] = new int[4][4];
+                        int[][] block = new int[4][4];
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
                                 block[i][j] = leftYSb[y].getPredict(
@@ -736,10 +732,10 @@ final class MacroBlock {
                     }
                 }
 
-                SubBlock[] leftUSb = new SubBlock[2];
-                for (int x = 0; x < 2; x++) {
-                    leftUSb[x] = leftMb.getYSubBlock(1, x);
-                }
+//                 SubBlock[] leftUSb = new SubBlock[2];
+//                 for (int x = 0; x < 2; x++) {
+//                     leftUSb[x] = leftMb.getYSubBlock(1, x);
+//                 }
 
                 break;
             case Globals.TM_PRED:
@@ -756,23 +752,20 @@ final class MacroBlock {
                 for (int x = 0; x < 4; x++) {
                     leftYSb[x] = leftMb.getYSubBlock(3, x);
                 }
-                fill = new int[4][4];
+//                 fill = new int[4][4];
 
                 for (int b = 0; b < 4; b++) {
                     for (int a = 0; a < 4; a++) {
 
                         for (int d = 0; d < 4; d++) {
                             for (int c = 0; c < 4; c++) {
-
                                 int pred = leftYSb[b].getDest()[3][a]
                                         + aboveYSb[d].getDest()[c][3] - al;
 
                                 ySubBlocks[d][b].setPixel(c, a,
                                         Globals.clamp(pred, 255));
-
                             }
                         }
-
                     }
                 }
 
@@ -803,7 +796,6 @@ final class MacroBlock {
                 sb.reconstruct();
             }
         }
-
     }
 
     public void setFilterLevel(int value) {

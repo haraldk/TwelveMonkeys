@@ -31,6 +31,8 @@
 
 package com.twelvemonkeys.imageio.plugins.webp.vp8;
 
+import static com.twelvemonkeys.imageio.plugins.webp.vp8.Globals.clamp;
+
 final class SegmentQuant {
     private int filterStrength;
     private int Qindex;
@@ -40,17 +42,6 @@ final class SegmentQuant {
     private int y1dc;
     private int y2ac;
     private int y2dc;
-
-    private int clip(int val, int max) {
-        int r = val;
-        if (val > max) {
-            r = max;
-        }
-        if (r < 0) {
-            r = 0;
-        }
-        return r;
-    }
 
     public int getQindex() {
         return Qindex;
@@ -89,31 +80,31 @@ final class SegmentQuant {
     }
 
     public void setUvac_delta_q(int uvac_delta_q) {
-        this.uvac = Globals.vp8AcQLookup[clip(Qindex + uvac_delta_q, 127)];
+        this.uvac = Globals.vp8AcQLookup[clamp(Qindex + uvac_delta_q, 127)];
     }
 
     public void setUvdc_delta_q(int uvdc_delta_q) {
-        this.uvdc = Globals.vp8DcQLookup[clip(Qindex + uvdc_delta_q, 127)];
+        this.uvdc = Globals.vp8DcQLookup[clamp(Qindex + uvdc_delta_q, 127)];
     }
 
     public void setY1ac() {
-        this.y1ac = Globals.vp8AcQLookup[clip(Qindex, 127)];
+        this.y1ac = Globals.vp8AcQLookup[clamp(Qindex, 127)];
     }
 
     public void setY1dc(int y1dc) {
-        this.y1dc = Globals.vp8DcQLookup[clip(Qindex + y1dc, 127)];
+        this.y1dc = Globals.vp8DcQLookup[clamp(Qindex + y1dc, 127)];
         this.setY1ac();
     }
 
     public void setY2ac_delta_q(int y2ac_delta_q) {
-        this.y2ac = Globals.vp8AcQLookup[clip(Qindex + y2ac_delta_q, 127)] * 155 / 100;
+        this.y2ac = Globals.vp8AcQLookup[clamp(Qindex + y2ac_delta_q, 127)] * 155 / 100;
         if (this.y2ac < 8) {
             this.y2ac = 8;
         }
     }
 
     public void setY2dc(int y2dc_delta_q) {
-        this.y2dc = Globals.vp8DcQLookup[clip(Qindex + y2dc_delta_q, 127)] * 2;
+        this.y2dc = Globals.vp8DcQLookup[clamp(Qindex + y2dc_delta_q, 127)] * 2;
     }
 
     public int getFilterStrength() {

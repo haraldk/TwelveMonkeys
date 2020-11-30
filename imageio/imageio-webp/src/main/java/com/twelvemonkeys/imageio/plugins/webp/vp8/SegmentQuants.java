@@ -35,8 +35,17 @@ import java.io.IOException;
 
 final class SegmentQuants {
 
-    private static DeltaQ get_delta_q(BoolDecoder bc, int prev)
-            throws IOException {
+    private int qIndex;
+
+    private final SegmentQuant[] segQuants = new SegmentQuant[Globals.MAX_MB_SEGMENTS];
+
+    public SegmentQuants() {
+        for (int x = 0; x < Globals.MAX_MB_SEGMENTS; x++) {
+            segQuants[x] = new SegmentQuant();
+        }
+    }
+
+    private static DeltaQ get_delta_q(BoolDecoder bc, int prev) throws IOException {
         DeltaQ ret = new DeltaQ();
         ret.v = 0;
         ret.update = false;
@@ -49,22 +58,12 @@ final class SegmentQuants {
             }
         }
 
-		/* Trigger a quantizer update if the delta-q value has changed */
+        // Trigger a quantizer update if the delta-q value has changed
         if (ret.v != prev) {
             ret.update = true;
         }
 
         return ret;
-    }
-
-    private int qIndex;
-
-    private SegmentQuant[] segQuants = new SegmentQuant[Globals.MAX_MB_SEGMENTS];
-
-    public SegmentQuants() {
-        for (int x = 0; x < Globals.MAX_MB_SEGMENTS; x++) {
-            segQuants[x] = new SegmentQuant();
-        }
     }
 
     public int getqIndex() {
@@ -76,7 +75,7 @@ final class SegmentQuants {
     }
 
     public void parse(BoolDecoder bc, boolean segmentation_enabled,
-            boolean mb_segement_abs_delta) throws IOException {
+                      boolean mb_segement_abs_delta) throws IOException {
         qIndex = bc.readLiteral(7);
         boolean q_update = false;
         DeltaQ v = get_delta_q(bc, 0);
@@ -98,7 +97,8 @@ final class SegmentQuants {
         for (SegmentQuant s : segQuants) {
             if (!segmentation_enabled) {
                 s.setQindex(qIndex);
-            } else if (!mb_segement_abs_delta) {
+            }
+            else if (!mb_segement_abs_delta) {
                 s.setQindex(s.getQindex() + qIndex);
             }
 
@@ -107,11 +107,6 @@ final class SegmentQuants {
             s.setY2ac_delta_q(y2ac_delta_q);
             s.setUvdc_delta_q(uvdc_delta_q);
             s.setUvac_delta_q(uvac_delta_q);
-
         }
-    }
-
-    public void setSegQuants(SegmentQuant[] segQuants) {
-        this.segQuants = segQuants;
     }
 }
