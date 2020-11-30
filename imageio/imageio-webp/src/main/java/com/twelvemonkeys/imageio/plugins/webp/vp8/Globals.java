@@ -499,8 +499,7 @@ final class Globals {
 		for (int i = 0; i < vp8DefaultCoefProbs.length; i++)
 			for (int j = 0; j < vp8DefaultCoefProbs[0].length; j++)
 				for (int k = 0; k < vp8DefaultCoefProbs[0][0].length; k++)
-					for (int l = 0; l < vp8DefaultCoefProbs[0][0][0].length; l++)
-						r[i][j][k][l] = vp8DefaultCoefProbs[i][j][k][l];
+						r[i][j][k] = vp8DefaultCoefProbs[i][j][k].clone();
 		return r;
 	}
 

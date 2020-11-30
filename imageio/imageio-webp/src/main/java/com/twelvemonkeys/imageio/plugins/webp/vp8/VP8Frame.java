@@ -1060,22 +1060,24 @@ public final class VP8Frame {
     private final byte[] rgb = new byte[4]; // Allow decoding into RGBA, leaving the alpha out.
 
     private void copyBlock(final MacroBlock macroBlock, final WritableRaster byteRGBRaster, final ImageReadParam param) {
-        // TODO: Consider doing YCbCr -> RGB in reader instead, or pass a flag to allow readRaster reading direct YUV/YCbCr values
+        int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
+        int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
 
         // We might be copying into a smaller raster
         int yStart = macroBlock.getY() * 16;
-        int yEnd = Math.min(16, byteRGBRaster.getHeight() - yStart);
+        int yEnd = Math.min(16, byteRGBRaster.getHeight() * sourceYSubsampling - yStart);
         int xStart = macroBlock.getX() * 16;
-        int xEnd = Math.min(16, byteRGBRaster.getWidth() - xStart);
+        int xEnd = Math.min(16, byteRGBRaster.getWidth() * sourceXSubsampling - xStart);
 
-        for (int y = 0; y < yEnd; y++) {
-            for (int x = 0; x < xEnd; x++) {
+        for (int y = 0; y < yEnd; y += sourceYSubsampling) {
+            for (int x = 0; x < xEnd; x += sourceXSubsampling) {
                 yuv[0] = (byte) macroBlock.getSubBlock(SubBlock.Plane.Y1, x / 4, y / 4).getDest()[x % 4][y % 4];
                 yuv[1] = (byte) macroBlock.getSubBlock(SubBlock.Plane.U, (x / 2) / 4, (y / 2) / 4).getDest()[(x / 2) % 4][(y / 2) % 4];
                 yuv[2] = (byte) macroBlock.getSubBlock(SubBlock.Plane.V, (x / 2) / 4, (y / 2) / 4).getDest()[(x / 2) % 4][(y / 2) % 4];
 
+                // TODO: Consider doing YCbCr -> RGB in reader instead, or pass a flag to allow readRaster reading direct YUV/YCbCr values
                 convertYCbCr2RGB(yuv, rgb, 0);
-                byteRGBRaster.setDataElements(xStart + x, yStart + y, rgb);
+                byteRGBRaster.setDataElements((xStart + x) / sourceXSubsampling, (yStart + y) / sourceYSubsampling, rgb);
             }
         }
     }

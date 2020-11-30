@@ -145,16 +145,6 @@ final class LoopFilter {
         return abs(p1 - p0) > threshold || abs(q1 - q0) > threshold;
     }
 
-//     public static void loopFilter(VP8Frame frame) {
-//         if (frame.getFilterType() == 2) {
-//             loopFilterUV(frame);
-//             loopFilterY(frame);
-//         }
-//         else if (frame.getFilterType() == 1) {
-//             loopFilterSimple(frame);
-//         }
-//     }
-
     static void loopFilterBlock(final MacroBlock cmb, final MacroBlock lmb, final MacroBlock tmb, int frameType, boolean simpleFilter, int sharpness) {
         if (simpleFilter) {
             loopFilterSimpleBlock(cmb, lmb, tmb, sharpness);
@@ -165,23 +155,7 @@ final class LoopFilter {
         }
     }
 
-
-    private static void loopFilterSimple(VP8Frame frame) {
-        for (int y = 0; y < frame.getMacroBlockRows(); y++) {
-//            frame.fireLFProgressUpdate((100.0f * ((float) (y + 1) / (float) (frame
-//                    .getMacroBlockRows()))));
-            for (int x = 0; x < frame.getMacroBlockCols(); x++) {
-                loopFilterSimpleBlock(frame.getMacroBlock(x, y),
-                        x > 0 ? frame.getMacroBlock(x - 1, y) : null,
-                        y > 0 ? frame.getMacroBlock(x, y - 1) : null,
-                        frame.getSharpnessLevel());
-            }
-        }
-    }
-
     static void loopFilterSimpleBlock(final MacroBlock cmb, final MacroBlock lmb, final MacroBlock tmb, final int sharpnessLevel) {
-        // System.out.println("x: "+x+" y: "+y);
-//         MacroBlock bmb = frame.getMacroBlock(x, y); // TODO: Same..?
         int loop_filter_level = cmb.getFilterLevel();
         if (loop_filter_level != 0) {
             int interior_limit = cmb.getFilterLevel();
@@ -273,18 +247,6 @@ final class LoopFilter {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    private static void loopFilterUV(VP8Frame frame) {
-        for (int y = 0; y < frame.getMacroBlockRows(); y++) {
-            for (int x = 0; x < frame.getMacroBlockCols(); x++) {
-                loopFilterUVBlock(frame.getMacroBlock(x, y),
-                        x > 0 ? frame.getMacroBlock(x - 1, y) : null,
-                        y > 0 ? frame.getMacroBlock(x, y - 1) : null,
-                        frame.getSharpnessLevel(), frame.getFrameType()
-                );
             }
         }
     }
@@ -403,17 +365,6 @@ final class LoopFilter {
                         }
                     }
                 }
-            }
-        }
-    }
-
-    private static void loopFilterY(VP8Frame frame) {
-        for (int y = 0; y < frame.getMacroBlockRows(); y++) {
-            for (int x = 0; x < frame.getMacroBlockCols(); x++) {
-                loopFilterYBlock(frame.getMacroBlock(x, y),
-                        x > 0 ? frame.getMacroBlock(x - 1, y) : null,
-                        y > 0 ? frame.getMacroBlock(x, y - 1) : null,
-                        frame.getSharpnessLevel(), frame.getFrameType());
             }
         }
     }
@@ -587,9 +538,6 @@ final class LoopFilter {
         if ((abs(seg.P0 - seg.Q0) * 2 + abs(seg.P1 - seg.Q1) / 2) <= edge_limit) {
             common_adjust(true, seg); // use outer taps
         }
-        else {
-            // TODO?
-        }
     }
 
     private static void subblock_filter(int hev_threshold, // detect high edge variance
@@ -604,9 +552,6 @@ final class LoopFilter {
                 seg.Q1 = s2u(q1 - a);
                 seg.P1 = s2u(p1 + a);
             }
-        }
-        else {
-            // TODO?
         }
     }
 

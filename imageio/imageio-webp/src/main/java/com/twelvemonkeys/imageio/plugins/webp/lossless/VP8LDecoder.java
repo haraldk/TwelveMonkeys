@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.plugins.webp.RasterUtils.asByteRaster;
-import static java.lang.Math.abs;
+import static java.lang.Math.*;
 
 /**
  * VP8LDecoder.
@@ -49,14 +49,13 @@ import static java.lang.Math.abs;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 public final class VP8LDecoder {
-
     private final ImageInputStream imageInput;
     private final LSBBitReader lsbBitReader;
 
     private final List<Transform> transforms = new ArrayList<>();
     private ColorCache colorCache;
 
-    public VP8LDecoder(final ImageInputStream imageInput) {
+    public VP8LDecoder(final ImageInputStream imageInput, final boolean debug) {
         this.imageInput = imageInput;
         lsbBitReader = new LSBBitReader(imageInput);
     }
@@ -275,7 +274,7 @@ public final class VP8LDecoder {
 
     // Clamp the input value between 0 and 255.
     private static int clamp(final int a) {
-        return a < 0 ? 0 : a > 255 ? 255 : a;
+        return max(0, min(a, 255));
     }
 
     private static int clampAddSubtractFull(final int a, final int b, final int c) {

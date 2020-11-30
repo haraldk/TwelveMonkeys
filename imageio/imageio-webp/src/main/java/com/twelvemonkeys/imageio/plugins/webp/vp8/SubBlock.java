@@ -236,7 +236,6 @@ final class SubBlock {
     }
 
     public SubBlock getAbove() {
-
         return above;
     }
 
@@ -247,6 +246,7 @@ final class SubBlock {
                 && plane == Plane.Y1) {
             r = r + "\n  " + Globals.getSubBlockModeAsString(mode);
         }
+
         return r;
     }
 
@@ -260,12 +260,10 @@ final class SubBlock {
     }
 
     public int[][] getDiff() {
-
         return diff;
     }
 
     public SubBlock getLeft() {
-
         return left;
     }
 

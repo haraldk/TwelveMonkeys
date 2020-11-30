@@ -428,7 +428,7 @@ final class WebPImageReader extends ImageReaderBase {
     }
 
     private void readVP8Lossless(final WritableRaster raster, final ImageReadParam param) throws IOException {
-        VP8LDecoder decoder = new VP8LDecoder(imageInput);
+        VP8LDecoder decoder = new VP8LDecoder(imageInput, DEBUG);
         decoder.readVP8Lossless(raster, true);
     }
 
@@ -443,7 +443,6 @@ final class WebPImageReader extends ImageReaderBase {
         });
 
         if (!frame.decode(raster, param)) {
-            // TODO: Does this make any sense? Only happens if frame type is not still (0)
             processWarningOccurred("Nothing to decode");
         }
     }
