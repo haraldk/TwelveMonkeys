@@ -57,8 +57,10 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     private ImageInputStream stream;
 
-    private ByteBuffer buffer;
-    private ByteBuffer integralCache = ByteBuffer.allocate(8);
+    private  ByteBuffer buffer;
+
+    private final ByteBuffer integralCache = ByteBuffer.allocate(8);
+    private final byte[] integralCacheArray = integralCache.array();
 
     public BufferedImageInputStream(final ImageInputStream pStream) throws IOException {
         this(pStream, DEFAULT_BUFFER_SIZE);
@@ -97,10 +99,10 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
         if (!buffer.hasRemaining()) {
             fillBuffer();
-        }
 
-        if (!buffer.hasRemaining()) {
-            return -1;
+            if (!buffer.hasRemaining()) {
+                return -1;
+            }
         }
 
         bitOffset = 0;
@@ -172,21 +174,21 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     @Override
     public short readShort() throws IOException {
-        readFully(integralCache.array(), 0, 2);
+        readFully(integralCacheArray, 0, 2);
 
         return integralCache.getShort(0);
     }
 
     @Override
     public int readInt() throws IOException {
-        readFully(integralCache.array(), 0, 4);
+        readFully(integralCacheArray, 0, 4);
 
         return integralCache.getInt(0);
     }
 
     @Override
     public long readLong() throws IOException {
-        readFully(integralCache.array(), 0, 8);
+        readFully(integralCacheArray, 0, 8);
 
         return integralCache.getLong(0);
     }
