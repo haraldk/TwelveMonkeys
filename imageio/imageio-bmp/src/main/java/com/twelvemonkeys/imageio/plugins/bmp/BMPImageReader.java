@@ -37,7 +37,7 @@ import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 
 import javax.imageio.IIOException;
@@ -205,7 +205,7 @@ public final class BMPImageReader extends ImageReaderBase {
         checkBounds(pImageIndex);
 
         // TODO: Better implementation, include INT_RGB types for 3BYTE_BGR and 4BYTE_ABGR for INT_ARGB
-        return Arrays.asList(getRawImageType(pImageIndex)).iterator();
+        return Collections.singletonList(getRawImageType(pImageIndex)).iterator();
     }
 
     @Override
@@ -410,6 +410,13 @@ public final class BMPImageReader extends ImageReaderBase {
 
     private ImageReader initReaderDelegate(int compression) throws IOException {
         ImageReader reader = getImageReaderDelegate(compression);
+        reader.reset();
+
+        // Install listener
+        ListenerDelegator listenerDelegator = new ListenerDelegator();
+        reader.addIIOReadWarningListener(listenerDelegator);
+        reader.addIIOReadProgressListener(listenerDelegator);
+        reader.addIIOReadUpdateListener(listenerDelegator);
 
         imageInput.seek(pixelOffset);
         reader.setInput(new SubImageInputStream(imageInput, header.getImageSize()));
@@ -449,12 +456,6 @@ public final class BMPImageReader extends ImageReaderBase {
         }
 
         ImageReader reader = readers.next();
-
-        // Install listener
-        ListenerDelegator listenerDelegator = new ListenerDelegator();
-        reader.addIIOReadWarningListener(listenerDelegator);
-        reader.addIIOReadProgressListener(listenerDelegator);
-        reader.addIIOReadUpdateListener(listenerDelegator);
 
         // Cache for later use
         switch (compression) {
@@ -633,7 +634,8 @@ public final class BMPImageReader extends ImageReaderBase {
         return new BMPMetadata(header, colors);
     }
 
-    public static void main(String[] args) throws IOException {
+    @SuppressWarnings("ConstantConditions")
+    public static void main(String[] args) {
         BMPImageReaderSpi provider = new BMPImageReaderSpi();
         BMPImageReader reader = new BMPImageReader(provider);
 
@@ -686,7 +688,7 @@ public final class BMPImageReader extends ImageReaderBase {
         }
     }
 
-    @SuppressWarnings({"unchecked", "UnusedDeclaration"})
+    @SuppressWarnings({ "unchecked", "UnusedDeclaration", "SameParameterValue" })
     static <T extends Throwable> void throwAs(final Class<T> pType, final Throwable pThrowable) throws T {
         throw (T) pThrowable;
     }

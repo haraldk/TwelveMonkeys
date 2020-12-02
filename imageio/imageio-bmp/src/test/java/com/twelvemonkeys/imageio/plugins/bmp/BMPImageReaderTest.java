@@ -342,6 +342,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
         for (TestData data : getTestData()) {
             if (data.getInput().toString().contains("pal8offs")) {
+                // Skip: Contains extra bogus PaletteEntry nodes
                 continue;
             }
 
@@ -358,6 +359,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 System.err.println("WARNING: Reading " + data + " caused exception: " + e.getMessage());
                 continue;
             }
+
             IIOMetadata jreMetadata = jreReader.getImageMetadata(0);
 
             assertTrue(metadata.isStandardMetadataFormatSupported());
@@ -370,6 +372,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 String absolutePath = data.toString();
                 String localPath = absolutePath.substring(absolutePath.lastIndexOf("test-classes") + 12);
 
+                // TODO: blauesglas_16_bitmask444 fails BMP Version for 11+
                 Node expectedTree = jreMetadata.getAsTree(format);
                 Node actualTree = metadata.getAsTree(format);
 
@@ -428,6 +431,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         }
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     private boolean excludeEqualValueTest(final Node expected) {
         if (expected.getLocalName().equals("ImageSize")) {
             // JRE metadata returns 0, even if known in reader...
