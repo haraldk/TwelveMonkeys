@@ -30,26 +30,16 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import org.junit.Test;
-import org.w3c.dom.NodeList;
-
-import javax.imageio.*;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.spi.IIORegistry;
-import javax.imageio.spi.ImageWriterSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
-import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.RenderedImage;
@@ -61,10 +51,29 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.IIORegistry;
+import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+
+import org.junit.Test;
+import org.w3c.dom.NodeList;
+
+import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
 /**
  * JPEGImageWriterTest
@@ -85,13 +94,16 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
 
     @Override
     protected List<? extends RenderedImage> getTestData() {
+        ColorModel cmyk = new ComponentColorModel(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
         return Arrays.asList(
                 new BufferedImage(320, 200, BufferedImage.TYPE_3BYTE_BGR),
                 new BufferedImage(32, 20, BufferedImage.TYPE_INT_RGB),
                 new BufferedImage(32, 20, BufferedImage.TYPE_INT_BGR),
-                new BufferedImage(32, 20, BufferedImage.TYPE_INT_ARGB),
-                new BufferedImage(32, 20, BufferedImage.TYPE_4BYTE_ABGR),
-                new BufferedImage(32, 20, BufferedImage.TYPE_BYTE_GRAY)
+                // Java 11+ no longer supports RGBA JPEG
+//                new BufferedImage(32, 20, BufferedImage.TYPE_INT_ARGB),
+//                new BufferedImage(32, 20, BufferedImage.TYPE_4BYTE_ABGR),
+                new BufferedImage(32, 20, BufferedImage.TYPE_BYTE_GRAY),
+                new BufferedImage(cmyk, cmyk.createCompatibleWritableRaster(32, 20), cmyk.isAlphaPremultiplied(), null)
         );
     }
 

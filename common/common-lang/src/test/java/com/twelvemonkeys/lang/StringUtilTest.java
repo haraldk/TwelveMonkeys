@@ -30,7 +30,7 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.awt.*;
 import java.sql.Timestamp;
@@ -41,7 +41,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 /**
  * StringUtilTestCase
@@ -76,24 +76,24 @@ public class StringUtilTest {
         assertNull(StringUtil.valueOf(null));
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testToUpperCase() {
         String str = StringUtil.toUpperCase(TEST_STRING);
         assertNotNull(str);
         assertEquals(TEST_STRING.toUpperCase(), str);
 
-        str = StringUtil.toUpperCase(null);
-        assertNull(str);
+        assertNull(StringUtil.toUpperCase(null));
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testToLowerCase() {
         String str = StringUtil.toLowerCase(TEST_STRING);
         assertNotNull(str);
         assertEquals(TEST_STRING.toLowerCase(), str);
 
-        str = StringUtil.toLowerCase(null);
-        assertNull(str);
+        assertNull(StringUtil.toLowerCase(null));
     }
 
     @Test
@@ -113,6 +113,7 @@ public class StringUtilTest {
         assertFalse(StringUtil.isEmpty(new String[]{WHITESPACE_STRING, TEST_STRING}));
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testContains() {
         assertTrue(StringUtil.contains(TEST_STRING, TEST_STRING));
@@ -145,6 +146,7 @@ public class StringUtilTest {
         assertFalse(StringUtil.containsIgnoreCase(null, null));
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testContainsChar() {
         for (int i = 0; i < TEST_STRING.length(); i++) {
@@ -466,7 +468,7 @@ public class StringUtilTest {
         assertEquals(TEST_STRING, StringUtil.ltrim(TEST_STRING));
         assertEquals(TEST_STRING, StringUtil.ltrim("  " + TEST_STRING));
         assertEquals(TEST_STRING, StringUtil.ltrim(WHITESPACE_STRING + TEST_STRING));
-        assertFalse(TEST_STRING.equals(StringUtil.ltrim(TEST_STRING + WHITESPACE_STRING)));
+        assertNotEquals(TEST_STRING, StringUtil.ltrim(TEST_STRING + WHITESPACE_STRING));
         // TODO: Test is not complete
     }
 
@@ -475,7 +477,7 @@ public class StringUtilTest {
         assertEquals(TEST_STRING, StringUtil.rtrim(TEST_STRING));
         assertEquals(TEST_STRING, StringUtil.rtrim(TEST_STRING + "  "));
         assertEquals(TEST_STRING, StringUtil.rtrim(TEST_STRING + WHITESPACE_STRING));
-        assertFalse(TEST_STRING.equals(StringUtil.rtrim(WHITESPACE_STRING + TEST_STRING)));
+        assertNotEquals(TEST_STRING, StringUtil.rtrim(WHITESPACE_STRING + TEST_STRING));
         // TODO: Test is not complete
     }
 
@@ -516,7 +518,7 @@ public class StringUtilTest {
     public void testCaptialize() {
         assertNull(StringUtil.capitalize(null));
         assertEquals(TEST_STRING.toUpperCase(), StringUtil.capitalize(TEST_STRING.toUpperCase()));
-        assertTrue(StringUtil.capitalize("abc").charAt(0) == 'A');
+        assertEquals('A', StringUtil.capitalize("abc").charAt(0));
     }
 
     @Test
@@ -552,13 +554,13 @@ public class StringUtilTest {
     public void testToDateWithFormatString() {
         Calendar cal = new GregorianCalendar();
         cal.clear();
-        cal.set(1976, 2, 16); // Month is 0-based
+        cal.set(1976, Calendar.MARCH, 16); // Month is 0-based
         Date date = StringUtil.toDate("16.03.1976", "dd.MM.yyyy");
         assertNotNull(date);
         assertEquals(cal.getTime(), date);
 
         cal.clear();
-        cal.set(2004, 4, 13, 23, 51, 3);
+        cal.set(2004, Calendar.MAY, 13, 23, 51, 3);
         date = StringUtil.toDate("2004-5-13 23:51 (03)", "yyyy-MM-dd hh:mm (ss)");
         assertNotNull(date);
         assertEquals(cal.getTime(), date);
@@ -576,15 +578,15 @@ public class StringUtilTest {
     public void testToDateWithFormat() {
         Calendar cal = new GregorianCalendar();
         cal.clear();
-        cal.set(1976, 2, 16); // Month is 0-based
+        cal.set(1976, Calendar.MARCH, 16); // Month is 0-based
         Date date = StringUtil.toDate("16.03.1976", new SimpleDateFormat("dd.MM.yyyy"));
         assertNotNull(date);
         assertEquals(cal.getTime(), date);
 
         cal.clear();
-        cal.set(2004, 4, 13, 23, 51);
-        date = StringUtil.toDate("13.5.04 23:51",
-                                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, new Locale("no", "NO")));
+        cal.set(2004, Calendar.MAY, 13, 23, 51);
+        DateFormat format = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, new Locale("no", "NO"));
+        date = StringUtil.toDate(format.format(cal.getTime()), format);
         assertNotNull(date);
         assertEquals(cal.getTime(), date);
 
@@ -601,10 +603,9 @@ public class StringUtilTest {
     public void testToTimestamp() {
         Calendar cal = new GregorianCalendar();
         cal.clear();
-        cal.set(1976, 2, 16, 21, 28, 4); // Month is 0-based
-        Date date = StringUtil.toTimestamp("1976-03-16 21:28:04");
+        cal.set(1976, Calendar.MARCH, 16, 21, 28, 4); // Month is 0-based
+        Timestamp date = StringUtil.toTimestamp("1976-03-16 21:28:04");
         assertNotNull(date);
-        assertTrue(date instanceof Timestamp);
         assertEquals(cal.getTime(), date);
     }
 
@@ -821,7 +822,7 @@ public class StringUtilTest {
         assertTrue(StringUtil.isNumber("12345"));
         assertTrue(StringUtil.isNumber(TEST_INTEGER.toString()));
         assertTrue(StringUtil.isNumber("1234567890123456789012345678901234567890"));
-        assertTrue(StringUtil.isNumber(String.valueOf(Long.MAX_VALUE) + String.valueOf(Long.MAX_VALUE)));
+        assertTrue(StringUtil.isNumber(String.valueOf(Long.MAX_VALUE) + Long.MAX_VALUE));
         assertFalse(StringUtil.isNumber("abc"));
         assertFalse(StringUtil.isNumber(TEST_STRING));
     }
@@ -831,7 +832,7 @@ public class StringUtilTest {
         assertTrue(StringUtil.isNumber("-12345"));
         assertTrue(StringUtil.isNumber('-' + TEST_INTEGER.toString()));
         assertTrue(StringUtil.isNumber("-1234567890123456789012345678901234567890"));
-        assertTrue(StringUtil.isNumber('-' + String.valueOf(Long.MAX_VALUE) + String.valueOf(Long.MAX_VALUE)));
+        assertTrue(StringUtil.isNumber('-' + String.valueOf(Long.MAX_VALUE) + Long.MAX_VALUE));
         assertFalse(StringUtil.isNumber("-abc"));
         assertFalse(StringUtil.isNumber('-' + TEST_STRING));
     }

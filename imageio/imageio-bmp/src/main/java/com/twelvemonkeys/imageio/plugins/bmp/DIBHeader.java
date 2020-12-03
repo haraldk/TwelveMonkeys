@@ -364,7 +364,11 @@ abstract class DIBHeader {
 
         public String getBMPVersion() {
             // This is to be compatible with the native metadata of the original com.sun....BMPMetadata
-            return compression == DIB.COMPRESSION_BITFIELDS ? "BMP v. 3.x NT" : "BMP v. 3.x";
+            return size > DIB.BITMAP_INFO_HEADER_SIZE
+                   ? "BMP V2/V3 INFO"
+                   : compression == DIB.COMPRESSION_BITFIELDS || compression == DIB.COMPRESSION_ALPHA_BITFIELDS
+                     ? "BMP v. 3.x NT"
+                     : "BMP v. 3.x";
         }
     }
 

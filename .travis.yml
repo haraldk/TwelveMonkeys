@@ -2,10 +2,8 @@ dist: trusty
 language: java
 jdk:
   - oraclejdk8
-# Oracle JDK 7 no longer supported, we use env matrix to test various CMM providers
-#  - oraclejdk7
-# Some JPEGImageReader tests fail on OpenJDK, need to investigate/fix before enabling
-#  - openjdk7
+  - oraclejdk11
+  - oraclejdk15
 env:
   - MAVEN_OPTS=-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider
   - MAVEN_OPTS=""

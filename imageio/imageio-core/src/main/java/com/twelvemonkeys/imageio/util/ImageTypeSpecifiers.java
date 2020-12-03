@@ -30,14 +30,21 @@
 
 package com.twelvemonkeys.imageio.util;
 
-import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
-
-import javax.imageio.ImageTypeSpecifier;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-
 import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
+
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DirectColorModel;
+import java.awt.image.IndexColorModel;
+import java.awt.image.MultiPixelPackedSampleModel;
+import java.awt.image.SampleModel;
+
+import javax.imageio.ImageTypeSpecifier;
+
+import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
 
 /**
  * Factory class for creating {@code ImageTypeSpecifier}s.
@@ -169,21 +176,36 @@ public final class ImageTypeSpecifiers {
 
         int numEntries = 1 << bits;
 
-        byte[] r = new byte[numEntries];
-        byte[] g = new byte[numEntries];
-        byte[] b = new byte[numEntries];
+        ColorModel colorModel;
 
-        // Scale array values according to color profile..
-        for (int i = 0; i < numEntries; i++) {
-            float[] gray = new float[]{i / (float) (numEntries - 1)};
-            float[] rgb = colorSpace.toRGB(gray);
+        if (ColorSpace.getInstance(ColorSpace.CS_GRAY).equals(colorSpace)) {
+            // For default gray, use linear response
+            byte[] gray = new byte[numEntries];
 
-            r[i] = (byte) (rgb[0] * 255);
-            g[i] = (byte) (rgb[1] * 255);
-            b[i] = (byte) (rgb[2] * 255);
+            for (int i = 0; i < numEntries; i++) {
+                gray[i] = (byte) ((i * 255) / (numEntries - 1));
+            }
+
+            colorModel = new IndexColorModel(bits, numEntries, gray, gray, gray);
+        }
+        else {
+            byte[] r = new byte[numEntries];
+            byte[] g = new byte[numEntries];
+            byte[] b = new byte[numEntries];
+
+            // Scale array values according to color profile..
+            for (int i = 0; i < numEntries; i++) {
+                float[] gray = new float[] { i / (float) (numEntries - 1) };
+                float[] rgb = colorSpace.toRGB(gray);
+
+                r[i] = (byte) Math.round(rgb[0] * 255);
+                g[i] = (byte) Math.round(rgb[1] * 255);
+                b[i] = (byte) Math.round(rgb[2] * 255);
+            }
+
+            colorModel = new IndexColorModel(bits, numEntries, r, g, b);
         }
 
-        ColorModel colorModel = new IndexColorModel(bits, numEntries, r, g, b);
         SampleModel sampleModel = new MultiPixelPackedSampleModel(dataType, 1, 1, bits);
 
         return new ImageTypeSpecifier(colorModel, sampleModel);
@@ -201,7 +223,7 @@ public final class ImageTypeSpecifiers {
     }
 
     public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel pColorModel) {
-        return IndexedImageTypeSpecifier.createFromIndexColorModel(pColorModel);
+        return new IndexedImageTypeSpecifier(pColorModel);
     }
 
     public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel pColorModel) {

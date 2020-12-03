@@ -61,7 +61,7 @@ public final class UInt32ColorModel extends ComponentColorModel {
         // This class only supports DataBuffer.TYPE_INT, cast is safe
         int[] ipixel = (int[]) pixel;
         for (int c = 0, nc = normOffset; c < numComponents; c++, nc++) {
-            normComponents[nc] = ((float) (ipixel[c] & 0xffffffffl)) / ((float) ((1l << getComponentSize(c)) - 1));
+            normComponents[nc] = ((float) (ipixel[c] & 0xFFFFFFFFL)) / ((float) ((1L << getComponentSize(c)) - 1));
         }
 
         int numColorComponents = getNumColorComponents();
