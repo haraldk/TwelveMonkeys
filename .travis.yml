@@ -4,9 +4,6 @@ jdk:
   - oraclejdk8
   - oraclejdk11
   - oraclejdk15
-env:
-  - MAVEN_OPTS=-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider
-  - MAVEN_OPTS=""
 cache:
   directories:
   - $HOME/.m2
