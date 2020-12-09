@@ -35,6 +35,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
 import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
@@ -328,25 +329,24 @@ public final class VP8Frame {
         }
 
         int ibc = 0;
-        int num_part = 1 << multiTokenPartition;
+        int parts = 1 << multiTokenPartition;
 
-//         final boolean filter = getFilterType() > 0 && getFilterLevel() != 0;
+        Rectangle region = param != null && param.getSourceRegion() != null ? param.getSourceRegion() : raster.getBounds();
+        int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
+        int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
 
         for (int row = 0; row < macroBlockRows; row++) {
-            if (num_part > 1) {
+            if (parts > 1) {
                 tokenBoolDecoder = tokenBoolDecoders.get(ibc);
                 tokenBoolDecoder.seek();
 
-                decodeMacroBlockRow(row, raster, param);
-
                 ibc++;
-                if (ibc == num_part) {
+                if (ibc == parts) {
                     ibc = 0;
                 }
             }
-            else {
-                decodeMacroBlockRow(row, raster, param);
-            }
+
+            decodeMacroBlockRow(row, raster, region, sourceXSubsampling, sourceYSubsampling);
 
             fireProgressUpdate(row);
         }
@@ -354,7 +354,8 @@ public final class VP8Frame {
         return true;
     }
 
-    private void decodeMacroBlockRow(final int mbRow, final WritableRaster raster, final ImageReadParam param) throws IOException {
+    private void decodeMacroBlockRow(final int mbRow, final WritableRaster raster, final Rectangle region,
+                                     final int xSubsampling, final int ySubsampling) throws IOException {
         final boolean filter = filterLevel != 0;
 
         MacroBlock left = null;
@@ -372,7 +373,7 @@ public final class VP8Frame {
                 LoopFilter.loopFilterBlock(mb, left, top, frameType, simpleFilter, sharpnessLevel);
             }
 
-            copyBlock(mb, raster, param);
+            copyBlock(mb, raster, region, xSubsampling, ySubsampling);
 
             left = mb;
         }
@@ -1059,25 +1060,34 @@ public final class VP8Frame {
     private final byte[] yuv = new byte[3];
     private final byte[] rgb = new byte[4]; // Allow decoding into RGBA, leaving the alpha out.
 
-    private void copyBlock(final MacroBlock macroBlock, final WritableRaster byteRGBRaster, final ImageReadParam param) {
-        int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
-        int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
-
+    private void copyBlock(final MacroBlock macroBlock, final WritableRaster byteRGBRaster,
+                           final Rectangle region, final int xSubsampling, final int ySubsampling) {
         // We might be copying into a smaller raster
-        int yStart = macroBlock.getY() * 16;
-        int yEnd = Math.min(16, byteRGBRaster.getHeight() * sourceYSubsampling - yStart);
-        int xStart = macroBlock.getX() * 16;
-        int xEnd = Math.min(16, byteRGBRaster.getWidth() * sourceXSubsampling - xStart);
+        int yStart = macroBlock.getY() * 16 - region.y;
+        int yEnd = Math.min(16, byteRGBRaster.getHeight() * ySubsampling - yStart);
+        int xStart = macroBlock.getX() * 16 - region.x;
+        int xEnd = Math.min(16, byteRGBRaster.getWidth() * xSubsampling - xStart);
 
-        for (int y = 0; y < yEnd; y += sourceYSubsampling) {
-            for (int x = 0; x < xEnd; x += sourceXSubsampling) {
+        for (int y = 0; y < yEnd; y += ySubsampling) {
+            int dstY = (yStart + y) / ySubsampling;
+            if (dstY < 0) {
+                continue;
+            }
+
+            for (int x = 0; x < xEnd; x += xSubsampling) {
+                int dstX = (xStart + x) / xSubsampling;
+                if (dstX < 0) {
+                    continue;
+                }
+
                 yuv[0] = (byte) macroBlock.getSubBlock(SubBlock.Plane.Y1, x / 4, y / 4).getDest()[x % 4][y % 4];
                 yuv[1] = (byte) macroBlock.getSubBlock(SubBlock.Plane.U, (x / 2) / 4, (y / 2) / 4).getDest()[(x / 2) % 4][(y / 2) % 4];
                 yuv[2] = (byte) macroBlock.getSubBlock(SubBlock.Plane.V, (x / 2) / 4, (y / 2) / 4).getDest()[(x / 2) % 4][(y / 2) % 4];
 
                 // TODO: Consider doing YCbCr -> RGB in reader instead, or pass a flag to allow readRaster reading direct YUV/YCbCr values
                 convertYCbCr2RGB(yuv, rgb, 0);
-                byteRGBRaster.setDataElements((xStart + x) / sourceXSubsampling, (yStart + y) / sourceYSubsampling, rgb);
+                byteRGBRaster.setDataElements(dstX, dstY, rgb);
+//                 byteRGBRaster.setDataElements(dstX, dstY, yuv);
             }
         }
     }
