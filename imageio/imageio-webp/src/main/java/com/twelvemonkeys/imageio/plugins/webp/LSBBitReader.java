@@ -21,7 +21,7 @@ public final class LSBBitReader {
     public long readBits(int bits) throws IOException {
         long result = 0;
         for (int i = 0; i < bits; i++) {
-            result |= readBit() << i;
+            result |= (long) readBit() << i;
         }
 
         return result;

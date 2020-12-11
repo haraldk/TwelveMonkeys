@@ -1034,9 +1034,8 @@ public final class VP8Frame {
         long partitionsStart = offset + first_partition_length_in_bytes;
         long partition = partitionsStart;
         multiTokenPartition = bc.readLiteral(2);
-//        logger.log("multi_token_partition: " + multiTokenPartition);
         int num_part = 1 << multiTokenPartition;
-//        logger.log("num_part: " + num_part);
+
         if (num_part > 1) {
             partition += 3 * (num_part - 1);
         }
