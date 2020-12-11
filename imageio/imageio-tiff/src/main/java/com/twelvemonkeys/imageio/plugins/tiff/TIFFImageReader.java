@@ -57,6 +57,7 @@ import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.xml.XMLSerializer;
+
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -2581,6 +2582,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     public static void main(final String[] args) throws IOException {
         ImageIO.setUseCache(false);
+        deregisterOSXTIFFImageReaderSpi();
 
         for (final String arg : args) {
             File file = new File(arg);
@@ -2590,8 +2592,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                 System.err.println("Could not read file: " + file);
                 continue;
             }
-
-            deregisterOSXTIFFImageReaderSpi();
 
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 
