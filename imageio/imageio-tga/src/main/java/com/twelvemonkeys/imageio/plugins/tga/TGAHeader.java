@@ -200,12 +200,12 @@ final class TGAHeader {
             int components = colorMap.hasAlpha() ? 4 : 3;
             byte[] cmap = new byte[rgb.length * components];
             for (int i = 0; i < rgb.length; i++) {
-                cmap[i * components    ] = (byte) ((rgb[i] >> 16) & 0xff);
-                cmap[i * components + 1] = (byte) ((rgb[i] >>  8) & 0xff);
-                cmap[i * components + 2] = (byte) ((rgb[i]      ) & 0xff);
+                cmap[i * components    ] = (byte) ((rgb[i]      ) & 0xff); // B
+                cmap[i * components + 1] = (byte) ((rgb[i] >>  8) & 0xff); // G
+                cmap[i * components + 2] = (byte) ((rgb[i] >> 16) & 0xff); // R
 
                 if (components == 4) {
-                    cmap[i * components + 3] = (byte) ((rgb[i] >>> 24) & 0xff);
+                    cmap[i * components + 3] = (byte) ((rgb[i] >>> 24) & 0xff); // A
                 }
             }
 
@@ -298,9 +298,23 @@ final class TGAHeader {
                 hasAlpha = false;
                 break;
             case 24:
+                // BGR -> RGB
+                for (int i = 0; i < cmap.length; i += 3) {
+                    byte b = cmap[i];
+                    cmap[i    ] = cmap[i + 2];
+                    cmap[i + 2] = b;
+                }
+
                 hasAlpha = false;
                 break;
             case 32:
+                // BGRA -> RGBA
+                for (int i = 0; i < cmap.length; i += 4) {
+                    byte b = cmap[i];
+                    cmap[i    ] = cmap[i + 2];
+                    cmap[i + 2] = b;
+                }
+
                 hasAlpha = true;
                 break;
             default:
