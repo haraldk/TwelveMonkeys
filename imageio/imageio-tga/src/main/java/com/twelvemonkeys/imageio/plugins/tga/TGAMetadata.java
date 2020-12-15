@@ -189,6 +189,7 @@ final class TGAMetadata extends AbstractMetadata {
         switch (header.getPixelDepth()) {
             case 8:
                 bitsPerSample.setAttribute("value", createListValue(1, Integer.toString(header.getPixelDepth())));
+                break;
             case 16:
                 if (header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha()) {
                     bitsPerSample.setAttribute("value", "5, 5, 5, 1");
