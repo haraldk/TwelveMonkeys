@@ -48,7 +48,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
@@ -154,7 +154,7 @@ public final class JPEGSegmentUtil {
     }
 
     static String asAsciiString(final byte[] data, final int offset, final int length) {
-        return new String(data, offset, length, Charset.forName("ascii"));
+        return new String(data, offset, length, StandardCharsets.US_ASCII);
     }
 
     static void readSOI(final ImageInputStream stream) throws IOException {
