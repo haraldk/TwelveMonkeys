@@ -68,14 +68,19 @@ public class CCITTFaxDecoderStreamTest {
     };
 
     // group3_2d.tif: EOL|k=1|3W|1B|2W|EOL|k=0|V|V|V|EOL|k=1|3W|1B|2W|EOL|k=0|V-1|V|V|6*F
-    static final byte[] DATA_G3_2D = { 0x00, 0x1C, 0x27, 0x00, 0x17, 0x00, 0x1C, 0x27, 0x00, 0x12, (byte) 0xC0 };
+    static final byte[] DATA_G3_2D = {0x00, 0x1C, 0x27, 0x00, 0x17, 0x00, 0x1C, 0x27, 0x00, 0x12, (byte) 0xC0};
 
     // group3_2d_fill.tif
-    static final byte[] DATA_G3_2D_FILL = { 0x00, 0x01, (byte) 0xC2, 0x70, 0x01, 0x70, 0x01, (byte) 0xC2, 0x70, 0x01,
-            0x2C };
+    static final byte[] DATA_G3_2D_FILL = {0x00, 0x01, (byte) 0xC2, 0x70, 0x01, 0x70, 0x01, (byte) 0xC2,
+                                           0x70, 0x01, 0x2C};
 
-    static final byte[] DATA_G3_2D_lsb2msb = { 0x00, 0x38, (byte) 0xE4, 0x00, (byte) 0xE8, 0x00, 0x38, (byte) 0xE4,
-            0x00, 0x48, 0x03 };
+    static final byte[] DATA_G3_2D_lsb2msb = {0x00, 0x38, (byte) 0xE4, 0x00, (byte) 0xE8, 0x00, 0x38, (byte) 0xE4,
+                                              0x00, 0x48, 0x03};
+
+    static final byte[] DATA_G3_LONG = {0x00, 0x68, 0x0A, (byte) 0xC9, 0x3A, 0x3A, 0x00, 0x68,
+                                        (byte) 0x8A, (byte) 0xD8, 0x3A, 0x35, 0x00, 0x68, 0x0A, 0x06,
+                                        (byte) 0xDD, 0x3A, 0x19, 0x00, 0x68, (byte) 0x8A, (byte) 0x9E, 0x75,
+                                        0x08, 0x00, 0x68};
 
     // group4.tif:
     // Line 1: V-3, V-2, V0
@@ -189,6 +194,7 @@ public class CCITTFaxDecoderStreamTest {
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D)));
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D_FILL)));
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D_lsb2msb)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_LONG)));
 
         // Group 4/CCITT_T6
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T6, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T6, new ByteArrayInputStream(DATA_G4)));
