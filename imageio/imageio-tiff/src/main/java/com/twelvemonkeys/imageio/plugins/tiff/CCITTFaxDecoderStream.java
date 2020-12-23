@@ -152,7 +152,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     static int findCompressionType(final int type, final InputStream in) throws IOException {
         // Discover possible incorrect type, revert to RLE
         if (type == TIFFExtension.COMPRESSION_CCITT_T4 && in.markSupported()) {
-            byte[] streamData = new byte[20];
+            byte[] streamData = new byte[32];
 
             try {
                 in.mark(streamData.length);
@@ -173,8 +173,9 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
             if (streamData[0] != 0 || (streamData[1] >> 4 != 1 && streamData[1] != 1)) {
                 // Leading EOL (0b000000000001) not found, search further and try RLE if not found
+                int numBits = streamData.length * 8;
                 short b = (short) (((streamData[0] << 8) + streamData[1]) >> 4);
-                for (int i = 12; i < 160; i++) {
+                for (int i = 12; i < numBits; i++) {
                     b = (short) ((b << 1) + ((streamData[(i / 8)] >> (7 - (i % 8))) & 0x01));
 
                     if ((b & 0xFFF) == 1) {
