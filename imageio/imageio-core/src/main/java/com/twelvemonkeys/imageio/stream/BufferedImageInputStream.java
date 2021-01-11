@@ -43,15 +43,18 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * A buffered {@code ImageInputStream}.
  * Experimental - seems to be effective for {@link javax.imageio.stream.FileImageInputStream}
  * and {@link javax.imageio.stream.FileCacheImageInputStream} when doing a lot of single-byte reads
- * (or short byte-array reads) on OS X at least.
+ * (or short byte-array reads).
  * Code that uses the {@code readFully} methods are not affected by the issue.
+ * <p/>
+ * NOTE: Invoking {@code close()} will  <em>NOT</em> close the wrapped stream.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedFileImageInputStream.java,v 1.0 May 15, 2008 4:36:49 PM haraldk Exp$
+ *
+ * @deprecated Use {@link BufferedFileImageInputStream} instead.
  */
-// TODO: Create a provider for this (wrapping the FileIIS and FileCacheIIS classes), and disable the Sun built-in spis?
-// TODO: Test on other platforms, might be just an OS X issue
+@Deprecated
 public final class BufferedImageInputStream extends ImageInputStreamImpl implements ImageInputStream {
     static final int DEFAULT_BUFFER_SIZE = 8192;
 

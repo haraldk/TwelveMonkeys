@@ -187,7 +187,7 @@ public class JPEGSegmentImageInputStreamTest {
         assertEquals(2, iis.read(buffer, 0, buffer.length));
         assertEquals(2, iis.getStreamPosition());
 
-        iis.seek(2000); // Just a random postion beyond EOF
+        iis.seek(2000); // Just a random position beyond EOF
         assertEquals(2000, iis.getStreamPosition());
 
         // So far, so good (but stream position is now really beyond EOF)...

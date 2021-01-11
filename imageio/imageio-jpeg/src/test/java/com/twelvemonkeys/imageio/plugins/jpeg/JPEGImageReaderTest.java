@@ -1415,7 +1415,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                         assertNotNull(unknown.getUserObject()); // All unknowns must have user object (data array)
                     }
                 }
-                catch (IIOException e) {
+                catch (IOException e) {
                     e.printStackTrace();
                     fail(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
                 }

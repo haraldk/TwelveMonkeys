@@ -31,8 +31,6 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
-
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -77,7 +75,7 @@ final class JPEGLosslessDecoderWrapper {
      * @throws IOException is thrown if the decoder failed or a conversion is not supported
      */
     BufferedImage readImage(final List<Segment> segments, final ImageInputStream input) throws IOException {
-        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, createBufferedInput(input), listenerDelegate);
+        JPEGLosslessDecoder decoder = new JPEGLosslessDecoder(segments, input, listenerDelegate);
 
         // TODO: Allow 10/12/14 bit (using a ComponentColorModel with correct bits, as in TIFF)
         // TODO: Rewrite this to pass a pre-allocated buffer of correct type (byte/short)/correct bands
@@ -109,10 +107,6 @@ final class JPEGLosslessDecoderWrapper {
         }
 
         throw new IIOException("JPEG Lossless with " + decoder.getPrecision() + " bit precision and " + decoder.getNumComponents() + " component(s) not supported");
-    }
-
-    private ImageInputStream createBufferedInput(final ImageInputStream input) throws IOException {
-        return input instanceof BufferedImageInputStream ? input : new BufferedImageInputStream(input);
     }
 
     Raster readRaster(final List<Segment> segments, final ImageInputStream input) throws IOException {

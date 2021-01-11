@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2021, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,7 +34,6 @@ import com.twelvemonkeys.imageio.spi.ProviderInfo;
 
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.stream.FileCacheImageInputStream;
-import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.File;
@@ -72,7 +71,7 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
             // Special case for file protocol, a lot faster than FileCacheImageInputStream
             if ("file".equals(url.getProtocol())) {
                 try {
-                    return new BufferedImageInputStream(new FileImageInputStream(new File(url.toURI())));
+                    return new BufferedFileImageInputStream(new File(url.toURI()));
                 }
                 catch (URISyntaxException ignore) {
                     // This should never happen, but if it does, we'll fall back to using the stream  
@@ -81,29 +80,29 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
             }
 
             // Otherwise revert to cached
-            final InputStream stream = url.openStream();
+            final InputStream urlStream = url.openStream();
             if (pUseCache) {
-                return new BufferedImageInputStream(new FileCacheImageInputStream(stream, pCacheDir) {
+                return new FileCacheImageInputStream(urlStream, pCacheDir) {
                     @Override
                     public void close() throws IOException {
                         try {
                             super.close();
                         }
                         finally {
-                            stream.close(); // NOTE: If this line throws IOE, it will shadow the original..
+                            urlStream.close(); // NOTE: If this line throws IOE, it will shadow the original..
                         }
                     }
-                });
+                };
             }
             else {
-                return new MemoryCacheImageInputStream(stream) {
+                return new MemoryCacheImageInputStream(urlStream) {
                     @Override
                     public void close() throws IOException {
                         try {
                             super.close();
                         }
                         finally {
-                            stream.close(); // NOTE: If this line throws IOE, it will shadow the original..
+                            urlStream.close(); // NOTE: If this line throws IOE, it will shadow the original..
                         }
                     }
                 };

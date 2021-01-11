@@ -2660,8 +2660,8 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                     try {
                         long start = System.currentTimeMillis();
-//                    int width = reader.getWidth(imageNo);
-//                    int height = reader.getHeight(imageNo);
+                   int width = reader.getWidth(imageNo);
+                   int height = reader.getHeight(imageNo);
 //                    param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //                    param.setSourceRegion(new Rectangle(100, 300, 400, 400));
 //                    param.setSourceRegion(new Rectangle(95, 105, 100, 100));
@@ -2669,6 +2669,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 //                    param.setDestinationOffset(new Point(50, 150));
 //                    param.setSourceSubsampling(2, 2, 0, 0);
 //                    param.setSourceSubsampling(3, 3, 0, 0);
+//                    param.setSourceSubsampling(4, 4, 0, 0);
                         BufferedImage image = reader.read(imageNo, param);
                         System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 

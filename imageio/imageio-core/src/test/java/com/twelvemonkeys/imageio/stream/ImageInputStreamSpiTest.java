@@ -18,7 +18,7 @@ abstract class ImageInputStreamSpiTest<T> {
 
     protected abstract ImageInputStreamSpi createProvider();
 
-    protected abstract T createInput();
+    protected abstract T createInput() throws IOException;
 
     @Test
     public void testInputClass() {
