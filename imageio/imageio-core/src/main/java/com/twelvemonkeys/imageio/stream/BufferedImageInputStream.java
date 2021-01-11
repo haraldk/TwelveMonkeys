@@ -255,6 +255,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
             }
 
             int val = buffer.get() & 0xff;
+            streamPos++;
 
             accum <<= 8;
             accum |= val;
@@ -264,9 +265,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         // Move byte position back if in the middle of a byte
         if (newBitOffset != 0) {
             buffer.position(buffer.position() - 1);
-        }
-        else {
-            streamPos++;
+            streamPos--;
         }
 
         this.bitOffset = newBitOffset;
@@ -281,26 +280,26 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     }
 
     @Override
-    public void seek(long pPosition) throws IOException {
+    public void seek(long position) throws IOException {
         checkClosed();
         bitOffset = 0;
 
-        if (streamPos == pPosition) {
+        if (streamPos == position) {
             return;
         }
 
         // Optimized to not invalidate buffer if new position is within current buffer
-        long newBufferPos = buffer.position() + pPosition - streamPos;
+        long newBufferPos = buffer.position() + position - streamPos;
         if (newBufferPos >= 0 && newBufferPos <= buffer.limit()) {
             buffer.position((int) newBufferPos);
         }
         else {
             // Will invalidate buffer
             buffer.limit(0);
-            stream.seek(pPosition);
+            stream.seek(position);
         }
 
-        streamPos = pPosition;
+        streamPos = position;
     }
 
     @Override
@@ -332,7 +331,9 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     @Override
     public void close() throws IOException {
         if (stream != null) {
-            //stream.close();
+            // TODO: FixMe: Need to close underlying stream here!
+            //   For call sites that relies on not closing, we should instead not close the buffered stream.
+//             stream.close();
             stream = null;
             buffer = null;
         }
