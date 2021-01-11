@@ -1129,13 +1129,13 @@ public final class JPEGImageReader extends ImageReaderBase {
                 Application exif = exifSegments.get(0);
 
                 // Identifier is "Exif\0" + 1 byte pad
-                int offset = exif.identifier.length() + 2;
+                int dataOffset = exif.identifier.length() + 2;
 
-                if (exif.data.length <= offset) {
+                if (exif.data.length <= dataOffset) {
                     processWarningOccurred("Exif chunk has no data.");
                 }
                 else {
-                    ImageInputStream stream = new ByteArrayImageInputStream(exif.data, offset, exif.data.length - offset);
+                    ImageInputStream stream = new ByteArrayImageInputStream(exif.data, dataOffset, exif.data.length - dataOffset);
                     CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
 
                     if (exifMetadata.directoryCount() == 2) {
@@ -1146,14 +1146,18 @@ public final class JPEGImageReader extends ImageReaderBase {
                         int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
 
                         if (compression == 6) {
-                            if (ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) != null) {
-                                Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+                            Entry jpegOffEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+                            if (jpegOffEntry != null) {
+                                Entry jpegLenEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
 
-                                if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
+                                // Test if Exif thumbnail is contained within the Exif segment (offset + length <= segment.length)
+                                long jpegOffset = ((Number) jpegOffEntry.getValue()).longValue();
+                                long jpegLength = jpegLenEntry != null ? ((Number) jpegLenEntry.getValue()).longValue() : -1;
+                                if (jpegLength > 0 && jpegOffset + jpegLength <= stream.length()) {
                                     thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
                                 }
                                 else {
-                                    processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
+                                    processWarningOccurred("EXIF IFD with empty or incomplete JPEG thumbnail");
                                 }
                             }
                             else {
