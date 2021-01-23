@@ -289,8 +289,8 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     </dependency>
 
     <!--
-    Optional dependency. Needed only if you deploy `ImageIO` plugins as part of a web app.
-    Make sure you add the `IIOProviderContextListener` to your `web.xml`, see above.
+    Optional dependency. Needed only if you deploy ImageIO plugins as part of a web app.
+    Make sure you add the IIOProviderContextListener to your web.xml, see above.
     -->
     <dependency>
         <groupId>com.twelvemonkeys.servlet</groupId>
@@ -403,7 +403,6 @@ ImageIO plugins
 * [imageio-tga-3.6.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.6.2/imageio-tga-3.6.2.jar)
 * [imageio-thumbsdb-3.6.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.6.2/imageio-thumbsdb-3.6.2.jar)
 * [imageio-tiff-3.6.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.6.2/imageio-tiff-3.6.2.jar)
-* [imageio-xwd-3.6.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-xwd/3.6.2/imageio-xwd-3.6.2.jar)
 
 ImageIO plugins requiring 3rd party libs
 * [imageio-batik-3.6.2.jar](http://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.6.2/imageio-batik-3.6.2.jar)
