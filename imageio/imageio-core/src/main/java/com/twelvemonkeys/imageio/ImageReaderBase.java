@@ -528,9 +528,8 @@ public abstract class ImageReaderBase extends ImageReader {
                     KeyStroke.getKeyStroke('0'),
                     KeyStroke.getKeyStroke(KeyEvent.VK_0, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
             bindAction(new ZoomToFitAction("Zoom fit"), ZOOM_FIT,
-                    KeyStroke.getKeyStroke('='),
-                    KeyStroke.getKeyStroke(KeyEvent.VK_0, KeyEvent.SHIFT_DOWN_MASK | Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()),
-                    KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+                    KeyStroke.getKeyStroke('9'),
+                    KeyStroke.getKeyStroke(KeyEvent.VK_9, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
 
             bindAction(TransferHandler.getCopyAction(), (String) TransferHandler.getCopyAction().getValue(Action.NAME), KeyStroke.getKeyStroke(KeyEvent.VK_C, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
             bindAction(TransferHandler.getPasteAction(), (String) TransferHandler.getPasteAction().getValue(Action.NAME), KeyStroke.getKeyStroke(KeyEvent.VK_V, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
@@ -568,7 +567,7 @@ public abstract class ImageReaderBase extends ImageReader {
             addCheckBoxItem(new ChangeBackgroundAction("Dark", Color.DARK_GRAY), background, group);
             addCheckBoxItem(new ChangeBackgroundAction("Black", Color.BLACK), background, group);
             background.addSeparator();
-            ChooseBackgroundAction chooseBackgroundAction = new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : Color.BLUE);
+            ChooseBackgroundAction chooseBackgroundAction = new ChooseBackgroundAction("Choose...", defaultBG != null ? defaultBG : new Color(0xFF6600));
             chooseBackgroundAction.putValue(Action.SELECTED_KEY, backgroundPaint == defaultBG);
             addCheckBoxItem(chooseBackgroundAction, background, group);
 
@@ -703,7 +702,7 @@ public abstract class ImageReaderBase extends ImageReader {
                     source = (JComponent) menu.getInvoker();
                 }
 
-                Container container = ((JFrame) SwingUtilities.getWindowAncestor(source)).getRootPane();
+                Container container = SwingUtilities.getAncestorOfClass(JViewport.class, source);
 
                 double ratioX = container.getWidth() / (double) image.getWidth();
                 double ratioY = container.getHeight() / (double) image.getHeight();
