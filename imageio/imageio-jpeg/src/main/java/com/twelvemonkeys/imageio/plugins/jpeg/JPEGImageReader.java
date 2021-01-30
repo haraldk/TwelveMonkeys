@@ -62,6 +62,7 @@ import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
+import java.nio.ByteOrder;
 import java.util.List;
 import java.util.*;
 
@@ -1146,6 +1147,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                                     if (jpegLength > 0 && jpegOffset + jpegLength <= stream.length()) {
                                         // Verify first bytes are FFD8
                                         stream.seek(jpegOffset);
+                                        stream.setByteOrder(ByteOrder.BIG_ENDIAN);
                                         if (stream.readUnsignedShort() == JPEG.SOI) {
                                             thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
                                         }
@@ -1173,7 +1175,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                                         //  EXIFThumbnailReader?
                                         thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
                                     }
-
+                                    else {
+                                        processWarningOccurred("EXIF IFD with empty or incomplete uncompressed thumbnail");
+                                    }
                                 }
                                 else {
                                     processWarningOccurred("EXIF IFD with uncompressed thumbnail missing StripOffsets tag");
@@ -1230,7 +1234,15 @@ public final class JPEGImageReader extends ImageReaderBase {
     public BufferedImage readThumbnail(int imageIndex, int thumbnailIndex) throws IOException {
         checkThumbnailBounds(imageIndex, thumbnailIndex);
 
-        return thumbnails.get(thumbnailIndex).read();
+//         processThumbnailStarted(imageIndex, thumbnailIndex);
+//         processThumbnailProgress(0f);
+
+        BufferedImage thumbnail = thumbnails.get(thumbnailIndex).read();;
+
+//         processThumbnailProgress(100f);
+//         processThumbnailComplete();
+
+        return thumbnail;
     }
 
     // Metadata
