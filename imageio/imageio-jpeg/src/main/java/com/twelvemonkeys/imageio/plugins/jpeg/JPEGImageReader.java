@@ -903,6 +903,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                 try (ImageInputStream stream = new ByteArrayImageInputStream(exif.data, offset, exif.data.length - offset)) {
                     return (CompoundDirectory) new TIFFReader().read(stream);
                 }
+                catch (IIOException e) {
+                    processWarningOccurred("Exif chunk is present, but can't be read: " + e.getMessage());
+                }
             }
         }
 
@@ -1090,6 +1093,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             // Read JFIF thumbnails if present
             JFIF jfif = getJFIF();
             if (jfif != null && jfif.thumbnail != null) {
+                // TODO: Check if the JFIF segment really has room for this thumbnail?
                 thumbnails.add(new JFIFThumbnailReader(thumbnailProgressDelegator, imageIndex, thumbnails.size(), jfif));
             }
 
@@ -1100,6 +1104,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                     case JFXX.JPEG:
                     case JFXX.INDEXED:
                     case JFXX.RGB:
+                        // TODO: Check if the JFXX segment really has room for this thumbnail?
                         thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), imageIndex, thumbnails.size(), jfxx));
                         break;
                     default:
@@ -1120,45 +1125,67 @@ public final class JPEGImageReader extends ImageReaderBase {
                 }
                 else {
                     ImageInputStream stream = new ByteArrayImageInputStream(exif.data, dataOffset, exif.data.length - dataOffset);
-                    CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
+                    try {
+                        CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
 
-                    if (exifMetadata.directoryCount() == 2) {
-                        Directory ifd1 = exifMetadata.getDirectory(1);
+                        if (exifMetadata.directoryCount() == 2) {
+                            Directory ifd1 = exifMetadata.getDirectory(1);
 
-                        // Compression: 1 = no compression, 6 = JPEG compression (default)
-                        Entry compressionEntry = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-                        int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
+                            // Compression: 1 = no compression, 6 = JPEG compression (default)
+                            Entry compressionEntry = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
+                            int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
 
-                        if (compression == 6) {
-                            Entry jpegOffEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
-                            if (jpegOffEntry != null) {
-                                Entry jpegLenEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
+                            if (compression == 6) {
+                                Entry jpegOffEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
+                                if (jpegOffEntry != null) {
+                                    Entry jpegLenEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
 
-                                // Test if Exif thumbnail is contained within the Exif segment (offset + length <= segment.length)
-                                long jpegOffset = ((Number) jpegOffEntry.getValue()).longValue();
-                                long jpegLength = jpegLenEntry != null ? ((Number) jpegLenEntry.getValue()).longValue() : -1;
-                                if (jpegLength > 0 && jpegOffset + jpegLength <= stream.length()) {
-                                    thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                                    // Test if Exif thumbnail is contained within the Exif segment (offset + length <= segment.length)
+                                    long jpegOffset = ((Number) jpegOffEntry.getValue()).longValue();
+                                    long jpegLength = jpegLenEntry != null ? ((Number) jpegLenEntry.getValue()).longValue() : -1;
+                                    if (jpegLength > 0 && jpegOffset + jpegLength <= stream.length()) {
+                                        // Verify first bytes are FFD8
+                                        stream.seek(jpegOffset);
+                                        if (stream.readUnsignedShort() == JPEG.SOI) {
+                                            thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                                        }
+                                        // TODO: Simplify this warning fallback stuff...
+                                        else {
+                                            processWarningOccurred("EXIF IFD with empty or incomplete JPEG thumbnail");
+                                        }
+                                    }
+                                    else {
+                                        processWarningOccurred("EXIF IFD with empty or incomplete JPEG thumbnail");
+                                    }
                                 }
                                 else {
-                                    processWarningOccurred("EXIF IFD with empty or incomplete JPEG thumbnail");
+                                    processWarningOccurred("EXIF IFD with JPEG thumbnail missing JPEGInterchangeFormat tag");
+                                }
+                            }
+                            else if (compression == 1) {
+                                Entry stripOffEntry = ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS);
+                                if (stripOffEntry != null) {
+                                    long stripOffset = ((Number) stripOffEntry.getValue()).longValue();
+
+                                    if (stripOffset < stream.length()) {
+                                        // TODO: Verify length of Exif thumbnail vs length of segment like in JPEG
+                                        //  ...but this requires so many extra values... Instead move this logic to the
+                                        //  EXIFThumbnailReader?
+                                        thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
+                                    }
+
+                                }
+                                else {
+                                    processWarningOccurred("EXIF IFD with uncompressed thumbnail missing StripOffsets tag");
                                 }
                             }
                             else {
-                                processWarningOccurred("EXIF IFD with JPEG thumbnail missing JPEGInterchangeFormat tag");
+                                processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression);
                             }
                         }
-                        else if (compression == 1) {
-                            if (ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS) != null) {
-                                thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
-                            }
-                            else {
-                                processWarningOccurred("EXIF IFD with uncompressed thumbnail missing StripOffsets tag");
-                            }
-                        }
-                        else {
-                            processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression);
-                        }
+                    }
+                    catch (IIOException e) {
+                        processWarningOccurred("Exif chunk present, but can't be read: " + e.getMessage());
                     }
                 }
             }
