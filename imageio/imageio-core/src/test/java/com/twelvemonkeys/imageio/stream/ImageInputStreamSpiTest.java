@@ -11,10 +11,10 @@ import java.util.Locale;
 import static org.junit.Assert.*;
 
 abstract class ImageInputStreamSpiTest<T> {
-    private final ImageInputStreamSpi provider = createProvider();
+    protected final ImageInputStreamSpi provider = createProvider();
 
     @SuppressWarnings("unchecked")
-    private final Class<T> inputClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+    protected final Class<T> inputClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
 
     protected abstract ImageInputStreamSpi createProvider();
 

@@ -76,9 +76,8 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
      * @throws IllegalArgumentException if <code>file</code> is <code>null</code>.
      * @throws FileNotFoundException    if <code>file</code> is a directory or cannot be opened for reading
      *                                  for any reason.
-     * @throws IOException              if an I/O error occurs.
      */
-    public BufferedFileImageInputStream(final File file) throws IOException {
+    public BufferedFileImageInputStream(final File file) throws FileNotFoundException {
         this(new RandomAccessFile(notNull(file, "file"), "r"));
     }
 

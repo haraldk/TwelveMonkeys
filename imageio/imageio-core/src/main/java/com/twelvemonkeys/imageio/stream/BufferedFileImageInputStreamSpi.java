@@ -36,7 +36,7 @@ import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.File;
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -69,14 +69,21 @@ public class BufferedFileImageInputStreamSpi extends ImageInputStreamSpi {
         }
     }
 
-    public ImageInputStream createInputStreamInstance(final Object input, final boolean pUseCache, final File pCacheDir) throws IOException {
+    public ImageInputStream createInputStreamInstance(final Object input, final boolean pUseCache, final File pCacheDir) {
         if (input instanceof File) {
-            File file = (File) input;
-            return new BufferedFileImageInputStream(file);
+            try {
+                return new BufferedFileImageInputStream((File) input);
+            }
+            catch (FileNotFoundException e) {
+                // For consistency with the JRE bundled SPIs, we'll return null here,
+                // even though the spec does not say that's allowed.
+                // The problem is that the SPIs can only declare that they support an input type like a File,
+                // instead they should be allowed to inspect the instance, to see that the file does exist...
+                return null;
+            }
         }
-        else {
-            throw new IllegalArgumentException("Expected input of type URL: " + input);
-        }
+
+        throw new IllegalArgumentException("Expected input of type File: " + input);
     }
 
     @Override

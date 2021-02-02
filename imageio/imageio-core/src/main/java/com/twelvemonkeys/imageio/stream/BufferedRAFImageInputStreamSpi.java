@@ -71,12 +71,10 @@ public class BufferedRAFImageInputStreamSpi extends ImageInputStreamSpi {
 
     public ImageInputStream createInputStreamInstance(final Object input, final boolean pUseCache, final File pCacheDir) {
         if (input instanceof RandomAccessFile) {
-            RandomAccessFile file = (RandomAccessFile) input;
-            return new BufferedFileImageInputStream(file);
+            return new BufferedFileImageInputStream((RandomAccessFile) input);
         }
-        else {
-            throw new IllegalArgumentException("Expected input of type URL: " + input);
-        }
+
+        throw new IllegalArgumentException("Expected input of type RandomAccessFile: " + input);
     }
 
     @Override
