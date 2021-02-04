@@ -225,7 +225,7 @@ Build the project (using [Maven](http://maven.apache.org/download.cgi)):
 
     $ mvn package
 
-Currently, the recommended JDK for making a build is Oracle JDK 7.x or 8.x. 
+Currently, the recommended JDK for making a build is Oracle JDK 8.x. 
 
 It's possible to build using OpenJDK, but some tests might fail due to some minor differences between the color management systems used. You will need to either disable the tests in question, or build without tests altogether.
 
