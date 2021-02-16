@@ -218,7 +218,8 @@ public final class SGIImageReader extends ImageReaderBase {
 
     private void readRowByte(int height, Rectangle srcRegion, int[] scanlineOffsets, int[] scanlineLengths, int compression, int xSub, int ySub, int c, byte[] rowDataByte, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        int destY = height - 1 - y;
+        if (destY % ySub != 0 || destY < srcRegion.y || destY >= srcRegion.y + srcRegion.height) {
             if (compression == SGI.COMPRESSION_NONE) {
                 imageInput.skipBytes(rowDataByte.length);
             }
@@ -245,16 +246,17 @@ public final class SGIImageReader extends ImageReaderBase {
             }
         }
 
-        normalize(rowDataByte, 9, srcRegion.width / xSub);
+        normalize(rowDataByte, 0, srcRegion.width / xSub);
 
         // Flip into position (SGI images are stored bottom/up)
-        int dstY = (height - 1 - y - srcRegion.y) / ySub;
+        int dstY = (destY - srcRegion.y) / ySub;
         destChannel.setDataElements(0, dstY, srcChannel);
     }
 
     private void readRowUShort(int height, Rectangle srcRegion, int[] scanlineOffsets, int[] scanlineLengths, int compression, int xSub, int ySub, int c, short[] rowDataUShort, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        int destY = height - 1 - y;
+        if (destY % ySub != 0 || destY < srcRegion.y || destY >= srcRegion.y + srcRegion.height) {
             if (compression == SGI.COMPRESSION_NONE) {
                 imageInput.skipBytes(rowDataUShort.length * 2);
             }
@@ -281,10 +283,10 @@ public final class SGIImageReader extends ImageReaderBase {
             }
         }
 
-        normalize(rowDataUShort, 9, srcRegion.width / xSub);
+        normalize(rowDataUShort, 0, srcRegion.width / xSub);
 
         // Flip into position (SGI images are stored bottom/up)
-        int dstY = (height - 1 - y - srcRegion.y) / ySub;
+        int dstY = (destY - srcRegion.y) / ySub;
         destChannel.setDataElements(0, dstY, srcChannel);
     }
 

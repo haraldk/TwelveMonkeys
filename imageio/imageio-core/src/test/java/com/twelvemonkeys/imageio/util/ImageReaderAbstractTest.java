@@ -553,10 +553,10 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 int actualRGB = actual.getRGB(x, y);
 
                 try {
-                    assertEquals(String.format("%s alpha at (%d, %d)", message, x, y), (expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 5);
-                    assertEquals(String.format("%s red at (%d, %d)", message, x, y), (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
-                    assertEquals(String.format("%s green at (%d, %d)", message, x, y), (expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5);
-                    assertEquals(String.format("%s blue at (%d, %d)", message, x, y), expectedRGB & 0xff, actualRGB & 0xff, 5);
+                    assertEquals((expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 5);
+                    assertEquals((expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
+                    assertEquals((expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5);
+                    assertEquals(expectedRGB & 0xff, actualRGB & 0xff, 5);
                 }
                 catch (AssertionError e) {
                     File tempExpected = File.createTempFile("junit-expected-", ".png");
@@ -565,7 +565,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                     File tempActual = File.createTempFile("junit-actual-", ".png");
                     System.err.println("tempActual.getAbsolutePath(): " + tempActual.getAbsolutePath());
                     ImageIO.write(actual, "PNG", tempActual);
-
 
                     assertEquals(String.format("%s ARGB at (%d, %d)", message, x, y), String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB));
                 }
