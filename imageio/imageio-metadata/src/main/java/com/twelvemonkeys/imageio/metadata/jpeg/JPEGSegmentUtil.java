@@ -348,6 +348,7 @@ public final class JPEGSegmentUtil {
                 else if ("Photoshop 3.0".equals(segment.identifier())) {
                     // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
                     //       IPTC metadata. Probably duplicated in the XMP though...
+                    // TODO: Merge multiple APP13 segments to single resource block
                     ImageInputStream stream = new ByteArrayImageInputStream(segment.data, segment.offset(), segment.length());
                     Directory psd = new PSDReader().read(stream);
                     Entry iccEntry = psd.getEntryById(PSD.RES_ICC_PROFILE);
@@ -359,6 +360,7 @@ public final class JPEGSegmentUtil {
                     System.err.println(TIFFReader.HexDump.dump(segment.data));
                 }
                 else if ("ICC_PROFILE".equals(segment.identifier())) {
+                    // TODO: Merge multiple APP2 segments to single ICC Profile
                     // Skip
                 }
                 else {
