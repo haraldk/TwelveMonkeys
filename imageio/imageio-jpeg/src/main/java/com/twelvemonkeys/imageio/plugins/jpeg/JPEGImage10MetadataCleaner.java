@@ -133,7 +133,7 @@ final class JPEGImage10MetadataCleaner {
                     IIOMetadataNode app0JFXX = new IIOMetadataNode("app0JFXX");
                     app0JFXX.setAttribute("extensionCode", String.valueOf(jfxx.extensionCode));
 
-                    ThumbnailReader thumbnailReader = JFXXThumbnail.from(jfxx, reader.getThumbnailReader(), JPEGSegmentWarningListener.NULL_LISTENER);
+                    ThumbnailReader thumbnailReader = JFXXThumbnail.from(jfxx, reader.getThumbnailReader());
                     IIOMetadataNode jfifThumb;
 
                     switch (jfxx.extensionCode) {

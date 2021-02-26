@@ -909,17 +909,6 @@ public final class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    // TODO: Util method?
-    static byte[] readFully(DataInput stream, int len) throws IOException {
-        if (len == 0) {
-            throw new IllegalArgumentException("len == 0");
-        }
-
-        byte[] data = new byte[len];
-        stream.readFully(data);
-        return data;
-    }
-
     ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
@@ -1086,25 +1075,38 @@ public final class JPEGImageReader extends ImageReaderBase {
         if (thumbnails == null) {
             thumbnails = new ArrayList<>();
 
-            JPEGSegmentWarningDelegate listenerDelegate = new JPEGSegmentWarningDelegate();
-
             // Read JFIF thumbnails if present
-            ThumbnailReader thumbnailReader = JFIFThumbnail.from(getJFIF(), listenerDelegate);
-            if (thumbnailReader != null) {
-                thumbnails.add(thumbnailReader);
+            try {
+                ThumbnailReader thumbnail = JFIFThumbnail.from(getJFIF());
+                if (thumbnail != null) {
+                    thumbnails.add(thumbnail);
+                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
 
             // Read JFXX thumbnails if present
-            thumbnailReader = JFXXThumbnail.from(getJFXX(), getThumbnailReader(), listenerDelegate);
-            if (thumbnailReader != null) {
-                thumbnails.add(thumbnailReader);
+            try {
+                ThumbnailReader thumbnail = JFXXThumbnail.from(getJFXX(), getThumbnailReader());
+                if (thumbnail != null) {
+                    thumbnails.add(thumbnail);
+                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
 
             // Read Exif thumbnails if present
-            EXIF exif = getExif();
-            thumbnailReader = EXIFThumbnail.from(exif, parseExif(exif), getThumbnailReader(), listenerDelegate);
-            if (thumbnailReader != null) {
-                thumbnails.add(thumbnailReader);
+            try {
+                EXIF exif = getExif();
+                ThumbnailReader thumbnailReader = EXIFThumbnail.from(exif, parseExif(exif), getThumbnailReader());
+                if (thumbnailReader != null) {
+                    thumbnails.add(thumbnailReader);
+                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
         }
     }

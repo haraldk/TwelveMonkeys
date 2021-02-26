@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
 
 /**
  * AbstractThumbnailReaderTest
@@ -52,8 +51,6 @@ public abstract class AbstractThumbnailReaderTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
     }
-
-    protected final JPEGSegmentWarningListener listener = mock(JPEGSegmentWarningListener.class);
 
     protected abstract ThumbnailReader createReader(ImageInputStream stream) throws IOException;
 

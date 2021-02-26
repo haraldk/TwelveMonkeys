@@ -36,6 +36,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 
 import org.junit.Test;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
@@ -43,7 +44,6 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 /**
  * JFIFThumbnailReaderTest
@@ -64,43 +64,33 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
         JPEGSegment segment = segments.get(0);
 
-        return JFIFThumbnail.from(JFIF.read(new DataInputStream(segment.segmentData()), segment.segmentLength()), listener);
+        return JFIFThumbnail.from(JFIF.read(new DataInputStream(segment.segmentData()), segment.segmentLength()));
     }
 
     @Test
-    public void testFromNull() {
-        assertNull(JFIFThumbnail.from(null, listener));
-
-        verify(listener, never()).warningOccurred(anyString());
+    public void testFromNull() throws IOException {
+        assertNull(JFIFThumbnail.from(null));
     }
 
     @Test
-    public void testFromNullThumbnail() {
-        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, null), listener));
-
-        verify(listener, never()).warningOccurred(anyString());
+    public void testFromNullThumbnail() throws IOException {
+        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, null)));
     }
 
     @Test
-    public void testFromEmpty() {
-        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, new byte[0]), listener));
-
-        verify(listener, never()).warningOccurred(anyString());
+    public void testFromEmpty() throws IOException {
+        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, new byte[0])));
     }
 
-    @Test
-    public void testFromTruncated() {
-        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 255, 170, new byte[99]), listener));
-
-        verify(listener, only()).warningOccurred(anyString());
+    @Test(expected = IIOException.class)
+    public void testFromTruncated() throws IOException {
+        JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 255, 170, new byte[99]));
     }
 
     @Test
     public void testFromValid() throws IOException {
-        ThumbnailReader reader = JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 30, 20, new byte[30 * 20 * 3]), listener);
+        ThumbnailReader reader = JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 30, 20, new byte[30 * 20 * 3]));
         assertNotNull(reader);
-
-        verify(listener, never()).warningOccurred(anyString());
 
         // Sanity check below
         assertEquals(30, reader.getWidth());

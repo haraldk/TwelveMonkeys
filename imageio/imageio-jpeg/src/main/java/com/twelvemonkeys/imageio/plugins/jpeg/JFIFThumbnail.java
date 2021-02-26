@@ -32,6 +32,9 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.plugins.jpeg.ThumbnailReader.UncompressedThumbnailReader;
 
+import javax.imageio.IIOException;
+import java.io.IOException;
+
 /**
  * JFIFThumbnail
  *
@@ -43,14 +46,13 @@ final class JFIFThumbnail {
     private JFIFThumbnail() {
     }
 
-    static ThumbnailReader from(final JFIF segment, final JPEGSegmentWarningListener listener) {
+    static ThumbnailReader from(final JFIF segment) throws IOException {
         if (segment != null && segment.xThumbnail > 0 && segment.yThumbnail > 0) {
             if (segment.thumbnail == null || segment.thumbnail.length < segment.xThumbnail * segment.yThumbnail) {
-                listener.warningOccurred("Ignoring truncated JFIF thumbnail");
+                throw new IIOException("Truncated JFIF thumbnail");
             }
-            else {
-                return new UncompressedThumbnailReader(segment.xThumbnail, segment.yThumbnail, segment.thumbnail);
-            }
+
+            return new UncompressedThumbnailReader(segment.xThumbnail, segment.yThumbnail, segment.thumbnail);
         }
 
         return null;

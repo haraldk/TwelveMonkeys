@@ -57,31 +57,30 @@ final class EXIFThumbnail {
     private EXIFThumbnail() {
     }
 
-    static ThumbnailReader from(final EXIF exif, final CompoundDirectory exifMetadata, final ImageReader jpegThumbnailReader, final JPEGSegmentWarningListener listener) throws IOException {
-        if (exif != null && exifMetadata != null && exifMetadata.directoryCount() == 2) {
-            ImageInputStream stream = exif.exifData(); // NOTE This is an in-memory stream and must not be closed...
+    static ThumbnailReader from(final EXIF segment, final CompoundDirectory exif, final ImageReader jpegThumbnailReader) throws IOException {
+        if (segment != null && exif != null && exif.directoryCount() >= 2) {
+            ImageInputStream stream = segment.exifData(); // NOTE This is an in-memory stream and must not be closed...
 
-            Directory ifd1 = exifMetadata.getDirectory(1);
+            Directory ifd1 = exif.getDirectory(1);
 
             // Compression: 1 = no compression, 6 = JPEG compression (default)
             Entry compressionEntry = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
             int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
 
             switch (compression) {
-                case 6:
-                    return createJPEGThumbnailReader(exif, jpegThumbnailReader, listener, stream, ifd1);
                 case 1:
-                    return createUncompressedThumbnailReader(listener, stream, ifd1);
+                    return createUncompressedThumbnailReader(stream, ifd1);
+                case 6:
+                    return createJPEGThumbnailReader(segment, jpegThumbnailReader, stream, ifd1);
                 default:
-                    listener.warningOccurred("EXIF IFD with unknown thumbnail compression (expected 1 or 6): " + compression);
-                    break;
+                    throw new IIOException("EXIF IFD with unknown thumbnail compression (expected 1 or 6): " + compression);
             }
         }
 
         return null;
     }
 
-    private static UncompressedThumbnailReader createUncompressedThumbnailReader(JPEGSegmentWarningListener listener, ImageInputStream stream, Directory ifd1) throws IOException {
+    private static UncompressedThumbnailReader createUncompressedThumbnailReader(ImageInputStream stream, Directory ifd1) throws IOException {
         Entry stripOffEntry = ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS);
         Entry width = ifd1.getEntryById(TIFF.TAG_IMAGE_WIDTH);
         Entry height = ifd1.getEntryById(TIFF.TAG_IMAGE_HEIGHT);
@@ -95,12 +94,8 @@ final class EXIFThumbnail {
             int w = ((Number) width.getValue()).intValue();
             int h = ((Number) height.getValue()).intValue();
 
-            // TODO: Decide on warning OR exception!
-            if (bitsPerSample != null) {
-                int[] bpp = (int[]) bitsPerSample.getValue();
-                if (!Arrays.equals(bpp, new int[] {8, 8, 8})) {
-                    throw new IIOException("Unknown BitsPerSample value for uncompressed EXIF thumbnail (expected [8, 8, 8]): " + bitsPerSample.getValueAsString());
-                }
+            if (bitsPerSample != null && !Arrays.equals((int[]) bitsPerSample.getValue(), new int[] {8, 8, 8})) {
+                throw new IIOException("Unknown BitsPerSample value for uncompressed EXIF thumbnail (expected [8, 8, 8]): " + bitsPerSample.getValueAsString());
             }
 
             if (samplesPerPixel != null && ((Number) samplesPerPixel.getValue()).intValue() != 3) {
@@ -111,7 +106,7 @@ final class EXIFThumbnail {
             long stripOffset = ((Number) stripOffEntry.getValue()).longValue();
 
             int thumbLength = w * h * 3;
-            if (stripOffset >= 0 && stripOffset + thumbLength < stream.length()) {
+            if (stripOffset >= 0 && stripOffset + thumbLength <= stream.length()) {
                 // Read raw image data, either RGB or YCbCr
                 stream.seek(stripOffset);
                 byte[] thumbData = new byte[thumbLength];
@@ -135,11 +130,10 @@ final class EXIFThumbnail {
             }
         }
 
-        listener.warningOccurred("EXIF IFD with empty or incomplete uncompressed thumbnail");
-        return null;
+        throw new IIOException("EXIF IFD with empty or incomplete uncompressed thumbnail");
     }
 
-    private static JPEGThumbnailReader createJPEGThumbnailReader(EXIF exif, ImageReader jpegThumbnailReader, JPEGSegmentWarningListener listener, ImageInputStream stream, Directory ifd1) throws IOException {
+    private static JPEGThumbnailReader createJPEGThumbnailReader(EXIF exif, ImageReader jpegThumbnailReader, ImageInputStream stream, Directory ifd1) throws IOException {
         Entry jpegOffEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT);
         if (jpegOffEntry != null) {
             Entry jpegLenEntry = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
@@ -152,13 +146,13 @@ final class EXIFThumbnail {
                 // Verify first bytes are FFD8
                 stream.seek(jpegOffset);
                 stream.setByteOrder(ByteOrder.BIG_ENDIAN);
+
                 if (stream.readUnsignedShort() == JPEG.SOI) {
                     return new JPEGThumbnailReader(jpegThumbnailReader, stream, jpegOffset);
                 }
             }
         }
 
-        listener.warningOccurred("EXIF IFD with empty or incomplete JPEG thumbnail");
-        return null;
+        throw new IIOException("EXIF IFD with empty or incomplete JPEG thumbnail");
     }
 }

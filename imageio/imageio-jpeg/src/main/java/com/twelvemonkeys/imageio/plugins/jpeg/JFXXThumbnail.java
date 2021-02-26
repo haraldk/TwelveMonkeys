@@ -36,7 +36,9 @@ import com.twelvemonkeys.imageio.plugins.jpeg.ThumbnailReader.JPEGThumbnailReade
 import com.twelvemonkeys.imageio.plugins.jpeg.ThumbnailReader.UncompressedThumbnailReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageReader;
+import java.io.IOException;
 
 /**
  * JFXXThumbnailReader
@@ -50,7 +52,7 @@ final class JFXXThumbnail {
     private JFXXThumbnail() {
     }
 
-    static ThumbnailReader from(final JFXX segment, final ImageReader thumbnailReader, final JPEGSegmentWarningListener listener) {
+    static ThumbnailReader from(final JFXX segment, final ImageReader thumbnailReader) throws IOException {
         if (segment != null) {
             if (segment.thumbnail != null && segment.thumbnail.length > 2) {
                 switch (segment.extensionCode) {
@@ -64,26 +66,29 @@ final class JFXXThumbnail {
                     case JFXX.INDEXED:
                         int w = segment.thumbnail[0] & 0xff;
                         int h = segment.thumbnail[1] & 0xff;
+
                         if (segment.thumbnail.length >= 2 + 768 + w * h) {
                             return new IndexedThumbnailReader(w, h, segment.thumbnail, 2, segment.thumbnail, 2 + 768);
                         }
+
                         break;
 
                     case JFXX.RGB:
                         w = segment.thumbnail[0] & 0xff;
                         h = segment.thumbnail[1] & 0xff;
+
                         if (segment.thumbnail.length >= 2 + w * h * 3) {
                             return new UncompressedThumbnailReader(w, h, segment.thumbnail, 2);
                         }
+
                         break;
 
                     default:
-                        listener.warningOccurred(String.format("Unknown JFXX extension code: %d, ignoring thumbnail", segment.extensionCode));
-                        return null;
+                        throw new IIOException(String.format("Unknown JFXX extension code: %d, ignoring thumbnail", segment.extensionCode));
                 }
             }
 
-            listener.warningOccurred("JFXX segment truncated, ignoring thumbnail");
+            throw new IIOException("JFXX segment truncated, ignoring thumbnail");
         }
 
         return null;
