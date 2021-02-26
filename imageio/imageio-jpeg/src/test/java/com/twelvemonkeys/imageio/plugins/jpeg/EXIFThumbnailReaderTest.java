@@ -35,18 +35,19 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+
 import org.junit.Test;
-import org.mockito.InOrder;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 /**
  * EXIFThumbnailReaderTest
@@ -57,31 +58,28 @@ import static org.mockito.Mockito.*;
  */
 public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
+    private final ImageReader thumbnailReader = ImageIO.getImageReadersByFormatName("jpeg").next();
+
     @Override
-    protected EXIFThumbnailReader createReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex, final ImageInputStream stream) throws IOException {
+    protected ThumbnailReader createReader(final ImageInputStream stream) throws IOException {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(stream, JPEG.APP1, "Exif");
         stream.close();
 
         assertNotNull(segments);
         assertFalse(segments.isEmpty());
 
-        TIFFReader reader = new TIFFReader();
-        InputStream data = segments.get(0).data();
-        if (data.read() < 0) {
-            throw new AssertionError("EOF!");
-        }
+        JPEGSegment exifSegment = segments.get(0);
+        InputStream data = exifSegment.segmentData();
+        byte[] exifData = new byte[exifSegment.segmentLength() - 2];
+        new DataInputStream(data).readFully(exifData);
 
-        ImageInputStream exifStream = ImageIO.createImageInputStream(data);
-        CompoundDirectory ifds = (CompoundDirectory) reader.read(exifStream);
-
-        assertEquals(2, ifds.directoryCount());
-
-        return new EXIFThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("JPEG").next(), imageIndex, thumbnailIndex, ifds.getDirectory(1), exifStream);
+        EXIF exif = new EXIF(exifData);
+        return EXIFThumbnail.from(exif, (CompoundDirectory) new TIFFReader().read(exif.exifData()), thumbnailReader, listener);
     }
 
     @Test
     public void testReadJPEG() throws IOException {
-        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"));
+        ThumbnailReader reader = createReader(createStream("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"));
 
         assertEquals(114, reader.getWidth());
         assertEquals(160, reader.getHeight());
@@ -94,7 +92,7 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
     @Test
     public void testReadRaw() throws IOException {
-        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/exif-rgb-thumbnail-sony-d700.jpg"));
+        ThumbnailReader reader = createReader(createStream("/jpeg/exif-rgb-thumbnail-sony-d700.jpg"));
 
         assertEquals(80, reader.getWidth());
         assertEquals(60, reader.getHeight());
@@ -103,29 +101,5 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(thumbnail);
         assertEquals(80, thumbnail.getWidth());
         assertEquals(60, thumbnail.getHeight());
-    }
-
-    @Test
-    public void testProgressListenerJPEG() throws IOException {
-        ThumbnailReadProgressListener listener = mock(ThumbnailReadProgressListener.class);
-
-        createReader(listener, 42, 43, createStream("/jpeg/cmyk-sample-multiple-chunk-icc.jpg")).read();
-
-        InOrder order = inOrder(listener);
-        order.verify(listener).thumbnailStarted(42, 43);
-        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
-        order.verify(listener).thumbnailComplete();
-    }
-
-    @Test
-    public void testProgressListenerRaw() throws IOException {
-        ThumbnailReadProgressListener listener = mock(ThumbnailReadProgressListener.class);
-
-        createReader(listener, 0, 99, createStream("/jpeg/exif-rgb-thumbnail-sony-d700.jpg")).read();
-
-        InOrder order = inOrder(listener);
-        order.verify(listener).thumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
-        order.verify(listener).thumbnailComplete();
     }
 }

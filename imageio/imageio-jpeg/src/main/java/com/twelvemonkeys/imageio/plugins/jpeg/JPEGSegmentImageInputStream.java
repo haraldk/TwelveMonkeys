@@ -59,7 +59,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     // TODO: Support multiple JPEG streams (SOI...EOI, SOI...EOI, ...) in a single file
 
     private final ImageInputStream stream;
-    private final JPEGSegmentStreamWarningListener warningListener;
+    private final JPEGSegmentWarningListener warningListener;
 
     private final ComponentIdSet componentIds = new ComponentIdSet();
 
@@ -68,13 +68,13 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     private Segment segment;
 
 
-    JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentStreamWarningListener warningListener) {
+    JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentWarningListener warningListener) {
         this.stream = notNull(stream, "stream");
         this.warningListener = notNull(warningListener, "warningListener");
     }
 
     JPEGSegmentImageInputStream(final ImageInputStream stream) {
-        this(stream, JPEGSegmentStreamWarningListener.NULL_LISTENER);
+        this(stream, JPEGSegmentWarningListener.NULL_LISTENER);
     }
 
     private void processWarningOccured(final String warning) {

@@ -33,10 +33,12 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+
+import org.junit.After;
 import org.junit.Test;
-import org.mockito.InOrder;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
@@ -44,6 +46,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -54,8 +57,10 @@ import static org.mockito.Mockito.*;
  * @version $Id: JFXXThumbnailReaderTest.java,v 1.0 04.05.12 15:56 haraldk Exp$
  */
 public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
+    private final ImageReader thumbnailReader = ImageIO.getImageReadersByFormatName("jpeg").next();
+
     @Override
-    protected JFXXThumbnailReader createReader(ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, ImageInputStream stream) throws IOException {
+    protected ThumbnailReader createReader(ImageInputStream stream) throws IOException {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(stream, JPEG.APP0, "JFXX");
         stream.close();
 
@@ -63,12 +68,81 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertFalse(segments.isEmpty());
 
         JPEGSegment jfxx = segments.get(0);
-        return new JFXXThumbnailReader(progressListener, ImageIO.getImageReadersByFormatName("jpeg").next(), imageIndex, thumbnailIndex, JFXX.read(new DataInputStream(jfxx.segmentData()), jfxx.length()));
+        return JFXXThumbnail.from(JFXX.read(new DataInputStream(jfxx.segmentData()), jfxx.length()), thumbnailReader, listener);
+    }
+
+    @After
+    public void tearDown() {
+        thumbnailReader.dispose();
+    }
+
+    @Test
+    public void testFromNull() {
+        assertNull(JFXXThumbnail.from(null, thumbnailReader, listener));
+
+        verify(listener, never()).warningOccurred(anyString());
+    }
+
+    @Test
+    public void testFromNullThumbnail() {
+        assertNull(JFXXThumbnail.from(new JFXX(JFXX.JPEG, null), thumbnailReader, listener));
+
+        verify(listener, only()).warningOccurred(anyString());
+    }
+
+    @Test
+    public void testFromEmpty() {
+        assertNull(JFXXThumbnail.from(new JFXX(JFXX.JPEG, new byte[0]), thumbnailReader, listener));
+
+        verify(listener, only()).warningOccurred(anyString());
+    }
+
+    @Test
+    public void testFromTruncatedJPEG() {
+        assertNull(JFXXThumbnail.from(new JFXX(JFXX.JPEG, new byte[99]), thumbnailReader, listener));
+
+        verify(listener, only()).warningOccurred(anyString());
+    }
+
+    @Test
+    public void testFromTruncatedRGB() {
+        byte[] thumbnail = new byte[765];
+        thumbnail[0] = (byte) 160;
+        thumbnail[1] = 90;
+        assertNull(JFXXThumbnail.from(new JFXX(JFXX.RGB, thumbnail), thumbnailReader, listener));
+
+        verify(listener, only()).warningOccurred(anyString());
+    }
+
+    @Test
+    public void testFromTruncatedIndexed() {
+        byte[] thumbnail = new byte[365];
+        thumbnail[0] = (byte) 160;
+        thumbnail[1] = 90;
+        assertNull(JFXXThumbnail.from(new JFXX(JFXX.INDEXED, thumbnail), thumbnailReader, listener));
+
+        verify(listener, only()).warningOccurred(anyString());
+    }
+
+    @Test
+    public void testFromValid() throws IOException {
+        byte[] thumbnail = new byte[14];
+        thumbnail[0] = 2;
+        thumbnail[1] = 2;
+        ThumbnailReader reader = JFXXThumbnail.from(new JFXX(JFXX.RGB, thumbnail), thumbnailReader, listener);
+        assertNotNull(reader);
+
+        verify(listener, never()).warningOccurred(anyString());
+
+        // Sanity check below
+        assertEquals(2, reader.getWidth());
+        assertEquals(2, reader.getHeight());
+        assertNotNull(reader.read());
     }
 
     @Test
     public void testReadJPEG() throws IOException {
-        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"));
+        ThumbnailReader reader = createReader(createStream("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"));
 
         assertEquals(80, reader.getWidth());
         assertEquals(60, reader.getHeight());
@@ -81,16 +155,4 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
     // TODO: Test JFXX indexed thumbnail
     // TODO: Test JFXX RGB thumbnail
-
-    @Test
-    public void testProgressListenerRaw() throws IOException {
-        ThumbnailReadProgressListener listener = mock(ThumbnailReadProgressListener.class);
-
-        createReader(listener, 0, 99, createStream("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg")).read();
-
-        InOrder order = inOrder(listener);
-        order.verify(listener).thumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
-        order.verify(listener).thumbnailComplete();
-    }
 }

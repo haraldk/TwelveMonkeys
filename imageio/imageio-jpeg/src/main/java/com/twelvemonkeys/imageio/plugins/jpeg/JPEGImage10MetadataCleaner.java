@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.xml.XMLSerializer;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -132,7 +133,7 @@ final class JPEGImage10MetadataCleaner {
                     IIOMetadataNode app0JFXX = new IIOMetadataNode("app0JFXX");
                     app0JFXX.setAttribute("extensionCode", String.valueOf(jfxx.extensionCode));
 
-                    JFXXThumbnailReader thumbnailReader = new JFXXThumbnailReader(null, reader.getThumbnailReader(), 0, 0, jfxx);
+                    ThumbnailReader thumbnailReader = JFXXThumbnail.from(jfxx, reader.getThumbnailReader(), JPEGSegmentWarningListener.NULL_LISTENER);
                     IIOMetadataNode jfifThumb;
 
                     switch (jfxx.extensionCode) {

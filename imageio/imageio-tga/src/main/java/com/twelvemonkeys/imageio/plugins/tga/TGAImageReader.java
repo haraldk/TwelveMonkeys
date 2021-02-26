@@ -441,6 +441,7 @@ final class TGAImageReader extends ImageReaderBase {
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
 
         processThumbnailStarted(imageIndex, thumbnailIndex);
+        processThumbnailProgress(0f);
 
         // Thumbnail is always stored non-compressed, no need for RLE support
         imageInput.seek(extensions.getThumbnailOffset() + 2);
@@ -468,6 +469,7 @@ final class TGAImageReader extends ImageReaderBase {
             }
         }
 
+        processThumbnailProgress(100f);
         processThumbnailComplete();
 
         return destination;

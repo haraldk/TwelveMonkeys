@@ -30,14 +30,29 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-/**
- * JPEGSegmentStreamWarningListener
- */
-interface JPEGSegmentStreamWarningListener {
-    void warningOccurred(String warning);
+import com.twelvemonkeys.imageio.plugins.jpeg.ThumbnailReader.UncompressedThumbnailReader;
 
-    JPEGSegmentStreamWarningListener NULL_LISTENER = new JPEGSegmentStreamWarningListener() {
-        @Override
-        public void warningOccurred(final String warning) {}
-    };
+/**
+ * JFIFThumbnail
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: haraldk$
+ * @version $Id: JFIFThumbnail.java,v 1.0 18.04.12 12:19 haraldk Exp$
+ */
+final class JFIFThumbnail {
+    private JFIFThumbnail() {
+    }
+
+    static ThumbnailReader from(final JFIF segment, final JPEGSegmentWarningListener listener) {
+        if (segment != null && segment.xThumbnail > 0 && segment.yThumbnail > 0) {
+            if (segment.thumbnail == null || segment.thumbnail.length < segment.xThumbnail * segment.yThumbnail) {
+                listener.warningOccurred("Ignoring truncated JFIF thumbnail");
+            }
+            else {
+                return new UncompressedThumbnailReader(segment.xThumbnail, segment.yThumbnail, segment.thumbnail);
+            }
+        }
+
+        return null;
+    }
 }

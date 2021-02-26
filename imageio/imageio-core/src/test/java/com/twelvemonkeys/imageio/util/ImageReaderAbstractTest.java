@@ -284,26 +284,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     }
 
     @Test
-    public void testReadNoInput() throws IOException {
-        ImageReader reader = createReader();
-        // Do not set input
-
-        BufferedImage image = null;
-        try {
-            image = reader.read(0);
-            fail("Read image with no input");
-        }
-        catch (IllegalStateException ignore) {
-        }
-        catch (IOException e) {
-            failBecause("Image could not be read", e);
-        }
-        assertNull(image);
-
-        reader.dispose();
-    }
-
-    @Test
     public void testReRead() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
@@ -323,69 +303,71 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         reader.dispose();
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
+    public void testReadNoInput() throws IOException {
+        ImageReader reader = createReader();
+        // Do not set input
+
+        try {
+            reader.read(0);
+            fail("Read image with no input");
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
     public void testReadIndexNegativeWithParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        BufferedImage image = null;
         try {
-            image = reader.read(-1, reader.getDefaultReadParam());
+            reader.read(-1, reader.getDefaultReadParam());
             fail("Read image with illegal index");
-        }
-        catch (IndexOutOfBoundsException ignore) {
         }
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
-
-        assertNull(image);
-
-        reader.dispose();
+        finally {
+            reader.dispose();
+        }
     }
 
-    @Test
+    @Test(expected = IndexOutOfBoundsException.class)
     public void testReadIndexOutOfBoundsWithParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
 
-        BufferedImage image = null;
         try {
-            image = reader.read(Short.MAX_VALUE, reader.getDefaultReadParam());
+            reader.read(Short.MAX_VALUE, reader.getDefaultReadParam());
             fail("Read image with index out of bounds");
-        }
-        catch (IndexOutOfBoundsException ignore) {
         }
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
-
-        assertNull(image);
-
-        reader.dispose();
+        finally {
+            reader.dispose();
+        }
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void testReadNoInputWithParam() throws IOException {
         ImageReader reader = createReader();
         // Do not set input
 
-        BufferedImage image = null;
         try {
-            image = reader.read(0, reader.getDefaultReadParam());
+            reader.read(0, reader.getDefaultReadParam());
             fail("Read image with no input");
-        }
-        catch (IllegalStateException ignore) {
         }
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
-
-        assertNull(image);
-
-        reader.dispose();
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
@@ -1655,6 +1637,64 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         two.setRGB(0, 0, Color.RED.getRGB());
 
         assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
+        reader.dispose();
+    }
+
+    @Test
+    public void testReadThumbnails() throws IOException {
+        T reader = createReader();
+
+        if (reader.readerSupportsThumbnails()) {
+            for (TestData testData : getTestData()) {
+                try (ImageInputStream inputStream = testData.getInputStream()) {
+                    reader.setInput(inputStream);
+
+                    int numImages = reader.getNumImages(true);
+
+                    for (int i = 0; i < numImages; i++) {
+                        int numThumbnails = reader.getNumThumbnails(0);
+
+                        for (int t = 0; t < numThumbnails; t++) {
+                            BufferedImage thumbnail = reader.readThumbnail(0, t);
+
+                            assertNotNull(thumbnail);
+                        }
+                    }
+                }
+            }
+        }
+
+        reader.dispose();
+    }
+
+    @Test
+    public void testThumbnailProgress() throws IOException {
+        T reader = createReader();
+
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
+
+        if (reader.readerSupportsThumbnails()) {
+            for (TestData testData : getTestData()) {
+                try (ImageInputStream inputStream = testData.getInputStream()) {
+
+                    reader.setInput(inputStream);
+
+                    int numThumbnails = reader.getNumThumbnails(0);
+                    for (int i = 0; i < numThumbnails; i++) {
+                        reset(listener);
+
+                        reader.readThumbnail(0, i);
+
+                        InOrder order = inOrder(listener);
+                        order.verify(listener).thumbnailStarted(reader, 0, i);
+                        order.verify(listener, atLeastOnce()).thumbnailProgress(reader, 100f);
+                        order.verify(listener).thumbnailComplete(reader);
+                    }
+                }
+            }
+        }
+
         reader.dispose();
     }
 

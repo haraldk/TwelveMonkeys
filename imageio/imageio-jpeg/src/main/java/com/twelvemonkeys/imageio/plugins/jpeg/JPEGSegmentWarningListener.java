@@ -31,16 +31,13 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 /**
- * ThumbnailReadProgressListener
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: ThumbnailReadProgressListener.java,v 1.0 07.05.12 10:15 haraldk Exp$
+ * JPEGSegmentStreamWarningListener
  */
-interface ThumbnailReadProgressListener {
-    void thumbnailStarted(int imageIndex, int thumbnailIndex);
+interface JPEGSegmentWarningListener {
+    void warningOccurred(String warning);
 
-    void thumbnailProgress(float percentageDone);
-
-    void thumbnailComplete();
+    JPEGSegmentWarningListener NULL_LISTENER = new JPEGSegmentWarningListener() {
+        @Override
+        public void warningOccurred(final String warning) {}
+    };
 }
