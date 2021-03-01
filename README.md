@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.org/haraldk/TwelveMonkeys) 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio)
-[![StackOverflow](https://img.shields.io/badge/tag-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio/badge.svg?color=slateblue)](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio)
+[![StackOverflow](https://img.shields.io/badge/stack_overflow-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
 
 ## About
@@ -28,8 +28,9 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 |        | ICO      | MS Windows Icon Format    | ✔  | ✔   | - | 
 | [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
 | [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | -  | 
-| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | - | 
-| [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard |  
+| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | Standard | 
+| [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard | 
+|   | **JPEG Lossless** |   | ✔  |  -  | Native & Standard | 
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
 |        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 
 | [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple Mac Paint Picture Format | ✔  | -   | - | 
@@ -50,7 +51,11 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 
 
 **Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), 
-and make sure you use either version 1.6.1, 1.7.1, 1.8+ or later.*
+and make sure you use version 1.14 or later.*
+
+Note that GIF, PNG and WBMP formats are already supported through the ImageIO API, using the
+[JDK standard plugins](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/package-summary.html).
+For BMP, JPEG, and TIFF formats the TwelveMonkeys plugins provides extended format support and additional features.
 
 ## Basic usage
 
@@ -79,10 +84,8 @@ The plugins are discovered automatically at run time. See the [FAQ](#faq) for mo
 If you need more control of read parameters and the reading process, the common idiom for reading is something like:
 
 ```java
-// Create input stream
-ImageInputStream input = ImageIO.createImageInputStream(file);
-
-try {
+// Create input stream (in try-with-resource block to avoid leaks)
+try (ImageInputStream input = ImageIO.createImageInputStream(file)) {
     // Get the reader
     Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 
@@ -119,10 +122,6 @@ try {
         reader.dispose();
     }
 }
-finally {
-    // Close stream in finally block to avoid resource leaks
-    input.close();
-}
 ```
 
 Query the reader for source image dimensions using `reader.getWidth(n)` and `reader.getHeight(n)` without reading the
@@ -144,10 +143,8 @@ if (!writers.hasNext()) {
 ImageWriter writer = writers.next();
 
 try {
-    // Create output stream
-    ImageOutputStream output = ImageIO.createImageOutputStream(file);
-
-    try {
+    // Create output stream (in try-with-resource block to avoid leaks)
+    try (ImageOutputStream output = ImageIO.createImageOutputStream(file)) {
         writer.setOutput(output);
 
         // Optionally, listen to progress, warnings, etc.
@@ -159,10 +156,6 @@ try {
 
         // Optionally, provide thumbnails and image/stream metadata
         writer.write(..., new IIOImage(..., image, ...), param);
-    }
-    finally {
-        // Close stream in finally block to avoid resource leaks
-        output.close();
     }
 }
 finally {
@@ -446,7 +439,7 @@ Servlet support
 
 ## License
 
-The project is distributed under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
+This project is provided under the OSI approved [BSD license](http://opensource.org/licenses/BSD-3-Clause):
 
     Copyright (c) 2008-2020, Harald Kuhr
     All rights reserved.
@@ -509,10 +502,15 @@ the Sun/Oracle provided `JPEGImageReader` and `BMPImageReader`, and the Apple pr
 respectively. Using the pairwise ordering will not remove any functionality form these implementations, but in most 
 cases you'll end up using the TwelveMonkeys plug-ins instead.
 
+q: Why is there no support for common formats like GIF or PNG?
+
+a: The short answer is simply that the built-in support in ImageIO for these formats are good enough as-is.
+If you are looking for better PNG write performance on Java 7 and 8, see [JDK9 PNG Writer Backport](https://github.com/gredler/jdk9-png-writer-backport).
+
 
 q: What about JAI? Several of the formats are already supported by JAI.
 
-a: While JAI (and jai-imageio in particular) have support for some of the formats, JAI has some major issues.
+a: While JAI (and jai-imageio in particular) have support for some of the same formats, JAI has some major issues.
 The most obvious being:
 - It's not actively developed. No issues has been fixed for years.
 - To get full format support, you need native libs.
