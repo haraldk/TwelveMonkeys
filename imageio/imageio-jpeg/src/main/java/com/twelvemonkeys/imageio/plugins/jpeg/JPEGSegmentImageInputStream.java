@@ -572,12 +572,17 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         @Override
         public int read(final ImageInputStream stream) {
-            return data[pos++] & 0xff;
+            return data.length > pos ? data[pos++] & 0xff : -1;
         }
 
         @Override
         public int read(final ImageInputStream stream, byte[] b, int off, int len) {
-            int length = Math.min(data.length - pos, len);
+            int dataLeft = data.length - pos;
+            if (dataLeft <= 0) {
+                return -1;
+            }
+
+            int length = Math.min(dataLeft, len);
             System.arraycopy(data, pos, b, off, length);
             pos += length;
 
