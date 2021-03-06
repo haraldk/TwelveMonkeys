@@ -178,19 +178,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     private boolean isLossless() throws IOException {
         assertInput();
 
-        try {
-            if (getSOF().marker == JPEG.SOF3) {
-                return true;
-            }
-        }
-        catch (IIOException e) {
-            // May happen if no SOF is found, in case we'll just fall through
-            if (DEBUG) {
-                e.printStackTrace();
-            }
-        }
-
-        return false;
+        return getSOF().marker == JPEG.SOF3;
     }
 
     @Override
