@@ -655,7 +655,7 @@ public class SVGImageReader extends ImageReaderBase {
                 if (allowExternalResources) {
                     return super.getExternalResourceSecurity(resourceURL, docURL);
                 }
-                return new NoLoadExternalResourceSecurity();
+                return new EmbededExternalResourceSecurity(resourceURL);
             }
         }
     }
