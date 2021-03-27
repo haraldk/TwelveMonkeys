@@ -48,10 +48,10 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
@@ -696,7 +696,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     }
 
     private int getPhotometricInterpretationWithFallback() throws IIOException {
-        // PhotometricInterpretation is a required TAG, but as it can be guessed this does a fallback that is equal to JAI ImageIO.
+        // PhotometricInterpretation is a required tag, but as it can be guessed this does a fallback that is similar to JAI ImageIO.
         int interpretation = getValueAsIntWithDefault(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation", -1);
         if (interpretation == -1) {
             int compression = getValueAsIntWithDefault(TIFF.TAG_COMPRESSION, TIFFBaseline.COMPRESSION_NONE);
@@ -713,7 +713,13 @@ public final class TIFFImageReader extends ImageReaderBase {
                 interpretation = TIFFBaseline.PHOTOMETRIC_PALETTE;
             }
             else if ((samplesPerPixel - extraSamples) == 3) {
-                interpretation = TIFFBaseline.PHOTOMETRIC_RGB;
+                if (compression == TIFFExtension.COMPRESSION_JPEG
+                     || compression == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                    interpretation = TIFFExtension.PHOTOMETRIC_YCBCR;
+                }
+                else {
+                    interpretation = TIFFBaseline.PHOTOMETRIC_RGB;
+                }
             }
             else if ((samplesPerPixel - extraSamples) == 4) {
                 interpretation = TIFFExtension.PHOTOMETRIC_SEPARATED;
@@ -959,10 +965,9 @@ public final class TIFFImageReader extends ImageReaderBase {
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
 
-        // TODO: Get number of extra samples not part of the rawType spec...
-        // TODO: If extrasamples, we might need to create a raster with more samples...
+        // Raw type may contain extra samples
         WritableRaster rowRaster = rawType.createBufferedImage(stripTileWidth, 1).getRaster();
-//        WritableRaster rowRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, stripTileWidth, 1, 2, null).createWritableChild(0, 0, stripTileWidth, 1, 0, 0, new int[]{0});
+
         Rectangle clip = new Rectangle(srcRegion);
         int srcRow = 0;
         Boolean needsCSConversion = null;
@@ -1121,6 +1126,13 @@ public final class TIFFImageReader extends ImageReaderBase {
                 // TODO: Cache the JPEG reader for later use? Remember to reset to avoid resource leaks
 
                 ImageReader jpegReader = createJPEGDelegate();
+                // TODO: Use proper inner class + add case for old JPEG
+                jpegReader.addIIOReadWarningListener(new IIOReadWarningListener() {
+                    @Override
+                    public void warningOccurred(final ImageReader source, final String warning) {
+                        processWarningOccurred(warning);
+                    }
+                });
                 JPEGImageReadParam jpegParam = (JPEGImageReadParam) jpegReader.getDefaultReadParam();
 
                 // JPEG_TABLES should be a full JPEG 'abbreviated table specification', containing:
@@ -1135,7 +1147,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                     // This initializes the tables and other internal settings for the reader,
                     // and is actually a feature of JPEG, see abbreviated streams:
                     // http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
-                    jpegReader.getStreamMetadata();
+                    IIOMetadata streamMetadata = jpegReader.getStreamMetadata();
+                    new XMLSerializer(System.out, "UTF8").serialize(streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName()), false);
                 }
                 else if (tilesDown * tilesAcross > 1) {
                     processWarningOccurred("Missing JPEGTables for tiled/striped TIFF with compression: 7 (JPEG)");
@@ -1810,8 +1823,6 @@ public final class TIFFImageReader extends ImageReaderBase {
         out.writeByte(0); // Spectral selection end
         out.writeByte(0); // Approx high & low
 
-//        System.err.println(TIFFReader.HexDump.dump(stream.toByteArray()));
-//
         return stream.createInputStream();
     }
 
@@ -1872,10 +1883,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                         }
 
                         // Subsample horizontal
-                        if (xSub != 1) {
-                            IIOUtil.subsampleRow(rowDataByte, srcRegion.x * numBands, colsInTile,
-                                    rowDataByte, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
-                        }
+                        subsampleRow(rowDataByte, srcRegion.x * numBands, colsInTile,
+                                rowDataByte, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
 
                         destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
                     }
@@ -1914,10 +1923,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                         normalizeColor(interpretation, rowDataShort);
 
                         // Subsample horizontal
-                        if (xSub != 1) {
-                            subsampleRow(rowDataShort, srcRegion.x * numBands, colsInTile,
-                                    rowDataShort, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
-                        }
+                        subsampleRow(rowDataShort, srcRegion.x * numBands, colsInTile,
+                                rowDataShort, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
 
                         destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
                         // TODO: Possible speedup ~30%!:
@@ -1950,10 +1957,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                         normalizeColor(interpretation, rowDataInt);
 
                         // Subsample horizontal
-                        if (xSub != 1) {
-                            subsampleRow(rowDataInt, srcRegion.x * numBands, colsInTile,
-                                    rowDataInt, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
-                        }
+                        subsampleRow(rowDataInt, srcRegion.x * numBands, colsInTile,
+                                rowDataInt, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
 
                         destChannel.setDataElements(startCol / xSub, (row - srcRegion.y) / ySub, srcChannel);
                     }
@@ -2596,12 +2601,19 @@ public final class TIFFImageReader extends ImageReaderBase {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
 
             if (!readers.hasNext()) {
-                System.err.println("No reader for: " + file);
-                continue;
+                String suffix = FileUtil.getExtension(file.getName());
+                readers = ImageIO.getImageReadersBySuffix(suffix);
+
+                if (!readers.hasNext()) {
+                    System.err.println("No reader for: " + file);
+                    continue;
+                }
+
+                System.err.println("Could not determine file format, falling back to file extension: ." + suffix);
             }
 
             ImageReader reader = readers.next();
-            System.err.printf("Reading %s format (%s)%n", reader.getFormatName(), reader);
+            System.out.printf("Reading %s format (%s)%n", reader.getFormatName(), reader);
 
             reader.addIIOReadWarningListener(new IIOReadWarningListener() {
                 public void warningOccurred(ImageReader source, String warning) {

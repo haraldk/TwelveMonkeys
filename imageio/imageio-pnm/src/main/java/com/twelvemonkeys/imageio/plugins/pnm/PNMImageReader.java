@@ -353,10 +353,7 @@ public final class PNMImageReader extends ImageReaderBase {
         input.readFully(rowDataByte);
 
         // Subsample (horizontal)
-        if (xSub > 1) {
-            subsampleRow(rowDataByte, srcRegion.x, srcRegion.width, rowDataByte, 0, samplesPerPixel, bitsPerSample, xSub);
-        }
-
+        subsampleRow(rowDataByte, srcRegion.x, srcRegion.width, rowDataByte, 0, samplesPerPixel, bitsPerSample, xSub);
         normalize(rowDataByte, 0, rowDataByte.length / xSub);
 
         int destY = (y - srcRegion.y) / ySub;
@@ -382,10 +379,7 @@ public final class PNMImageReader extends ImageReaderBase {
         readFully(input, rowDataUShort);
 
         // Subsample (horizontal)
-        if (xSub > 1) {
-            subsampleRow(rowDataUShort, srcRegion.x, srcRegion.width, rowDataUShort, 0, samplesPerPixel, 16, xSub);
-        }
-
+        subsampleRow(rowDataUShort, srcRegion.x, srcRegion.width, rowDataUShort, 0, samplesPerPixel, 16, xSub);
         normalize(rowDataUShort);
 
         int destY = (y - srcRegion.y) / ySub;
