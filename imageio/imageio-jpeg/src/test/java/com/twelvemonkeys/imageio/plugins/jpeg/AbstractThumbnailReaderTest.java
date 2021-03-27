@@ -52,9 +52,7 @@ public abstract class AbstractThumbnailReaderTest {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
     }
 
-    protected abstract ThumbnailReader createReader(
-            ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, ImageInputStream stream
-    ) throws IOException;
+    protected abstract ThumbnailReader createReader(ImageInputStream stream) throws IOException;
 
     protected final ImageInputStream createStream(final String name) throws IOException {
         URL resource = getClass().getResource(name);

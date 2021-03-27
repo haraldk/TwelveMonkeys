@@ -224,7 +224,7 @@ final class TGAImageReader extends ImageReaderBase {
                              byte[] rowDataByte, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
         // If subsampled or outside source region, skip entire row
         if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
-            imageInput.skipBytes(rowDataByte.length);
+            input.skipBytes(rowDataByte.length);
 
             return;
         }
@@ -251,7 +251,8 @@ final class TGAImageReader extends ImageReaderBase {
                 destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             case TGA.ORIGIN_UPPER_LEFT:
-                destChannel.setDataElements(0, y, srcChannel);
+                dstY = y / ySub;
+                destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             default:
                 throw new IIOException("Unsupported origin: " + origin);
@@ -289,7 +290,8 @@ final class TGAImageReader extends ImageReaderBase {
                 destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             case TGA.ORIGIN_UPPER_LEFT:
-                destChannel.setDataElements(0, y, srcChannel);
+                dstY = y / ySub;
+                destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             default:
                 throw new IIOException("Unsupported origin: " + origin);
@@ -439,6 +441,7 @@ final class TGAImageReader extends ImageReaderBase {
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
 
         processThumbnailStarted(imageIndex, thumbnailIndex);
+        processThumbnailProgress(0f);
 
         // Thumbnail is always stored non-compressed, no need for RLE support
         imageInput.seek(extensions.getThumbnailOffset() + 2);
@@ -466,6 +469,7 @@ final class TGAImageReader extends ImageReaderBase {
             }
         }
 
+        processThumbnailProgress(100f);
         processThumbnailComplete();
 
         return destination;

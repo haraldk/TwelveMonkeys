@@ -53,7 +53,8 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
 
     @Override
     protected List<TestData> getTestData() {
-        return Collections.singletonList(
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/sgi/input.sgi"), new Dimension(70, 46)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/sgi/MARBLES.SGI"), new Dimension(1419, 1001)) // RLE encoded RGB
         );
     }

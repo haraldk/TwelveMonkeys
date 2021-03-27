@@ -104,6 +104,6 @@
     </dependencies>
 
     <properties>
-        <batik.version>1.12</batik.version>
+        <batik.version>1.14</batik.version>
     </properties>
 </project>

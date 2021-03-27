@@ -346,7 +346,7 @@ public final class FileUtil {
 
     /**
      * Gets the file (type) extension of the given file.
-     * A file extension is the part of the filename, after the last occurence
+     * A file extension is the part of the filename, after the last occurrence
      * of a period {@code '.'}.
      * If the filename contains no period, {@code null} is returned.
      *

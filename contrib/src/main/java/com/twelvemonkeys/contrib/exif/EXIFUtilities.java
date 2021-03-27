@@ -2,6 +2,7 @@ package com.twelvemonkeys.contrib.exif;
 
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
+
 import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOImage;
@@ -82,12 +83,11 @@ public class EXIFUtilities {
         ImageReader reader = readers.next();
         try {
             reader.setInput(input, true, false);
-            IIOImage image = reader.readAll(0, reader.getDefaultReadParam());
 
-            BufferedImage bufferedImage = ImageUtil.toBuffered(image.getRenderedImage());
-            image.setRenderedImage(applyOrientation(bufferedImage, findImageOrientation(image.getMetadata()).value()));
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            BufferedImage bufferedImage = applyOrientation(reader.read(0), findImageOrientation(metadata).value());
 
-            return image;
+            return new IIOImage(bufferedImage, null, metadata);
         }
         finally {
             reader.dispose();
@@ -123,8 +123,14 @@ public class EXIFUtilities {
         for (String arg : args) {
             File input = new File(arg);
 
-            // Read everything (similar to ImageReader.readAll(0, null)), but applies the correct image orientation
+            // Read everything but thumbnails (similar to ImageReader.readAll(0, null)),
+            // and applies the correct image orientation
             IIOImage image = readWithOrientation(input);
+
+            if (image == null) {
+                System.err.printf("No reader for %s%n", input);
+                continue;
+            }
 
             // Finds the orientation as defined by the javax_imageio_1.0 format
             Orientation orientation = findImageOrientation(image.getMetadata());

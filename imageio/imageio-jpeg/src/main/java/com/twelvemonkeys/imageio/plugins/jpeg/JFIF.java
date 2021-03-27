@@ -38,7 +38,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * JFIFSegment
+ * A JFIF segment.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -54,8 +54,8 @@ final class JFIF extends Application {
     final int yThumbnail;
     final byte[] thumbnail;
 
-    private JFIF(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail, byte[] data) {
-        super(JPEG.APP0, "JFIF", data);
+    JFIF(int majorVersion, int minorVersion, int units, int xDensity, int yDensity, int xThumbnail, int yThumbnail, byte[] thumbnail) {
+        super(JPEG.APP0, "JFIF", new byte[5 + 9 + (thumbnail != null ? thumbnail.length : 0)]);
 
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
@@ -98,7 +98,7 @@ final class JFIF extends Application {
             throw new EOFException();
         }
 
-        data.readFully(new byte[5]);
+        data.readFully(new byte[5]); // Skip "JFIF\0"
 
         byte[] bytes = new byte[length - 2 - 5];
         data.readFully(bytes);
@@ -115,8 +115,7 @@ final class JFIF extends Application {
                 buffer.getShort() & 0xffff,
                 x = buffer.get() & 0xff,
                 y = buffer.get() & 0xff,
-                getBytes(buffer, Math.min(buffer.remaining(), x * y * 3)),
-                bytes
+                getBytes(buffer, Math.min(buffer.remaining(), x * y * 3))
         );
     }
 

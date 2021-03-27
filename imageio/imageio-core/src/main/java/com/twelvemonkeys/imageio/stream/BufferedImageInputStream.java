@@ -43,15 +43,18 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * A buffered {@code ImageInputStream}.
  * Experimental - seems to be effective for {@link javax.imageio.stream.FileImageInputStream}
  * and {@link javax.imageio.stream.FileCacheImageInputStream} when doing a lot of single-byte reads
- * (or short byte-array reads) on OS X at least.
+ * (or short byte-array reads).
  * Code that uses the {@code readFully} methods are not affected by the issue.
+ * <p/>
+ * NOTE: Invoking {@code close()} will  <em>NOT</em> close the wrapped stream.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedFileImageInputStream.java,v 1.0 May 15, 2008 4:36:49 PM haraldk Exp$
+ *
+ * @deprecated Use {@link BufferedFileImageInputStream} instead.
  */
-// TODO: Create a provider for this (wrapping the FileIIS and FileCacheIIS classes), and disable the Sun built-in spis?
-// TODO: Test on other platforms, might be just an OS X issue
+@Deprecated
 public final class BufferedImageInputStream extends ImageInputStreamImpl implements ImageInputStream {
     static final int DEFAULT_BUFFER_SIZE = 8192;
 
@@ -255,6 +258,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
             }
 
             int val = buffer.get() & 0xff;
+            streamPos++;
 
             accum <<= 8;
             accum |= val;
@@ -264,9 +268,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         // Move byte position back if in the middle of a byte
         if (newBitOffset != 0) {
             buffer.position(buffer.position() - 1);
-        }
-        else {
-            streamPos++;
+            streamPos--;
         }
 
         this.bitOffset = newBitOffset;
@@ -281,26 +283,26 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     }
 
     @Override
-    public void seek(long pPosition) throws IOException {
+    public void seek(long position) throws IOException {
         checkClosed();
         bitOffset = 0;
 
-        if (streamPos == pPosition) {
+        if (streamPos == position) {
             return;
         }
 
         // Optimized to not invalidate buffer if new position is within current buffer
-        long newBufferPos = buffer.position() + pPosition - streamPos;
+        long newBufferPos = buffer.position() + position - streamPos;
         if (newBufferPos >= 0 && newBufferPos <= buffer.limit()) {
             buffer.position((int) newBufferPos);
         }
         else {
             // Will invalidate buffer
             buffer.limit(0);
-            stream.seek(pPosition);
+            stream.seek(position);
         }
 
-        streamPos = pPosition;
+        streamPos = position;
     }
 
     @Override
@@ -332,7 +334,9 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     @Override
     public void close() throws IOException {
         if (stream != null) {
-            //stream.close();
+            // TODO: FixMe: Need to close underlying stream here!
+            //   For call sites that relies on not closing, we should instead not close the buffered stream.
+//             stream.close();
             stream = null;
             buffer = null;
         }

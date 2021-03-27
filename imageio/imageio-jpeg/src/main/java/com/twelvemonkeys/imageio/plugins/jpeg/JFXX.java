@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 /**
- * JFXXSegment
+ * A JFXX segment (aka JFIF extension segment).
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
@@ -49,8 +49,8 @@ final class JFXX extends Application {
     final int extensionCode;
     final byte[] thumbnail;
 
-    private JFXX(final int extensionCode, final byte[] thumbnail, final byte[] data) {
-        super(com.twelvemonkeys.imageio.metadata.jpeg.JPEG.APP0, "JFXX", data);
+    JFXX(final int extensionCode, final byte[] thumbnail) {
+        super(com.twelvemonkeys.imageio.metadata.jpeg.JPEG.APP0, "JFXX", new byte[1 + (thumbnail != null ? thumbnail.length : 0)]);
 
         this.extensionCode = extensionCode;
         this.thumbnail = thumbnail;
@@ -82,8 +82,7 @@ final class JFXX extends Application {
 
         return new JFXX(
                 bytes[0] & 0xff,
-                bytes.length - 1 > 0 ? Arrays.copyOfRange(bytes, 1, bytes.length - 1) : null,
-                bytes
+                bytes.length - 1 > 0 ? Arrays.copyOfRange(bytes, 1, bytes.length - 1) : null
         );
     }
 }

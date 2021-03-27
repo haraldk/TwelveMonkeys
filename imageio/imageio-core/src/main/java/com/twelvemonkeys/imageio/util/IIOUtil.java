@@ -223,7 +223,12 @@ public final class IIOUtil {
     public static void subsampleRow(byte[] srcRow, int srcPos, int srcWidth,
                                     byte[] destRow, int destPos,
                                     int samplesPerPixel, int bitsPerSample, int samplePeriod) {
-        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1"); // Period == 1 could be a no-op...
+        // Period == 1 is a no-op...
+        if (samplePeriod == 1) {
+            return;
+        }
+
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1");
         Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 8 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
                 "bitsPerSample must be > 0 and <= 8 and a power of 2");
         Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
@@ -261,7 +266,12 @@ public final class IIOUtil {
     public static void subsampleRow(short[] srcRow, int srcPos, int srcWidth,
                                     short[] destRow, int destPos,
                                     int samplesPerPixel, int bitsPerSample, int samplePeriod) {
-        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1"); // Period == 1 could be a no-op...
+        // Period == 1 is a no-op...
+        if (samplePeriod == 1) {
+            return;
+        }
+
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1");
         Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 16 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
                 "bitsPerSample must be > 0 and <= 16 and a power of 2");
         Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
@@ -278,7 +288,12 @@ public final class IIOUtil {
     public static void subsampleRow(int[] srcRow, int srcPos, int srcWidth,
                                     int[] destRow, int destPos,
                                     int samplesPerPixel, int bitsPerSample, int samplePeriod) {
-        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1"); // Period == 1 could be a no-op...
+        // Period == 1 is a no-op...
+        if (samplePeriod == 1) {
+            return;
+        }
+
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1");
         Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 32 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
                 "bitsPerSample must be > 0 and <= 32 and a power of 2");
         Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");

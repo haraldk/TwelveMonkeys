@@ -59,7 +59,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     // TODO: Support multiple JPEG streams (SOI...EOI, SOI...EOI, ...) in a single file
 
     private final ImageInputStream stream;
-    private final JPEGSegmentStreamWarningListener warningListener;
+    private final JPEGSegmentWarningListener warningListener;
 
     private final ComponentIdSet componentIds = new ComponentIdSet();
 
@@ -68,13 +68,13 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     private Segment segment;
 
 
-    JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentStreamWarningListener warningListener) {
+    JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentWarningListener warningListener) {
         this.stream = notNull(stream, "stream");
         this.warningListener = notNull(warningListener, "warningListener");
     }
 
     JPEGSegmentImageInputStream(final ImageInputStream stream) {
-        this(stream, JPEGSegmentStreamWarningListener.NULL_LISTENER);
+        this(stream, JPEGSegmentWarningListener.NULL_LISTENER);
     }
 
     private void processWarningOccured(final String warning) {
@@ -150,7 +150,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 else {
                     if (marker == JPEG.EOI) {
                         segment = new Segment(marker, realPosition, segment.end(), 2);
-                        segments.add(segment);
                     }
                     else {
                         // Length including length field itself
@@ -165,6 +164,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                             // Inspect segment, see if we have 16 bit precision (assuming segments will not contain
                             // multiple quality tables with varying precision)
                             int qtInfo = stream.read();
+
                             if ((qtInfo & 0x10) == 0x10) {
                                 processWarningOccured("16 bit DQT encountered");
                                 segment = new DownsampledDQTReplacement(realPosition, segment.end(), length, qtInfo, stream);
@@ -188,10 +188,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         else {
                             segment = new Segment(marker, realPosition, segment.end(), length);
                         }
-
-                        segments.add(segment);
                     }
 
+                    segments.add(segment);
                     currentSegment = segments.size() - 1;
 
                     if (marker == JPEG.SOS) {
@@ -572,12 +571,17 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         @Override
         public int read(final ImageInputStream stream) {
-            return data[pos++] & 0xff;
+            return data.length > pos ? data[pos++] & 0xff : -1;
         }
 
         @Override
         public int read(final ImageInputStream stream, byte[] b, int off, int len) {
-            int length = Math.min(data.length - pos, len);
+            int dataLeft = data.length - pos;
+            if (dataLeft <= 0) {
+                return -1;
+            }
+
+            int length = Math.min(dataLeft, len);
             System.arraycopy(data, pos, b, off, length);
             pos += length;
 

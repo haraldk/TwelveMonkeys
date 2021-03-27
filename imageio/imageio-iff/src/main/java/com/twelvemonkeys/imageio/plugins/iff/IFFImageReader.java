@@ -30,6 +30,17 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.image.ResampleOp;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.io.enc.PackBitsDecoder;
+
+import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
@@ -40,23 +51,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-
-import com.twelvemonkeys.image.ResampleOp;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
 /**
  * Reader for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) and PBM
@@ -824,8 +818,7 @@ public final class IFFImageReader extends ImageReaderBase {
                 continue;
             }
 
-            try {
-                ImageInputStream input = new BufferedImageInputStream(ImageIO.createImageInputStream(file));
+            try (ImageInputStream input = ImageIO.createImageInputStream(file)) {
                 boolean canRead = reader.getOriginatingProvider().canDecodeInput(input);
 
                 if (canRead) {

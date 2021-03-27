@@ -56,7 +56,7 @@ final class QuickTime {
     private static final List<QTDecompressor> sDecompressors = Arrays.asList(
             new QTBMPDecompressor(),
             new QTRAWDecompressor(),
-            // The GenericDecompressor must be the last in the list
+            // The GenericDecompressor MUST be the last in the list, as it claims to read everything...
             new QTGenericDecompressor()
     );
 
@@ -87,7 +87,7 @@ final class QuickTime {
    kH263CodecType               ='h263'
    kIndeo4CodecType             ='IV41'
    kJPEGCodecType               ='jpeg' -> JPEG, SUPPORTED
-   kMacPaintCodecType           ='PNTG' -> Isn't this the PICT format itself? Does that make sense?! ;-)
+   kMacPaintCodecType           ='PNTG' -> PNTG, should work, but lacks test data
    kMicrosoftVideo1CodecType    ='msvc'
    kMotionJPEGACodecType        ='mjpa'
    kMotionJPEGBCodecType        ='mjpb'
@@ -99,12 +99,12 @@ final class QuickTime {
    kQuickDrawCodecType          ='qdrw' -> QD?
    kQuickDrawGXCodecType        ='qdgx' -> QD?
    kRawCodecType                ='raw ' -> Raw (A)RGB pixel data
-   kSGICodecType                ='.SGI'
+   kSGICodecType                ='.SGI' -> SGI, should work, but lacks test data
    k16GrayCodecType             ='b16g' -> Raw 16 bit gray data?
    k64ARGBCodecType             ='b64a' -> Raw 64 bit (16 bpp) color data?
    kSorensonCodecType           ='SVQ1'
    kSorensonYUV9CodecType       ='syv9'
-   kTargaCodecType              ='tga ' -> TGA, maybe create a plugin for that
+   kTargaCodecType              ='tga ' -> TGA, should work, but lacks test data
    k32AlphaGrayCodecType        ='b32a' -> 16 bit gray + 16 bit alpha raw data?
    kTIFFCodecType               ='tiff' -> TIFF, SUPPORTED
    kVectorCodecType             ='path'
@@ -117,13 +117,13 @@ final class QuickTime {
     /**
      * Gets a decompressor that can decompress the described data.
      *
-     * @param pDescription the image description ({@code 'idsc'} Atom).
+     * @param description the image description ({@code 'idsc'} Atom).
      * @return a decompressor that can decompress data decribed by the given {@link ImageDesc description},
      *         or {@code null} if no decompressor is found
      */
-    private static QTDecompressor getDecompressor(final ImageDesc pDescription) {
+    private static QTDecompressor getDecompressor(final ImageDesc description) {
         for (QTDecompressor decompressor : sDecompressors) {
-            if (decompressor.canDecompress(pDescription)) {
+            if (decompressor.canDecompress(description)) {
                 return decompressor;
             }
         }
@@ -134,13 +134,13 @@ final class QuickTime {
     /**
      * Decompresses the QuickTime image data from the given stream.  
      *
-     * @param pStream the image input stream
+     * @param stream the image input stream
      * @return a {@link BufferedImage} containing the image data, or {@code null} if no decompressor is capable of
      *         decompressing the image.
      * @throws IOException if an I/O exception occurs during read
      */
-    public static BufferedImage decompress(final ImageInputStream pStream) throws IOException {
-        ImageDesc description = ImageDesc.read(pStream);
+    public static BufferedImage decompress(final ImageInputStream stream) throws IOException {
+        ImageDesc description = ImageDesc.read(stream);
 
         if (PICTImageReader.DEBUG) {
             System.out.println(description);
@@ -152,12 +152,8 @@ final class QuickTime {
             return null;
         }
 
-        InputStream streamAdapter = IIOUtil.createStreamAdapter(pStream, description.dataSize);
-        try {
-           return decompressor.decompress(description, streamAdapter);
-        }
-        finally {
-            streamAdapter.close();
+        try (InputStream streamAdapter = IIOUtil.createStreamAdapter(stream, description.dataSize)) {
+            return decompressor.decompress(description, streamAdapter);
         }
     }
 
@@ -195,7 +191,7 @@ final class QuickTime {
 
         byte[] extraDesc;
 
-        private ImageDesc() {}
+        ImageDesc() {}
 
         public static ImageDesc read(final DataInput pStream) throws IOException {
             // The following looks like the 'idsc' Atom (as described in the QuickTime File Format)

@@ -38,7 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Application.
+ * An application (APPn) segment in the JPEG stream.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
@@ -78,7 +78,9 @@ class Application extends Segment {
                 if ("JFXX".equals(identifier)) {
                     return JFXX.read(data, length);
                 }
-                // TODO: Exif?
+                if ("Exif".equals(identifier)) {
+                    return EXIF.read(data, length);
+                }
             case JPEG.APP2:
                 // ICC_PROFILE
                 if ("ICC_PROFILE".equals(identifier)) {

@@ -61,6 +61,8 @@ import java.util.List;
 import java.util.*;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNoException;
@@ -1415,7 +1417,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                         assertNotNull(unknown.getUserObject()); // All unknowns must have user object (data array)
                     }
                 }
-                catch (IIOException e) {
+                catch (IOException e) {
                     e.printStackTrace();
                     fail(String.format("Reading metadata failed for %s image %s: %s", testData, i, e.getMessage()));
                 }
@@ -1957,6 +1959,38 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         }
         finally {
             reader.dispose();
+        }
+    }
+
+    @Test(timeout = 1000L)
+    public void testInfiniteLoopCorrupt() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
+            reader.setInput(iis);
+
+            try {
+                reader.read(0, null);
+            }
+            catch (IIOException expected) {
+                assertThat(expected.getMessage(), allOf(containsString("SOF"), containsString("stream")));
+            }
+        }
+    }
+
+    @Test(timeout = 1000L)
+    public void testInfiniteLoopCorruptRaster() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
+            reader.setInput(iis);
+
+            try {
+                reader.readRaster(0, null);
+            }
+            catch (IIOException expected) {
+                assertThat(expected.getMessage(), allOf(containsString("SOF"), containsString("stream")));
+            }
         }
     }
 }

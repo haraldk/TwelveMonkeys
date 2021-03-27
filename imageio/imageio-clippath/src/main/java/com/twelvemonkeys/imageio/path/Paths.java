@@ -56,6 +56,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
@@ -131,7 +133,13 @@ public final class Paths {
             List<JPEGSegment> photoshop = JPEGSegmentUtil.readSegments(stream, segmentIdentifiers);
 
             if (!photoshop.isEmpty()) {
-                return readPathFromPhotoshopResources(new MemoryCacheImageInputStream(photoshop.get(0).data()));
+                InputStream data = null;
+
+                for (JPEGSegment ps : photoshop) {
+                    data = data == null ? ps.data() : new SequenceInputStream(data, ps.data());
+                }
+
+                return readPathFromPhotoshopResources(new MemoryCacheImageInputStream(data));
             }
         }
         else if (magic >>> 16 == TIFF.BYTE_ORDER_MARK_BIG_ENDIAN && (magic & 0xffff) == TIFF.TIFF_MAGIC
@@ -350,10 +358,10 @@ public final class Paths {
                 IIOMetadataNode unknown = new IIOMetadataNode("unknown");
                 unknown.setAttribute("MarkerTag", Integer.toString(JPEG.APP13 & 0xFF));
 
-                byte[] identfier = "Photoshop 3.0".getBytes(StandardCharsets.US_ASCII);
-                byte[] data = new byte[identfier.length + 1 + pathResource.length];
-                System.arraycopy(identfier, 0, data, 0, identfier.length);
-                System.arraycopy(pathResource, 0, data, identfier.length + 1, pathResource.length);
+                byte[] identifier = "Photoshop 3.0".getBytes(StandardCharsets.US_ASCII);
+                byte[] data = new byte[identifier.length + 1 + pathResource.length];
+                System.arraycopy(identifier, 0, data, 0, identifier.length);
+                System.arraycopy(pathResource, 0, data, identifier.length + 1, pathResource.length);
 
                 unknown.setUserObject(data);
 

@@ -30,29 +30,21 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.*;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.SequenceInputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.color.YCbCrConverter;
+import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.xml.XMLSerializer;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.*;
 import javax.imageio.event.IIOReadUpdateListener;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
@@ -60,25 +52,14 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.color.ColorSpaces;
-import com.twelvemonkeys.imageio.color.YCbCrConverter;
-import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
-import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
-import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
-import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
-import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-import com.twelvemonkeys.lang.Validate;
-import com.twelvemonkeys.xml.XMLSerializer;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
+import java.io.*;
+import java.util.List;
+import java.util.*;
 
 /**
  * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
@@ -140,7 +121,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     private List<Segment> segments;
 
     private int currentStreamIndex = 0;
-    private List<Long> streamOffsets = new ArrayList<>();
+    private final List<Long> streamOffsets = new ArrayList<>();
 
     protected JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
@@ -192,19 +173,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     private boolean isLossless() throws IOException {
         assertInput();
 
-        try {
-            if (getSOF().marker == JPEG.SOF3) {
-                return true;
-            }
-        }
-        catch (IIOException ignore) {
-            // May happen if no SOF is found, in case we'll just fall through
-            if (DEBUG) {
-                ignore.printStackTrace();
-            }
-        }
-
-        return false;
+        return getSOF().marker == JPEG.SOF3;
     }
 
     @Override
@@ -681,7 +650,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     private void initDelegate(boolean seekForwardOnly, boolean ignoreMetadata) throws IOException {
         // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
         delegate.setInput(imageInput != null
-                          ? new JPEGSegmentImageInputStream(new SubImageInputStream(imageInput, Long.MAX_VALUE), new JPEGSegmentStreamWarningDelegate())
+                          ? new JPEGSegmentImageInputStream(new SubImageInputStream(imageInput, Long.MAX_VALUE), new JPEGSegmentWarningDelegate())
                           : null, seekForwardOnly, ignoreMetadata);
     }
 
@@ -719,6 +688,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     }
 
     private void initHeader(final int imageIndex) throws IOException {
+        assertInput();
         if (imageIndex < 0) {
             throw new IndexOutOfBoundsException("imageIndex < 0: " + imageIndex);
         }
@@ -747,26 +717,26 @@ public final class JPEGImageReader extends ImageReaderBase {
             long lastKnownSOIOffset = streamOffsets.get(streamOffsets.size() - 1);
             imageInput.seek(lastKnownSOIOffset);
 
-            try (ImageInputStream stream = new BufferedImageInputStream(imageInput)) { // Extreme (10s -> 50ms) speedup if imageInput is FileIIS
+            try {
                 for (int i = streamOffsets.size() - 1; i < imageIndex; i++) {
                     long start = 0;
 
                     if (DEBUG) {
                         start = System.currentTimeMillis();
-                        System.out.println(String.format("Start seeking for image index %d", i + 1));
+                        System.out.printf("Start seeking for image index %d%n", i + 1);
                     }
 
                     // Need to skip over segments, as they may contain JPEG markers (eg. JFXX or EXIF thumbnail)
-                    JPEGSegmentUtil.readSegments(stream, Collections.<Integer, List<String>>emptyMap());
+                    JPEGSegmentUtil.readSegments(imageInput, Collections.<Integer, List<String>>emptyMap());
 
                     // Now, search for EOI and following SOI...
                     int marker;
-                    while ((marker = stream.read()) != -1) {
-                        if (marker == 0xFF && (0xFF00 | stream.readUnsignedByte()) == JPEG.EOI) {
+                    while ((marker = imageInput.read()) != -1) {
+                        if (marker == 0xFF && (0xFF00 | imageInput.readUnsignedByte()) == JPEG.EOI) {
                             // Found EOI, now the SOI should be nearby...
-                            while ((marker = stream.read()) != -1) {
-                                if (marker == 0xFF && (0xFF00 | stream.readUnsignedByte()) == JPEG.SOI) {
-                                    long nextSOIOffset = stream.getStreamPosition() - 2;
+                            while ((marker = imageInput.read()) != -1) {
+                                if (marker == 0xFF && (0xFF00 | imageInput.readUnsignedByte()) == JPEG.SOI) {
+                                    long nextSOIOffset = imageInput.getStreamPosition() - 2;
                                     imageInput.seek(nextSOIOffset);
                                     streamOffsets.add(nextSOIOffset);
 
@@ -780,10 +750,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                     }
 
                     if (DEBUG) {
-                        System.out.println(String.format("Seek in %d ms", System.currentTimeMillis() - start));
+                        System.out.printf("Seek in %d ms%n", System.currentTimeMillis() - start);
                     }
                 }
-
             }
             catch (EOFException eof) {
                 IndexOutOfBoundsException ioobe = new IndexOutOfBoundsException("Image index " + imageIndex + " not found in stream");
@@ -843,9 +812,9 @@ public final class JPEGImageReader extends ImageReaderBase {
 
             return JPEGSegmentUtil.readSegments(imageInput, JPEGSegmentUtil.ALL_SEGMENTS);
         }
-        catch (IIOException | IllegalArgumentException ignore) {
+        catch (IIOException | IllegalArgumentException e) {
             if (DEBUG) {
-                ignore.printStackTrace();
+                e.printStackTrace();
             }
         }
         finally {
@@ -904,36 +873,28 @@ public final class JPEGImageReader extends ImageReaderBase {
         return jfxx.isEmpty() ? null : (JFXX) jfxx.get(0);
     }
 
-    private CompoundDirectory getExif() throws IOException {
-        List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+    private EXIF getExif() throws IOException {
+        List<Application> exif = getAppSegments(JPEG.APP1, "Exif");
+        return exif.isEmpty() ? null : (EXIF) exif.get(0); // TODO: Can there actually be more Exif segments?
+    }
 
-        if (!exifSegments.isEmpty()) {
-            Application exif = exifSegments.get(0);
-            int offset = exif.identifier.length() + 2; // Incl. pad
-
-            if (exif.data.length <= offset) {
-                processWarningOccurred("Exif chunk has no data.");
-            }
-            else {
-                // TODO: Consider returning ByteArrayImageInputStream from Segment.data()
-                try (ImageInputStream stream = new ByteArrayImageInputStream(exif.data, offset, exif.data.length - offset)) {
+    private CompoundDirectory parseExif(final EXIF exif) throws IOException {
+        if (exif != null) {
+            // Identifier is "Exif\0" + 1 byte pad
+            if (exif.data.length > exif.identifier.length() + 2) {
+                try (ImageInputStream stream = exif.exifData()) {
                     return (CompoundDirectory) new TIFFReader().read(stream);
                 }
+                catch (IIOException e) {
+                    processWarningOccurred("Exif chunk is present, but can't be read: " + e.getMessage());
+                }
+            }
+            else {
+                processWarningOccurred("Exif chunk has no data.");
             }
         }
 
         return null;
-    }
-
-    // TODO: Util method?
-    static byte[] readFully(DataInput stream, int len) throws IOException {
-        if (len == 0) {
-            return null;
-        }
-
-        byte[] data = new byte[len];
-        stream.readFully(data);
-        return data;
     }
 
     ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
@@ -1101,78 +1062,39 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         if (thumbnails == null) {
             thumbnails = new ArrayList<>();
-            ThumbnailReadProgressListener thumbnailProgressDelegator = new ThumbnailProgressDelegate();
 
             // Read JFIF thumbnails if present
-            JFIF jfif = getJFIF();
-            if (jfif != null && jfif.thumbnail != null) {
-                thumbnails.add(new JFIFThumbnailReader(thumbnailProgressDelegator, imageIndex, thumbnails.size(), jfif));
+            try {
+                ThumbnailReader thumbnail = JFIFThumbnail.from(getJFIF());
+                if (thumbnail != null) {
+                    thumbnails.add(thumbnail);
+                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
 
             // Read JFXX thumbnails if present
-            JFXX jfxx = getJFXX();
-            if (jfxx != null && jfxx.thumbnail != null) {
-                switch (jfxx.extensionCode) {
-                    case JFXX.JPEG:
-                    case JFXX.INDEXED:
-                    case JFXX.RGB:
-                        thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), imageIndex, thumbnails.size(), jfxx));
-                        break;
-                    default:
-                        processWarningOccurred("Unknown JFXX extension code: " + jfxx.extensionCode);
+            try {
+                ThumbnailReader thumbnail = JFXXThumbnail.from(getJFXX(), getThumbnailReader());
+                if (thumbnail != null) {
+                    thumbnails.add(thumbnail);
                 }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
 
             // Read Exif thumbnails if present
-            List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
-            if (!exifSegments.isEmpty()) {
-                Application exif = exifSegments.get(0);
-
-                // Identifier is "Exif\0" + 1 byte pad
-                int offset = exif.identifier.length() + 2;
-
-                if (exif.data.length <= offset) {
-                    processWarningOccurred("Exif chunk has no data.");
+            try {
+                EXIF exif = getExif();
+                ThumbnailReader thumbnailReader = EXIFThumbnail.from(exif, parseExif(exif), getThumbnailReader());
+                if (thumbnailReader != null) {
+                    thumbnails.add(thumbnailReader);
                 }
-                else {
-                    ImageInputStream stream = new ByteArrayImageInputStream(exif.data, offset, exif.data.length - offset);
-                    CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
-
-                    if (exifMetadata.directoryCount() == 2) {
-                        Directory ifd1 = exifMetadata.getDirectory(1);
-
-                        // Compression: 1 = no compression, 6 = JPEG compression (default)
-                        Entry compressionEntry = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-                        int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
-
-                        if (compression == 6) {
-                            if (ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) != null) {
-                                Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
-
-                                if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
-                                    thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
-                                }
-                                else {
-                                    processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
-                                }
-                            }
-                            else {
-                                processWarningOccurred("EXIF IFD with JPEG thumbnail missing JPEGInterchangeFormat tag");
-                            }
-                        }
-                        else if (compression == 1) {
-                            if (ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS) != null) {
-                                thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
-                            }
-                            else {
-                                processWarningOccurred("EXIF IFD with uncompressed thumbnail missing StripOffsets tag");
-                            }
-                        }
-                        else {
-                            processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression);
-                        }
-                    }
-                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
         }
     }
@@ -1215,7 +1137,15 @@ public final class JPEGImageReader extends ImageReaderBase {
     public BufferedImage readThumbnail(int imageIndex, int thumbnailIndex) throws IOException {
         checkThumbnailBounds(imageIndex, thumbnailIndex);
 
-        return thumbnails.get(thumbnailIndex).read();
+        processThumbnailStarted(imageIndex, thumbnailIndex);
+        processThumbnailProgress(0f);
+
+        BufferedImage thumbnail = thumbnails.get(thumbnailIndex).read();;
+
+        processThumbnailProgress(100f);
+        processThumbnailComplete();
+
+        return thumbnail;
     }
 
     // Metadata
@@ -1224,7 +1154,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         initHeader(imageIndex);
 
-        return new JPEGImage10Metadata(segments, getSOF(), getJFIF(), getJFXX(), getEmbeddedICCProfile(true), getAdobeDCT(), getExif());
+        return new JPEGImage10Metadata(segments, getSOF(), getJFIF(), getJFXX(), getEmbeddedICCProfile(true), getAdobeDCT(), parseExif(getExif()));
     }
 
     @Override
@@ -1349,24 +1279,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private class ThumbnailProgressDelegate implements ThumbnailReadProgressListener {
-        @Override
-        public void thumbnailStarted(int imageIndex, int thumbnailIndex) {
-            processThumbnailStarted(imageIndex, thumbnailIndex);
-        }
-
-        @Override
-        public void thumbnailProgress(float percentageDone) {
-            processThumbnailProgress(percentageDone);
-        }
-
-        @Override
-        public void thumbnailComplete() {
-            processThumbnailComplete();
-        }
-    }
-
-    private class JPEGSegmentStreamWarningDelegate implements JPEGSegmentStreamWarningListener {
+    private class JPEGSegmentWarningDelegate implements JPEGSegmentWarningListener {
         @Override
         public void warningOccurred(String warning) {
             processWarningOccurred(warning);
@@ -1392,7 +1305,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             final String arg = args[argIdx];
 
             if (arg.charAt(0) == '-') {
-                if (arg.equals("-s") || arg.equals("--subsample") && args.length > argIdx) {
+                if (arg.equals("-s") || arg.equals("--subsample") && args.length > argIdx + 1) {
                     String[] sub = args[++argIdx].split(",");
 
                     try {
@@ -1411,7 +1324,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                         System.err.println("Bad sub sampling (x,y): '" + args[argIdx] + "'");
                     }
                 }
-                else if (arg.equals("-r") || arg.equals("--roi") && args.length > argIdx) {
+                else if (arg.equals("-r") || arg.equals("--roi") && args.length > argIdx + 1) {
                     String[] region = args[++argIdx].split(",");
 
                     try {

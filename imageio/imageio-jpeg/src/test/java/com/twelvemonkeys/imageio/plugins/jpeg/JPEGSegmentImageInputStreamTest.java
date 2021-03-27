@@ -187,7 +187,7 @@ public class JPEGSegmentImageInputStreamTest {
         assertEquals(2, iis.read(buffer, 0, buffer.length));
         assertEquals(2, iis.getStreamPosition());
 
-        iis.seek(2000); // Just a random postion beyond EOF
+        iis.seek(2000); // Just a random position beyond EOF
         assertEquals(2000, iis.getStreamPosition());
 
         // So far, so good (but stream position is now really beyond EOF)...
@@ -228,4 +228,29 @@ public class JPEGSegmentImageInputStreamTest {
         assertEquals(-1, iis.read());
         assertEquals(0x2012, iis.getStreamPosition());
     }
+
+
+    @Test(timeout = 1000L)
+    public void testInfiniteLoopCorrupt() throws IOException {
+        try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
+            long length = 0;
+            while (stream.read() != -1) {
+                length++;
+            }
+
+            assertEquals(25504L, length); // Sanity check: same as file size, except..?
+        }
+
+        try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
+            long length = 0;
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = stream.read(buffer)) != -1) {
+                length += read;
+            }
+
+            assertEquals(25504L, length); // Sanity check: same as file size, except..?
+        }
+    }
 }
+

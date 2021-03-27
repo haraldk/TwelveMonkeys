@@ -31,9 +31,14 @@
 package com.twelvemonkeys.imageio.plugins.pict;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
+
+import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 
 /**
  * QTGenericDecompressor
@@ -43,11 +48,36 @@ import java.io.InputStream;
  * @version $Id: QTGenericDecompressor.java,v 1.0 Feb 16, 2009 9:26:13 PM haraldk Exp$
  */
 final class QTGenericDecompressor extends QTDecompressor {
-    public boolean canDecompress(final QuickTime.ImageDesc pDescription) {
+    public boolean canDecompress(final ImageDesc description) {
+        // Instead of testing, we just allow everything, and might eventually fail on decompress later...
         return true;
     }
 
-    public BufferedImage decompress(final QuickTime.ImageDesc pDescription, final InputStream pStream) throws IOException {
-        return ImageIO.read(pStream);
+    public BufferedImage decompress(final ImageDesc description, final InputStream stream) throws IOException {
+        BufferedImage image = ImageIO.read(stream);
+
+        if (image == null) {
+            return readUsingFormatName(description.compressorIdentifer.trim(), stream);
+        }
+
+        return image;
+    }
+
+    private BufferedImage readUsingFormatName(final String formatName, final InputStream stream) throws IOException {
+        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(formatName);
+
+        if (readers.hasNext()) {
+            ImageReader reader = readers.next();
+
+            try (ImageInputStream input = ImageIO.createImageInputStream(stream)) {
+                reader.setInput(input);
+                return reader.read(0);
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+
+        return null;
     }
 }

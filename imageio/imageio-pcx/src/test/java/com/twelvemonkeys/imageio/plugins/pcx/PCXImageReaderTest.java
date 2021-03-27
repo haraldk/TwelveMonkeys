@@ -64,7 +64,7 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
+                new TestData(getClassLoaderResource("/pcx/input.pcx"), new Dimension(70, 46)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/lena.pcx"), new Dimension(512, 512)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/lena2.pcx"), new Dimension(512, 512)), // RLE encoded, 256 color indexed (8 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena3.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel)
@@ -76,6 +76,7 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
                 new TestData(getClassLoaderResource("/pcx/lena9.pcx"), new Dimension(512, 512)), // RLE encoded, 2 color indexed (1 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/lena10.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel) (uses only 8 colors)
                 new TestData(getClassLoaderResource("/pcx/DARKSTAR.PCX"), new Dimension(88, 52)), // RLE encoded monochrome (1 bps/1 channel)
+                new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/no-palette-monochrome.pcx"), new Dimension(128, 152)), // RLE encoded monochrome (1 bps/1 channel)
                 // See cga-pcx.txt, however, the text seems to be in error, the bits can not not as described
                 new TestData(getClassLoaderResource("/pcx/CGA_BW.PCX"), new Dimension(640, 200)), // RLE encoded indexed (CGA mode)

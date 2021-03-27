@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
+import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
+
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,20 +48,20 @@ abstract class QTDecompressor {
      * Returns whether this decompressor is capable of decompressing the image
      * data described by the given image description.
      *
-     * @param pDescription the image description ({@code 'idsc'} Atom).
+     * @param description the image description ({@code 'idsc'} Atom).
      * @return {@code true} if this decompressor is capable of decompressing
      *          he data in the given image description, otherwise {@code false}.
      */
-    public abstract boolean canDecompress(QuickTime.ImageDesc pDescription);
+    public abstract boolean canDecompress(ImageDesc description);
 
     /**
      * Decompresses an image.
      *
-     * @param pDescription the image description ({@code 'idsc'} Atom).
-     * @param pStream the image data stream
+     * @param description the image description ({@code 'idsc'} Atom).
+     * @param stream the image data stream
      * @return the decompressed image
      *
      * @throws java.io.IOException if an I/O exception occurs during reading.
      */
-    public abstract BufferedImage decompress(QuickTime.ImageDesc pDescription, InputStream pStream) throws IOException;
+    public abstract BufferedImage decompress(ImageDesc description, InputStream stream) throws IOException;
 }

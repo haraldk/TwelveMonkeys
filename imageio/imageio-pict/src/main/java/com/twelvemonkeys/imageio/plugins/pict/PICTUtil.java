@@ -37,6 +37,7 @@ import java.awt.image.IndexColorModel;
 import java.io.DataInput;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 
 /**
@@ -76,7 +77,8 @@ final class PICTUtil {
     static String readIdString(final DataInput pStream) throws IOException {
         byte[] bytes = new byte[4];
         pStream.readFully(bytes);
-        return new String(bytes, "ASCII");
+
+        return new String(bytes, StandardCharsets.US_ASCII);
     }
 
     /**

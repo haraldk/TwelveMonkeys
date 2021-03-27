@@ -68,6 +68,7 @@ import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
 import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -76,11 +77,8 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.image.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.*;
 
 /**
  * Reader for Apple Mac Paint Picture (PICT) format.
@@ -123,10 +121,11 @@ public final class PICTImageReader extends ImageReaderBase {
     private double screenImageYRatio;
 
     // List of images created during image import
-    private List<BufferedImage> images = new ArrayList<>();
+    private final List<BufferedImage> images = new ArrayList<>();
     private long imageStartStreamPos;
     protected int picSize;
 
+    @Deprecated
     public PICTImageReader() {
         this(null);
     }
@@ -168,14 +167,14 @@ public final class PICTImageReader extends ImageReaderBase {
      * @throws IOException if an I/O error occurs while reading the image.
      */
     private void readPICTHeader(final ImageInputStream pStream) throws IOException {
-        pStream.seek(0l);
+        pStream.seek(0L);
 
         try {
             readPICTHeader0(pStream);
         }
         catch (IIOException e) {
             // Rest and try again
-            pStream.seek(0l);
+            pStream.seek(0L);
 
             // Skip first 512 bytes
             PICTImageReaderSpi.skipNullHeader(pStream);
@@ -207,7 +206,7 @@ public final class PICTImageReader extends ImageReaderBase {
             System.out.println("frame: " + frame);
         }
 
-        // Set default display ratios. 72 dpi is the standard Macintosh resolution.
+        // Set default display ratios. 72 dpi is the standard Mac resolution.
         screenImageXRatio = 1.0;
         screenImageYRatio = 1.0;
 
@@ -215,7 +214,7 @@ public final class PICTImageReader extends ImageReaderBase {
         boolean isExtendedV2 = false;
         int version = pStream.readShort();
         if (DEBUG) {
-            System.out.println(String.format("PICT version: 0x%04x", version));
+            System.out.printf("PICT version: 0x%04x%n", version);
         }
 
         if (version == (PICT.OP_VERSION << 8) + 0x01) {
@@ -231,24 +230,20 @@ public final class PICTImageReader extends ImageReaderBase {
 
             int headerVersion = pStream.readInt();
             if (DEBUG) {
-                System.out.println(String.format("headerVersion: 0x%04x", headerVersion));
+                System.out.printf("headerVersion: 0x%04x%n", headerVersion);
             }
 
             // TODO: This (headerVersion) should be picture size (bytes) for non-V2-EXT...?
             //       - but.. We should take care to make sure we don't mis-interpret non-PICT data...
-            //if (headerVersion == PICT.HEADER_V2) {
             if ((headerVersion & 0xffff0000) != PICT.HEADER_V2_EXT) {
                 // TODO: Test this.. Looks dodgy to me..
                 // Get the image resolution and calculate the ratio between
                 // the default Mac screen resolution and the image resolution
 
-                // int y (fixed point)
+                // int y, x, w(?), h (fixed point)
                 double y2 = PICTUtil.readFixedPoint(pStream);
-                // int x (fixed point)
                 double x2 = PICTUtil.readFixedPoint(pStream);
-                // int w (fixed point)
                 double w2 = PICTUtil.readFixedPoint(pStream); // ?!
-                // int h (fixed point)
                 double h2 = PICTUtil.readFixedPoint(pStream);
 
                 screenImageXRatio = (w - x) / (w2 - x2);
@@ -264,7 +259,7 @@ public final class PICTImageReader extends ImageReaderBase {
                 // int reserved
                 pStream.skipBytes(4);
             }
-            else /*if ((headerVersion & 0xffff0000) == PICT.HEADER_V2_EXT)*/ {
+            else {
                 isExtendedV2 = true;
                 // Get the image resolution
                 // Not sure if they are useful for anything...
@@ -281,13 +276,10 @@ public final class PICTImageReader extends ImageReaderBase {
 
                 // Get the image resolution and calculate the ratio between
                 // the default Mac screen resolution and the image resolution
-                // short y
+                // short y, x, h, w
                 short y2 = pStream.readShort();
-                // short x
                 short x2 = pStream.readShort();
-                // short h
                 short h2 = pStream.readShort();
-                // short w
                 short w2 = pStream.readShort();
 
                 screenImageXRatio = (w - x) / (double) (w2 - x2);
@@ -400,7 +392,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         }
                         break;
 
-                    case PICT.OP_CLIP_RGN:// OK for RECTS, not for regions yet
+                    case PICT.OP_CLIP_RGN:// OK for RECTs, not for regions yet
                         // Read the region
                         if ((region = readRegion(pStream, bounds)) == null) {
                             throw new IIOException("Could not read region");
@@ -735,12 +727,13 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x25:
                     case 0x26:
                     case 0x27:
+                    case 0x2F:
                         // Apple reserved
                         dataLength = pStream.readUnsignedShort();
 
                         pStream.readFully(new byte[dataLength], 0, dataLength);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -829,14 +822,6 @@ public final class PICTImageReader extends ImageReaderBase {
                         }
                         break;
 
-                    case 0x2F:
-                        dataLength = pStream.readUnsignedShort();
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
-                        if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
-                        }
-                        break;
-
                         //--------------------------------------------------------------------------------
                         // Rect treatments
                         //--------------------------------------------------------------------------------
@@ -920,7 +905,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x003e:
                     case 0x003f:
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1092,7 +1077,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x57:
                         pStream.readFully(new byte[8], 0, 8);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1187,7 +1172,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x67:
                         pStream.readFully(new byte[12], 0, 12);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
                     case 0x6d:
@@ -1195,7 +1180,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x6f:
                         pStream.readFully(new byte[4], 0, 4);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1283,7 +1268,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case 0x7e:
                     case 0x7f:
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1293,7 +1278,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         // Read the polygon
                         polygon = readPoly(pStream, bounds);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1384,7 +1369,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         // Read the region
                         region = readRegion(pStream, bounds);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1414,7 +1399,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         dataLength = pStream.readUnsignedShort();
                         pStream.readFully(new byte[dataLength], 0, dataLength);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x - length: %d", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength));
+                            System.out.printf("%s: 0x%04x - length: %d%n", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength);
                         }
                         break;
 
@@ -1442,7 +1427,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         dataLength = pStream.readUnsignedShort();
                         pStream.readFully(new byte[dataLength], 0, dataLength);
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x", PICT.APPLE_USE_RESERVED_FIELD, opCode));
+                            System.out.printf("%s: 0x%04x%n", PICT.APPLE_USE_RESERVED_FIELD, opCode);
                         }
                         break;
 
@@ -1478,7 +1463,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         // TODO: Read this as well, need test data
                         dataLength = pStream.readInt();
                         if (DEBUG) {
-                            System.out.println(String.format("unCompressedQuickTime, length %d", dataLength));
+                            System.out.printf("unCompressedQuickTime, length %d%n", dataLength);
                         }
                         pStream.readFully(new byte[dataLength], 0, dataLength);
                         break;
@@ -1515,7 +1500,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         }
 
                         if (DEBUG) {
-                            System.out.println(String.format("%s: 0x%04x - length: %s", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength));
+                            System.out.printf("%s: 0x%04x - length: %s%n", PICT.APPLE_USE_RESERVED_FIELD, opCode, dataLength);
                         }
 
                         if (dataLength != 0) {
@@ -1577,7 +1562,7 @@ public final class PICTImageReader extends ImageReaderBase {
             matrix[i] = pStream.readInt();
         }
         if (DEBUG) {
-            System.out.println(String.format("matrix: %s", Arrays.toString(matrix)));
+            System.out.printf("matrix: %s%n", Arrays.toString(matrix));
         }
 
         // Matte
@@ -1833,7 +1818,7 @@ public final class PICTImageReader extends ImageReaderBase {
             ////////////////////////////////////////////////////
             // TODO: This works for single image PICTs only...
             // However, this is the most common case. Ok for now
-            processImageProgress(scanline * 100 / srcRect.height);
+            processImageProgress(scanline * 100 / (float) srcRect.height);
             if (abortRequested()) {
                 processReadAborted();
 
@@ -2134,7 +2119,7 @@ public final class PICTImageReader extends ImageReaderBase {
             ////////////////////////////////////////////////////
             // TODO: This works for single image PICTs only...
             // However, this is the most common case. Ok for now
-            processImageProgress(scanline * 100 / srcRect.height);
+            processImageProgress(scanline * 100 / (float) srcRect.height);
             if (abortRequested()) {
                 processReadAborted();
 
@@ -2626,7 +2611,7 @@ public final class PICTImageReader extends ImageReaderBase {
         return getYPtCoord(getPICTFrame().height);
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
+    public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) {
         // TODO: The images look slightly different in Preview.. Could indicate the color space is wrong...
         return Collections.singletonList(
                 ImageTypeSpecifiers.createPacked(
@@ -2636,11 +2621,19 @@ public final class PICTImageReader extends ImageReaderBase {
         ).iterator();
     }
 
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+        getPICTFrame(); // TODO: Would probably be better to use readPictHeader here, but it isn't cached
+
+        return new PICTMetadata(version, screenImageXRatio, screenImageYRatio);
+    }
+
     protected static void showIt(final BufferedImage pImage, final String pTitle) {
         ImageReaderBase.showIt(pImage, pTitle);
     }
 
-    public static void main(final String[] pArgs) throws IOException {
+    public static void main(final String[] pArgs) {
         ImageReader reader = new PICTImageReader(new PICTImageReaderSpi());
 
         for (String arg : pArgs) {

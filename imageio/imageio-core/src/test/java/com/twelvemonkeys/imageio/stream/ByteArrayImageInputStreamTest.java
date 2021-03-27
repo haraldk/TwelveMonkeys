@@ -39,11 +39,11 @@ import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTest.rang
 import static org.junit.Assert.*;
 
 /**
- * ByteArrayImageInputStreamTestCase
+ * ByteArrayImageInputStreamTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: ByteArrayImageInputStreamTestCase.java,v 1.0 Apr 21, 2009 10:58:48 AM haraldk Exp$
+ * @version $Id: ByteArrayImageInputStreamTest.java,v 1.0 Apr 21, 2009 10:58:48 AM haraldk Exp$
  */
 public class ByteArrayImageInputStreamTest {
     private final Random random = new Random(1709843507234566L);

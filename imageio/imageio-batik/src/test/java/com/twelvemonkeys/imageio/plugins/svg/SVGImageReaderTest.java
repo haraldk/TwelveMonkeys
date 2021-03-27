@@ -297,6 +297,25 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         }
     }
 
+    @Test
+    public void testReadEmbeddedWithDisallowExternalResources() throws IOException{
+        // File using "data:" URLs for embedded resources
+        URL resource = getClassLoaderResource("/svg/embedded-data-resource.svg");
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setAllowExternalResources(false);
+            reader.read(0, param);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
     @Test(expected = SecurityException.class)
     public void testDisallowedExternalResources() throws URISyntaxException, IOException {
         // system-property set to true in surefire-plugin-settings in the pom

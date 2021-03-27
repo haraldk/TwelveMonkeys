@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Harald Kuhr
+ * Copyright (c) 2021, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,41 +30,45 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import java.awt.image.BufferedImage;
+import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+
+import javax.imageio.stream.ImageInputStream;
+import java.io.DataInput;
+import java.io.EOFException;
 import java.io.IOException;
 
 /**
- * JFIFThumbnailReader
+ * An EXIF segment.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: JFIFThumbnailReader.java,v 1.0 18.04.12 12:19 haraldk Exp$
+ * @version $Id: JFIFSegment.java,v 1.0 23.04.12 16:52 haraldk Exp$
  */
-final class JFIFThumbnailReader extends ThumbnailReader {
-    private final JFIF segment;
-
-    JFIFThumbnailReader(final ThumbnailReadProgressListener progressListener, final int imageIndex, final int thumbnailIndex, final JFIF segment) {
-        super(progressListener, imageIndex, thumbnailIndex);
-        this.segment = segment;
+final class EXIF extends Application {
+    EXIF(byte[] data) {
+        super(JPEG.APP1, "Exif", data);
     }
 
     @Override
-    public BufferedImage read() {
-        processThumbnailStarted();
-        BufferedImage thumbnail = readRawThumbnail(segment.thumbnail, segment.thumbnail.length, 0, segment.xThumbnail, segment.yThumbnail);
-        processThumbnailProgress(100f);
-        processThumbnailComplete();
-
-        return thumbnail;
+    public String toString() {
+        return String.format("APP1/Exif, length: %d", data.length);
     }
 
-    @Override
-    public int getWidth() throws IOException {
-        return segment.xThumbnail;
+    ImageInputStream exifData() {
+        // Identifier is "Exif\0" + 1 byte pad
+        int offset = identifier.length() + 2;
+        return new ByteArrayImageInputStream(data, offset, data.length - offset);
     }
 
-    @Override
-    public int getHeight() throws IOException {
-        return segment.yThumbnail;
+    public static EXIF read(final DataInput data, int length) throws IOException {
+        if (length < 2 + 6) {
+            throw new EOFException();
+        }
+
+        byte[] bytes = new byte[length - 2];
+        data.readFully(bytes);
+
+        return new EXIF(bytes);
     }
 }

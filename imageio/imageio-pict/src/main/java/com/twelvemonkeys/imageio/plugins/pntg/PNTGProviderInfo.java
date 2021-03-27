@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, Harald Kuhr
+ * Copyright (c) 2015, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,16 +28,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.jpeg;
+package com.twelvemonkeys.imageio.plugins.pntg;
+
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 
 /**
- * JPEGSegmentStreamWarningListener
+ * PNTGProviderInfo.
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: harald.kuhr$
+ * @version $Id: PNTGProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
-interface JPEGSegmentStreamWarningListener {
-    void warningOccurred(String warning);
-
-    JPEGSegmentStreamWarningListener NULL_LISTENER = new JPEGSegmentStreamWarningListener() {
-        @Override
-        public void warningOccurred(final String warning) {}
-    };
+final class PNTGProviderInfo extends ReaderWriterProviderInfo {
+    protected PNTGProviderInfo() {
+        super(
+                PNTGProviderInfo.class,
+                new String[] {"pntg", "PNTG"},
+                new String[] {"mac", "pic", "pntg"},
+                new String[] {"image/x-pntg"},
+                "com.twelvemonkeys.imageio.plugins.mac.MACImageReader",
+                new String[] {"com.twelvemonkeys.imageio.plugins.mac.MACImageReaderSpi"},
+                null, null,
+                false, null, null, null, null,
+                true, null, null, null, null
+        );
+    }
 }

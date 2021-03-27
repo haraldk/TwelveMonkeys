@@ -30,13 +30,13 @@
 
 package com.twelvemonkeys.imageio.metadata.xmp;
 
-import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * XMPScanner
@@ -101,13 +101,9 @@ public final class XMPScanner {
      * @throws IOException if an I/O exception occurs reading from {@code pInput}.
      * @see ImageIO#createImageInputStream(Object)
      */
+    @SuppressWarnings("StatementWithEmptyBody")
     static public Reader scanForXMPPacket(final Object pInput) throws IOException {
         ImageInputStream stream = pInput instanceof ImageInputStream ? (ImageInputStream) pInput : ImageIO.createImageInputStream(pInput);
-
-        // TODO: Consider if BufferedIIS is a good idea
-        if (!(stream instanceof BufferedImageInputStream)) {
-            stream = new BufferedImageInputStream(stream);
-        }
 
         // TODO: Might be more than one XMP block per file (it's possible to re-start for now)..
         long pos;
@@ -128,17 +124,17 @@ public final class XMPScanner {
                 if (bom[0] == (byte) 0xEF && bom[1] == (byte) 0xBB && bom[2] == (byte) 0xBF && bom[3] == quote ||
                         bom[0] == quote) {
                     // UTF-8
-                    cs = Charset.forName("UTF-8");
+                    cs = StandardCharsets.UTF_8;
                 }
                 else if (bom[0] == (byte) 0xFE && bom[1] == (byte) 0xFF && bom[2] == 0x00 && bom[3] == quote) {
                     // UTF-16 BIG endian
-                    cs = Charset.forName("UTF-16BE");
+                    cs = StandardCharsets.UTF_16BE;
                 }
                 else if (bom[0] == 0x00 && bom[1] == (byte) 0xFF && bom[2] == (byte) 0xFE && bom[3] == quote) {
                     stream.skipBytes(1); // Alignment
 
                     // UTF-16 little endian
-                    cs = Charset.forName("UTF-16LE");
+                    cs = StandardCharsets.UTF_16LE;
                 }
                 else if (bom[0] == 0x00 && bom[1] == 0x00 && bom[2] == (byte) 0xFE && bom[3] == (byte) 0xFF) {
                     // NOTE: 32-bit character set not supported by default
@@ -186,7 +182,7 @@ public final class XMPScanner {
      * @throws IOException if an I/O exception occurs during scanning
      */
     private static long scanForSequence(final ImageInputStream pStream, final byte[] pSequence) throws IOException {
-        long start = -1l;
+        long start = -1L;
 
         int index = 0;
         int nullBytes = 0;
@@ -222,7 +218,7 @@ public final class XMPScanner {
             }
         }
 
-        return -1l;
+        return -1L;
     }
 
     public static void main(final String[] pArgs) throws IOException {

@@ -171,11 +171,9 @@ final class XWDImageReader extends ImageReaderBase {
                 }
             }
 
-            if (xSub != 1) {
-                // Horizontal subsampling
-                int samplesPerPixel = header.numComponents();
-                subsampleRow(row, srcRegion.x * samplesPerPixel, srcRegion.width, row, srcRegion.x * samplesPerPixel, samplesPerPixel, header.bitsPerRGB, xSub);
-            }
+            // Horizontal subsampling
+            int samplesPerPixel = header.numComponents();
+            subsampleRow(row, srcRegion.x * samplesPerPixel, srcRegion.width, row, srcRegion.x * samplesPerPixel, samplesPerPixel, header.bitsPerRGB, xSub);
 
             raster.setDataElements(0, (y - srcRegion.y) / ySub, rowRaster);
 

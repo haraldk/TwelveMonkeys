@@ -30,12 +30,16 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
+import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataOutputStream;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * QTBMPDecompressor
@@ -45,28 +49,24 @@ import java.io.*;
  * @version $Id: QTBMPDecompressor.java,v 1.0 Feb 16, 2009 9:18:28 PM haraldk Exp$
  */
 final class QTBMPDecompressor extends QTDecompressor {
-    public boolean canDecompress(final QuickTime.ImageDesc pDescription) {
-        return QuickTime.VENDOR_APPLE.equals(pDescription.compressorVendor) && "WRLE".equals(pDescription.compressorIdentifer)
-                && "bmp ".equals(idString(pDescription.extraDesc, 4));
+    public boolean canDecompress(final ImageDesc description) {
+        return QuickTime.VENDOR_APPLE.equals(description.compressorVendor)
+                && "WRLE".equals(description.compressorIdentifer)
+                && "bmp ".equals(idString(description.extraDesc, 4));
     }
 
-    private static String idString(final byte[] pData, final int pOffset) {
-        try {
-            return new String(pData, pOffset, 4, "ASCII");
-        }
-        catch (UnsupportedEncodingException e) {
-            throw new Error("ASCII charset must always be supported", e);
-        }
+    private static String idString(final byte[] data, final int offset) {
+        return new String(data, offset, 4, StandardCharsets.US_ASCII);
     }
 
-    public BufferedImage decompress(final QuickTime.ImageDesc pDescription, final InputStream pStream) throws IOException {
-        return ImageIO.read(new SequenceInputStream(fakeBMPHeader(pDescription), pStream));
+    public BufferedImage decompress(final ImageDesc description, final InputStream stream) throws IOException {
+        return ImageIO.read(new SequenceInputStream(fakeBMPHeader(description), stream));
     }
 
-    private InputStream fakeBMPHeader(final QuickTime.ImageDesc pDescription) throws IOException {
+    private InputStream fakeBMPHeader(final ImageDesc description) throws IOException {
         int bmpHeaderSize = 14;
         int dibHeaderSize = 12; // 12: OS/2 V1
-        ByteArrayOutputStream out = new FastByteArrayOutputStream(bmpHeaderSize + dibHeaderSize);
+        FastByteArrayOutputStream out = new FastByteArrayOutputStream(bmpHeaderSize + dibHeaderSize);
 
         LittleEndianDataOutputStream stream = new LittleEndianDataOutputStream(out);
 
@@ -74,7 +74,7 @@ final class QTBMPDecompressor extends QTDecompressor {
         stream.writeByte('B');
         stream.writeByte('M');
 
-        stream.writeInt(pDescription.dataSize + bmpHeaderSize + dibHeaderSize); // Data size + BMP header + DIB header
+        stream.writeInt(description.dataSize + bmpHeaderSize + dibHeaderSize); // Data size + BMP header + DIB header
 
         stream.writeShort(0x0); // Reserved
         stream.writeShort(0x0); // Reserved
@@ -84,12 +84,12 @@ final class QTBMPDecompressor extends QTDecompressor {
         // DIB header
         stream.writeInt(dibHeaderSize);      // DIB header size
 
-        stream.writeShort(pDescription.width);
-        stream.writeShort(pDescription.height);
+        stream.writeShort(description.width);
+        stream.writeShort(description.height);
 
         stream.writeShort(1); // Planes, only legal value: 1
-        stream.writeShort(pDescription.depth); // Bit depth
+        stream.writeShort(description.depth); // Bit depth
 
-        return new ByteArrayInputStream(out.toByteArray());
+        return out.createInputStream();
     }
 }
