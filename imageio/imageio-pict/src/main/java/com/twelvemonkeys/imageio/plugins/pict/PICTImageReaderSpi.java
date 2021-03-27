@@ -71,7 +71,7 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
 
         try {
             if (isPICT(stream)) {
-                // If PICT Clipping format, return true immediately
+                // If PICT clipboard format, return true immediately
                 return true;
             }
             else {
@@ -154,8 +154,8 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
         pStream.skipBytes(PICT.PICT_NULL_HEADER_SIZE);
     }
 
+    // NOTE: As the PICT format has a very weak identifier, a true return value is not necessarily a PICT...
     private boolean isPICT(final ImageInputStream pStream) throws IOException {
-        // TODO: Need to validate better...
         // Size may be 0, so we can't use this for validation...
         pStream.readUnsignedShort();
 
@@ -169,8 +169,8 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
             return false;
         }
 
+        // Validate magic
         int magic = pStream.readInt();
-        
         return (magic & 0xffff0000) == PICT.MAGIC_V1 || magic == PICT.MAGIC_V2;
     }
 
@@ -179,6 +179,6 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
     }
 
     public String getDescription(final Locale pLocale) {
-        return "Apple Mac Paint Picture (PICT) image reader";
+        return "Apple MacPaint/QuickDraw Picture (PICT) image reader";
     }
 }

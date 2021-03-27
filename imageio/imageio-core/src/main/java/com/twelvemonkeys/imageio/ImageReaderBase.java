@@ -265,8 +265,9 @@ public abstract class ImageReaderBase extends ImageReader {
                         // - transferType is ok
                         // - bands are ok
                         // TODO: Test if color model is ok?
-                        if (specifier.getSampleModel().getTransferType() == dest.getSampleModel().getTransferType() &&
-                                specifier.getNumBands() <= dest.getSampleModel().getNumBands()) {
+                        if (specifier.getSampleModel().getTransferType() == dest.getSampleModel().getTransferType()
+                                && Arrays.equals(specifier.getSampleModel().getSampleSize(), dest.getSampleModel().getSampleSize())
+                                && specifier.getNumBands() <= dest.getSampleModel().getNumBands()) {
                             found = true;
                             break;
                         }

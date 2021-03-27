@@ -33,7 +33,8 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 |   | JPEG Lossless |   | ✔  |  -  | Native & Standard | 
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
 |        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 
-| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple Mac Paint Picture Format | ✔  | ✔   | - | 
+| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple QuickTime Picture Format | ✔  | ✔   | Standard | 
+|        | PNTG     | Apple MacPaint Picture Format | ✔  |     | Standard | 
 | [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | Standard | 
 |        | PBM      | NetPBM Portable Bit Map | ✔  | -     | Standard | 
 |        | PGM      | NetPBM Portable Grey Map | ✔  | -   | Standard | 

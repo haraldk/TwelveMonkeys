@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2015, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,40 +28,29 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.pict;
+package com.twelvemonkeys.imageio.plugins.pntg;
 
-import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
-
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 
 /**
- * Abstract base class for a stateless image decompressor, for use by {@link QuickTime}.
+ * PNTGProviderInfo.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: QTDecompressor.java,v 1.0 Feb 16, 2009 7:21:27 PM haraldk Exp$
+ * @author last modified by $Author: harald.kuhr$
+ * @version $Id: PNTGProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
-abstract class QTDecompressor {
-    /**
-     * Returns whether this decompressor is capable of decompressing the image
-     * data described by the given image description.
-     *
-     * @param description the image description ({@code 'idsc'} Atom).
-     * @return {@code true} if this decompressor is capable of decompressing
-     *          he data in the given image description, otherwise {@code false}.
-     */
-    public abstract boolean canDecompress(ImageDesc description);
-
-    /**
-     * Decompresses an image.
-     *
-     * @param description the image description ({@code 'idsc'} Atom).
-     * @param stream the image data stream
-     * @return the decompressed image
-     *
-     * @throws java.io.IOException if an I/O exception occurs during reading.
-     */
-    public abstract BufferedImage decompress(ImageDesc description, InputStream stream) throws IOException;
+final class PNTGProviderInfo extends ReaderWriterProviderInfo {
+    protected PNTGProviderInfo() {
+        super(
+                PNTGProviderInfo.class,
+                new String[] {"pntg", "PNTG"},
+                new String[] {"mac", "pic", "pntg"},
+                new String[] {"image/x-pntg"},
+                "com.twelvemonkeys.imageio.plugins.mac.MACImageReader",
+                new String[] {"com.twelvemonkeys.imageio.plugins.mac.MACImageReaderSpi"},
+                null, null,
+                false, null, null, null, null,
+                true, null, null, null, null
+        );
+    }
 }
