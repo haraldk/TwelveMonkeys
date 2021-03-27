@@ -1147,8 +1147,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                     // This initializes the tables and other internal settings for the reader,
                     // and is actually a feature of JPEG, see abbreviated streams:
                     // http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
-                    IIOMetadata streamMetadata = jpegReader.getStreamMetadata();
-                    new XMLSerializer(System.out, "UTF8").serialize(streamMetadata.getAsTree(streamMetadata.getNativeMetadataFormatName()), false);
+                    jpegReader.getStreamMetadata();
                 }
                 else if (tilesDown * tilesAcross > 1) {
                     processWarningOccurred("Missing JPEGTables for tiled/striped TIFF with compression: 7 (JPEG)");

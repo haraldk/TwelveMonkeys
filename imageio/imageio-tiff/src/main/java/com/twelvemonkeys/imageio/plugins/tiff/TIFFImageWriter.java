@@ -768,45 +768,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         entries.put(TIFF.TAG_SOFTWARE, new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
         entries.put(TIFF.TAG_ORIENTATION, new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
 
-        if (ifd != null) {
-            for (Entry entry : ifd) {
-                int tagId = (Integer) entry.getIdentifier();
-
-                switch (tagId) {
-                    // Baseline
-                    case TIFF.TAG_SUBFILE_TYPE:
-                    case TIFF.TAG_OLD_SUBFILE_TYPE:
-                    case TIFF.TAG_IMAGE_DESCRIPTION:
-                    case TIFF.TAG_MAKE:
-                    case TIFF.TAG_MODEL:
-                    case TIFF.TAG_ORIENTATION:
-                    case TIFF.TAG_X_RESOLUTION:
-                    case TIFF.TAG_Y_RESOLUTION:
-                    case TIFF.TAG_RESOLUTION_UNIT:
-                    case TIFF.TAG_SOFTWARE:
-                    case TIFF.TAG_DATE_TIME:
-                    case TIFF.TAG_ARTIST:
-                    case TIFF.TAG_HOST_COMPUTER:
-                    case TIFF.TAG_COPYRIGHT:
-                    // Extension
-                    case TIFF.TAG_DOCUMENT_NAME:
-                    case TIFF.TAG_PAGE_NAME:
-                    case TIFF.TAG_X_POSITION:
-                    case TIFF.TAG_Y_POSITION:
-                    case TIFF.TAG_PAGE_NUMBER:
-                    case TIFF.TAG_XMP:
-                    // Private/Custom
-                    case TIFF.TAG_IPTC:
-                    case TIFF.TAG_PHOTOSHOP:
-                    case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:
-                    case TIFF.TAG_PHOTOSHOP_ANNOTATIONS:
-                    case TIFF.TAG_EXIF_IFD:
-                    case TIFF.TAG_GPS_IFD:
-                    case TIFF.TAG_INTEROP_IFD:
-                        entries.put(tagId, entry);
-                }
-            }
-        }
+        mergeSafeMetadata(ifd, entries);
 
         ColorModel colorModel = imageType.getColorModel();
         SampleModel sampleModel = imageType.getSampleModel();
@@ -901,6 +863,64 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: Float values!
 
         return new TIFFImageMetadata(entries.values());
+    }
+
+    private void mergeSafeMetadata(final Directory ifd, final Map<Integer, Entry> entries) {
+        if (ifd == null) {
+            return;
+        }
+
+        for (Entry entry : ifd) {
+            int tagId = (Integer) entry.getIdentifier();
+
+            switch (tagId) {
+                // Baseline
+                case TIFF.TAG_SUBFILE_TYPE:
+                case TIFF.TAG_OLD_SUBFILE_TYPE:
+                case TIFF.TAG_IMAGE_DESCRIPTION:
+                case TIFF.TAG_MAKE:
+                case TIFF.TAG_MODEL:
+                case TIFF.TAG_ORIENTATION:
+                case TIFF.TAG_X_RESOLUTION:
+                case TIFF.TAG_Y_RESOLUTION:
+                case TIFF.TAG_RESOLUTION_UNIT:
+                case TIFF.TAG_SOFTWARE:
+                case TIFF.TAG_DATE_TIME:
+                case TIFF.TAG_ARTIST:
+                case TIFF.TAG_HOST_COMPUTER:
+                case TIFF.TAG_COPYRIGHT:
+                // Extension
+                case TIFF.TAG_DOCUMENT_NAME:
+                case TIFF.TAG_PAGE_NAME:
+                case TIFF.TAG_X_POSITION:
+                case TIFF.TAG_Y_POSITION:
+                case TIFF.TAG_PAGE_NUMBER:
+                case TIFF.TAG_XMP:
+                // Private/Custom
+                case TIFF.TAG_IPTC:
+                case TIFF.TAG_PHOTOSHOP:
+                case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:
+                case TIFF.TAG_PHOTOSHOP_ANNOTATIONS:
+                case TIFF.TAG_EXIF_IFD:
+                case TIFF.TAG_GPS_IFD:
+                case TIFF.TAG_INTEROP_IFD:
+                    entries.put(tagId, entry);
+                    break;
+                default:
+                    // Allow most extension and custom tags
+                    if (tagId >= 1000 && tagId < 50706) {
+                        entries.put(tagId, entry);
+                    }
+                    // Skip 50 706 - 57 080 (DNG tags)
+                    else if (tagId > 50780 && tagId < 65000) {
+                        entries.put(tagId, entry);
+                    }
+                    // Always allow "the reusable range"
+                    else if (tagId >= 65000 && tagId <= 65535) {
+                        entries.put(tagId, entry);
+                    }
+            }
+        }
     }
 
     @Override
