@@ -1631,12 +1631,14 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         BufferedImage one = reader.read(0);
         BufferedImage two = reader.read(0);
 
+        // Test for same BufferedImage instance
         assertNotSame("Multiple reads return same (mutable) image", one, two);
 
-        one.setRGB(0, 0, Color.BLUE.getRGB());
-        two.setRGB(0, 0, Color.RED.getRGB());
-
+        // Test for same backing storage (array)
+        one.setRGB(0, 0, Color.BLACK.getRGB());
+        two.setRGB(0, 0, Color.WHITE.getRGB());
         assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
+
         reader.dispose();
     }
 

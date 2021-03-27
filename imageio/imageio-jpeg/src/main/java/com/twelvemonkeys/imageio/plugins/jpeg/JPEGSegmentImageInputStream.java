@@ -150,7 +150,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 else {
                     if (marker == JPEG.EOI) {
                         segment = new Segment(marker, realPosition, segment.end(), 2);
-                        segments.add(segment);
                     }
                     else {
                         // Length including length field itself
@@ -165,6 +164,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                             // Inspect segment, see if we have 16 bit precision (assuming segments will not contain
                             // multiple quality tables with varying precision)
                             int qtInfo = stream.read();
+
                             if ((qtInfo & 0x10) == 0x10) {
                                 processWarningOccured("16 bit DQT encountered");
                                 segment = new DownsampledDQTReplacement(realPosition, segment.end(), length, qtInfo, stream);
@@ -188,10 +188,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         else {
                             segment = new Segment(marker, realPosition, segment.end(), length);
                         }
-
-                        segments.add(segment);
                     }
 
+                    segments.add(segment);
                     currentSegment = segments.size() - 1;
 
                     if (marker == JPEG.SOS) {
