@@ -781,11 +781,11 @@ public final class TIFFImageReader extends ImageReaderBase {
                 throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer (expected 8/16/32): " + bitsPerSample);
 
             case TIFFExtension.SAMPLEFORMAT_FP:
-                if (bitsPerSample == 32) {
+                if (bitsPerSample == 16 || bitsPerSample == 32) {
                     return DataBuffer.TYPE_FLOAT;
                 }
 
-                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 32): " + bitsPerSample);
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 16/32): " + bitsPerSample);
             default:
                 throw new IIOException("Unknown TIFF SampleFormat (expected 1, 2, 3 or 4): " + sampleFormat);
         }
@@ -1969,7 +1969,9 @@ public final class TIFFImageReader extends ImageReaderBase {
 
             case DataBuffer.TYPE_FLOAT:
                 /*for (int band = 0; band < bands; band++)*/ {
+                boolean needsWidening = getBitsPerSample() == 16;
                 float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData(band);
+                short[] rowDataShort = needsWidening ? new short[rowDataFloat.length] : null;
 
                 WritableRaster destChannel = banded
                                              ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
@@ -1978,12 +1980,19 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
                                     : tileRowRaster;
 
+
                 for (int row = startRow; row < startRow + rowsInTile; row++) {
                     if (row >= srcRegion.y + srcRegion.height) {
                         break; // We're done with this tile
                     }
 
-                    readFully(input, rowDataFloat);
+                    if (needsWidening) {
+                        readFully(input, rowDataShort);
+                        toFloat(rowDataFloat, rowDataShort);
+                    }
+                    else {
+                        readFully(input, rowDataFloat);
+                    }
 
                     if (row >= srcRegion.y) {
                         normalizeColor(interpretation, rowDataFloat);
@@ -2008,7 +2017,52 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void clamp(float[] rowDataFloat) {
+    private void toFloat(final float[] rowDataFloat, final short[] rowDataShort) {
+        for (int i = 0; i < rowDataFloat.length; i++) {
+            rowDataFloat[i] = toFloat(rowDataShort[i]);
+        }
+    }
+
+    /**
+     * Converts an IEEE 754 half-precision data type to single-precision.
+     *
+     * @param shortValue a 16 bit half precision value
+     * @return an IEE 754 single precision float
+     *
+     * @see <a href="https://stackoverflow.com/a/6162687/259991">Stack Overflow answer by x4u</a>
+     * @see <a href="https://en.wikipedia.org/wiki/Half-precision_floating-point_format>Wikipedia</a>
+     */
+    private float toFloat(final short shortValue) {
+        int mantissa = shortValue & 0x03ff;         // 10 bits mantissa
+        int exponent = shortValue & 0x7c00;         //  5 bits exponent
+
+        if (exponent == 0x7c00) {                   // NaN/Inf
+            exponent = 0x3fc00;                     // -> NaN/Inf
+        }
+        else if (exponent != 0) {                   // Normalized value
+            exponent += 0x1c000;                    // exp - 15 + 127
+
+            // Smooth transition
+            if (mantissa == 0 && exponent > 0x1c400) {
+                return Float.intBitsToFloat((shortValue & 0x8000) << 16 | exponent << 13 | 0x3ff);
+            }
+        }
+        else if (mantissa != 0) {                   // && exp == 0 -> subnormal
+            exponent = 0x1c400;                     // Make it normal
+
+            do {
+                mantissa <<= 1;                     // mantissa * 2
+                exponent -= 0x400;                  // Decrease exp by 1
+            } while ((mantissa & 0x400) == 0);      // while not normal
+
+            mantissa &= 0x3ff;                      // Discard subnormal bit
+        }                                           // else +/-0 -> +/-0
+
+        // Combine all parts,  sign << (31 - 15), value << (23 - 10)
+        return Float.intBitsToFloat((shortValue & 0x8000) << 16 | (exponent | mantissa) << 13);
+    }
+
+    private void clamp(final float[] rowDataFloat) {
         for (int i = 0; i < rowDataFloat.length; i++) {
             if (rowDataFloat[i] > 1f) {
                 rowDataFloat[i] = 1f;
