@@ -48,6 +48,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
@@ -67,7 +68,6 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
-import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -84,7 +84,8 @@ import java.util.*;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.*;
+import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
 import static java.util.Arrays.asList;
 
 /**
@@ -2640,7 +2641,6 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     public static void main(final String[] args) throws IOException {
         ImageIO.setUseCache(false);
-        deregisterOSXTIFFImageReaderSpi();
 
         for (final String arg : args) {
             File file = new File(arg);
@@ -2659,6 +2659,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 if (!readers.hasNext()) {
                     System.err.println("No reader for: " + file);
+                    System.err.println("Supported formats: " + Arrays.toString(IIOUtil.getNormalizedReaderFormatNames()));
                     continue;
                 }
 
@@ -2878,14 +2879,5 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     protected static void showIt(BufferedImage image, String title) {
         ImageReaderBase.showIt(image, title);
-    }
-
-    private static void deregisterOSXTIFFImageReaderSpi() {
-        IIORegistry registry = IIORegistry.getDefaultInstance();
-        ImageReaderSpi provider = lookupProviderByName(registry, "com.sun.imageio.plugins.tiff.TIFFImageReaderSpi", ImageReaderSpi.class);
-
-        if (provider != null) {
-            registry.deregisterServiceProvider(provider);
-        }
     }
 }
