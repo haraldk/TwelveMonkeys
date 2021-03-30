@@ -132,7 +132,6 @@ public final class TIFFImageReader extends ImageReaderBase {
     // TODO: Thumbnail support (what is a TIFF thumbnail anyway? Photoshop way? Or use subfiletype?)
 
     // TODOs ImageIO advanced functionality:
-    // TODO: Tiling support (readTile, readTileRaster)
     // TODO: Implement readAsRenderedImage to allow tiled RenderedImage?
     //       For some layouts, we could do reads super-fast with a memory mapped buffer.
     // TODO: Implement readRaster directly (100% correctly)
