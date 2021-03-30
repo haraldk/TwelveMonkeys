@@ -36,8 +36,8 @@ import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
@@ -75,7 +75,7 @@ public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
         return canDecodeAs(pSource, TIFF.TIFF_MAGIC);
     }
 
-    static boolean canDecodeAs(final Object pSource, final int magic) throws IOException {
+    static boolean canDecodeAs(final Object pSource, final int versionMagic) throws IOException {
         if (!(pSource instanceof ImageInputStream)) {
             return false;
         }
@@ -84,27 +84,14 @@ public final class TIFFImageReaderSpi extends ImageReaderSpiBase {
 
         stream.mark();
         try {
-            byte[] bom = new byte[2];
-            stream.readFully(bom);
+            byte[] magic = new byte[4];
+            stream.readFully(magic);
 
-            ByteOrder originalOrder = stream.getByteOrder();
-
-            try {
-                if (bom[0] == 'I' && bom[1] == 'I') {
-                    stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-                }
-                else if (bom[0] == 'M' && bom[1] == 'M') {
-                    stream.setByteOrder(ByteOrder.BIG_ENDIAN);
-                }
-                else  {
-                    return false;
-                }
-
-                return stream.readUnsignedShort() == magic;
-            }
-            finally {
-                stream.setByteOrder(originalOrder);
-            }
+            return magic[0] == 'I' && magic[1] == 'I' && magic[2] == (versionMagic & 0xFF) && magic[3] == (versionMagic >>> 8)
+                    || magic[0] == 'M' && magic[1] == 'M' && magic[2] == (versionMagic >>> 8) && magic[3] == (versionMagic & 0xFF);
+        }
+        catch (EOFException ignore) {
+            return false;
         }
         finally {
             stream.reset();
