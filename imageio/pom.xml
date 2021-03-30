@@ -52,6 +52,9 @@
 
         <!-- Test cases for the JRE provided ImageIO plugins -->
         <module>imageio-reference</module>
+        <module>imageio-jpeg-jep262-interop</module>
+        <module>imageio-jpeg-jai-interop</module>
+        <module>imageio-tiff-jdk-interop</module>
     </modules>
 
     <properties>
@@ -140,6 +143,12 @@
 	        <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-jpeg</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+	        <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>imageio-tiff</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

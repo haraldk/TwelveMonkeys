@@ -636,6 +636,12 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         try {
             if (imageInput != null) {
+                // Need to wrap stream to avoid messing with the byte order of the underlying stream
+                // in the case we are operating as a delegate for ie. TIFFImageReader.
+                if (!(imageInput instanceof SubImageInputStream)) {
+                    imageInput = new SubImageInputStream(imageInput, Long.MAX_VALUE);
+                }
+
                 streamOffsets.add(imageInput.getStreamPosition());
             }
 
@@ -650,7 +656,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     private void initDelegate(boolean seekForwardOnly, boolean ignoreMetadata) throws IOException {
         // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
         delegate.setInput(imageInput != null
-                          ? new JPEGSegmentImageInputStream(new SubImageInputStream(imageInput, Long.MAX_VALUE), new JPEGSegmentWarningDelegate())
+                          ? new JPEGSegmentImageInputStream(imageInput, new JPEGSegmentWarningDelegate())
                           : null, seekForwardOnly, ignoreMetadata);
     }
 
@@ -705,7 +711,6 @@ public final class JPEGImageReader extends ImageReaderBase {
         thumbnails = null;
 
         initDelegate(seekForwardOnly, ignoreMetadata);
-
         initHeader();
     }
 
