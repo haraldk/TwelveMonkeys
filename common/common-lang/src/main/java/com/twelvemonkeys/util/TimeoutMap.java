@@ -34,7 +34,7 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * A {@code Map} implementation that removes (exipres) its elements after
+ * A {@code Map} implementation that removes (expires) its elements after
  * a given period. The map is by default backed by a {@link java.util.HashMap},
  * or can be instantiated with any given {@code Map} as backing.
  * <p>
@@ -67,7 +67,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     protected long expiryTime = 60000L;  // 1 minute
 
     //////////////////////
-    private volatile long nextExpiryTime;
+    private volatile long nextExpiryTime = Long.MAX_VALUE;
     //////////////////////
 
     /**
@@ -178,7 +178,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * @return {@code true} if this map contains no key-value mappings.
      */
     public boolean isEmpty() {
-        return (size() <= 0);
+        return size() <= 0;
     }
 
     /**
@@ -208,7 +208,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * @see #containsKey(java.lang.Object)
      */
     public V get(Object pKey) {
-        TimedEntry<K, V> entry = (TimedEntry<K, V>) entries.get(pKey);
+        TimedEntry entry = (TimedEntry) entries.get(pKey);
 
         if (entry == null) {
             return null;
@@ -236,7 +236,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      *         {@code null} values.
      */
     public V put(K pKey, V pValue) {
-        TimedEntry<K, V> entry = (TimedEntry<K, V>) entries.get(pKey);
+        TimedEntry entry = (TimedEntry) entries.get(pKey);
         V oldValue;
 
         if (entry == null) {
@@ -272,7 +272,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      *         {@code null} values.
      */
     public V remove(Object pKey) {
-        TimedEntry<K, V> entry = (TimedEntry<K, V>) entries.remove(pKey);
+        TimedEntry entry = (TimedEntry) entries.remove(pKey);
         return (entry != null) ? entry.getValue() : null;
     }
 
@@ -284,13 +284,12 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
         init();
     }
 
-    /*protected*/ TimedEntry<K, V> createEntry(K pKey, V pValue) {
-        return new TimedEntry<K, V>(pKey, pValue);
+    /*protected*/ TimedEntry createEntry(K pKey, V pValue) {
+        return new TimedEntry(pKey, pValue);
     }
 
     /**
      * Removes any expired mappings.
-     *
      */
     protected void removeExpiredEntries() {
         // Remove any expired elements
@@ -312,7 +311,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
             long next = Long.MAX_VALUE;
             nextExpiryTime = next; // Avoid multiple runs...
             for (Iterator<Entry<K, V>> iterator = new EntryIterator(); iterator.hasNext();) {
-                TimedEntry<K, V> entry = (TimedEntry<K, V>) iterator.next();
+                TimedEntry entry = (TimedEntry) iterator.next();
                 ////
                 long expires = entry.expires();
                 if (expires < next) {
@@ -376,7 +375,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
 
             while (mNext == null && mIterator.hasNext()) {
                 Entry<K, Entry<K, V>> entry = mIterator.next();
-                TimedEntry<K, V> timed = (TimedEntry<K, V>) entry.getValue();
+                TimedEntry timed = (TimedEntry) entry.getValue();
 
                 if (timed.isExpiredBy(mNow)) {
                     // Remove from map, and continue
@@ -425,17 +424,26 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     /**
      * Keeps track of timed objects
      */
-    private class TimedEntry<K, V> extends BasicEntry<K, V> {
+    private class TimedEntry extends BasicEntry<K, V> {
         private long mTimestamp;
 
         TimedEntry(K pKey, V pValue) {
             super(pKey, pValue);
-            mTimestamp = System.currentTimeMillis();
+            updateTimestamp();
         }
 
         public V setValue(V pValue) {
-            mTimestamp = System.currentTimeMillis();
+            updateTimestamp();
             return super.setValue(pValue);
+        }
+
+        private void updateTimestamp() {
+            mTimestamp = System.currentTimeMillis();
+
+            long expires = expires();
+            if (expires < nextExpiryTime) {
+                nextExpiryTime = expires;
+            }
         }
 
         final boolean isExpired() {

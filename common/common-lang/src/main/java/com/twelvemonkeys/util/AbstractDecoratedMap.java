@@ -330,7 +330,7 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
     }
 
     /**
-     * A simple Map.Entry implementaton.
+     * A simple Map.Entry implementation.
      */
     static class BasicEntry<K, V> implements Entry<K, V>, Serializable {
         K mKey;
