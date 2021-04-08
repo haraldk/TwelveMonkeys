@@ -63,7 +63,8 @@ final class RLEDecoder implements Decoder {
 
                     buffer.put((byte) data);
                 }
-            } else {
+            }
+            else {
                 for (int b = 0; b < pixel.length; b++) {
                     int data = stream.read();
                     if (data < 0) {

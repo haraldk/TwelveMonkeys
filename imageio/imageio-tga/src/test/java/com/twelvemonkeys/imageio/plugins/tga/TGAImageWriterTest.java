@@ -30,15 +30,18 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
 
 import org.junit.Test;
+import org.w3c.dom.NodeList;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
@@ -53,7 +56,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertImageDataEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 
 /**
@@ -85,6 +88,13 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> 
     }
 
     @Test
+    public void testDefaultParamIsTGA() throws IOException {
+        ImageWriter writer = createWriter();
+        assertEquals(writer.getDefaultWriteParam().getClass(), TGAImageWriteParam.class);
+        writer.dispose();
+    }
+
+    @Test
     public void testWriteRead() throws IOException {
         ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
@@ -108,5 +118,120 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> 
                 assertImageDataEquals("Images differ for " + testData, (BufferedImage) testData, image);
             }
         }
+
+        writer.dispose();
+        reader.dispose();
+    }
+
+    @Test
+    public void testWriteReadRLE() throws IOException {
+        ImageWriter writer = createWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        assumeNotNull(reader);
+
+        ImageWriteParam param = writer.getDefaultWriteParam();
+        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        param.setCompressionType("RLE");
+
+        for (RenderedImage testData : getTestData()) {
+            FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(4096);
+
+            try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+                writer.setOutput(stream);
+                writer.write(null, new IIOImage(drawSomething((BufferedImage) testData), null, null), param);
+            }
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(buffer.toByteArray())) {
+                reader.setInput(stream);
+
+                BufferedImage image = reader.read(0);
+
+                assertNotNull(image);
+                assertImageDataEquals("Images differ for " + testData, (BufferedImage) testData, image);
+            }
+        }
+
+        writer.dispose();
+        reader.dispose();
+    }
+
+    @Test
+    public void testRewriteCompressionCopyFromMetadataUncompressed() throws IOException {
+        ImageWriter writer = createWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        assumeNotNull(reader);
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/UTC24.TGA"))) {
+            reader.setInput(input);
+            IIOImage image = reader.readAll(0, null);
+            assertNull(findCompressionType(image.getMetadata())); // Sanity
+
+            FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(65536);
+
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+                writer.setOutput(output);
+
+                // Copy from metadata should be default, we'll validate here
+                ImageWriteParam param = writer.getDefaultWriteParam();
+                assertEquals(ImageWriteParam.MODE_COPY_FROM_METADATA, param.getCompressionMode());
+
+                writer.write(null, image, param);
+            }
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(buffer.toByteArray())) {
+                reader.setInput(stream);
+                IIOMetadata metadata = reader.getImageMetadata(0);
+
+                assertNull(findCompressionType(metadata));
+            }
+        }
+
+        writer.dispose();
+        reader.dispose();
+    }
+
+    @Test
+    public void testRewriteCompressionCopyFromMetadataRLE() throws IOException {
+        ImageWriter writer = createWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        assumeNotNull(reader);
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/CTC24.TGA"))) {
+            reader.setInput(input);
+            IIOImage image = reader.readAll(0, null);
+            assertEquals("RLE", findCompressionType(image.getMetadata())); // Sanity
+
+            FastByteArrayOutputStream buffer = new FastByteArrayOutputStream(32768);
+
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(buffer)) {
+                writer.setOutput(output);
+
+                // Copy from metadata should be default, we'll just go with no param here
+                writer.write(null, image, null);
+            }
+
+            try (ImageInputStream inputStream = new ByteArrayImageInputStream(buffer.toByteArray())) {
+                reader.setInput(inputStream);
+                IIOMetadata metadata = reader.getImageMetadata(0);
+
+                assertEquals("RLE", findCompressionType(metadata));
+            }
+        }
+
+        writer.dispose();
+        reader.dispose();
+    }
+
+    private String findCompressionType(IIOMetadata metadata) {
+        IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList compressionTypeName = root.getElementsByTagName("CompressionTypeName");
+        if (compressionTypeName.getLength() > 0) {
+            return compressionTypeName.item(0).getAttributes().getNamedItem("value").getNodeValue();
+        }
+
+        return null;
     }
 }

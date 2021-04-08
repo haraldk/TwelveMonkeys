@@ -78,7 +78,12 @@ final class TGAMetadata extends AbstractMetadata {
         chroma.appendChild(numChannels);
         switch (header.getPixelDepth()) {
             case 8:
-                numChannels.setAttribute("value", Integer.toString(1));
+                if (header.getImageType() == TGA.IMAGETYPE_MONOCHROME || header.getImageType() == TGA.IMAGETYPE_MONOCHROME_RLE) {
+                    numChannels.setAttribute("value", Integer.toString(1));
+                }
+                else {
+                    numChannels.setAttribute("value", Integer.toString(3));
+                }
                 break;
             case 16:
                 if (header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha()) {
@@ -146,7 +151,7 @@ final class TGAMetadata extends AbstractMetadata {
                 IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
                 node.appendChild(compressionTypeName);
                 String value = header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN || header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE
-                               ? "Uknown" : "RLE";
+                               ? "Unknown" : "RLE";
                 compressionTypeName.setAttribute("value", value);
 
                 IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
@@ -155,7 +160,7 @@ final class TGAMetadata extends AbstractMetadata {
 
                 return node;
             default:
-                // No compreesion
+                // No compression
                 return null;
         }
     }
@@ -199,10 +204,10 @@ final class TGAMetadata extends AbstractMetadata {
                 }
                 break;
             case 24:
-                bitsPerSample.setAttribute("value", createListValue(3, Integer.toString(8)));
+                bitsPerSample.setAttribute("value", createListValue(3, "8"));
                 break;
             case 32:
-                bitsPerSample.setAttribute("value", createListValue(4, Integer.toString(8)));
+                bitsPerSample.setAttribute("value", createListValue(4, "8"));
                 break;
         }
 

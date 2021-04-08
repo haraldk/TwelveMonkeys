@@ -31,18 +31,26 @@
 package com.twelvemonkeys.imageio.plugins.tga;
 
 import com.twelvemonkeys.imageio.ImageWriterBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.io.LittleEndianDataOutputStream;
+import com.twelvemonkeys.io.enc.EncoderStream;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static com.twelvemonkeys.imageio.plugins.tga.TGAImageWriteParam.isRLE;
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
@@ -55,13 +63,23 @@ final class TGAImageWriter extends ImageWriterBase {
 
     @Override
     public IIOMetadata getDefaultImageMetadata(final ImageTypeSpecifier imageType, final ImageWriteParam param) {
-        TGAHeader header = TGAHeader.from(imageType.createBufferedImage(1, 1), param);
+        Validate.notNull(imageType, "imageType");
+
+        TGAHeader header = TGAHeader.from(imageType.createBufferedImage(1, 1), isRLE(param, null));
         return new TGAMetadata(header, null);
     }
 
     @Override
     public IIOMetadata convertImageMetadata(final IIOMetadata inData, final ImageTypeSpecifier imageType, final ImageWriteParam param) {
-        return null;
+        Validate.notNull(inData, "inData");
+        Validate.notNull(imageType, "imageType");
+
+        if (inData instanceof TGAMetadata) {
+            return inData;
+        }
+
+        // TODO: Make metadata mutable, and do actual merge
+        return getDefaultImageMetadata(imageType, param);
     }
 
     @Override
@@ -74,15 +92,22 @@ final class TGAImageWriter extends ImageWriterBase {
     }
 
     @Override
+    public ImageWriteParam getDefaultWriteParam() {
+        return new TGAImageWriteParam(getLocale());
+    }
+
+    @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
         assertOutput();
+        Validate.notNull(image, "image");
 
         if (image.hasRaster()) {
             throw new UnsupportedOperationException("Raster not supported");
         }
 
+        final boolean compressed = isRLE(param, image.getMetadata());
         RenderedImage renderedImage = image.getRenderedImage();
-        TGAHeader header = TGAHeader.from(renderedImage, param);
+        TGAHeader header = TGAHeader.from(renderedImage, compressed);
 
         header.write(imageOutput);
 
@@ -94,7 +119,7 @@ final class TGAImageWriter extends ImageWriterBase {
                                      ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, false, false).createBufferedImage(renderedImage.getWidth(), 1).getRaster()
                                      : ImageTypeSpecifier.createFromRenderedImage(renderedImage).createBufferedImage(renderedImage.getWidth(), 1).getRaster();
 
-        DataBuffer buffer = rowRaster.getDataBuffer();
+        final DataBuffer buffer = rowRaster.getDataBuffer();
 
         for (int tileY = 0; tileY < renderedImage.getNumYTiles(); tileY++) {
             for (int tileX = 0; tileX < renderedImage.getNumXTiles(); tileX++) {
@@ -110,6 +135,8 @@ final class TGAImageWriter extends ImageWriterBase {
                         break;
                     }
 
+                    DataOutput imageOutput = compressed ? createRLEStream(header, this.imageOutput) : this.imageOutput;
+
                     switch (buffer.getDataType()) {
                         case DataBuffer.TYPE_BYTE:
                             rowRaster.setDataElements(0, 0, raster.createChild(0, y, raster.getWidth(), 1, 0, 0, null));
@@ -118,22 +145,37 @@ final class TGAImageWriter extends ImageWriterBase {
                         case DataBuffer.TYPE_USHORT:
                             rowRaster.setDataElements(0, 0, raster.createChild(0, y, raster.getWidth(), 1, 0, 0, null));
                             short[] shorts = ((DataBufferUShort) buffer).getData();
-                            imageOutput.writeShorts(shorts, 0, shorts.length);
+
+                            // TODO: Get rid of this, due to stupid design in EncoderStream...
+                            ByteBuffer bb = ByteBuffer.allocate(shorts.length * 2);
+                            bb.order(ByteOrder.LITTLE_ENDIAN);
+                            bb.asShortBuffer().put(shorts);
+                            imageOutput.write(bb.array());
+                            // TODO: The below should work just as good
+//                             for (short value : shorts) {
+//                                 imageOutput.writeShort(value);
+//                             }
                             break;
                         default:
-                            throw new IIOException("Unsupported data");
+                            throw new IIOException("Unsupported data type");
                     }
 
-                    processImageProgress(tileY * 100f / renderedImage.getNumYTiles());
+                    if (compressed) {
+                        ((LittleEndianDataOutputStream) imageOutput).close();
+                    }
                 }
 
+                processImageProgress(tileY * 100f / renderedImage.getNumYTiles());
             }
         }
 
         // TODO: If we have thumbnails, we need to write extension too.
 
         processImageComplete();
+    }
 
+    private static LittleEndianDataOutputStream createRLEStream(final TGAHeader header, final ImageOutputStream stream) {
+        return new LittleEndianDataOutputStream(new EncoderStream(IIOUtil.createStreamAdapter(stream), new RLEEncoder(header.getPixelDepth())));
     }
 
     // TODO: Refactor to common util
