@@ -62,6 +62,7 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
      * @return {@code dest}, or a new {@link WritableRaster} if {@code dest} is {@code null}.
      * @throws IllegalArgumentException if {@code src} and {@code dest} refer to the same object
      */
+    @Override
     public WritableRaster filter(Raster src, WritableRaster dest) {
         Validate.notNull(src, "src may not be null");
         // TODO: Why not allow same raster, if converting to 4 byte ABGR?
@@ -142,10 +143,12 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
         rgb[2] = (byte) (255 - (((cmyk[2] & 0xFF) * (255 - k) / 255) + k));
     }
 
+    @Override
     public Rectangle2D getBounds2D(Raster src) {
         return src.getBounds();
     }
 
+    @Override
     public WritableRaster createCompatibleDestRaster(final Raster src) {
         // WHAT?? This code no longer work for JRE 7u45+... JRE bug?!
 //        Raster child = src.createChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0, 1, 2});
@@ -157,6 +160,7 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
         return raster.createWritableChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0, 1, 2});
     }
 
+    @Override
     public Point2D getPoint2D(Point2D srcPt, Point2D dstPt) {
         if (dstPt == null) {
             dstPt = new Point2D.Double(srcPt.getX(), srcPt.getY());
@@ -168,6 +172,7 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
         return dstPt;
     }
 
+    @Override
     public RenderingHints getRenderingHints() {
         return null;
     }

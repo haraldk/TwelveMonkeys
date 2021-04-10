@@ -194,73 +194,38 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
-        checkBounds(imageIndex);
-        initHeader(imageIndex);
+        ImageTypeSpecifier rawImageType = getRawImageType(imageIndex);
+        ColorModel rawColorModel = rawImageType.getColorModel();
+        JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
-        Iterator<ImageTypeSpecifier> types;
-        try {
-            types = delegate.getImageTypes(0);
-        }
-        catch (IndexOutOfBoundsException | NegativeArraySizeException ignore) {
-            types = null;
-        }
+        Set<ImageTypeSpecifier> types = new LinkedHashSet<>();
 
-        JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
-
-        if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
-            // Add the standard types, we can always convert to these
-            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
-            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
-            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
-
-            // We also read and return CMYK if the source image is CMYK/YCCK + original color profile if present
-            ICC_Profile profile = getEmbeddedICCProfile(false);
-
-            if (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-                if (profile != null && profile.getNumComponents() == 4) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
-                }
-
-                typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
-            }
-            else if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.RGB) {
-                if (profile != null && profile.getNumComponents() == 3) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2}, DataBuffer.TYPE_BYTE, false, false));
-                }
-            }
-            else if (csType == JPEGColorSpace.YCbCrA || csType == JPEGColorSpace.RGBA) {
-                // Prepend ARGB types
-                typeList.addAll(0, Arrays.asList(
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB),
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR),
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE),
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE)
-                ));
-
-                if (profile != null && profile.getNumComponents() == 3) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, true, false));
-                }
+        if (rawColorModel.getColorSpace().getType() != ColorSpace.TYPE_GRAY) {
+            // Add the standard types, we can always convert to these, except for gray
+            if (rawColorModel.hasAlpha()) {
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE));
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
             }
 
-            return typeList.iterator();
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
         }
-        else if (csType == JPEGColorSpace.RGB) {
-            // Bug in com.sun...JPEGImageReader: returns gray as acceptable type, but refuses to convert
-            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
 
-            // Filter out the gray type
-            while (types.hasNext()) {
-                ImageTypeSpecifier type = types.next();
-                if (type.getBufferedImageType() != BufferedImage.TYPE_BYTE_GRAY) {
-                    typeList.add(type);
-                }
+        types.add(rawImageType);
+
+        // If the source type has a luminance (Y) component, we can also convert to gray
+        if (sourceCSType != JPEGColorSpace.RGB && sourceCSType != JPEGColorSpace.RGBA && sourceCSType != JPEGColorSpace.CMYK) {
+            if (rawColorModel.hasAlpha()) {
+                types.add(ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE, false));
             }
 
-            return typeList.iterator();
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
         }
 
-        return types;
+        return types.iterator();
     }
 
     @Override
@@ -268,34 +233,55 @@ public final class JPEGImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         initHeader(imageIndex);
 
-        // If delegate can determine the spec, we'll just go with that
-        try {
-            ImageTypeSpecifier rawType = delegate.getRawImageType(0);
-
-            if (rawType != null) {
-                return rawType;
-            }
-        }
-        catch (IIOException | NullPointerException | ArrayIndexOutOfBoundsException | NegativeArraySizeException ignore) {
-            // Fall through
-        }
-
-        // Otherwise, consult the image metadata
+        // Consult the image metadata
         JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
+        ICC_Profile profile = getEmbeddedICCProfile(false);
+
+        ColorSpace cs;
+        boolean hasAlpha = false;
 
         switch (csType) {
-            case CMYK:
-                // Create based on embedded profile if exists, or create from "Generic CMYK"
-                ICC_Profile profile = getEmbeddedICCProfile(false);
+            case GrayA:
+                hasAlpha = true;
+            case Gray:
+                // Create based on embedded profile if exists, otherwise create from Gray
+                cs = profile != null && profile.getNumComponents() == 1
+                     ? ColorSpaces.createColorSpace(profile)
+                     : ColorSpaces.getColorSpace(ColorSpace.CS_GRAY);
+                return ImageTypeSpecifiers.createInterleaved(cs, hasAlpha ? new int[] {1, 0} : new int[] {0}, DataBuffer.TYPE_BYTE, hasAlpha, false);
 
-                if (profile != null && profile.getNumComponents() == 4) {
-                    return ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+            case YCbCrA:
+            case RGBA:
+            case PhotoYCCA:
+                hasAlpha = true;
+            case YCbCr:
+            case RGB:
+            case PhotoYCC:
+                // Create based on PhotoYCC profile...
+                if (csType == JPEGColorSpace.PhotoYCC || csType == JPEGColorSpace.PhotoYCCA) {
+                    cs = ColorSpaces.getColorSpace(ColorSpace.CS_PYCC);
+                }
+                else {
+                    // ...or create based on embedded profile if exists, otherwise create from sRGB
+                    cs = profile != null && profile.getNumComponents() == 3
+                         ? ColorSpaces.createColorSpace(profile)
+                         : ColorSpaces.getColorSpace(ColorSpace.CS_sRGB);
                 }
 
-                return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+                return ImageTypeSpecifiers.createInterleaved(cs, hasAlpha ? new int[] {3, 2, 1, 0} : new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, hasAlpha, false);
+
+            case YCCK:
+            case CMYK:
+                // Create based on embedded profile if exists, otherwise create from "Generic CMYK"
+                cs = profile != null && profile.getNumComponents() == 4
+                     ? ColorSpaces.createColorSpace(profile)
+                     : ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+
+                return ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+
             default:
-                // For other types, we probably can't give a proper type, return null
-                return null;
+                // For other types, we probably can't give a proper type
+                throw new IIOException("Could not determine JPEG source color space");
         }
     }
 
@@ -322,7 +308,8 @@ public final class JPEGImageReader extends ImageReaderBase {
             adobeDCT = null;
         }
 
-        JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
+        JFIF jfif = getJFIF();
+        JPEGColorSpace sourceCSType = getSourceCSType(jfif, adobeDCT, sof);
 
         if (sof.marker == JPEG.SOF3) {
             // Read image as lossless
@@ -347,20 +334,15 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
-        else if (delegate.canReadRaster() && (
-                bogusAdobeDCT ||
-                        sourceCSType == JPEGColorSpace.CMYK ||
-                        sourceCSType == JPEGColorSpace.YCCK ||
-                        profile != null && !ColorSpaces.isCS_sRGB(profile) ||
-                        (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE ||
-                        !delegate.getImageTypes(0).hasNext() ||
-                        sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
+        else if (bogusAdobeDCT
+                || profile != null && !ColorSpaces.isCS_sRGB(profile)
+                || (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE
+                || delegateCSTypeMismatch(jfif, adobeDCT, sof, sourceCSType)) {
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
             }
 
-            // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMYK and other good types?
             return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, profile);
         }
 
@@ -369,6 +351,56 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
 
         return delegate.read(0, param);
+    }
+
+    private boolean delegateCSTypeMismatch(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame, final JPEGColorSpace sourceCSType) throws IOException {
+        switch (sourceCSType) {
+            case GrayA:
+            case RGBA:
+            case YCbCrA:
+            case PhotoYCC:
+            case PhotoYCCA:
+            case CMYK:
+            case YCCK:
+                // These are no longer supported by the delegate, we'll handle ourselves
+                return true;
+        }
+
+        try {
+            ImageTypeSpecifier rawImageType = delegate.getRawImageType(0);
+
+            switch (sourceCSType) {
+                case Gray:
+                    return rawImageType == null || rawImageType.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_GRAY;
+                case YCbCr:
+                    // NOTE: For backwards compatibility, null is allowed for YCbCr
+                    if (rawImageType == null) {
+                        return false;
+                    }
+
+                    //  If We have a JFIF, but with non-standard component Ids, the standard reader mistakes it for RGB
+                    if (jfif != null && (startOfFrame.components[0].id != 1 || startOfFrame.components[1].id != 2 || startOfFrame.components[2].id != 3)) {
+                        return true;
+                    }
+                    // Else, if we have no Adobe marker and no subsampling, the standard reader mistakes it for RGB
+                    else if (adobeDCT == null
+                            && (startOfFrame.components[0].id != 1 || startOfFrame.components[1].id != 2 || startOfFrame.components[2].id != 3)
+                            && (startOfFrame.components[0].hSub == 1 || startOfFrame.components[0].vSub == 1
+                            || startOfFrame.components[1].hSub == 1 || startOfFrame.components[1].vSub == 1
+                            || startOfFrame.components[2].hSub == 1 || startOfFrame.components[2].vSub == 1)) {
+                        return true;
+                    }
+                case RGB:
+                    return rawImageType == null || rawImageType.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_RGB;
+                default:
+                    // Probably needs special handling, but we don't know what to do...
+                    return false;
+            }
+        }
+        catch (IIOException | NullPointerException | ArrayIndexOutOfBoundsException | NegativeArraySizeException ignore) {
+            // An exception here is a clear indicator we need to handle conversion
+            return true;
+        }
     }
 
     private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, Frame startOfFrame, JPEGColorSpace csType, ICC_Profile profile) throws IOException {
@@ -388,7 +420,10 @@ public final class JPEGImageReader extends ImageReaderBase {
         RasterOp convert = null;
         ICC_ColorSpace intendedCS = profile != null ? ColorSpaces.createColorSpace(profile) : null;
 
-        if (profile != null && (csType == JPEGColorSpace.Gray || csType == JPEGColorSpace.GrayA)) {
+        if (destination.getNumBands() <= 2 && (csType != JPEGColorSpace.Gray && csType != JPEGColorSpace.GrayA)) {
+            convert = new LumaToGray();
+        }
+        else if (profile != null && (csType == JPEGColorSpace.Gray || csType == JPEGColorSpace.GrayA)) {
             // com.sun. reader does not do ColorConvertOp for CS_GRAY, even if embedded ICC profile,
             // probably because IJG native part does it already...? If applied, color looks wrong (too dark)...
 //            convert = new ColorConvertOp(intendedCS, image.getColorModel().getColorSpace(), null);
@@ -397,8 +432,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             // Handle inconsistencies
             if (startOfFrame.componentsInFrame() != intendedCS.getNumComponents()) {
                 // If ICC profile number of components and startOfFrame does not match, ignore ICC profile
-                processWarningOccurred(String.format(
-                        "Embedded ICC color profile is incompatible with image data. " +
+                processWarningOccurred(String.format("Embedded ICC color profile is incompatible with image data. " +
                                 "Profile indicates %d components, but SOF%d has %d color components. " +
                                 "Ignoring ICC profile, assuming source color space %s.",
                         intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame(), csType
@@ -422,10 +456,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             ColorSpace cmykCS = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
 
             if (cmykCS instanceof ICC_ColorSpace) {
-                processWarningOccurred(
-                        "No embedded ICC color profile, defaulting to \"generic\" CMYK ICC profile. " +
-                                "Colors may look incorrect."
-                );
+                processWarningOccurred("No embedded ICC color profile, defaulting to \"generic\" CMYK ICC profile. Colors may look incorrect.");
 
                 // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
                 if (cmykCS != image.getColorModel().getColorSpace()) {
@@ -434,16 +465,10 @@ public final class JPEGImageReader extends ImageReaderBase {
             }
             else {
                 // ColorConvertOp using non-ICC CS is deadly slow, fall back to fast conversion instead
-                processWarningOccurred(
-                        "No embedded ICC color profile, will convert using inaccurate CMYK to RGB conversion. " +
-                                "Colors may look incorrect."
-                );
+                processWarningOccurred("No embedded ICC color profile, will convert using inaccurate CMYK to RGB conversion. Colors may look incorrect.");
 
                 convert = new FastCMYKToRGB();
             }
-        }
-        else if (profile != null) {
-            processWarningOccurred("Embedded ICC color profile is incompatible with Java 2D, color profile will be ignored.");
         }
 
         // We'll need a read param
@@ -523,10 +548,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                     switch (adobeDCT.transform) {
                         case AdobeDCT.Unknown:
                             return JPEGColorSpace.RGB;
-                        case AdobeDCT.YCC:
-                            return JPEGColorSpace.YCbCr;
                         default:
                             // TODO: Warning!
+                        case AdobeDCT.YCC:
                             return JPEGColorSpace.YCbCr; // assume it's YCbCr
                     }
                 }
@@ -556,10 +580,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                     switch (adobeDCT.transform) {
                         case AdobeDCT.Unknown:
                             return JPEGColorSpace.CMYK;
-                        case AdobeDCT.YCCK:
-                            return JPEGColorSpace.YCCK;
                         default:
                             // TODO: Warning!
+                        case AdobeDCT.YCCK:
                             return JPEGColorSpace.YCCK; // assume it's YCCK
                     }
                 }
