@@ -97,10 +97,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     protected abstract List<String> getMIMETypes();
 
-    protected boolean allowsNullRawImageType() {
-        return false;
-    }
-
     protected static void failBecause(String message, Throwable exception) {
         throw new AssertionError(message, exception);
     }
@@ -221,6 +217,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                     image = reader.read(i);
                 }
                 catch (Exception e) {
+                    e.printStackTrace();
                     failBecause(String.format("Image %s index %s could not be read: %s", data.getInput(), i, e), e);
                 }
 
@@ -1359,9 +1356,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             reader.setInput(data.getInputStream());
 
             ImageTypeSpecifier rawType = reader.getRawImageType(0);
-            if (rawType == null && allowsNullRawImageType()) {
-                continue;
-            }
             assertNotNull(rawType);
 
             Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
@@ -1383,6 +1377,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
             assertTrue("ImageTypeSpecifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
         }
+
         reader.dispose();
     }
 

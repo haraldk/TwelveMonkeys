@@ -557,7 +557,7 @@ public class TimeoutMapTest extends MapAbstractTest {
                 // NOTE: Only wait fist time, to avoid slooow tests
                 synchronized (this) {
                     try {
-                        wait(60l);
+                        wait(60L);
                     }
                     catch (InterruptedException e) {
                     }
@@ -591,7 +591,7 @@ public class TimeoutMapTest extends MapAbstractTest {
                     try {
                         wait(60l);
                     }
-                    catch (InterruptedException e) {
+                    catch (InterruptedException ignore) {
                     }
                 }
             }
@@ -650,6 +650,25 @@ public class TimeoutMapTest extends MapAbstractTest {
 
         assertTrue("Wrong entry removed, keySet().iterator() is broken.", !map.containsKey(removedKey));
         assertTrue("Wrong entry removed, keySet().iterator() is broken.", map.containsKey(otherKey));
+    }
+
+
+    @Test
+    public void testContainsKeyOnEmptyMap() {
+        // See #600
+        Map<String, String> timeoutMap = new TimeoutMap<>(30);
+        assertFalse(timeoutMap.containsKey("xyz"));
+        timeoutMap.put("xyz", "xyz");
+        assertTrue(timeoutMap.containsKey("xyz"));
+
+        try {
+            Thread.sleep(50); // Let the item expire
+        }
+        catch (InterruptedException ignore) {
+        }
+
+        assertFalse(timeoutMap.containsKey("xyz"));
+        assertNull(timeoutMap.get("xyz"));
     }
 }
 

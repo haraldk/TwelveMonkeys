@@ -67,7 +67,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     private int currentSegment = -1;
     private Segment segment;
 
-
     JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentWarningListener warningListener) {
         this.stream = notNull(stream, "stream");
         this.warningListener = notNull(warningListener, "warningListener");
@@ -333,7 +332,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     private void streamInit() throws IOException {
-        stream.seek(0);
+        long position = stream.getStreamPosition();
 
         try {
             int soi = stream.readUnsignedShort();
@@ -342,7 +341,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 throw new IIOException(String.format("Not a JPEG stream (starts with: 0x%04x, expected SOI: 0x%04x)", soi, JPEG.SOI));
             }
 
-            segment = new Segment(soi, 0, 0, 2);
+            segment = new Segment(soi, position, 0, 2);
 
             segments.add(segment);
             currentSegment = segments.size() - 1; // 0

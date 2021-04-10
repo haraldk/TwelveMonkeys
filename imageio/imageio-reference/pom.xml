@@ -7,7 +7,7 @@
         <version>3.7-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-reference</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: reference test cases</name>
+    <name>TwelveMonkeys :: ImageIO :: JDK Reference Tests</name>
     <description>
         Test cases for the JRE provided ImageReader implementations for reference.
     </description>

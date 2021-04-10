@@ -47,26 +47,26 @@ import static com.twelvemonkeys.imageio.plugins.tga.TGA.EXT_AREA_SIZE;
  */
 final class TGAExtensions {
 
-    private String authorName;
-    private String authorComments;
+    String authorName;
+    String authorComments;
 
-    private Calendar creationDate;
-    private String jobId;
+    Calendar creationDate;
+    String jobId;
 
-    private String softwareId;
-    private String softwareVersion;
+    String softwareId;
+    String softwareVersion;
 
-    private int backgroundColor;
-    private double pixelAspectRatio;
-    private double gamma;
+    int backgroundColor;
+    double pixelAspectRatio;
+    double gamma;
 
-    private long colorCorrectionOffset;
-    private long postageStampOffset;
-    private long scanLineOffset;
+    long colorCorrectionOffset;
+    long postageStampOffset;
+    long scanLineOffset;
 
-    private int attributeType;
+    int attributeType;
 
-    private TGAExtensions() {
+    TGAExtensions() {
     }
 
     static TGAExtensions read(final ImageInputStream stream) throws IOException {
@@ -142,6 +142,7 @@ final class TGAExtensions {
             return null;
         }
 
+        //noinspection MagicConstant
         calendar.set(year, month - 1, date, hourOfDay, minute, second);
 
         return calendar;
@@ -176,6 +177,7 @@ final class TGAExtensions {
         }
     }
 
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     public boolean isAlphaPremultiplied() {
         switch (attributeType) {
             case 4:

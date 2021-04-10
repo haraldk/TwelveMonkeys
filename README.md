@@ -23,32 +23,32 @@ The goal is to create a set of efficient and robust ImageIO plug-ins, that can b
 | ------ | -------- | -----------           |:----:|:-----:| -------- | ----- |
 | Batik  | **SVG**  | Scalable Vector Graphics | ✔ |  -  | - | Requires [Batik](https://xmlgraphics.apache.org/batik/)
 |        | WMF      | MS Windows Metafile      | ✔ |  -  | - | Requires [Batik](https://xmlgraphics.apache.org/batik/)
-| [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  | MS Windows and IBM OS/2 Device Independent Bitmap | ✔  | ✔   | Native & Standard |
+| [BMP](https://github.com/haraldk/TwelveMonkeys/wiki/BMP-Plugin)    | **BMP**  | MS Windows and IBM OS/2 Device Independent Bitmap | ✔  | ✔   | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/bmp_metadata.html) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |
 |        | CUR      | MS Windows Cursor Format  | ✔  | -   | - |
 |        | ICO      | MS Windows Icon Format    | ✔  | ✔   | - | 
-| [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | Standard | 
+| [HDR](https://github.com/haraldk/TwelveMonkeys/wiki/HDR-Plugin)    | HDR      | Radiance High Dynamic Range RGBE Format | ✔  | - | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [ICNS](https://github.com/haraldk/TwelveMonkeys/wiki/ICNS-Plugin)   | ICNS     | Apple Icon Image | ✔  | ✔   | -  | 
-| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | Standard | 
-| [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | Native & Standard | 
-|   | JPEG Lossless |   | ✔  |  -  | Native & Standard | 
-| [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | Standard | 
-|        | DCX      | Multi-page PCX fax document | ✔  | -   | Standard | 
-| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple QuickTime Picture Format | ✔  | ✔   | Standard | 
-|        | PNTG     | Apple MacPaint Picture Format | ✔  |     | Standard | 
-| [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | Standard | 
-|        | PBM      | NetPBM Portable Bit Map | ✔  | -     | Standard | 
-|        | PGM      | NetPBM Portable Grey Map | ✔  | -   | Standard | 
-|        | PPM      | NetPBM Portable Pix Map | ✔  | ✔   | Standard | 
-|        | PFM      | Portable Float Map | ✔  | -   | Standard | 
-| [PSD](https://github.com/haraldk/TwelveMonkeys/wiki/PSD-Plugin)    | **PSD**  | Adobe Photoshop Document | ✔  | - | Native & Standard |  
-|        |  PSB     | Adobe Photoshop Large Document | ✔  | - | Native & Standard | 
-| [SGI](https://github.com/haraldk/TwelveMonkeys/wiki/SGI-Plugin)    | SGI      | Silicon Graphics Image Format  | ✔  | -   | Standard | 
-| [TGA](https://github.com/haraldk/TwelveMonkeys/wiki/TGA-Plugin)    | TGA      | Truevision TGA Image Format  | ✔  | ✔   | Standard | 
+| [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group | ✔  | ✔   | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/jpeg_metadata.html#image) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|   | JPEG Lossless |   | ✔  |  -  | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/jpeg_metadata.html#image) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | DCX      | Multi-page PCX fax document | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple QuickTime Picture Format | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | PNTG     | Apple MacPaint Picture Format | ✔  |     | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | PBM      | NetPBM Portable Bit Map | ✔  | -     | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | PGM      | NetPBM Portable Grey Map | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | PPM      | NetPBM Portable Pix Map | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | PFM      | Portable Float Map | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [PSD](https://github.com/haraldk/TwelveMonkeys/wiki/PSD-Plugin)    | **PSD**  | Adobe Photoshop Document | ✔  | - | Native & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
+|        |  PSB     | Adobe Photoshop Large Document | ✔  | - | Native & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [SGI](https://github.com/haraldk/TwelveMonkeys/wiki/SGI-Plugin)    | SGI      | Silicon Graphics Image Format  | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [TGA](https://github.com/haraldk/TwelveMonkeys/wiki/TGA-Plugin)    | TGA      | Truevision TGA Image Format  | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |ThumbsDB| Thumbs.db| MS Windows Thumbs DB | ✔  | -   | - | OLE2 Compound Document based format only
-| [TIFF](https://github.com/haraldk/TwelveMonkeys/wiki/TIFF-Plugin)   | **TIFF** | Aldus/Adobe Tagged Image File Format | ✔  | ✔ | Native & Standard | 
-|        | BigTIFF  |  | ✔  | - | Native & Standard |  
-| [WebP](https://github.com/haraldk/TwelveMonkeys/wiki/WebP-Plugin)   | **WebP** | Google WebP Format | ✔  | - | Standard |  In progress
-| XWD    | XWD      | X11 Window Dump Format | ✔  | -   | Standard | 
+| [TIFF](https://github.com/haraldk/TwelveMonkeys/wiki/TIFF-Plugin)   | **TIFF** | Aldus/Adobe Tagged Image File Format | ✔  | ✔ | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/tiff_metadata.html#ImageMetadata) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | BigTIFF  |  | ✔  | - | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/tiff_metadata.html#ImageMetadata) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
+| [WebP](https://github.com/haraldk/TwelveMonkeys/wiki/WebP-Plugin)   | **WebP** | Google WebP Format | ✔  | - | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  In progress
+| XWD    | XWD      | X11 Window Dump Format | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 
 
 **Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](http://xmlgraphics.apache.org/security.html), 

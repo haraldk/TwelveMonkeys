@@ -31,7 +31,6 @@
 package com.twelvemonkeys.imageio.plugins.tga;
 
 import javax.imageio.IIOException;
-import javax.imageio.ImageWriteParam;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
@@ -58,9 +57,9 @@ final class TGAHeader {
     private int height;
     private int pixelDepth;
     private int attributeBits;
-    private int origin;
+    int origin;
     private int interleave;
-    private String identification;
+    String identification;
     private IndexColorModel colorMap;
 
     int getImageType() {
@@ -119,7 +118,7 @@ final class TGAHeader {
                 '}';
     }
 
-    static TGAHeader from(final RenderedImage image, final ImageWriteParam param)  {
+    static TGAHeader from(final RenderedImage image, final boolean compressed)  {
         notNull(image, "image");
 
         ColorModel colorModel = image.getColorModel();
@@ -128,7 +127,7 @@ final class TGAHeader {
         TGAHeader header = new TGAHeader();
 
         header.colorMapType = colorMap != null ? 1 : 0;
-        header.imageType = getImageType(colorModel, param);
+        header.imageType = getImageType(colorModel, compressed);
         header.colorMapStart = 0;
         header.colorMapSize = colorMap != null ? colorMap.getMapSize() : 0;
         header.colorMapDepth = colorMap != null ? (colorMap.hasAlpha() ? 32 : 24) : 0;
@@ -149,7 +148,7 @@ final class TGAHeader {
         return header;
     }
 
-    private static int getImageType(final ColorModel colorModel, final ImageWriteParam param) {
+    private static int getImageType(final ColorModel colorModel, final boolean compressed) {
         int uncompressedType;
 
         if (colorModel instanceof IndexColorModel) {
@@ -169,7 +168,7 @@ final class TGAHeader {
             }
         }
 
-        return uncompressedType | (TGAImageWriteParam.isRLE(param) ? 8 : 0);
+        return uncompressedType | (compressed ? 8 : 0);
     }
 
     void write(final DataOutput stream) throws IOException {

@@ -50,8 +50,8 @@ final class JPEGProviderInfo extends ReaderWriterProviderInfo {
                 new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi"},
                 "com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriter",
                 new String[] {"com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi"},
-                false, null, null, null, null,
-                true, null, null, null, null
+                false, "javax_imageio_jpeg_stream_1.0", null, null, null,
+                true, "javax_imageio_jpeg_image_1.0", null, null, null
         );
     }
 }

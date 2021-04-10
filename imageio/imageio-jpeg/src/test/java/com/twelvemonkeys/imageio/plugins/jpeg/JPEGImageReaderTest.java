@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.lang.StringUtil;
 
 import org.hamcrest.core.IsInstanceOf;
@@ -55,6 +56,7 @@ import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.io.*;
 import java.util.List;
@@ -138,11 +140,6 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         );
 
         // More test data in specific tests below
-    }
-
-    @Override
-    protected boolean allowsNullRawImageType() {
-        return true;
     }
 
     @Override
@@ -422,8 +419,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
-    public void testYCbCrNotSubsampledNonstandardChannelIndexes() throws IOException {
-        // Regression: Make sure 3 channel, non-subsampled JFIF, defaults to YCbCr, even if unstandard channel indexes
+    public void testYCbCrNotSubsampledNonstandardComponentIds() throws IOException {
+        // Regression: Make sure 3 channel, non-subsampled JFIF, defaults to YCbCr, even if nonstandard component ids
         JPEGImageReader reader = createReader();
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-ycbcr-no-subsampling-intel.jpg"))) {
             reader.setInput(stream);
@@ -1235,6 +1232,56 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         }
     }
 
+    @Test
+    public void testRGBANoGrayImageTypes() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/adobe-unknown-rgb-ids.jpg")));
+
+        Iterator<ImageTypeSpecifier> imageTypes = reader.getImageTypes(0);
+
+        while (imageTypes.hasNext()) {
+            ImageTypeSpecifier specifier = imageTypes.next();
+            assertNotEquals("RGB JPEGs can't be decoded as Gray as it has no luminance (Y) component", ColorSpace.TYPE_GRAY, specifier.getColorModel().getColorSpace().getType());
+        }
+
+        reader.dispose();
+    }
+
+    @Test(expected = Exception.class)
+    public void testRGBAsGray() throws IOException {
+        final JPEGImageReader reader = createReader();
+        try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/adobe-unknown-rgb-ids.jpg")));
+
+            assertEquals(225, reader.getWidth(0));
+            assertEquals(156, reader.getHeight(0));
+
+            final ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(0, 0, 225, 8));
+            param.setDestinationType(ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE));
+
+            // Should ideally throw IIOException due to destination type mismatch, but throws IllegalArgumentException...
+            reader.read(0, param);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testYCbCrAsGray() throws IOException {
+        JPEGImageReader reader = createReader();
+        reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/jfif-ycbcr-no-subsampling-intel.jpg")));
+
+        ImageReadParam param = reader.getDefaultReadParam();
+        param.setDestinationType(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
+
+        BufferedImage image = reader.read(0, param);
+
+        assertNotNull(image);
+        assertEquals(BufferedImage.TYPE_BYTE_GRAY, image.getType());
+    }
+
     /**
      * Slightly fuzzy RGB equals method. Tolerance +/-5 steps.
      */
@@ -1818,7 +1865,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/exif-jfif-app13-app14ycck-3channel.jpg")));
 
             ImageTypeSpecifier rawType = reader.getRawImageType(0);
-            assertNull(rawType); // But no exception, please...
+            assertNotNull(rawType); // As of Java 9, use RGB for YCC and CMYK for YCCK
         }
         finally {
             reader.dispose();

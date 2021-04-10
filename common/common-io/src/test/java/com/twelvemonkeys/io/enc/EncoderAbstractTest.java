@@ -32,13 +32,13 @@ package com.twelvemonkeys.io.enc;
 
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.ObjectAbstractTest;
+
 import org.junit.Test;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -73,7 +73,7 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
         }
     }
 
-    private byte[] createData(final int pLength) throws Exception {
+    private byte[] createData(final int pLength) {
         byte[] bytes = new byte[pLength];
         RANDOM.nextBytes(bytes);
         return bytes;
@@ -82,18 +82,14 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
     private void runStreamTest(final int pLength) throws Exception {
         byte[] data = createData(pLength);
         ByteArrayOutputStream outBytes = new ByteArrayOutputStream();
-        OutputStream out = new EncoderStream(outBytes, createEncoder(), true);
 
-        try {
+        try (OutputStream out = new EncoderStream(outBytes, createEncoder(), true)) {
             // Provoke failure for encoders that doesn't take array offset properly into account
             int off = (data.length + 1) / 2;
             out.write(data, 0, off);
             if (data.length > off) {
                 out.write(data, off, data.length - off);
             }
-        }
-        finally {
-            out.close();
         }
 
         byte[] encoded = outBytes.toByteArray();
@@ -102,7 +98,7 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
 //        System.err.println("encoded: " + Arrays.toString(encoded));
 
         byte[] decoded = FileUtil.read(new DecoderStream(new ByteArrayInputStream(encoded), createCompatibleDecoder()));
-        assertTrue(Arrays.equals(data, decoded));
+        assertArrayEquals(data, decoded);
 
         InputStream in = new DecoderStream(new ByteArrayInputStream(encoded), createCompatibleDecoder());
         outBytes = new ByteArrayOutputStream();
@@ -116,7 +112,7 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
         }
 
         decoded = outBytes.toByteArray();
-        assertTrue(Arrays.equals(data, decoded));
+        assertArrayEquals(data, decoded);
     }
 
     @Test
@@ -126,10 +122,6 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
                 runStreamTest(i);
             }
             catch (IOException e) {
-                e.printStackTrace();
-                fail(e.getMessage() + ": " + i);
-            }
-            catch (Exception e) {
                 e.printStackTrace();
                 fail(e.getMessage() + ": " + i);
             }
@@ -143,10 +135,6 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
                 e.printStackTrace();
                 fail(e.getMessage() + ": " + i);
             }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail(e.getMessage() + ": " + i);
-            }
         }
 
         for (int i = 2000; i < 80000; i += 1000) {
@@ -157,14 +145,8 @@ public abstract class EncoderAbstractTest extends ObjectAbstractTest {
                 e.printStackTrace();
                 fail(e.getMessage() + ": " + i);
             }
-            catch (Exception e) {
-                e.printStackTrace();
-                fail(e.getMessage() + ": " + i);
-            }
         }
     }
 
-    // TODO: Test that the transition from byte[] to ByteBuffer didn't introduce bugs when writing to a wrapped array with offset.
-
-
+    // TODO: Test that the transition from byte[] to ByteBuffer didn't introduce bugs when writing to a wrapped array with offset.
 }

@@ -63,7 +63,7 @@ public class FastCMYKToRGBTest {
         assertNotNull(pixel);
         assertEquals(3, pixel.length);
         byte[] expected = {(byte) 255, (byte) 255, (byte) 255};
-        assertTrue(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), Arrays.equals(expected, pixel));
+        assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
     }
 
     @Test
@@ -95,7 +95,7 @@ public class FastCMYKToRGBTest {
             assertNotNull(pixel);
             assertEquals(3, pixel.length);
             byte[] expected = {(byte) 0, (byte) 0, (byte) 0};
-            assertTrue(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), Arrays.equals(expected, pixel));
+            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
         }
     }
 
@@ -134,7 +134,7 @@ public class FastCMYKToRGBTest {
             assertNotNull(pixel);
             assertEquals(3, pixel.length);
             byte[] expected = {(byte) (255 - i), (byte) i, (byte) (127 - i)};
-            assertTrue(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), Arrays.equals(expected, pixel));
+            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
         }
     }
 
@@ -153,7 +153,7 @@ public class FastCMYKToRGBTest {
             assertNotNull(pixel);
             assertEquals(3, pixel.length);
             byte[] expected = {(byte) (255 - i), (byte) i, (byte) (127 - i)};
-            assertTrue(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), Arrays.equals(expected, pixel));
+            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
         }
     }
 
@@ -172,7 +172,7 @@ public class FastCMYKToRGBTest {
             assertNotNull(pixel);
             assertEquals(4, pixel.length);
             byte[] expected = {(byte) (255 - i), (byte) i, (byte) (127 - i), (byte) 0xff};
-            assertTrue(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), Arrays.equals(expected, pixel));
+            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
         }
     }
 

@@ -30,7 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import javax.imageio.ImageWriteParam;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import java.util.Locale;
 
 /**
@@ -42,14 +48,29 @@ public final class TGAImageWriteParam extends ImageWriteParam {
         this(null);
     }
 
-    @SuppressWarnings("WeakerAccess")
     public TGAImageWriteParam(final Locale locale) {
         super(locale);
 
+        canWriteCompressed = true;
         compressionTypes = new String[]{"None", "RLE"};
     }
 
-    static boolean isRLE(final ImageWriteParam param) {
-        return param != null && param.getCompressionMode() == MODE_EXPLICIT && "RLE".equals(param.getCompressionType());
+    static boolean isRLE(final ImageWriteParam param, final IIOMetadata metadata) {
+        return (param == null || param.canWriteCompressed() && param.getCompressionMode() == MODE_COPY_FROM_METADATA) && "RLE".equals(compressionTypeFromMetadata(metadata))
+                || param != null && param.canWriteCompressed() && param.getCompressionMode() == MODE_EXPLICIT && "RLE".equals(param.getCompressionType());
+    }
+
+    private static String compressionTypeFromMetadata(final IIOMetadata metadata) {
+        if (metadata != null) {
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            NodeList compressionTypeName = root.getElementsByTagName("CompressionTypeName");
+
+            if (compressionTypeName.getLength() > 0) {
+                Node value = compressionTypeName.item(0).getAttributes().getNamedItem("value");
+                return value != null ? value.getNodeValue() : null;
+            }
+        }
+
+        return null;
     }
 }
