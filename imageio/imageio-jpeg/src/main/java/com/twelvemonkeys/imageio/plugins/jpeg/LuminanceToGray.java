@@ -58,7 +58,7 @@ final class LuminanceToGray implements RasterOp {
             dest = createCompatibleDestRaster(src);
         }
 
-        // If src and dest have alpha component, keep it, otherwise extract luma only
+        // If src and dest have alpha component, keep it, otherwise extract luminance only
         int[] bandList = src.getNumBands() > 3 && dest.getNumBands() > 1 ? new int[] {0, 3} : new int[] {0};
         dest.setRect(0, 0, src.createChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, bandList));
 
