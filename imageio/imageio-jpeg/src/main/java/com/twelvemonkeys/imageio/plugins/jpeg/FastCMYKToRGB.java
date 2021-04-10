@@ -156,8 +156,8 @@ class FastCMYKToRGB implements /*BufferedImageOp,*/ RasterOp {
 
         // This is a workaround for the above code that no longer works.
         // It wil use 25% more memory, but it seems to work...
-        WritableRaster raster = src.createCompatibleWritableRaster();
-        return raster.createWritableChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0, 1, 2});
+        return src.createCompatibleWritableRaster()
+                  .createWritableChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0, 1, 2});
     }
 
     @Override

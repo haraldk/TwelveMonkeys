@@ -72,8 +72,8 @@ final class LuminanceToGray implements RasterOp {
 
     @Override
     public WritableRaster createCompatibleDestRaster(final Raster src) {
-        WritableRaster raster = src.createCompatibleWritableRaster();
-        return raster.createWritableChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0});
+        return src.createCompatibleWritableRaster()
+                  .createWritableChild(0, 0, src.getWidth(), src.getHeight(), 0, 0, new int[] {0});
     }
 
     @Override
