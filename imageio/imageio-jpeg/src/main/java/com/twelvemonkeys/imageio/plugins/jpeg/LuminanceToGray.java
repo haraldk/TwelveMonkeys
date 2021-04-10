@@ -52,7 +52,7 @@ final class LuminanceToGray implements RasterOp {
     public WritableRaster filter(final Raster src, WritableRaster dest) {
         Validate.notNull(src, "src may not be null");
         Validate.isTrue(src != dest, "src and dest raster may not be same");
-        Validate.isTrue(src.getNumDataElements() >= 3, src.getNumDataElements(), "Luma raster must have at least 3 data elements: %s");
+        Validate.isTrue(src.getNumDataElements() >= 3, src.getNumDataElements(), "luminance raster must have at least 3 data elements: %s");
 
         if (dest == null) {
             dest = createCompatibleDestRaster(src);
