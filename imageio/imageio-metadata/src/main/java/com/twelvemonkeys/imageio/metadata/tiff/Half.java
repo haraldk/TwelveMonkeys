@@ -116,7 +116,6 @@ public final class Half extends Number implements Comparable<Half> {
      *
      */
     public static short floatToShortBits(final float floatValue) {
-        // TODO: Is this okay? Need test
         return (short) floatTo16Bits(floatValue);
     }
 
