@@ -16,10 +16,10 @@ import static org.junit.Assert.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: LumaToGrayTest.java,v 1.0 10/04/2021 haraldk Exp$
  */
-public class LumaToGrayTest {
+public class LuminanceToGrayTest {
     @Test
     public void testConvertByteYcc() {
-        LumaToGray convert = new LumaToGray();
+        LuminanceToGray convert = new LuminanceToGray();
 
         WritableRaster input = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, 1, 1, 3, null);
         WritableRaster result = null;
@@ -39,7 +39,7 @@ public class LumaToGrayTest {
 
     @Test
     public void testConvertByteYccK() {
-        LumaToGray convert = new LumaToGray();
+        LuminanceToGray convert = new LuminanceToGray();
 
         WritableRaster input = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, 1, 1, 4, null);
         WritableRaster result = null;
@@ -59,7 +59,7 @@ public class LumaToGrayTest {
 
     @Test
     public void testConvertByteYccA() {
-        LumaToGray convert = new LumaToGray();
+        LuminanceToGray convert = new LuminanceToGray();
 
         WritableRaster input = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, 1, 1, 4, null);
         WritableRaster result = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, 1, 1, 2, null);

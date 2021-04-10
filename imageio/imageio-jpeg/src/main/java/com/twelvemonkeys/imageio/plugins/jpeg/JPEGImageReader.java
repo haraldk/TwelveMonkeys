@@ -421,7 +421,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         ICC_ColorSpace intendedCS = profile != null ? ColorSpaces.createColorSpace(profile) : null;
 
         if (destination.getNumBands() <= 2 && (csType != JPEGColorSpace.Gray && csType != JPEGColorSpace.GrayA)) {
-            convert = new LumaToGray();
+            convert = new LuminanceToGray();
         }
         else if (profile != null && (csType == JPEGColorSpace.Gray || csType == JPEGColorSpace.GrayA)) {
             // com.sun. reader does not do ColorConvertOp for CS_GRAY, even if embedded ICC profile,

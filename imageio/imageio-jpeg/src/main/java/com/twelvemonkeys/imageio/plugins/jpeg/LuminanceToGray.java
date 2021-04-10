@@ -16,7 +16,7 @@ import java.awt.image.WritableRaster;
  * @author last modified by $Author: haraldk$
  * @version $Id: LumaToGray.java,v 1.0 10/04/2021 haraldk Exp$
  */
-final class LumaToGray implements RasterOp {
+final class LuminanceToGray implements RasterOp {
 
     @Override
     public WritableRaster filter(final Raster src, WritableRaster dest) {
