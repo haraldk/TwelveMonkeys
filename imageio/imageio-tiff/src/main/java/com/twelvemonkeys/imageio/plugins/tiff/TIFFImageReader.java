@@ -42,6 +42,7 @@ import com.twelvemonkeys.imageio.metadata.iptc.IPTCReader;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.psd.PSD;
 import com.twelvemonkeys.imageio.metadata.psd.PSDReader;
+import com.twelvemonkeys.imageio.metadata.tiff.Half;
 import com.twelvemonkeys.imageio.metadata.tiff.Rational;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
@@ -2019,47 +2020,8 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     private void toFloat(final float[] rowDataFloat, final short[] rowDataShort) {
         for (int i = 0; i < rowDataFloat.length; i++) {
-            rowDataFloat[i] = toFloat(rowDataShort[i]);
+            rowDataFloat[i] = Half.shortBitsToFloat(rowDataShort[i]);
         }
-    }
-
-    /**
-     * Converts an IEEE 754 half-precision data type to single-precision.
-     *
-     * @param shortValue a 16 bit half precision value
-     * @return an IEE 754 single precision float
-     *
-     * @see <a href="https://stackoverflow.com/a/6162687/259991">Stack Overflow answer by x4u</a>
-     * @see <a href="https://en.wikipedia.org/wiki/Half-precision_floating-point_format>Wikipedia</a>
-     */
-    private float toFloat(final short shortValue) {
-        int mantissa = shortValue & 0x03ff;         // 10 bits mantissa
-        int exponent = shortValue & 0x7c00;         //  5 bits exponent
-
-        if (exponent == 0x7c00) {                   // NaN/Inf
-            exponent = 0x3fc00;                     // -> NaN/Inf
-        }
-        else if (exponent != 0) {                   // Normalized value
-            exponent += 0x1c000;                    // exp - 15 + 127
-
-            // Smooth transition
-            if (mantissa == 0 && exponent > 0x1c400) {
-                return Float.intBitsToFloat((shortValue & 0x8000) << 16 | exponent << 13 | 0x3ff);
-            }
-        }
-        else if (mantissa != 0) {                   // && exp == 0 -> subnormal
-            exponent = 0x1c400;                     // Make it normal
-
-            do {
-                mantissa <<= 1;                     // mantissa * 2
-                exponent -= 0x400;                  // Decrease exp by 1
-            } while ((mantissa & 0x400) == 0);      // while not normal
-
-            mantissa &= 0x3ff;                      // Discard subnormal bit
-        }                                           // else +/-0 -> +/-0
-
-        // Combine all parts,  sign << (31 - 15), value << (23 - 10)
-        return Float.intBitsToFloat((shortValue & 0x8000) << 16 | (exponent | mantissa) << 13);
     }
 
     private void clamp(final float[] rowDataFloat) {
