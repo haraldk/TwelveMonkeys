@@ -74,8 +74,9 @@ public final class WebPImageReaderSpi extends ImageReaderSpiBase {
             int chunk = stream.readInt();
 
             switch (chunk) {
-                case WebP.CHUNK_VP8L:
-                case WebP.CHUNK_VP8X:
+                // TODO. Support lossless
+//                 case WebP.CHUNK_VP8L:
+//                 case WebP.CHUNK_VP8X:
                 case WebP.CHUNK_VP8_:
                     return true;
                 default:
