@@ -817,13 +817,14 @@ public final class JPEGImageReader extends ImageReaderBase {
 
                 // TODO: We should probably optimize this
                 try {
+                    segments = null;
                     getSOF(); // No SOF, no image
                     count++;
                 }
                 catch (IIOException ignore) {}
             }
 
-            currentStreamIndex = -1;
+            imageInput.seek(streamOffsets.get(currentStreamIndex));
 
             return count;
         }
