@@ -49,10 +49,10 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
     private final String[] mimeTypes;
     private final String readerClassName;
     private final String[] readerSpiClassNames;
-    private final Class[] inputTypes = new Class[] {ImageInputStream.class};
+    private final Class<?>[] inputTypes = new Class<?>[] {ImageInputStream.class};
     private final String writerClassName;
     private final String[] writerSpiClassNames;
-    private final Class[] outputTypes = new Class[] {ImageOutputStream.class};
+    private final Class<?>[] outputTypes = new Class<?>[] {ImageOutputStream.class};
     private final boolean supportsStandardStreamMetadata;
     private final String nativeStreamMetadataFormatName;
     private final String nativeStreamMetadataFormatClassName;
@@ -80,7 +80,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
                                        final String writerClassName,
                                        final String[] writerSpiClassNames,
                                        final boolean supportsStandardStreamMetadata,
-                                       final String nativeStreameMetadataFormatName,
+                                       final String nativeStreamMetadataFormatName,
                                        final String nativeStreamMetadataFormatClassName,
                                        final String[] extraStreamMetadataFormatNames,
                                        final String[] extraStreamMetadataFormatClassNames,
@@ -99,7 +99,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
         this.writerClassName = writerClassName;
         this.writerSpiClassNames = writerSpiClassNames;
         this.supportsStandardStreamMetadata = supportsStandardStreamMetadata;
-        this.nativeStreamMetadataFormatName = nativeStreameMetadataFormatName;
+        this.nativeStreamMetadataFormatName = nativeStreamMetadataFormatName;
         this.nativeStreamMetadataFormatClassName = nativeStreamMetadataFormatClassName;
         this.extraStreamMetadataFormatNames = extraStreamMetadataFormatNames;
         this.extraStreamMetadataFormatClassNames = extraStreamMetadataFormatClassNames;

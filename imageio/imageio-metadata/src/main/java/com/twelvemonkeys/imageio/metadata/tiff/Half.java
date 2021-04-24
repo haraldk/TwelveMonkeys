@@ -4,7 +4,7 @@ package com.twelvemonkeys.imageio.metadata.tiff;
  * IEEE 754 half-precision floating point data type.
  *
  * @see <a href="https://stackoverflow.com/a/6162687/259991">Stack Overflow answer by x4u</a>
- * @see <a href="https://en.wikipedia.org/wiki/Half-precision_floating-point_format>Wikipedia</a>
+ * @see <a href="https://en.wikipedia.org/wiki/Half-precision_floating-point_format">Wikipedia</a>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$

@@ -45,8 +45,9 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * and {@link javax.imageio.stream.FileCacheImageInputStream} when doing a lot of single-byte reads
  * (or short byte-array reads).
  * Code that uses the {@code readFully} methods are not affected by the issue.
- * <p/>
+ * <p>
  * NOTE: Invoking {@code close()} will  <em>NOT</em> close the wrapped stream.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
