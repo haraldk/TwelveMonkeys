@@ -12,6 +12,10 @@
         Test JPEG plugin and JEP-262 (JDK TIFF plugin) interoperability
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.jep262interop</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

@@ -12,6 +12,10 @@
         ImageIO plugin for Silicon Graphics Image Format (SGI)
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.sgi</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

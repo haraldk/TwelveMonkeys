@@ -12,6 +12,9 @@
         ImageIO plugin for NetPBM Portable Any Map (PNM)
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.pnm</project.jpms.module.name>
+    </properties>
 
     <dependencies>
         <dependency>

@@ -12,6 +12,10 @@
         ImageIO plugin for Radiance RGBE High Dynaimc Range format (HDR).
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.hdr</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

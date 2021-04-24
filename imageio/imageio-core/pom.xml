@@ -9,6 +9,10 @@
     <artifactId>imageio-core</artifactId>
     <name>TwelveMonkeys :: ImageIO :: Core</name>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.core</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>

@@ -13,6 +13,10 @@
         The TwelveMonkeys Common Image support
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.common.image</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>

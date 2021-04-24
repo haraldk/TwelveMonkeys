@@ -12,6 +12,10 @@
       ImageIO plugin for Aldus/Adobe Tagged Image File Format (TIFF).
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.tiff</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

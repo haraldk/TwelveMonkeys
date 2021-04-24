@@ -13,6 +13,10 @@
         type ILBM and PBM format.
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.iff</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

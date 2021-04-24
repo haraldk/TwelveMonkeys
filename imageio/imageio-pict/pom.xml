@@ -10,6 +10,10 @@
     <name>TwelveMonkeys :: ImageIO :: PICT plugin</name>
     <description>ImageIO plugin for Apple Mac Paint Picture (PICT) format.</description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.pict</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

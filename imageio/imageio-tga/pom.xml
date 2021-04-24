@@ -12,6 +12,10 @@
         ImageIO plugin for Truevision TGA Image Format (TGA)
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.tga</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

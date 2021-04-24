@@ -12,6 +12,10 @@
         ImageIO plugin for ZSoft Paintbrush Format (PCX)
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.pcx</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

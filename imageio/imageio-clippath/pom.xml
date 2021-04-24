@@ -12,6 +12,10 @@
         Photoshop Clipping Path Support.
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.clippath</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

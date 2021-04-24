@@ -12,6 +12,10 @@
         ImageIO plugin for Adobe Photoshop Document (PSD).
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.psd</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

@@ -12,6 +12,10 @@
         Test JPEG plugin and JAI TIFF plugin interoperability
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.jaiinterop</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.github.jai-imageio</groupId>

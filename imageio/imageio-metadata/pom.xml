@@ -12,6 +12,10 @@
         ImageIO metadata module.
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.metadata</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

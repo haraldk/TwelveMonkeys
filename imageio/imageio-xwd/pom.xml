@@ -12,6 +12,10 @@
         ImageIO plugin for X11 Window Dump Format (XWD)
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.xwd</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

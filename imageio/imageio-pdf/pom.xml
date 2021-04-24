@@ -12,6 +12,9 @@
         ImageIO plugin for Adobe Portable Document Format (PDF).
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.pdf</project.jpms.module.name>
+    </properties>
 
     <dependencies>
         <dependency>

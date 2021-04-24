@@ -12,6 +12,10 @@
         ImageIO plugin for Joint Photographer Expert Group images (JPEG/JFIF).
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.jpeg</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

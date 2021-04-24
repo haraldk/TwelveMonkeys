@@ -13,4 +13,8 @@
         The TwelveMonkeys Common Language support
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.common.lang</project.jpms.module.name>
+    </properties>
+
 </project>

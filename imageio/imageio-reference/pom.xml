@@ -12,6 +12,10 @@
         Test cases for the JRE provided ImageReader implementations for reference.
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.reference</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

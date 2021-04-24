@@ -14,6 +14,12 @@
         See the <a href="http://xmlgraphics.apache.org/batik/">Batik Home page</a>
         for more information.]]>
     </description>
+
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.batik</project.jpms.module.name>
+        <batik.version>1.14</batik.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -102,8 +108,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <properties>
-        <batik.version>1.14</batik.version>
-    </properties>
 </project>

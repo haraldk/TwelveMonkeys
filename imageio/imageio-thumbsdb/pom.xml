@@ -12,6 +12,10 @@
         ImageIO plugin for Windows Thumbs DB (Thumbs.db) format.
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.thumbsdb</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

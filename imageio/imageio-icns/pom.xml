@@ -10,6 +10,10 @@
     <name>TwelveMonkeys :: ImageIO :: ICNS plugin</name>
     <description>ImageIO plugin for Apple Icon Image (ICNS) format.</description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.icns</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

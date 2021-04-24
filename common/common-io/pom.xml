@@ -13,6 +13,10 @@
         The TwelveMonkeys Common IO support
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.common.io</project.jpms.module.name>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
