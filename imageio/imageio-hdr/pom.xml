@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.7-SNAPSHOT</version>
+        <version>3.7.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-hdr</artifactId>
     <name>TwelveMonkeys :: ImageIO :: HDR plugin</name>
