@@ -59,7 +59,7 @@
 
 <hr>
 
-<h2><a id="user-content-features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>File formats supported</h2>
+<h2><a id="formats" class="anchor" href="#formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>File formats supported</h2>
 
 <table>
   <thead>
@@ -476,6 +476,33 @@ and make sure you use version 1.14 or later.</em></p>
 <p>Note that GIF, PNG and WBMP formats are already supported through the ImageIO API, using the
 <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/package-summary.html" rel="nofollow">JDK standard plugins</a>.
 For BMP, JPEG, and TIFF formats the TwelveMonkeys plugins provides extended format support and additional features.</p>
+
+<hr>
+
+<h2><a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Additional features</h2>
+
+<h3>Adobe Clipping Path support</h3>
+
+<p>
+    Read and write Adobe Clipping Paths to/from TIFF, JPEG and PSD files and apply them to images.
+
+    See <a href="https://github.com/haraldk/TwelveMonkeys/wiki/Photoshop-Clipping-Path-support">Adobe Clipping Path support on the Wiki</a>
+    for more details and example code.
+</p>
+
+<h3>High quality image resampling</h3>
+
+<p>
+    High quality image resampling (often referred to as scaling or resizing), using the <code>ResampleOp</code>.
+    Supports various interpolation algorithms, like Lanczos or Mitchell.
+</p>
+
+<h3>Diffusion dither</h3>
+
+<p>
+    The library comes with a dithering operation, that can be used to convert <code>BufferedImage</code>s to
+    <code>IndexColorModel</code> using Floyd-Steinberg error-diffusion dither.
+</p>
 
 <hr>
 
