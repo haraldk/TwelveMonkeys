@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg.jep262interop;
 import com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import org.junit.AssumptionViolatedException;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -48,7 +49,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests the JEP 262 TIFFImageReader delegating to our JPEGImageReader.
@@ -74,15 +74,13 @@ public class JEP262TIFFImageReaderInteroperabilityTest extends ImageReaderAbstra
         }
 
         // Skip tests if we have no Spi (ie. pre JDK 9)
-        assumeTrue("Provider " + JEP_262_PROVIDER_CLASS_NAME + " not found", false);
-
-        return null;
+        throw new AssumptionViolatedException("Provider " + JEP_262_PROVIDER_CLASS_NAME + " not found");
     }
 
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/tiff/foto_0001.tif"), new Dimension(1663, 2338)), // Little endian, Old JPEG
+                new TestData(getClassLoaderResource("/tiff/foto_0001.tif"), new Dimension(1663, 2338), new Dimension(1663, 2337)), // Little endian, Old JPEG
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-8bit-gray.tif"), new Dimension(512, 512))  // Lossless JPEG Gray, 8 bit/sample
         );
