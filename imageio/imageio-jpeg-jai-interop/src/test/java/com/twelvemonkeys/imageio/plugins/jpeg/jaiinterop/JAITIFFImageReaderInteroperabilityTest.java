@@ -78,7 +78,7 @@ public class JAITIFFImageReaderInteroperabilityTest extends ImageReaderAbstractT
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/tiff/foto_0001.tif"), new Dimension(1663, 2338)), // Little endian, Old JPEG
+                new TestData(getClassLoaderResource("/tiff/foto_0001.tif"), new Dimension(1663, 2338), new Dimension(1663, 2337)), // Little endian, Old JPEG
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-8bit-gray.tif"), new Dimension(512, 512))  // Lossless JPEG Gray, 8 bit/sample
         );
