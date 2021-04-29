@@ -46,6 +46,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * JPEGImageReaderTest
@@ -89,24 +90,16 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Override
     public void testSetDestination() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
-        if (IS_JAVA_6_OR_LATER) {
-            super.testSetDestination();
-        }
-        else {
-            System.err.println("WARNING: Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
-        }
+        assumeTrue("Test skipped due to known bug in Java 1.5, please test again with Java 6 or later", IS_JAVA_6_OR_LATER);
+        super.testSetDestination();
     }
 
     @Test
     @Override
     public void testSetDestinationType() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
-        if (IS_JAVA_6_OR_LATER) {
-            super.testSetDestinationType();
-        }
-        else {
-            System.err.println("WARNING: Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
-        }
+        assumeTrue("Test skipped due to known bug in Java 1.5, please test again with Java 6 or later", IS_JAVA_6_OR_LATER);
+        super.testSetDestinationType();
     }
 
     @Test
