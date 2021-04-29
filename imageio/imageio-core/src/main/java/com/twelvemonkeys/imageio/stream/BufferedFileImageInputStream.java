@@ -93,8 +93,8 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean fillBuffer() throws IOException {
-        bufferPos = 0;
         int length = raf.read(buffer, 0, buffer.length);
+        bufferPos = 0;
         bufferLimit = max(length, 0);
 
         return bufferLimit > 0;
@@ -245,7 +245,7 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
 
         // Optimized to not invalidate buffer if new position is within current buffer
         long newBufferPos = bufferPos + position - streamPos;
-        if (newBufferPos >= 0 && newBufferPos <= bufferLimit) {
+        if (newBufferPos >= 0 && newBufferPos < bufferLimit) {
             bufferPos = (int) newBufferPos;
         }
         else {
