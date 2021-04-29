@@ -125,27 +125,35 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
     }
 
     @Override
-    public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
+    public int read(final byte[] bytes, final int offset, final int length) throws IOException {
         checkClosed();
         bitOffset = 0;
 
         if (bufferEmpty()) {
             // Bypass buffer if buffer is empty for reads longer than buffer
-            if (pLength >= buffer.length) {
-                return readDirect(pBuffer, pOffset, pLength);
+            if (length >= buffer.length) {
+                return readDirect(bytes, offset, length);
             }
             else if (!fillBuffer()) {
                 return -1;
             }
         }
 
-        return readBuffered(pBuffer, pOffset, pLength);
+        int fromBuffer = readBuffered(bytes, offset, length);
+
+        if (length > fromBuffer) {
+            // Due to known bugs in certain JDK-bundled ImageIO plugins expecting read to behave as readFully,
+            // we'll read as much as possible from the buffer, and the rest directly after
+            return fromBuffer + max(0, readDirect(bytes, offset + fromBuffer, length - fromBuffer));
+        }
+
+        return fromBuffer;
     }
 
-    private int readDirect(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
+    private int readDirect(final byte[] bytes, final int offset, final int length) throws IOException {
         // Invalidate the buffer, as its contents is no longer in sync with the stream's position.
         bufferLimit = 0;
-        int read = raf.read(pBuffer, pOffset, pLength);
+        int read = raf.read(bytes, offset, length);
 
         if (read > 0) {
             streamPos += read;
@@ -154,17 +162,17 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
         return read;
     }
 
-    private int readBuffered(final byte[] pBuffer, final int pOffset, final int pLength) {
+    private int readBuffered(final byte[] bytes, final int offset, final int length) {
         // Read as much as possible from buffer
-        int length = Math.min(bufferLimit - bufferPos, pLength);
+        int available = Math.min(bufferLimit - bufferPos, length);
 
-        if (length > 0) {
-            System.arraycopy(buffer, bufferPos, pBuffer, pOffset, length);
-            bufferPos += length;
-            streamPos += length;
+        if (available > 0) {
+            System.arraycopy(buffer, bufferPos, bytes, offset, available);
+            bufferPos += available;
+            streamPos += available;
         }
 
-        return length;
+        return available;
     }
 
     public long length() {

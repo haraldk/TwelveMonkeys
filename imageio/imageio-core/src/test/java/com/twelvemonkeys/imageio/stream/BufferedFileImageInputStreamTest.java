@@ -383,4 +383,23 @@ public class BufferedFileImageInputStreamTest {
         stream.close();
         verify(mock, only()).close();
     }
+
+    @Test
+    public void testWorkaroundForWBMPImageReaderExpectsReadToBehaveAsReadFully() throws IOException {
+        // See #606 for details.
+        // Bug in JDK WBMPImageReader, uses read(byte[], int, int) instead of readFully(byte[], int, int).
+        // Ie: Relies on read to return all bytes at once, without blocking
+        int size = BufferedFileImageInputStream.DEFAULT_BUFFER_SIZE * 7;
+        byte[] bytes = new byte[size];
+        File file = randomDataToFile(bytes);
+
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            byte[] result = new byte[size];
+            int head = stream.read(result, 0, 12);          // Provoke a buffered read
+            int len = stream.read(result, 12, size - 12);   // Rest of buffer + direct read
+
+            assertEquals(size, len + head);
+            assertArrayEquals(bytes, result);
+        }
+   }
 }
