@@ -67,8 +67,9 @@ public class BufferedFileImageInputStreamTest {
 
     @Test
     public void testCreate() throws IOException {
-        BufferedFileImageInputStream stream = new BufferedFileImageInputStream(File.createTempFile("empty", ".tmp"));
-        assertEquals("Data length should be same as stream length", 0, stream.length());
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(File.createTempFile("empty", ".tmp"))) {
+            assertEquals("Data length should be same as stream length", 0, stream.length());
+        }
     }
 
     @Test
@@ -104,12 +105,12 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 1024];
         File file = randomDataToFile(data);
 
-        BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file);
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            assertEquals("File length should be same as stream length", file.length(), stream.length());
 
-        assertEquals("File length should be same as stream length", file.length(), stream.length());
-
-        for (byte value : data) {
-            assertEquals("Wrong data read", value & 0xff, stream.read());
+            for (byte value : data) {
+                assertEquals("Wrong data read", value & 0xff, stream.read());
+            }
         }
     }
 
@@ -118,15 +119,15 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 1024];
         File file = randomDataToFile(data);
 
-        BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file);
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            assertEquals("File length should be same as stream length", file.length(), stream.length());
 
-        assertEquals("File length should be same as stream length", file.length(), stream.length());
+            byte[] result = new byte[1024];
 
-        byte[] result = new byte[1024];
-
-        for (int i = 0; i < data.length / result.length; i++) {
-            stream.readFully(result);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+            for (int i = 0; i < data.length / result.length; i++) {
+                stream.readFully(result);
+                assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+            }
         }
     }
 
@@ -135,16 +136,16 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 14];
         File file = randomDataToFile(data);
 
-        BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file);
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            assertEquals("File length should be same as stream length", file.length(), stream.length());
 
-        assertEquals("File length should be same as stream length", file.length(), stream.length());
+            byte[] result = new byte[7];
 
-        byte[] result = new byte[7];
-
-        for (int i = 0; i < data.length / result.length; i += 2) {
-            stream.readFully(result);
-            stream.skipBytes(result.length);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+            for (int i = 0; i < data.length / result.length; i += 2) {
+                stream.readFully(result);
+                stream.skipBytes(result.length);
+                assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+            }
         }
     }
 
@@ -153,19 +154,35 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 18];
         File file = randomDataToFile(data);
 
-        BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file);
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            assertEquals("File length should be same as stream length", file.length(), stream.length());
 
-        assertEquals("File length should be same as stream length", file.length(), stream.length());
+            byte[] result = new byte[9];
 
-        byte[] result = new byte[9];
+            for (int i = 0; i < data.length / result.length; i++) {
+                // Read backwards
+                long newPos = stream.length() - result.length - i * result.length;
+                stream.seek(newPos);
+                assertEquals("Wrong stream position", newPos, stream.getStreamPosition());
+                stream.readFully(result);
+                assertTrue("Wrong data read: " + i, rangeEquals(data, (int) newPos, result, 0, result.length));
+            }
+        }
+    }
 
-        for (int i = 0; i < data.length / result.length; i++) {
-            // Read backwards
-            long newPos = stream.length() - result.length - i * result.length;
-            stream.seek(newPos);
-            assertEquals("Wrong stream position", newPos, stream.getStreamPosition());
-            stream.readFully(result);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, (int) newPos, result, 0, result.length));
+    @Test
+    public void testReadOutsideDataSeek0Read() throws IOException {
+        byte[] data = new byte[256];
+        File file = randomDataToFile(data);
+
+        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            assertEquals("File length should be same as stream length", file.length(), stream.length());
+
+            byte[] buffer = new byte[data.length * 2];
+            stream.read(buffer);
+            stream.seek(0);
+            assertNotEquals(-1, stream.read());
+            assertNotEquals(-1, stream.read(buffer));
         }
     }
 
@@ -176,10 +193,10 @@ public class BufferedFileImageInputStreamTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        ImageInputStream stream = new BufferedFileImageInputStream(file);
-
-        for (int i = 1; i <= 64; i++) {
-            assertEquals(String.format("bit %d differ", i), (value << (i - 1L)) >>> 63L, stream.readBit());
+        try (ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            for (int i = 1; i <= 64; i++) {
+                assertEquals(String.format("bit %d differ", i), (value << (i - 1L)) >>> 63L, stream.readBit());
+            }
         }
     }
 
@@ -190,12 +207,12 @@ public class BufferedFileImageInputStreamTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        ImageInputStream stream = new BufferedFileImageInputStream(file);
-
-        for (int i = 1; i <= 64; i++) {
-            stream.seek(0);
-            assertEquals(String.format("bit %d differ", i), value >>> (64L - i), stream.readBits(i));
-            assertEquals(i % 8, stream.getBitOffset());
+        try (ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            for (int i = 1; i <= 64; i++) {
+                stream.seek(0);
+                assertEquals(String.format("bit %d differ", i), value >>> (64L - i), stream.readBits(i));
+                assertEquals(i % 8, stream.getBitOffset());
+            }
         }
     }
 
@@ -206,13 +223,13 @@ public class BufferedFileImageInputStreamTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        ImageInputStream stream = new BufferedFileImageInputStream(file);
-
-        for (int i = 1; i <= 60; i++) {
-            stream.seek(0);
-            stream.setBitOffset(i % 8);
-            assertEquals(String.format("bit %d differ", i), (value << (i % 8)) >>> (64L - i), stream.readBits(i));
-            assertEquals(i * 2 % 8, stream.getBitOffset());
+        try (ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            for (int i = 1; i <= 60; i++) {
+                stream.seek(0);
+                stream.setBitOffset(i % 8);
+                assertEquals(String.format("bit %d differ", i), (value << (i % 8)) >>> (64L - i), stream.readBits(i));
+                assertEquals(i * 2 % 8, stream.getBitOffset());
+            }
         }
     }
 
@@ -221,35 +238,37 @@ public class BufferedFileImageInputStreamTest {
         byte[] bytes = new byte[8743]; // Slightly more than one buffer size
         File file = randomDataToFile(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
-        final ImageInputStream stream = new BufferedFileImageInputStream(file);
-        stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
-        for (int i = 0; i < bytes.length / 2; i++) {
-            assertEquals(buffer.getShort(), stream.readShort());
-        }
+        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readShort();
+            for (int i = 0; i < bytes.length / 2; i++) {
+                assertEquals(buffer.getShort(), stream.readShort());
             }
-        });
 
-        stream.seek(0);
-        stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-        buffer.position(0);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readShort();
+                }
+            });
 
-        for (int i = 0; i < bytes.length / 2; i++) {
-            assertEquals(buffer.getShort(), stream.readShort());
-        }
+            stream.seek(0);
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            buffer.position(0);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readShort();
+            for (int i = 0; i < bytes.length / 2; i++) {
+                assertEquals(buffer.getShort(), stream.readShort());
             }
-        });
+
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readShort();
+                }
+            });
+        }
     }
 
     @Test
@@ -257,35 +276,37 @@ public class BufferedFileImageInputStreamTest {
         byte[] bytes = new byte[8743]; // Slightly more than one buffer size
         File file = randomDataToFile(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
-        final ImageInputStream stream = new BufferedFileImageInputStream(file);
-        stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
-        for (int i = 0; i < bytes.length / 4; i++) {
-            assertEquals(buffer.getInt(), stream.readInt());
-        }
+        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readInt();
+            for (int i = 0; i < bytes.length / 4; i++) {
+                assertEquals(buffer.getInt(), stream.readInt());
             }
-        });
 
-        stream.seek(0);
-        stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-        buffer.position(0);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readInt();
+                }
+            });
 
-        for (int i = 0; i < bytes.length / 4; i++) {
-            assertEquals(buffer.getInt(), stream.readInt());
-        }
+            stream.seek(0);
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            buffer.position(0);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readInt();
+            for (int i = 0; i < bytes.length / 4; i++) {
+                assertEquals(buffer.getInt(), stream.readInt());
             }
-        });
+
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readInt();
+                }
+            });
+        }
     }
 
     @Test
@@ -293,35 +314,37 @@ public class BufferedFileImageInputStreamTest {
         byte[] bytes = new byte[8743]; // Slightly more than one buffer size
         File file = randomDataToFile(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
-        final ImageInputStream stream = new BufferedFileImageInputStream(file);
-        stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
-        for (int i = 0; i < bytes.length / 8; i++) {
-            assertEquals(buffer.getLong(), stream.readLong());
-        }
+        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readLong();
+            for (int i = 0; i < bytes.length / 8; i++) {
+                assertEquals(buffer.getLong(), stream.readLong());
             }
-        });
 
-        stream.seek(0);
-        stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-        buffer.position(0);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readLong();
+                }
+            });
 
-        for (int i = 0; i < bytes.length / 8; i++) {
-            assertEquals(buffer.getLong(), stream.readLong());
-        }
+            stream.seek(0);
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            buffer.position(0);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readLong();
+            for (int i = 0; i < bytes.length / 8; i++) {
+                assertEquals(buffer.getLong(), stream.readLong());
             }
-        });
+
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readLong();
+                }
+            });
+        }
     }
 
     @Test
@@ -329,49 +352,50 @@ public class BufferedFileImageInputStreamTest {
         byte[] bytes = new byte[9];
         File file = randomDataToFile(bytes);
 
-        final ImageInputStream stream = new BufferedFileImageInputStream(file);
-        stream.seek(1000);
+        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+            stream.seek(1000);
 
-        assertEquals(-1, stream.read());
-        assertEquals(-1, stream.read(new byte[1], 0, 1));
+            assertEquals(-1, stream.read());
+            assertEquals(-1, stream.read(new byte[1], 0, 1));
 
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readFully(new byte[1]);
-            }
-        });
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readByte();
-            }
-        });
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readShort();
-            }
-        });
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readInt();
-            }
-        });
-        assertThrows(EOFException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                stream.readLong();
-            }
-        });
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readFully(new byte[1]);
+                }
+            });
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readByte();
+                }
+            });
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readShort();
+                }
+            });
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readInt();
+                }
+            });
+            assertThrows(EOFException.class, new ThrowingRunnable() {
+                @Override
+                public void run() throws Throwable {
+                    stream.readLong();
+                }
+            });
 
-        stream.seek(0);
-        for (byte value : bytes) {
-            assertEquals(value, stream.readByte());
+            stream.seek(0);
+            for (byte value : bytes) {
+                assertEquals(value, stream.readByte());
+            }
+
+            assertEquals(-1, stream.read());
         }
-
-        assertEquals(-1, stream.read());
     }
 
     @Test
