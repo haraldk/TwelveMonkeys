@@ -131,14 +131,15 @@ public final class PSDImageWriter extends ImageWriterBase  {
         imageOutput.skipBytes(byteCounts.length * (largeFormat ? 4 : 2));
 
         // TODO: Loop over tiles?
+        Raster tile = sampleModel.getTransferType() == DataBuffer.TYPE_INT && sampleModel instanceof SinglePixelPackedSampleModel
+                      ? RasterUtils.asByteRaster(image.getTile(0, 0))
+                      : image.getTile(0, 0);
+
         for (int channel = 0; channel < channels; channel++) {
             // TODO: Alpha issues:
             //  1. Alpha channel is written (but not read, because there are no layers, and alpha is considered present only if layer count is negative)
             //     - Can we write a small hidden layer, just to have -1 layers?
             //  2. Alpha needs to be premultiplied against white background (to avoid inverse halo)
-            Raster tile = sampleModel.getTransferType() == DataBuffer.TYPE_INT && sampleModel instanceof SinglePixelPackedSampleModel
-                          ? RasterUtils.asByteRaster(image.getTile(0, 0))
-                          : image.getTile(0, 0);
             Raster channelRaster = tile.createChild(0, 0, width, height, 0, 0, new int[] {channel});
 
             switch (bits) {
