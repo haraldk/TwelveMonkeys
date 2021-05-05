@@ -60,7 +60,7 @@ public final class TIFFWriter extends MetadataWriter {
     private static final int LONGWORD_LENGTH = 4;
     private static final int ENTRY_LENGTH = 12;
 
-    public boolean write(final Collection<Entry> entries, final ImageOutputStream stream) throws IOException {
+    public boolean write(final Collection<? extends Entry> entries, final ImageOutputStream stream) throws IOException {
         return write(new IFD(entries), stream);
     }
 

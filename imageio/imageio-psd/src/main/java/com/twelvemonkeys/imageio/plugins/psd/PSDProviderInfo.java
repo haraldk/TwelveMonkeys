@@ -43,8 +43,8 @@ final class PSDProviderInfo extends ReaderWriterProviderInfo {
     protected PSDProviderInfo() {
         super(
                 PSDProviderInfo.class,
-                new String[] {"psd", "PSD"},
-                new String[] {"psd"},
+                new String[] {"psd", "PSD", "psb", "PSB"},
+                new String[] {"psd", "psb"},
                 new String[] {
                         "image/vnd.adobe.photoshop",        // Official, IANA registered
                         "application/vnd.adobe.photoshop",  // Used in XMP
@@ -54,8 +54,8 @@ final class PSDProviderInfo extends ReaderWriterProviderInfo {
                 },
                 "com.twelvemonkeys.imageio.plugins.psd.PSDImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.psd.PSDImageReaderSpi"},
-                null,
-                null, // new String[] {"com.twelvemonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
+                "com.twelvemonkeys.imageio.plugins.psd.PSDImageWriter",
+                new String[] {"com.twelvemonkeys.imageio.plugins.psd.PSDImageWriterSpi"},
                 false, null, null, null, null,
                 true, PSDMetadata.NATIVE_METADATA_FORMAT_NAME, PSDMetadata.NATIVE_METADATA_FORMAT_CLASS_NAME, null, null
         );

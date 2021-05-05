@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import javax.imageio.IIOException;
+import javax.imageio.stream.ImageOutputStream;
 import java.io.DataInput;
 import java.io.IOException;
 
@@ -57,8 +58,8 @@ final class PSDHeader {
 //       WORD Mode;           /* Color mode */
 //    } PSD_HEADER;
 
-    private static final int PSD_MAX_SIZE = 30000;
-    private static final int PSB_MAX_SIZE = 300000;
+    static final int PSD_MAX_SIZE = 30000;
+    static final int PSB_MAX_SIZE = 300000;
 
     final short channels;
     final int width;
@@ -67,7 +68,57 @@ final class PSDHeader {
     final short mode;
     final boolean largeFormat;
 
-    PSDHeader(final DataInput pInput) throws IOException {
+    PSDHeader(int channels, int width, int height, int bits, int mode, boolean largeFormat) {
+        this((short) channels, width, height, (short) bits, (short) mode, largeFormat);
+    }
+
+    private PSDHeader(short channels, int width, int height, short bits, short mode, boolean largeFormat) {
+        if (channels < 1 || channels > 56) {
+            throw new IllegalArgumentException(String.format("Unsupported number of channels for PSD: %d", channels));
+        }
+        this.channels = channels;
+
+        this.width = width;
+        this.height = height;
+
+        switch (bits) {
+            case 1:
+            case 8:
+            case 16:
+            case 32:
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported bit depth for PSD: %d bits", bits));
+        }
+
+        this.bits = bits;
+
+        switch (mode) {
+            case PSD.COLOR_MODE_BITMAP:
+            case PSD.COLOR_MODE_GRAYSCALE:
+            case PSD.COLOR_MODE_INDEXED:
+            case PSD.COLOR_MODE_RGB:
+            case PSD.COLOR_MODE_CMYK:
+            case PSD.COLOR_MODE_MULTICHANNEL:
+            case PSD.COLOR_MODE_DUOTONE:
+            case PSD.COLOR_MODE_LAB:
+                break;
+            default:
+                throw new IllegalArgumentException(String.format("Unsupported color mode for PSD: %d", mode));
+        }
+
+        this.mode = mode;
+
+        this.largeFormat = largeFormat;
+
+        if (!hasValidDimensions()) {
+            throw new IllegalArgumentException(String.format("Dimensions exceed maximum allowed for %s: %dx%d (max %dx%d)",
+                    largeFormat ? "PSB" : "PSD",
+                    width, height, getMaxSize(), getMaxSize()));
+        }
+    }
+
+    static PSDHeader read(final DataInput pInput) throws IOException {
         int signature = pInput.readInt();
         if (signature != PSD.SIGNATURE_8BPS) {
             throw new IIOException("Not a PSD document, expected signature \"8BPS\": \"" + PSDUtil.intToStr(signature) + "\" (0x" + Integer.toHexString(signature) + ")");
@@ -75,6 +126,7 @@ final class PSDHeader {
 
         int version = pInput.readUnsignedShort();
 
+        boolean largeFormat;
         switch (version) {
             case PSD.VERSION_PSD:
                 largeFormat = false;
@@ -89,15 +141,15 @@ final class PSDHeader {
         byte[] reserved = new byte[6];
         pInput.readFully(reserved); // We don't really care
 
-        channels = pInput.readShort();
+        short channels = pInput.readShort();
         if (channels < 1 || channels > 56) {
             throw new IIOException(String.format("Unsupported number of channels for PSD: %d", channels));
         }
 
-        height = pInput.readInt(); // Rows
-        width = pInput.readInt(); // Columns
+        int height = pInput.readInt(); // Rows
+        int width = pInput.readInt();  // Columns
 
-        bits = pInput.readShort();
+        short bits = pInput.readShort();
 
         switch (bits) {
             case 1:
@@ -109,7 +161,7 @@ final class PSDHeader {
                 throw new IIOException(String.format("Unsupported bit depth for PSD: %d bits", bits));
         }
 
-        mode = pInput.readShort();
+        short mode = pInput.readShort();
 
         switch (mode) {
             case PSD.COLOR_MODE_BITMAP:
@@ -124,6 +176,21 @@ final class PSDHeader {
             default:
                 throw new IIOException(String.format("Unsupported color mode for PSD: %d", mode));
         }
+
+        return new PSDHeader(channels, width, height, bits, mode, largeFormat);
+    }
+
+    void write(ImageOutputStream output) throws IOException {
+        output.writeInt(PSD.SIGNATURE_8BPS);
+        output.writeShort(largeFormat ? PSD.VERSION_PSB : PSD.VERSION_PSD);
+
+        output.write(new byte[6]); // Reserved
+
+        output.writeShort(channels);
+        output.writeInt(height); // Columns
+        output.writeInt(width);  // Rows
+        output.writeShort(bits);
+        output.writeShort(mode);
     }
 
     @Override
@@ -177,4 +244,5 @@ final class PSDHeader {
                 return "Unkown mode";
         }
     }
+
 }

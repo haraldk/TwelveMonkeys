@@ -40,7 +40,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.twelvemonkeys.imageio.plugins.webp.RasterUtils.asByteRaster;
+import static com.twelvemonkeys.imageio.util.RasterUtils.asByteRaster;
 import static java.lang.Math.*;
 
 /**
@@ -180,8 +180,7 @@ public final class VP8LDecoder {
                                 new DataBufferInt(colorTable, colorTableSize),
                                 colorTableSize, 1, colorTableSize,
                                 new int[] {0}, null
-                        ),
-                        ColorModel.getRGBdefault()
+                        )
                 ), false);
 
                 // TODO: We may not really need this value...

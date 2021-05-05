@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,14 +53,23 @@ final class ICCProfile extends PSDImageResource {
     }
 
     @Override
-    protected void readData(ImageInputStream pInput) throws IOException {
-        InputStream stream = IIOUtil.createStreamAdapter(pInput, size);
-        try {
+    protected void readData(final ImageInputStream pInput) throws IOException {
+        try (InputStream stream = IIOUtil.createStreamAdapter(pInput, size)) {
             profile = ICC_Profile.getInstance(stream);
         }
-        finally {
-            // Make sure stream has correct position after read
-            stream.close();
+    }
+
+    static void writeData(final ImageOutputStream output, final ICC_Profile profile) throws IOException {
+        output.writeInt(PSD.RESOURCE_TYPE);
+        output.writeShort(PSD.RES_ICC_PROFILE);
+        output.writeShort(0); // Zero-length Pascal name + pad
+
+        byte[] data = profile.getData();
+        output.writeInt(data.length + data.length % 2);
+        output.write(data);
+
+        if (data.length % 2 != 0) {
+            output.write(0); // pad
         }
     }
 
