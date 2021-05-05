@@ -86,13 +86,13 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
     protected List<? extends RenderedImage> getTestData() {
         return Arrays.asList(
                 new BufferedImage(300, 200, BufferedImage.TYPE_INT_RGB),
-                new BufferedImage(300, 200, BufferedImage.TYPE_INT_ARGB),
-                new BufferedImage(300, 200, BufferedImage.TYPE_3BYTE_BGR),
-                new BufferedImage(300, 200, BufferedImage.TYPE_4BYTE_ABGR),
-                new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_GRAY),
-                new BufferedImage(300, 200, BufferedImage.TYPE_USHORT_GRAY),
-                new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_BINARY),
-                new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_INDEXED)
+                new BufferedImage(301, 199, BufferedImage.TYPE_INT_ARGB),
+                new BufferedImage(299, 201, BufferedImage.TYPE_3BYTE_BGR),
+                new BufferedImage(160, 90, BufferedImage.TYPE_4BYTE_ABGR),
+                new BufferedImage(90, 160, BufferedImage.TYPE_BYTE_GRAY),
+                new BufferedImage(30, 20, BufferedImage.TYPE_USHORT_GRAY),
+                new BufferedImage(30, 20, BufferedImage.TYPE_BYTE_BINARY),
+                new BufferedImage(30, 20, BufferedImage.TYPE_BYTE_INDEXED)
         );
     }
 

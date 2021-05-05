@@ -42,6 +42,7 @@ import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.imageio.util.RasterUtils;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
@@ -299,6 +300,7 @@ final class WebPImageReader extends ImageReaderBase {
         List<ImageTypeSpecifier> types = new ArrayList<>();
         types.add(rawImageType);
         types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB));
+        types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_INT_ARGB_PRE : BufferedImage.TYPE_INT_BGR));
 
         return types.iterator();
     }
@@ -314,13 +316,13 @@ final class WebPImageReader extends ImageReaderBase {
         switch (header.fourCC) {
             case WebP.CHUNK_VP8_:
                 imageInput.seek(header.offset);
-                readVP8(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()), param);
+                readVP8(RasterUtils.asByteRaster(destination.getRaster()), param);
 
                 break;
 
             case WebP.CHUNK_VP8L:
                 imageInput.seek(header.offset);
-                readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()), param);
+                readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param);
 
                 break;
 
@@ -373,13 +375,13 @@ final class WebPImageReader extends ImageReaderBase {
                             break;
 
                         case WebP.CHUNK_VP8_:
-                            readVP8(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel())
+                            readVP8(RasterUtils.asByteRaster(destination.getRaster())
                                     .createWritableChild(0, 0, width, height, 0, 0, new int[]{0, 1, 2}), param);
 
                             break;
 
                         case WebP.CHUNK_VP8L:
-                            readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster(), destination.getColorModel()), param);
+                            readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param);
 
                             break;
 

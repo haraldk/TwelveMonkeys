@@ -842,7 +842,7 @@ public final class PSDImageReader extends ImageReaderBase {
         assertInput();
 
         if (header == null) {
-            header = new PSDHeader(imageInput);
+            header = PSDHeader.read(imageInput);
 
             if (!header.hasValidDimensions()) {
                 processWarningOccurred(String.format("Dimensions exceed maximum allowed for %s: %dx%d (max %dx%d)",
@@ -930,13 +930,12 @@ public final class PSDImageReader extends ImageReaderBase {
 
             // NOTE: The spec says that if this section is empty, the length should be 0.
             // Yet I have a PSB file that has size 12, and both contained lengths set to 0 (which
-            // is alo not as per spec, as layer count should be included if there's a layer info
+            // is also not as per spec, as layer count should be included if there's a layer info
             // block, so minimum size should be either 0 or 14 (or 16 if multiple of 4 for PSB))...
 
             if (layerAndMaskInfoLength > 0) {
                 long pos = imageInput.getStreamPosition();
 
-                //if (metadata.layerInfo == null) {
                 long layerInfoLength = header.largeFormat ? imageInput.readLong() : imageInput.readUnsignedInt();
 
                 if (layerInfoLength > 0) {
@@ -991,7 +990,6 @@ public final class PSDImageReader extends ImageReaderBase {
                     System.out.println("layerInfo: " + metadata.layerInfo);
                     System.out.println("globalLayerMask: " + (metadata.globalLayerMask != PSDGlobalLayerMask.NULL_MASK ? metadata.globalLayerMask : null));
                 }
-                //}
             }
 
             metadata.imageDataStart = metadata.layerAndMaskInfoStart + layerAndMaskInfoLength + (header.largeFormat ? 8 : 4);

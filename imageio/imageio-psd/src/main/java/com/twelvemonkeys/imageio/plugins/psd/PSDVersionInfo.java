@@ -67,7 +67,7 @@ final class PSDVersionInfo extends PSDImageResource {
 
         writer = PSDUtil.readUnicodeString(pInput);
         reader = PSDUtil.readUnicodeString(pInput);
-        
+
         fileVersion = pInput.readInt();
     }
 

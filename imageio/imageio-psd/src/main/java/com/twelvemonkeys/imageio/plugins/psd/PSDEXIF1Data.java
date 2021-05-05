@@ -31,11 +31,16 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * EXIF metadata.
@@ -58,6 +63,27 @@ final class PSDEXIF1Data extends PSDDirectoryResource {
     Directory parseDirectory() throws IOException {
         // The data is in essence an embedded TIFF file.
         return new TIFFReader().read(new ByteArrayImageInputStream(data));
+    }
+
+    static void writeData(final ImageOutputStream output, final Collection<? extends Entry> directory) throws IOException {
+        output.writeInt(PSD.RESOURCE_TYPE);
+        output.writeShort(PSD.RES_EXIF_DATA_1);
+        output.writeShort(0); // Zero-length Pascal name + pad
+        output.writeInt(0); // Dummy length
+
+        long beforeExif = output.getStreamPosition();
+        new TIFFWriter().write(directory, new SubImageOutputStream(output));
+
+        long afterExif = output.getStreamPosition();
+        if ((afterExif - beforeExif) % 2 != 0) {
+            afterExif++;
+            output.write(0); // Pad
+        }
+
+        // Update length
+        output.seek(beforeExif - 4);
+        output.writeInt((int) (afterExif - beforeExif));
+        output.seek(afterExif);
     }
 
     @Override

@@ -69,12 +69,10 @@ final public class PSDImageReaderSpi extends ImageReaderSpiBase {
                 switch (version) {
                     case PSD.VERSION_PSD:
                     case PSD.VERSION_PSB:
-                        break;
+                        return true;
                     default:
-                        return false;
+                        // Fall through
                 }
-
-                return true;
             }
 
             return false;
