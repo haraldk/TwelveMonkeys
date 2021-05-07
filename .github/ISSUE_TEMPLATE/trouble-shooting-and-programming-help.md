@@ -1,6 +1,7 @@
 ---
 name: Trouble shooting and programming help
-about: "Please use StackOverflow instead \U0001F600 "
+about: 'General programming issues will reach a wider audience at StackOverflow. Tag
+  questions with java, javax-imageio and/or twelvemonkeys '
 title: ''
 labels: Trouble-shooting
 assignees: ''
