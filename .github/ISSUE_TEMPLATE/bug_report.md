@@ -10,24 +10,18 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-**TwelveMonkeys ImageIO version**
-The version of the library in use.
+**Version information**
+1. The version of the TwelveMonkeys ImageIO library in use.
+For example:  4.0.0
 
-For example:
-
-    4.0.0
-
-**Java version**
-The *exact* output of `java --version` (or `java -version` for older Java releases). 
-
+2. The *exact* output of `java --version` (or `java -version` for older Java releases). 
 For example: 
 
     java version "1.8.0_271"
     Java(TM) SE Runtime Environment (build 1.8.0_271-b09)
     Java HotSpot(TM) 64-Bit Server VM (build 25.271-b09, mixed mode)
 
-**Environment info**
-Extra information about OS version, server version, standalone program or web application packaging, executable wrapper, etc. Please state exact version numbers where applicable.
+3. Extra information about OS version, server version, standalone program or web application packaging, executable wrapper, etc. Please state exact version numbers where applicable.
 
 **To Reproduce**
 Steps to reproduce the behavior:
@@ -45,7 +39,7 @@ Preferably as a failing JUnit test, or a standalone program with a `main` method
 
 Less is more. Don't add your entire project, only the code required to reproduce the problem. 😀 
 
-**Sample file**
+**Sample file(s)**
 Attach any sample files needed to reproduce the problem. Use a ZIP-file if the format is not directly supported by GitHub.
 
 **Stak trace**
