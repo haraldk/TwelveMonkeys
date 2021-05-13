@@ -47,7 +47,7 @@ import java.util.List;
  * @version $Id: CR2ImageReaderTest.java,v 1.0 07.04.14 21:52 haraldk Exp$
  */
 @Ignore
-public class CR2ImageReaderTest extends ImageReaderAbstractTest {
+public class CR2ImageReaderTest extends ImageReaderAbstractTest<CR2ImageReader> {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -68,16 +68,6 @@ public class CR2ImageReaderTest extends ImageReaderAbstractTest {
     @Override
     protected ImageReaderSpi createProvider() {
         return new CR2ImageReaderSpi();
-    }
-
-    @Override
-    protected ImageReader createReader() {
-        return new CR2ImageReader(createProvider());
-    }
-
-    @Override
-    protected Class getReaderClass() {
-        return CR2ImageReader.class;
     }
 
     @Override

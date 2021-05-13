@@ -47,7 +47,7 @@ import java.util.List;
  * @version $Id: CR2ImageReaderTest.java,v 1.0 07.04.14 21:52 haraldk Exp$
  */
 @Ignore
-public class DNGImageReaderTest extends ImageReaderAbstractTest {
+public class DNGImageReaderTest extends ImageReaderAbstractTest<DNGImageReader> {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -67,16 +67,6 @@ public class DNGImageReaderTest extends ImageReaderAbstractTest {
     @Override
     protected ImageReaderSpi createProvider() {
         return new DNGImageReaderSpi();
-    }
-
-    @Override
-    protected ImageReader createReader() {
-        return new com.twelvemonkeys.imageio.plugins.dng.DNGImageReader(createProvider());
-    }
-
-    @Override
-    protected Class getReaderClass() {
-        return com.twelvemonkeys.imageio.plugins.dng.DNGImageReader.class;
     }
 
     @Override

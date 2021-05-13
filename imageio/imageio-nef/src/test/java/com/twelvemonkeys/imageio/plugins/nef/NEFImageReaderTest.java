@@ -47,7 +47,7 @@ import java.util.List;
  * @version $Id: CR2ImageReaderTest.java,v 1.0 07.04.14 21:52 haraldk Exp$
  */
 @Ignore
-public class NEFImageReaderTest extends ImageReaderAbstractTest {
+public class NEFImageReaderTest extends ImageReaderAbstractTest<NEFImageReader> {
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
@@ -61,16 +61,6 @@ public class NEFImageReaderTest extends ImageReaderAbstractTest {
     @Override
     protected ImageReaderSpi createProvider() {
         return new NEFImageReaderSpi();
-    }
-
-    @Override
-    protected ImageReader createReader() {
-        return new NEFImageReader(createProvider());
-    }
-
-    @Override
-    protected Class getReaderClass() {
-        return NEFImageReader.class;
     }
 
     @Override

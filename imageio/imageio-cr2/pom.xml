@@ -33,7 +33,7 @@
     <parent>
         <artifactId>imageio</artifactId>
         <groupId>com.twelvemonkeys.imageio</groupId>
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
