@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.tga;
 
 import javax.imageio.IIOException;
@@ -5,6 +35,8 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
+
+import static com.twelvemonkeys.imageio.plugins.tga.TGA.EXT_AREA_SIZE;
 
 /**
  * TGAExtensions.
@@ -14,40 +46,40 @@ import java.util.Calendar;
  * @version $Id: TGAExtensions.java,v 1.0 27/07/15 harald.kuhr Exp$
  */
 final class TGAExtensions {
-    public static final int EXT_AREA_SIZE = 495;
 
-    private String authorName;
-    private String authorComments;
+    String authorName;
+    String authorComments;
 
-    private Calendar creationDate;
-    private String jobId;
+    Calendar creationDate;
+    String jobId;
 
-    private String softwareId;
-    private String softwareVersion;
+    String softwareId;
+    String softwareVersion;
 
-    private int backgroundColor;
-    private double pixelAspectRatio;
-    private double gamma;
+    int backgroundColor;
+    double pixelAspectRatio;
+    double gamma;
 
-    private long colorCorrectionOffset;
-    private long postageStampOffset;
-    private long scanLineOffset;
+    long colorCorrectionOffset;
+    long postageStampOffset;
+    long scanLineOffset;
 
-    private int attributeType;
+    int attributeType;
 
-    private TGAExtensions() {
+    TGAExtensions() {
     }
 
     static TGAExtensions read(final ImageInputStream stream) throws IOException {
         int extSize = stream.readUnsignedShort();
 
-        // Should always be 495 for version 2.0, no newer version exists...
-        if (extSize < EXT_AREA_SIZE) {
+        // Should always be 495 for version 2.0, no newer version exists.
+        // NOTE: Known AutoDesk 3ds Max issue, extension area size field is 494, but still good.
+        if (extSize < EXT_AREA_SIZE - 1) {
             throw new IIOException(String.format("TGA Extension Area size less than %d: %d", EXT_AREA_SIZE, extSize));
         }
 
         TGAExtensions extensions = new TGAExtensions();
-        extensions.authorName = readString(stream, 41);;
+        extensions.authorName = readString(stream, 41);
         extensions.authorComments = readString(stream, 324);
         extensions.creationDate = readDate(stream);
         extensions.jobId = readString(stream, 41);
@@ -58,10 +90,10 @@ final class TGAExtensions {
 
         // Software version (* 100) short + single byte ASCII (ie. 101 'b' for 1.01b)
         int softwareVersion = stream.readUnsignedShort();
-        int softwareLetter = stream.readByte();
+        char softwareLetter = (char) stream.readByte();
 
-        extensions.softwareVersion = softwareVersion != 0 && softwareLetter != ' '
-                                     ? String.format("%d.%d%d", softwareVersion / 100, softwareVersion % 100, softwareLetter).trim()
+        extensions.softwareVersion = softwareVersion != 0 || softwareLetter != ' '
+                                     ? String.format("%d.%d%s", softwareVersion / 100, softwareVersion % 100, softwareLetter).trim()
                                      : null;
 
         extensions.backgroundColor = stream.readInt(); // ARGB
@@ -110,6 +142,7 @@ final class TGAExtensions {
             return null;
         }
 
+        //noinspection MagicConstant
         calendar.set(year, month - 1, date, hourOfDay, minute, second);
 
         return calendar;
@@ -144,6 +177,7 @@ final class TGAExtensions {
         }
     }
 
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     public boolean isAlphaPremultiplied() {
         switch (attributeType) {
             case 4:

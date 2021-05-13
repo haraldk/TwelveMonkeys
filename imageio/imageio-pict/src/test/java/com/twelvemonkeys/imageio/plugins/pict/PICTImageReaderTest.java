@@ -1,13 +1,45 @@
+/*
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -15,7 +47,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
+import static com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi.isOtherFormat;
+import static org.junit.Assert.*;
 
 /**
  * ICOImageReaderTestCase
@@ -30,7 +63,10 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         IIORegistry.getDefaultInstance().registerServiceProvider(new ByteArrayImageInputStreamSpi());
     }
 
-    static ImageReaderSpi sProvider = new PICTImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new PICTImageReaderSpi();
+    }
 
     // TODO: Should also test the clipboard format (without 512 byte header)
     protected List<TestData> getTestData() {
@@ -59,29 +95,51 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return sProvider;
-    }
-
     @Override
-    protected PICTImageReader createReader() {
-        return new PICTImageReader(sProvider);
-    }
-
-    protected Class<PICTImageReader> getReaderClass() {
-        return PICTImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("pict");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Arrays.asList("pct", "pict");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/pict", "image/x-pict");
+    }
+
+    @Test
+    public void testIsOtherFormat() throws IOException {
+        assertFalse(isOtherFormat(new ByteArrayImageInputStream(new byte[8])));
+
+        // BMP
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'B', 'M', 0, 0, 0, 0, 0, 0})));
+
+        // GIF
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'G', 'I', 'F', '8', '7', 'a', 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'G', 'I', 'F', '8', '9', 'a', 0, 0})));
+
+        // JPEG (JFIF, EXIF, "raw")
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE1, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xDB, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xC4, 0, 0, 0, 0})));
+
+        // PNG
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A})));
+
+        // PSD
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'8', 'B', 'P', 'S', 0, 0, 0, 0})));
+
+        // TIFF (Little Endian, Big Endian)
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'I', 'I', 42, 0, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'M', 'M', 0, 42, 0, 0, 0, 0})));
+
+        // BigTIFF (Little Endian, Big Endian)
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'I', 'I', 43, 0, 0, 0, 0, 0})));
+        assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'M', 'M', 0, 43, 0, 0, 0, 0})));
     }
 
     @Ignore("Known issue")
@@ -91,41 +149,60 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         super.testReadWithSubsampleParamPixels();
     }
 
+    @Test
+    public void testProviderShouldNotConsumeExistingMarks() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[1024])) {
+            stream.seek(42);
+            stream.mark();
+            stream.seek(123);
+
+            ((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(stream);
+
+            assertEquals(123, stream.getStreamPosition());
+            stream.reset();
+            assertEquals(42, stream.getStreamPosition());
+        }
+    }
+
     // Regression tests
 
     @Test
     public void testProviderNotMatchJPEG() throws IOException {
         // This JPEG contains PICT magic bytes at locations a PICT would normally have them.
         // We should not claim to be able read it.
-        assertFalse(sProvider.canDecodeInput(
+        assertFalse(((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(
                 new TestData(getClassLoaderResource("/jpeg/R-7439-1151526181.jpeg"),
                 new Dimension(386, 396)
+        )));
+        assertFalse(((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(
+                new TestData(getClassLoaderResource("/jpeg/89497426-adc19a00-d7ff-11ea-8ad1-0cbcd727b62a.jpeg"),
+                new Dimension(640, 480)
         )));
     }
 
     @Test
-    public void testDataExtV2() throws IOException, InterruptedException {
+    public void testDataExtV2() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_EXT_V2));
         reader.read(0);
     }
 
     @Test
-    public void testDataV2() throws IOException, InterruptedException {
+    public void testDataV2() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V2));
         reader.read(0);
     }
 
     @Test
-    public void testDataV1() throws IOException, InterruptedException {
+    public void testDataV1() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1));
         reader.read(0);
     }
 
     @Test
-    public void testDataV1OvalRect() throws IOException, InterruptedException {
+    public void testDataV1OvalRect() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_OVAL_RECT));
         reader.read(0);
@@ -146,7 +223,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     }
 
     @Test
-    public void testDataV1CopyBits() throws IOException, InterruptedException {
+    public void testDataV1CopyBits() throws IOException {
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);

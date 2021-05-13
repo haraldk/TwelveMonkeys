@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.servlet.image;
@@ -42,9 +44,9 @@ import java.awt.image.RenderedImage;
 /**
  * This Servlet is able to render a cropped part of an image.
  *
- * <P><HR><P>
+ * <hr>
  *
- * <A name="parameters"></A><STRONG>Parameters:</STRONG><BR>
+ * <a name="parameters"></a><strong>Parameters:</strong><br>
  * <DL>
  * <DT>{@code cropX}</DT>
  * <DD>integer, the new left edge of the image.
@@ -61,25 +63,24 @@ import java.awt.image.RenderedImage;
  * <DT>{@code cropUnits}</DT>
  * <DD>string, one of {@code PIXELS}, {@code PERCENT}.
  * {@code PIXELS} is default. -->
- *
- *
  * </DL>
  *
- * @example
+ * <p>
+ * Examples:
+ * <br>
  * JPEG:
- * &lt;IMG src="/scale/test.jpg?image=http://www.iconmedialab.com/images/random/home_image_12.jpg&width=500&uniform=true"&gt;
- *
+ * &lt;IMG src="/scale/test.jpg?image=http://www.iconmedialab.com/images/random/home_image_12.jpg&amp;width=500&amp;uniform=true"&gt;
+ * <br>
  * PNG:
- * &lt;IMG src="/scale/test.png?cache=false&image=http://www.iconmedialab.com/images/random/home_image_12.jpg&width=50&units=PERCENT"&gt;
- *
- * @todo Correct rounding errors, resulting in black borders when rotating 90
- *       degrees, and one of width or height is odd length...
+ * &lt;IMG src="/scale/test.png?cache=false&amp;image=http://www.iconmedialab.com/images/random/home_image_12.jpg&amp;width=50&amp;units=PERCENT"&gt;
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: RotateFilter.java#1 $
  */
-
+// TODO: Correct rounding errors, resulting in black borders when rotating 90
+//       degrees, and one of width or height is odd length...
 public class RotateFilter extends ImageFilter {
     /** {@code angle}*/
     protected final static String PARAM_ANGLE = "angle";

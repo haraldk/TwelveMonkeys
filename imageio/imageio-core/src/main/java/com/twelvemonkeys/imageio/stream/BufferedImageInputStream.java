@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.stream;
 
 import javax.imageio.stream.ImageInputStream;
@@ -13,22 +43,28 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * A buffered {@code ImageInputStream}.
  * Experimental - seems to be effective for {@link javax.imageio.stream.FileImageInputStream}
  * and {@link javax.imageio.stream.FileCacheImageInputStream} when doing a lot of single-byte reads
- * (or short byte-array reads) on OS X at least.
+ * (or short byte-array reads).
  * Code that uses the {@code readFully} methods are not affected by the issue.
+ * <p>
+ * NOTE: Invoking {@code close()} will  <em>NOT</em> close the wrapped stream.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedFileImageInputStream.java,v 1.0 May 15, 2008 4:36:49 PM haraldk Exp$
+ *
+ * @deprecated Use {@link BufferedFileImageInputStream} instead.
  */
-// TODO: Create a provider for this (wrapping the FileIIS and FileCacheIIS classes), and disable the Sun built-in spis?
-// TODO: Test on other platforms, might be just an OS X issue
+@Deprecated
 public final class BufferedImageInputStream extends ImageInputStreamImpl implements ImageInputStream {
     static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private ImageInputStream stream;
 
-    private ByteBuffer buffer;
-    private ByteBuffer integralCache = ByteBuffer.allocate(8);
+    private  ByteBuffer buffer;
+
+    private final ByteBuffer integralCache = ByteBuffer.allocate(8);
+    private final byte[] integralCacheArray = integralCache.array();
 
     public BufferedImageInputStream(final ImageInputStream pStream) throws IOException {
         this(pStream, DEFAULT_BUFFER_SIZE);
@@ -67,10 +103,10 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
         if (!buffer.hasRemaining()) {
             fillBuffer();
-        }
 
-        if (!buffer.hasRemaining()) {
-            return -1;
+            if (!buffer.hasRemaining()) {
+                return -1;
+            }
         }
 
         bitOffset = 0;
@@ -142,21 +178,21 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
 
     @Override
     public short readShort() throws IOException {
-        readFully(integralCache.array(), 0, 2);
+        readFully(integralCacheArray, 0, 2);
 
         return integralCache.getShort(0);
     }
 
     @Override
     public int readInt() throws IOException {
-        readFully(integralCache.array(), 0, 4);
+        readFully(integralCacheArray, 0, 4);
 
         return integralCache.getInt(0);
     }
 
     @Override
     public long readLong() throws IOException {
-        readFully(integralCache.array(), 0, 8);
+        readFully(integralCacheArray, 0, 8);
 
         return integralCache.getLong(0);
     }
@@ -223,6 +259,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
             }
 
             int val = buffer.get() & 0xff;
+            streamPos++;
 
             accum <<= 8;
             accum |= val;
@@ -232,9 +269,7 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
         // Move byte position back if in the middle of a byte
         if (newBitOffset != 0) {
             buffer.position(buffer.position() - 1);
-        }
-        else {
-            streamPos++;
+            streamPos--;
         }
 
         this.bitOffset = newBitOffset;
@@ -249,26 +284,26 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     }
 
     @Override
-    public void seek(long pPosition) throws IOException {
+    public void seek(long position) throws IOException {
         checkClosed();
         bitOffset = 0;
 
-        if (streamPos == pPosition) {
+        if (streamPos == position) {
             return;
         }
 
         // Optimized to not invalidate buffer if new position is within current buffer
-        long newBufferPos = buffer.position() + pPosition - streamPos;
+        long newBufferPos = buffer.position() + position - streamPos;
         if (newBufferPos >= 0 && newBufferPos <= buffer.limit()) {
             buffer.position((int) newBufferPos);
         }
         else {
             // Will invalidate buffer
             buffer.limit(0);
-            stream.seek(pPosition);
+            stream.seek(position);
         }
 
-        streamPos = pPosition;
+        streamPos = position;
     }
 
     @Override
@@ -300,7 +335,9 @@ public final class BufferedImageInputStream extends ImageInputStreamImpl impleme
     @Override
     public void close() throws IOException {
         if (stream != null) {
-            //stream.close();
+            // TODO: FixMe: Need to close underlying stream here!
+            //   For call sites that relies on not closing, we should instead not close the buffered stream.
+//             stream.close();
             stream = null;
             buffer = null;
         }

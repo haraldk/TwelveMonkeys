@@ -1,8 +1,39 @@
+/*
+ * Copyright (c) 2021, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.stream;
+
+import com.twelvemonkeys.imageio.spi.ProviderInfo;
 
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.stream.FileCacheImageInputStream;
-import javax.imageio.stream.FileImageInputStream;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.File;
@@ -23,7 +54,11 @@ import java.util.Locale;
  // TODO: URI instead of URL?
 public class URLImageInputStreamSpi extends ImageInputStreamSpi {
     public URLImageInputStreamSpi() {
-        super("TwelveMonkeys", "1.0 BETA", URL.class);
+        this(new StreamProviderInfo());
+    }
+
+    private URLImageInputStreamSpi(ProviderInfo providerInfo) {
+        super(providerInfo.getVendorName(), providerInfo.getVersion(), URL.class);
     }
 
     // TODO: Create a URI or URLImageInputStream class, with a getUR[I|L] method, to allow for multiple file formats
@@ -36,7 +71,7 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
             // Special case for file protocol, a lot faster than FileCacheImageInputStream
             if ("file".equals(url.getProtocol())) {
                 try {
-                    return new BufferedImageInputStream(new FileImageInputStream(new File(url.toURI())));
+                    return new BufferedFileImageInputStream(new File(url.toURI()));
                 }
                 catch (URISyntaxException ignore) {
                     // This should never happen, but if it does, we'll fall back to using the stream  
@@ -45,29 +80,29 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
             }
 
             // Otherwise revert to cached
-            final InputStream stream = url.openStream();
+            final InputStream urlStream = url.openStream();
             if (pUseCache) {
-                return new BufferedImageInputStream(new FileCacheImageInputStream(stream, pCacheDir) {
+                return new FileCacheImageInputStream(urlStream, pCacheDir) {
                     @Override
                     public void close() throws IOException {
                         try {
                             super.close();
                         }
                         finally {
-                            stream.close(); // NOTE: If this line throws IOE, it will shadow the original..
+                            urlStream.close(); // NOTE: If this line throws IOE, it will shadow the original..
                         }
                     }
-                });
+                };
             }
             else {
-                return new MemoryCacheImageInputStream(stream) {
+                return new MemoryCacheImageInputStream(urlStream) {
                     @Override
                     public void close() throws IOException {
                         try {
                             super.close();
                         }
                         finally {
-                            stream.close(); // NOTE: If this line throws IOE, it will shadow the original..
+                            urlStream.close(); // NOTE: If this line throws IOE, it will shadow the original..
                         }
                     }
                 };
@@ -76,6 +111,11 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
         else {
             throw new IllegalArgumentException("Expected input of type URL: " + pInput);
         }
+    }
+
+    @Override
+    public boolean canUseCacheFile() {
+        return true;
     }
 
     public String getDescription(final Locale pLocale) {

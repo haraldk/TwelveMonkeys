@@ -4,35 +4,37 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio;
 
-import org.junit.Test;
+import static java.util.Collections.singleton;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageTypeSpecifier;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -40,8 +42,13 @@ import java.awt.image.DataBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
-import static org.junit.Assert.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
+
+import org.junit.Test;
 
 /**
  * ImageReaderBaseTest
@@ -208,16 +215,23 @@ public class ImageReaderBaseTest {
         assertEquals(TYPES.get(0).getBufferedImageType(), destination.getType());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IIOException.class)
     public void testGetDestinationParamDestinationExceedsIntegerMax() throws IIOException {
         ImageReadParam param = new ImageReadParam();
         param.setSourceRegion(new Rectangle(3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE)); // 6 442 057 734 pixels
         ImageReaderBase.getDestination(param, TYPES.iterator(), 6 * Short.MAX_VALUE, 4 * Short.MAX_VALUE); // 25 768 230 936 pixels
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testGetDestinationExceedsIntegerMax() throws IIOException {
+    @Test(expected = IIOException.class)
+    public void testGetDestinationDimensionExceedsIntegerMax() throws IIOException {
         ImageReaderBase.getDestination(null, TYPES.iterator(), 3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE); // 6 442 057 734 pixels
+    }
+
+    @Test(expected = IIOException.class)
+    public void testGetDestinationStorageExceedsIntegerMax() throws IIOException {
+        Set<ImageTypeSpecifier> byteTypes = singleton(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+        ImageReaderBase.getDestination(null, byteTypes.iterator(), Short.MAX_VALUE,  Short.MAX_VALUE); // 1 073 676 289 pixels
+        // => 3 221 028 867 bytes needed in continuous array, not possible
     }
 
     @Test

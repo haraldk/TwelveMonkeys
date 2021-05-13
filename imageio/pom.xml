@@ -3,13 +3,14 @@
     <parent>
         <groupId>com.twelvemonkeys</groupId>
         <artifactId>twelvemonkeys</artifactId>
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
     <artifactId>imageio</artifactId>
     <packaging>pom</packaging>
     <name>TwelveMonkeys :: ImageIO</name>
+    <url>https://github.com/haraldk/TwelveMonkeys/tree/master/imageio</url>
 
     <contributors>
         <contributor>
@@ -47,12 +48,17 @@
         <module>imageio-tga</module>
         <module>imageio-thumbsdb</module>
         <module>imageio-tiff</module>
+        <module>imageio-webp</module>
+        <module>imageio-xwd</module>
 
         <!-- Wrappers for 3rd party libs  -->
         <module>imageio-batik</module>
 
         <!-- Test cases for the JRE provided ImageIO plugins -->
         <module>imageio-reference</module>
+        <module>imageio-jpeg-jep262-interop</module>
+        <module>imageio-jpeg-jai-interop</module>
+        <module>imageio-tiff-jdk-interop</module>
     </modules>
 
     <properties>
@@ -94,7 +100,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.7</version>
+            <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -147,6 +153,12 @@
 	        <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-jpeg</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+	        <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>imageio-tiff</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

@@ -3,7 +3,7 @@
     <parent>
 	<groupId>com.twelvemonkeys.imageio</groupId>        
 	<artifactId>imageio</artifactId>        
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>imageio-metadata</artifactId>
@@ -11,6 +11,10 @@
     <description>
         ImageIO metadata module.
     </description>
+
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.metadata</project.jpms.module.name>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -21,6 +25,7 @@
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

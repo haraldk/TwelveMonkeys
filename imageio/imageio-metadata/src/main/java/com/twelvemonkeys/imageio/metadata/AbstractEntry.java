@@ -4,35 +4,37 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.metadata;
 
-import com.twelvemonkeys.lang.Validate;
-import com.twelvemonkeys.util.CollectionUtil;
-
 import java.lang.reflect.Array;
 import java.util.Arrays;
+
+import com.twelvemonkeys.lang.Validate;
+import com.twelvemonkeys.util.CollectionUtil;
 
 /**
  * AbstractEntry
@@ -58,10 +60,10 @@ public abstract class AbstractEntry implements Entry {
     }
 
     /**
-     * Returns a format-native identifier. 
-     * For example {@code "2:00"} for IPTC "Record Version" field, or {@code "0x040c"} for PSD "Thumbnail" resource. 
+     * Returns a format-native identifier.
+     * For example {@code "2:00"} for IPTC "Record Version" field, or {@code "0x040c"} for PSD "Thumbnail" resource.
      * This default implementation simply returns {@code String.valueOf(getIdentifier())}.
-     * 
+     *
      * @return a format-native identifier.
      */
     protected String getNativeIdentifier() {
@@ -82,17 +84,21 @@ public abstract class AbstractEntry implements Entry {
     }
 
     public String getValueAsString() {
-        if (valueCount() > 1) {
-            if (valueCount() < 16) {
+        int count = valueCount();
+
+        if (count == 0 && value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
+            return "";
+        }
+        if (count > 1) {
+            if (count < 16) {
                 return arrayToString(value);
             }
             else {
                 String first = arrayToString(CollectionUtil.subArray(value, 0, 4));
-                String last = arrayToString(CollectionUtil.subArray(value, valueCount() - 4, 4));
-                return String.format("%s ... %s (%d)", first.substring(0, first.length() - 1), last.substring(1), valueCount());
+                String last = arrayToString(CollectionUtil.subArray(value, count - 4, 4));
+                return String.format("%s ... %s (%d)", first.substring(0, first.length() - 1), last.substring(1), count);
             }
         }
-
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 1) {
             return String.valueOf(Array.get(value, 0));
         }
@@ -172,7 +178,7 @@ public abstract class AbstractEntry implements Entry {
         }
 
         AbstractEntry other = (AbstractEntry) pOther;
-        
+
         return identifier.equals(other.identifier) && (
                 value == null && other.value == null || value != null && valueEquals(other)
         );

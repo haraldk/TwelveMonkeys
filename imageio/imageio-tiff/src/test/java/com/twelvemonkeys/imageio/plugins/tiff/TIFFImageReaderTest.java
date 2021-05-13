@@ -1,32 +1,38 @@
-package com.twelvemonkeys.imageio.plugins.tiff;/*
+/*
  * Copyright (c) 2012, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+package com.twelvemonkeys.imageio.plugins.tiff;
+
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.IIOException;
@@ -38,8 +44,8 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.Raster;
+import java.awt.color.ColorSpace;
+import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -47,9 +53,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
-import static org.junit.internal.matchers.StringContains.containsString;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
@@ -64,7 +71,10 @@ import static org.mockito.Mockito.*;
  */
 public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader> {
 
-    private static final TIFFImageReaderSpi SPI = new TIFFImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new TIFFImageReaderSpi();
+    }
 
     @Override
     protected List<TestData> getTestData() {
@@ -92,6 +102,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
                 new TestData(getClassLoaderResource("/tiff/grayscale-alpha.tiff"), new Dimension(248, 351)), // Gray + unassociated alpha
                 new TestData(getClassLoaderResource("/tiff/signed-integral-8bit.tif"), new Dimension(439, 167)), // Gray, 8 bit *signed* integral
+                new TestData(getClassLoaderResource("/tiff/floatingpoint-16bit.tif"), new Dimension(151, 151)), // RGB, 16 bit floating point
                 new TestData(getClassLoaderResource("/tiff/floatingpoint-32bit.tif"), new Dimension(300, 100)), // RGB, 32 bit floating point
                 new TestData(getClassLoaderResource("/tiff/general-cmm-error.tif"), new Dimension(1181, 860)), // RGB, LZW compression with broken/incompatible ICC profile
                 new TestData(getClassLoaderResource("/tiff/lzw-rgba-padded-icc.tif"), new Dimension(19, 11)), // RGBA, LZW compression with padded ICC profile
@@ -101,6 +112,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/scan-mono-iccgray.tif"), new Dimension(2408, 3436)), // B/W, PackBits w/gray ICC profile
                 new TestData(getClassLoaderResource("/tiff/planar-striped-lzw.tif"), new Dimension(229, 229)), // RGB 8 bit/sample, planar, LZW compression
                 new TestData(getClassLoaderResource("/tiff/colormap-with-extrasamples.tif"), new Dimension(10, 10)), // Palette, 8 bit/sample, 2 samples/pixel, extra samples, LZW
+                new TestData(getClassLoaderResource("/tiff/indexed-unspecified-extrasamples.tif"), new Dimension(98, 106)), // Palette, 8 bit/sample, 2 samples/pixel, extra samples
                 new TestData(getClassLoaderResource("/tiff/packbits-fillorder-2.tif"), new Dimension(3508, 2481)), // B/W, PackBits, FillOrder 2
                 // CCITT
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_1d.tif"), new Dimension(6, 4)), // B/W, CCITT T4 1D
@@ -158,7 +170,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-8bit-gray.tif"), new Dimension(512, 512)),  // Lossless JPEG Gray, 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-12bit-gray.tif"), new Dimension(512, 512)),  // Lossless JPEG Gray, 12 bit/sample
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-16bit-gray.tif"), new Dimension(512, 512)),  // Lossless JPEG Gray, 16 bit/sample
-                new TestData(getClassLoaderResource("/tiff/jpeg-lossless-24bit-rgb"), new Dimension(512, 512)),  // Lossless JPEG RGB, 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/jpeg-lossless-24bit-rgb.tif"), new Dimension(512, 512)),  // Lossless JPEG RGB, 8 bit/sample
                 // Custom PIXTIFF ZIP (Compression: 50013)
                 new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313))  // ZIP Gray, 8 bit/sample
         );
@@ -173,20 +185,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-04.tif"), new Dimension(73, 43)) // RGB 4 bit/sample
         );
-    }
-    @Override
-    protected ImageReaderSpi createProvider() {
-        return SPI;
-    }
-
-    @Override
-    protected Class<TIFFImageReader> getReaderClass() {
-        return TIFFImageReader.class;
-    }
-
-    @Override
-    protected TIFFImageReader createReader() {
-        return SPI.createReaderInstance(null);
     }
 
     @Override
@@ -302,6 +300,27 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Incorrect StripOffsets/TileOffsets"), contains("SOS marker")));
+        }
+    }
+
+    @Test
+    public void testReadOldStyleWangMultiStrip2() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/662260-color.tif"), new Dimension(1600, 1200));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(1);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Incorrect StripOffsets/TileOffsets"), contains("SOS marker")));
         }
     }
 
@@ -561,6 +580,76 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadBogusByteCounts() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/CCITT-G4-300dpi-StripByteCounts0.tif"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+
+            BufferedImage image = null;
+            try {
+                // Get the crop mark on the page
+                param.setSourceRegion(new Rectangle(95, 105, 100, 100));
+                image = reader.read(0, param);
+            }
+            catch (IOException e) {
+                failBecause("Image could not be read", e);
+            }
+
+            assertNotNull(image);
+            assertEquals(100, image.getWidth());
+            assertEquals(100, image.getHeight());
+
+            // We have cropped a crop mark, should be black on white
+            for (int y = 0; y < 26; y++) {
+                for (int x = 0; x < 67; x++) {
+                    assertRGBEquals("Expected black " + x + "," +  y, 0xff000000, image.getRGB(x, y), 0);
+                }
+                // Skip one column due to fuzzy edges
+                for (int x = 68; x < 100; x++) {
+                    assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
+                }
+            }
+            // Skip one row due to fuzzy edges
+            for (int y = 27; y < 71; y++) {
+                for (int x = 0; x < 23; x++) {
+                    assertRGBEquals("Expected black " + x + "," +  y, 0xff000000, image.getRGB(x, y), 0);
+                }
+                // Skip one column due to fuzzy edges
+                for (int x = 24; x < 100; x++) {
+                    assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
+                }
+            }
+            for (int y = 71; y < 100; y++) {
+                for (int x = 0; x < 100; x++) {
+                    assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testReadIncorrectCompressionRLEAsG3() throws IOException {
+        TestData testData = new TestData(getClassLoaderResource("/tiff/incorrect-compression-rle-as-g3.tif"), new Dimension(1700, 32));
+
+        try (ImageInputStream stream = testData.getInputStream()) {
+            TIFFImageReader reader = createReader();
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("compression type"), contains("does not match")));
+        }
+    }
+
+    @Test
     public void testReadMultipleExtraSamples() throws IOException {
         ImageReader reader = createReader();
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/pack.tif"))) {
@@ -584,6 +673,94 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertEquals(0x00, image.getRGB(0, 0)); // Should be all transparent
             assertEquals(0xff, (image.getRGB(150, 50) & 0xff000000) >>> 24, 2); // For some reason, it's not all transparent
         }
+    }
+
+    @Test
+    public void testAlphaRasterForMultipleExtraSamples() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/extra-channels.tif"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            assertEquals(0x00, image.getRGB(0, 0));
+            assertEquals(0xf5, (image.getRGB(50, 50) & 0xff000000) >>> 24);
+
+            int[] alpha = new int[1];
+            WritableRaster alphaRaster = image.getAlphaRaster();
+            assertEquals(0x00, alphaRaster.getPixel(0, 0, alpha)[0]);
+            assertEquals(0xf5,  alphaRaster.getPixel(50, 50, alpha)[0]);
+        }
+    }
+	
+    @Test
+    public void testMinIsWhiteWithProfile() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/ccitt/min-is-white-with-profile.tif"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            assertEquals(0xFFFFFFFF, image.getRGB(0, 0));
+            assertEquals(0xFFFFFFFF, image.getRGB(50, 50));
+        }
+    }
+
+    @Test
+    public void testReadCMYKExtraSamples() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/cmyk-with-non-alpha-extra-channel.tiff"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+
+            BufferedImage image = null;
+            try {
+                image = reader.read(0, param);
+            }
+            catch (IOException e) {
+                failBecause("Image could not be read", e);
+            }
+
+            assertNotNull(image);
+            assertEquals(160, image.getWidth());
+            assertEquals(227, image.getHeight());
+
+            // This TIFF does not contain an ICC profile, making the RGB result depend on the platforms "Generic CMYK" profile
+            ColorSpace genericCMYK = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+            ComponentColorModel cmyk = new ComponentColorModel(genericCMYK, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+            // Input (0,0): -41, 104, 37, 1 (C, M, Y, K)
+            int expected = cmyk.getRGB(new byte[]{-41, 104, 37, 1});
+
+            assertRGBEquals("Wrong RGB (0,0)", expected, image.getRGB(0, 0), 4);
+            assertRGBEquals("Wrong RGB (159,226)", expected, image.getRGB(159, 226), 4);
+        }
+    }
+
+    @Test
+    public void testReadWithSubsampleParamPixelsBinary() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d.tif"), new Dimension(6, 4));
+        reader.setInput(data.getInputStream());
+
+        ImageReadParam param = reader.getDefaultReadParam();
+
+        BufferedImage image = null;
+        BufferedImage subsampled = null;
+        try {
+            image = reader.read(0, param);
+
+            param.setSourceSubsampling(2, 2, 0, 0);
+            subsampled = reader.read(0, param);
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+
+        assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
     }
 
     @Test
@@ -657,7 +834,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
-    public void testReadUnsupported() {
+    public void testReadUnsupported() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getUnsupportedTestData()) {
@@ -679,7 +856,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
-    public void testStreamMetadataNonNull() {
+    public void testStreamMetadataNonNull() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getTestData()) {
@@ -688,7 +865,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             try {
                 IIOMetadata streamMetadata = reader.getStreamMetadata();
                 assertNotNull(streamMetadata);
-                assertThat(streamMetadata, is(TIFFStreamMetadata.class));
+                assertThat(streamMetadata, instanceOf(TIFFStreamMetadata.class));
             }
             catch (Exception e) {
                 failBecause(String.format("Image %s could not be read: %s", data.getInput(), e), e);
@@ -719,7 +896,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
-    public void testReadRaster() {
+    public void testReadRaster() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getTestData()) {

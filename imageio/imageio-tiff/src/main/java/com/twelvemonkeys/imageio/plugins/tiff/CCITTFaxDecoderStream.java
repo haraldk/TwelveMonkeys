@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.tiff;
@@ -89,11 +91,10 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         super(Validate.notNull(stream, "stream"));
 
         this.columns = Validate.isTrue(columns > 0, columns, "width must be greater than 0");
-        this.type = Validate.isTrue(
-                type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE ||
-                        type == TIFFExtension.COMPRESSION_CCITT_T4 || type == TIFFExtension.COMPRESSION_CCITT_T6,
-                type, "Only CCITT Modified Huffman RLE compression (2), CCITT T4 (3) or CCITT T6 (4) supported: %s"
-        );
+        this.type = Validate.isTrue(type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE ||
+                        type == TIFFExtension.COMPRESSION_CCITT_T4 ||
+                        type == TIFFExtension.COMPRESSION_CCITT_T6,
+                type, "Only CCITT Modified Huffman RLE compression (2), CCITT T4 (3) or CCITT T6 (4) supported: %s");
         this.fillOrder = Validate.isTrue(
                 fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT || fillOrder == TIFFExtension.FILL_RIGHT_TO_LEFT,
                 fillOrder, "Expected fill order 1  or 2: %s"
@@ -146,6 +147,47 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
                                  final long options) {
         this(stream, columns, type, fillOrder, options, type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
+    }
+
+    static int findCompressionType(final int type, final InputStream in) throws IOException {
+        // Discover possible incorrect type, revert to RLE
+        if (type == TIFFExtension.COMPRESSION_CCITT_T4 && in.markSupported()) {
+            byte[] streamData = new byte[32];
+
+            try {
+                in.mark(streamData.length);
+
+                int offset = 0;
+                while (offset < streamData.length) {
+                    int read = in.read(streamData, offset, streamData.length - offset);
+                    if (read <= 0) {
+                        break;
+                    }
+
+                    offset += read;
+                }
+            }
+            finally {
+                in.reset();
+            }
+
+            if (streamData[0] != 0 || (streamData[1] >> 4 != 1 && streamData[1] != 1)) {
+                // Leading EOL (0b000000000001) not found, search further and try RLE if not found
+                int numBits = streamData.length * 8;
+                short b = (short) (((streamData[0] << 8) + streamData[1]) >> 4);
+                for (int i = 12; i < numBits; i++) {
+                    b = (short) ((b << 1) + ((streamData[(i / 8)] >> (7 - (i % 8))) & 0x01));
+
+                    if ((b & 0xFFF) == 1) {
+                        return TIFFExtension.COMPRESSION_CCITT_T4;
+                    }
+                }
+
+                return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+            }
+        }
+
+        return type;
     }
 
     private void fetch() throws IOException {

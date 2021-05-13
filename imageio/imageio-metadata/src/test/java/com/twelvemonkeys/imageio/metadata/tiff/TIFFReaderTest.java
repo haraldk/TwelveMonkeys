@@ -4,46 +4,53 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.metadata.tiff;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.*;
+
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+
+import org.junit.Test;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
 import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import org.junit.Test;
-
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.InputStream;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
 
 /**
  * TIFFReaderTest
@@ -318,6 +325,153 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
             CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
             assertEquals(1, directory.directoryCount());
             assertEquals(15, directory.size());
+        }
+    }
+
+    @Test
+    public void testReadNestedExifWithoutOOME() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-with-nested-exif.jpg"))) {
+            stream.seek(30);
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 886));
+            assertEquals(1, directory.directoryCount());
+            assertEquals(10, directory.size());
+        }
+    }
+
+    @Test
+    public void testReadExifBogusCountWithoutOOME() throws IOException {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/jpeg/exif-oome-bogus-count.jpg"))) {
+            stream.seek(30);
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(new SubImageInputStream(stream, 3503));
+            assertEquals(2, directory.directoryCount());
+            assertEquals(12, directory.size());
+            assertEquals(9, directory.getDirectory(0).size());
+            assertEquals(3, directory.getDirectory(1).size());
+        }
+    }
+
+    @Test
+    public void testReadWithoutOOME() throws IOException {
+        // This EXIF segment from a JPEG contains an Interop IFD, containing a weird value that could be interpreted
+        // as a huge SLONG8 field (valid for BigTIFF only).
+        // OutOfMemoryError would only happen if length of stream is not known (ie. reading from underlying stream).
+        try (InputStream stream = getResource("/exif/exif-bad-interop-oome.bin").openStream()) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(new MemoryCacheImageInputStream(stream));
+            assertEquals(2, directory.directoryCount());
+            assertEquals(11, directory.getDirectory(0).size());
+            assertEquals(6, directory.getDirectory(1).size());
+            assertEquals("Picasa", directory.getDirectory(0).getEntryById(TIFF.TAG_SOFTWARE).getValue());
+            assertEquals("2020:11:17 16:05:37", directory.getDirectory(0).getEntryById(TIFF.TAG_DATE_TIME).getValueAsString());
+        }
+    }
+
+    @Test(timeout = 200)
+    public void testReadCyclicExifWithoutLoopOrOOME() throws IOException {
+        // This EXIF segment has an interesting bug...
+        // The bits per sample value (0x 0008 0008 0008) overwrites half the IFD1 link offset (should be 0x00000000),
+        // effectively making it a loop back to the IFD0 at offset 0x0000008...
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/exif-loop.bin"))) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+            assertEquals(1, directory.directoryCount());
+            assertEquals(12, directory.getDirectory(0).size());
+            assertEquals("Polarr Photo Editor", directory.getDirectory(0).getEntryById(TIFF.TAG_SOFTWARE).getValue());
+            assertEquals("2019:02:27 09:22:59", directory.getDirectory(0).getEntryById(TIFF.TAG_DATE_TIME).getValueAsString());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testIFDLoop() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                0, (byte) 259,  // compression
+                0, 3,           // SHORT
+                0, 0, 0, 1,     // count
+                0, 0, 0, 0,     //
+                0, 0, 0, 8,     // IFD1 pointer
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testIFDLoopNested() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 8,     // sub IFD pointer -> IFD0
+                0, 0, 0, 0,     // End of IFD chain
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testSubIFDLoop() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 26,    // SubIFD pointer
+                0, 0, 0, 0,     // End of IFD chain
+                // --- sub IFD
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 26,    // sub IFD pointer -> sub IFD
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
+        }
+    }
+
+    @Test(timeout = 100)
+    public void testSubIFDLoopNested() throws IOException {
+        byte[] looping = new byte[] {
+                'M', 'M', 0, 42,
+                0, 0, 0, 8,     // IFD0 pointer
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 26,    // SubIFD pointer
+                0, 0, 0, 0,     // End of IFD chain
+                // --- sub IFD
+                0, 1,           // entry count
+                1, 74,          // sub IFD
+                0, 4,           // LONG
+                0, 0, 0, 1,     // count
+                0, 0, 0, 8,     // sub IFD pointer -> IFD0
+        };
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
+            CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
+
+            assertEquals(1, directory.directoryCount());
+            assertEquals(1, directory.size());
         }
     }
 }

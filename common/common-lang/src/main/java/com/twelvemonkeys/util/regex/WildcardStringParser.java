@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.util.regex;
@@ -33,34 +35,32 @@ import java.io.PrintStream;
 /**
  * This class parses arbitrary strings against a wildcard string mask provided.
  * The wildcard characters are '*' and '?'.
- * <p/>
+ * <p>
  * The string masks provided are treated as case sensitive.<br>
  * Null-valued string masks as well as null valued strings to be parsed, will lead to rejection.
- * <p/>
- * <p/>
- * <p/>
+ * </p>
+ * <p>
  * <i>This class is custom designed for wildcard string parsing and is several times faster than the implementation based on the Jakarta Regexp package.</i>
- * <p/>
- * <p><hr style="height=1"><p>
- * <p/>
+ * </p>
+ * <hr style="height=1">
+ * <p>
  * This task is performed based on regular expression techniques.
  * The possibilities of string generation with the well-known wildcard characters stated above,
  * represent a subset of the possibilities of string generation with regular expressions.<br>
  * The '*' corresponds to ([Union of all characters in the alphabet])*<br>
  * The '?' corresponds to ([Union of all characters in the alphabet])<br>
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<small>These expressions are not suited for textual representation at all, I must say. Is there any math tags included in HTML?</small>
- * <p/>
- * <p/>
- * <p/>
+ * </p>
+ * <p>
  * The complete meta-language for regular expressions are much larger.
  * This fact makes it fairly straightforward to build data structures for parsing because the amount of rules of building these structures are quite limited, as stated below.
- * <p/>
- * <p/>
- * <p/>
+ * </p>
+ * <p>
  * To bring this over to mathematical terms:
  * The parser ia a <b>nondeterministic finite automaton</b> (latin) representing the <b>grammar</b> which is stated by the string mask.
  * The <b>language</b> accepted by this automaton is the set of all strings accepted by this automaton.<br>
  * The formal automaton quintuple consists of:
+ * </p>
  * <ol>
  * <li>A finite set of <b>states</b>, depending on the wildcard string mask.
  * For each character in the mask a state representing that character is created.
@@ -90,11 +90,11 @@ import java.io.PrintStream;
  * Parsing faults must be reported to the author.
  * </small>
  * </ol>
- * <p/>
- * <p><hr style="height=1"><p>
- * <p/>
+ * <hr style="height=1">
+ * <p>
  * Examples of usage:<br>
  * This example will return "Accepted!".
+ * </p>
  * <pre>
  * WildcardStringParser parser = new WildcardStringParser("*_28????.jp*");
  * if (parser.parseString("gupu_280915.jpg")) {
@@ -103,12 +103,10 @@ import java.io.PrintStream;
  *     System.out.println("Not accepted!");
  * }
  * </pre>
- * <p/>
- * <p><hr style="height=1"><p>
- * <p/>
+ * <hr style="height=1">
+ * <p>
  * Theories and concepts are based on the book <i>Elements of the Theory of Computation</i>, by Harry l. Lewis and Christos H. Papadimitriou, (c) 1981 by Prentice Hall.
- * <p/>
- * <p/>
+ * </p>
  *
  * @author <a href="mailto:eirik.torske@iconmedialab.no">Eirik Torske</a>
  * @deprecated Will probably be removed in the near future
@@ -144,7 +142,6 @@ public class WildcardStringParser {
 
     /**
      * Creates a wildcard string parser.
-     * <p/>
      *
      * @param pStringMask the wildcard string mask.
      */
@@ -154,7 +151,6 @@ public class WildcardStringParser {
 
     /**
      * Creates a wildcard string parser.
-     * <p/>
      *
      * @param pStringMask the wildcard string mask.
      * @param pDebugging {@code true} will cause debug messages to be emitted to {@code System.out}.
@@ -165,7 +161,6 @@ public class WildcardStringParser {
 
     /**
      * Creates a wildcard string parser.
-     * <p/>
      *
      * @param pStringMask the wildcard string mask.
      * @param pDebugging {@code true} will cause debug messages to be emitted.
@@ -311,7 +306,6 @@ public class WildcardStringParser {
 
     /**
      * Gets the string mask that was used when building the parser atomaton.
-     * <p/>
      *
      * @return the string mask used for building the parser automaton.
      */
@@ -321,7 +315,6 @@ public class WildcardStringParser {
 
     /**
      * Parses a string according to the rules stated above.
-     * <p/>
      *
      * @param pStringToParse the string to parse.
      * @return {@code true} if and only if the string are accepted by the automaton.
@@ -629,7 +622,7 @@ public class WildcardStringParser {
             buffer.append("\n");
             buffer.append("      Format: <state index>: <character> (<last free state>)");
             buffer.append("\n");
-            buffer.append("      Number of strings parsed: " + totalNumberOfStringsParsed);
+            buffer.append("      Number of strings parsed: ").append(totalNumberOfStringsParsed);
             buffer.append("\n");
         }
         return buffer.toString();

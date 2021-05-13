@@ -4,29 +4,53 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.bmp;
+
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.*;
+import java.io.DataInput;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.Iterator;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
@@ -37,30 +61,13 @@ import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.xml.XMLSerializer;
 
-import javax.imageio.*;
-import javax.imageio.event.IIOReadUpdateListener;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-import java.io.DataInput;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.Iterator;
-
 /**
  * ImageReader for Microsoft Windows Bitmap (BMP) format.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: CURImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
- * @see com.twelvemonkeys.imageio.plugins.bmp.ICOImageReader
+ * @version $Id: BMPImageReader.java,v 1.0 Apr 20, 2009 11:54:28 AM haraldk Exp$
+ * @see ICOImageReader
  */
 public final class BMPImageReader extends ImageReaderBase {
     private long pixelOffset;
@@ -123,6 +130,10 @@ public final class BMPImageReader extends ImageReaderBase {
 
             // Read DIB header
             header = DIBHeader.read(imageInput);
+
+            if (pixelOffset < header.size + DIB.BMP_FILE_HEADER_SIZE) {
+                throw new IIOException("Invalid pixel offset: " + pixelOffset);
+            }
         }
     }
 
@@ -194,7 +205,7 @@ public final class BMPImageReader extends ImageReaderBase {
         checkBounds(pImageIndex);
 
         // TODO: Better implementation, include INT_RGB types for 3BYTE_BGR and 4BYTE_ABGR for INT_ARGB
-        return Arrays.asList(getRawImageType(pImageIndex)).iterator();
+        return Collections.singletonList(getRawImageType(pImageIndex)).iterator();
     }
 
     @Override
@@ -205,87 +216,56 @@ public final class BMPImageReader extends ImageReaderBase {
             throw new IIOException("Multiple planes not supported");
         }
 
-        switch (header.getBitCount()) {
-            case 1:
-            case 2:
-            case 4:
-            case 8:
-                return ImageTypeSpecifiers.createFromIndexColorModel(readColorMap());
+        try {
+            switch (header.getBitCount()) {
+                case 1:
+                case 2:
+                case 4:
+                case 8:
+                    return ImageTypeSpecifiers.createFromIndexColorModel(readColorMap());
 
-            case 16:
-                if (header.hasMasks()) {
-                    int[] masks = getMasks();
+                case 16:
+                    if (header.hasMasks()) {
+                        return ImageTypeSpecifiers.createPacked(
+                                ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                                header.masks[0], header.masks[1], header.masks[2], header.masks[3],
+                                DataBuffer.TYPE_USHORT, false
+                        );
+                    }
 
-                    return ImageTypeSpecifiers.createPacked(
-                            ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0], masks[1], masks[2], masks[3],
-                            DataBuffer.TYPE_USHORT, false
-                    );
-                }
+                    // Default if no mask is 555
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
 
-                // Default if no mask is 555
-                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_555_RGB);
+                case 24:
+                    if (header.getCompression() != DIB.COMPRESSION_RGB) {
+                        throw new IIOException("Unsupported compression for RGB: " + header.getCompression());
+                    }
 
-            case 24:
-                if (header.getCompression() != DIB.COMPRESSION_RGB) {
-                    throw new IIOException("Unsupported compression for RGB: " + header.getCompression());
-                }
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
 
-                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+                case 32:
+                    if (header.hasMasks()) {
+                        return ImageTypeSpecifiers.createPacked(
+                                ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                                header.masks[0], header.masks[1], header.masks[2], header.masks[3],
+                                DataBuffer.TYPE_INT, false
+                        );
+                    }
 
-            case 32:
-                if (header.hasMasks()) {
-                    int[] masks = getMasks();
+                    // Default if no mask
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
 
-                    return ImageTypeSpecifiers.createPacked(
-                            ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                            masks[0], masks[1], masks[2], masks[3],
-                            DataBuffer.TYPE_INT, false
-                    );
-                }
-
-                // Default if no mask
-                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
-
-            case 0:
-                if (header.getCompression() == DIB.COMPRESSION_JPEG || header.getCompression() == DIB.COMPRESSION_PNG) {
-                    return initReaderDelegate(header.getCompression()).getRawImageType(0);
-                }
-            default:
-                throw new IIOException("Unsupported bit count: " + header.getBitCount());
+                case 0:
+                    if (header.getCompression() == DIB.COMPRESSION_JPEG || header.getCompression() == DIB.COMPRESSION_PNG) {
+                        return initReaderDelegate(header.getCompression()).getRawImageType(0);
+                    }
+                default:
+                    throw new IIOException("Unsupported bit count: " + header.getBitCount());
+            }
         }
-    }
-
-    private int[] getMasks() throws IOException {
-        if (header.masks != null) {
-            // Get mask and create either 555, 565 or 444/4444 etc
-            return header.masks;
+        catch (IllegalArgumentException e) {
+            throw new IIOException(e.getMessage(), e);
         }
-
-        switch (header.getCompression()) {
-            case DIB.COMPRESSION_BITFIELDS:
-            case DIB.COMPRESSION_ALPHA_BITFIELDS:
-                // Consult BITFIELDS/ALPHA_BITFIELDS
-                return readBitFieldsMasks();
-            default:
-                return null;
-        }
-    }
-
-    private int[] readBitFieldsMasks() throws IOException {
-        long offset = DIB.BMP_FILE_HEADER_SIZE + header.getSize();
-
-        if (offset != imageInput.getStreamPosition()) {
-            imageInput.seek(offset);
-        }
-
-        int[] masks = DIBHeader.readMasks(imageInput);
-
-        if (header.getCompression() != DIB.COMPRESSION_ALPHA_BITFIELDS) {
-            masks[3] = 0;
-        }
-
-        return masks;
     }
 
     @Override
@@ -430,6 +410,13 @@ public final class BMPImageReader extends ImageReaderBase {
 
     private ImageReader initReaderDelegate(int compression) throws IOException {
         ImageReader reader = getImageReaderDelegate(compression);
+        reader.reset();
+
+        // Install listener
+        ListenerDelegator listenerDelegator = new ListenerDelegator();
+        reader.addIIOReadWarningListener(listenerDelegator);
+        reader.addIIOReadProgressListener(listenerDelegator);
+        reader.addIIOReadUpdateListener(listenerDelegator);
 
         imageInput.seek(pixelOffset);
         reader.setInput(new SubImageInputStream(imageInput, header.getImageSize()));
@@ -469,12 +456,6 @@ public final class BMPImageReader extends ImageReaderBase {
         }
 
         ImageReader reader = readers.next();
-
-        // Install listener
-        ListenerDelegator listenerDelegator = new ListenerDelegator();
-        reader.addIIOReadWarningListener(listenerDelegator);
-        reader.addIIOReadProgressListener(listenerDelegator);
-        reader.addIIOReadUpdateListener(listenerDelegator);
 
         // Cache for later use
         switch (compression) {
@@ -648,12 +629,13 @@ public final class BMPImageReader extends ImageReaderBase {
         }
 
         // Why, oh why..? Instead of accepting it's own native format as it should,
-        // The BMPImageWriter only accepts instances of com.sun.imageio.plugins.bmp.BMPMetadata...
+        // The DIBImageWriter only accepts instances of com.sun.imageio.plugins.bmp.BMPMetadata...
         // TODO: Consider reflectively construct a BMPMetadata and inject fields
         return new BMPMetadata(header, colors);
     }
 
-    public static void main(String[] args) throws IOException {
+    @SuppressWarnings("ConstantConditions")
+    public static void main(String[] args) {
         BMPImageReaderSpi provider = new BMPImageReaderSpi();
         BMPImageReader reader = new BMPImageReader(provider);
 
@@ -706,7 +688,7 @@ public final class BMPImageReader extends ImageReaderBase {
         }
     }
 
-    @SuppressWarnings({"unchecked", "UnusedDeclaration"})
+    @SuppressWarnings({ "unchecked", "UnusedDeclaration", "SameParameterValue" })
     static <T extends Throwable> void throwAs(final Class<T> pType, final Throwable pThrowable) throws T {
         throw (T) pThrowable;
     }

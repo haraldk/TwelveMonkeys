@@ -4,13 +4,29 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-reference</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: reference test cases</name>
+    <name>TwelveMonkeys :: ImageIO :: JDK Reference Tests</name>
     <description>
         Test cases for the JRE provided ImageReader implementations for reference.
     </description>
+
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.reference</project.jpms.module.name>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -21,6 +37,7 @@
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.io;
@@ -34,8 +36,9 @@ import java.io.*;
 
 /**
  * A {@code SeekableInputStream} implementation that caches data in a temporary {@code File}.
- * <p/>
+ * <p>
  * Temporary files are created as specified in {@link File#createTempFile(String, String, java.io.File)}.
+ * </p>
  *
  * @see MemoryCacheSeekableStream
  * @see FileSeekableStream
@@ -122,7 +125,9 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
 
     @Override
     protected void closeImpl() throws IOException {
+        // TODO: Close cache file
         super.closeImpl();
+
         buffer = null;
     }
 
@@ -192,39 +197,45 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
         return length;
     }
 
+    // TODO: We need to close the cache file!!! Otherwise we are leaking file descriptors
+
     final static class FileCache extends StreamCache {
-        private RandomAccessFile mCacheFile;
+        private RandomAccessFile cacheFile;
 
         public FileCache(final File pFile) throws FileNotFoundException {
             Validate.notNull(pFile, "file");
-            mCacheFile = new RandomAccessFile(pFile, "rw");
+            cacheFile = new RandomAccessFile(pFile, "rw");
         }
 
         public void write(final int pByte) throws IOException {
-            mCacheFile.write(pByte);
+            cacheFile.write(pByte);
         }
 
         @Override
         public void write(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
-            mCacheFile.write(pBuffer, pOffset, pLength);
+            cacheFile.write(pBuffer, pOffset, pLength);
         }
 
         public int read() throws IOException {
-            return mCacheFile.read();
+            return cacheFile.read();
         }
 
         @Override
         public int read(final byte[] pBuffer, final int pOffset, final int pLength) throws IOException {
-            return mCacheFile.read(pBuffer, pOffset, pLength);
+            return cacheFile.read(pBuffer, pOffset, pLength);
         }
 
         public void seek(final long pPosition) throws IOException {
-            mCacheFile.seek(pPosition);
+            cacheFile.seek(pPosition);
         }
 
         public long getPosition() throws IOException {
-            return mCacheFile.getFilePointer();
+            return cacheFile.getFilePointer();
+        }
+
+        @Override
+        void close() throws IOException {
+            cacheFile.close();
         }
     }
-
 }

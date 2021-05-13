@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.path;
 
 import org.junit.Test;
@@ -33,7 +63,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, 42);
 
         assertEquals(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, segment.selector);
-        assertEquals(42, segment.length);
+        assertEquals(42, segment.lengthOrRule);
         assertEquals(-1, segment.cppx, 0);
         assertEquals(-1, segment.cppy, 0);
         assertEquals(-1, segment.apx, 0);
@@ -52,7 +82,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, 27);
 
         assertEquals(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, segment.selector);
-        assertEquals(27, segment.length);
+        assertEquals(27, segment.lengthOrRule);
         assertEquals(-1, segment.cppx, 0);
         assertEquals(-1, segment.cppy, 0);
         assertEquals(-1, segment.apx, 0);
@@ -68,7 +98,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -83,8 +113,13 @@ public class AdobePathSegmentTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateOpenLinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateOpenLinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, -16.1, -16.1, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateOpenLinkedRecordOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 16.1, 16.1, 0, 0, 1, 1);
     }
 
     @Test
@@ -92,7 +127,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -108,8 +143,13 @@ public class AdobePathSegmentTest {
 
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateOpenUnlinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateOpenUnlinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, -16.5, 0, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateOpenUnlinkedRecorOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, 0, -17, 0, 0, 16.5, 1);
     }
 
     /// Closed subpath
@@ -119,7 +159,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -134,8 +174,13 @@ public class AdobePathSegmentTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateClosedLinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateClosedLinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, -16.5, -.5, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateClosedLinkedRecordOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, .5, 16.5, 0, 0, 1, 1);
     }
 
     @Test
@@ -143,7 +188,7 @@ public class AdobePathSegmentTest {
         AdobePathSegment segment = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, .5, .5, 0, 0, 1, 1);
 
         assertEquals(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, segment.selector);
-        assertEquals(-1, segment.length);
+        assertEquals(-1, segment.lengthOrRule);
         assertEquals(.5, segment.cppx, 0);
         assertEquals(.5, segment.cppy, 0);
         assertEquals(0, segment.apx, 0);
@@ -159,17 +204,22 @@ public class AdobePathSegmentTest {
 
 
     @Test(expected = IllegalArgumentException.class)
-    public void testCreateClosedUnlinkedRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, -.5, -.5, 0, 0, 1, 1);
+    public void testCreateClosedUnlinkedRecordOutOfRangeNegative() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, -.5, -16.5, 0, 0, 1, 1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateClosedUnlinkedRecordOutOfRangePositive() {
+        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, 16.5, .5, 0, 0, 1, 1);
     }
 
     @Test
     public void testToStringRule() {
-        String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD, 2).toString();
+        String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD, 0).toString();
         assertTrue(string, string.startsWith("Rule"));
         assertTrue(string, string.contains("Initial"));
         assertTrue(string, string.contains("fill"));
-        assertTrue(string, string.contains("rule=2"));
+        assertTrue(string, string.contains("rule=0"));
     }
 
     @Test
@@ -178,13 +228,13 @@ public class AdobePathSegmentTest {
         assertTrue(string, string.startsWith("Len"));
         assertTrue(string, string.contains("Closed"));
         assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("totalPoints=2"));
+        assertTrue(string, string.contains("length=2"));
 
         string = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, 42).toString();
         assertTrue(string, string.startsWith("Len"));
         assertTrue(string, string.contains("Open"));
         assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("totalPoints=42"));
+        assertTrue(string, string.contains("length=42"));
     }
 
     @Test

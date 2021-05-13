@@ -1,7 +1,38 @@
+/*
+ * Copyright (c) 2013, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.xml.XMLSerializer;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -21,11 +52,6 @@ import java.util.List;
  * @version $Id: JPEGImage10MetadataCleaner.java,v 1.0 22.10.13 14:41 haraldk Exp$
  */
 final class JPEGImage10MetadataCleaner {
-
-    /**
-     * Native metadata format name
-     */
-    static final String JAVAX_IMAGEIO_JPEG_IMAGE_1_0 = "javax_imageio_jpeg_image_1.0";
 
     private final JPEGImageReader reader;
 
@@ -63,7 +89,7 @@ final class JPEGImage10MetadataCleaner {
         the version to the method/constructor used to obtain an IIOMetadata object.)
          */
 
-        IIOMetadataNode tree = (IIOMetadataNode) imageMetadata.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+        IIOMetadataNode tree = (IIOMetadataNode) imageMetadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
         IIOMetadataNode jpegVariety = (IIOMetadataNode) tree.getElementsByTagName("JPEGvariety").item(0);
         IIOMetadataNode markerSequence = (IIOMetadataNode) tree.getElementsByTagName("markerSequence").item(0);
 
@@ -107,7 +133,7 @@ final class JPEGImage10MetadataCleaner {
                     IIOMetadataNode app0JFXX = new IIOMetadataNode("app0JFXX");
                     app0JFXX.setAttribute("extensionCode", String.valueOf(jfxx.extensionCode));
 
-                    JFXXThumbnailReader thumbnailReader = new JFXXThumbnailReader(null, reader.getThumbnailReader(), 0, 0, jfxx);
+                    ThumbnailReader thumbnailReader = JFXXThumbnail.from(jfxx, reader.getThumbnailReader());
                     IIOMetadataNode jfifThumb;
 
                     switch (jfxx.extensionCode) {
@@ -115,7 +141,7 @@ final class JPEGImage10MetadataCleaner {
                             jfifThumb = new IIOMetadataNode("JFIFthumbJPEG");
                             // Contains it's own "markerSequence" with full DHT, DQT, SOF etc...
                             IIOMetadata thumbMeta = thumbnailReader.readMetadata();
-                            Node thumbTree = thumbMeta.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
+                            Node thumbTree = thumbMeta.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
                             jfifThumb.appendChild(thumbTree.getLastChild());
                             app0JFXX.appendChild(jfifThumb);
                             break;
@@ -277,11 +303,11 @@ final class JPEGImage10MetadataCleaner {
         }
 
         try {
-            imageMetadata.setFromTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0, tree);
+            imageMetadata.setFromTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0, tree);
         }
         catch (IIOInvalidTreeException e) {
             if (JPEGImageReader.DEBUG) {
-                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0), false);
+                new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(imageMetadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0), false);
                 System.out.println("-- 8< --");
                 new XMLSerializer(System.out, System.getProperty("file.encoding")).serialize(tree, false);
             }

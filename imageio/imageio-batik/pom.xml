@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-batik</artifactId>
     <name>TwelveMonkeys :: ImageIO :: Batik Plugin</name>
@@ -15,6 +15,27 @@
         for more information.]]>
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.batik</project.jpms.module.name>
+        <batik.version>1.14</batik.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <com.twelvemonkeys.imageio.plugins.svg.allowexternalresources>
+                            true
+                        </com.twelvemonkeys.imageio.plugins.svg.allowexternalresources>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
@@ -24,6 +45,7 @@
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -49,7 +71,7 @@
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>xmlgraphics-commons</artifactId>
-            <version>2.0.1</version>
+            <version>2.2</version>
             <scope>provided</scope>
         </dependency>
 
@@ -86,8 +108,4 @@
             </exclusions>
         </dependency>
     </dependencies>
-
-    <properties>
-        <batik.version>1.8</batik.version>
-    </properties>
 </project>

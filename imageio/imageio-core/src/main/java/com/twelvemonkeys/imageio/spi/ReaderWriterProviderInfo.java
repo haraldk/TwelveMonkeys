@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.spi;
@@ -47,10 +49,10 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
     private final String[] mimeTypes;
     private final String readerClassName;
     private final String[] readerSpiClassNames;
-    private final Class[] inputTypes = new Class[] {ImageInputStream.class};
+    private final Class<?>[] inputTypes = new Class<?>[] {ImageInputStream.class};
     private final String writerClassName;
     private final String[] writerSpiClassNames;
-    private final Class[] outputTypes = new Class[] {ImageOutputStream.class};
+    private final Class<?>[] outputTypes = new Class<?>[] {ImageOutputStream.class};
     private final boolean supportsStandardStreamMetadata;
     private final String nativeStreamMetadataFormatName;
     private final String nativeStreamMetadataFormatClassName;
@@ -78,7 +80,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
                                        final String writerClassName,
                                        final String[] writerSpiClassNames,
                                        final boolean supportsStandardStreamMetadata,
-                                       final String nativeStreameMetadataFormatName,
+                                       final String nativeStreamMetadataFormatName,
                                        final String nativeStreamMetadataFormatClassName,
                                        final String[] extraStreamMetadataFormatNames,
                                        final String[] extraStreamMetadataFormatClassNames,
@@ -97,7 +99,7 @@ public abstract class ReaderWriterProviderInfo extends ProviderInfo {
         this.writerClassName = writerClassName;
         this.writerSpiClassNames = writerSpiClassNames;
         this.supportsStandardStreamMetadata = supportsStandardStreamMetadata;
-        this.nativeStreamMetadataFormatName = nativeStreameMetadataFormatName;
+        this.nativeStreamMetadataFormatName = nativeStreamMetadataFormatName;
         this.nativeStreamMetadataFormatClassName = nativeStreamMetadataFormatClassName;
         this.extraStreamMetadataFormatNames = extraStreamMetadataFormatNames;
         this.extraStreamMetadataFormatClassNames = extraStreamMetadataFormatClassNames;

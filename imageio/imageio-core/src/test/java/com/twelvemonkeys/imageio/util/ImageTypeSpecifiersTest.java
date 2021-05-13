@@ -1,13 +1,49 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.util;
 
-import com.twelvemonkeys.lang.Validate;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DirectColorModel;
+import java.awt.image.IndexColorModel;
 
 import javax.imageio.ImageTypeSpecifier;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
+
+import com.twelvemonkeys.lang.Validate;
 
 public class ImageTypeSpecifiersTest {
 
@@ -31,10 +67,21 @@ public class ImageTypeSpecifiersTest {
     @Test
     public void testCreateFromBufferedImageType() {
         for (int type = BufferedImage.TYPE_INT_RGB; type < BufferedImage.TYPE_BYTE_INDEXED; type++) {
-            assertEquals(
-                    ImageTypeSpecifier.createFromBufferedImageType(type),
-                    ImageTypeSpecifiers.createFromBufferedImageType(type)
-            );
+            ImageTypeSpecifier expected;
+
+            switch (type) {
+                // Special handling for USHORT_565 and 555, due to bug in ImageTypeSpecifier for these types (DirectColorModel is 32 bits)
+                case BufferedImage.TYPE_USHORT_565_RGB:
+                    expected = createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false);
+                    break;
+                case BufferedImage.TYPE_USHORT_555_RGB:
+                    expected = createPacked(sRGB, DCM_555_RED_MASK, DCM_555_GRN_MASK, DCM_555_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false);
+                    break;
+                default:
+                    expected = ImageTypeSpecifier.createFromBufferedImageType(type);
+            }
+
+            assertEquals(expected, ImageTypeSpecifiers.createFromBufferedImageType(type));
         }
     }
 
@@ -89,7 +136,7 @@ public class ImageTypeSpecifiersTest {
 
         // Extra: Make sure color models bits is actually 16 (ImageTypeSpecifier equivalent returns 32)
         assertEquals(16, ImageTypeSpecifiers.createPacked(sRGB, DCM_565_RED_MASK, DCM_565_GRN_MASK, DCM_565_BLU_MASK, 0, DataBuffer.TYPE_USHORT, false).getColorModel().getPixelSize());
-   }
+    }
 
     @Test
     public void testCreatePacked8() {
@@ -500,7 +547,7 @@ public class ImageTypeSpecifiersTest {
     }
 
     @Test
-    public void testCreatePackedGrayscale1() {
+    public void testCreatePackedGrayscale1BPP() {
         assertEquals(
                 ImageTypeSpecifier.createGrayscale(1, DataBuffer.TYPE_BYTE, false),
                 ImageTypeSpecifiers.createPackedGrayscale(GRAY, 1, DataBuffer.TYPE_BYTE)
@@ -508,7 +555,8 @@ public class ImageTypeSpecifiersTest {
     }
 
     @Test
-    public void testCreatePackedGrayscale2() {
+    public void testCreatePackedGrayscale2BPP() {
+        // TODO: Fails on Java 11+, because IndexColorModel now has an overloaded equals that actually tests the color entries
         assertEquals(
                 ImageTypeSpecifier.createGrayscale(2, DataBuffer.TYPE_BYTE, false),
                 ImageTypeSpecifiers.createPackedGrayscale(GRAY, 2, DataBuffer.TYPE_BYTE)
@@ -516,7 +564,8 @@ public class ImageTypeSpecifiersTest {
     }
 
     @Test
-    public void testCreatePackedGrayscale4() {
+    public void testCreatePackedGrayscale4BPP()  {
+        // TODO: Fails on Java 11+, because IndexColorModel now has an overloaded equals that actually tests the color entries
         assertEquals(
                 ImageTypeSpecifier.createGrayscale(4, DataBuffer.TYPE_BYTE, false),
                 ImageTypeSpecifiers.createPackedGrayscale(GRAY, 4, DataBuffer.TYPE_BYTE)
@@ -609,7 +658,7 @@ public class ImageTypeSpecifiersTest {
         for (int bits = 1; bits <= 8; bits <<= 1) {
             int[] colors = createIntLut(1 << bits);
             assertEquals(
-                    IndexedImageTypeSpecifier.createFromIndexColorModel(new IndexColorModel(bits, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE)),
+                    new IndexedImageTypeSpecifier(new IndexColorModel(bits, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE)),
                     ImageTypeSpecifiers.createIndexed(colors, false, -1, bits, DataBuffer.TYPE_BYTE)
             );
         }
@@ -619,7 +668,7 @@ public class ImageTypeSpecifiersTest {
     public void testCreateIndexedIntArray16() {
         int[] colors = createIntLut(1 << 16);
         assertEquals(
-                IndexedImageTypeSpecifier.createFromIndexColorModel(new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT)),
+                new IndexedImageTypeSpecifier(new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT)),
                 ImageTypeSpecifiers.createIndexed(colors, false, -1, 16, DataBuffer.TYPE_USHORT)
         );
 
@@ -631,7 +680,7 @@ public class ImageTypeSpecifiersTest {
             int[] colors = createIntLut(1 << bits);
             IndexColorModel colorModel = new IndexColorModel(bits, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
             assertEquals(
-                    IndexedImageTypeSpecifier.createFromIndexColorModel(colorModel),
+                    new IndexedImageTypeSpecifier(colorModel),
                     ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
             );
         }
@@ -642,7 +691,7 @@ public class ImageTypeSpecifiersTest {
         int[] colors = createIntLut(1 << 16);
         IndexColorModel colorModel = new IndexColorModel(16, colors.length, colors, 0, false, -1, DataBuffer.TYPE_USHORT);
         assertEquals(
-                IndexedImageTypeSpecifier.createFromIndexColorModel(colorModel),
+                new IndexedImageTypeSpecifier(colorModel),
                 ImageTypeSpecifiers.createFromIndexColorModel(colorModel)
         );
     }

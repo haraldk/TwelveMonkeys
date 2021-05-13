@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.tiff;
@@ -57,15 +59,28 @@ public class CCITTFaxDecoderStreamTest {
     static final byte[] DATA_G3_1D_FILL = { 0x00, 0x01, (byte) 0x84, (byte) 0xE0, 0x01, (byte) 0x84, (byte) 0xE0, 0x01,
             (byte) 0x84, (byte) 0xE0, 0x1, 0x7D, (byte) 0xC0 };
 
+    // group3_1d_premature_eol.tif
+    // 0011 0101 | 0000 0010 1011 | 0110 0111 | 0010 1001 | 0100
+    // 0W | 59B | 640W | 40W
+    static final byte[] DATA_G3_1D_PREMATURE_EOL = {
+            0x35, 0x02, (byte) 0xB6, 0x72, (byte) 0x94, (byte) 0xE8, 0x74, 0x38, 0x1C, (byte) 0x81, 0x64, (byte) 0xD4,
+            0x0A, (byte) 0xD9, (byte) 0xD2, 0x27, 0x50, (byte) 0x90, (byte) 0xA6, (byte) 0x87, 0x43, (byte) 0xE3
+    };
+
     // group3_2d.tif: EOL|k=1|3W|1B|2W|EOL|k=0|V|V|V|EOL|k=1|3W|1B|2W|EOL|k=0|V-1|V|V|6*F
-    static final byte[] DATA_G3_2D = { 0x00, 0x1C, 0x27, 0x00, 0x17, 0x00, 0x1C, 0x27, 0x00, 0x12, (byte) 0xC0 };
+    static final byte[] DATA_G3_2D = {0x00, 0x1C, 0x27, 0x00, 0x17, 0x00, 0x1C, 0x27, 0x00, 0x12, (byte) 0xC0};
 
     // group3_2d_fill.tif
-    static final byte[] DATA_G3_2D_FILL = { 0x00, 0x01, (byte) 0xC2, 0x70, 0x01, 0x70, 0x01, (byte) 0xC2, 0x70, 0x01,
-            0x2C };
+    static final byte[] DATA_G3_2D_FILL = {0x00, 0x01, (byte) 0xC2, 0x70, 0x01, 0x70, 0x01, (byte) 0xC2,
+                                           0x70, 0x01, 0x2C};
 
-    static final byte[] DATA_G3_2D_lsb2msb = { 0x00, 0x38, (byte) 0xE4, 0x00, (byte) 0xE8, 0x00, 0x38, (byte) 0xE4,
-            0x00, 0x48, 0x03 };
+    static final byte[] DATA_G3_2D_lsb2msb = {0x00, 0x38, (byte) 0xE4, 0x00, (byte) 0xE8, 0x00, 0x38, (byte) 0xE4,
+                                              0x00, 0x48, 0x03};
+
+    static final byte[] DATA_G3_LONG = {0x00, 0x68, 0x0A, (byte) 0xC9, 0x3A, 0x3A, 0x00, 0x68,
+                                        (byte) 0x8A, (byte) 0xD8, 0x3A, 0x35, 0x00, 0x68, 0x0A, 0x06,
+                                        (byte) 0xDD, 0x3A, 0x19, 0x00, 0x68, (byte) 0x8A, (byte) 0x9E, 0x75,
+                                        0x08, 0x00, 0x68};
 
     // group4.tif:
     // Line 1: V-3, V-2, V0
@@ -166,6 +181,28 @@ public class CCITTFaxDecoderStreamTest {
         byte[] bytes = new byte[imageData.length];
         new DataInputStream(stream).readFully(bytes);
         assertArrayEquals(imageData, bytes);
+    }
+
+    @Test
+    public void testFidCompressionType() throws IOException {
+        // RLE
+        assertEquals(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, CCITTFaxDecoderStream.findCompressionType(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, new ByteArrayInputStream(DATA_RLE_UNALIGNED)));
+
+        // Group 3/CCITT_T4
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_1D)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_1D_FILL)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D_FILL)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D_lsb2msb)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_LONG)));
+
+        // Group 4/CCITT_T6
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T6, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T6, new ByteArrayInputStream(DATA_G4)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T6, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T6, new ByteArrayInputStream(DATA_G4_ALIGNED)));
+
+        // From sample file encoded with RLE, but with CCITT_T4 compression tag
+        assertEquals(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_1D_PREMATURE_EOL)));
+        assertEquals(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_RLE_UNALIGNED)));
     }
 
     @Test

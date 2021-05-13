@@ -6,26 +6,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
@@ -33,27 +35,27 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 
 import javax.imageio.IIOException;
+import javax.imageio.plugins.jpeg.JPEGHuffmanTable;
 import java.io.DataInput;
 import java.io.IOException;
 
 final class HuffmanTable extends Segment {
 
-    private final int l[][][] = new int[4][2][16];
-    private final int th[] = new int[4]; // 1: this table is present
-    final int v[][][][] = new int[4][2][16][200]; // tables
-    final int[][] tc = new int[4][2]; // 1: this table is present
+    private final short[][][] l = new short[4][2][16];
+    private final short[][][][] v = new short[4][2][16][200]; // tables
+    private final boolean[][] tc = new boolean[4][2]; // 1: this table is present
 
-    static final int MSB = 0x80000000;
+    private static final int MSB = 0x80000000;
 
     private HuffmanTable() {
         super(JPEG.DHT);
    }
 
-    void buildHuffTables(final int[][][] HuffTab) throws IOException {
+    void buildHuffTables(final int[][][] huffTab) throws IOException {
         for (int t = 0; t < 4; t++) {
             for (int c = 0; c < 2; c++) {
-                if (tc[t][c] != 0) {
-                    buildHuffTable(HuffTab[t][c], l[t][c], v[t][c]);
+                if (tc[t][c]) {
+                    buildHuffTable(huffTab[t][c], l[t][c], v[t][c]);
                 }
             }
         }
@@ -66,7 +68,7 @@ final class HuffmanTable extends Segment {
     //	            V[i][j] Huffman Value (length=i)
     //	Effect:
     //	    build up HuffTab[t][c] using L and V.
-    private void buildHuffTable(final int tab[], final int L[], final int V[][]) throws IOException {
+    private void buildHuffTable(final int[] tab, final short[] L, final short[][] V) throws IOException {
         int temp = 256;
         int k = 0;
 
@@ -110,7 +112,7 @@ final class HuffmanTable extends Segment {
 
         for (int t = 0; t < tc.length; t++) {
             for (int c = 0; c < tc[t].length; c++) {
-                if (tc[t][c] != 0) {
+                if (tc[t][c]) {
                     if (builder.length() > 4) {
                         builder.append(", ");
                     }
@@ -147,11 +149,10 @@ final class HuffmanTable extends Segment {
                 throw new IIOException("Unexpected JPEG Huffman Table class (> 2): " + c);
             }
 
-            table.th[t] = 1;
-            table.tc[t][c] = 1;
+            table.tc[t][c] = true;
 
             for (int i = 0; i < 16; i++) {
-                table.l[t][c][i] = data.readUnsignedByte();
+                table.l[t][c][i] = (short) data.readUnsignedByte();
                 count++;
             }
 
@@ -160,7 +161,7 @@ final class HuffmanTable extends Segment {
                     if (count > length) {
                         throw new IIOException("JPEG Huffman Table format error");
                     }
-                    table.v[t][c][i][j] = data.readUnsignedByte();
+                    table.v[t][c][i][j] = (short) data.readUnsignedByte();
                     count++;
                 }
             }
@@ -171,5 +172,42 @@ final class HuffmanTable extends Segment {
         }
 
         return table;
+    }
+
+    public boolean isPresent(int tableId, int tableClass) {
+        return tc[tableId][tableClass];
+    }
+
+    private short[] lengths(int tableId, int tableClass) {
+        // TODO: Consider stripping the 0s?
+        return l[tableId][tableClass];
+    }
+
+    private short[] tables(int tableId, int tableClass) {
+        // Find sum of lengths
+        short[] lengths = lengths(tableId, tableClass);
+
+        int sumOfLengths = 0;
+        for (int length : lengths) {
+            sumOfLengths += length;
+        }
+
+        // Flatten the tables
+        short[] tables = new short[sumOfLengths];
+
+        int pos = 0;
+        for (int i = 0; i < 16; i++) {
+            short[] table = v[tableId][tableClass][i];
+            short length = lengths[i];
+
+            System.arraycopy(table, 0, tables, pos, length);
+            pos += length;
+        }
+
+        return tables;
+    }
+
+    JPEGHuffmanTable toNativeTable(int tableId, int tableClass) {
+        return new JPEGHuffmanTable(lengths(tableId, tableClass), tables(tableId, tableClass));
     }
 }

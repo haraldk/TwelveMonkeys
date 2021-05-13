@@ -1,29 +1,31 @@
 /*
- * Copyright (c) 2013, Harald Kuhr
+ * Copyright (c) 2013, Oliver Schmidtmer, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.contrib.tiff;
@@ -200,37 +202,68 @@ public class TIFFUtilitiesTest {
     }
 
     @Test
-    public void testMergeBogusInterchangeFormatLength() throws IOException {
-        String[] testFiles = new String[] {
+    public void testOldStyleJPEGTransform() throws IOException {
+        String[] testFiles = new String[]{
                 "/tiff/old-style-jpeg-bogus-jpeginterchangeformatlength.tif", // InterchangeFormat before StripOffset, length not including StripOffset
                 "/tiff/old-style-jpeg-no-jpeginterchangeformatlength.tif", // missing JPEGInterChangeFormatLength and JPEGInterchangeFormat == StipOffset
-                "/tiff/old-style-jpeg-multiple-strips.tif" // InterchangeFormat with multiple strips
+                "/tiff/old-style-jpeg-multiple-strips.tif", // InterchangeFormat with multiple strips
+                "/contrib/tiff/old-style-jpeg-invalid-tables.tif", // AC/DC Tables are invalid (to long) and lie within the JPEGInterchangeFormat stream
+                "/contrib/tiff/smallliz.tif", // InterchangeFormat contains whole JPEG, ByteStrip only raw ImageData after SOS
+                "/contrib/tiff/WangJPEG.tif", // multiple strips, first strip contains SOS
+                "/contrib/tiff/zackthecat.tif" // No JPEGInterchangeFormat, ByteStrip contains only raw image data
         };
 
         for (String testFile : testFiles) {
-            File output = File.createTempFile("imageiotest", ".tif");
-            ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
-            InputStream inputStream1 = getClassLoaderResource(testFile).openStream();
-            ImageInputStream imageInput1 = ImageIO.createImageInputStream(inputStream1);
-            InputStream inputStream2 = getClassLoaderResource(testFile).openStream();
-            ImageInputStream imageInput2 = ImageIO.createImageInputStream(inputStream2);
-            ArrayList<TIFFUtilities.TIFFPage> pages = new ArrayList<>();
-            pages.addAll(TIFFUtilities.getPages(imageInput1));
-            pages.addAll(TIFFUtilities.getPages(imageInput2));
-            TIFFUtilities.writePages(outputStream, pages);
+            try {
+                File output = File.createTempFile("imageiotest", ".tif");
+                ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
+                InputStream inputStream = getClassLoaderResource(testFile).openStream();
+                ImageInputStream imageInput = ImageIO.createImageInputStream(inputStream);
+                List<TIFFUtilities.TIFFPage> pages = TIFFUtilities.getPages(imageInput);
+                TIFFUtilities.writePages(outputStream, pages);
 
-            ImageInputStream testOutput = ImageIO.createImageInputStream(output);
-            ImageReader reader = ImageIO.getImageReaders(testOutput).next();
-            reader.setInput(testOutput);
-            int numImages = reader.getNumImages(true);
-            for (int i = 0; i < numImages; i++) {
-                reader.read(i);
+                ImageInputStream testOutput = ImageIO.createImageInputStream(output);
+                ImageReader reader = ImageIO.getImageReaders(testOutput).next();
+                reader.setInput(testOutput);
+                int numImages = reader.getNumImages(true);
+                for (int i = 0; i < numImages; i++) {
+                    reader.read(i);
+                }
+
+                imageInput.close();
+                outputStream.close();
+            } catch (Exception exc) {
+                throw new IOException(testFile, exc);
             }
-
-            imageInput1.close();
-            imageInput2.close();
-            outputStream.close();
         }
+    }
+
+    @Test
+    public void testMergeWithSubIFD() throws IOException {
+        String testFile = "/tiff/cmyk_jpeg.tif";
+
+        File output = File.createTempFile("imageiotest", ".tif");
+        ImageOutputStream outputStream = ImageIO.createImageOutputStream(output);
+        InputStream inputStream1 = getClassLoaderResource(testFile).openStream();
+        ImageInputStream imageInput1 = ImageIO.createImageInputStream(inputStream1);
+        InputStream inputStream2 = getClassLoaderResource(testFile).openStream();
+        ImageInputStream imageInput2 = ImageIO.createImageInputStream(inputStream2);
+        ArrayList<TIFFUtilities.TIFFPage> pages = new ArrayList<>();
+        pages.addAll(TIFFUtilities.getPages(imageInput1));
+        pages.addAll(TIFFUtilities.getPages(imageInput2));
+        TIFFUtilities.writePages(outputStream, pages);
+
+        ImageInputStream testOutput = ImageIO.createImageInputStream(output);
+        ImageReader reader = ImageIO.getImageReaders(testOutput).next();
+        reader.setInput(testOutput);
+        int numImages = reader.getNumImages(true);
+        for (int i = 0; i < numImages; i++) {
+            reader.read(i);
+        }
+
+        imageInput1.close();
+        imageInput2.close();
+        outputStream.close();
     }
 
     protected URL getClassLoaderResource(final String pName) {

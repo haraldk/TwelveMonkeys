@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
@@ -60,7 +62,7 @@ import java.util.SortedSet;
  * @author last modified by $Author: haku$
  * @version $Id: ThumbsDBImageReader.java,v 1.0 22.jan.2007 18:49:38 haku Exp$
  * @see com.twelvemonkeys.io.ole2.CompoundDocument
- * @see <a href="http://en.wikipedia.org/wiki/Thumbs.db>Wikipedia: Thumbs.db</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Thumbs.db">Wikipedia: Thumbs.db</a>
  */
 public final class ThumbsDBImageReader extends ImageReaderBase {
     private static final int THUMBNAIL_OFFSET = 12;
@@ -105,10 +107,11 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
     /**
      * Instructs the reader wether it should read and cache alle thumbnails
      * in sequence, during the first read operation.
-     * <p/>
+     * <p>
      * This is useful mainly if you need to read all the thumbnails, and you
      * need them in random order, as it requires less repositioning in the
      * underlying stream.
+     * </p>
      *
      * @param pLoadEagerly {@code true} if the reader should read all thumbs on first read
      */
@@ -337,7 +340,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
         // TODO: Rethink this...
         // Seems to be up to Windows and the installed programs what formats
         // are supported...
-        // Some thumbs are just icons, and it might be better to use ImageIO to create thumbs for these... :-/ 
+        // Some thumbs are just icons, and it might be better to use ImageIO to create thumbs for these... :-/
         // At least this seems fine for now
         String extension = FileUtil.getExtension(pFileName);
         if (StringUtil.isEmpty(extension)) {
@@ -348,7 +351,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
         return !"psd".equals(extension) && !"svg".equals(extension) && catalog != null && catalog.getIndex(pFileName) != -1;
     }
 
-    /// Test code below 
+    /// Test code below
 
     public static void main(String[] pArgs) throws IOException {
         ThumbsDBImageReader reader = new ThumbsDBImageReader();
@@ -418,7 +421,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
                 return SIZE;
             }
         });
-        label.setText("" + image.getWidth() + "x" + image.getHeight() + ": " + pName);
+        label.setText(image.getWidth() + "x" + image.getHeight() + ": " + pName);
         label.setToolTipText(image.toString());
         pParent.add(label);
     }

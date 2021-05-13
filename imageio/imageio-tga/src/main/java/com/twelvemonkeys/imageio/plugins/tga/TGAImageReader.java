@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.tga;
@@ -56,14 +58,14 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-public final class TGAImageReader extends ImageReaderBase {
+final class TGAImageReader extends ImageReaderBase {
     // http://www.fileformat.info/format/tga/egff.htm
     // http://www.gamers.org/dEngine/quake3/TGA.txt
 
     private TGAHeader header;
     private TGAExtensions extensions;
 
-    protected TGAImageReader(final ImageReaderSpi provider) {
+    TGAImageReader(final ImageReaderSpi provider) {
         super(provider);
     }
 
@@ -222,7 +224,7 @@ public final class TGAImageReader extends ImageReaderBase {
                              byte[] rowDataByte, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
         // If subsampled or outside source region, skip entire row
         if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
-            imageInput.skipBytes(rowDataByte.length);
+            input.skipBytes(rowDataByte.length);
 
             return;
         }
@@ -249,7 +251,8 @@ public final class TGAImageReader extends ImageReaderBase {
                 destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             case TGA.ORIGIN_UPPER_LEFT:
-                destChannel.setDataElements(0, y, srcChannel);
+                dstY = y / ySub;
+                destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             default:
                 throw new IIOException("Unsupported origin: " + origin);
@@ -287,7 +290,8 @@ public final class TGAImageReader extends ImageReaderBase {
                 destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             case TGA.ORIGIN_UPPER_LEFT:
-                destChannel.setDataElements(0, y, srcChannel);
+                dstY = y / ySub;
+                destChannel.setDataElements(0, dstY, srcChannel);
                 break;
             default:
                 throw new IIOException("Unsupported origin: " + origin);
@@ -437,6 +441,7 @@ public final class TGAImageReader extends ImageReaderBase {
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
 
         processThumbnailStarted(imageIndex, thumbnailIndex);
+        processThumbnailProgress(0f);
 
         // Thumbnail is always stored non-compressed, no need for RLE support
         imageInput.seek(extensions.getThumbnailOffset() + 2);
@@ -464,6 +469,7 @@ public final class TGAImageReader extends ImageReaderBase {
             }
         }
 
+        processThumbnailProgress(100f);
         processThumbnailComplete();
 
         return destination;

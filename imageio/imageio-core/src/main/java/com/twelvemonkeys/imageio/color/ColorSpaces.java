@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *  Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *  Neither the name "TwelveMonkeys" nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.color;
@@ -48,10 +50,11 @@ import java.util.Properties;
 
 /**
  * A helper class for working with ICC color profiles and color spaces.
- * <p />
+ * <p>
  * Standard ICC color profiles are read from system-specific locations
  * for known operating systems.
- * <p />
+ * </p>
+ * <p>
  * Color profiles may be configured by placing a property-file
  * {@code com/twelvemonkeys/imageio/color/icc_profiles.properties}
  * on the classpath, specifying the full path to the profiles.
@@ -59,8 +62,10 @@ import java.util.Properties;
  * can be downloaded from
  * <a href="http://www.color.org/profiles2.xalter">ICC</a>,
  * <a href="http://www.adobe.com/downloads/">Adobe</a> or other places.
- * <p />
+ *  * </p>
+ * <p>
  * Example property file:
+ * </p>
  * <pre>
  * # icc_profiles.properties
  * ADOBE_RGB_1998=/path/to/Adobe RGB 1998.icc
@@ -98,13 +103,27 @@ public final class ColorSpaces {
     // Cache for the latest used color spaces
     private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<>(10);
 
+    static {
+        try {
+            // Force invocation of ProfileDeferralMgr.activateProfiles() to avoid JDK-6986863
+            ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData();
+        }
+        catch (Throwable disasters) {
+            System.err.println("ICC Color Profile not properly activated due to the exception below.");
+            System.err.println("Expect to see JDK-6986863 in action, and consider filing a bug report to your JRE provider.");
+
+            disasters.printStackTrace();
+        }
+    }
+
     private ColorSpaces() {}
 
     /**
      * Creates an ICC color space from the given ICC color profile.
-     * <p />
+     * <p>
      * For standard Java color spaces, the built-in instance is returned.
      * Otherwise, color spaces are looked up from cache and created on demand.
+     * </p>
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return an ICC color space
@@ -203,10 +222,14 @@ public final class ColorSpaces {
         }
     }
 
-    private static void validateColorSpace(ICC_ColorSpace cs) {
-        // Validate the color space, to avoid caching bad color spaces
+    private static void validateColorSpace(final ICC_ColorSpace cs) {
+        // Validate the color space, to avoid caching bad profiles/color spaces
         // Will throw IllegalArgumentException or CMMException if the profile is bad
-        cs.fromRGB(new float[] {1f, 0f, 0f});
+        cs.fromRGB(new float[] {0.999f, 0.5f, 0.001f});
+
+        // This breaks *some times* after validation of bad profiles,
+        // we'll let it blow up early in this case
+        cs.getProfile().getData();
     }
 
     /**
@@ -226,11 +249,12 @@ public final class ColorSpaces {
 
     /**
      * Tests whether an ICC color profile is known to cause problems for {@link java.awt.image.ColorConvertOp}.
-     * <p />
+     * <p>
      * <em>
      * Note that this method only tests if a color conversion using this profile is known to fail.
      * There's no guarantee that the color conversion will succeed even if this method returns {@code false}.
      * </em>
+     * </p>
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return {@code true} if known to be offending, {@code false} otherwise
@@ -258,11 +282,12 @@ public final class ColorSpaces {
     /**
      * Tests whether an ICC color profile is valid.
      * Invalid profiles are known to cause problems for {@link java.awt.image.ColorConvertOp}.
-     * <p />
+     * <p>
      * <em>
      * Note that this method only tests if a color conversion using this profile is known to fail.
      * There's no guarantee that the color conversion will succeed even if this method returns {@code false}.
      * </em>
+     * </p>
      *
      * @param profile the ICC color profile. May not be {@code null}.
      * @return {@code profile} if valid.
@@ -279,9 +304,10 @@ public final class ColorSpaces {
 
     /**
      * Returns the color space specified by the given color space constant.
-     * <p />
+     * <p>
      * For standard Java color spaces, the built-in instance is returned.
      * Otherwise, color spaces are looked up from cache and created on demand.
+     * </p>
      *
      * @param colorSpace the color space constant.
      * @return the {@link ColorSpace} specified by the color space constant.

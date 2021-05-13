@@ -1,17 +1,50 @@
+/*
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.stream;
 
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
+
 import org.junit.Test;
 
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 
 import static java.util.Arrays.fill;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * BufferedImageInputStreamTest
@@ -40,6 +73,257 @@ public class BufferedImageInputStreamTest {
             assertTrue("Exception message does not contain parameter name", message.contains("stream"));
             assertTrue("Exception message does not contain null", message.contains("null"));
         }
+    }
+
+    @Test
+    public void testReadBit() throws IOException {
+        byte[] bytes = new byte[] {(byte) 0xF0, (byte) 0x0F};
+
+        // Create wrapper stream
+        BufferedImageInputStream stream = new BufferedImageInputStream(new ByteArrayImageInputStream(bytes));
+
+        // Read all bits
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(2, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(3, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit());
+        assertEquals(5, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit());
+        assertEquals(6, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit());
+        assertEquals(7, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit()); // last bit
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        // Full reset, read same sequence again
+        stream.seek(0);
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+        assertEquals(0, stream.readBit());
+        assertEquals(0, stream.readBit());
+        assertEquals(0, stream.readBit());
+        assertEquals(0, stream.readBit());
+
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        // Full reset, read partial
+        stream.seek(0);
+
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+
+        // Byte reset, read same sequence again
+        stream.setBitOffset(0);
+
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+        assertEquals(1, stream.readBit());
+        assertEquals(0, stream.readBit());
+
+        // Byte reset, read partial sequence again
+        stream.setBitOffset(3);
+
+        assertEquals(1, stream.readBit());
+        assertEquals(0, stream.readBit());
+        assertEquals(0, stream.getStreamPosition());
+
+        // Byte reset, read partial sequence again
+        stream.setBitOffset(6);
+
+        assertEquals(0, stream.readBit());
+        assertEquals(0, stream.readBit());
+        assertEquals(1, stream.getStreamPosition());
+
+        // Read all bits, second byte
+        assertEquals(0, stream.readBit());
+        assertEquals(1, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit());
+        assertEquals(2, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit());
+        assertEquals(3, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBit());
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(5, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(6, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit());
+        assertEquals(7, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(1, stream.readBit()); // last bit
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(2, stream.getStreamPosition());
+    }
+
+    @Test
+    public void testReadBits() throws IOException {
+        byte[] bytes = new byte[] {(byte) 0xF0, (byte) 0xCC, (byte) 0xAA};
+
+        // Create wrapper stream
+        BufferedImageInputStream stream = new BufferedImageInputStream(new ByteArrayImageInputStream(bytes));
+
+        // Read all bits, first byte
+        assertEquals(3, stream.readBits(2));
+        assertEquals(2, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(3, stream.readBits(2));
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBits(2));
+        assertEquals(6, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBits(2));
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        // Read all bits, second byte
+        assertEquals(3, stream.readBits(2));
+        assertEquals(2, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBits(2));
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(3, stream.readBits(2));
+        assertEquals(6, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(0, stream.readBits(2));
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(2, stream.getStreamPosition());
+
+        // Read all bits, third byte
+        assertEquals(2, stream.readBits(2));
+        assertEquals(2, stream.getBitOffset());
+        assertEquals(2, stream.getStreamPosition());
+
+        assertEquals(2, stream.readBits(2));
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(2, stream.getStreamPosition());
+
+        assertEquals(2, stream.readBits(2));
+        assertEquals(6, stream.getBitOffset());
+        assertEquals(2, stream.getStreamPosition());
+
+        assertEquals(2, stream.readBits(2));
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(3, stream.getStreamPosition());
+
+        // Full reset, read same sequence again
+        stream.seek(0);
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        // Read all bits, increasing size
+        assertEquals(7, stream.readBits(3)); // 111
+        assertEquals(3, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(8, stream.readBits(4)); // 1000
+        assertEquals(7, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(12, stream.readBits(5)); // 01100
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(50, stream.readBits(6)); // 110010
+        assertEquals(2, stream.getBitOffset());
+        assertEquals(2, stream.getStreamPosition());
+
+        assertEquals(42, stream.readBits(6)); // 101010
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(3, stream.getStreamPosition());
+
+        // Full reset, read same sequence again
+        stream.seek(0);
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        // Read all bits multi-byte
+        assertEquals(0xF0C, stream.readBits(12)); // 111100001100
+        assertEquals(4, stream.getBitOffset());
+        assertEquals(1, stream.getStreamPosition());
+
+        assertEquals(0xCAA, stream.readBits(12)); // 110010101010
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(3, stream.getStreamPosition());
+
+        // Full reset, read same sequence again, all bits in one go
+        stream.seek(0);
+        assertEquals(0, stream.getBitOffset());
+        assertEquals(0, stream.getStreamPosition());
+
+        assertEquals(0xF0CCAA, stream.readBits(24));
+    }
+
+    @Test
+    public void testReadBitsRandom() throws IOException {
+        long value = random.nextLong();
+        byte[] bytes = new byte[8];
+        ByteBuffer.wrap(bytes).putLong(value);
+
+        // Create wrapper stream
+        BufferedImageInputStream stream = new BufferedImageInputStream(new ByteArrayImageInputStream(bytes));
+
+        for (int i = 1; i < 64; i++) {
+            stream.seek(0);
+            assertEquals(i + " bits differ", value >>> (64L - i), stream.readBits(i));
+        }
+    }
+
+    @Test
+    public void testClose() throws IOException {
+        // Create wrapper stream
+        ImageInputStream mock = mock(ImageInputStream.class);
+        BufferedImageInputStream stream = new BufferedImageInputStream(mock);
+
+        stream.close();
+        verify(mock, never()).close();
     }
 
     // TODO: Write other tests

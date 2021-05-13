@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2014, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.path;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
@@ -8,15 +38,18 @@ import org.junit.Test;
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * PathsTest.
@@ -95,12 +128,12 @@ public class PathsTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testApplyClippingPathNullPath() throws IOException {
+    public void testApplyClippingPathNullPath() {
         Paths.applyClippingPath(null, new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testApplyClippingPathNullSource() throws IOException {
+    public void testApplyClippingPathNullSource() {
         Paths.applyClippingPath(new GeneralPath(), null);
     }
 
@@ -117,7 +150,7 @@ public class PathsTest {
         assertEquals(source.getWidth(), image.getWidth());
         assertEquals(source.getHeight(), image.getHeight());
         // Transparent
-        assertTrue(image.getColorModel().getTransparency() == Transparency.TRANSLUCENT);
+        assertEquals(Transparency.TRANSLUCENT, image.getColorModel().getTransparency());
 
         // Corners (at least) should be transparent
         assertEquals(0, image.getRGB(0, 0));
@@ -131,8 +164,9 @@ public class PathsTest {
         // TODO: Mor sophisticated test that tests all pixels outside path...
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = IllegalArgumentException.class)
-    public void testApplyClippingPathNullDestination() throws IOException {
+    public void testApplyClippingPathNullDestination() {
         Paths.applyClippingPath(new GeneralPath(), new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), null);
     }
 
@@ -179,7 +213,7 @@ public class PathsTest {
         assertEquals(857, image.getWidth());
         assertEquals(1800, image.getHeight());
         // Transparent
-        assertTrue(image.getColorModel().getTransparency() == Transparency.TRANSLUCENT);
+        assertEquals(Transparency.TRANSLUCENT, image.getColorModel().getTransparency());
 
         // Corners (at least) should be transparent
         assertEquals(0, image.getRGB(0, 0));
@@ -200,34 +234,70 @@ public class PathsTest {
     }
 
     static Path2D readExpectedPath(final String resource) throws IOException {
-        ObjectInputStream ois = new ObjectInputStream(PathsTest.class.getResourceAsStream(resource));
-
-        try {
+        try (ObjectInputStream ois = new ObjectInputStream(PathsTest.class.getResourceAsStream(resource))) {
             return (Path2D) ois.readObject();
         }
         catch (ClassNotFoundException e) {
             throw new IOException(e);
         }
-        finally {
-            ois.close();
-        }
     }
 
     static void assertPathEquals(final Path2D expectedPath, final Path2D actualPath) {
+        assertNotNull("Expected path is null, check your tests...", expectedPath);
+        assertNotNull(actualPath);
+
         PathIterator expectedIterator = expectedPath.getPathIterator(null);
         PathIterator actualIterator = actualPath.getPathIterator(null);
+
         float[] expectedCoords = new float[6];
         float[] actualCoords = new float[6];
 
-        while(!actualIterator.isDone()) {
+        while(!expectedIterator.isDone()) {
+            assertFalse("Less points than expected", actualIterator.isDone());
+
             int expectedType = expectedIterator.currentSegment(expectedCoords);
             int actualType = actualIterator.currentSegment(actualCoords);
 
-            assertEquals(expectedType, actualType);
-            assertArrayEquals(expectedCoords, actualCoords, 0);
+            assertEquals("Unexpected segment type", expectedType, actualType);
+            assertArrayEquals("Unexpected coordinates", expectedCoords, actualCoords, 0);
 
             actualIterator.next();
             expectedIterator.next();
         }
+
+        assertTrue("More points than expected", actualIterator.isDone());
+    }
+
+    @Test
+    public void testWriteJPEG() throws IOException {
+        Path2D originalPath = readExpectedPath("/ser/multiple-clips.ser");
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_3BYTE_BGR);
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(bytes)) {
+            boolean written = Paths.writeClipped(image, originalPath, "JPEG", stream);
+            assertTrue(written);
+        }
+        assertTrue(bytes.size() > 1024); // Actual size may be plugin specific...
+
+        Path2D actualPath = Paths.readPath(new ByteArrayImageInputStream(bytes.toByteArray()));
+        assertPathEquals(originalPath, actualPath);
+    }
+
+    @Test
+    public void testWriteTIFF() throws IOException {
+        Path2D originalPath = readExpectedPath("/ser/grape-path.ser");
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(bytes)) {
+            boolean written = Paths.writeClipped(image, originalPath, "TIFF", stream);
+            assumeTrue(written); // TIFF support is optional
+        }
+
+        assertTrue(bytes.size() > 1024); // Actual size may be plugin specific...
+
+        Path2D actualPath = Paths.readPath(new ByteArrayImageInputStream(bytes.toByteArray()));
+        assertPathEquals(originalPath, actualPath);
     }
 }

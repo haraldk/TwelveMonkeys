@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
@@ -31,9 +33,10 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import org.junit.Test;
-import org.mockito.InOrder;
 
+import org.junit.Test;
+
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.DataInputStream;
@@ -41,7 +44,6 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 /**
  * JFIFThumbnailReaderTest
@@ -51,8 +53,9 @@ import static org.mockito.Mockito.*;
  * @version $Id: JFIFThumbnailReaderTest.java,v 1.0 04.05.12 15:56 haraldk Exp$
  */
 public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
+
     @Override
-    protected JFIFThumbnailReader createReader(ThumbnailReadProgressListener progressListener, int imageIndex, int thumbnailIndex, ImageInputStream stream) throws IOException {
+    protected ThumbnailReader createReader(ImageInputStream stream) throws IOException {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(stream, JPEG.APP0, "JFIF");
         stream.close();
 
@@ -60,12 +63,44 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertFalse(segments.isEmpty());
 
         JPEGSegment segment = segments.get(0);
-        return new JFIFThumbnailReader(progressListener, imageIndex, thumbnailIndex, JFIF.read(new DataInputStream(segment.segmentData()), segment.segmentLength()));
+
+        return JFIFThumbnail.from(JFIF.read(new DataInputStream(segment.segmentData()), segment.segmentLength()));
+    }
+
+    @Test
+    public void testFromNull() throws IOException {
+        assertNull(JFIFThumbnail.from(null));
+    }
+
+    @Test
+    public void testFromNullThumbnail() throws IOException {
+        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, null)));
+    }
+
+    @Test
+    public void testFromEmpty() throws IOException {
+        assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, new byte[0])));
+    }
+
+    @Test(expected = IIOException.class)
+    public void testFromTruncated() throws IOException {
+        JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 255, 170, new byte[99]));
+    }
+
+    @Test
+    public void testFromValid() throws IOException {
+        ThumbnailReader reader = JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 30, 20, new byte[30 * 20 * 3]));
+        assertNotNull(reader);
+
+        // Sanity check below
+        assertEquals(30, reader.getWidth());
+        assertEquals(20, reader.getHeight());
+        assertNotNull(reader.read());
     }
 
     @Test
     public void testReadRaw() throws IOException {
-        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/jfif-jfif-and-exif-thumbnail-sharpshot-iphone.jpg"));
+        ThumbnailReader reader = createReader(createStream("/jpeg/jfif-jfif-and-exif-thumbnail-sharpshot-iphone.jpg"));
 
         assertEquals(131, reader.getWidth());
         assertEquals(122, reader.getHeight());
@@ -78,7 +113,7 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
     @Test
     public void testReadNonSpecGray() throws IOException {
-        ThumbnailReader reader = createReader(mock(ThumbnailReadProgressListener.class), 0, 0, createStream("/jpeg/jfif-grayscale-thumbnail.jpg"));
+        ThumbnailReader reader = createReader(createStream("/jpeg/jfif-grayscale-thumbnail.jpg"));
 
         assertEquals(127, reader.getWidth());
         assertEquals(76, reader.getHeight());
@@ -88,17 +123,5 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertEquals(BufferedImage.TYPE_BYTE_GRAY, thumbnail.getType());
         assertEquals(127, thumbnail.getWidth());
         assertEquals(76, thumbnail.getHeight());
-    }
-
-    @Test
-    public void testProgressListenerRaw() throws IOException {
-        ThumbnailReadProgressListener listener = mock(ThumbnailReadProgressListener.class);
-
-        createReader(listener, 0, 99, createStream("/jpeg/jfif-jfif-and-exif-thumbnail-sharpshot-iphone.jpg")).read();
-
-        InOrder order = inOrder(listener);
-        order.verify(listener).thumbnailStarted(0, 99);
-        order.verify(listener, atLeastOnce()).thumbnailProgress(100f);
-        order.verify(listener).thumbnailComplete();
     }
 }

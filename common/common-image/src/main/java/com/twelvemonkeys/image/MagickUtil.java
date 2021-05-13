@@ -4,31 +4,36 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.image;
 
-import magick.*;
+import magick.ImageType;
+import magick.MagickException;
+import magick.MagickImage;
+import magick.PixelPacket;
 
 import java.awt.*;
 import java.awt.color.ColorSpace;
@@ -39,10 +44,11 @@ import java.awt.image.*;
 /**
  * Utility for converting JMagick {@code MagickImage}s to standard Java
  * {@code BufferedImage}s and back.
- * <p/>
+ * <p>
  * <em>NOTE: This class is considered an implementation detail and not part of
  * the public API. This class is subject to change without further notice. 
  * You have been warned. :-)</em>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/MagickUtil.java#4 $
@@ -95,8 +101,9 @@ public final class MagickUtil {
 
     /**
      * Converts a {@code MagickImage} to a {@code BufferedImage}.
-     * <p/>
+     * <p>
      * The conversion depends on {@code pImage}'s {@code ImageType}:
+     * </p>
      * <dl>
      * <dt>{@code ImageType.BilevelType}</dt>
      * <dd>{@code BufferedImage} of type {@code TYPE_BYTE_BINARY}</dd>
@@ -108,15 +115,16 @@ public final class MagickUtil {
      *
      * <dt>{@code ImageType.PaletteType}</dt>
      * <dd>{@code BufferedImage} of type {@code TYPE_BYTE_BINARY} (for images
-     * with a palette of <= 16 colors) or {@code TYPE_BYTE_INDEXED}</dd>
+     * with a palette of &lt;= 16 colors) or {@code TYPE_BYTE_INDEXED}</dd>
      * <dt>{@code ImageType.PaletteMatteType}</dt>
      * <dd>{@code BufferedImage} of type {@code TYPE_BYTE_BINARY} (for images
-     * with a palette of <= 16 colors) or {@code TYPE_BYTE_INDEXED}</dd>
+     * with a palette of &lt;= 16 colors) or {@code TYPE_BYTE_INDEXED}</dd>
      *
      * <dt>{@code ImageType.TrueColorType}</dt>
      * <dd>{@code BufferedImage} of type {@code TYPE_3BYTE_BGR}</dd>
      * <dt>{@code ImageType.TrueColorPaletteType}</dt>
      * <dd>{@code BufferedImage} of type {@code TYPE_4BYTE_ABGR}</dd>
+     * </dl>
      *
      * @param pImage the original {@code MagickImage}
      * @return a new {@code BufferedImage}
@@ -186,24 +194,26 @@ public final class MagickUtil {
 
     /**
      * Converts a {@code BufferedImage} to a {@code MagickImage}.
-     * <p/>
+     * <p>
      * The conversion depends on {@code pImage}'s {@code ColorModel}:
+     * </p>
      * <dl>
      * <dt>{@code IndexColorModel} with 1 bit b/w</dt>
      * <dd>{@code MagickImage} of type {@code ImageType.BilevelType}</dd>
      * <dt>{@code IndexColorModel} &gt; 1 bit,</dt>
      * <dd>{@code MagickImage} of type {@code ImageType.PaletteType}
      * or {@code MagickImage} of type {@code ImageType.PaletteMatteType}
-     * depending on <tt>ColorModel.getAlpha()</dd>
+     * depending on <tt>ColorModel.getAlpha()</tt></dd>
      *
      * <dt>{@code ColorModel.getColorSpace().getType() == ColorSpace.TYPE_GRAY}</dt>
      * <dd>{@code MagickImage} of type {@code ImageType.GrayscaleType}
      * or {@code MagickImage} of type {@code ImageType.GrayscaleMatteType}
-     * depending on <tt>ColorModel.getAlpha()</dd>
+     * depending on <tt>ColorModel.getAlpha()</tt></dd>
      *
      * <dt>{@code ColorModel.getColorSpace().getType() == ColorSpace.TYPE_RGB}</dt>
      * <dd>{@code MagickImage} of type {@code ImageType.TrueColorType}
      * or {@code MagickImage} of type {@code ImageType.TrueColorPaletteType}</dd>
+     * </dl>
      *
      * @param pImage the original {@code BufferedImage}
      * @return a new {@code MagickImage}
@@ -427,7 +437,7 @@ public final class MagickUtil {
     /**
      * Converts a palette-based {@code MagickImage} to a
      * {@code BufferedImage}, of type {@code TYPE_BYTE_BINARY} (for images
-     * with a palette of <= 16 colors) or {@code TYPE_BYTE_INDEXED}.
+     * with a palette of &lt;= 16 colors) or {@code TYPE_BYTE_INDEXED}.
      *
      * @param pImage the original {@code MagickImage}
      * @param pAlpha keep alpha channel

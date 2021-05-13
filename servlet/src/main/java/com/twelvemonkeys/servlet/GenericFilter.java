@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.servlet;
@@ -38,25 +40,29 @@ import java.util.Enumeration;
 
 /**
  * Defines a generic, protocol-independent filter.
- * <P/>
+ * <p>
  * {@code GenericFilter} is inspired by {@link GenericServlet}, and
  * implements the {@code Filter} and {@code FilterConfig} interfaces.
- * <P/>
+ * </p>
+ * <p>
  * {@code GenericFilter} makes writing filters easier. It provides simple
  * versions of the lifecycle methods {@code init} and {@code destroy}
  * and of the methods in the {@code FilterConfig} interface.
  * {@code GenericFilter} also implements the {@code log} methods,
  * declared in the {@code ServletContext} interface.
- * <p/
+ * </p>
+ * <p>
  * {@code GenericFilter} has an auto-init system, that automatically invokes
  * the method matching the signature {@code void setX(&lt;Type&gt;)},
  * for every init-parameter {@code x}. Both camelCase and lisp-style parameter
  * naming is supported, lisp-style names will be converted to camelCase.
  * Parameter values are automatically converted from string representation to
  * most basic types, if necessary.
- * <p/>
+ * </p>
+ * <p>
  * To write a generic filter, you need only override the abstract
  * {@link #doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}  doFilterImpl} method.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -76,7 +82,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
 
     /**
      * Makes sure the filter runs once per request
-     * <p/>
+     *
      * @see #isRunOnce
      * @see #ATTRIB_RUN_ONCE_VALUE
      * @see #oncePerRequest
@@ -87,7 +93,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * Makes sure the filter runs once per request.
      * Must be configured through init method, as the filter name is not
      * available before we have a {@code FilterConfig} object.
-     * <p/>
+     *
      * @see #isRunOnce
      * @see #ATTRIB_RUN_ONCE_VALUE
      * @see #oncePerRequest
@@ -96,7 +102,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
 
     /**
      * Makes sure the filter runs once per request
-     * <p/>
+     *
      * @see #isRunOnce
      * @see #ATTRIB_RUN_ONCE_EXT
      * @see #oncePerRequest
@@ -106,16 +112,18 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
     /**
      * Indicates if this filter should run once per request ({@code true}),
      * or for each forward/include resource ({@code false}).
-     * <p/>
+     * <p>
      * Set this variable to true, to make sure the filter runs once per request.
-     *
+     * </p>
+     * <p>
      * <em>NOTE: As of Servlet 2.4, this field
      * should always be left to it's default value ({@code false}).
-     * <br/>
+     * <br>
      * To run the filter once per request, the {@code filter-mapping} element
      * of the web-descriptor should include a {@code dispatcher} element:
-     * <pre>&lt;dispatcher&gt;REQUEST&lt;/dispatcher&gt;</pre>
      * </em>
+     * </p>
+     * <pre>&lt;dispatcher&gt;REQUEST&lt;/dispatcher&gt;</pre>
      */
     protected boolean oncePerRequest = false;
 
@@ -127,16 +135,18 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
     /**
      * Called by the web container to indicate to a filter that it is being
      * placed into service.
-     * <p/>
+     * <p>
      * This implementation stores the {@code FilterConfig} object it
      * receives from the servlet container for later use.
      * Generally, there's no reason to override this method, override the
      * no-argument {@code init} instead. However, <em>if</em> you are
      * overriding this form of the method,
      * always call {@code super.init(config)}.
-     * <p/>
+     * </p>
+     * <p>
      * This implementation will also set all configured key/value pairs, that
      * have a matching setter method annotated with {@link InitParam}.
+     * </p>
      *
      * @param pConfig the filter config
      * @throws ServletException if an error occurs during init
@@ -181,9 +191,10 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * The {@code doFilter} method of the Filter is called by the container
      * each time a request/response pair is passed through the chain due to a
      * client request for a resource at the end of the chain.
-     * <p/>
+     * <p>
      * Subclasses <em>should not override this method</em>, but rather the
      * abstract {@link #doFilterImpl(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)}  doFilterImpl} method.
+     * </p>
      *
      * @param pRequest the servlet request
      * @param pResponse the servlet response
@@ -212,10 +223,11 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      * A return value of false, indicates that the filter has not yet run.
      * A return value of true, indicates that the filter has run for this
      * request, and processing should not continue.
-     * <P/>
+     * <p>
      * Note that the method will mark the request as filtered on first
      * invocation.
-     * <p/>
+     * </p>
+     *
      * @see #ATTRIB_RUN_ONCE_EXT
      * @see #ATTRIB_RUN_ONCE_VALUE
      *

@@ -4,45 +4,42 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.servlet;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.ServletResponseWrapper;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.OutputStream;
+import javax.servlet.*;
 import java.io.FilterOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 
 /**
  * Removes extra unneccessary white space from a servlet response.
  * White space is defined as per {@link Character#isWhitespace(char)}.
- * <p/>
+ * <p>
  * This filter has no understanding of the content in the reponse, and will
  * remove repeated white space anywhere in the stream. It is intended for
  * removing white space from HTML or XML streams, but this limitation makes it
@@ -51,21 +48,23 @@ import java.io.FilterOutputStream;
  * you keep CSS and JavaScript in separate files (this will have the added
  * benefit of further reducing the ammount of data communicated between
  * server and client).
- * <p/>
+ * </p>
+ * <p>
  * <em>At the moment this filter has no concept of encoding</em>.
  * This means, that if some multi-byte escape sequence contains one or more
  * bytes that <em>individually</em> is treated as a white space, these bytes
  * may be skipped.
- * As <a href="http://en.wikipedia.org/wiki/UTF-8" title="UTF-8">UTF-8</a>
+ * As <a href="http://en.wikipedia.org/wiki/UTF-8">UTF-8</a>
  * guarantees that no bytes are repeated in this way, this filter can safely
  * filter UTF-8.
  * Simple 8 bit character encodings, like the
- * <a href="http://en.wikipedia.org/wiki/ISO/IEC_8859"
- * title="ISO/IEC 8859">ISO/IEC 8859</a> standard, or
- * <a href="http://en.wikipedia.org/wiki/Windows-1252" title="Windows-1252">
+ * <a href="http://en.wikipedia.org/wiki/ISO/IEC_8859">ISO/IEC 8859</a> standard, or
+ * <a href="http://en.wikipedia.org/wiki/Windows-1252">Windows-1252"</a>
  * are always safe.
- * <p/>
- * <b>Configuration</b><br/>
+ * </p>
+ * <p>
+ * <b>Configuration</b>
+ * <br>
  * To use {@code TrimWhiteSpaceFilter} in your web-application, you simply need
  * to add it to your web descriptor ({@code web.xml}).
  * If using a servlet container that supports the Servlet 2.4 spec, the new
@@ -76,8 +75,10 @@ import java.io.FilterOutputStream;
  * {@code "once-per-request"} to {@code "true"} (this will have the same effect,
  * but might perform slightly worse than the 2.4 version).
  * Please see the examples below.
- * <p/>
- * <b>Servlet 2.4 version, filter section:</b><br/>
+ * </p>
+ * <p>
+ * <b>Servlet 2.4 version, filter section:</b>
+ * </p>
  * <pre>
  * &lt;!-- TrimWS Filter Configuration --&gt;
  * &lt;filter&gt;
@@ -90,7 +91,7 @@ import java.io.FilterOutputStream;
  *      &lt;/init-param&gt;
  * &lt;/filter&gt;
  * </pre>
- * <b>Filter-mapping section:</b><br/>
+ * <b>Filter-mapping section:</b><br>
  * <pre>
  * &lt;!-- TimWS Filter Mapping --&gt;
  * &lt;filter-mapping&gt;

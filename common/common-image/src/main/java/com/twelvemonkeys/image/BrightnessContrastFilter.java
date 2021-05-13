@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.image;
@@ -33,14 +35,15 @@ import java.awt.image.RGBImageFilter;
 
 /**
  * Adjusts the contrast and brightness of an image.
- * <p/>
+ * <p>
  * For brightness, the valid range is {@code -2.0,..,0.0,..,2.0}.
  * A value of {@code 0.0} means no change.
  * Negative values will make the pixels darker.
  * Maximum negative value ({@code -2}) will make all filtered pixels black.
  * Positive values will make the pixels brighter.
  * Maximum positive value ({@code 2}) will make all filtered pixels white.
- * <p/>
+ * </p>
+ * <p>
  * For contrast, the valid range is {@code -1.0,..,0.0,..,1.0}.
  * A value of {@code 0.0} means no change.
  * Negative values will reduce contrast.
@@ -49,15 +52,14 @@ import java.awt.image.RGBImageFilter;
  * Positive values will increase contrast.
  * Maximum positive value ({@code 1}) will make all filtered pixels primary
  * colors (either black, white, cyan, magenta, yellow, red, blue or green).
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  *
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/image/BrightnessContrastFilter.java#1 $
- *
- * @todo consider doing something similar to http://archives.java.sun.com/cgi-bin/wa?A2=ind0302&L=jai-interest&F=&S=&P=15947
  */
-
+// TODO: consider doing something similar to http://archives.java.sun.com/cgi-bin/wa?A2=ind0302&L=jai-interest&F=&S=&P=15947
 public class BrightnessContrastFilter extends RGBImageFilter {
 
     // TODO: Replace with RescaleOp?
@@ -74,8 +76,9 @@ public class BrightnessContrastFilter extends RGBImageFilter {
     /**
      * Creates a BrightnessContrastFilter with default values
      * ({@code brightness=0.3, contrast=0.3}).
-     * <p/>
+     * <p>
      * This will slightly increase both brightness and contrast.
+     * </p>
      */
     public BrightnessContrastFilter() {
         this(0.3f, 0.3f);
@@ -84,14 +87,15 @@ public class BrightnessContrastFilter extends RGBImageFilter {
     /**
      * Creates a BrightnessContrastFilter with the given values for brightness
      * and contrast.
-     * <p/>
+     * <p>
      * For brightness, the valid range is {@code -2.0,..,0.0,..,2.0}.
      * A value of {@code 0.0} means no change.
      * Negative values will make the pixels darker.
      * Maximum negative value ({@code -2}) will make all filtered pixels black.
      * Positive values will make the pixels brighter.
      * Maximum positive value ({@code 2}) will make all filtered pixels white.
-     * <p/>
+     * </p>
+     * <p>
      * For contrast, the valid range is {@code -1.0,..,0.0,..,1.0}.
      * A value of {@code 0.0} means no change.
      * Negative values will reduce contrast.
@@ -100,6 +104,7 @@ public class BrightnessContrastFilter extends RGBImageFilter {
      * Positive values will increase contrast.
      * Maximum positive value ({@code 1}) will make all filtered pixels primary
      * colors (either black, white, cyan, magenta, yellow, red, blue or green).
+     * </p>
      *
      * @param pBrightness adjust the brightness of the image, in the range
      * {@code -2.0,..,0.0,..,2.0}.

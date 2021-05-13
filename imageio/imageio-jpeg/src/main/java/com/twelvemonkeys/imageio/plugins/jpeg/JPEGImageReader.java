@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *  Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *  Neither the name "TwelveMonkeys" nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
@@ -32,13 +34,11 @@ import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.lang.Validate;
@@ -52,20 +52,19 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * A JPEG {@code ImageReader} implementation based on the JRE {@code JPEGImageReader},
  * that adds support and properly handles cases where the JRE version throws exceptions.
- * <p/>
+ * <br>
  * Main features:
  * <ul>
  * <li>Support for YCbCr JPEGs without JFIF segment (converted to RGB, using the embedded ICC profile if applicable)</li>
@@ -108,9 +107,6 @@ public final class JPEGImageReader extends ImageReaderBase {
     /** Internal constant for referring all APP segments */
     static final int ALL_APP_MARKERS = -1;
 
-    /** Segment identifiers for the JPEG segments we care about reading. */
-    private static final Map<Integer, List<String>> SEGMENT_IDENTIFIERS = JPEGSegmentUtil.ALL_SEGMENTS;
-
     /** Our JPEG reading delegate */
     private final ImageReader delegate;
 
@@ -121,10 +117,11 @@ public final class JPEGImageReader extends ImageReaderBase {
     private ImageReader thumbnailReader;
     private List<ThumbnailReader> thumbnails;
 
-    private JPEGImage10MetadataCleaner metadataCleaner;
-
     /** Cached list of JPEG segments we filter from the underlying stream */
     private List<Segment> segments;
+
+    private int currentStreamIndex = 0;
+    private final List<Long> streamOffsets = new ArrayList<>();
 
     protected JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
@@ -142,14 +139,16 @@ public final class JPEGImageReader extends ImageReaderBase {
     @Override
     protected void resetMembers() {
         delegate.reset();
+
+        currentStreamIndex = 0;
+        streamOffsets.clear();
+
         segments = null;
         thumbnails = null;
 
         if (thumbnailReader != null) {
             thumbnailReader.reset();
         }
-
-        metadataCleaner = null;
 
         installListeners();
     }
@@ -171,179 +170,125 @@ public final class JPEGImageReader extends ImageReaderBase {
         return delegate.getFormatName();
     }
 
-    @Override
-    public int getNumImages(boolean allowSearch) throws IOException {
-        if (allowSearch) {
-            if (isLossless()) {
-                return 1;
-            }
-        }
-
-        try {
-            return delegate.getNumImages(allowSearch);
-        }
-        catch (ArrayIndexOutOfBoundsException ignore) {
-            // This will happen if we find a "tables only" image, with no more images in stream.
-            return 0;
-        }
-    }
-
     private boolean isLossless() throws IOException {
         assertInput();
 
-        try {
-            Frame sof = getSOF();
-            if (sof.marker == JPEG.SOF3) {
-                return true;
-            }
-        }
-        catch (IIOException ignore) {
-            // May happen if no SOF is found, in case we'll just fall through
-            if (DEBUG) {
-                ignore.printStackTrace();
-            }
-        }
-
-        return false;
+        return getSOF().marker == JPEG.SOF3;
     }
 
     @Override
     public int getWidth(int imageIndex) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
-        Frame sof = getSOF();
-        if (sof.marker == JPEG.SOF3) {
-            return sof.samplesPerLine;
-        }
-
-        return delegate.getWidth(imageIndex);
+        return getSOF().samplesPerLine;
     }
 
     @Override
     public int getHeight(int imageIndex) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
-        Frame sof = getSOF();
-        if (sof.marker == JPEG.SOF3) {
-            return sof.lines;
-        }
-
-        return delegate.getHeight(imageIndex);
+        return getSOF().lines;
     }
 
     @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
-        Iterator<ImageTypeSpecifier> types = delegate.getImageTypes(imageIndex);
-        JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
+        ImageTypeSpecifier rawImageType = getRawImageType(imageIndex);
+        ColorModel rawColorModel = rawImageType.getColorModel();
+        JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
 
-        if (types == null || !types.hasNext() || csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
-            // Add the standard types, we can always convert to these
-            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
-            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
-            typeList.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
+        Set<ImageTypeSpecifier> types = new LinkedHashSet<>();
 
-            // We also read and return CMYK if the source image is CMYK/YCCK + original color profile if present
-            ICC_Profile profile = getEmbeddedICCProfile(false);
-
-            if (csType == JPEGColorSpace.CMYK || csType == JPEGColorSpace.YCCK) {
-                if (profile != null && profile.getNumComponents() == 4) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
-                }
-
-                typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false));
-            }
-            else if (csType == JPEGColorSpace.YCbCr || csType == JPEGColorSpace.RGB) {
-                if (profile != null && profile.getNumComponents() == 3) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2}, DataBuffer.TYPE_BYTE, false, false));
-                }
-            }
-            else if (csType == JPEGColorSpace.YCbCrA || csType == JPEGColorSpace.RGBA) {
-                // Prepend ARGB types
-                typeList.addAll(0, Arrays.asList(
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB),
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR),
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE),
-                        ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE)
-                ));
-
-                if (profile != null && profile.getNumComponents() == 3) {
-                    typeList.add(ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, true, false));
-                }
+        if (rawColorModel.getColorSpace().getType() != ColorSpace.TYPE_GRAY) {
+            // Add the standard types, we can always convert to these, except for gray
+            if (rawColorModel.hasAlpha()) {
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE));
+                types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
             }
 
-            return typeList.iterator();
-        }
-        else if (csType == JPEGColorSpace.RGB) {
-            // Bug in com.sun...JPEGImageReader: returns gray as acceptable type, but refuses to convert
-            ArrayList<ImageTypeSpecifier> typeList = new ArrayList<>();
-
-            // Filter out the gray type
-            while (types.hasNext()) {
-                ImageTypeSpecifier type = types.next();
-                if (type.getBufferedImageType() != BufferedImage.TYPE_BYTE_GRAY) {
-                    typeList.add(type);
-                }
-            }
-
-            return typeList.iterator();
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
         }
 
-        return types;
+        types.add(rawImageType);
+
+        // If the source type has a luminance (Y) component, we can also convert to gray
+        if (sourceCSType != JPEGColorSpace.RGB && sourceCSType != JPEGColorSpace.RGBA && sourceCSType != JPEGColorSpace.CMYK) {
+            if (rawColorModel.hasAlpha()) {
+                types.add(ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE, false));
+            }
+
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
+        }
+
+        return types.iterator();
     }
 
     @Override
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
-        // If delegate can determine the spec, we'll just go with that
-        try {
-            ImageTypeSpecifier rawType = delegate.getRawImageType(imageIndex);
+        checkBounds(imageIndex);
+        initHeader(imageIndex);
 
-            if (rawType != null) {
-                return rawType;
-            }
-        }
-        catch (IIOException | NullPointerException ignore) {
-            // Fall through
-        }
-
-        // Otherwise, consult the image metadata
+        // Consult the image metadata
         JPEGColorSpace csType = getSourceCSType(getJFIF(), getAdobeDCT(), getSOF());
+        ICC_Profile profile = getEmbeddedICCProfile(false);
+
+        ColorSpace cs;
+        boolean hasAlpha = false;
 
         switch (csType) {
-            case CMYK:
-                // Create based on embedded profile if exists, or create from "Generic CMYK"
-                ICC_Profile profile = getEmbeddedICCProfile(false);
+            case GrayA:
+                hasAlpha = true;
+            case Gray:
+                // Create based on embedded profile if exists, otherwise create from Gray
+                cs = profile != null && profile.getNumComponents() == 1
+                     ? ColorSpaces.createColorSpace(profile)
+                     : ColorSpaces.getColorSpace(ColorSpace.CS_GRAY);
+                return ImageTypeSpecifiers.createInterleaved(cs, hasAlpha ? new int[] {1, 0} : new int[] {0}, DataBuffer.TYPE_BYTE, hasAlpha, false);
 
-                if (profile != null && profile.getNumComponents() == 4) {
-                    return ImageTypeSpecifiers.createInterleaved(ColorSpaces.createColorSpace(profile), new int[]{3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+            case YCbCrA:
+            case RGBA:
+            case PhotoYCCA:
+                hasAlpha = true;
+            case YCbCr:
+            case RGB:
+            case PhotoYCC:
+                // Create based on PhotoYCC profile...
+                if (csType == JPEGColorSpace.PhotoYCC || csType == JPEGColorSpace.PhotoYCCA) {
+                    cs = ColorSpaces.getColorSpace(ColorSpace.CS_PYCC);
+                }
+                else {
+                    // ...or create based on embedded profile if exists, otherwise create from sRGB
+                    cs = profile != null && profile.getNumComponents() == 3
+                         ? ColorSpaces.createColorSpace(profile)
+                         : ColorSpaces.getColorSpace(ColorSpace.CS_sRGB);
                 }
 
-                return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+                return ImageTypeSpecifiers.createInterleaved(cs, hasAlpha ? new int[] {3, 2, 1, 0} : new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, hasAlpha, false);
+
+            case YCCK:
+            case CMYK:
+                // Create based on embedded profile if exists, otherwise create from "Generic CMYK"
+                cs = profile != null && profile.getNumComponents() == 4
+                     ? ColorSpaces.createColorSpace(profile)
+                     : ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
+
+                return ImageTypeSpecifiers.createInterleaved(cs, new int[] {3, 2, 1, 0}, DataBuffer.TYPE_BYTE, false, false);
+
             default:
-                // For other types, we probably can't give a proper type, return null
-                return null;
+                // For other types, we probably can't give a proper type
+                throw new IIOException("Could not determine JPEG source color space");
         }
-    }
-
-    @Override
-    public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
-        super.setInput(input, seekForwardOnly, ignoreMetadata);
-
-        // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
-        delegate.setInput(imageInput != null
-                          ? new JPEGSegmentImageInputStream(imageInput, new JPEGSegmentStreamWarningDelegate())
-                          : null, seekForwardOnly, ignoreMetadata);
-    }
-
-    @Override
-    public boolean isRandomAccessEasy(int imageIndex) throws IOException {
-        return delegate.isRandomAccessEasy(imageIndex);
     }
 
     @Override
     public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
-        assertInput();
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         Frame sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
@@ -363,7 +308,8 @@ public final class JPEGImageReader extends ImageReaderBase {
             adobeDCT = null;
         }
 
-        JPEGColorSpace sourceCSType = getSourceCSType(getJFIF(), adobeDCT, sof);
+        JFIF jfif = getJFIF();
+        JPEGColorSpace sourceCSType = getSourceCSType(jfif, adobeDCT, sof);
 
         if (sof.marker == JPEG.SOF3) {
             // Read image as lossless
@@ -385,23 +331,18 @@ public final class JPEGImageReader extends ImageReaderBase {
 
             return bufferedImage;
         }
-        
+
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
-        else if (delegate.canReadRaster() && (
-                bogusAdobeDCT ||
-                sourceCSType == JPEGColorSpace.CMYK ||
-                sourceCSType == JPEGColorSpace.YCCK ||
-                profile != null && !ColorSpaces.isCS_sRGB(profile) ||
-                (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE ||
-                !delegate.getImageTypes(imageIndex).hasNext() ||
-                sourceCSType == JPEGColorSpace.YCbCr && getRawImageType(imageIndex) != null)) { // TODO: Issue warning?
+        else if (bogusAdobeDCT
+                || profile != null && !ColorSpaces.isCS_sRGB(profile)
+                || (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE
+                || delegateCSTypeMismatch(jfif, adobeDCT, sof, sourceCSType)) {
             if (DEBUG) {
                 System.out.println("Reading using raster and extra conversion");
                 System.out.println("ICC color profile: " + profile);
             }
 
-            // TODO: Possible to optimize slightly, to avoid readAsRaster for non-CMYK and other good types?
             return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, profile);
         }
 
@@ -409,7 +350,57 @@ public final class JPEGImageReader extends ImageReaderBase {
             System.out.println("Reading using delegate");
         }
 
-        return delegate.read(imageIndex, param);
+        return delegate.read(0, param);
+    }
+
+    private boolean delegateCSTypeMismatch(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame, final JPEGColorSpace sourceCSType) throws IOException {
+        switch (sourceCSType) {
+            case GrayA:
+            case RGBA:
+            case YCbCrA:
+            case PhotoYCC:
+            case PhotoYCCA:
+            case CMYK:
+            case YCCK:
+                // These are no longer supported by the delegate, we'll handle ourselves
+                return true;
+        }
+
+        try {
+            ImageTypeSpecifier rawImageType = delegate.getRawImageType(0);
+
+            switch (sourceCSType) {
+                case Gray:
+                    return rawImageType == null || rawImageType.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_GRAY;
+                case YCbCr:
+                    // NOTE: For backwards compatibility, null is allowed for YCbCr
+                    if (rawImageType == null) {
+                        return false;
+                    }
+
+                    //  If We have a JFIF, but with non-standard component Ids, the standard reader mistakes it for RGB
+                    if (jfif != null && (startOfFrame.components[0].id != 1 || startOfFrame.components[1].id != 2 || startOfFrame.components[2].id != 3)) {
+                        return true;
+                    }
+                    // Else, if we have no Adobe marker and no subsampling, the standard reader mistakes it for RGB
+                    else if (adobeDCT == null
+                            && (startOfFrame.components[0].id != 1 || startOfFrame.components[1].id != 2 || startOfFrame.components[2].id != 3)
+                            && (startOfFrame.components[0].hSub == 1 || startOfFrame.components[0].vSub == 1
+                            || startOfFrame.components[1].hSub == 1 || startOfFrame.components[1].vSub == 1
+                            || startOfFrame.components[2].hSub == 1 || startOfFrame.components[2].vSub == 1)) {
+                        return true;
+                    }
+                case RGB:
+                    return rawImageType == null || rawImageType.getColorModel().getColorSpace().getType() != ColorSpace.TYPE_RGB;
+                default:
+                    // Probably needs special handling, but we don't know what to do...
+                    return false;
+            }
+        }
+        catch (IIOException | NullPointerException | ArrayIndexOutOfBoundsException | NegativeArraySizeException ignore) {
+            // An exception here is a clear indicator we need to handle conversion
+            return true;
+        }
     }
 
     private BufferedImage readImageAsRasterAndReplaceColorProfile(int imageIndex, ImageReadParam param, Frame startOfFrame, JPEGColorSpace csType, ICC_Profile profile) throws IOException {
@@ -429,7 +420,10 @@ public final class JPEGImageReader extends ImageReaderBase {
         RasterOp convert = null;
         ICC_ColorSpace intendedCS = profile != null ? ColorSpaces.createColorSpace(profile) : null;
 
-        if (profile != null && (csType == JPEGColorSpace.Gray || csType == JPEGColorSpace.GrayA)) {
+        if (destination.getNumBands() <= 2 && (csType != JPEGColorSpace.Gray && csType != JPEGColorSpace.GrayA)) {
+            convert = new LuminanceToGray();
+        }
+        else if (profile != null && (csType == JPEGColorSpace.Gray || csType == JPEGColorSpace.GrayA)) {
             // com.sun. reader does not do ColorConvertOp for CS_GRAY, even if embedded ICC profile,
             // probably because IJG native part does it already...? If applied, color looks wrong (too dark)...
 //            convert = new ColorConvertOp(intendedCS, image.getColorModel().getColorSpace(), null);
@@ -438,8 +432,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             // Handle inconsistencies
             if (startOfFrame.componentsInFrame() != intendedCS.getNumComponents()) {
                 // If ICC profile number of components and startOfFrame does not match, ignore ICC profile
-                processWarningOccurred(String.format(
-                        "Embedded ICC color profile is incompatible with image data. " +
+                processWarningOccurred(String.format("Embedded ICC color profile is incompatible with image data. " +
                                 "Profile indicates %d components, but SOF%d has %d color components. " +
                                 "Ignoring ICC profile, assuming source color space %s.",
                         intendedCS.getNumComponents(), startOfFrame.marker & 0xf, startOfFrame.componentsInFrame(), csType
@@ -463,10 +456,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             ColorSpace cmykCS = ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK);
 
             if (cmykCS instanceof ICC_ColorSpace) {
-                processWarningOccurred(
-                        "No embedded ICC color profile, defaulting to \"generic\" CMYK ICC profile. " +
-                                "Colors may look incorrect."
-                );
+                processWarningOccurred("No embedded ICC color profile, defaulting to \"generic\" CMYK ICC profile. Colors may look incorrect.");
 
                 // NOTE: Avoid using CCOp if same color space, as it's more compatible that way
                 if (cmykCS != image.getColorModel().getColorSpace()) {
@@ -475,27 +465,18 @@ public final class JPEGImageReader extends ImageReaderBase {
             }
             else {
                 // ColorConvertOp using non-ICC CS is deadly slow, fall back to fast conversion instead
-                processWarningOccurred(
-                        "No embedded ICC color profile, will convert using inaccurate CMYK to RGB conversion. " +
-                                "Colors may look incorrect."
-                );
+                processWarningOccurred("No embedded ICC color profile, will convert using inaccurate CMYK to RGB conversion. Colors may look incorrect.");
 
                 convert = new FastCMYKToRGB();
             }
         }
-        else if (profile != null) {
-            processWarningOccurred("Embedded ICC color profile is incompatible with Java 2D, color profile will be ignored.");
-        }
 
         // We'll need a read param
-        Rectangle origSourceRegion;
         if (param == null) {
             param = delegate.getDefaultReadParam();
-            origSourceRegion = null;
         }
-        else {
-            origSourceRegion = param.getSourceRegion();
-        }
+
+        Rectangle origSourceRegion = param.getSourceRegion();
 
         Rectangle srcRegion = new Rectangle();
         Rectangle dstRegion = new Rectangle();
@@ -512,7 +493,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         // for each iteration, so we'll read all at once.
         try {
             param.setSourceRegion(srcRegion);
-            Raster raster = delegate.readRaster(imageIndex, param); // non-converted
+            Raster raster = delegate.readRaster(0, param); // non-converted
 
             // Apply source color conversion from implicit color space
             if (csType == JPEGColorSpace.YCbCr) {
@@ -550,7 +531,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         return image;
     }
 
-    private JPEGColorSpace getSourceCSType(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame) throws IIOException {
+    static JPEGColorSpace getSourceCSType(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame) throws IIOException {
         // Adapted from libjpeg jdapimin.c:
         // Guess the input colorspace
         // (Wish JPEG committee had provided a real way to specify this...)
@@ -567,10 +548,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                     switch (adobeDCT.transform) {
                         case AdobeDCT.Unknown:
                             return JPEGColorSpace.RGB;
-                        case AdobeDCT.YCC:
-                            return JPEGColorSpace.YCbCr;
                         default:
                             // TODO: Warning!
+                        case AdobeDCT.YCC:
                             return JPEGColorSpace.YCbCr; // assume it's YCbCr
                     }
                 }
@@ -600,10 +580,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                     switch (adobeDCT.transform) {
                         case AdobeDCT.Unknown:
                             return JPEGColorSpace.CMYK;
-                        case AdobeDCT.YCCK:
-                            return JPEGColorSpace.YCCK;
                         default:
                             // TODO: Warning!
+                        case AdobeDCT.YCCK:
                             return JPEGColorSpace.YCCK; // assume it's YCCK
                     }
                 }
@@ -635,7 +614,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    protected ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
+    private ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
         // NOTE: This is probably not the right way to do it... :-P
         // TODO: Consider moving method to ColorSpaces class or new class in imageio.color package
 
@@ -674,6 +653,36 @@ public final class JPEGImageReader extends ImageReaderBase {
         array[index + 3] = (byte) (value      );
     }
 
+    @Override
+    public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
+        super.setInput(input, seekForwardOnly, ignoreMetadata);
+
+        try {
+            if (imageInput != null) {
+                // Need to wrap stream to avoid messing with the byte order of the underlying stream
+                // in the case we are operating as a delegate for ie. TIFFImageReader.
+                if (!(imageInput instanceof SubImageInputStream)) {
+                    imageInput = new SubImageInputStream(imageInput, Long.MAX_VALUE);
+                }
+
+                streamOffsets.add(imageInput.getStreamPosition());
+            }
+
+            initDelegate(seekForwardOnly, ignoreMetadata);
+        }
+        catch (IOException e) {
+            // TODO: This should ideally be reported as an IOException, but I don't see how
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
+
+    private void initDelegate(boolean seekForwardOnly, boolean ignoreMetadata) throws IOException {
+        // JPEGSegmentImageInputStream that filters out/skips bad/unnecessary segments
+        delegate.setInput(imageInput != null
+                          ? new JPEGSegmentImageInputStream(imageInput, new JPEGSegmentWarningDelegate())
+                          : null, seekForwardOnly, ignoreMetadata);
+    }
+
     private void initHeader() throws IOException {
         if (segments == null) {
             long start = DEBUG ? System.currentTimeMillis() : 0;
@@ -707,17 +716,134 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
+    private void initHeader(final int imageIndex) throws IOException {
+        assertInput();
+        if (imageIndex < 0) {
+            throw new IndexOutOfBoundsException("imageIndex < 0: " + imageIndex);
+        }
+
+        if (imageIndex == currentStreamIndex) {
+            initHeader();
+            return;
+        }
+
+        gotoImage(imageIndex);
+
+        // Reset segments and re-init the header
+        segments = null;
+        thumbnails = null;
+
+        initDelegate(seekForwardOnly, ignoreMetadata);
+        initHeader();
+    }
+
+    private void gotoImage(final int imageIndex) throws IOException {
+        if (imageIndex < streamOffsets.size()) {
+            imageInput.seek(streamOffsets.get(imageIndex));
+        }
+        else {
+            long lastKnownSOIOffset = streamOffsets.get(streamOffsets.size() - 1);
+            imageInput.seek(lastKnownSOIOffset);
+
+            try {
+                for (int i = streamOffsets.size() - 1; i < imageIndex; i++) {
+                    long start = 0;
+
+                    if (DEBUG) {
+                        start = System.currentTimeMillis();
+                        System.out.printf("Start seeking for image index %d%n", i + 1);
+                    }
+
+                    // Need to skip over segments, as they may contain JPEG markers (eg. JFXX or EXIF thumbnail)
+                    JPEGSegmentUtil.readSegments(imageInput, Collections.<Integer, List<String>>emptyMap());
+
+                    // Now, search for EOI and following SOI...
+                    int marker;
+                    while ((marker = imageInput.read()) != -1) {
+                        if (marker == 0xFF && (0xFF00 | imageInput.readUnsignedByte()) == JPEG.EOI) {
+                            // Found EOI, now the SOI should be nearby...
+                            while ((marker = imageInput.read()) != -1) {
+                                if (marker == 0xFF && (0xFF00 | imageInput.readUnsignedByte()) == JPEG.SOI) {
+                                    long nextSOIOffset = imageInput.getStreamPosition() - 2;
+                                    imageInput.seek(nextSOIOffset);
+                                    streamOffsets.add(nextSOIOffset);
+
+                                    break;
+                                }
+                            }
+
+                            // ...or we may have missed it, but at least we tried
+                            break;
+                        }
+                    }
+
+                    if (DEBUG) {
+                        System.out.printf("Seek in %d ms%n", System.currentTimeMillis() - start);
+                    }
+                }
+            }
+            catch (EOFException eof) {
+                IndexOutOfBoundsException ioobe = new IndexOutOfBoundsException("Image index " + imageIndex + " not found in stream");
+                ioobe.initCause(eof);
+                throw ioobe;
+            }
+
+            if (imageIndex >= streamOffsets.size()) {
+                throw new IndexOutOfBoundsException("Image index " + imageIndex + " not found in stream");
+            }
+        }
+
+        currentStreamIndex = imageIndex;
+    }
+
+    @Override
+    public int getNumImages(boolean allowSearch) throws IOException {
+        assertInput();
+
+        if (allowSearch) {
+            if (seekForwardOnly) {
+                throw new IllegalStateException("seekForwardOnly and allowSearch are both true");
+            }
+
+            int index = 0;
+            int count = 0;
+            while (true) {
+                try {
+                    gotoImage(index++);
+                }
+                catch (IndexOutOfBoundsException e) {
+                    break;
+                }
+
+                // TODO: We should probably optimize this
+                try {
+                    segments = null;
+                    getSOF(); // No SOF, no image
+                    count++;
+                }
+                catch (IIOException ignore) {}
+            }
+
+            imageInput.seek(streamOffsets.get(currentStreamIndex));
+
+            return count;
+        }
+
+        // We can't possibly know without searching
+        return -1;
+    }
+
     private List<JPEGSegment> readSegments() throws IOException {
         imageInput.mark();
 
         try {
-            imageInput.seek(0); // TODO: Seek to wanted image, skip images on the way
+            imageInput.seek(streamOffsets.get(currentStreamIndex));
 
-            return JPEGSegmentUtil.readSegments(imageInput, SEGMENT_IDENTIFIERS);
+            return JPEGSegmentUtil.readSegments(imageInput, JPEGSegmentUtil.ALL_SEGMENTS);
         }
-        catch (IIOException | IllegalArgumentException ignore) {
+        catch (IIOException | IllegalArgumentException e) {
             if (DEBUG) {
-                ignore.printStackTrace();
+                e.printStackTrace();
             }
         }
         finally {
@@ -776,39 +902,31 @@ public final class JPEGImageReader extends ImageReaderBase {
         return jfxx.isEmpty() ? null : (JFXX) jfxx.get(0);
     }
 
-    private CompoundDirectory getExif() throws IOException {
-        List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
+    private EXIF getExif() throws IOException {
+        List<Application> exif = getAppSegments(JPEG.APP1, "Exif");
+        return exif.isEmpty() ? null : (EXIF) exif.get(0); // TODO: Can there actually be more Exif segments?
+    }
 
-        if (!exifSegments.isEmpty()) {
-            Application exif = exifSegments.get(0);
-            InputStream data = exif.data();
-
-            if (data.read() == -1) { // Read pad
-                processWarningOccurred("Exif chunk has no data.");
+    private CompoundDirectory parseExif(final EXIF exif) throws IOException {
+        if (exif != null) {
+            // Identifier is "Exif\0" + 1 byte pad
+            if (exif.data.length > exif.identifier.length() + 2) {
+                try (ImageInputStream stream = exif.exifData()) {
+                    return (CompoundDirectory) new TIFFReader().read(stream);
+                }
+                catch (IIOException e) {
+                    processWarningOccurred("Exif chunk is present, but can't be read: " + e.getMessage());
+                }
             }
             else {
-                ImageInputStream stream = ImageIO.createImageInputStream(data);
-                return (CompoundDirectory) new TIFFReader().read(stream);
-
-                // TODO: Directory offset of thumbnail is wrong/relative to container stream, causing trouble for the TIFFReader...
+                processWarningOccurred("Exif chunk has no data.");
             }
         }
 
         return null;
     }
 
-    // TODO: Util method?
-    static byte[] readFully(DataInput stream, int len) throws IOException {
-        if (len == 0) {
-            return null;
-        }
-
-        byte[] data = new byte[len];
-        stream.readFully(data);
-        return data;
-    }
-
-    protected ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
+    ICC_Profile getEmbeddedICCProfile(final boolean allowBadIndexes) throws IOException {
         // ICC v 1.42 (2006) annex B:
         // APP2 marker (0xFFE2) + 2 byte length + ASCII 'ICC_PROFILE' + 0 (termination)
         // + 1 byte chunk number + 1 byte chunk count (allows ICC profiles chunked in multiple APP2 segments)
@@ -832,8 +950,9 @@ public final class JPEGImageReader extends ImageReaderBase {
                 return null;
             }
 
-            int iccChunkDataSize = segment.data.length - segment.identifier.length() - 3; // ICC_PROFILE + null + chunk number + count
-            int iccSize = intFromBigEndian(segment.data, segment.identifier.length() + 3);
+            int segmentDataStart = segment.identifier.length() + 3; // ICC_PROFILE + null + chunk number + count
+            int iccChunkDataSize = segment.data.length - segmentDataStart;
+            int iccSize = segment.data.length < segmentDataStart + 4 ? 0 : intFromBigEndian(segment.data, segmentDataStart);
 
             return readICCProfileSafe(stream, allowBadIndexes, iccSize, iccChunkDataSize);
         }
@@ -886,9 +1005,10 @@ public final class JPEGImageReader extends ImageReaderBase {
                 int index = badICC ? i : chunkNumber - 1;
                 streams[index] = stream;
 
-                iccChunkDataSize += segment.data.length - segment.identifier.length() - 3;
+                int segmentDataStart = segment.identifier.length() + 3; // ICC_PROFILE + null + chunk number + count
+                iccChunkDataSize += segment.data.length - segmentDataStart;
                 if (index == 0) {
-                    iccSize = intFromBigEndian(segment.data, segment.identifier.length() + 3);
+                    iccSize = intFromBigEndian(segment.data, segmentDataStart);
                 }
             }
 
@@ -926,6 +1046,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     @Override
     public Raster readRaster(final int imageIndex, final ImageReadParam param) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         if (isLossless()) {
             // TODO: What about stream position?
@@ -933,7 +1054,13 @@ public final class JPEGImageReader extends ImageReaderBase {
             return new JPEGLosslessDecoderWrapper(this).readRaster(segments, imageInput);
         }
 
-        return delegate.readRaster(imageIndex, param);
+        try {
+            return delegate.readRaster(0, param);
+        }
+        catch (IndexOutOfBoundsException knownIssue) {
+            // com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
+            throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
+        }
     }
 
     @Override
@@ -960,80 +1087,43 @@ public final class JPEGImageReader extends ImageReaderBase {
 
     private void readThumbnailMetadata(int imageIndex) throws IOException {
         checkBounds(imageIndex);
+        initHeader(imageIndex);
 
         if (thumbnails == null) {
             thumbnails = new ArrayList<>();
-            ThumbnailReadProgressListener thumbnailProgressDelegator = new ThumbnailProgressDelegate();
 
             // Read JFIF thumbnails if present
-            JFIF jfif = getJFIF();
-            if (jfif != null && jfif.thumbnail != null) {
-                thumbnails.add(new JFIFThumbnailReader(thumbnailProgressDelegator, imageIndex, thumbnails.size(), jfif));
+            try {
+                ThumbnailReader thumbnail = JFIFThumbnail.from(getJFIF());
+                if (thumbnail != null) {
+                    thumbnails.add(thumbnail);
+                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
 
             // Read JFXX thumbnails if present
-            JFXX jfxx = getJFXX();
-            if (jfxx != null && jfxx.thumbnail != null) {
-                switch (jfxx.extensionCode) {
-                    case JFXX.JPEG:
-                    case JFXX.INDEXED:
-                    case JFXX.RGB:
-                        thumbnails.add(new JFXXThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), imageIndex, thumbnails.size(), jfxx));
-                        break;
-                    default:
-                        processWarningOccurred("Unknown JFXX extension code: " + jfxx.extensionCode);
+            try {
+                ThumbnailReader thumbnail = JFXXThumbnail.from(getJFXX(), getThumbnailReader());
+                if (thumbnail != null) {
+                    thumbnails.add(thumbnail);
                 }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
 
             // Read Exif thumbnails if present
-            List<Application> exifSegments = getAppSegments(JPEG.APP1, "Exif");
-            if (!exifSegments.isEmpty()) {
-                Application exif = exifSegments.get(0);
-                InputStream data = exif.data();
-
-                if (data.read() == -1) {
-                    // Pad
-                    processWarningOccurred("Exif chunk has no data.");
+            try {
+                EXIF exif = getExif();
+                ThumbnailReader thumbnailReader = EXIFThumbnail.from(exif, parseExif(exif), getThumbnailReader());
+                if (thumbnailReader != null) {
+                    thumbnails.add(thumbnailReader);
                 }
-                else {
-                    ImageInputStream stream = new MemoryCacheImageInputStream(data);
-                    CompoundDirectory exifMetadata = (CompoundDirectory) new TIFFReader().read(stream);
-
-                    if (exifMetadata.directoryCount() == 2) {
-                        Directory ifd1 = exifMetadata.getDirectory(1);
-
-                        // Compression: 1 = no compression, 6 = JPEG compression (default)
-                        Entry compressionEntry = ifd1.getEntryById(TIFF.TAG_COMPRESSION);
-                        int compression = compressionEntry == null ? 6 : ((Number) compressionEntry.getValue()).intValue();
-
-                        if (compression == 6) {
-                            if (ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) != null) {
-                                Entry jpegLength = ifd1.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH);
-
-                                if ((jpegLength == null || ((Number) jpegLength.getValue()).longValue() > 0)) {
-                                    thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
-                                }
-                                else {
-                                    processWarningOccurred("EXIF IFD with empty (zero-length) thumbnail");
-                                }
-                            }
-                            else {
-                                processWarningOccurred("EXIF IFD with JPEG thumbnail missing JPEGInterchangeFormat tag");
-                            }
-                        }
-                        else if (compression == 1) {
-                            if (ifd1.getEntryById(TIFF.TAG_STRIP_OFFSETS) != null) {
-                                thumbnails.add(new EXIFThumbnailReader(thumbnailProgressDelegator, getThumbnailReader(), 0, thumbnails.size(), ifd1, stream));
-                            }
-                            else {
-                                processWarningOccurred("EXIF IFD with uncompressed thumbnail missing StripOffsets tag");
-                            }
-                        }
-                        else {
-                            processWarningOccurred("EXIF IFD with unknown compression (expected 1 or 6): " + compression);
-                        }
-                    }
-                }
+            }
+            catch (IOException e) {
+                processWarningOccurred(e.getMessage());
             }
         }
     }
@@ -1076,44 +1166,24 @@ public final class JPEGImageReader extends ImageReaderBase {
     public BufferedImage readThumbnail(int imageIndex, int thumbnailIndex) throws IOException {
         checkThumbnailBounds(imageIndex, thumbnailIndex);
 
-        return thumbnails.get(thumbnailIndex).read();
+        processThumbnailStarted(imageIndex, thumbnailIndex);
+        processThumbnailProgress(0f);
+
+        BufferedImage thumbnail = thumbnails.get(thumbnailIndex).read();;
+
+        processThumbnailProgress(100f);
+        processThumbnailComplete();
+
+        return thumbnail;
     }
 
     // Metadata
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        // checkBounds needed, as we catch the IndexOutOfBoundsException below.
-        checkBounds(imageIndex);
+        initHeader(imageIndex);
 
-        IIOMetadata imageMetadata;
-
-        if (isLossless()) {
-            return new JPEGImage10Metadata(segments);
-        }
-        else {
-            try {
-                imageMetadata = delegate.getImageMetadata(imageIndex);
-            }
-            catch (IndexOutOfBoundsException knownIssue) {
-                // TMI-101: com.sun.imageio.plugins.jpeg.JPEGBuffer doesn't do proper sanity check of input data.
-                throw new IIOException("Corrupt JPEG data: Bad segment length", knownIssue);
-            }
-            catch (NegativeArraySizeException knownIssue) {
-                // Most likely from com.sun.imageio.plugins.jpeg.SOSMarkerSegment
-                throw new IIOException("Corrupt JPEG data: Bad component count", knownIssue);
-            }
-
-            if (imageMetadata != null && Arrays.asList(imageMetadata.getMetadataFormatNames()).contains(JPEGImage10MetadataCleaner.JAVAX_IMAGEIO_JPEG_IMAGE_1_0)) {
-                if (metadataCleaner == null) {
-                    metadataCleaner = new JPEGImage10MetadataCleaner(this);
-                }
-
-                return metadataCleaner.cleanMetadata(imageMetadata);
-            }
-        }
-
-        return imageMetadata;
+        return new JPEGImage10Metadata(segments, getSOF(), getJFIF(), getJFXX(), getEmbeddedICCProfile(true), getAdobeDCT(), parseExif(getExif()));
     }
 
     @Override
@@ -1166,22 +1236,22 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         @Override
         public void imageComplete(ImageReader source) {
-                processImageComplete();
+            processImageComplete();
         }
 
         @Override
         public void imageProgress(ImageReader source, float percentageDone) {
-                processImageProgress(percentageDone);
+            processImageProgress(percentageDone);
         }
 
         @Override
         public void imageStarted(ImageReader source, int imageIndex) {
-                processImageStarted(imageIndex);
+            processImageStarted(currentStreamIndex);
         }
 
         @Override
         public void readAborted(ImageReader source) {
-                processReadAborted();
+            processReadAborted();
         }
 
         @Override
@@ -1206,7 +1276,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         @Override
         public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
-            processThumbnailStarted(imageIndex, thumbnailIndex);
+            processThumbnailStarted(currentStreamIndex, thumbnailIndex);
         }
 
         public void passStarted(ImageReader source, BufferedImage theImage, int pass, int minPass, int maxPass, int minX, int minY, int periodX, int periodY, int[] bands) {
@@ -1238,29 +1308,13 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private class ThumbnailProgressDelegate implements ThumbnailReadProgressListener {
-        @Override
-        public void thumbnailStarted(int imageIndex, int thumbnailIndex) {
-            processThumbnailStarted(imageIndex, thumbnailIndex);
-        }
-
-        @Override
-        public void thumbnailProgress(float percentageDone) {
-            processThumbnailProgress(percentageDone);
-        }
-
-        @Override
-        public void thumbnailComplete() {
-            processThumbnailComplete();
-        }
-    }
-
-    private class JPEGSegmentStreamWarningDelegate implements JPEGSegmentStreamWarningListener {
+    private class JPEGSegmentWarningDelegate implements JPEGSegmentWarningListener {
         @Override
         public void warningOccurred(String warning) {
             processWarningOccurred(warning);
         }
     }
+
     protected static void showIt(final BufferedImage pImage, final String pTitle) {
         ImageReaderBase.showIt(pImage, pTitle);
     }
@@ -1280,7 +1334,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             final String arg = args[argIdx];
 
             if (arg.charAt(0) == '-') {
-                if (arg.equals("-s") || arg.equals("--subsample") && args.length > argIdx) {
+                if (arg.equals("-s") || arg.equals("--subsample") && args.length > argIdx + 1) {
                     String[] sub = args[++argIdx].split(",");
 
                     try {
@@ -1299,7 +1353,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                         System.err.println("Bad sub sampling (x,y): '" + args[argIdx] + "'");
                     }
                 }
-                else if (arg.equals("-r") || arg.equals("--roi") && args.length > argIdx) {
+                else if (arg.equals("-r") || arg.equals("--roi") && args.length > argIdx + 1) {
                     String[] region = args[++argIdx].split(",");
 
                     try {

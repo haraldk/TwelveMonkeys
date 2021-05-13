@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.common</groupId>
         <artifactId>common</artifactId>
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <artifactId>common-io</artifactId>
     <packaging>jar</packaging>
@@ -12,6 +12,10 @@
     <description>
         The TwelveMonkeys Common IO support
     </description>
+
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.common.io</project.jpms.module.name>
+    </properties>
 
     <dependencies>
         <dependency>

@@ -1,30 +1,32 @@
 /*
-Copyright (c) 2008, Harald Kuhr
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice,
-      this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice,
-      this list of conditions and the following disclaimer in the documentation
-      and/or other materials provided with the distribution.
-    * Neither the name "TwelveMonkeys" nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
 
 Parts of this software is based on JVG/JIS.
 See http://www.cs.hut.fi/~framling/JVG/index.html for more information.
@@ -75,15 +77,16 @@ import java.io.*;
 
 /**
  * Writer for Apple Mac Paint Picture (PICT) format.
- * <p/>
+ * <p>
  * Images are stored using the "opDirectBitsRect" opcode, which directly
  * stores RGB values (using PackBits run-length encoding).
+ * </p>
  *
  * @author <a href="http://www.cs.hut.fi/~framling/JVG/">Kary Främling</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: PICTWriter.java,v 1.0 05.apr.2006 15:20:48 haku Exp$
  */
-public class PICTImageWriter extends ImageWriterBase {
+public final class PICTImageWriter extends ImageWriterBase {
 
     // TODO: Inline these?
     private int rowBytes;
@@ -98,12 +101,13 @@ public class PICTImageWriter extends ImageWriterBase {
      * Constructs an {@code ImageWriter} and sets its
      * {@code originatingProvider} instance variable to the
      * supplied value.
-     * <p/>
-     * <p> Subclasses that make use of extensions should provide a
-     * constructor with signature {@code (ImageWriterSpi,
-     *Object)} in order to retrieve the extension object.  If
+     * <p>
+     * Subclasses that make use of extensions should provide a
+     * constructor with signature {@code (ImageWriterSpi, Object)}
+     * in order to retrieve the extension object.  If
      * the extension object is unsuitable, an
      * {@code IllegalArgumentException} should be thrown.
+     * </p>
      *
      * @param pProvider the {@code ImageWriterSpi} that
      *                  is constructing this object, or {@code null}.

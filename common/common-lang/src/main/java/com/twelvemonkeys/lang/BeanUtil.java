@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.lang;
@@ -35,13 +37,14 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Map;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * A utility class with some useful bean-related functions.
- * <p/>
+ * <p>
  * <em>NOTE: This class is not considered part of the public API and may be changed without notice</em>
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -64,13 +67,11 @@ public final class BeanUtil {
      *
      * @return A string containing the value of the given property, or {@code null}
      *         if it can not be found.
-     * @todo Remove System.err's... Create new Exception? Hmm..
      */
     public static Object getPropertyValue(Object pObject, String pProperty) {
-        //
+        // TODO: Remove System.err's... Create new Exception? Hmm..
         // TODO: Support get(Object) method of Collections!
         //       Handle lists and arrays with [] (index) operator
-        //
 
         if (pObject == null || pProperty == null || pProperty.length() < 1) {
             return null;
@@ -87,7 +88,7 @@ public final class BeanUtil {
 
         while (begIdx < pProperty.length() && begIdx >= 0) {
 
-            endIdx = pProperty.indexOf(".", endIdx + 1);
+            endIdx = pProperty.indexOf('.', endIdx + 1);
             if (endIdx > 0) {
                 subProp = pProperty.substring(begIdx, endIdx);
                 begIdx = endIdx + 1;
@@ -105,7 +106,7 @@ public final class BeanUtil {
             Class[] paramClass = new Class[0];
 
             int begBracket;
-            if ((begBracket = subProp.indexOf("[")) > 0) {
+            if ((begBracket = subProp.indexOf('[')) > 0) {
                 // An error if there is no matching bracket
                 if (!subProp.endsWith("]")) {
                     return null;
@@ -533,9 +534,10 @@ public final class BeanUtil {
      * a method named
      * {@code set + capitalize(entry.getKey())} is called on the bean,
      * with {@code entry.getValue()} as its argument.
-     * <p/>
+     * <p>
      * Properties that has no matching set-method in the bean, are simply
      * discarded.
+     * </p>
      *
      * @param pBean    The bean to configure
      * @param pMapping The mapping for the bean
@@ -558,12 +560,14 @@ public final class BeanUtil {
      * a method named
      * {@code set + capitalize(entry.getKey())} is called on the bean,
      * with {@code entry.getValue()} as its argument.
-     * <p/>
+     * <p>
      * Optionally, lisp-style names are allowed, and automatically converted
      * to Java-style camel-case names.
-     * <p/>
+     * </p>
+     * <p>
      * Properties that has no matching set-method in the bean, are simply
      * discarded.
+     * </p>
      *
      * @see StringUtil#lispToCamel(String)
      *

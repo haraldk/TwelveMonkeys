@@ -1,37 +1,62 @@
-package com.twelvemonkeys.image;
+/*
+ * Copyright (c) 2008, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
+package com.twelvemonkeys.image;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
-import java.awt.image.ColorModel;
-import java.awt.image.IndexColorModel;
-import java.awt.image.Raster;
-import java.awt.image.RasterOp;
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 import java.util.Random;
 
 /**
  * This {@code BufferedImageOp/RasterOp} implements basic
  * Floyd-Steinberg error-diffusion algorithm for dithering.
- * <P/>
+ * <p>
  * The weights used are 7/16, 3/16, 5/16 and 1/16, distributed like this:
  * <!-- - -
  *  | |x|7|
  *  - - - -
  *  |3|5|1|
  *   - - -->
- * <P/>
- * <TABLE border="1" cellpadding="4" cellspacing="0">
- *  <TR><TD bgcolor="#000000">&nbsp;</TD><TD class="TableHeadingColor"
- *          align="center">X</TD><TD>7/16</TD></TR>
- *  <TR><TD>3/16</TD><TD>5/16</TD><TD>1/16</TD></TR>
- * </TABLE>
- * <P/>
+ * </p>
+ * <table border="1" cellpadding="4" cellspacing="0">
+ *     <caption>Floyd-Steinberg error-diffusion weights</caption>
+ *     <tr><td bgcolor="#000000">&nbsp;</td><td class="TableHeadingColor"
+ *          align="center">x</td><td>7/16</td></tr>
+ *     <tr><td>3/16</td><td>5/16</td><td>1/16</td></tr>
+ * </table>
+ * <p>
  * See <A href="http://www.awprofessional.com/bookstore/product.asp?isbn=0201848406&rl=1">Computer Graphics (Foley et al.)</a>
  * for more information.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $

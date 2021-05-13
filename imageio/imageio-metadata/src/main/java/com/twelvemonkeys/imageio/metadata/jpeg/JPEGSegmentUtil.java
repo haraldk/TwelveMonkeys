@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *  Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *  Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *  Neither the name "TwelveMonkeys" nor the
- * names of its contributors may be used to endorse or promote products
- * derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.metadata.jpeg;
@@ -46,7 +48,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
@@ -152,7 +154,7 @@ public final class JPEGSegmentUtil {
     }
 
     static String asAsciiString(final byte[] data, final int offset, final int length) {
-        return new String(data, offset, length, Charset.forName("ascii"));
+        return new String(data, offset, length, StandardCharsets.US_ASCII);
     }
 
     static void readSOI(final ImageInputStream stream) throws IOException {
@@ -165,22 +167,24 @@ public final class JPEGSegmentUtil {
 //        int trash = 0;
         int marker = stream.readUnsignedByte();
 
-        // Skip trash padding before the marker
-        while (marker != 0xff) {
-            marker = stream.readUnsignedByte();
+        while (!isKnownJPEGMarker(marker)) {
+            // Skip trash padding before the marker
+            while (marker != 0xff) {
+                marker = stream.readUnsignedByte();
 //            trash++;
-        }
+            }
 
 //        if (trash != 0) {
             // TODO: Issue warning?
 //            System.err.println("trash: " + trash);
 //        }
 
-        marker = 0xff00 | stream.readUnsignedByte();
-
-        // Skip over 0xff padding between markers
-        while (marker == 0xffff) {
             marker = 0xff00 | stream.readUnsignedByte();
+
+            // Skip over 0xff padding between markers
+            while (marker == 0xffff) {
+                marker = 0xff00 | stream.readUnsignedByte();
+            }
         }
 
         if ((marker >> 8 & 0xff) != 0xff) {
@@ -192,7 +196,7 @@ public final class JPEGSegmentUtil {
         byte[] data;
 
         if (segmentIdentifiers.containsKey(marker)) {
-            data = new byte[length - 2];
+            data = new byte[Math.max(0, length - 2)];
             stream.readFully(data);
         }
         else {
@@ -216,6 +220,57 @@ public final class JPEGSegmentUtil {
         }
 
         return new JPEGSegment(marker, data, length);
+    }
+
+    public static boolean isKnownJPEGMarker(final int marker) {
+        switch (marker) {
+            case JPEG.SOI:
+            case JPEG.EOI:
+            case JPEG.DHT:
+            case JPEG.SOS:
+            case JPEG.DQT:
+            case JPEG.COM:
+            case JPEG.SOF0:
+            case JPEG.SOF1:
+            case JPEG.SOF2:
+            case JPEG.SOF3:
+            case JPEG.SOF5:
+            case JPEG.SOF6:
+            case JPEG.SOF7:
+            case JPEG.SOF9:
+            case JPEG.SOF10:
+            case JPEG.SOF11:
+            case JPEG.SOF13:
+            case JPEG.SOF14:
+            case JPEG.SOF15:
+            case JPEG.SOF55:
+            case JPEG.APP0:
+            case JPEG.APP1:
+            case JPEG.APP2:
+            case JPEG.APP3:
+            case JPEG.APP4:
+            case JPEG.APP5:
+            case JPEG.APP6:
+            case JPEG.APP7:
+            case JPEG.APP8:
+            case JPEG.APP9:
+            case JPEG.APP10:
+            case JPEG.APP11:
+            case JPEG.APP12:
+            case JPEG.APP13:
+            case JPEG.APP14:
+            case JPEG.APP15:
+            case JPEG.DRI:
+            case JPEG.TEM:
+            case JPEG.DAC:
+            case JPEG.DHP:
+            case JPEG.DNL:
+            case JPEG.EXP:
+            case JPEG.LSE:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static class AllIdsList extends ArrayList<String> {
@@ -293,6 +348,7 @@ public final class JPEGSegmentUtil {
                 else if ("Photoshop 3.0".equals(segment.identifier())) {
                     // TODO: The "Photoshop 3.0" segment contains several image resources, of which one might contain
                     //       IPTC metadata. Probably duplicated in the XMP though...
+                    // TODO: Merge multiple APP13 segments to single resource block
                     ImageInputStream stream = new ByteArrayImageInputStream(segment.data, segment.offset(), segment.length());
                     Directory psd = new PSDReader().read(stream);
                     Entry iccEntry = psd.getEntryById(PSD.RES_ICC_PROFILE);
@@ -304,6 +360,7 @@ public final class JPEGSegmentUtil {
                     System.err.println(TIFFReader.HexDump.dump(segment.data));
                 }
                 else if ("ICC_PROFILE".equals(segment.identifier())) {
+                    // TODO: Merge multiple APP2 segments to single ICC Profile
                     // Skip
                 }
                 else {

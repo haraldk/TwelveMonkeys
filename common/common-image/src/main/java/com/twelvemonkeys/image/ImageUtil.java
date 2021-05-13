@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.image;
@@ -160,11 +162,12 @@ public final class ImageUtil {
 
     /**
      * The sharpen kernel. Uses the following 3 by 3 matrix:
-     * <TABLE border="1" cellspacing="0">
-     * <TR><TD>0.0</TD><TD>-0.3</TD><TD>0.0</TD></TR>
-     * <TR><TD>-0.3</TD><TD>2.2</TD><TD>-0.3</TD></TR>
-     * <TR><TD>0.0</TD><TD>-0.3</TD><TD>0.0</TD></TR>
-     * </TABLE>
+     * <table border="1" cellspacing="0">
+     *     <caption>Sharpen Kernel Matrix</caption>
+     *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
+     *     <tr><td>-0.3</td><td>2.2</td><td>-0.3</td></tr>
+     *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
+     * </table>
      */
     private static final Kernel SHARPEN_KERNEL = new Kernel(3, 3, SHARPEN_MATRIX);
 
@@ -206,9 +209,10 @@ public final class ImageUtil {
      * Converts the {@code RenderedImage} to a {@code BufferedImage}.
      * The new image will have the <em>same</em> {@code ColorModel},
      * {@code Raster} and properties as the original image, if possible.
-     * <p/>
+     * <p>
      * If the image is already a {@code BufferedImage}, it is simply returned
      * and no conversion takes place.
+     * </p>
      *
      * @param pOriginal the image to convert.
      *
@@ -260,9 +264,10 @@ public final class ImageUtil {
     /**
      * Converts the {@code RenderedImage} to a {@code BufferedImage} of the
      * given type.
-     * <p/>
+     * <p>
      * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
+     * </p>
      *
      * @param pOriginal the image to convert.
      * @param pType the type of buffered image
@@ -306,12 +311,14 @@ public final class ImageUtil {
      * Converts the {@code BufferedImage} to a {@code BufferedImage} of the
      * given type. The new image will have the same {@code ColorModel},
      * {@code Raster} and properties as the original image, if possible.
-     * <p/>
+     * <p>
      * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
-     * <p/>
+     * </p>
+     * <p>
      * This method simply invokes
      * {@link #toBuffered(RenderedImage,int) toBuffered((RenderedImage) pOriginal, pType)}.
+     * </p>
      *
      * @param pOriginal the image to convert.
      * @param pType the type of buffered image
@@ -331,9 +338,10 @@ public final class ImageUtil {
      * Converts the {@code Image} to a {@code BufferedImage}.
      * The new image will have the same {@code ColorModel}, {@code Raster} and
      * properties as the original image, if possible.
-     * <p/>
+     * <p>
      * If the image is already a {@code BufferedImage}, it is simply returned
      * and no conversion takes place.
+     * </p>
      *
      * @param pOriginal the image to convert.
      *
@@ -387,19 +395,22 @@ public final class ImageUtil {
     /**
      * Creates a {@code WritableRaster} for the given {@code ColorModel} and
      * pixel data.
-     * <p/>
+     * <p>
      * This method is optimized for the most common cases of {@code ColorModel}
      * and pixel data combinations. The raster's backing {@code DataBuffer} is
      * created directly from the pixel data, as this is faster and more
      * resource-friendly than using
      * {@code ColorModel.createCompatibleWritableRaster(w, h)}.
-     * <p/>
+     * </p>
+     * <p>
      * For uncommon combinations, the method will fallback to using
      * {@code ColorModel.createCompatibleWritableRaster(w, h)} and
      * {@code WritableRaster.setDataElements(w, h, pixels)}
-     * <p/>
+     * </p>
+     * <p>
      * Note that the {@code ColorModel} and pixel data are <em>not</em> cloned
      * (in most cases).
+     * </p>
      *
      * @param pWidth the requested raster width
      * @param pHeight the requested raster height
@@ -541,9 +552,10 @@ public final class ImageUtil {
      * Converts the {@code Image} to a {@code BufferedImage} of the given type.
      * The new image will have the same {@code ColorModel}, {@code Raster} and
      * properties as the original image, if possible.
-     * <p/>
+     * <p>
      * If the image is already a {@code BufferedImage} of the given type, it
      * is simply returned and no conversion takes place.
+     * </p>
      *
      * @param pOriginal the image to convert.
      * @param pType the type of buffered image
@@ -654,9 +666,10 @@ public final class ImageUtil {
      * Rotates the image 90 degrees, clockwise (aka "rotate right"),
      * counter-clockwise (aka "rotate left") or 180 degrees, depending on the
      * {@code pDirection} argument.
-     * <p/>
+     * <p>
      * The new image will be completely covered with pixels from the source
      * image.
+     * </p>
      *
      * @param pImage the source image.
      * @param pDirection the direction, must be either {@link #ROTATE_90_CW},
@@ -1065,14 +1078,16 @@ public final class ImageUtil {
     /**
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
-     * <TABLE border="1" cellspacing="0">
-     * <TR><TD>0.0</TD><TD>-0.3</TD><TD>0.0</TD></TR>
-     * <TR><TD>-0.3</TD><TD>2.2</TD><TD>-0.3</TD></TR>
-     * <TR><TD>0.0</TD><TD>-0.3</TD><TD>0.0</TD></TR>
-     * </TABLE>
-     * <P/>
+     * <table border="1" cellspacing="0">
+     *     <caption>Sharpen Kernel Matrix</caption>
+     *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
+     *     <tr><td>-0.3</td><td>2.2</td><td>-0.3</td></tr>
+     *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
+     * </table>
+     * <p>
      * This is the same result returned as
      * {@code sharpen(pOriginal, 0.3f)}.
+     * </p>
      *
      * @param pOriginal the BufferedImage to sharpen
      *
@@ -1085,13 +1100,14 @@ public final class ImageUtil {
     /**
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
-     * <TABLE border="1" cellspacing="0">
-     * <TR><TD>0.0</TD><TD>-{@code pAmount}</TD><TD>0.0</TD></TR>
-     * <TR><TD>-{@code pAmount}</TD>
-     *     <TD>4.0 * {@code pAmount} + 1.0</TD>
-     *     <TD>-{@code pAmount}</TD></TR>
-     * <TR><TD>0.0</TD><TD>-{@code pAmount}</TD><TD>0.0</TD></TR>
-     * </TABLE>
+     * <table border="1" cellspacing="0">
+     *     <caption>Sharpen Kernel Matrix</caption>
+     *     <tr><td>0.0</td><td>-{@code pAmount}</td><td>0.0</td></tr>
+     *     <tr><td>-{@code pAmount}</td>
+     *         <td>4.0 * {@code pAmount} + 1.0</td>
+     *         <td>-{@code pAmount}</td></tr>
+     *     <tr><td>0.0</td><td>-{@code pAmount}</td><td>0.0</td></tr>
+     * </table>
      *
      * @param pOriginal the BufferedImage to sharpen
      * @param pAmount the amount of sharpening

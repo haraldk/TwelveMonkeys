@@ -4,30 +4,34 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOParam;
 import javax.imageio.ImageIO;
@@ -83,9 +87,10 @@ public final class IIOUtil {
 
     /**
      * Creates an {@code OutputStream} adapter that writes to an underlying {@code ImageOutputStream}.
-     * <p/>
+     * <p>
      * Note: The adapter is buffered, and <em>MUST</em> be properly flushed/closed after use,
      * otherwise data may be lost.
+     * </p>
      *
      * @param pStream the stream to write to.
      * @return an {@code OutputSteam} writing to {@code pStream}.
@@ -144,10 +149,9 @@ public final class IIOUtil {
             return null;
         }
 
-        if (pSourceRegion != null) {
-            if (pSourceRegion.x != 0 || pSourceRegion.y != 0 || pSourceRegion.width != pImage.getWidth() || pSourceRegion.height != pImage.getHeight()) {
-                return pImage.getSubimage(pSourceRegion.x, pSourceRegion.y, pSourceRegion.width, pSourceRegion.height);
-            }
+        if (pSourceRegion != null
+            && (pSourceRegion.x != 0 || pSourceRegion.y != 0 || pSourceRegion.width != pImage.getWidth() || pSourceRegion.height != pImage.getHeight())) {
+            return pImage.getSubimage(pSourceRegion.x, pSourceRegion.y, pSourceRegion.width, pSourceRegion.height);
         }
 
         return pImage;
@@ -188,7 +192,7 @@ public final class IIOUtil {
      * The names are all upper-case, and contains no duplicates.
      *
      * @return a normalized array of {@code String}s.
-     * @see javax.imageio.ImageIO#getReaderFormatNames()
+     * @see ImageIO#getReaderFormatNames()
      */
     public static String[] getNormalizedReaderFormatNames() {
         return normalizeNames(ImageIO.getReaderFormatNames());
@@ -199,7 +203,7 @@ public final class IIOUtil {
      * The names are all upper-case, and contains no duplicates.
      *
      * @return a normalized array of {@code String}s.
-     * @see javax.imageio.ImageIO#getWriterFormatNames()  
+     * @see ImageIO#getWriterFormatNames()
      */
     public static String[] getNormalizedWriterFormatNames() {
         return normalizeNames(ImageIO.getWriterFormatNames());
@@ -212,6 +216,111 @@ public final class IIOUtil {
             normalizedNames.add(name.toUpperCase());
         }
 
-        return normalizedNames.toArray(new String[normalizedNames.size()]);
+        return normalizedNames.toArray(new String[0]);
+    }
+
+    // TODO: RasterUtils? Subsampler?
+    public static void subsampleRow(byte[] srcRow, int srcPos, int srcWidth,
+                                    byte[] destRow, int destPos,
+                                    int samplesPerPixel, int bitsPerSample, int samplePeriod) {
+        // Period == 1 is a no-op...
+        if (samplePeriod == 1) {
+            return;
+        }
+
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1");
+        Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 8 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
+                "bitsPerSample must be > 0 and <= 8 and a power of 2");
+        Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
+        Validate.isTrue(samplesPerPixel * bitsPerSample <= 8 || samplesPerPixel * bitsPerSample % 8 == 0,
+                "samplesPerPixel * bitsPerSample must be < 8 or a multiple of 8 ");
+
+        if (bitsPerSample * samplesPerPixel % 8 == 0) {
+            int pixelStride = bitsPerSample * samplesPerPixel / 8;
+            for (int x = 0; x < srcWidth * pixelStride; x += samplePeriod * pixelStride) {
+                // System.arraycopy should be intrinsic, but consider using direct array access for pixelStride == 1
+                System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
+            }
+        }
+        else {
+            // Start bit fiddling...
+            int pixelStride = bitsPerSample * samplesPerPixel;
+            int mask = (1 << pixelStride) - 1;
+
+            for (int x = 0; x < srcWidth; x += samplePeriod) {
+                int dstOff = (destPos + x / samplePeriod) * pixelStride / 8;
+                int srcOff = (srcPos + x) * pixelStride / 8;
+
+                int srcBitPos = 8 - pixelStride - (x * pixelStride) % 8;
+                int srcMask = mask << srcBitPos;
+
+                int dstBitPos = 8 - pixelStride - (x * pixelStride / samplePeriod) % 8;
+                int dstMask = ~(mask << dstBitPos);
+
+                int val = ((srcRow[srcOff] & srcMask) >> srcBitPos);
+                destRow[dstOff] = (byte) ((destRow[dstOff] & dstMask) | val << dstBitPos);
+            }
+        }
+    }
+
+    public static void subsampleRow(short[] srcRow, int srcPos, int srcWidth,
+                                    short[] destRow, int destPos,
+                                    int samplesPerPixel, int bitsPerSample, int samplePeriod) {
+        // Period == 1 is a no-op...
+        if (samplePeriod == 1) {
+            return;
+        }
+
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1");
+        Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 16 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
+                "bitsPerSample must be > 0 and <= 16 and a power of 2");
+        Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
+        Validate.isTrue(samplesPerPixel * bitsPerSample <= 16 || samplesPerPixel * bitsPerSample % 16 == 0,
+                "samplesPerPixel * bitsPerSample must be < 16 or a multiple of 16 ");
+
+        int pixelStride = bitsPerSample * samplesPerPixel / 16;
+        for (int x = 0; x < srcWidth * pixelStride; x += samplePeriod * pixelStride) {
+            // System.arraycopy should be intrinsic, but consider using direct array access for pixelStride == 1
+            System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
+        }
+    }
+
+    public static void subsampleRow(int[] srcRow, int srcPos, int srcWidth,
+                                    int[] destRow, int destPos,
+                                    int samplesPerPixel, int bitsPerSample, int samplePeriod) {
+        // Period == 1 is a no-op...
+        if (samplePeriod == 1) {
+            return;
+        }
+
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1");
+        Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 32 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
+                "bitsPerSample must be > 0 and <= 32 and a power of 2");
+        Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
+        Validate.isTrue(samplesPerPixel * bitsPerSample <= 32 || samplesPerPixel * bitsPerSample % 32 == 0,
+                "samplesPerPixel * bitsPerSample must be < 32 or a multiple of 32 ");
+
+        int pixelStride = bitsPerSample * samplesPerPixel / 32;
+        for (int x = 0; x < srcWidth * pixelStride; x += samplePeriod * pixelStride) {
+            // System.arraycopy should be intrinsic, but consider using direct array access for pixelStride == 1
+            System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
+        }
+    }
+
+    public static void subsampleRow(float[] srcRow, int srcPos, int srcWidth,
+                                    float[] destRow, int destPos,
+                                    int samplesPerPixel, int bitsPerSample, int samplePeriod) {
+        Validate.isTrue(samplePeriod > 1, "samplePeriod must be > 1"); // Period == 1 could be a no-op...
+        Validate.isTrue(bitsPerSample > 0 && bitsPerSample <= 32 && (bitsPerSample == 1 || bitsPerSample % 2 == 0),
+                "bitsPerSample must be > 0 and <= 32 and a power of 2");
+        Validate.isTrue(samplesPerPixel > 0, "samplesPerPixel must be > 0");
+        Validate.isTrue(samplesPerPixel * bitsPerSample <= 32 || samplesPerPixel * bitsPerSample % 32 == 0,
+                "samplesPerPixel * bitsPerSample must be < 32 or a multiple of 32 ");
+
+        int pixelStride = bitsPerSample * samplesPerPixel / 32;
+        for (int x = 0; x < srcWidth * pixelStride; x += samplePeriod * pixelStride) {
+            // System.arraycopy should be intrinsic, but consider using direct array access for pixelStride == 1
+            System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
+        }
     }
 }

@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.tiff;
@@ -132,28 +134,25 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
     @Override
     public void write(final IIOMetadata streamMetadata, final IIOImage image, final ImageWriteParam param) throws IOException {
-        assertOutput();
-        configureStreamByteOrder(streamMetadata, imageOutput);
-
-        // TODO: Make TIFFEntry and possibly TIFFDirectory? public
-        TIFFWriter tiffWriter = new TIFFWriter();
-        tiffWriter.writeTIFFHeader(imageOutput);
-
-        writePage(0, image, param, tiffWriter, imageOutput.getStreamPosition());
-
-        imageOutput.flush();
+        prepareWriteSequence(streamMetadata);
+        writeToSequence(image, param);
+        endWriteSequence();
     }
 
     private long writePage(int imageIndex, IIOImage image, ImageWriteParam param, TIFFWriter tiffWriter, long lastIFDPointerOffset)
             throws IOException {
         RenderedImage renderedImage = image.getRenderedImage();
-
-        TIFFImageMetadata metadata = image.getMetadata() != null
-                                     ? convertImageMetadata(image.getMetadata(), ImageTypeSpecifier.createFromRenderedImage(renderedImage), param)
-                                     : getDefaultImageMetadata(ImageTypeSpecifier.createFromRenderedImage(renderedImage), param);
-
-        ColorModel colorModel = renderedImage.getColorModel();
         SampleModel sampleModel = renderedImage.getSampleModel();
+
+        // Can't use createFromRenderedImage in this case, as it does not consider palette for TYPE_BYTE_BINARY...
+        // TODO: Consider writing workaround in ImageTypeSpecifiers
+        ImageTypeSpecifier spec = new ImageTypeSpecifier(renderedImage);
+
+        // TODO: Handle case where convertImageMetadata returns null, due to unknown metadata format, or reconsider if that's a valid case...
+        TIFFImageMetadata metadata = image.getMetadata() != null
+                                     ? convertImageMetadata(image.getMetadata(), spec, param)
+                                     : getDefaultImageMetadata(spec, param);
+
         int numBands = sampleModel.getNumBands();
         int pixelSize = computePixelSize(sampleModel);
 
@@ -175,155 +174,39 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
-        // TODO: There shouldn't be necessary to create a separate map here, this should be handled in the
-        // convertImageMetadata/getDefaultImageMetadata methods....
         Map<Integer, Entry> entries = new LinkedHashMap<>();
+        // Copy metadata to output
+        Directory metadataIFD = metadata.getIFD();
+        for (Entry entry : metadataIFD) {
+            entries.put((Integer) entry.getIdentifier(), entry);
+        }
+
         entries.put(TIFF.TAG_IMAGE_WIDTH, new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, renderedImage.getWidth()));
         entries.put(TIFF.TAG_IMAGE_HEIGHT, new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
-        entries.put(TIFF.TAG_ORIENTATION, new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
-        entries.put(TIFF.TAG_BITS_PER_SAMPLE, new TIFFEntry(TIFF.TAG_BITS_PER_SAMPLE, asShortArray(sampleModel.getSampleSize())));
-
-        // If numComponents > numColorComponents, write ExtraSamples
-        if (numBands > colorModel.getNumColorComponents()) {
-            // TODO: Write per component > numColorComponents
-            if (colorModel.hasAlpha()) {
-                entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, colorModel.isAlphaPremultiplied() ? TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA : TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA));
-            }
-            else {
-                entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, TIFFBaseline.EXTRASAMPLE_UNSPECIFIED));
-            }
-        }
-
-        // Write compression field from param or metadata
-        int compression;
-        if ((param == null || param.getCompressionMode() == TIFFImageWriteParam.MODE_COPY_FROM_METADATA)
-                && image.getMetadata() != null && metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION) != null) {
-            compression = ((Number) metadata.getIFD().getEntryById(TIFF.TAG_COMPRESSION).getValue()).intValue();
-        }
-        else {
-            compression = TIFFImageWriteParam.getCompressionType(param);
-        }
-
-        entries.put(TIFF.TAG_COMPRESSION, new TIFFEntry(TIFF.TAG_COMPRESSION, compression));
-
-        // TODO: Let param/metadata control predictor
-        // TODO: Depending on param.getCompressionMode(): DISABLED/EXPLICIT/COPY_FROM_METADATA/DEFAULT
-        switch (compression) {
-            case TIFFExtension.COMPRESSION_ZLIB:
-            case TIFFExtension.COMPRESSION_DEFLATE:
-            case TIFFExtension.COMPRESSION_LZW:
-                if (pixelSize >= 8) {
-                    entries.put(TIFF.TAG_PREDICTOR, new TIFFEntry(TIFF.TAG_PREDICTOR, TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING));
-                }
-
-                break;
-
-            case TIFFExtension.COMPRESSION_CCITT_T4:
-                Entry group3options = metadata.getIFD().getEntryById(TIFF.TAG_GROUP3OPTIONS);
-
-                if (group3options == null) {
-                    group3options = new TIFFEntry(TIFF.TAG_GROUP3OPTIONS, (long) TIFFExtension.GROUP3OPT_2DENCODING);
-                }
-
-                entries.put(TIFF.TAG_GROUP3OPTIONS, group3options);
-
-                break;
-
-            case TIFFExtension.COMPRESSION_CCITT_T6:
-                Entry group4options = metadata.getIFD().getEntryById(TIFF.TAG_GROUP4OPTIONS);
-
-                if (group4options == null) {
-                    group4options = new TIFFEntry(TIFF.TAG_GROUP4OPTIONS, 0L);
-                }
-
-                entries.put(TIFF.TAG_GROUP4OPTIONS, group4options);
-
-                break;
-
-            default:
-        }
-
-        int photometric = getPhotometricInterpretation(colorModel, compression);
-        entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, photometric));
-
-        if (photometric == TIFFBaseline.PHOTOMETRIC_PALETTE && colorModel instanceof IndexColorModel) {
-            // TODO: Fix consistency between sampleModel.getSampleSize() and colorModel.getPixelSize()...
-            // We should be able to support 1, 2, 4 and 8 bits per sample at least, and probably 3, 5, 6 and 7 too
-            entries.put(TIFF.TAG_COLOR_MAP, new TIFFEntry(TIFF.TAG_COLOR_MAP, createColorMap((IndexColorModel) colorModel, sampleModel.getSampleSize(0))));
-            entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, 1));
-        }
-        else {
-            entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numBands));
-
-            // Note: Assuming sRGB to be the default RGB interpretation
-            ColorSpace colorSpace = colorModel.getColorSpace();
-            if (colorSpace instanceof ICC_ColorSpace && !colorSpace.isCS_sRGB()) {
-                entries.put(TIFF.TAG_ICC_PROFILE, new TIFFEntry(TIFF.TAG_ICC_PROFILE, ((ICC_ColorSpace) colorSpace).getProfile().getData()));
-            }
-        }
-
-        // Default sample format SAMPLEFORMAT_UINT need not be written
-        if (sampleModel.getDataType() == DataBuffer.TYPE_SHORT/* TODO: if isSigned(sampleModel.getDataType) or getSampleFormat(sampleModel) != 0 */) {
-            entries.put(TIFF.TAG_SAMPLE_FORMAT, new TIFFEntry(TIFF.TAG_SAMPLE_FORMAT, TIFFExtension.SAMPLEFORMAT_INT));
-        }
-        // TODO: Float values!
-
-        // TODO: Again, this should be handled in the metadata conversion....
-        // Get Software from metadata, or use default
-        Entry software = metadata.getIFD().getEntryById(TIFF.TAG_SOFTWARE);
-        entries.put(TIFF.TAG_SOFTWARE, software != null ? software : new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
-
-        // Copy metadata to output
-        int[] copyTags = {
-                TIFF.TAG_ORIENTATION,
-                TIFF.TAG_DATE_TIME,
-                TIFF.TAG_DOCUMENT_NAME,
-                TIFF.TAG_IMAGE_DESCRIPTION,
-                TIFF.TAG_MAKE,
-                TIFF.TAG_MODEL,
-                TIFF.TAG_PAGE_NAME,
-                TIFF.TAG_PAGE_NUMBER,
-                TIFF.TAG_ARTIST,
-                TIFF.TAG_HOST_COMPUTER,
-                TIFF.TAG_COPYRIGHT
-        };
-        for (int tagID : copyTags) {
-            Entry entry = metadata.getIFD().getEntryById(tagID);
-            if (entry != null) {
-                entries.put(tagID, entry);
-            }
-        }
-
-        // Get X/YResolution and ResolutionUnit from metadata if set, otherwise use defaults
-        // TODO: Add logic here OR in metadata merging, to make sure these 3 values are consistent.
-        Entry xRes = metadata.getIFD().getEntryById(TIFF.TAG_X_RESOLUTION);
-        entries.put(TIFF.TAG_X_RESOLUTION, xRes != null ? xRes : new TIFFEntry(TIFF.TAG_X_RESOLUTION, STANDARD_DPI));
-        Entry yRes = metadata.getIFD().getEntryById(TIFF.TAG_Y_RESOLUTION);
-        entries.put(TIFF.TAG_Y_RESOLUTION, yRes != null ? yRes : new TIFFEntry(TIFF.TAG_Y_RESOLUTION, STANDARD_DPI));
-        Entry resUnit = metadata.getIFD().getEntryById(TIFF.TAG_RESOLUTION_UNIT);
-        entries.put(TIFF.TAG_RESOLUTION_UNIT, resUnit != null ? resUnit : new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFFBaseline.RESOLUTION_UNIT_DPI));
 
         // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
         entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, renderedImage.getHeight()));
-        // - StripByteCounts - for no compression, entire image data... (TODO: How to know the byte counts prior to writing data?)
+        // StripByteCounts - for no compression, entire image data...
         entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, -1)); // Updated later
-        // - StripOffsets - can be offset to single strip only (TODO: but how large is the IFD data...???)
+        // StripOffsets - can be offset to single strip only
         entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, -1)); // Updated later
 
         // TODO: If tiled, write tile indexes etc
         // Depending on param.getTilingMode
         long nextIFDPointerOffset = -1;
 
+        int compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
+
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
             // This implementation, allows semi-streaming-compatible uncompressed TIFFs
             long streamPosition = imageOutput.getStreamPosition();
 
             long ifdSize = tiffWriter.computeIFDSize(entries.values());
-            long stripOffset = streamPosition + 4 +  ifdSize + 4;
-            long stripByteCount = (renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7) / 8;
+            long stripOffset = streamPosition + 4 + ifdSize + 4;
+            long stripByteCount = ((long) renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7L) / 8L;
 
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
@@ -374,8 +257,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
 
@@ -866,7 +749,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 }
             }
             catch (IIOInvalidTreeException e) {
-                // TODO: How to issue warning when warning requires imageIndex??? Use -1?
+                processWarningOccurred(sequenceIndex, "Could not convert image meta data: " + e.getMessage());
             }
 
             ifd = outData.getIFD();
@@ -881,12 +764,20 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         Map<Integer, Entry> entries = new LinkedHashMap<>(ifd != null ? ifd.size() + 10 : 20);
 
-        if (ifd != null) {
-            for (Entry entry : ifd) {
-                entries.put((Integer) entry.getIdentifier(), entry);
-            }
-        }
+        // Set software as default, may be overwritten
+        entries.put(TIFF.TAG_SOFTWARE, new TIFFEntry(TIFF.TAG_SOFTWARE, "TwelveMonkeys ImageIO TIFF writer " + originatingProvider.getVersion()));
+        entries.put(TIFF.TAG_ORIENTATION, new TIFFEntry(TIFF.TAG_ORIENTATION, 1)); // (optional)
 
+        mergeSafeMetadata(ifd, entries);
+
+        ColorModel colorModel = imageType.getColorModel();
+        SampleModel sampleModel = imageType.getSampleModel();
+        int numBands = sampleModel.getNumBands();
+        int pixelSize = computePixelSize(sampleModel);
+
+        entries.put(TIFF.TAG_BITS_PER_SAMPLE, new TIFFEntry(TIFF.TAG_BITS_PER_SAMPLE, asShortArray(sampleModel.getSampleSize())));
+
+        // Compression field from param or metadata
         int compression;
         if ((param == null || param.getCompressionMode() == TIFFImageWriteParam.MODE_COPY_FROM_METADATA)
                 && ifd != null && ifd.getEntryById(TIFF.TAG_COMPRESSION) != null) {
@@ -895,13 +786,141 @@ public final class TIFFImageWriter extends ImageWriterBase {
         else {
             compression = TIFFImageWriteParam.getCompressionType(param);
         }
+        entries.put(TIFF.TAG_COMPRESSION, new TIFFEntry(TIFF.TAG_COMPRESSION, compression));
 
-        int photometricInterpretation = getPhotometricInterpretation(imageType.getColorModel(), compression);
+        // TODO: Allow metadata to take precedence?
+        int photometricInterpretation = getPhotometricInterpretation(colorModel, compression);
         entries.put(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, photometricInterpretation));
 
-        // TODO: Set values from param if != null + combined values...
+        // If numComponents > numColorComponents, write ExtraSamples
+        if (numBands > colorModel.getNumColorComponents()) {
+            // TODO: Write per component > numColorComponents
+            if (colorModel.hasAlpha()) {
+                entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, colorModel.isAlphaPremultiplied() ? TIFFBaseline.EXTRASAMPLE_ASSOCIATED_ALPHA : TIFFBaseline.EXTRASAMPLE_UNASSOCIATED_ALPHA));
+            }
+            else {
+                entries.put(TIFF.TAG_EXTRA_SAMPLES, new TIFFEntry(TIFF.TAG_EXTRA_SAMPLES, TIFFBaseline.EXTRASAMPLE_UNSPECIFIED));
+            }
+        }
+
+        switch (compression) {
+            case TIFFExtension.COMPRESSION_ZLIB:
+            case TIFFExtension.COMPRESSION_DEFLATE:
+            case TIFFExtension.COMPRESSION_LZW:
+                // TODO: Let param/metadata control predictor
+                // TODO: Depending on param.getCompressionMode(): DISABLED/EXPLICIT/COPY_FROM_METADATA/DEFAULT
+                if (pixelSize >= 8) {
+                    entries.put(TIFF.TAG_PREDICTOR, new TIFFEntry(TIFF.TAG_PREDICTOR, TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING));
+                }
+
+                break;
+
+            case TIFFExtension.COMPRESSION_CCITT_T4:
+                Entry group3options = ifd != null ? ifd.getEntryById(TIFF.TAG_GROUP3OPTIONS) : null;
+
+                if (group3options == null) {
+                    group3options = new TIFFEntry(TIFF.TAG_GROUP3OPTIONS, (long) TIFFExtension.GROUP3OPT_2DENCODING);
+                }
+
+                entries.put(TIFF.TAG_GROUP3OPTIONS, group3options);
+
+                break;
+
+            case TIFFExtension.COMPRESSION_CCITT_T6:
+                Entry group4options = ifd != null ? ifd.getEntryById(TIFF.TAG_GROUP4OPTIONS) : null;
+
+                if (group4options == null) {
+                    group4options = new TIFFEntry(TIFF.TAG_GROUP4OPTIONS, 0L);
+                }
+
+                entries.put(TIFF.TAG_GROUP4OPTIONS, group4options);
+
+                break;
+
+            default:
+        }
+
+        if (photometricInterpretation == TIFFBaseline.PHOTOMETRIC_PALETTE && colorModel instanceof IndexColorModel) {
+            // TODO: Fix consistency between sampleModel.getSampleSize() and colorModel.getPixelSize()...
+            // We should be able to support 1, 2, 4 and 8 bits per sample at least, and probably 3, 5, 6 and 7 too
+            entries.put(TIFF.TAG_COLOR_MAP, new TIFFEntry(TIFF.TAG_COLOR_MAP, createColorMap((IndexColorModel) colorModel, sampleModel.getSampleSize(0))));
+            entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, 1));
+        }
+        else {
+            entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numBands));
+
+            // Note: Assuming sRGB to be the default RGB interpretation
+            ColorSpace colorSpace = colorModel.getColorSpace();
+            if (colorSpace instanceof ICC_ColorSpace && !colorSpace.isCS_sRGB()) {
+                entries.put(TIFF.TAG_ICC_PROFILE, new TIFFEntry(TIFF.TAG_ICC_PROFILE, ((ICC_ColorSpace) colorSpace).getProfile().getData()));
+            }
+        }
+
+        // Default sample format SAMPLEFORMAT_UINT need not be written
+        if (sampleModel.getDataType() == DataBuffer.TYPE_SHORT/* TODO: if isSigned(sampleModel.getDataType) or getSampleFormat(sampleModel) != 0 */) {
+            entries.put(TIFF.TAG_SAMPLE_FORMAT, new TIFFEntry(TIFF.TAG_SAMPLE_FORMAT, TIFFExtension.SAMPLEFORMAT_INT));
+        }
+        // TODO: Float values!
 
         return new TIFFImageMetadata(entries.values());
+    }
+
+    private void mergeSafeMetadata(final Directory ifd, final Map<Integer, Entry> entries) {
+        if (ifd == null) {
+            return;
+        }
+
+        for (Entry entry : ifd) {
+            int tagId = (Integer) entry.getIdentifier();
+
+            switch (tagId) {
+                // Baseline
+                case TIFF.TAG_SUBFILE_TYPE:
+                case TIFF.TAG_OLD_SUBFILE_TYPE:
+                case TIFF.TAG_IMAGE_DESCRIPTION:
+                case TIFF.TAG_MAKE:
+                case TIFF.TAG_MODEL:
+                case TIFF.TAG_ORIENTATION:
+                case TIFF.TAG_X_RESOLUTION:
+                case TIFF.TAG_Y_RESOLUTION:
+                case TIFF.TAG_RESOLUTION_UNIT:
+                case TIFF.TAG_SOFTWARE:
+                case TIFF.TAG_DATE_TIME:
+                case TIFF.TAG_ARTIST:
+                case TIFF.TAG_HOST_COMPUTER:
+                case TIFF.TAG_COPYRIGHT:
+                // Extension
+                case TIFF.TAG_DOCUMENT_NAME:
+                case TIFF.TAG_PAGE_NAME:
+                case TIFF.TAG_X_POSITION:
+                case TIFF.TAG_Y_POSITION:
+                case TIFF.TAG_PAGE_NUMBER:
+                case TIFF.TAG_XMP:
+                // Private/Custom
+                case TIFF.TAG_IPTC:
+                case TIFF.TAG_PHOTOSHOP:
+                case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:
+                case TIFF.TAG_PHOTOSHOP_ANNOTATIONS:
+                case TIFF.TAG_EXIF_IFD:
+                case TIFF.TAG_GPS_IFD:
+                case TIFF.TAG_INTEROP_IFD:
+                    entries.put(tagId, entry);
+                    break;
+                default:
+                    // Allow most extension and custom tags
+                    if (tagId >= 1000 && tagId < 50706) {
+                        entries.put(tagId, entry);
+                    }
+                    // Skip 50 706 - 57 080 (DNG tags)
+                    else if (tagId > 50780 && tagId < 65000) {
+                        entries.put(tagId, entry);
+                    }
+                    // Always allow "the reusable range"
+                    else if (tagId >= 65000 && tagId <= 65535) {
+                        entries.put(tagId, entry);
+                    }
+            }
+        }
     }
 
     @Override
@@ -927,7 +946,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void prepareWriteSequence(IIOMetadata streamMetadata) throws IOException {
+    public void prepareWriteSequence(final IIOMetadata streamMetadata) throws IOException {
         if (writingSequence) {
             throw new IllegalStateException("sequence writing has already been started!");
         }
@@ -942,7 +961,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void writeToSequence(IIOImage image, ImageWriteParam param) throws IOException {
+    public void writeToSequence(final IIOImage image, final ImageWriteParam param) throws IOException {
         if (!writingSequence) {
             throw new IllegalStateException("prepareWriteSequence() must be called before writeToSequence()!");
         }

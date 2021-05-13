@@ -4,40 +4,32 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.util.WeakWeakMap;
-
-import javax.imageio.*;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.swing.*;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.event.WindowAdapter;
@@ -45,16 +37,32 @@ import java.awt.event.WindowEvent;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.swing.*;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.util.WeakWeakMap;
 
 /**
  * ImageReader for Microsoft Windows ICO (icon) format.
  * 1, 4, 8 bit palette support with bitmask transparency, and 16, 24 and 32 bit
  * true color support with alpha. Also supports Windows Vista PNG encoded icons.
- * <p/>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ICOImageReader.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
@@ -84,7 +92,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
     protected void resetMembers() {
         directory = null;
-        
+
         headers.clear();
         descriptors.clear();
 
@@ -234,8 +242,9 @@ abstract class DIBImageReader extends ImageReaderBase {
         ImageReader pngReader = getPNGReader();
 
         imageInput.seek(pEntry.getOffset());
-        InputStream inputStream = IIOUtil.createStreamAdapter(imageInput, pEntry.getSize());
-        ImageInputStream stream = ImageIO.createImageInputStream(inputStream);
+//        InputStream inputStream = IIOUtil.createStreamAdapter(imageInput, pEntry.getSize());
+//        ImageInputStream stream = ImageIO.createImageInputStream(inputStream);
+        ImageInputStream stream = new SubImageInputStream(imageInput, pEntry.getSize());
 
         // NOTE: Will throw IOException on later reads if input is not PNG
         pngReader.setInput(stream);
@@ -285,8 +294,8 @@ abstract class DIBImageReader extends ImageReaderBase {
             }
 
             // TODO: Support this, it's already in the BMP reader, spec allows RLE4 and RLE8
-            if (header.getCompression() != 0) {
-                descriptor = new BitmapUnsupported(pEntry, String.format("Unsupported compression: %d", header.getCompression()));
+            if (header.getCompression() != DIB.COMPRESSION_RGB) {
+                descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported compression: %d", header.getCompression()));
             }
             else {
                 int bitCount = header.getBitCount();
@@ -314,7 +323,7 @@ abstract class DIBImageReader extends ImageReaderBase {
                         break;
 
                     default:
-                        descriptor = new BitmapUnsupported(pEntry, String.format("Unsupported bit count %d", bitCount));
+                        descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported bit count %d", bitCount));
                 }
             }
 
@@ -354,7 +363,7 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmapIndexed1(final BitmapIndexed pBitmap, final boolean pAsMask) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth() >> 3);
+        int width = adjustToPadding((pBitmap.getWidth() + 7) >> 3);
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
@@ -388,7 +397,7 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmapIndexed4(final BitmapIndexed pBitmap) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth() >> 1);
+        int width = adjustToPadding((pBitmap.getWidth() + 1) >> 1);
         byte[] row = new byte[width];
 
         for (int y = 0; y < pBitmap.getHeight(); y++) {
@@ -456,13 +465,12 @@ abstract class DIBImageReader extends ImageReaderBase {
     }
 
     private void readBitmap16(final BitmapDescriptor pBitmap) throws IOException {
-        // TODO: No idea if this actually works..
         short[] pixels = new short[pBitmap.getWidth() * pBitmap.getHeight()];
 
         // TODO: Support TYPE_USHORT_565 and the RGB 444/ARGB 4444 layouts
         // Will create TYPE_USHORT_555
         DirectColorModel cm = new DirectColorModel(16, 0x7C00, 0x03E0, 0x001F);
-        DataBuffer buffer = new DataBufferShort(pixels, pixels.length);
+        DataBuffer buffer = new DataBufferUShort(pixels, pixels.length);
         WritableRaster raster = Raster.createPackedRaster(
                 buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
         );
@@ -550,7 +558,7 @@ abstract class DIBImageReader extends ImageReaderBase {
             if (abortRequested()) {
                 processReadAborted();
                 break;
-            }            
+            }
             processImageProgress(100 * y / (float) pBitmap.getHeight());
         }
 
@@ -590,7 +598,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
         return directory.getEntry(pImageIndex);
     }
-    
+
     /// Test code below, ignore.. :-)
     public static void main(final String[] pArgs) throws IOException {
         if (pArgs.length == 0) {
@@ -700,10 +708,10 @@ abstract class DIBImageReader extends ImageReaderBase {
             }
         });
 
-        button.setText("" + image.getWidth() + "x" +
+        button.setText(image.getWidth() + "x" +
                 image.getHeight() + ": "
                 + ((image.getColorModel() instanceof IndexColorModel) ?
-                "" + ((IndexColorModel) image.getColorModel()).getMapSize() :
+                String.valueOf(((IndexColorModel) image.getColorModel()).getMapSize()) :
                 "TrueColor"));
 
         pParent.add(button);

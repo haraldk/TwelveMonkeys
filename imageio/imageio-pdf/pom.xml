@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.4-SNAPSHOT</version>
+        <version>3.8.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-pdf</artifactId>
     <name>TwelveMonkeys :: ImageIO :: PDF plugin</name>
@@ -12,6 +12,9 @@
         ImageIO plugin for Adobe Portable Document Format (PDF).
     </description>
 
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.pdf</project.jpms.module.name>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -22,6 +25,7 @@
             <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

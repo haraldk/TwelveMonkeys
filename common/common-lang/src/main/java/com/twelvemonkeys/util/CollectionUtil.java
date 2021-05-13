@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.util;
@@ -266,7 +268,7 @@ public final class CollectionUtil {
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null} or
      *         if {@code pArray} is not an array.
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     public static Object subArray(Object pArray, int pStart) {
         return subArray(pArray, pStart, -1);
@@ -277,13 +279,14 @@ public final class CollectionUtil {
      * If the sub array is same length as the original
      * ({@code pStart == 0}), the original array will be returned.
      *
+     * @param <T> the type of array
      * @param pArray the original array
      * @param pStart the start index of the original array
      * @return a subset of the original array, or the original array itself,
      *         if {@code pStart} is 0.
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     public static <T> T[] subArray(T[] pArray, int pStart) {
         return subArray(pArray, pStart, -1);
@@ -307,7 +310,7 @@ public final class CollectionUtil {
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null} or
      *         if {@code pArray} is not an array.
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     @SuppressWarnings({"SuspiciousSystemArraycopy"})
     public static Object subArray(Object pArray, int pStart, int pLength) {
@@ -361,6 +364,7 @@ public final class CollectionUtil {
      * If the sub array is same length as the original, the original array will
      * be returned.
      *
+     * @param <T> the type of array
      * @param pArray  the original array
      * @param pStart  the start index of the original array
      * @param pLength the length of the new array
@@ -369,7 +373,7 @@ public final class CollectionUtil {
      *         negative, or greater or equal to {@code pArray.length}.
      *
      * @throws IllegalArgumentException if {@code pArray} is {@code null}
-     * @throws ArrayIndexOutOfBoundsException if {@code pStart} < 0
+     * @throws ArrayIndexOutOfBoundsException if {@code pStart} &lt; 0
      */
     @SuppressWarnings("unchecked")
     public static <T> T[] subArray(T[] pArray, int pStart, int pLength) {
@@ -422,8 +426,8 @@ public final class CollectionUtil {
      * @param pArray the array to iterate
      * @return a new {@link ListIterator}
      * @throws IllegalArgumentException if {@code pArray} is {@code null},
-     *         {@code pStart < 0}, or
-     *         {@code pLength > pArray.length - pStart}
+     *         {@code pStart &lt; 0}, or
+     *         {@code pLength &gt; pArray.length - pStart}
      */
     public static <E> ListIterator<E> iterator(final E[] pArray) {
         return iterator(pArray, 0, notNull(pArray).length);
@@ -437,8 +441,8 @@ public final class CollectionUtil {
      * @param pLength the number of elements to include in the iterator
      * @return a new {@link ListIterator}
      * @throws IllegalArgumentException if {@code pArray} is {@code null},
-     *         {@code pStart < 0}, or
-     *         {@code pLength > pArray.length - pStart}
+     *         {@code pStart &lt; 0}, or
+     *         {@code pLength &gt; pArray.length - pStart}
      */
     public static <E> ListIterator<E> iterator(final E[] pArray, final int pStart, final int pLength) {
         return new ArrayIterator<E>(pArray, pStart, pLength);

@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
@@ -35,11 +37,12 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil.isKnownJPEGMarker;
 import static com.twelvemonkeys.lang.Validate.notNull;
 import static java.util.Arrays.copyOf;
 
@@ -55,23 +58,22 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     // TODO: Rewrite JPEGSegment (from metadata) to store stream pos/length, and be able to replay data, and use instead of Segment?
     // TODO: Support multiple JPEG streams (SOI...EOI, SOI...EOI, ...) in a single file
 
-    final private ImageInputStream stream;
-    final private JPEGSegmentStreamWarningListener warningListener;
+    private final ImageInputStream stream;
+    private final JPEGSegmentWarningListener warningListener;
 
-    final private ComponentIdSet componentIds = new ComponentIdSet();
+    private final ComponentIdSet componentIds = new ComponentIdSet();
 
-    private final List<Segment> segments = new ArrayList<Segment>(64);
+    private final List<Segment> segments = new ArrayList<>(64);
     private int currentSegment = -1;
     private Segment segment;
 
-
-    JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentStreamWarningListener warningListener) {
+    JPEGSegmentImageInputStream(final ImageInputStream stream, final JPEGSegmentWarningListener warningListener) {
         this.stream = notNull(stream, "stream");
         this.warningListener = notNull(warningListener, "warningListener");
     }
 
     JPEGSegmentImageInputStream(final ImageInputStream stream) {
-        this(stream, JPEGSegmentStreamWarningListener.NULL_LISTENER);
+        this(stream, JPEGSegmentWarningListener.NULL_LISTENER);
     }
 
     private void processWarningOccured(final String warning) {
@@ -105,24 +107,25 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
             // Scan forward
             while (true) {
-                long realPosition = stream.getStreamPosition();
-
                 int trash = 0;
                 int marker = stream.readUnsignedByte();
 
-                // Skip bad padding before the marker
-                while (marker != 0xff) {
-                    marker = stream.readUnsignedByte();
-                    trash++;
-                    realPosition++;
-                }
+                while (!isKnownJPEGMarker(marker)) {
+                    marker &= 0xff;
 
-                marker = 0xff00 | stream.readUnsignedByte();
+                    // Skip bad padding before the marker
+                    while (marker != 0xff) {
+                        marker = stream.readUnsignedByte();
+                        trash++;
+                    }
 
-                // Skip over 0xff padding between markers
-                while (marker == 0xffff) {
-                    realPosition++;
                     marker = 0xff00 | stream.readUnsignedByte();
+
+                    // Skip over 0xff padding between markers
+                    while (marker == 0xffff) {
+                        marker = 0xff00 | stream.readUnsignedByte();
+                        trash++;
+                    }
                 }
 
                 if (trash != 0) {
@@ -130,6 +133,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     // and issued the correct warning. However, the native metadata chokes on it, so we'll mask it out.
                     processWarningOccured(String.format("Corrupt JPEG data: %d extraneous bytes before marker 0x%02x", trash, marker & 0xff));
                 }
+
+                long realPosition = stream.getStreamPosition() - 2;
 
                 // We are now handling all important segments ourselves, except APP1/Exif and APP14/Adobe,
                 // as these segments affects image decoding.
@@ -144,7 +149,6 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 else {
                     if (marker == JPEG.EOI) {
                         segment = new Segment(marker, realPosition, segment.end(), 2);
-                        segments.add(segment);
                     }
                     else {
                         // Length including length field itself
@@ -159,6 +163,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                             // Inspect segment, see if we have 16 bit precision (assuming segments will not contain
                             // multiple quality tables with varying precision)
                             int qtInfo = stream.read();
+
                             if ((qtInfo & 0x10) == 0x10) {
                                 processWarningOccured("16 bit DQT encountered");
                                 segment = new DownsampledDQTReplacement(realPosition, segment.end(), length, qtInfo, stream);
@@ -168,6 +173,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                             }
                         }
                         else if (isSOFMarker(marker)) {
+                            // TODO: Warning + ignore if we already have a SOF
                             // Replace duplicate SOFn component ids
                             byte[] data = readReplaceDuplicateSOFnComponentIds(marker, length);
                             segment = new ReplacementSegment(marker, realPosition, segment.end(), length, data);
@@ -181,10 +187,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                         else {
                             segment = new Segment(marker, realPosition, segment.end(), length);
                         }
-
-                        segments.add(segment);
                     }
 
+                    segments.add(segment);
                     currentSegment = segments.size() - 1;
 
                     if (marker == JPEG.SOS) {
@@ -268,7 +273,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 processWarningOccured(String.format("Duplicate component ID %d in SOF", id));
 
                 id++;
-                while (!componentIds.add(id)) {
+                while (componentIds.size() < 4 && !componentIds.add(id) && id < 255) {
                     id++;
                 }
 
@@ -323,11 +328,11 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     static String asAsciiString(final byte[] data, final int offset, final int length) {
-        return new String(data, offset, length, Charset.forName("ascii"));
+        return new String(data, offset, length, StandardCharsets.US_ASCII);
     }
 
     private void streamInit() throws IOException {
-        stream.seek(0);
+        long position = stream.getStreamPosition();
 
         try {
             int soi = stream.readUnsignedShort();
@@ -336,7 +341,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 throw new IIOException(String.format("Not a JPEG stream (starts with: 0x%04x, expected SOI: 0x%04x)", soi, JPEG.SOI));
             }
 
-            segment = new Segment(soi, 0, 0, 2);
+            segment = new Segment(soi, position, 0, 2);
 
             segments.add(segment);
             currentSegment = segments.size() - 1; // 0
@@ -380,6 +385,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                 fetchSegment();
             }
             catch (EOFException ignore) {
+                segments.add(new Segment(0, segment.realEnd(), segment.end(), Integer.MAX_VALUE * 2L - segment.realEnd()));
                 // This might happen if the segment lengths in the stream are bad.
                 // We MUST leave internal state untouched in this case.
                 // We ignore this exception here, but client code will get
@@ -415,7 +421,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
             repositionAsNecessary();
 
             long bytesLeft = segment.end() - streamPos; // If no more bytes after reposition, we're at EOF
-            int count = bytesLeft == 0 ? -1 : segment.read(stream, b, off + total, (int) Math.min(len - total, bytesLeft));
+            int count = bytesLeft <= 0 ? -1 : segment.read(stream, b, off + total, (int) Math.min(len - total, bytesLeft));
 
             if (count == -1) {
                 // EOF
@@ -435,8 +441,9 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     @SuppressWarnings({"FinalizeDoesntCallSuperFinalize"})
+    @Deprecated
     @Override
-    protected void finalize() throws Throwable {
+    protected void finalize() {
         // Empty finalizer (for improved performance; no need to call super.finalize() in this case)
     }
 
@@ -563,12 +570,17 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
 
         @Override
         public int read(final ImageInputStream stream) {
-            return data[pos++] & 0xff;
+            return data.length > pos ? data[pos++] & 0xff : -1;
         }
 
         @Override
         public int read(final ImageInputStream stream, byte[] b, int off, int len) {
-            int length = Math.min(data.length - pos, len);
+            int dataLeft = data.length - pos;
+            if (dataLeft <= 0) {
+                return -1;
+            }
+
+            int length = Math.min(dataLeft, len);
             System.arraycopy(data, pos, b, off, length);
             pos += length;
 
@@ -577,7 +589,7 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
     }
 
     static final class ComponentIdSet {
-        final int[] values = new int[4]; // The native code don't support more than 4 components
+        final int[] values = new int[4]; // The native code doesn't support more than 4 components
         int size;
 
         boolean add(final int value) {

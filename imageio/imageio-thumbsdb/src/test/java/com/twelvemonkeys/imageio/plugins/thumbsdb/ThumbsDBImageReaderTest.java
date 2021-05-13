@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
@@ -33,6 +35,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 import com.twelvemonkeys.lang.SystemUtil;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -58,13 +61,16 @@ import static org.junit.Assert.assertNotNull;
 public class ThumbsDBImageReaderTest extends ImageReaderAbstractTest<ThumbsDBImageReader> {
     private static final boolean IS_JAVA_6 = SystemUtil.isClassAvailable("java.util.Deque");
 
-    private ThumbsDBImageReaderSpi provider = new ThumbsDBImageReaderSpi();
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new ThumbsDBImageReaderSpi();
+    }
 
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 new TestData(
                         getClassLoaderResource("/thumbsdb/Thumbs.db"),
-                        new Dimension(96, 96), new Dimension(96, 96), new Dimension(16, 16), 
+                        new Dimension(96, 96), new Dimension(96, 96), new Dimension(16, 16),
                         new Dimension(96, 45), new Dimension(63, 96), new Dimension(96, 96),
                         new Dimension(96, 64), new Dimension(96, 96), new Dimension(96, 77)
                 ),
@@ -86,27 +92,17 @@ public class ThumbsDBImageReaderTest extends ImageReaderAbstractTest<ThumbsDBIma
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return provider;
-    }
-
     @Override
-    protected ThumbsDBImageReader createReader() {
-        return new ThumbsDBImageReader(provider);
-    }
-
-    protected Class<ThumbsDBImageReader> getReaderClass() {
-        return ThumbsDBImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("thumbs");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Collections.singletonList("db");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Collections.singletonList("image/x-thumbs-db");
     }

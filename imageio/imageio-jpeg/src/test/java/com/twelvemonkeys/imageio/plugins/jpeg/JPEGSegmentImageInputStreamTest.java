@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
@@ -32,6 +34,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+
 import org.junit.Test;
 import org.mockito.internal.matchers.LessOrEqual;
 
@@ -44,7 +47,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * JPEGSegmentImageInputStreamTest
@@ -173,6 +178,32 @@ public class JPEGSegmentImageInputStreamTest {
     }
 
     @Test
+    public void testEOFExceptionInSegmentParsingShouldNotCreateBadState2() throws IOException {
+        ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/51432b02-02a8-11e7-9203-b42b1c43c0c3.jpg")));
+
+        byte[] buffer = new byte[4096];
+
+        // NOTE: This is a simulation of how the native parts of com.sun...JPEGImageReader would read the image...
+        assertEquals(2, iis.read(buffer, 0, buffer.length));
+        assertEquals(2, iis.getStreamPosition());
+
+        iis.seek(2000); // Just a random position beyond EOF
+        assertEquals(2000, iis.getStreamPosition());
+
+        // So far, so good (but stream position is now really beyond EOF)...
+
+        // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(-1, iis.read());
+        assertEquals(2000, iis.getStreamPosition());
+
+        // Again, should just continue returning -1 for ever
+        assertEquals(-1, iis.read());
+        assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(2000, iis.getStreamPosition());
+    }
+
+    @Test
     public void testEOFExceptionInSegmentParsingShouldNotCreateBadState() throws IOException {
         ImageInputStream iis = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/broken-no-sof-ascii-transfer-mode.jpg")));
 
@@ -189,10 +220,37 @@ public class JPEGSegmentImageInputStreamTest {
 
         // This however, will blow up with an EOFException internally (but we'll return -1 to be good)
         assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(-1, iis.read());
         assertEquals(0x2012, iis.getStreamPosition());
 
         // Again, should just continue returning -1 for ever
         assertEquals(-1, iis.read(buffer, 0, buffer.length));
+        assertEquals(-1, iis.read());
         assertEquals(0x2012, iis.getStreamPosition());
     }
+
+
+    @Test(timeout = 1000L)
+    public void testInfiniteLoopCorrupt() throws IOException {
+        try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
+            long length = 0;
+            while (stream.read() != -1) {
+                length++;
+            }
+
+            assertEquals(25504L, length); // Sanity check: same as file size, except..?
+        }
+
+        try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
+            long length = 0;
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = stream.read(buffer)) != -1) {
+                length += read;
+            }
+
+            assertEquals(25504L, length); // Sanity check: same as file size, except..?
+        }
+    }
 }
+

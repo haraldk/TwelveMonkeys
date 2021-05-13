@@ -1,32 +1,72 @@
+/*
+ * Copyright (c) 2009, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadProgressListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.ImageReaderSpi;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.imageio.*;
-import javax.imageio.event.IIOReadProgressListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.spi.ImageReaderSpi;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNoException;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 /**
  * BMPImageReaderTest
@@ -36,6 +76,12 @@ import static org.mockito.Mockito.*;
  * @version $Id: BMPImageReaderTest.java,v 1.0 Apr 1, 2008 10:39:17 PM haraldk Exp$
  */
 public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> {
+    @Override
+    protected ImageReaderSpi createProvider() {
+        return new BMPImageReaderSpi();
+    }
+
+    @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
                 // BMP Suite "Good"
@@ -112,27 +158,17 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         );
     }
 
-    protected ImageReaderSpi createProvider() {
-        return new BMPImageReaderSpi();
-    }
-
     @Override
-    protected BMPImageReader createReader() {
-        return new BMPImageReader(createProvider());
-    }
-
-    protected Class<BMPImageReader> getReaderClass() {
-        return BMPImageReader.class;
-    }
-
     protected List<String> getFormatNames() {
         return Collections.singletonList("bmp");
     }
 
+    @Override
     protected List<String> getSuffixes() {
         return Arrays.asList("bmp", "rle");
     }
 
+    @Override
     protected List<String> getMIMETypes() {
         return Collections.singletonList("image/bmp");
     }
@@ -146,7 +182,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
             ImageTypeSpecifier rawType = reader.getRawImageType(0);
 
-            // As the JPEGImageReader we delegate to returns null for YCbCr, we'll have to do the same
+            // As the JPEGImageReader we delegate to may return null for YCbCr, we'll have to do the same
             if (rawType == null && data.getInput().toString().contains("jpeg")) {
                 continue;
             }
@@ -241,7 +277,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     @Test
-    public void testAddIIOReadProgressListenerCallbacksJPEG() {
+    public void testAddIIOReadProgressListenerCallbacksJPEG() throws IOException {
         ImageReader reader = createReader();
         TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb24jpeg.bmp"), new Dimension(127, 64));
         reader.setInput(data.getInputStream());
@@ -264,7 +300,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     @Test
-    public void testAddIIOReadProgressListenerCallbacksPNG() {
+    public void testAddIIOReadProgressListenerCallbacksPNG() throws IOException {
         ImageReader reader = createReader();
         TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb24png.bmp"), new Dimension(127, 64));
         reader.setInput(data.getInputStream());
@@ -287,7 +323,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     @Test
-    public void testMetadataEqualsJRE() throws IOException, URISyntaxException {
+    public void testMetadataEqualsJRE() throws IOException {
         ImageReader jreReader;
         try {
             @SuppressWarnings("unchecked")
@@ -306,6 +342,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
         for (TestData data : getTestData()) {
             if (data.getInput().toString().contains("pal8offs")) {
+                // Skip: Contains extra bogus PaletteEntry nodes
                 continue;
             }
 
@@ -322,9 +359,10 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 System.err.println("WARNING: Reading " + data + " caused exception: " + e.getMessage());
                 continue;
             }
+
             IIOMetadata jreMetadata = jreReader.getImageMetadata(0);
 
-            assertEquals(true, metadata.isStandardMetadataFormatSupported());
+            assertTrue(metadata.isStandardMetadataFormatSupported());
             assertEquals(jreMetadata.getNativeMetadataFormatName(), metadata.getNativeMetadataFormatName());
             assertArrayEquals(jreMetadata.getExtraMetadataFormatNames(), metadata.getExtraMetadataFormatNames());
 
@@ -334,23 +372,24 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 String absolutePath = data.toString();
                 String localPath = absolutePath.substring(absolutePath.lastIndexOf("test-classes") + 12);
 
+                // TODO: blauesglas_16_bitmask444 fails BMP Version for 11+
                 Node expectedTree = jreMetadata.getAsTree(format);
                 Node actualTree = metadata.getAsTree(format);
 
-//                try {
+                try {
                     assertNodeEquals(localPath + " - " + format, expectedTree, actualTree);
-//                }
-//                catch (AssertionError e) {
-//                    ByteArrayOutputStream expected = new ByteArrayOutputStream();
-//                    ByteArrayOutputStream actual = new ByteArrayOutputStream();
-//
-//                    new XMLSerializer(expected, "UTF-8").serialize(expectedTree, false);
-//                    new XMLSerializer(actual, "UTF-8").serialize(actualTree, false);
-//
-//                    assertEquals(e.getMessage(), new String(expected.toByteArray(), "UTF-8"), new String(actual.toByteArray(), "UTF-8"));
-//
-//                    throw e;
-//                }
+                }
+                catch (AssertionError e) {
+                    ByteArrayOutputStream expected = new ByteArrayOutputStream();
+                    ByteArrayOutputStream actual = new ByteArrayOutputStream();
+
+                    new XMLSerializer(expected, "UTF-8").serialize(expectedTree, false);
+                    new XMLSerializer(actual, "UTF-8").serialize(actualTree, false);
+
+                    assertEquals(e.getMessage(), new String(expected.toByteArray(), StandardCharsets.UTF_8), new String(actual.toByteArray(), StandardCharsets.UTF_8));
+
+                    throw e;
+                }
             }
         }
     }
@@ -372,18 +411,27 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         NodeList expectedChildNodes = expected.getChildNodes();
         NodeList actualChildNodes = actual.getChildNodes();
 
-        assertEquals(message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes),
-                expectedChildNodes.getLength(), actualChildNodes.getLength());
+        assertTrue(message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes),
+                expectedChildNodes.getLength() <= actualChildNodes.getLength());
 
         for (int i = 0; i < expectedChildNodes.getLength(); i++) {
             Node expectedChild = expectedChildNodes.item(i);
+
             Node actualChild = actualChildNodes.item(i);
+
+            for (int j = 0; j < actualChildNodes.getLength(); j++) {
+                if (actualChildNodes.item(j).getLocalName().equals(expectedChild.getLocalName())) {
+                    actualChild = actualChildNodes.item(j);
+                    break;
+                }
+            }
 
             assertEquals(message + " node name differs", expectedChild.getLocalName(), actualChild.getLocalName());
             assertNodeEquals(message + "/" + expectedChild.getLocalName(), expectedChild, actualChild);
         }
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     private boolean excludeEqualValueTest(final Node expected) {
         if (expected.getLocalName().equals("ImageSize")) {
             // JRE metadata returns 0, even if known in reader...

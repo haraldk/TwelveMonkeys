@@ -4,31 +4,34 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -47,6 +50,7 @@ import java.awt.image.RenderedImage;
 import java.awt.image.SampleModel;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,26 +71,25 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     // TODO: Should we really test if the provider is installed?
     //       - Pro: Tests the META-INF/services config
     //       - Con: Not all providers should be installed at runtime...
+    // TODO: Create own subclass for testing the Spis?
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
         ImageIO.setUseCache(false);
     }
 
-    protected abstract List<TestData> getTestData();
+    @SuppressWarnings("unchecked")
+    private final Class<T> readerClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+
+    protected final ImageReaderSpi provider = createProvider();
 
     protected abstract ImageReaderSpi createProvider();
 
-    protected abstract Class<T> getReaderClass();
-
-    protected T createReader() {
-        try {
-            return getReaderClass().newInstance();
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+    protected final T createReader() throws IOException {
+        return readerClass.cast(provider.createReaderInstance(null));
     }
+
+    protected abstract List<TestData> getTestData();
 
     protected abstract List<String> getFormatNames();
 
@@ -94,14 +97,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     protected abstract List<String> getMIMETypes();
 
-    protected boolean allowsNullRawImageType() {
-        return false;
-    }    
-
     protected static void failBecause(String message, Throwable exception) {
-        AssertionError error = new AssertionError(message);
-        error.initCause(exception);
-        throw error;
+        throw new AssertionError(message, exception);
     }
 
     protected void assertProviderInstalledForName(final String pFormat, final Class<? extends ImageReader> pReaderClass) {
@@ -121,17 +118,20 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         boolean found = false;
         while (pReaders.hasNext()) {
             ImageReader reader = pReaders.next();
-            if (reader.getClass() == pReaderClass) {
+            if (reader.getClass() == pReaderClass && isOurProvider(reader.getOriginatingProvider())) {
                 found = true;
             }
         }
 
-        assertTrue(String.format("%s not installed for %s", pReaderClass.getSimpleName(), pFormat), found);
+        assertTrue(String.format("%s not provided by %s for '%s'", pReaderClass.getSimpleName(), provider.getClass().getSimpleName(), pFormat), found);
+    }
+
+    private boolean isOurProvider(final ImageReaderSpi spi) {
+        return provider.getClass().isInstance(spi);
     }
 
     @Test
     public void testProviderInstalledForNames() {
-        Class<? extends ImageReader> readerClass = getReaderClass();
         for (String name : getFormatNames()) {
             assertProviderInstalledForName(name, readerClass);
         }
@@ -139,7 +139,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     @Test
     public void testProviderInstalledForSuffixes() {
-        Class<? extends ImageReader> readerClass = getReaderClass();
         for (String suffix : getSuffixes()) {
             assertProviderInstalledForSuffix(suffix, readerClass);
         }
@@ -147,7 +146,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     @Test
     public void testProviderInstalledForMIMETypes() {
-        Class<? extends ImageReader> readerClass = getReaderClass();
         for (String type : getMIMETypes()) {
             assertProviderInstalledForMIMEType(type, readerClass);
         }
@@ -157,7 +155,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     public void testProviderCanRead() throws IOException {
         List<TestData> testData = getTestData();
 
-        ImageReaderSpi provider = createProvider();
         for (TestData data : testData) {
             ImageInputStream stream = data.getInputStream();
             assertNotNull(stream);
@@ -170,7 +167,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         boolean canRead = false;
 
         try {
-            canRead = createProvider().canDecodeInput(null);
+            canRead = provider.canDecodeInput(null);
         }
         catch (IllegalArgumentException ignore) {
         }
@@ -185,7 +182,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     }
 
     @Test
-    public void testSetInput() {
+    public void testSetInput() throws IOException {
         // Should just pass with no exceptions
         ImageReader reader = createReader();
         assertNotNull(reader);
@@ -193,18 +190,21 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         for (TestData data : getTestData()) {
             reader.setInput(data.getInputStream());
         }
+
+        reader.dispose();
     }
 
     @Test
-    public void testSetInputNull() {
+    public void testSetInputNull() throws IOException {
         // Should just pass with no exceptions
         ImageReader reader = createReader();
         assertNotNull(reader);
         reader.setInput(null);
+        reader.dispose();
     }
 
     @Test
-    public void testRead() {
+    public void testRead() throws IOException {
         ImageReader reader = createReader();
 
         for (TestData data : getTestData()) {
@@ -217,6 +217,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                     image = reader.read(i);
                 }
                 catch (Exception e) {
+                    e.printStackTrace();
                     failBecause(String.format("Image %s index %s could not be read: %s", data.getInput(), i, e), e);
                 }
 
@@ -233,10 +234,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 );
             }
         }
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadIndexNegative() {
+    public void testReadIndexNegative() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -252,10 +255,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             failBecause("Image could not be read", e);
         }
         assertNull(image);
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadIndexOutOfBounds() {
+    public void testReadIndexOutOfBounds() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -271,24 +276,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             failBecause("Image could not be read", e);
         }
         assertNull(image);
-    }
 
-    @Test
-    public void testReadNoInput() {
-        ImageReader reader = createReader();
-        // Do not set input
-
-        BufferedImage image = null;
-        try {
-            image = reader.read(0);
-            fail("Read image with no input");
-        }
-        catch (IllegalStateException ignore) {
-        }
-        catch (IOException e) {
-            failBecause("Image could not be read", e);
-        }
-        assertNull(image);
+        reader.dispose();
     }
 
     @Test
@@ -307,69 +296,79 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertEquals(first.getType(), second.getType());
         assertEquals(first.getWidth(), second.getWidth());
         assertEquals(first.getHeight(), second.getHeight());
+
+        reader.dispose();
     }
 
-    @Test
-    public void testReadIndexNegativeWithParam() {
-        ImageReader reader = createReader();
-        TestData data = getTestData().get(0);
-        reader.setInput(data.getInputStream());
-
-        BufferedImage image = null;
-        try {
-            image = reader.read(-1, reader.getDefaultReadParam());
-            fail("Read image with illegal index");
-        }
-        catch (IndexOutOfBoundsException ignore) {
-        }
-        catch (IOException e) {
-            failBecause("Image could not be read", e);
-        }
-
-        assertNull(image);
-    }
-
-    @Test
-    public void testReadIndexOutOfBoundsWithParam() {
-        ImageReader reader = createReader();
-        TestData data = getTestData().get(0);
-        reader.setInput(data.getInputStream());
-
-        BufferedImage image = null;
-        try {
-            image = reader.read(99, reader.getDefaultReadParam());
-            fail("Read image with index out of bounds");
-        }
-        catch (IndexOutOfBoundsException ignore) {
-        }
-        catch (IOException e) {
-            failBecause("Image could not be read", e);
-        }
-
-        assertNull(image);
-    }
-
-    @Test
-    public void testReadNoInputWithParam() {
+    @Test(expected = IllegalStateException.class)
+    public void testReadNoInput() throws IOException {
         ImageReader reader = createReader();
         // Do not set input
 
-        BufferedImage image = null;
         try {
-            image = reader.read(0, reader.getDefaultReadParam());
+            reader.read(0);
             fail("Read image with no input");
-        }
-        catch (IllegalStateException ignore) {
         }
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+    }
 
-        assertNull(image);
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIndexNegativeWithParam() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = getTestData().get(0);
+        reader.setInput(data.getInputStream());
+
+        try {
+            reader.read(-1, reader.getDefaultReadParam());
+            fail("Read image with illegal index");
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testReadIndexOutOfBoundsWithParam() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = getTestData().get(0);
+        reader.setInput(data.getInputStream());
+
+        try {
+            reader.read(Short.MAX_VALUE, reader.getDefaultReadParam());
+            fail("Read image with index out of bounds");
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testReadNoInputWithParam() throws IOException {
+        ImageReader reader = createReader();
+        // Do not set input
+
+        try {
+            reader.read(0, reader.getDefaultReadParam());
+            fail("Read image with no input");
+        }
+        catch (IOException e) {
+            failBecause("Image could not be read", e);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
-    public void testReadWithNewParam() {
+    public void testReadWithNewParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -385,10 +384,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(), data.getDimension(0).width, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(), data.getDimension(0).height, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadWithDefaultParam() {
+    public void testReadWithDefaultParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -404,10 +405,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(), data.getDimension(0).width, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(), data.getDimension(0).height, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadWithNullParam() {
+    public void testReadWithNullParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -423,10 +426,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(), data.getDimension(0).width, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(), data.getDimension(0).height, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadWithSizeParam() {
+    public void testReadWithSizeParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -447,10 +452,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
             assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
         }
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadWithSubsampleParamDimensions() {
+    public void testReadWithSubsampleParamDimensions() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -469,6 +476,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: ", (data.getDimension(0).width + 4) / 5, image.getWidth());
         assertEquals("Read image has wrong height: ", (data.getDimension(0).height + 4) / 5, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
@@ -492,11 +501,14 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
 
         assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+
+        reader.dispose();
     }
 
     // TODO: Subsample all test data
     // TODO: Subsample with varying ratios and offsets
 
+    @SuppressWarnings("SameParameterValue")
     protected final void assertSubsampledImageDataEquals(String message, BufferedImage expected, BufferedImage actual, ImageReadParam param) throws IOException {
         assertNotNull("Expected image was null", expected);
         assertNotNull("Actual image was null!", actual);
@@ -520,10 +532,10 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 int actualRGB = actual.getRGB(x, y);
 
                 try {
-                    assertEquals(String.format("%s alpha at (%d, %d)", message, x, y), (expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 5);
-                    assertEquals(String.format("%s red at (%d, %d)", message, x, y), (expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
-                    assertEquals(String.format("%s green at (%d, %d)", message, x, y), (expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5);
-                    assertEquals(String.format("%s blue at (%d, %d)", message, x, y), expectedRGB & 0xff, actualRGB & 0xff, 5);
+                    assertEquals((expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 5);
+                    assertEquals((expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5);
+                    assertEquals((expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5);
+                    assertEquals(expectedRGB & 0xff, actualRGB & 0xff, 5);
                 }
                 catch (AssertionError e) {
                     File tempExpected = File.createTempFile("junit-expected-", ".png");
@@ -532,7 +544,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                     File tempActual = File.createTempFile("junit-actual-", ".png");
                     System.err.println("tempActual.getAbsolutePath(): " + tempActual.getAbsolutePath());
                     ImageIO.write(actual, "PNG", tempActual);
-
 
                     assertEquals(String.format("%s ARGB at (%d, %d)", message, x, y), String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB));
                 }
@@ -562,7 +573,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     }
 
     @Test
-    public void testReadWithSourceRegionParam() {
+    public void testReadWithSourceRegionParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -581,6 +592,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
@@ -591,38 +604,53 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
     protected void assertReadWithSourceRegionParamEqualImage(final Rectangle r, final TestData data, final int imageIndex) throws IOException {
         ImageReader reader = createReader();
-        reader.setInput(data.getInputStream());
-        ImageReadParam param = reader.getDefaultReadParam();
+        try (ImageInputStream inputStream = data.getInputStream()) {
+            reader.setInput(inputStream);
+            ImageReadParam param = reader.getDefaultReadParam();
 
-        // Read full image and get sub image for comparison
-        final BufferedImage roi = reader.read(imageIndex, param).getSubimage(r.x, r.y, r.width, r.height);
+            // Read full image and get sub image for comparison
+            BufferedImage original = reader.read(imageIndex, param);
+            final BufferedImage roi = original.getSubimage(r.x, r.y, r.width, r.height);
 
-        param.setSourceRegion(r);
+            param.setSourceRegion(r);
 
-        final BufferedImage image = reader.read(imageIndex, param);
+            final BufferedImage image = reader.read(imageIndex, param);
 
-//        try {
-//            SwingUtilities.invokeAndWait(new Runnable() {
-//                public void run() {
-//                    JPanel panel = new JPanel(new FlowLayout());
-//                    panel.add(new JLabel(new BufferedImageIcon(roi, r.width * 10, r.height * 10, true)));
-//                    panel.add(new JLabel(new BufferedImageIcon(image, r.width * 10, r.height * 10, true)));
-//                    JOptionPane.showConfirmDialog(null, panel);
-//                }
-//            });
-//        }
-//        catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
+            assertNotNull("Image was null!", image);
+            assertEquals("Read image has wrong width: " + image.getWidth(), r.width, image.getWidth());
+            assertEquals("Read image has wrong height: " + image.getHeight(), r.height, image.getHeight());
 
-        assertNotNull("Image was null!", image);
-        assertEquals("Read image has wrong width: " + image.getWidth(), r.width, image.getWidth());
-        assertEquals("Read image has wrong height: " + image.getHeight(), r.height, image.getHeight());
-        assertImageDataEquals("Images differ", roi, image);
+            try {
+                assertImageDataEquals("Images differ", roi, image);
+            }
+            catch (AssertionError e) {
+                File tempExpected = File.createTempFile("junit-expected-", ".png");
+                System.err.println("tempExpected.getAbsolutePath(): " + tempExpected.getAbsolutePath());
+
+                Graphics2D graphics = original.createGraphics();
+                try {
+                    graphics.setColor(Color.RED);
+                    graphics.draw(r);
+                }
+                finally {
+                    graphics.dispose();
+                }
+
+                ImageIO.write(original, "PNG", tempExpected);
+                File tempActual = File.createTempFile("junit-actual-", ".png");
+                System.err.println("tempActual.getAbsolutePath(): " + tempActual.getAbsolutePath());
+                ImageIO.write(image, "PNG", tempActual);
+
+                throw e;
+            }
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
-    public void testReadWithSizeAndSourceRegionParam() {
+    public void testReadWithSizeAndSourceRegionParam() throws IOException {
         // TODO: Is this test correct???
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
@@ -648,10 +676,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             assertEquals("Read image has wrong width: " + image.getWidth(), 10, image.getWidth());
             assertEquals("Read image has wrong height: " + image.getHeight(), 10, image.getHeight());
         }
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadWithSubsampleAndSourceRegionParam() {
+    public void testReadWithSubsampleAndSourceRegionParam() throws IOException {
         // NOTE: The "standard" (com.sun.imageio.plugin.*) ImageReaders pass
         // this test, so the test should be correct...
         ImageReader reader = createReader();
@@ -673,10 +703,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertEquals("Read image has wrong width: " + image.getWidth(), 5, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(), 5, image.getHeight());
 
+        reader.dispose();
     }
 
     @Test
-    public void testReadAsRenderedImageIndexNegative() {
+    public void testReadAsRenderedImageIndexNegative() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -692,11 +723,14 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+
         assertNull(image);
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadAsRenderedImageIndexOutOfBounds() throws IIOException {
+    public void testReadAsRenderedImageIndexOutOfBounds() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -716,17 +750,20 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+
         assertNull(image);
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadAsRenderedImageNoInput() {
+    public void testReadAsRenderedImageNoInput() throws IOException {
         ImageReader reader = createReader();
         // Do not set input
 
-        BufferedImage image = null;
+        RenderedImage image = null;
         try {
-            image = reader.read(0, reader.getDefaultReadParam());
+            image = reader.readAsRenderedImage(0, reader.getDefaultReadParam());
             fail("Read image with no input");
         }
         catch (IllegalStateException expected) {
@@ -735,11 +772,14 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+
         assertNull(image);
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadAsRenderedImage() {
+    public void testReadAsRenderedImage() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -751,15 +791,18 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(),
                 data.getDimension(0).width, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(),
                 data.getDimension(0).height, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
-    public void testReadAsRenderedImageWithDefaultParam() {
+    public void testReadAsRenderedImageWithDefaultParam() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -771,22 +814,26 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             failBecause("Image could not be read", e);
         }
+
         assertNotNull("Image was null!", image);
         assertEquals("Read image has wrong width: " + image.getWidth(),
                 data.getDimension(0).width, image.getWidth());
         assertEquals("Read image has wrong height: " + image.getHeight(),
                 data.getDimension(0).height, image.getHeight());
+
+        reader.dispose();
     }
 
     @Test
-    public void testGetDefaultReadParam() {
+    public void testGetDefaultReadParam() throws IOException {
         ImageReader reader = createReader();
         ImageReadParam param = reader.getDefaultReadParam();
         assertNotNull(param);
+        reader.dispose();
     }
 
     @Test
-    public void testGetFormatName() {
+    public void testGetFormatName() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -798,10 +845,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail(e.getMessage());
         }
         assertNotNull(name);
+        reader.dispose();
     }
 
     @Test
-    public void testGetMinIndex() {
+    public void testGetMinIndex() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -813,10 +861,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IllegalStateException ignore) {
         }
         assertEquals(0, num);
+        reader.dispose();
     }
 
     @Test
-    public void testGetMinIndexNoInput() {
+    public void testGetMinIndexNoInput() throws IOException {
         ImageReader reader = createReader();
         int num = 0;
 
@@ -826,10 +875,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IllegalStateException ignore) {
         }
         assertEquals(0, num);
+        reader.dispose();
     }
 
     @Test
-    public void testGetNumImages() {
+    public void testGetNumImages() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -854,10 +904,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         if (data.getImageCount() != num) {
             System.err.println("WARNING: Image count not equal to test data count");
         }
+        reader.dispose();
     }
 
     @Test
-    public void testGetNumImagesNoInput() {
+    public void testGetNumImagesNoInput() throws IOException {
         ImageReader reader = createReader();
         int num = -1;
 
@@ -881,10 +932,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail(e.getMessage());
         }
         assertEquals(-1, num);
+        reader.dispose();
     }
 
     @Test
-    public void testGetWidth() {
+    public void testGetWidth() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -897,10 +949,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail("Could not read image width: " + e);
         }
         assertEquals("Wrong width reported", data.getDimension(0).width, width);
+        reader.dispose();
     }
 
     @Test
-    public void testGetWidthIndexOutOfBounds() {
+    public void testGetWidthIndexOutOfBounds() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -917,16 +970,17 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             fail("Could not read image aspect ratio: " + e);
         }
+        reader.dispose();
     }
 
     @Test
-    public void testGetWidthNoInput() {
+    public void testGetWidthNoInput() throws IOException {
         ImageReader reader = createReader();
 
         int width = 0;
         try {
             width = reader.getWidth(0);
-            fail("Width read without imput");
+            fail("Width read without input");
         }
         catch (IllegalStateException ignore) {
         }
@@ -934,10 +988,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail("Could not read image width: " + e);
         }
         assertEquals("Wrong width reported", 0, width);
+        reader.dispose();
     }
 
     @Test
-    public void testGetHeight() {
+    public void testGetHeight() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -950,16 +1005,17 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail("Could not read image height: " + e);
         }
         assertEquals("Wrong height reported", data.getDimension(0).height, height);
+        reader.dispose();
     }
 
     @Test
-    public void testGetHeightNoInput() {
+    public void testGetHeightNoInput() throws IOException {
         ImageReader reader = createReader();
 
         int height = 0;
         try {
             height = reader.getHeight(0);
-            fail("height read without imput");
+            fail("height read without input");
         }
         catch (IllegalStateException ignore) {
         }
@@ -967,10 +1023,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail("Could not read image height: " + e);
         }
         assertEquals("Wrong height reported", 0, height);
+        reader.dispose();
     }
 
     @Test
-    public void testGetHeightIndexOutOfBounds() {
+    public void testGetHeightIndexOutOfBounds() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -987,10 +1044,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             fail("Could not read image height: " + e);
         }
+        reader.dispose();
     }
 
     @Test
-    public void testGetAspectRatio() {
+    public void testGetAspectRatio() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1004,10 +1062,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
         Dimension d = data.getDimension(0);
         assertEquals("Wrong aspect aspect ratio", d.getWidth() / d.getHeight(), aspectRatio, 0.001);
+        reader.dispose();
     }
 
     @Test
-    public void testGetAspectRatioNoInput() {
+    public void testGetAspectRatioNoInput() throws IOException {
         ImageReader reader = createReader();
 
         float aspectRatio = 0f;
@@ -1021,10 +1080,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             fail("Could not read image aspect ratio" + e);
         }
         assertEquals("Wrong aspect aspect ratio", 0f, aspectRatio, 0f);
+        reader.dispose();
     }
 
     @Test
-    public void testGetAspectRatioIndexOutOfBounds() {
+    public void testGetAspectRatioIndexOutOfBounds() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1041,16 +1101,17 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IOException e) {
             fail("Could not read image aspect ratio" + e);
         }
+        reader.dispose();
     }
 
     @Test
-    public void testDisposeBeforeRead() {
+    public void testDisposeBeforeRead() throws IOException {
         ImageReader reader = createReader();
         reader.dispose(); // Just pass with no exceptions
     }
 
     @Test
-    public void testDisposeAfterRead() {
+    public void testDisposeAfterRead() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1058,19 +1119,21 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     }
 
     @Test
-    public void testAddIIOReadProgressListener() {
+    public void testAddIIOReadProgressListener() throws IOException {
         ImageReader reader = createReader();
         reader.addIIOReadProgressListener(mock(IIOReadProgressListener.class));
+        reader.dispose();
     }
 
     @Test
-    public void testAddIIOReadProgressListenerNull() {
+    public void testAddIIOReadProgressListenerNull() throws IOException {
         ImageReader reader = createReader();
         reader.addIIOReadProgressListener(null);
+        reader.dispose();
     }
 
     @Test
-    public void testAddIIOReadProgressListenerCallbacks() {
+    public void testAddIIOReadProgressListenerCallbacks() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1090,10 +1153,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ordered.verify(listener).imageStarted(reader, 0);
         ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
         ordered.verify(listener).imageComplete(reader);
+        reader.dispose();
     }
 
     @Test
-    public void testMultipleAddIIOReadProgressListenerCallbacks() {
+    public void testMultipleAddIIOReadProgressListenerCallbacks() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1127,26 +1191,29 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ordered.verify(listener).imageComplete(reader);
         ordered.verify(listenerToo).imageComplete(reader);
         ordered.verify(listenerThree).imageComplete(reader);
+        reader.dispose();
     }
 
     @Test
-    public void testRemoveIIOReadProgressListenerNull() {
+    public void testRemoveIIOReadProgressListenerNull() throws IOException {
         ImageReader reader = createReader();
         reader.removeIIOReadProgressListener(null);
+        reader.dispose();
     }
 
     @Test
-    public void testRemoveIIOReadProgressListenerNone() {
+    public void testRemoveIIOReadProgressListenerNone() throws IOException {
         ImageReader reader = createReader();
         reader.removeIIOReadProgressListener(mock(IIOReadProgressListener.class));
+        reader.dispose();
     }
 
     @Test
-    public void testRemoveIIOReadProgressListener() {
+    public void testRemoveIIOReadProgressListener() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
-        
+
         IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
         reader.addIIOReadProgressListener(listener);
         reader.removeIIOReadProgressListener(listener);
@@ -1160,10 +1227,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
         // Should not have called any methods...
         verifyZeroInteractions(listener);
+        reader.dispose();
     }
 
     @Test
-    public void testRemoveIIOReadProgressListenerMultiple() {
+    public void testRemoveIIOReadProgressListenerMultiple() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1191,10 +1259,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ordered.verify(listenerToo).imageStarted(reader, 0);
         ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyInt());
         ordered.verify(listenerToo).imageComplete(reader);
+        reader.dispose();
     }
 
     @Test
-    public void testRemoveAllIIOReadProgressListeners() {
+    public void testRemoveAllIIOReadProgressListeners() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1213,10 +1282,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
         // Should not have called any methods...
         verifyZeroInteractions(listener);
+        reader.dispose();
     }
 
     @Test
-    public void testRemoveAllIIOReadProgressListenersMultiple() {
+    public void testRemoveAllIIOReadProgressListenersMultiple() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1239,10 +1309,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         // Should not have called any methods...
         verifyZeroInteractions(listener);
         verifyZeroInteractions(listenerToo);
+        reader.dispose();
     }
 
     @Test
-    public void testAbort() {
+    public void testAbort() throws IOException {
         final ImageReader reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
@@ -1256,7 +1327,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         // Create a listener that just makes the reader abort immediately...
         IIOReadProgressListener abortingListener = mock(IIOReadProgressListener.class, "Aborter");
         Answer<Void> abort = new Answer<Void>() {
-            public Void answer(InvocationOnMock invocation) throws Throwable {
+            public Void answer(InvocationOnMock invocation) {
                 reader.abort();
                 return null;
             }
@@ -1275,6 +1346,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
         verify(listener).readAborted(reader);
         verify(listenerToo).readAborted(reader);
+        reader.dispose();
     }
 
     @Test
@@ -1284,9 +1356,6 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             reader.setInput(data.getInputStream());
 
             ImageTypeSpecifier rawType = reader.getRawImageType(0);
-            if (rawType == null && allowsNullRawImageType()) {
-                continue;
-            }
             assertNotNull(rawType);
 
             Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
@@ -1306,8 +1375,10 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 }
             }
 
-            assertTrue("ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
+            assertTrue("ImageTypeSpecifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
         }
+
+        reader.dispose();
     }
 
     @Test
@@ -1334,6 +1405,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
             assertSame(destination, result);
         }
+        reader.dispose();
     }
 
     @Test
@@ -1363,6 +1435,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         else {
             System.err.println("WARNING: Test skipped due to reader.getRawImageType(0) returning null");
         }
+        reader.dispose();
     }
 
     @Test
@@ -1398,7 +1471,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                                 destination.getType() == BufferedImage.TYPE_BYTE_INDEXED) &&
                                 message.contains("indexcolormodel")))) {
                     failBecause(
-                        "Wrong message: " + message + " for type " + destination.getType(), expected
+                            "Wrong message: " + message + " for type " + destination.getType(), expected
                     );
                 }
             }
@@ -1407,6 +1480,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 assertTrue("Wrong message: " + message, message.contains("dest"));
             }
         }
+        reader.dispose();
     }
 
     @Test
@@ -1435,6 +1509,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 }
             }
         }
+        reader.dispose();
     }
 
     private List<ImageTypeSpecifier> createIllegalTypes(Iterator<ImageTypeSpecifier> pValidTypes) {
@@ -1480,9 +1555,9 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertNotNull(image);
         assertEquals(reader.getWidth(0) + point.x, image.getWidth());
         assertEquals(reader.getHeight(0) + point.y, image.getHeight());
+        reader.dispose();
     }
 
-    @SuppressWarnings("ConstantConditions")
     @Test
     public void testSetDestinationOffsetNull() throws IOException {
         final ImageReader reader = createReader();
@@ -1497,6 +1572,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().toLowerCase().contains("offset"));
         }
+        reader.dispose();
     }
 
     @Test
@@ -1532,12 +1608,13 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             assertEquals(expectedModel.getDataType(), resultModel.getDataType());
             assertEquals(expectedModel.getNumBands(), resultModel.getNumBands());
             assertEquals(expectedModel.getNumDataElements(), resultModel.getNumDataElements());
-            assertTrue(Arrays.equals(expectedModel.getSampleSize(), resultModel.getSampleSize()));
+            assertArrayEquals(expectedModel.getSampleSize(), resultModel.getSampleSize());
             assertEquals(expectedModel.getTransferType(), resultModel.getTransferType());
             for (int i = 0; i < expectedModel.getNumBands(); i++) {
                 assertEquals(expectedModel.getSampleSize(i), resultModel.getSampleSize(i));
             }
         }
+        reader.dispose();
     }
 
     @Test
@@ -1545,22 +1622,83 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         T reader = createReader();
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
-        
+
         BufferedImage one = reader.read(0);
         BufferedImage two = reader.read(0);
-       
+
+        // Test for same BufferedImage instance
         assertNotSame("Multiple reads return same (mutable) image", one, two);
 
-        one.setRGB(0, 0, Color.BLUE.getRGB());
-        two.setRGB(0, 0, Color.RED.getRGB());
-
+        // Test for same backing storage (array)
+        one.setRGB(0, 0, Color.BLACK.getRGB());
+        two.setRGB(0, 0, Color.WHITE.getRGB());
         assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
+
+        reader.dispose();
+    }
+
+    @Test
+    public void testReadThumbnails() throws IOException {
+        T reader = createReader();
+
+        if (reader.readerSupportsThumbnails()) {
+            for (TestData testData : getTestData()) {
+                try (ImageInputStream inputStream = testData.getInputStream()) {
+                    reader.setInput(inputStream);
+
+                    int numImages = reader.getNumImages(true);
+
+                    for (int i = 0; i < numImages; i++) {
+                        int numThumbnails = reader.getNumThumbnails(0);
+
+                        for (int t = 0; t < numThumbnails; t++) {
+                            BufferedImage thumbnail = reader.readThumbnail(0, t);
+
+                            assertNotNull(thumbnail);
+                        }
+                    }
+                }
+            }
+        }
+
+        reader.dispose();
+    }
+
+    @Test
+    public void testThumbnailProgress() throws IOException {
+        T reader = createReader();
+
+        IIOReadProgressListener listener = mock(IIOReadProgressListener.class);
+        reader.addIIOReadProgressListener(listener);
+
+        if (reader.readerSupportsThumbnails()) {
+            for (TestData testData : getTestData()) {
+                try (ImageInputStream inputStream = testData.getInputStream()) {
+
+                    reader.setInput(inputStream);
+
+                    int numThumbnails = reader.getNumThumbnails(0);
+                    for (int i = 0; i < numThumbnails; i++) {
+                        reset(listener);
+
+                        reader.readThumbnail(0, i);
+
+                        InOrder order = inOrder(listener);
+                        order.verify(listener).thumbnailStarted(reader, 0, i);
+                        order.verify(listener, atLeastOnce()).thumbnailProgress(reader, 100f);
+                        order.verify(listener).thumbnailComplete(reader);
+                    }
+                }
+            }
+        }
+
+        reader.dispose();
     }
 
     @Test
     public void testNotBadCachingThumbnails() throws IOException {
         T reader = createReader();
-        
+
         if (reader.readerSupportsThumbnails()) {
             for (TestData data : getTestData()) {
                 reader.setInput(data.getInputStream());
@@ -1587,7 +1725,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
                         assertTrue(one.getRGB(0, 0) != two.getRGB(0, 0));
                     }
-                    
+
                     if (thumbnails > 0) {
                         // We've tested thumbnails, let's get out of here
                         return;
@@ -1597,24 +1735,23 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
             fail("No thumbnails tested for reader that supports thumbnails.");
         }
+        reader.dispose();
     }
-    
+
     @Ignore("TODO: Implement")
     @Test
-    public void testSetDestinationBands() throws IOException {
+    public void testSetDestinationBands() {
         throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
     }
 
     @Ignore("TODO: Implement")
     @Test
-    public void testSetSourceBands() throws IOException {
+    public void testSetSourceBands() {
         throw new UnsupportedOperationException("Method testSetDestinationBands not implemented"); // TODO: Implement
     }
 
     @Test
     public void testProviderAndMetadataFormatNamesMatch() throws IOException {
-        ImageReaderSpi provider = createProvider();
-
         ImageReader reader = createReader();
         reader.setInput(getTestData().get(0).getInputStream());
 
@@ -1627,6 +1764,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         if (streamMetadata != null) {
             assertEquals(provider.getNativeStreamMetadataFormatName(), streamMetadata.getNativeMetadataFormatName());
         }
+        reader.dispose();
     }
 
     protected URL getClassLoaderResource(final String pName) {
@@ -1734,7 +1872,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
         @Override
         public String toString() {
-            return getClass().getSimpleName() + ": " + String.valueOf(input);
+            return String.format("%s: %s", getClass().getSimpleName(), input);
         }
     }
 }

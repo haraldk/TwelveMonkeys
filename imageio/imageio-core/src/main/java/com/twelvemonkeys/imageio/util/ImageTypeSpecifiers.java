@@ -4,45 +4,54 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.util;
 
-import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
-
-import javax.imageio.ImageTypeSpecifier;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-
 import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
+
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DirectColorModel;
+import java.awt.image.IndexColorModel;
+import java.awt.image.MultiPixelPackedSampleModel;
+import java.awt.image.SampleModel;
+
+import javax.imageio.ImageTypeSpecifier;
+
+import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
 
 /**
  * Factory class for creating {@code ImageTypeSpecifier}s.
  * Fixes some subtle bugs in {@code ImageTypeSpecifier}'s factory methods, but
  * in most cases, this class will delegate to the corresponding methods in {@link ImageTypeSpecifier}.
  *
- * @see javax.imageio.ImageTypeSpecifier
+ * @see ImageTypeSpecifier
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: ImageTypeSpecifiers.java,v 1.0 24.01.11 17.51 haraldk Exp$
@@ -52,6 +61,28 @@ public final class ImageTypeSpecifiers {
     private ImageTypeSpecifiers() {}
 
     public static ImageTypeSpecifier createFromBufferedImageType(final int bufferedImageType) {
+        switch (bufferedImageType) {
+            // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for the USHORT types
+            case BufferedImage.TYPE_USHORT_565_RGB:
+                return createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                        0xF800,
+                        0x07E0,
+                        0x001F,
+                        0x0,
+                        DataBuffer.TYPE_USHORT,
+                        false);
+
+            case BufferedImage.TYPE_USHORT_555_RGB:
+                return createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
+                        0x7C00,
+                        0x03E0,
+                        0x001F,
+                        0x0,
+                        DataBuffer.TYPE_USHORT,
+                        false);
+            default:
+        }
+
         return ImageTypeSpecifier.createFromBufferedImageType(bufferedImageType);
     }
 
@@ -145,21 +176,36 @@ public final class ImageTypeSpecifiers {
 
         int numEntries = 1 << bits;
 
-        byte[] arr = new byte[numEntries];
-        byte[] arg = new byte[numEntries];
-        byte[] arb = new byte[numEntries];
+        ColorModel colorModel;
 
-        // Scale array values according to color profile..
-        for (int i = 0; i < numEntries; i++) {
-            float[] gray = new float[]{i / (float) (numEntries - 1)};
-            float[] rgb = colorSpace.toRGB(gray);
+        if (ColorSpace.getInstance(ColorSpace.CS_GRAY).equals(colorSpace)) {
+            // For default gray, use linear response
+            byte[] gray = new byte[numEntries];
 
-            arr[i] = (byte) (rgb[0] * 255);
-            arg[i] = (byte) (rgb[1] * 255);
-            arb[i] = (byte) (rgb[2]* 255);
+            for (int i = 0; i < numEntries; i++) {
+                gray[i] = (byte) ((i * 255) / (numEntries - 1));
+            }
+
+            colorModel = new IndexColorModel(bits, numEntries, gray, gray, gray);
+        }
+        else {
+            byte[] r = new byte[numEntries];
+            byte[] g = new byte[numEntries];
+            byte[] b = new byte[numEntries];
+
+            // Scale array values according to color profile..
+            for (int i = 0; i < numEntries; i++) {
+                float[] gray = new float[] { i / (float) (numEntries - 1) };
+                float[] rgb = colorSpace.toRGB(gray);
+
+                r[i] = (byte) Math.round(rgb[0] * 255);
+                g[i] = (byte) Math.round(rgb[1] * 255);
+                b[i] = (byte) Math.round(rgb[2] * 255);
+            }
+
+            colorModel = new IndexColorModel(bits, numEntries, r, g, b);
         }
 
-        ColorModel colorModel = new IndexColorModel(bits, numEntries, arr, arg, arb);
         SampleModel sampleModel = new MultiPixelPackedSampleModel(dataType, 1, 1, bits);
 
         return new ImageTypeSpecifier(colorModel, sampleModel);
@@ -177,11 +223,16 @@ public final class ImageTypeSpecifiers {
     }
 
     public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel pColorModel) {
-        return IndexedImageTypeSpecifier.createFromIndexColorModel(pColorModel);
+        return new IndexedImageTypeSpecifier(pColorModel);
     }
 
     public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel pColorModel) {
         ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel);
+        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+    }
+
+    public static ImageTypeSpecifier createDiscreteExtraSamplesIndexedFromIndexColorModel(final IndexColorModel pColorModel, int extraSamples, boolean hasAlpha) {
+        ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel, extraSamples, hasAlpha);
         return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
     }
 }

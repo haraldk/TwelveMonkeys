@@ -1,8 +1,38 @@
+/*
+ * Copyright (c) 2016, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.spi;
 
 import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
-import org.junit.internal.matchers.TypeSafeMatcher;
 
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
@@ -12,6 +42,7 @@ import javax.imageio.spi.ImageWriterSpi;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 /**
@@ -32,52 +63,52 @@ public abstract class ReaderWriterProviderInfoTest {
     }
 
     @Test
-    public void readerClassName() throws Exception {
+    public void readerClassName() {
         assertClassExists(providerInfo.readerClassName(), ImageReader.class);
     }
 
     @Test
-    public void readerSpiClassNames() throws Exception {
+    public void readerSpiClassNames() {
         assertClassesExist(providerInfo.readerSpiClassNames(), ImageReaderSpi.class);
     }
 
     @Test
-    public void inputTypes() throws Exception {
+    public void inputTypes() {
         assertNotNull(providerInfo.inputTypes());
     }
 
     @Test
-    public void writerClassName() throws Exception {
+    public void writerClassName() {
         assertClassExists(providerInfo.writerClassName(), ImageWriter.class);
     }
 
     @Test
-    public void writerSpiClassNames() throws Exception {
+    public void writerSpiClassNames() {
         assertClassesExist(providerInfo.writerSpiClassNames(), ImageWriterSpi.class);
     }
 
     @Test
-    public void outputTypes() throws Exception {
+    public void outputTypes() {
         assertNotNull(providerInfo.outputTypes());
     }
 
     @Test
-    public void nativeStreamMetadataFormatClassName() throws Exception {
+    public void nativeStreamMetadataFormatClassName() {
         assertClassExists(providerInfo.nativeStreamMetadataFormatClassName(), IIOMetadataFormat.class);
     }
 
     @Test
-    public void extraStreamMetadataFormatClassNames() throws Exception {
+    public void extraStreamMetadataFormatClassNames() {
         assertClassesExist(providerInfo.extraStreamMetadataFormatClassNames(), IIOMetadataFormat.class);
     }
 
     @Test
-    public void nativeImageMetadataFormatClassName() throws Exception {
+    public void nativeImageMetadataFormatClassName() {
         assertClassExists(providerInfo.nativeImageMetadataFormatClassName(), IIOMetadataFormat.class);
     }
 
     @Test
-    public void extraImageMetadataFormatClassNames() throws Exception {
+    public void extraImageMetadataFormatClassNames() {
         assertClassesExist(providerInfo.extraImageMetadataFormatClassNames(), IIOMetadataFormat.class);
     }
 
@@ -85,7 +116,7 @@ public abstract class ReaderWriterProviderInfoTest {
     public void formatNames() {
         String[] names = providerInfo.formatNames();
         assertNotNull(names);
-        assertFalse(names.length == 0);
+        assertNotEquals(0, names.length);
 
         List<String> list = asList(names);
 
@@ -102,7 +133,7 @@ public abstract class ReaderWriterProviderInfoTest {
     public void suffixes() {
         String[] suffixes = providerInfo.suffixes();
         assertNotNull(suffixes);
-        assertFalse(suffixes.length == 0);
+        assertNotEquals(0, suffixes.length);
 
         for (String suffix : suffixes) {
             assertNotNull(suffix);
@@ -114,7 +145,7 @@ public abstract class ReaderWriterProviderInfoTest {
     public void mimeTypes() {
         String[] mimeTypes = providerInfo.mimeTypes();
         assertNotNull(mimeTypes);
-        assertFalse(mimeTypes.length == 0);
+        assertNotEquals(0, mimeTypes.length);
 
         for (String mimeType : mimeTypes) {
             assertNotNull(mimeType);

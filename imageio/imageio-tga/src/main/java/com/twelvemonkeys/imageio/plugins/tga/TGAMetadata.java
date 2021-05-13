@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.tga;
@@ -35,12 +37,14 @@ import java.awt.*;
 import java.awt.image.IndexColorModel;
 import java.util.Calendar;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 final class TGAMetadata extends AbstractMetadata {
     private final TGAHeader header;
     private final TGAExtensions extensions;
 
     TGAMetadata(final TGAHeader header, final TGAExtensions extensions) {
-        this.header = header;
+        this.header = notNull(header, "header");
         this.extensions = extensions;
     }
 
@@ -74,7 +78,12 @@ final class TGAMetadata extends AbstractMetadata {
         chroma.appendChild(numChannels);
         switch (header.getPixelDepth()) {
             case 8:
-                numChannels.setAttribute("value", Integer.toString(1));
+                if (header.getImageType() == TGA.IMAGETYPE_MONOCHROME || header.getImageType() == TGA.IMAGETYPE_MONOCHROME_RLE) {
+                    numChannels.setAttribute("value", Integer.toString(1));
+                }
+                else {
+                    numChannels.setAttribute("value", Integer.toString(3));
+                }
                 break;
             case 16:
                 if (header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha()) {
@@ -142,7 +151,7 @@ final class TGAMetadata extends AbstractMetadata {
                 IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
                 node.appendChild(compressionTypeName);
                 String value = header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN || header.getImageType() == TGA.IMAGETYPE_COLORMAPPED_HUFFMAN_QUADTREE
-                               ? "Uknown" : "RLE";
+                               ? "Unknown" : "RLE";
                 compressionTypeName.setAttribute("value", value);
 
                 IIOMetadataNode lossless = new IIOMetadataNode("Lossless");
@@ -151,7 +160,7 @@ final class TGAMetadata extends AbstractMetadata {
 
                 return node;
             default:
-                // No compreesion
+                // No compression
                 return null;
         }
     }
@@ -185,6 +194,7 @@ final class TGAMetadata extends AbstractMetadata {
         switch (header.getPixelDepth()) {
             case 8:
                 bitsPerSample.setAttribute("value", createListValue(1, Integer.toString(header.getPixelDepth())));
+                break;
             case 16:
                 if (header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha()) {
                     bitsPerSample.setAttribute("value", "5, 5, 5, 1");
@@ -194,10 +204,10 @@ final class TGAMetadata extends AbstractMetadata {
                 }
                 break;
             case 24:
-                bitsPerSample.setAttribute("value", createListValue(3, Integer.toString(8)));
+                bitsPerSample.setAttribute("value", createListValue(3, "8"));
                 break;
             case 32:
-                bitsPerSample.setAttribute("value", createListValue(4, Integer.toString(8)));
+                bitsPerSample.setAttribute("value", createListValue(4, "8"));
                 break;
         }
 

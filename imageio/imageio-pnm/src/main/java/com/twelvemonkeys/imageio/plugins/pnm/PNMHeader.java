@@ -4,26 +4,28 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.pnm;
@@ -43,6 +45,7 @@ final class PNMHeader {
     private final TupleType tupleType;
     private final int width;
     private final int height;
+    private final float maxSampleFloat;
     private final int maxSample;
 
     private final List<String> comments;
@@ -55,8 +58,9 @@ final class PNMHeader {
         this.height = isTrue(height > 0, height, "height must be greater than: %d");
         isTrue(depth == tupleType.getSamplesPerPixel(), depth, String.format("incorrect depth for %s, expected %d: %d", tupleType, tupleType.getSamplesPerPixel(), depth));
         this.maxSample = isTrue(tupleType.isValidMaxSample(maxSample), maxSample, "maxSample out of range: %d");
+        this.maxSampleFloat = this.maxSample;
 
-        this.comments = Collections.unmodifiableList(new ArrayList<String>(comments));
+        this.comments = Collections.unmodifiableList(new ArrayList<>(comments));
 
         byteOrder = ByteOrder.BIG_ENDIAN;
     }
@@ -68,10 +72,11 @@ final class PNMHeader {
         this.height = isTrue(height > 0, height, "height must be greater than: %d");
         isTrue(depth == tupleType.getSamplesPerPixel(), depth, String.format("incorrect depth for %s, expected %d: %d", tupleType, tupleType.getSamplesPerPixel(), depth));
 
-        this.maxSample = -1;
+        this.maxSample = 1;
+        this.maxSampleFloat = maxSample;
         this.byteOrder = byteOrder;
 
-        this.comments = Collections.unmodifiableList(new ArrayList<String>(comments));
+        this.comments = Collections.unmodifiableList(new ArrayList<>(comments));
     }
 
     private boolean isValidFileType(final short fileType) {
@@ -116,11 +121,8 @@ final class PNMHeader {
         if (maxSample <= PNM.MAX_VAL_16BIT) {
             return 16;
         }
-        if ((maxSample & 0xffffffffL) <= PNM.MAX_VAL_32BIT) {
-            return 32;
-        }
 
-        throw new AssertionError("maxSample exceeds 32 bit");
+        return 32;
     }
 
     public int getTransferType() {
@@ -133,11 +135,8 @@ final class PNMHeader {
         if (maxSample <= PNM.MAX_VAL_16BIT) {
             return DataBuffer.TYPE_USHORT;
         }
-        if ((maxSample & 0xffffffffL) <= PNM.MAX_VAL_32BIT) {
-            return DataBuffer.TYPE_INT;
-        }
 
-        throw new AssertionError("maxSample exceeds 32 bit");
+        return DataBuffer.TYPE_INT;
     }
 
     public List<String> getComments() {
@@ -152,7 +151,8 @@ final class PNMHeader {
         return byteOrder;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "PNMHeader{" +
                 "fileType=" + PNMImageReader.asASCII(fileType) +
                 ", tupleType=" + tupleType +

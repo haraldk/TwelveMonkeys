@@ -12,14 +12,15 @@ import java.util.regex.Pattern;
  * (RGBE_DATA_??? values control this.)  Only the mimimal header reading and
  * writing is implemented.  Each routine does error checking and will return
  * a status value as defined below.  This code is intended as a skeleton so
- * feel free to modify it to suit your needs. <P>
- * <p/>
- * Ported to Java and restructured by Kenneth Russell. <BR>
- * posted to http://www.graphics.cornell.edu/~bjw/ <BR>
- * written by Bruce Walter  (bjw@graphics.cornell.edu)  5/26/95 <BR>
- * based on code written by Greg Ward <BR>
- * <p/>
- * Source: https://java.net/projects/jogl-demos/sources/svn/content/trunk/src/demos/hdr/RGBE.java
+ * feel free to modify it to suit your needs.
+ * <p>
+ * Ported to Java and restructured by Kenneth Russell.
+ * posted to http://www.graphics.cornell.edu/~bjw/
+ * written by Bruce Walter  (bjw@graphics.cornell.edu)  5/26/95
+ * based on code written by Greg Ward
+ * </p>
+ *
+ * @see <a href="https://java.net/projects/jogl-demos/sources/svn/content/trunk/src/demos/hdr/RGBE.java">Source</a>
  */
 final class RGBE {
     // Flags indicating which fields in a Header are valid

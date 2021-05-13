@@ -4,39 +4,41 @@
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name "TwelveMonkeys" nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
 import com.twelvemonkeys.image.ResampleOp;
 import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.BufferedImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
 import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -45,6 +47,7 @@ import java.awt.image.*;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -54,13 +57,14 @@ import java.util.List;
  * format (Packed BitMap).
  * The IFF format (Interchange File Format) is the standard file format
  * supported by allmost all image software for the Amiga computer.
- * <p/>
+ * <p>
  * This reader supports the original palette-based 1-8 bit formats, including
  * EHB (Extra Half-Bright), HAM (Hold and Modify), and the more recent "deep"
  * formats, 8 bit gray, 24 bit RGB and 32 bit ARGB.
  * Uncompressed and ByteRun1 compressed (run length encoding) files are
  * supported.
- * <p/>
+ * </p>
+ * <p>
  * Palette based images are read as {@code BufferedImage} of
  * {@link BufferedImage#TYPE_BYTE_INDEXED TYPE_BYTE_INDEXED} or
  * {@link BufferedImage#TYPE_BYTE_BINARY BufferedImage#}
@@ -71,7 +75,8 @@ import java.util.List;
  * {@link BufferedImage#TYPE_3BYTE_BGR TYPE_3BYTE_BGR}.
  * 32 bit true-color images are read as
  * {@link BufferedImage#TYPE_4BYTE_ABGR TYPE_4BYTE_ABGR}.
- * <p/>
+ * </p>
+ * <p>
  * Issues: HAM and HAM8 (Hold and Modify) formats are converted to RGB (24 bit),
  * as it seems to be very hard to create an {@code IndexColorModel} subclass
  * that would correctly describe these formats.
@@ -80,10 +85,11 @@ import java.util.List;
  * HAM8 (8 bits) needs 18 bits storage/pixel, if unpacked to RGB (6 bits/gun).
  * See <a href="http://en.wikipedia.org/wiki/Hold_And_Modify">Wikipedia: HAM</a>
  * for more information.
- * <br/>
+ * <br>
  * EHB palette is expanded to an {@link IndexColorModel} with 64 entries.
  * See <a href="http://en.wikipedia.org/wiki/Extra_Half-Brite">Wikipedia: EHB</a>
  * for more information.
+ * </p>
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
@@ -91,7 +97,7 @@ import java.util.List;
  * @see <a href="http://en.wikipedia.org/wiki/Interchange_File_Format">Wikipedia: IFF</a>
  * @see <a href="http://en.wikipedia.org/wiki/ILBM">Wikipedia: IFF ILBM</a>
  */
-public class IFFImageReader extends ImageReaderBase {
+public final class IFFImageReader extends ImageReaderBase {
     // http://home.comcast.net/~erniew/lwsdk/docs/filefmts/ilbm.html
     // http://www.fileformat.info/format/iff/spec/7866a9f0e53c42309af667c5da3bd426/view.htm
     //   - Contains definitions of some "new" chunks, as well as alternative FORM types
@@ -106,17 +112,14 @@ public class IFFImageReader extends ImageReaderBase {
     private GRABChunk grab;
     private CAMGChunk viewPort;
     private MultiPalette paletteChange;
+    private final List<GenericChunk> meta = new ArrayList<>();
     private int formType;
     private long bodyStart;
 
     private BufferedImage image;
     private DataInputStream byteRunStream;
 
-    public IFFImageReader() {
-        super(new IFFImageReaderSpi());
-    }
-
-    protected IFFImageReader(ImageReaderSpi pProvider) {
+    IFFImageReader(ImageReaderSpi pProvider) {
         super(pProvider);
     }
 
@@ -128,6 +131,7 @@ public class IFFImageReader extends ImageReaderBase {
         }
     }
 
+    @Override
     protected void resetMembers() {
         header = null;
         colorMap = null;
@@ -135,6 +139,7 @@ public class IFFImageReader extends ImageReaderBase {
         body = null;
         viewPort = null;
         formType = 0;
+        meta.clear();
 
         image = null;
         byteRunStream = null;
@@ -253,11 +258,6 @@ public class IFFImageReader extends ImageReaderBase {
 //                    System.out.println(ctbl);
                     break;
 
-                case IFF.CHUNK_JUNK:
-                    // Always skip junk chunks
-                    IFFChunk.skipData(imageInput, length, 0);
-                    break;
-
                 case IFF.CHUNK_BODY:
                     if (body != null) {
                         throw new IIOException("Multiple BODY chunks not allowed");
@@ -269,18 +269,32 @@ public class IFFImageReader extends ImageReaderBase {
                     // NOTE: We don't read the body here, it's done later in the read(int, ImageReadParam) method
                     // Done reading meta
                     return;
-                default:
-                    // TODO: We probably want to store ANNO, TEXT, AUTH, COPY etc chunks as Metadata
-                    // SHAM, ANNO, DEST, SPRT and more
-                    IFFChunk generic = new GenericChunk(chunkId, length);
+
+                case IFF.CHUNK_ANNO:
+                case IFF.CHUNK_AUTH:
+                case IFF.CHUNK_COPY:
+                case IFF.CHUNK_NAME:
+                case IFF.CHUNK_TEXT:
+                case IFF.CHUNK_UTF8:
+                    GenericChunk generic = new GenericChunk(chunkId, length);
                     generic.readChunk(imageInput);
+                    meta.add(generic);
 
 //                    System.out.println(generic);
+                    break;
+
+                case IFF.CHUNK_JUNK:
+                    // Always skip junk chunks
+                default:
+                    // TODO: SHAM, DEST, SPRT and more
+                    // Everything else, we'll just skip
+                    IFFChunk.skipData(imageInput, length, 0);
                     break;
             }
         }
     }
 
+    @Override
     public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
         init(pIndex);
 
@@ -309,16 +323,26 @@ public class IFFImageReader extends ImageReaderBase {
         return result;
     }
 
+    @Override
     public int getWidth(int pIndex) throws IOException {
         init(pIndex);
         return header.width;
     }
 
+    @Override
     public int getHeight(int pIndex) throws IOException {
         init(pIndex);
         return header.height;
     }
 
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        init(imageIndex);
+
+        return new IFFImageMetadata(formType, header, colorMap != null ? colorMap.getIndexColorModel(header, isEHB()) : null, viewPort, meta);
+    }
+
+    @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) throws IOException {
         init(pIndex);
 
@@ -358,12 +382,11 @@ public class IFFImageReader extends ImageReaderBase {
                     if (colorMap != null) {
                         IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
                         specifier = ImageTypeSpecifiers.createFromIndexColorModel(cm);
-                        break;
                     }
                     else {
                         specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
-                        break;
                     }
+                    break;
                 }
                 // NOTE: HAM modes falls through, as they are converted to RGB
             case 24:
@@ -781,7 +804,7 @@ public class IFFImageReader extends ImageReaderBase {
     }
 
     public static void main(String[] pArgs) throws IOException {
-        ImageReader reader = new IFFImageReader();
+        ImageReader reader = new IFFImageReader(new IFFImageReaderSpi());
 
         boolean scale = false;
         for (String arg : pArgs) {
@@ -795,8 +818,7 @@ public class IFFImageReader extends ImageReaderBase {
                 continue;
             }
 
-            try {
-                ImageInputStream input = new BufferedImageInputStream(ImageIO.createImageInputStream(file));
+            try (ImageInputStream input = ImageIO.createImageInputStream(file)) {
                 boolean canRead = reader.getOriginatingProvider().canDecodeInput(input);
 
                 if (canRead) {
