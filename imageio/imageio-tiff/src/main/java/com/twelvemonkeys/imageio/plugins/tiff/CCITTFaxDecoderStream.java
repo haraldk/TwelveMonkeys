@@ -152,38 +152,49 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     static int findCompressionType(final int type, final InputStream in) throws IOException {
         // Discover possible incorrect type, revert to RLE
         if (type == TIFFExtension.COMPRESSION_CCITT_T4 && in.markSupported()) {
-            byte[] streamData = new byte[32];
+            int limit = 500;
 
             try {
-                in.mark(streamData.length);
+                in.mark(limit);
 
-                int offset = 0;
-                while (offset < streamData.length) {
-                    int read = in.read(streamData, offset, streamData.length - offset);
-                    if (read <= 0) {
-                        break;
+                int first = in.read();
+                int second = in.read();
+                if (first == -1 || second == -1) {
+                    // stream to short
+                    return type;
+                }
+                else if (first == 0 && (((byte) second) >> 4 == 1 || ((byte) second) == 1)) {
+                    // correct, starts with EOL or byte aligned EOL
+                    return type;
+                }
+                short b = (short) (((((byte) first) << 8) + ((byte) second)) >> 4);
+                int limitBits = limit * 8;
+                int read = second;
+                byte streamByte = (byte) read;
+                for (int i = 12; i < limitBits; i++) {
+                    if (i % 8 == 0) {
+                        read = in.read();
+                        if (read > -1) {
+                            streamByte = (byte) read;
+                        }
+                        else {
+                            // no EOL before stream end
+                            return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+                        }
                     }
 
-                    offset += read;
-                }
-            }
-            finally {
-                in.reset();
-            }
-
-            if (streamData[0] != 0 || (streamData[1] >> 4 != 1 && streamData[1] != 1)) {
-                // Leading EOL (0b000000000001) not found, search further and try RLE if not found
-                int numBits = streamData.length * 8;
-                short b = (short) (((streamData[0] << 8) + streamData[1]) >> 4);
-                for (int i = 12; i < numBits; i++) {
-                    b = (short) ((b << 1) + ((streamData[(i / 8)] >> (7 - (i % 8))) & 0x01));
+                    b = (short) ((b << 1) + ((streamByte >> (7 - (i % 8))) & 0x01));
 
                     if ((b & 0xFFF) == 1) {
+                        // found EOL
                         return TIFFExtension.COMPRESSION_CCITT_T4;
                     }
                 }
-
+                // no EOL till limit
                 return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
+            }
+            finally {
+                in.reset();
             }
         }
 
