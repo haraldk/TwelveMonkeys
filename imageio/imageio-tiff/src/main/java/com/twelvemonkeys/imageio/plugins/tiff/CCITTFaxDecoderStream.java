@@ -174,13 +174,11 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 for (int i = 12; i < limitBits; i++) {
                     if (i % 8 == 0) {
                         read = in.read();
-                        if (read > -1) {
-                            streamByte = (byte) read;
-                        }
-                        else {
+                        if (read == -1) {
                             // no EOL before stream end
                             return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
                         }
+                        streamByte = (byte) read;
                     }
 
                     b = (short) ((b << 1) + ((streamByte >> (7 - (i % 8))) & 0x01));
