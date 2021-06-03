@@ -45,8 +45,8 @@ import java.awt.image.BufferedImage;
  */
 public class BufferedImageIcon implements Icon {
     private final BufferedImage image;
-    private int width;
-    private int height;
+    private final int width;
+    private final int height;
     private final boolean fast;
 
     public BufferedImageIcon(BufferedImage pImage) {
@@ -81,11 +81,10 @@ public class BufferedImageIcon implements Icon {
         else {
             //System.out.println("Scaling using interpolation");
             Graphics2D g2 = (Graphics2D) g;
-            AffineTransform xform = AffineTransform.getTranslateInstance(x, y);
-            xform.scale(width / (double) image.getWidth(), height / (double) image.getHeight());
-            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                                RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g2.drawImage(image, xform, null);
+            AffineTransform transform = AffineTransform.getTranslateInstance(x, y);
+            transform.scale(width / (double) image.getWidth(), height / (double) image.getHeight());
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.drawImage(image, transform, null);
         }
     }
 }
