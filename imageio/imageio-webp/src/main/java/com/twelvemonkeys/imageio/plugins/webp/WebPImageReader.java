@@ -53,6 +53,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.awt.image.DataBuffer;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
@@ -218,7 +219,7 @@ final class WebPImageReader extends ImageReaderBase {
 
                 if (header.containsICCP) {
                     // ICCP chunk must be first chunk, if present
-                    while (iccProfile != null && imageInput.getStreamPosition() < imageInput.length()) {
+                    while (iccProfile == null && imageInput.getStreamPosition() < imageInput.length()) {
                         int nextChunk = imageInput.readInt();
                         long chunkLength = imageInput.readUnsignedInt();
                         long chunkStart = imageInput.getStreamPosition();
@@ -280,10 +281,6 @@ final class WebPImageReader extends ImageReaderBase {
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         readHeader(imageIndex);
 
-        // TODO: Spec says:
-        // "alpha value is codified in bits 31..24, red in bits 23..16, green in bits 15..8 and blue in bits 7..0,
-        // but implementations of the format are free to use another representation internally."
-        // TODO: Doc says alpha flag is "hint only" :-P
         if (iccProfile != null && !ColorSpaces.isCS_sRGB(iccProfile)) {
             ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(iccProfile);
             int[] bandOffsets = header.containsALPH ? new int[] {0, 1, 2, 3} : new int[] {0, 1, 2};
@@ -298,6 +295,11 @@ final class WebPImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawImageType = getRawImageType(imageIndex);
 
         List<ImageTypeSpecifier> types = new ArrayList<>();
+
+        if (rawImageType.getBufferedImageType() == BufferedImage.TYPE_CUSTOM) {
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR));
+        }
+
         types.add(rawImageType);
         types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB));
         types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_INT_ARGB_PRE : BufferedImage.TYPE_INT_BGR));
@@ -376,19 +378,22 @@ final class WebPImageReader extends ImageReaderBase {
 
                         case WebP.CHUNK_VP8_:
                             readVP8(RasterUtils.asByteRaster(destination.getRaster())
-                                    .createWritableChild(0, 0, width, height, 0, 0, new int[]{0, 1, 2}), param);
-
+                                    .createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[]{0, 1, 2}), param);
                             break;
 
                         case WebP.CHUNK_VP8L:
                             readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param);
+                            break;
 
+                        case WebP.CHUNK_ICCP:
+                            // Ignore, we already read this
                             break;
 
                         case WebP.CHUNK_ANIM:
                         case WebP.CHUNK_ANMF:
                             processWarningOccurred("Ignoring unsupported chunk: " + fourCC(nextChunk));
                             break;
+
                         default:
                             processWarningOccurred("Ignoring unexpected chunk: " + fourCC(nextChunk));
                             break;
@@ -403,6 +408,8 @@ final class WebPImageReader extends ImageReaderBase {
                 throw new IIOException("Unknown first chunk for WebP: " + fourCC(header.fourCC));
         }
 
+        applyICCProfileIfNeeded(destination);
+
         if (abortRequested()) {
             processReadAborted();
         } else {
@@ -410,6 +417,21 @@ final class WebPImageReader extends ImageReaderBase {
         }
 
         return destination;
+    }
+
+    private void applyICCProfileIfNeeded(final BufferedImage destination) {
+        if (iccProfile != null) {
+            ICC_Profile destinationProfile = ((ICC_ColorSpace) destination.getColorModel().getColorSpace()).getProfile();
+
+            if (!iccProfile.equals(destinationProfile)) {
+                if (DEBUG) {
+                    System.err.println("Converting from " + iccProfile + " to " + (ColorSpaces.isCS_sRGB(destinationProfile) ? "sRGB" : destinationProfile));
+                }
+
+                new ColorConvertOp(new ICC_Profile[] {iccProfile, destinationProfile}, null)
+                        .filter(destination.getRaster(), destination.getRaster());
+            }
+        }
     }
 
     private void opaqueAlpha(final WritableRaster alphaRaster) {

@@ -2,8 +2,16 @@ package com.twelvemonkeys.imageio.plugins.webp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import org.junit.Test;
+
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -58,5 +66,25 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
     @Override
     protected List<String> getMIMETypes() {
         return asList("image/webp", "image/x-webp");
+    }
+
+    @Test
+    public void testReadAndApplyICCProfile() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/photo-iccp-adobergb.webp"))) {
+            reader.setInput(stream);
+
+            // We'll read a small portion of the image into a a destination type that use sRGB
+            ImageReadParam param = new ImageReadParam();
+            param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+            param.setSourceRegion(new Rectangle(20, 20));
+
+            BufferedImage image = reader.read(0, param);
+            assertRGBEquals("RGB values differ, incorrect ICC profile or conversion?", 0XFFDC9100, image.getRGB(10, 10), 10);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 }
