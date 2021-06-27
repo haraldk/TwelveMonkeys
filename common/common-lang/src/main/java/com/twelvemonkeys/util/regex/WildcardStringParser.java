@@ -111,6 +111,7 @@ import java.io.PrintStream;
  * @author <a href="mailto:eirik.torske@iconmedialab.no">Eirik Torske</a>
  * @deprecated Will probably be removed in the near future
  */
+@Deprecated
 public class WildcardStringParser {
     // TODO: Get rid of this class
 

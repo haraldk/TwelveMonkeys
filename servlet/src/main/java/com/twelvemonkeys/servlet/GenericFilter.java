@@ -357,6 +357,7 @@ public abstract class GenericFilter implements Filter, FilterConfig, Serializabl
      *
      * @deprecated For compatibility only, use {@link #init init} instead.
      */
+    @Deprecated
     @SuppressWarnings("UnusedDeclaration")
     public void setFilterConfig(final FilterConfig pFilterConfig) {
         try {

@@ -65,6 +65,7 @@ import java.io.FilenameFilter;
  * @see WildcardStringParser
  * @deprecated
  */
+@Deprecated
 public class FilenameMaskFilter implements FilenameFilter {
 
      // TODO: Rewrite to use regexp, or create new class

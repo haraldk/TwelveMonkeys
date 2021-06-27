@@ -157,6 +157,7 @@ public class Time {
      * @see #parseTime(String)
      * @deprecated
      */
+    @Deprecated
     public String toString(String pFormatStr) {
         TimeFormat tf = new TimeFormat(pFormatStr);
 
@@ -174,6 +175,7 @@ public class Time {
      * @see #toString(String)
      * @deprecated
      */
+    @Deprecated
     public static Time parseTime(String pStr) {
         TimeFormat tf = TimeFormat.getInstance();
 
