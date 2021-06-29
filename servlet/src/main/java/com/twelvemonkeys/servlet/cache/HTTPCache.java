@@ -271,9 +271,10 @@ public class HTTPCache {
      *                                  cannot be created.
      * @deprecated Use {@link #HTTPCache(File, long, int, int, boolean)} instead.
      */
+    @Deprecated
     public HTTPCache(final String pName, final ServletContext pContext,
-            final int pDefaultCacheExpiryTime, final int pMaxMemCacheSize,
-            final int pMaxCachedEntites, final boolean pDeleteCacheOnExit) {
+                     final int pDefaultCacheExpiryTime, final int pMaxMemCacheSize,
+                     final int pMaxCachedEntites, final boolean pDeleteCacheOnExit) {
         this(
                 getTempFolder(pName, pContext),
                 pDefaultCacheExpiryTime, pMaxMemCacheSize, pMaxCachedEntites, pDeleteCacheOnExit,

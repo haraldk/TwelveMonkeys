@@ -337,6 +337,7 @@ public final class ServletUtil {
      * @deprecated Use {@link javax.servlet.http.HttpServletRequest#getRequestURL()}
      *             instead.
      */
+    @Deprecated
     static StringBuffer buildHTTPURL(final HttpServletRequest pRequest) {
         StringBuffer resultURL = new StringBuffer();
 

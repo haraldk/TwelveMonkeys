@@ -587,6 +587,7 @@ class IndexImage {
      * @deprecated Use {@link #getIndexColorModel(Image,int,int)} instead!
      *             This version will be removed in a later version of the API.
      */
+    @Deprecated
     public static IndexColorModel getIndexColorModel(Image pImage, int pNumberOfColors, boolean pFast) {
         return getIndexColorModel(pImage, pNumberOfColors, pFast ? COLOR_SELECTION_FAST : COLOR_SELECTION_QUALITY);
     }

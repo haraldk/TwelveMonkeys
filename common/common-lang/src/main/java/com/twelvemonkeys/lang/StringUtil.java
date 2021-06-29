@@ -770,6 +770,7 @@ public final class StringUtil {
      */
 
     /*public*/
+    @Deprecated
     static String formatNumber(long pNum, int pLen) throws IllegalArgumentException {
         StringBuilder result = new StringBuilder();
 
@@ -1464,6 +1465,7 @@ public final class StringUtil {
      */
 
     /*public*/
+    @Deprecated
     static String removeSubstring(final String pSource, final char pBeginBoundaryChar, final char pEndBoundaryChar, final int pOffset) {
         StringBuilder filteredString = new StringBuilder();
         boolean insideDemarcatedArea = false;

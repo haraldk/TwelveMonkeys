@@ -39,6 +39,7 @@ import java.io.IOException;
  *
  * @deprecated Use {@link AdobePathReader} instead. This class will be removed in a future release.
  */
+@Deprecated
 public final class AdobePathBuilder {
 
     private final AdobePathReader delegate;
