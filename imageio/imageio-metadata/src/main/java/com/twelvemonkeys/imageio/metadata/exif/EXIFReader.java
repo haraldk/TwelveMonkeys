@@ -46,6 +46,7 @@ import java.io.IOException;
  *
  * @deprecated Use com.twelvemonkeys.imageio.metadata.tiff.TIFFReader instead.
  */
+@Deprecated
 public final class EXIFReader extends MetadataReader {
 
     private final TIFFReader delegate = new TIFFReader();

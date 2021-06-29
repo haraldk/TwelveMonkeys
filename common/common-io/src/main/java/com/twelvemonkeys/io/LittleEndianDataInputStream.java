@@ -442,6 +442,7 @@ public class LittleEndianDataInputStream extends FilterInputStream implements Da
      * @see        java.io.BufferedReader#readLine()
      * @see        java.io.DataInputStream#readLine()
      */
+    @Deprecated
     public String readLine() throws IOException {
         DataInputStream ds = new DataInputStream(in);
         return ds.readLine();

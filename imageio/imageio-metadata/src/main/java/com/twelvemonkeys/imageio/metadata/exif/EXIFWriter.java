@@ -48,6 +48,7 @@ import java.util.Collection;
  *
  * @deprecated Use com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter instead.
  */
+@Deprecated
 public final class EXIFWriter extends MetadataWriter {
 
     private final TIFFWriter delegate = new TIFFWriter();

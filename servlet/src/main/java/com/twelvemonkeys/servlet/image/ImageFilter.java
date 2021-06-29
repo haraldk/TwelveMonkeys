@@ -146,7 +146,7 @@ public abstract class ImageFilter extends GenericFilter {
      * @param pRequest the original request
      * @return the new response, or {@code pResponse} if the response is already wrapped
      *
-     * @see com.twelvemonkeys.servlet.image.ImageServletResponseWrapper
+     * @see com.twelvemonkeys.servlet.image.ImageServletResponseImpl
      */
     private ImageServletResponse createImageServletResponse(final ServletRequest pRequest, final ServletResponse pResponse) {
         if (pResponse instanceof ImageServletResponseImpl) {
