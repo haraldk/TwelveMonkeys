@@ -52,10 +52,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorConvertOp;
-import java.awt.image.DataBuffer;
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -421,15 +418,20 @@ final class WebPImageReader extends ImageReaderBase {
 
     private void applyICCProfileIfNeeded(final BufferedImage destination) {
         if (iccProfile != null) {
-            ICC_Profile destinationProfile = ((ICC_ColorSpace) destination.getColorModel().getColorSpace()).getProfile();
+            ColorModel colorModel = destination.getColorModel();
+            ICC_Profile destinationProfile = ((ICC_ColorSpace) colorModel.getColorSpace()).getProfile();
 
             if (!iccProfile.equals(destinationProfile)) {
                 if (DEBUG) {
                     System.err.println("Converting from " + iccProfile + " to " + (ColorSpaces.isCS_sRGB(destinationProfile) ? "sRGB" : destinationProfile));
                 }
 
+                WritableRaster raster = colorModel.hasAlpha()
+                                        ? destination.getRaster().createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[] {0, 1, 2})
+                                        : destination.getRaster();
+
                 new ColorConvertOp(new ICC_Profile[] {iccProfile, destinationProfile}, null)
-                        .filter(destination.getRaster(), destination.getRaster());
+                        .filter(raster, raster);
             }
         }
     }
