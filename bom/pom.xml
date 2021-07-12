@@ -125,6 +125,11 @@
             </dependency>
             <dependency>
                 <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-webp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.twelvemonkeys.imageio</groupId>
                 <artifactId>imageio-xwd</artifactId>
                 <version>${project.version}</version>
             </dependency>
