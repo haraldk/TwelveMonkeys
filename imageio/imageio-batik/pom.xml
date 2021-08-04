@@ -70,13 +70,6 @@
 
         <dependency>
             <groupId>org.apache.xmlgraphics</groupId>
-            <artifactId>xmlgraphics-commons</artifactId>
-            <version>2.2</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.xmlgraphics</groupId>
             <artifactId>batik-anim</artifactId>
             <version>${batik.version}</version>
             <scope>provided</scope>
@@ -98,7 +91,7 @@
             <!--
             There seems to be some weirdness in the
             Batik/FOP poms (Batik depends on FOP 0.20-5) that screws things up,
-            making everything end up depending on Batik 1.5, not 1.6
+            making everything end up depending on Batik 1.5, not the specified version
             -->
             <exclusions>
                 <exclusion>

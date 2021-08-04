@@ -30,37 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.svg;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.lang.StringUtil;
-import org.apache.batik.anim.dom.SVGDOMImplementation;
-import org.apache.batik.anim.dom.SVGOMDocument;
-import org.apache.batik.bridge.*;
-import org.apache.batik.css.parser.CSSLexicalUnit;
-import org.apache.batik.dom.util.DOMUtilities;
-import org.apache.batik.ext.awt.image.GraphicsUtil;
-import org.apache.batik.gvt.CanvasGraphicsNode;
-import org.apache.batik.gvt.GraphicsNode;
-import org.apache.batik.gvt.renderer.ConcreteImageRendererFactory;
-import org.apache.batik.gvt.renderer.ImageRenderer;
-import org.apache.batik.gvt.renderer.ImageRendererFactory;
-import org.apache.batik.transcoder.*;
-import org.apache.batik.transcoder.image.ImageTranscoder;
-import org.apache.batik.util.ParsedURL;
-import org.apache.batik.util.SVGConstants;
-import org.apache.batik.xml.LexicalUnits;
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.w3c.dom.svg.SVGSVGElement;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -69,6 +40,38 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.spi.ImageReaderSpi;
+
+import org.apache.batik.anim.dom.SVGDOMImplementation;
+import org.apache.batik.anim.dom.SVGOMDocument;
+import org.apache.batik.bridge.*;
+import org.apache.batik.dom.util.DOMUtilities;
+import org.apache.batik.ext.awt.image.GraphicsUtil;
+import org.apache.batik.gvt.CanvasGraphicsNode;
+import org.apache.batik.gvt.GraphicsNode;
+import org.apache.batik.gvt.renderer.ConcreteImageRendererFactory;
+import org.apache.batik.gvt.renderer.ImageRenderer;
+import org.apache.batik.gvt.renderer.ImageRendererFactory;
+import org.apache.batik.transcoder.SVGAbstractTranscoder;
+import org.apache.batik.transcoder.TranscoderException;
+import org.apache.batik.transcoder.TranscoderInput;
+import org.apache.batik.transcoder.TranscoderOutput;
+import org.apache.batik.transcoder.TranscodingHints;
+import org.apache.batik.transcoder.image.ImageTranscoder;
+import org.apache.batik.util.ParsedURL;
+import org.apache.batik.util.SVGConstants;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+import org.w3c.dom.svg.SVGSVGElement;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.StringUtil;
 
 /**
  * Image reader for SVG document fragments.
@@ -132,6 +135,7 @@ public class SVGImageReader extends ImageReaderBase {
             // Set ImageReadParams as hints
             // Note: The cast to Map invokes a different method that preserves
             // unset defaults, DO NOT REMOVE!
+            //noinspection rawtypes
             rasterizer.setTranscodingHints((Map) paramsToHints(svgParam));
         }
 
@@ -260,7 +264,7 @@ public class SVGImageReader extends ImageReaderBase {
         }
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+    public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) {
         return Collections.singleton(ImageTypeSpecifier.createFromRenderedImage(rasterizer.createImage(1, 1))).iterator();
     }
 
@@ -289,7 +293,7 @@ public class SVGImageReader extends ImageReaderBase {
         }
 
         //  This is cheating... We don't fully transcode after all
-        protected void transcode(Document document, final String uri, final TranscoderOutput output) throws TranscoderException {
+        protected void transcode(Document document, final String uri, final TranscoderOutput output) {
             // Sets up root, curTxf & curAoi
             // ----
             if (document != null) {
@@ -584,9 +588,7 @@ public class SVGImageReader extends ImageReaderBase {
                 return dest;
             }
             catch (Exception ex) {
-                TranscoderException exception = new TranscoderException(ex.getMessage());
-                exception.initCause(ex);
-                throw exception;
+                throw new TranscoderException(ex.getMessage(), ex);
             }
             finally {
                 if (context != null) {
