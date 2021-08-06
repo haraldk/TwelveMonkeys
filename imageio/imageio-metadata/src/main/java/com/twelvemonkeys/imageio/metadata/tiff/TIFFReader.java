@@ -73,16 +73,17 @@ public final class TIFFReader extends MetadataReader {
             }
         };
 
-        map.put(TIFF.TAG_SUB_IFD, Collections.unmodifiableCollection(Collections.singleton(TIFF.TAG_SUB_IFD)));
-        map.put(TIFF.TAG_EXIF_IFD, Collections.unmodifiableCollection(Collections.singleton(TIFF.TAG_INTEROP_IFD)));
+        map.put(TIFF.TAG_SUB_IFD, Collections.singleton(TIFF.TAG_SUB_IFD));
+        map.put(TIFF.TAG_EXIF_IFD, Collections.singleton(TIFF.TAG_INTEROP_IFD));
 
         return Collections.unmodifiableMap(map);
     }
 
+    private final Set<Long> parsedIFDs = new TreeSet<>();
+
     private long length;
     private boolean longOffsets;
     private int offsetSize;
-    private Set<Long> parsedIFDs = new TreeSet<>();
 
     @Override
     public Directory read(final ImageInputStream input) throws IOException {
