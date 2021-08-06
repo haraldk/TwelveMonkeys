@@ -30,22 +30,26 @@
 
 package com.twelvemonkeys.imageio.metadata.tiff;
 
+import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getType;
+import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
+
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import javax.imageio.IIOException;
+import javax.imageio.stream.ImageOutputStream;
+
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.MetadataWriter;
 import com.twelvemonkeys.lang.Validate;
-
-import javax.imageio.IIOException;
-import javax.imageio.stream.ImageOutputStream;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
-import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getType;
-import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
 
 /**
  * TIFFWriter
@@ -58,7 +62,7 @@ public final class TIFFWriter extends MetadataWriter {
 
     private static final int WORD_LENGTH = 2;
     private static final int LONGWORD_LENGTH = 4;
-    private static final int ENTRY_LENGTH = 12;
+    private static final long ENTRY_LENGTH = 12;
 
     public boolean write(final Collection<? extends Entry> entries, final ImageOutputStream stream) throws IOException {
         return write(new IFD(entries), stream);
@@ -248,7 +252,7 @@ public final class TIFFWriter extends MetadataWriter {
 
     private int getCount(final Entry entry) {
         Object value = entry.getValue();
-        return value instanceof String ? ((String) value).getBytes(Charset.forName("UTF-8")).length + 1 : entry.valueCount();
+        return value instanceof String ? ((String) value).getBytes(StandardCharsets.UTF_8).length + 1 : entry.valueCount();
     }
 
     private void writeValueInline(final Object value, final short type, final ImageOutputStream stream) throws IOException {
