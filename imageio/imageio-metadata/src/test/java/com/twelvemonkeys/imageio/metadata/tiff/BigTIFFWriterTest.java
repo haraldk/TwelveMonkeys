@@ -57,10 +57,11 @@ import static org.junit.Assert.assertNotNull;
  * @author last modified by $Author: haraldk$
  * @version $Id: TIFFWriterTest.java,v 1.0 18.07.13 09:53 haraldk Exp$
  */
-public class TIFFWriterTest extends MetadataWriterAbstractTest {
+public class BigTIFFWriterTest extends MetadataWriterAbstractTest {
 
     @Override
     protected InputStream getData() throws IOException {
+        // TODO: Replace with BigTIFF resource
         return getResource("/exif/exif-jpeg-segment.bin").openStream();
     }
 
@@ -70,7 +71,7 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
 
     @Override
     protected TIFFWriter createWriter() {
-        return new TIFFWriter();
+        return new TIFFWriter(8);
     }
 
     @Test
@@ -92,13 +93,13 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
 
         byte[] data = output.toByteArray();
 
-        assertEquals(106, data.length);
+        assertEquals(164, data.length);
         assertEquals('M', data[0]);
         assertEquals('M', data[1]);
         assertEquals(0, data[2]);
-        assertEquals(42, data[3]);
+        assertEquals(43, data[3]);
 
-        Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
+        Directory read = createReader().read(new ByteArrayImageInputStream(data));
 
         assertNotNull(read);
         assertEquals(5, read.size());
@@ -140,11 +141,11 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
 
         byte[] data = output.toByteArray();
 
-        assertEquals(60, data.length);
+        assertEquals(94, data.length);
         assertEquals('M', data[0]);
         assertEquals('M', data[1]);
         assertEquals(0, data[2]);
-        assertEquals(42, data[3]);
+        assertEquals(43, data[3]);
 
         Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
 
@@ -175,10 +176,10 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
 
         byte[] data = output.toByteArray();
 
-        assertEquals(60, data.length);
+        assertEquals(94, data.length);
         assertEquals('I', data[0]);
         assertEquals('I', data[1]);
-        assertEquals(42, data[2]);
+        assertEquals(43, data[2]);
         assertEquals(0, data[3]);
 
         Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
@@ -192,13 +193,39 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
     }
 
     @Test
-    public void testNesting() throws IOException {
+    public void testNestingIFD8Long8() throws IOException {
         TIFFEntry artist = new TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, "TwelveMonkeys ImageIO");
 
-        TIFFEntry subSubSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(artist)));
+        TIFFEntry subSubSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD8, new IFD(Collections.singletonList(artist)));
+        TIFFEntry subSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG8, new IFD(Collections.singletonList(subSubSubSubIFD)));
+        TIFFEntry subSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG8, new IFD(Collections.singletonList(subSubSubIFD)));
+        TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD8, new IFD(Collections.singletonList(subSubIFD)));
+
+        Directory directory = new IFD(Collections.<Entry>singletonList(subIFD));
+
+        ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
+        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
+
+        createWriter().write(directory, imageStream);
+        imageStream.flush();
+
+        assertEquals(output.size(), imageStream.getStreamPosition());
+
+        Directory read = new TIFFReader().read(new ByteArrayImageInputStream(output.toByteArray()));
+
+        assertNotNull(read);
+        assertEquals(1, read.size());
+        assertEquals(subIFD, read.getEntryById(TIFF.TAG_SUB_IFD)); // Recursively tests content!
+    }
+
+    @Test
+    public void testNestingIFDLong() throws IOException {
+        TIFFEntry artist = new TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, "TwelveMonkeys ImageIO");
+
+        TIFFEntry subSubSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD, new IFD(Collections.singletonList(artist)));
         TIFFEntry subSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubSubIFD)));
         TIFFEntry subSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubIFD)));
-        TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubIFD)));
+        TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD, new IFD(Collections.singletonList(subSubIFD)));
 
         Directory directory = new IFD(Collections.<Entry>singletonList(subIFD));
 
@@ -250,18 +277,18 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         ImageOutputStream stream = new NullImageOutputStream();
         writer.writeIFD(entries, stream);
 
-        assertEquals(94, writer.computeIFDSize(entries));
-        assertEquals(98, stream.getStreamPosition());
+        assertEquals(140, writer.computeIFDSize(entries));
+        assertEquals(148, stream.getStreamPosition());
     }
 
     @Test
-    public void testComputeIFDSizeNested() throws IOException {
+    public void testComputeIFDSizeNestedIFD8Long8() throws IOException {
         TIFFEntry artist = new TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, "TwelveMonkeys ImageIO");
 
-        TIFFEntry subSubSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(artist)));
-        TIFFEntry subSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubSubIFD)));
-        TIFFEntry subSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubIFD)));
-        TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubIFD)));
+        TIFFEntry subSubSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD8, new IFD(Collections.singletonList(artist)));
+        TIFFEntry subSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG8, new IFD(Collections.singletonList(subSubSubSubIFD)));
+        TIFFEntry subSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG8, new IFD(Collections.singletonList(subSubSubIFD)));
+        TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD8, new IFD(Collections.singletonList(subSubIFD)));
 
         List<Entry> entries = Collections.<Entry>singletonList(subIFD);
 
@@ -270,8 +297,28 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         ImageOutputStream stream = new NullImageOutputStream();
         writer.writeIFD(entries, stream);
 
-        assertEquals(92, writer.computeIFDSize(entries)); // 92 = 5 * (2 + 12) + 22
-        assertEquals(96, stream.getStreamPosition()); // 96 = 4 + 5 * (2 + 12) + 22
+        assertEquals(162, writer.computeIFDSize(entries));
+        assertEquals(170, stream.getStreamPosition());
+    }
+
+    @Test
+    public void testComputeIFDSizeNestedIFDLong() throws IOException {
+        TIFFEntry artist = new TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, "TwelveMonkeys ImageIO");
+
+        TIFFEntry subSubSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD, new IFD(Collections.singletonList(artist)));
+        TIFFEntry subSubSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubSubIFD)));
+        TIFFEntry subSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubIFD)));
+        TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_IFD, new IFD(Collections.singletonList(subSubIFD)));
+
+        List<Entry> entries = Collections.<Entry>singletonList(subIFD);
+
+        TIFFWriter writer = createWriter();
+
+        ImageOutputStream stream = new NullImageOutputStream();
+        writer.writeIFD(entries, stream);
+
+        assertEquals(162, writer.computeIFDSize(entries)); // 162 = 5 * (8 + 20) + 22
+        assertEquals(170, stream.getStreamPosition()); // 170 = 8 + 5 * (8 + 20) + 22
     }
 
     private static class NullImageOutputStream extends ImageOutputStreamImpl {

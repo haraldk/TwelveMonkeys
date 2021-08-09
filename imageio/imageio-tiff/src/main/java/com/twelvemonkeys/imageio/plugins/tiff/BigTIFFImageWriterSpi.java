@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Harald Kuhr
+ * Copyright (c) 2021, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,30 +30,38 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+
+import javax.imageio.ImageTypeSpecifier;
+import java.util.Locale;
 
 /**
- * BigTIFFProviderInfo.
+ * BigTIFFImageWriterSpi
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: harald.kuhr$
- * @version $Id: BigTIFFProviderInfo.java,v 1.0 26/04/2017 harald.kuhr Exp$
+ * @author last modified by $Author: haraldk$
+ * @version $Id: BigTIFFImageWriterSpi.java,v 1.0 18.09.13 12:46 haraldk Exp$
  */
-final class BigTIFFProviderInfo extends ReaderWriterProviderInfo {
-    protected BigTIFFProviderInfo() {
-        super(
-                BigTIFFProviderInfo.class,
-                new String[] {"bigtiff", "BigTIFF", "BIGTIFF"},
-                new String[] {"tif", "tiff", "btf", "tf8", "btiff"},
-                new String[] {
-                        "image/tiff", "image/x-tiff"
-                },
-                "com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader",
-                new String[] {"com.twelvemonkeys.imageio.plugins.tiff.BigTIFFImageReaderSpi"},
-                "com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriter",
-                new String[] {"com.twelvemonkeys.imageio.plugins.tiff.BigTIFFImageWriterSpi"},
-                false, TIFFStreamMetadata.SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, "com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadataFormat", null, null,
-                true, TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, "com.twelvemonkeys.imageio.plugins.tiff.TIFFMedataFormat", null, null
-        );
+public final class BigTIFFImageWriterSpi extends ImageWriterSpiBase {
+    // TODO: Implement canEncodeImage better
+
+    public BigTIFFImageWriterSpi() {
+        super(new BigTIFFProviderInfo());
+    }
+
+    @Override
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
+        // TODO: Test bit depths compatibility
+        return true;
+    }
+
+    @Override
+    public TIFFImageWriter createWriterInstance(final Object extension) {
+        return new TIFFImageWriter(this);
+    }
+
+    @Override
+    public String getDescription(final Locale locale) {
+        return "BigTIFF image writer";
     }
 }

@@ -202,26 +202,26 @@ public final class TIFFImageWriter extends ImageWriterBase {
             long streamPosition = imageOutput.getStreamPosition();
 
             long ifdSize = tiffWriter.computeIFDSize(entries.values());
-            long stripOffset = streamPosition + 4 + ifdSize + 4;
+            long stripOffset = streamPosition + tiffWriter.offsetSize() + ifdSize + tiffWriter.offsetSize();
             long stripByteCount = ((long) renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7L) / 8L;
 
             entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
 
-            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
+            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
 
             // If we have a previous IFD, update pointer
             if (streamPosition > lastIFDPointerOffset) {
                 imageOutput.seek(lastIFDPointerOffset);
-                imageOutput.writeInt((int) ifdPointer);
+                tiffWriter.writeOffset(imageOutput, ifdPointer);
                 imageOutput.seek(nextIFDPointerOffset);
             }
 
-            imageOutput.writeInt(0); // Update next IFD pointer later
+            tiffWriter.writeOffset(imageOutput, 0); // Update next IFD pointer later
         }
         else {
-            imageOutput.writeInt(0); // Update current IFD pointer later
+            tiffWriter.writeOffset(imageOutput, 0); // Update current IFD pointer later
         }
 
         long stripOffset = imageOutput.getStreamPosition();
@@ -260,7 +260,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
             entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
 
-            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes case of ordering tags
+            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
 
             nextIFDPointerOffset = imageOutput.getStreamPosition();
 
@@ -268,10 +268,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
             // However, need to update here, because to the writeIFD method writes the pointer, but at the incorrect offset
             // TODO: Refactor writeIFD to take an offset
             imageOutput.seek(lastIFDPointerOffset);
-            imageOutput.writeInt((int) ifdPointer);
+            tiffWriter.writeOffset(imageOutput, ifdPointer);
             imageOutput.seek(nextIFDPointerOffset);
 
-            imageOutput.writeInt(0); // Next IFD pointer updated later
+            tiffWriter.writeOffset(imageOutput, 0); // Next IFD pointer updated later
         }
 
         return nextIFDPointerOffset;
@@ -955,7 +955,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
         configureStreamByteOrder(streamMetadata, imageOutput);
 
         writingSequence = true;
-        sequenceTIFFWriter = new TIFFWriter();
+        sequenceTIFFWriter = new TIFFWriter("bigtiff".equalsIgnoreCase(getFormatName()) ? 8 : 4);
         sequenceTIFFWriter.writeTIFFHeader(imageOutput);
         sequenceLastIFDPos = imageOutput.getStreamPosition();
     }
@@ -1015,8 +1015,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         BufferedImage original;
 //        BufferedImage original = ImageIO.read(file);
-        ImageInputStream inputStream = ImageIO.createImageInputStream(file);
-        try {
+        try (ImageInputStream inputStream = ImageIO.createImageInputStream(file)) {
             Iterator<ImageReader> readers = ImageIO.getImageReaders(inputStream);
 
             if (!readers.hasNext()) {
@@ -1045,9 +1044,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
             System.err.println("param.getDestinationType(): " + param.getDestinationType());
 
             original = reader.read(0, param);
-        }
-        finally {
-            inputStream.close();
         }
 
         System.err.println("original: " + original);
@@ -1084,12 +1080,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
 //        output.deleteOnExit();
 
         System.err.println("output: " + output);
-        TIFFImageWriter writer = new TIFFImageWriter(null);
+        TIFFImageWriter writer = new TIFFImageWriter(new TIFFImageWriterSpi());
 //        ImageWriter writer = ImageIO.getImageWritersByFormatName("PNG").next();
 //        ImageWriter writer = ImageIO.getImageWritersByFormatName("BMP").next();
-        ImageOutputStream stream = ImageIO.createImageOutputStream(output);
 
-        try {
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(output)) {
             writer.setOutput(stream);
 
             ImageWriteParam param = writer.getDefaultWriteParam();
@@ -1106,9 +1101,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
             long start = System.currentTimeMillis();
             writer.write(null, new IIOImage(image, null, null), param);
             System.err.println("Write time: " + (System.currentTimeMillis() - start) + " ms");
-        }
-        finally {
-            stream.close();
         }
 
         System.err.println("output.length: " + output.length());

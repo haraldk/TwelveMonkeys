@@ -79,7 +79,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
     protected abstract ImageWriterSpi createProvider();
 
     protected final T createWriter() throws IOException {
-        return writerClass.cast(provider.createWriterInstance(null));
+        return writerClass.cast(provider.createWriterInstance());
     }
 
     protected abstract List<? extends RenderedImage> getTestData();
