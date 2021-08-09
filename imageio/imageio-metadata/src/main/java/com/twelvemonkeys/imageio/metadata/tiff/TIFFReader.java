@@ -30,8 +30,15 @@
 
 package com.twelvemonkeys.imageio.metadata.tiff;
 
-import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataReader;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.lang.Validate;
 
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
@@ -39,15 +46,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
-
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.MetadataReader;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.lang.Validate;
+import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
 
 /**
  * TIFFReader
