@@ -119,7 +119,7 @@ final class EXIFThumbnail {
                     case 6:
                         // YCbCr
                         for (int i = 0; i < thumbLength; i += 3) {
-                            YCbCrConverter.convertYCbCr2RGB(thumbData, thumbData, i);
+                            YCbCrConverter.convertJPEGYCbCr2RGB(thumbData, thumbData, i);
                         }
                         break;
                     default:

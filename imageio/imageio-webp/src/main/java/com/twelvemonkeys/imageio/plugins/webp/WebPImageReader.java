@@ -86,15 +86,7 @@ final class WebPImageReader extends ImageReaderBase {
 
     @Override
     public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
-        // TODO: Figure out why this makes the reader order of magnitudes faster (2-3x?)
-        //  ...or, how to make VP8 decoder make longer reads/make a better FileImageInputStream...
         super.setInput(input, seekForwardOnly, ignoreMetadata);
-//         try {
-//             super.setInput(new BufferedImageInputStream((ImageInputStream) input), seekForwardOnly, ignoreMetadata);
-//         }
-//         catch (IOException e) {
-//             throw new IOError(e);
-//         }
 
         lsbBitReader = new LSBBitReader(imageInput);
     }
@@ -344,7 +336,7 @@ final class WebPImageReader extends ImageReaderBase {
                             int reserved = (int) imageInput.readBits(2);
                             if (reserved != 0) {
                                 // Spec says SHOULD be 0
-                                throw new IIOException(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
+                                processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
                             }
 
                             int preProcessing = (int) imageInput.readBits(2);
@@ -384,6 +376,9 @@ final class WebPImageReader extends ImageReaderBase {
 
                         case WebP.CHUNK_ICCP:
                             // Ignore, we already read this
+                        case WebP.CHUNK_EXIF:
+                        case WebP.CHUNK_XMP_:
+                            // Ignore, we'll read this later
                             break;
 
                         case WebP.CHUNK_ANIM:

@@ -42,7 +42,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.twelvemonkeys.imageio.color.YCbCrConverter.convertYCbCr2RGB;
+import static com.twelvemonkeys.imageio.color.YCbCrConverter.convertRec601YCbCr2RGB;
 
 public final class VP8Frame {
     private static final int BLOCK_TYPES = 4;
@@ -54,8 +54,6 @@ public final class VP8Frame {
 
     private IIOReadProgressListener listener = null;
 
-    //    private int bufferCount;
-//    private int buffersToCreate = 1;
     private final int[][][][] coefProbs;
     private int filterLevel;
 
@@ -117,7 +115,6 @@ public final class VP8Frame {
 
         int c = frame.readUnsignedByte();
         frameType = getBitAsInt(c, 0);
-//        logger.log("Frame type: " + frameType);
 
         if (frameType != 0) {
             return false;
@@ -478,7 +475,6 @@ public final class VP8Frame {
     }
 
     public BufferedImage getDebugImageDiff() {
-
         BufferedImage bi = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_RGB);
         WritableRaster imRas = bi.getWritableTile(0, 0);
         for (int x = 0; x < getWidth(); x++) {
@@ -1037,12 +1033,12 @@ public final class VP8Frame {
         int num_part = 1 << multiTokenPartition;
 
         if (num_part > 1) {
-            partition += 3 * (num_part - 1);
+            partition += 3L * (num_part - 1);
         }
         for (int i = 0; i < num_part; i++) {
             // Calculate the length of this partition. The last partition size is implicit.
             if (i < num_part - 1) {
-                partitionSize = readPartitionSize(partitionsStart + (i * 3));
+                partitionSize = readPartitionSize(partitionsStart + (i * 3L));
                 bc.seek();
             }
             else {
@@ -1084,9 +1080,8 @@ public final class VP8Frame {
                 yuv[2] = (byte) macroBlock.getSubBlock(SubBlock.Plane.V, (x / 2) / 4, (y / 2) / 4).getDest()[(x / 2) % 4][(y / 2) % 4];
 
                 // TODO: Consider doing YCbCr -> RGB in reader instead, or pass a flag to allow readRaster reading direct YUV/YCbCr values
-                convertYCbCr2RGB(yuv, rgb, 0);
+                convertRec601YCbCr2RGB(yuv, rgb, 0);
                 byteRGBRaster.setDataElements(dstX, dstY, rgb);
-//                 byteRGBRaster.setDataElements(dstX, dstY, yuv);
             }
         }
     }

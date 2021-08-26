@@ -123,7 +123,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     private int currentStreamIndex = 0;
     private final List<Long> streamOffsets = new ArrayList<>();
 
-    protected JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
+    JPEGImageReader(final ImageReaderSpi provider, final ImageReader delegate) {
         super(provider);
 
         this.delegate = Validate.notNull(delegate);
@@ -1169,7 +1169,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         processThumbnailStarted(imageIndex, thumbnailIndex);
         processThumbnailProgress(0f);
 
-        BufferedImage thumbnail = thumbnails.get(thumbnailIndex).read();;
+        BufferedImage thumbnail = thumbnails.get(thumbnailIndex).read();
 
         processThumbnailProgress(100f);
         processThumbnailComplete();
@@ -1211,7 +1211,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                YCbCrConverter.convertYCbCr2RGB(data, data, (x + y * width) * numComponents);
+                YCbCrConverter.convertJPEGYCbCr2RGB(data, data, (x + y * width) * numComponents);
             }
         }
     }
@@ -1225,7 +1225,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             for (int x = 0; x < width; x++) {
                 int offset = (x + y * width) * 4;
                 // YCC -> CMY
-                YCbCrConverter.convertYCbCr2RGB(data, data, offset);
+                YCbCrConverter.convertJPEGYCbCr2RGB(data, data, offset);
                 // Inverse K
                 data[offset + 3] = (byte) (0xff - data[offset + 3] & 0xff);
             }

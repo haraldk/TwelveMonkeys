@@ -2136,7 +2136,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                         && (referenceBW == null || Arrays.equals(referenceBW, REFERENCE_BLACK_WHITE_YCC_DEFAULT))) {
                     // Fast, default conversion
                     for (int i = 0; i < data.length; i += 3) {
-                        YCbCrConverter.convertYCbCr2RGB(data, data, i);
+                        // TODO: The default is likely neither JPEG or rec 601, as the reference B/W doesn't match...
+                        YCbCrConverter.convertJPEGYCbCr2RGB(data, data, i);
                     }
                 }
                 else {
