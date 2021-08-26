@@ -75,13 +75,28 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/photo-iccp-adobergb.webp"))) {
             reader.setInput(stream);
 
-            // We'll read a small portion of the image into a a destination type that use sRGB
+            // We'll read a small portion of the image into a destination type that use sRGB
             ImageReadParam param = new ImageReadParam();
             param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
             param.setSourceRegion(new Rectangle(20, 20));
 
             BufferedImage image = reader.read(0, param);
-            assertRGBEquals("RGB values differ, incorrect ICC profile or conversion?", 0XFFDC9100, image.getRGB(10, 10), 10);
+            assertRGBEquals("RGB values differ, incorrect ICC profile or conversion?", 0xFFEA9600, image.getRGB(10, 10), 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRec601ColorConversion() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/blue_tile.webp"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ, incorrect Y'CbCr -> RGB conversion", 0xFF72AED5, image.getRGB(80, 80), 1);
         }
         finally {
             reader.dispose();

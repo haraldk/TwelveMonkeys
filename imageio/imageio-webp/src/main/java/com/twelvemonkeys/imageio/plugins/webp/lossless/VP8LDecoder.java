@@ -259,12 +259,7 @@ public final class VP8LDecoder {
                 abs(pGreen - GREEN(T)) + abs(pBlue - BLUE(T));
 
         // Return either left or top, the one closer to the prediction.
-        if (pL < pT) {
-            return L;
-        }
-        else {
-            return T;
-        }
+        return pL < pT ? L : T;
     }
 
     private static int average2(final int a, final int b) {

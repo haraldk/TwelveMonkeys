@@ -45,36 +45,82 @@ public final class YCbCrConverter {
     private final static int CENTERJSAMPLE = 128;
     private final static int ONE_HALF = 1 << (SCALEBITS - 1);
 
-    private final static int[] Cr_R_LUT = new int[MAXJSAMPLE + 1];
-    private final static int[] Cb_B_LUT = new int[MAXJSAMPLE + 1];
-    private final static int[] Cr_G_LUT = new int[MAXJSAMPLE + 1];
-    private final static int[] Cb_G_LUT = new int[MAXJSAMPLE + 1];
+    private final static class JPEG {
+        private final static int[] Cr_R_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Cb_B_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Cr_G_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Cb_G_LUT = new int[MAXJSAMPLE + 1];
 
-    /**
-     * Initializes tables for YCC->RGB color space conversion.
-     */
-    private static void buildYCCtoRGBtable() {
-        if (ColorSpaces.DEBUG) {
-            System.err.println("Building YCC conversion table");
+        /**
+         * Initializes tables for YCC->RGB color space conversion.
+         */
+        private static void buildYCCtoRGBtable() {
+            if (ColorSpaces.DEBUG) {
+                System.err.println("Building JPEG YCbCr conversion table");
+            }
+
+            for (int i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
+                // i is the actual input pixel value, in the range 0..MAXJSAMPLE
+                // The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE
+                // Cr=>R value is nearest int to 1.40200 * x
+                Cr_R_LUT[i] = (int) ((1.40200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
+                // Cb=>B value is nearest int to 1.77200 * x
+                Cb_B_LUT[i] = (int) ((1.77200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
+                // Cr=>G value is scaled-up -0.71414 * x
+                Cr_G_LUT[i] = -(int) (0.71414 * (1 << SCALEBITS) + 0.5) * x;
+                // Cb=>G value is scaled-up -0.34414 * x
+                // We also add in ONE_HALF so that need not do it in inner loop
+                Cb_G_LUT[i] = -(int) ((0.34414) * (1 << SCALEBITS) + 0.5) * x + ONE_HALF;
+            }
         }
 
-        for (int i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
-            // i is the actual input pixel value, in the range 0..MAXJSAMPLE
-            // The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE
-            // Cr=>R value is nearest int to 1.40200 * x
-            Cr_R_LUT[i] = (int) ((1.40200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-            // Cb=>B value is nearest int to 1.77200 * x
-            Cb_B_LUT[i] = (int) ((1.77200 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
-            // Cr=>G value is scaled-up -0.71414 * x
-            Cr_G_LUT[i] = -(int) (0.71414 * (1 << SCALEBITS) + 0.5) * x;
-            // Cb=>G value is scaled-up -0.34414 * x
-            // We also add in ONE_HALF so that need not do it in inner loop
-            Cb_G_LUT[i] = -(int) ((0.34414) * (1 << SCALEBITS) + 0.5) * x + ONE_HALF;
+        static {
+            buildYCCtoRGBtable();
         }
     }
 
-    static {
-        buildYCCtoRGBtable();
+    private final static class ITU_R_601 {
+        private final static int[] Cr_R_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Cb_B_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Cr_G_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Cb_G_LUT = new int[MAXJSAMPLE + 1];
+        private final static int[] Y_LUT = new int[MAXJSAMPLE + 1];
+
+        /**
+         * Initializes tables for YCC->RGB color space conversion.
+         */
+        private static void buildYCCtoRGBtable() {
+            if (ColorSpaces.DEBUG) {
+                System.err.println("Building ITU-R REC.601 YCbCr conversion table");
+            }
+
+            for (int i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
+                // i is the actual input pixel value, in the range 0..MAXJSAMPLE
+                // The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE
+
+                // Y'CbCr to RGB conversion, using values from BT.601 specification:
+                //   R = 1.16438 * (Y'-16)                      + 1.59603 * (Cr-128)
+                //   G = 1.16438 * (Y'-16) - 0.39176 * (Cb-128) - 0.81297 * (Cr-128)
+                //   B = 1.16438 * (Y'-16) + 2.01723 * (Cb-128)
+
+                // Cr=>R value is nearest int to 1.59603 * x
+                Cr_R_LUT[i] = ((int) (1.59603 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
+                // Cb=>B value is nearest int to 2.01723 * x
+                Cb_B_LUT[i] = ((int) (2.01723 * (1 << SCALEBITS) + 0.5) * x + ONE_HALF) >> SCALEBITS;
+                // Cr=>G value is scaled-up -0.81297 * x
+                Cr_G_LUT[i] = -(int) (0.81297 * (1 << SCALEBITS) + 0.5) * x;
+                // Cb=>G value is scaled-up -0.39176 * x
+                // We also add in ONE_HALF so that need not do it in inner loop
+                Cb_G_LUT[i] = -(int) ((0.39176) * (1 << SCALEBITS) + 0.5) * x + ONE_HALF;
+
+                // Y`=>RGB
+                Y_LUT[i] = ((int) (1.16438 * (1 << SCALEBITS) + 0.5) * (i - 16) + ONE_HALF) >> SCALEBITS;
+            }
+        }
+
+        static {
+            buildYCCtoRGBtable();
+        }
     }
 
     public static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final double[] coefficients, double[] referenceBW, final int offset) {
@@ -108,17 +154,27 @@ public final class YCbCrConverter {
         rgb[offset + 1] = clamp(green);
     }
 
-    public static void convertYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
-        int y = yCbCr[offset] & 0xff;
-        int cr = yCbCr[offset + 2] & 0xff;
+    public static void convertJPEGYCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
+        int y  = yCbCr[offset    ] & 0xff;
         int cb = yCbCr[offset + 1] & 0xff;
+        int cr = yCbCr[offset + 2] & 0xff;
 
-        rgb[offset] = clamp(y + Cr_R_LUT[cr]);
-        rgb[offset + 1] = clamp(y + (Cb_G_LUT[cb] + Cr_G_LUT[cr] >> SCALEBITS));
-        rgb[offset + 2] = clamp(y + Cb_B_LUT[cb]);
+        rgb[offset    ] = clamp(y + JPEG.Cr_R_LUT[cr]);
+        rgb[offset + 1] = clamp(y + (JPEG.Cb_G_LUT[cb] + JPEG.Cr_G_LUT[cr] >> SCALEBITS));
+        rgb[offset + 2] = clamp(y + JPEG.Cb_B_LUT[cb]);
     }
 
-    private static byte clamp(int val) {
+    public static void convertRec601YCbCr2RGB(final byte[] yCbCr, final byte[] rgb, final int offset) {
+        int y =  yCbCr[offset    ] & 0xff;
+        int cb = yCbCr[offset + 1] & 0xff;
+        int cr = yCbCr[offset + 2] & 0xff;
+
+        rgb[offset    ] = clamp(ITU_R_601.Y_LUT[y] + ITU_R_601.Cr_R_LUT[cr]);
+        rgb[offset + 1] = clamp(ITU_R_601.Y_LUT[y] + (ITU_R_601.Cr_G_LUT[cr] + ITU_R_601.Cb_G_LUT[cb] >> SCALEBITS));
+        rgb[offset + 2] = clamp(ITU_R_601.Y_LUT[y] + ITU_R_601.Cb_B_LUT[cb]);
+    }
+
+    private static byte clamp(final int val) {
         return (byte) Math.max(0, Math.min(255, val));
     }
 }
