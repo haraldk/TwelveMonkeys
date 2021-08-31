@@ -38,6 +38,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.Rational;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.lang.Validate;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -84,7 +85,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
      * or {@link #mergeTree(String, Node)} methods.
      */
     public TIFFImageMetadata(final Directory ifd) {
-        super(true, TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, TIFFMedataFormat.class.getName(), null, null);
+        super(true, TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, TIFFImageMetadataFormat.class.getName(), null, null);
         this.ifd = Validate.notNull(ifd, "IFD");
         this.original = ifd;
     }

@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataTest.createTIFFFieldNode;
 import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertRGBEquals;
 import static org.junit.Assert.*;
@@ -113,7 +114,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
             writer.setOutput(stream);
 
-            String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+            String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
             IIOMetadata metadata = writer.getDefaultImageMetadata(ImageTypeSpecifier.createFromRenderedImage(image), null);
 
             IIOMetadataNode customMeta = new IIOMetadataNode(nativeFormat);
@@ -163,7 +164,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
             writer.setOutput(stream);
 
-            String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+            String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
             IIOMetadata metadata = writer.getDefaultImageMetadata(ImageTypeSpecifier.createFromRenderedImage(image), null);
 
             IIOMetadataNode customMeta = new IIOMetadataNode(nativeFormat);
