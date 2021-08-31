@@ -955,9 +955,13 @@ public final class TIFFImageWriter extends ImageWriterBase {
         configureStreamByteOrder(streamMetadata, imageOutput);
 
         writingSequence = true;
-        sequenceTIFFWriter = new TIFFWriter("bigtiff".equalsIgnoreCase(getFormatName()) ? 8 : 4);
+        sequenceTIFFWriter = new TIFFWriter(isBigTIFF() ? 8 : 4);
         sequenceTIFFWriter.writeTIFFHeader(imageOutput);
         sequenceLastIFDPos = imageOutput.getStreamPosition();
+    }
+
+    private boolean isBigTIFF() throws IOException {
+        return "bigtiff".equalsIgnoreCase(getFormatName());
     }
 
     @Override
