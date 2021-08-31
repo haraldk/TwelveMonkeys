@@ -34,11 +34,11 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 
 /**
- * TIFFMedataFormat.
+ * TIFFImageMetadataFormat.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
- * @version $Id: TIFFMedataFormat.java,v 1.0 17/04/15 harald.kuhr Exp$
+ * @version $Id: TIFFImageMetadataFormat.java,v 1.0 17/04/15 harald.kuhr Exp$
  */
 public final class TIFFImageMetadataFormat extends IIOMetadataFormatImpl {
     private static final TIFFImageMetadataFormat INSTANCE = new TIFFImageMetadataFormat();
