@@ -37,6 +37,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import com.twelvemonkeys.lang.StringUtil;
+
 import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -55,6 +56,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
 import static org.junit.Assert.*;
 
 /**
@@ -188,11 +190,11 @@ public class TIFFImageMetadataTest {
     @Test
     public void testMetadataNativeFormat() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/quad-lzw.tif");
-        Node root = metadata.getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
+        Node root = metadata.getAsTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
 
         // Root: "com_sun_media_imageio_plugins_tiff_image_1.0"
         assertNotNull(root);
-        assertEquals(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, root.getNodeName());
+        assertEquals(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, root.getNodeName());
         assertEquals(1, root.getChildNodes().getLength());
 
         // IFD: "TIFFIFD"
@@ -244,10 +246,10 @@ public class TIFFImageMetadataTest {
     public void testTreeDetached() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
-        Node nativeTree = metadata.getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
+        Node nativeTree = metadata.getAsTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
         assertNotNull(nativeTree);
 
-        Node nativeTree2 = metadata.getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
+        Node nativeTree2 = metadata.getAsTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
         assertNotNull(nativeTree2);
 
         assertNotSame(nativeTree, nativeTree2);
@@ -266,7 +268,7 @@ public class TIFFImageMetadataTest {
     public void testMergeTree() throws IOException {
         TIFFImageMetadata metadata = (TIFFImageMetadata) createMetadata("/tiff/sm_colors_tile.tif");
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
 
         Node nativeTree = metadata.getAsTree(nativeFormat);
         assertNotNull(nativeTree);
@@ -376,7 +378,7 @@ public class TIFFImageMetadataTest {
     public void testMergeTreeFormatMisMatch() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
         metadata.mergeTree(nativeFormat, new IIOMetadataNode("com_foo_bar_tiff_42"));
     }
 
@@ -384,7 +386,7 @@ public class TIFFImageMetadataTest {
     public void testMergeTreeInvalid() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
         metadata.mergeTree(nativeFormat, new IIOMetadataNode(nativeFormat)); // Requires at least one child node
     }
 
@@ -395,7 +397,7 @@ public class TIFFImageMetadataTest {
         // Read from file, set empty to see that all is cleared
         TIFFImageMetadata metadata = (TIFFImageMetadata) createMetadata("/tiff/sm_colors_tile.tif");
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
         IIOMetadataNode root = new IIOMetadataNode(nativeFormat);
         root.appendChild(new IIOMetadataNode("TIFFIFD"));
 
@@ -418,7 +420,7 @@ public class TIFFImageMetadataTest {
 
         TIFFImageMetadata metadata = new TIFFImageMetadata(Collections.<Entry>emptySet());
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
         IIOMetadataNode root = new IIOMetadataNode(nativeFormat);
 
         IIOMetadataNode ifdNode = new IIOMetadataNode("TIFFIFD");
@@ -492,7 +494,7 @@ public class TIFFImageMetadataTest {
     public void testSetFromTreeFormatMisMatch() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
         metadata.setFromTree(nativeFormat, new IIOMetadataNode("com_foo_bar_tiff_42"));
     }
 
@@ -500,7 +502,7 @@ public class TIFFImageMetadataTest {
     public void testSetFromTreeInvalid() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
-        String nativeFormat = TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+        String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
         metadata.setFromTree(nativeFormat, new IIOMetadataNode(nativeFormat)); // Requires at least one child node
     }
 

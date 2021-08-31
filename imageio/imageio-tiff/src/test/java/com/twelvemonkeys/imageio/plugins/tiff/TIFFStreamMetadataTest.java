@@ -40,7 +40,7 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageOutputStream;
 import java.nio.ByteOrder;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.SUN_NATIVE_STREAM_METADATA_FORMAT_NAME;
 import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;

@@ -31,8 +31,9 @@
 package com.twelvemonkeys.contrib.tiff;
 
 import com.twelvemonkeys.contrib.tiff.TIFFUtilities.TIFFExtension;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFMedataFormat;
+import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat;
 import com.twelvemonkeys.io.FileUtil;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.w3c.dom.Node;
@@ -154,7 +155,7 @@ public class TIFFUtilitiesTest {
         reader.setInput(checkTest1);
         for (int i = 0; i < 3; i++) {
             Node metaData = reader.getImageMetadata(i)
-                    .getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
+                    .getAsTree(TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
             short orientation = ((Number) expression.evaluate(metaData, XPathConstants.NUMBER)).shortValue();
             Assert.assertEquals(orientation, TIFFExtension.ORIENTATION_RIGHTTOP);
         }
@@ -171,7 +172,7 @@ public class TIFFUtilitiesTest {
         reader.setInput(checkTest2);
         for (int i = 0; i < 3; i++) {
             Node metaData = reader.getImageMetadata(i)
-                    .getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
+                    .getAsTree(TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
             short orientation = ((Number) expression.evaluate(metaData, XPathConstants.NUMBER)).shortValue();
             Assert.assertEquals(orientation, i == 1
                                              ? TIFFExtension.ORIENTATION_BOTRIGHT

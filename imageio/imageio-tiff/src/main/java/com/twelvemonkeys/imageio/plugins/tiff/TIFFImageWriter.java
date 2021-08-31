@@ -64,6 +64,7 @@ import java.util.*;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configureStreamByteOrder;
 
 /**
@@ -738,8 +739,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
             TIFFImageMetadata outData = new TIFFImageMetadata(Collections.<Entry>emptySet());
 
             try {
-                if (Arrays.asList(inData.getMetadataFormatNames()).contains(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME)) {
-                    outData.setFromTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, inData.getAsTree(TIFFMedataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME));
+                if (Arrays.asList(inData.getMetadataFormatNames()).contains(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME)) {
+                    outData.setFromTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, inData.getAsTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME));
                 }
                 else if (inData.isStandardMetadataFormatSupported()) {
                     outData.setFromTree(IIOMetadataFormatImpl.standardMetadataFormatName, inData.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName));
