@@ -185,6 +185,24 @@ public class ColorSpacesTest {
     }
 
     @Test
+    public void testIsCS_GRAYTrue() {
+        assertTrue(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_GRAY)));
+    }
+
+    @Test
+    public void testIsCS_GRAYFalse() {
+        assertFalse(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_sRGB)));
+        assertFalse(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB)));
+        assertFalse(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_CIEXYZ)));
+        assertFalse(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_PYCC)));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testIsCS_GRAYNull() {
+        ColorSpaces.isCS_GRAY(null);
+    }
+
+    @Test
     public void testEqualHeadersDifferentProfile() throws IOException {
         // These profiles are extracted from various JPEGs, and have the exact same profile header...
         ICC_Profile profile1 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));

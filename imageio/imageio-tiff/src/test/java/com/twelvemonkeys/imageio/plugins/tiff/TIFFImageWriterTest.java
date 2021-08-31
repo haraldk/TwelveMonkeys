@@ -555,6 +555,28 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
     }
 
     @Test
+    public void testWriteGrayNoProfile() throws IOException {
+        ImageWriter writer = createWriter();
+
+        FastByteArrayOutputStream bytes = new FastByteArrayOutputStream(512);
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+            writer.setOutput(output);
+            writer.write(new BufferedImage(10, 10, BufferedImage.TYPE_BYTE_GRAY));
+        }
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(bytes.createInputStream())) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+            reader.setInput(input);
+
+            TIFFImageMetadata metadata = (TIFFImageMetadata) reader.getImageMetadata(0);
+            Directory ifd = metadata.getIFD();
+
+            assertNull("Unexpected ICC profile for default gray", ifd.getEntryById(TIFF.TAG_ICC_PROFILE));
+        }
+    }
+
+    @Test
     public void testWriteParamJPEGQuality() throws IOException {
         ImageWriter writer = createWriter();
 
@@ -583,7 +605,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         // Read original LZW compressed TIFF
         IIOImage original;
 
-        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource("/tiff/a33.tif"))) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/a33.tif"))) {
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 

@@ -239,12 +239,28 @@ public final class ColorSpaces {
      * @return {@code true} if {@code profile} is equal to the default sRGB profile.
      * @throws IllegalArgumentException if {@code profile} is {@code null}
      *
+     * @see java.awt.color.ColorSpace#CS_sRGB
      * @see java.awt.color.ColorSpace#isCS_sRGB()
      */
     public static boolean isCS_sRGB(final ICC_Profile profile) {
         Validate.notNull(profile, "profile");
 
         return profile.getColorSpaceType() == ColorSpace.TYPE_RGB && Arrays.equals(getProfileHeaderWithProfileId(profile), sRGB.header);
+    }
+
+    /**
+     * Tests whether an ICC color profile is equal to the default GRAY profile.
+     *
+     * @param profile the ICC profile to test. May not be {@code null}.
+     * @return {@code true} if {@code profile} is equal to the default GRAY profile.
+     * @throws IllegalArgumentException if {@code profile} is {@code null}
+     *
+     * @see java.awt.color.ColorSpace#CS_GRAY
+     */
+    public static boolean isCS_GRAY(final ICC_Profile profile) {
+        Validate.notNull(profile, "profile");
+
+        return profile.getColorSpaceType() == ColorSpace.TYPE_GRAY && Arrays.equals(getProfileHeaderWithProfileId(profile), GRAY.header);
     }
 
     /**

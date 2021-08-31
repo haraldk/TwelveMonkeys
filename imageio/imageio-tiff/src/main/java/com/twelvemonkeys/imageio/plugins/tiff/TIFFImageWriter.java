@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageWriterBase;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.tiff.Rational;
@@ -849,9 +850,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
         else {
             entries.put(TIFF.TAG_SAMPLES_PER_PIXEL, new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, numBands));
 
-            // Note: Assuming sRGB to be the default RGB interpretation
+            // Embed ICC profile if we have one that:
+            // * is not sRGB (assuming sRGB to be the default RGB interpretation), and
+            // * is not gray scale (assuming photometric either BlackIsZero or WhiteIsZero)
             ColorSpace colorSpace = colorModel.getColorSpace();
-            if (colorSpace instanceof ICC_ColorSpace && !colorSpace.isCS_sRGB()) {
+            if (colorSpace instanceof ICC_ColorSpace && !colorSpace.isCS_sRGB() && !ColorSpaces.isCS_GRAY(((ICC_ColorSpace) colorSpace).getProfile())) {
                 entries.put(TIFF.TAG_ICC_PROFILE, new TIFFEntry(TIFF.TAG_ICC_PROFILE, ((ICC_ColorSpace) colorSpace).getProfile().getData()));
             }
         }
