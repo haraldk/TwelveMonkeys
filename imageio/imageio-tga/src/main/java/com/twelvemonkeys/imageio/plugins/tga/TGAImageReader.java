@@ -116,7 +116,13 @@ final class TGAImageReader extends ImageReaderBase {
                 return ImageTypeSpecifiers.createFromIndexColorModel(header.getColorMap());
             case TGA.IMAGETYPE_MONOCHROME:
             case TGA.IMAGETYPE_MONOCHROME_RLE:
-                return ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
+                switch (header.getPixelDepth()) {
+                    case 8:
+                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+                    case 16:
+                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_GRAY);
+                    default: throw new IIOException("Unknown pixel depth for monochrome: " + header.getPixelDepth());
+                }
             case TGA.IMAGETYPE_TRUECOLOR:
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
