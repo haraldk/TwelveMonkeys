@@ -196,8 +196,15 @@ final class TGAImageReader extends ImageReaderBase {
                     readRowByte(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataByte, destRaster, clippedRow, y);
                     break;
                 case 16:
-                    short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
-                    readRowUShort(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataUShort, destRaster, clippedRow, y);
+                    final DataBuffer dataBuffer = rowRaster.getDataBuffer();
+                    if (dataBuffer instanceof DataBufferByte) {
+                        byte[] rowDataByte16 = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
+                        readRowByte(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataByte16, destRaster, clippedRow, y);
+                    } else {
+                        // DataBufferUShort and any other
+                        short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
+                        readRowUShort(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataUShort, destRaster, clippedRow, y);
+                    }
                     break;
                 default:
                     throw new AssertionError("Unsupported pixel depth: " + header.getPixelDepth());
