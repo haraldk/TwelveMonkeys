@@ -86,8 +86,6 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 new TestData(getClassLoaderResource("/psd/test_gray16.psd"), new Dimension(710, 512)),
                 // 4 channel, CMYK, 16 bit samples
                 new TestData(getClassLoaderResource("/psd/cmyk_16bits.psd"), new Dimension(1000, 275)),
-                // 3 channel, RGB, 32 bit samples
-                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5)),
                 // 3 channel, RGB, 8 bit samples ("Large Document Format" aka PSB)
                 new TestData(getClassLoaderResource("/psb/test_original.psb"), new Dimension(710, 512)),
                 // From http://telegraphics.com.au/svn/psdparse/trunk/psd/
@@ -104,8 +102,45 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 new TestData(getClassLoaderResource("/psd/rgb-multichannel-no-transparency.psd"), new Dimension(100, 100)),
                 new TestData(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"), new Dimension(100, 100)),
                 // CMYK, uncompressed + contains some uncommon MeSa (instead of 8BIM) resource blocks
-                new TestData(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"), new Dimension(400, 191))
+                new TestData(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"), new Dimension(400, 191)),
+                // 3 channel, RGB, 32 bit samples
+                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5))
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
+        );
+    }
+
+    @Override
+    protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
+        return Arrays.asList(
+                // 5 channel, RGB
+                new TestData(getClassLoaderResource("/psd/photoshopping.psd"), new Dimension(300, 225)),
+                // 1 channel, gray, 8 bit samples
+                new TestData(getClassLoaderResource("/psd/buttons.psd"), new Dimension(20, 20)),
+                // 3 channel RGB, "no composite layer"
+                new TestData(getClassLoaderResource("/psd/jugware-icon.psd"), new Dimension(128, 128)),
+                // 3 channel RGB, old data, no layer info/mask
+                new TestData(getClassLoaderResource("/psd/MARBLES.PSD"), new Dimension(1419, 1001)),
+                // 1 channel, indexed color
+                new TestData(getClassLoaderResource("/psd/coral_fish.psd"), new Dimension(800, 800)),
+                // 1 channel, bitmap, 1 bit samples
+                new TestData(getClassLoaderResource("/psd/test_bitmap.psd"), new Dimension(710, 512)),
+                // 1 channel, gray, 16 bit samples
+                new TestData(getClassLoaderResource("/psd/test_gray16.psd"), new Dimension(710, 512)),
+                // 3 channel, RGB, 8 bit samples ("Large Document Format" aka PSB)
+                new TestData(getClassLoaderResource("/psb/test_original.psb"), new Dimension(710, 512)),
+                // From http://telegraphics.com.au/svn/psdparse/trunk/psd/
+                new TestData(getClassLoaderResource("/psd/adobehq.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq_ind.psd"), new Dimension(341, 512)),
+                // Contains a shorter than normal PrintFlags chunk
+                new TestData(getClassLoaderResource("/psd/adobehq-2.5.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq-3.0.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq-5.5.psd"), new Dimension(341, 512)),
+                new TestData(getClassLoaderResource("/psd/adobehq-7.0.psd"), new Dimension(341, 512)),
+                // From https://github.com/kmike/psd-tools/tree/master/tests/psd_files
+                new TestData(getClassLoaderResource("/psd/masks2.psd"), new Dimension(640, 1136)),
+                // RGB, multiple alpha channels, no transparency
+                new TestData(getClassLoaderResource("/psd/rgb-multichannel-no-transparency.psd"), new Dimension(100, 100)),
+                new TestData(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"), new Dimension(100, 100))
         );
     }
 
@@ -472,7 +507,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testMultiChannelNoTransparencyPSB() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        // The following PSB is RGB, has 4 channels (1 alpha/auxillary channel), but should be treated as opaque
+        // The following PSB is RGB, has 4 channels (1 alpha/auxiliary channel), but should be treated as opaque
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psb/rgb-multichannel-no-transparency.psb"))) {
             imageReader.setInput(stream);
 

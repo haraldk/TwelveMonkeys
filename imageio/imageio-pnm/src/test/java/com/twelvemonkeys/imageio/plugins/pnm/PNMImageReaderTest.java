@@ -62,6 +62,20 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
     }
 
     @Override
+    protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/ppm/lena.ppm"), new Dimension(128, 128)),     // P6 (PPM RAW)
+                new TestData(getClassLoaderResource("/ppm/colors.ppm"), new Dimension(3, 2)),       // P3 (PPM PLAIN)
+                new TestData(getClassLoaderResource("/pbm/j.pbm"), new Dimension(6, 10)),           // P1 (PBM PLAIN)
+                new TestData(getClassLoaderResource("/pgm/feep.pgm"), new Dimension(24, 7)),        // P2 (PGM PLAIN)
+                new TestData(getClassLoaderResource("/pgm/feep16.pgm"), new Dimension(24, 7)),      // P2 (PGM PLAIN, 16 bits/sample)
+                new TestData(getClassLoaderResource("/pgm/house.l.pgm"), new Dimension(367, 241)),  // P5 (PGM RAW)
+                new TestData(getClassLoaderResource("/ppm/lighthouse_rgb48.ppm"), new Dimension(768, 512))  // P6 (PPM RAW, 16 bits/sample)
+                // "/pfm/memorial.pfm" uses floating point
+        );
+    }
+
+    @Override
     protected List<String> getFormatNames() {
         return Arrays.asList(
                 "pnm", "pbm", "pgm", "ppm", "pfm",

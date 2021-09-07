@@ -78,7 +78,7 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
                 new TestData(getClassLoaderResource("/pcx/DARKSTAR.PCX"), new Dimension(88, 52)), // RLE encoded monochrome (1 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/no-palette-monochrome.pcx"), new Dimension(128, 152)), // RLE encoded monochrome (1 bps/1 channel)
-                // See cga-pcx.txt, however, the text seems to be in error, the bits can not not as described
+                // See cga-pcx.txt, however, the text seems to be in error, I don't see how the bits can be as described
                 new TestData(getClassLoaderResource("/pcx/CGA_BW.PCX"), new Dimension(640, 200)), // RLE encoded indexed (CGA mode)
                 new TestData(getClassLoaderResource("/pcx/CGA_FSD.PCX"), new Dimension(320, 200)), // RLE encoded indexed (CGA mode)
                 new TestData(getClassLoaderResource("/pcx/CGA_RGBI.PCX"), new Dimension(320, 200)), // RLE encoded indexed (CGA mode)
