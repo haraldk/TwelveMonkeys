@@ -38,12 +38,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 /**
- * TGAImageReaderTest
+ * HDRImageReaderTest
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
- * @version $Id: TGAImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
+ * @version $Id: HDRImageReaderTest.java,v 1.0 03.07.14 22:28 haraldk Exp$
  */
 public class HDRImageReaderTest extends ImageReaderAbstractTest<HDRImageReader> {
     @Override
@@ -56,6 +58,12 @@ public class HDRImageReaderTest extends ImageReaderAbstractTest<HDRImageReader> 
         return Collections.singletonList(
                 new TestData(getClassLoaderResource("/hdr/memorial_o876.hdr"), new Dimension(512, 768))
         );
+    }
+
+    @Override
+    protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
+        // HDR images uses floating point buffers...
+        return emptyList();
     }
 
     @Override

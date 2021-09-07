@@ -45,9 +45,8 @@ import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
-import java.awt.image.SampleModel;
+import java.awt.geom.AffineTransform;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
@@ -57,6 +56,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import static java.lang.Math.min;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -1735,6 +1735,43 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
             fail("No thumbnails tested for reader that supports thumbnails.");
         }
+        reader.dispose();
+    }
+
+    protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
+        // Allow subclasses to filter out test data that can't be converted to a compatible image without data loss
+        return getTestData();
+    }
+
+    @Test
+    public void testAffineTransformOpCompatibility() throws IOException {
+        // Test that the output of normal images are compatible with AffineTransformOp. Is unlikely to work on all test data
+        ImageReader reader = createReader();
+
+        for (TestData testData : getTestDataForAffineTransformOpCompatibility()) {
+            try (ImageInputStream input = testData.getInputStream()) {
+                reader.setInput(input);
+
+                ImageReadParam param = reader.getDefaultReadParam();
+                param.setSourceRegion(new Rectangle(min(reader.getWidth(0), 64), min(reader.getHeight(0), 64)));
+
+                BufferedImage originalImage = reader.read(0, param);
+
+                AffineTransform transform = AffineTransform.getTranslateInstance(10, 10);
+                AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+
+                try {
+                    BufferedImage resultImage = op.filter(originalImage, null); // The exception happens here
+                    assertNotNull(resultImage);
+                }
+                catch (ImagingOpException e) {
+                    fail(e.getMessage() + ".\n\t"
+                            + originalImage + "\n\t"
+                            + testData);
+                }
+            }
+        }
+
         reader.dispose();
     }
 

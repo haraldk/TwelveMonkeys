@@ -104,8 +104,15 @@ public final class PCXImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
         List<ImageTypeSpecifier> specifiers = new ArrayList<>();
-
-        // TODO: Implement
+        if (rawType.getSampleModel() instanceof BandedSampleModel) {
+            if (rawType.getNumBands() == 3) {
+                specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+            }
+            else if (rawType.getNumBands() == 4) {
+                specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+                specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
+            }
+        }
         specifiers.add(rawType);
 
         return specifiers.iterator();
@@ -142,10 +149,10 @@ public final class PCXImageReader extends ImageReaderBase {
                 // PCX RGB has channels for 24 bit RGB, will be validated by ImageTypeSpecifier
                 return ImageTypeSpecifiers.createBanded(ColorSpace.getInstance(ColorSpace.CS_sRGB), createIndices(channels, 1), createIndices(channels, 0), DataBuffer.TYPE_BYTE, channels == 4, false);
             case 24:
-                // Some sources says this is possible...
+                // Some sources say this is possible...
                 return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
             case 32:
-                // Some sources says this is possible...
+                // Some sources say this is possible...
                 return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
             default:
                 throw new IIOException("Unknown number of bytes per pixel: " + header.getBitsPerPixel());

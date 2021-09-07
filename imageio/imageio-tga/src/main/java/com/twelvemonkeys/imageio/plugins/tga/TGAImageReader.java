@@ -96,9 +96,17 @@ final class TGAImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
         List<ImageTypeSpecifier> specifiers = new ArrayList<>();
-
-        // TODO: Implement
         specifiers.add(rawType);
+
+        if (rawType.getBufferedImageType() == BufferedImage.TYPE_INT_RGB) {
+            specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
+        }
+        else if (rawType.getBufferedImageType() == BufferedImage.TYPE_INT_ARGB) {
+            specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE));
+        }
+        else if (rawType.getBufferedImageType() == BufferedImage.TYPE_INT_ARGB_PRE) {
+            specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+        }
 
         return specifiers.iterator();
     }
@@ -121,7 +129,8 @@ final class TGAImageReader extends ImageReaderBase {
                         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
                     case 16:
                         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_GRAY);
-                    default: throw new IIOException("Unknown pixel depth for monochrome: " + header.getPixelDepth());
+                    default:
+                        throw new IIOException("Unknown pixel depth for monochrome: " + header.getPixelDepth());
                 }
             case TGA.IMAGETYPE_TRUECOLOR:
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
@@ -141,12 +150,14 @@ final class TGAImageReader extends ImageReaderBase {
                     case 24:
                         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
                     case 32:
-                        // 4BYTE_BGRX...
-                        // Can't mask out alpha (efficiently) for 4BYTE, so we'll ignore it while reading instead,
-                        // if hasAlpha is false
-                        return ImageTypeSpecifiers.createInterleaved(sRGB, new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, isAlphaPremultiplied);
+                        // NOTE: We'll read using little endian byte order, thus the file layout is BGRA/BGRx
+                        if (hasAlpha) {
+                            return ImageTypeSpecifier.createFromBufferedImageType(isAlphaPremultiplied ? BufferedImage.TYPE_INT_ARGB_PRE : BufferedImage.TYPE_INT_ARGB);
+                        }
+
+                        return ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
                     default:
-                        throw new IIOException("Unknown pixel depth for truecolor: " + header.getPixelDepth());
+                        throw new IIOException("Unknown pixel depth for true color: " + header.getPixelDepth());
                 }
             default:
                 throw new IIOException("Unknown image type: " + header.getImageType());
@@ -193,20 +204,26 @@ final class TGAImageReader extends ImageReaderBase {
             input = imageInput;
         }
 
+        int pixelDepth = header.getPixelDepth();
+        boolean flipped = isOriginLowerLeft(header.getOrigin());
+
         for (int y = 0; y < height; y++) {
-            switch (header.getPixelDepth()) {
+            switch (pixelDepth) {
                 case 8:
                 case 24:
-                case 32:
                     byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                    readRowByte(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataByte, destRaster, clippedRow, y);
+                    readRowByte(input, height, srcRegion, flipped, xSub, ySub, rowDataByte, destRaster, clippedRow, y);
                     break;
                 case 16:
                     short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
-                    readRowUShort(input, height, srcRegion, header.getOrigin(), xSub, ySub, rowDataUShort, destRaster, clippedRow, y);
+                    readRowUShort(input, height, srcRegion, flipped, xSub, ySub, rowDataUShort, destRaster, clippedRow, y);
+                    break;
+                case 32:
+                    int[] rowDataInt = ((DataBufferInt) rowRaster.getDataBuffer()).getData();
+                    readRowInt(input, height, srcRegion, flipped, xSub, ySub, rowDataInt, destRaster, clippedRow, y);
                     break;
                 default:
-                    throw new AssertionError("Unsupported pixel depth: " + header.getPixelDepth());
+                    throw new AssertionError("Unsupported pixel depth: " + pixelDepth);
             }
 
             processImageProgress(100f * y / height);
@@ -226,10 +243,26 @@ final class TGAImageReader extends ImageReaderBase {
         return destination;
     }
 
-    private void readRowByte(final DataInput input, int height, Rectangle srcRegion, int origin, int xSub, int ySub,
+    private boolean isOriginLowerLeft(final int origin) throws IIOException {
+        switch (origin) {
+            case TGA.ORIGIN_LOWER_LEFT:
+                return true;
+            case TGA.ORIGIN_UPPER_LEFT:
+                return false;
+            default:
+                // Other orientations are not supported
+                throw new IIOException("Unsupported origin: " + origin);
+        }
+    }
+
+    private void readRowByte(final DataInput input, int height, Rectangle srcRegion, boolean flip, int xSub, int ySub,
                              byte[] rowDataByte, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
+        // Flip into position?
+        int srcY = flip ? height - 1 - y : y;
+        int dstY = (srcY - srcRegion.y) / ySub;
+
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        if (y % ySub != 0 || srcY < srcRegion.y || srcY >= srcRegion.y + srcRegion.height) {
             input.skipBytes(rowDataByte.length);
 
             return;
@@ -250,19 +283,7 @@ final class TGAImageReader extends ImageReaderBase {
             }
         }
 
-        switch (origin) {
-            case TGA.ORIGIN_LOWER_LEFT:
-                // Flip into position
-                int dstY = (height - 1 - y - srcRegion.y) / ySub;
-                destChannel.setDataElements(0, dstY, srcChannel);
-                break;
-            case TGA.ORIGIN_UPPER_LEFT:
-                dstY = y / ySub;
-                destChannel.setDataElements(0, dstY, srcChannel);
-                break;
-            default:
-                throw new IIOException("Unsupported origin: " + origin);
-        }
+        destChannel.setDataElements(0, dstY, srcChannel);
     }
 
     private void removeAlpha32(final byte[] rowData) {
@@ -271,10 +292,14 @@ final class TGAImageReader extends ImageReaderBase {
         }
     }
 
-    private void readRowUShort(final DataInput input, int height, Rectangle srcRegion, int origin, int xSub, int ySub,
+    private void readRowUShort(final DataInput input, int height, Rectangle srcRegion, boolean flip, int xSub, int ySub,
                                short[] rowDataUShort, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
+        // Flip into position?
+        int srcY = flip ? height - 1 - y : y;
+        int dstY = (srcY - srcRegion.y) / ySub;
+
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        if (y % ySub != 0 || srcY < srcRegion.y || srcY >= srcRegion.y + srcRegion.height) {
             input.skipBytes(rowDataUShort.length * 2);
 
             return;
@@ -289,19 +314,32 @@ final class TGAImageReader extends ImageReaderBase {
             }
         }
 
-        switch (origin) {
-            case TGA.ORIGIN_LOWER_LEFT:
-                // Flip into position
-                int dstY = (height - 1 - y - srcRegion.y) / ySub;
-                destChannel.setDataElements(0, dstY, srcChannel);
-                break;
-            case TGA.ORIGIN_UPPER_LEFT:
-                dstY = y / ySub;
-                destChannel.setDataElements(0, dstY, srcChannel);
-                break;
-            default:
-                throw new IIOException("Unsupported origin: " + origin);
+        destChannel.setDataElements(0, dstY, srcChannel);
+    }
+
+    private void readRowInt(final DataInput input, int height, Rectangle srcRegion, boolean flip, int xSub, int ySub,
+                            int[] rowDataInt, WritableRaster destChannel, Raster srcChannel, int y) throws IOException {
+        // Flip into position?
+        int srcY = flip ? height - 1 - y : y;
+        int dstY = (srcY - srcRegion.y) / ySub;
+
+        // If subsampled or outside source region, skip entire row
+        if (y % ySub != 0 || srcY < srcRegion.y || srcY >= srcRegion.y + srcRegion.height) {
+            input.skipBytes(rowDataInt.length * 4);
+
+            return;
         }
+
+        readFully(input, rowDataInt);
+
+        // Subsample horizontal
+        if (xSub != 1) {
+            for (int x = srcRegion.x / xSub; x < ((srcRegion.x + srcRegion.width) / xSub); x++) {
+                rowDataInt[x] = rowDataInt[x * xSub];
+            }
+        }
+
+        destChannel.setDataElements(0, dstY, srcChannel);
     }
 
     // TODO: Candidate util method
@@ -313,6 +351,19 @@ final class TGAImageReader extends ImageReaderBase {
         else {
             for (int i = 0; i < shorts.length; i++) {
                 shorts[i] = input.readShort();
+            }
+        }
+    }
+
+    // TODO: Candidate util method
+    private static void readFully(final DataInput input, final int[] ints) throws IOException {
+        if (input instanceof ImageInputStream) {
+            // Optimization for ImageInputStreams, read all in one go
+            ((ImageInputStream) input).readFully(ints, 0, ints.length);
+        }
+        else {
+            for (int i = 0; i < ints.length; i++) {
+                ints[i] = input.readInt();
             }
         }
     }
@@ -452,20 +503,26 @@ final class TGAImageReader extends ImageReaderBase {
         // Thumbnail is always stored non-compressed, no need for RLE support
         imageInput.seek(extensions.getThumbnailOffset() + 2);
 
+        int pixelDepth = header.getPixelDepth();
+        boolean flipped = isOriginLowerLeft(header.getOrigin());
+
         for (int y = 0; y < height; y++) {
-            switch (header.getPixelDepth()) {
+            switch (pixelDepth) {
                 case 8:
                 case 24:
-                case 32:
                     byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                    readRowByte(imageInput, height, srcRegion, header.getOrigin(), 1, 1, rowDataByte, destRaster, rowRaster, y);
+                    readRowByte(imageInput, height, srcRegion, flipped, 1, 1, rowDataByte, destRaster, rowRaster, y);
                     break;
                 case 16:
                     short[] rowDataUShort = ((DataBufferUShort) rowRaster.getDataBuffer()).getData();
-                    readRowUShort(imageInput, height, srcRegion, header.getOrigin(), 1, 1, rowDataUShort, destRaster, rowRaster, y);
+                    readRowUShort(imageInput, height, srcRegion, flipped, 1, 1, rowDataUShort, destRaster, rowRaster, y);
+                    break;
+                case 32:
+                    int[] rowDataInt = ((DataBufferInt) rowRaster.getDataBuffer()).getData();
+                    readRowInt(imageInput, height, srcRegion, flipped, 1, 1, rowDataInt, destRaster, rowRaster, y);
                     break;
                 default:
-                    throw new AssertionError("Unsupported pixel depth: " + header.getPixelDepth());
+                    throw new AssertionError("Unsupported pixel depth: " + pixelDepth);
             }
 
             processThumbnailProgress(100f * y / height);

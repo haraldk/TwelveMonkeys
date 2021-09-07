@@ -30,6 +30,22 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.io.LittleEndianDataInputStream;
+import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.xml.XMLSerializer;
+
+import javax.imageio.*;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
@@ -39,27 +55,6 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Iterator;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.event.IIOReadUpdateListener;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-import com.twelvemonkeys.io.LittleEndianDataInputStream;
-import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.xml.XMLSerializer;
 
 /**
  * ImageReader for Microsoft Windows Bitmap (BMP) format.
@@ -482,8 +477,12 @@ public final class BMPImageReader extends ImageReaderBase {
 
     private void readRowByte(final DataInput input, final int height, final Rectangle srcRegion, final int xSub, final int ySub,
                              final byte[] rowDataByte, final WritableRaster destChannel, final Raster srcChannel, final int y) throws IOException {
+        // Flip into position?
+        int srcY = !header.topDown ? height - 1 - y : y;
+        int dstY = (srcY - srcRegion.y) / ySub;
+
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        if (srcY % ySub != 0 || srcY < srcRegion.y || srcY >= srcRegion.y + srcRegion.height) {
             input.skipBytes(rowDataByte.length);
 
             return;
@@ -498,19 +497,17 @@ public final class BMPImageReader extends ImageReaderBase {
             }
         }
 
-        if (header.topDown) {
-            destChannel.setDataElements(0, y, srcChannel);
-        } else {
-            // Flip into position
-            int dstY = (height - 1 - y - srcRegion.y) / ySub;
-            destChannel.setDataElements(0, dstY, srcChannel);
-        }
+        destChannel.setDataElements(0, dstY, srcChannel);
     }
 
     private void readRowUShort(final DataInput input, final int height, final Rectangle srcRegion, final int xSub, final int ySub,
                                final short[] rowDataUShort, final WritableRaster destChannel, final Raster srcChannel, final int y) throws IOException {
+        // Flip into position?
+        int srcY = !header.topDown ? height - 1 - y : y;
+        int dstY = (srcY - srcRegion.y) / ySub;
+
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        if (srcY % ySub != 0 || srcY < srcRegion.y || srcY >= srcRegion.y + srcRegion.height) {
             input.skipBytes(rowDataUShort.length * 2 + (rowDataUShort.length % 2) * 2);
 
             return;
@@ -530,19 +527,17 @@ public final class BMPImageReader extends ImageReaderBase {
             }
         }
 
-        if (header.topDown) {
-            destChannel.setDataElements(0, y, srcChannel);
-        } else {
-            // Flip into position
-            int dstY = (height - 1 - y - srcRegion.y) / ySub;
-            destChannel.setDataElements(0, dstY, srcChannel);
-        }
+        destChannel.setDataElements(0, dstY, srcChannel);
     }
 
     private void readRowInt(final DataInput input, final int height, final Rectangle srcRegion, final int xSub, final int ySub,
                             final int[] rowDataInt, final WritableRaster destChannel, final Raster srcChannel, final int y) throws IOException {
+        // Flip into position?
+        int srcY = !header.topDown ? height - 1 - y : y;
+        int dstY = (srcY - srcRegion.y) / ySub;
+
         // If subsampled or outside source region, skip entire row
-        if (y % ySub != 0 || height - 1 - y < srcRegion.y || height - 1 - y >= srcRegion.y + srcRegion.height) {
+        if (srcY % ySub != 0 || srcY < srcRegion.y || srcY >= srcRegion.y + srcRegion.height) {
             input.skipBytes(rowDataInt.length * 4);
 
             return;
@@ -557,13 +552,7 @@ public final class BMPImageReader extends ImageReaderBase {
             }
         }
 
-        if (header.topDown) {
-            destChannel.setDataElements(0, y, srcChannel);
-        } else {
-            // Flip into position
-            int dstY = (height - 1 - y - srcRegion.y) / ySub;
-            destChannel.setDataElements(0, dstY, srcChannel);
-        }
+        destChannel.setDataElements(0, dstY, srcChannel);
     }
 
     // TODO: Candidate util method

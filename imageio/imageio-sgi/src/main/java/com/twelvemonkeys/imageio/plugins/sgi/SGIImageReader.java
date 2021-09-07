@@ -59,7 +59,7 @@ public final class SGIImageReader extends ImageReaderBase {
 
     private SGIHeader header;
 
-    protected SGIImageReader(final ImageReaderSpi provider) {
+    SGIImageReader(final ImageReaderSpi provider) {
         super(provider);
     }
 
@@ -88,9 +88,31 @@ public final class SGIImageReader extends ImageReaderBase {
     public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
 
-        List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> specifiers = new ArrayList<>();
 
-        // TODO: Implement
+        int channels = header.getChannels();
+
+        switch (header.getBytesPerPixel()) {
+            case 1:
+                if (channels == 1) {
+                    specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
+                }
+                else if (channels == 3) {
+                    specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+                }
+                else if (channels == 4) {
+                    specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+                }
+
+                break;
+            case 2:
+                if (channels == 1) {
+                    specifiers.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_USHORT_GRAY));
+                }
+
+                break;
+        }
+
         specifiers.add(rawType);
 
         return specifiers.iterator();

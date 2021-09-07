@@ -97,7 +97,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/test-single-gray-compression-type-2.tiff"), new Dimension(1728, 1146)), // Gray, CCITT type 2 compressed
                 new TestData(getClassLoaderResource("/tiff/cramps-tile.tif"), new Dimension(800, 607)), // Gray/WhiteIsZero, uncompressed, striped & tiled...
                 new TestData(getClassLoaderResource("/tiff/lzw-long-strings-sample.tif"), new Dimension(316, 173)), // RGBA, LZW compressed w/predictor
-                new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg_no_profile.tif"), new Dimension(150, 63)), // CMYK, JPEG compressed, no ICC profile
                 new TestData(getClassLoaderResource("/tiff/cmyk_jpeg.tif"), new Dimension(100, 100)), // CMYK, JPEG compressed, with ICC profile
                 new TestData(getClassLoaderResource("/tiff/grayscale-alpha.tiff"), new Dimension(248, 351)), // Gray + unassociated alpha
@@ -172,8 +171,53 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-16bit-gray.tif"), new Dimension(512, 512)),  // Lossless JPEG Gray, 16 bit/sample
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-24bit-rgb.tif"), new Dimension(512, 512)),  // Lossless JPEG RGB, 8 bit/sample
                 // Custom PIXTIFF ZIP (Compression: 50013)
-                new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313))  // ZIP Gray, 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313)),  // ZIP Gray, 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)) // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
         );
+    }
+
+    @Override
+    protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
+        return Arrays.asList(
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-02.tif"), new Dimension(73, 43)), // Gray 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-04.tif"), new Dimension(73, 43)), // Gray 4 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-06.tif"), new Dimension(73, 43)), // Gray 6 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-08.tif"), new Dimension(73, 43)), // Gray 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-10.tif"), new Dimension(73, 43)), // Gray 10 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-12.tif"), new Dimension(73, 43)), // Gray 12 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-14.tif"), new Dimension(73, 43)), // Gray 14 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-16.tif"), new Dimension(73, 43)), // Gray 16 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-24.tif"), new Dimension(73, 43)), // Gray 24 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-minisblack-32.tif"), new Dimension(73, 43)), // Gray 32 bit/sample
+                // Palette
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-02.tif"), new Dimension(73, 43)), // Palette 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-04.tif"), new Dimension(73, 43)), // Palette 4 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-08.tif"), new Dimension(73, 43)), // Palette 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-palette-16.tif"), new Dimension(73, 43)), // Palette 16 bit/sample
+                // RGB Interleaved (PlanarConfiguration: 1)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-10.tif"), new Dimension(73, 43)), // RGB 10 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-12.tif"), new Dimension(73, 43)), // RGB 12 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-14.tif"), new Dimension(73, 43)), // RGB 14 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-16.tif"), new Dimension(73, 43)), // RGB 16 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-24.tif"), new Dimension(73, 43)), // RGB 24 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-32.tif"), new Dimension(73, 43)), // RGB 32 bit/sample
+                // RGB Planar (PlanarConfiguration: 2)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-08.tif"), new Dimension(73, 43)) // RGB 8 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-10.tif"), new Dimension(73, 43)), // RGB 10 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-12.tif"), new Dimension(73, 43)), // RGB 12 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-14.tif"), new Dimension(73, 43)), // RGB 14 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-16.tif"), new Dimension(73, 43)), // RGB 16 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-24.tif"), new Dimension(73, 43)), // RGB 24 bit/sample
+//                 // RGB Interleaved Floating point..!? We can read this one, but the samples are not normalized, so colors are way too bright...
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-32.tif"), new Dimension(73, 43)),  // RGB 32 bit FP samples (!)
+//                 // Separated (CMYK) Interleaved (PlanarConfiguration: 1)
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-contig-16.tif"), new Dimension(73, 43)), // CMYK 16 bit/sample
+//                 // Separated (CMYK) Planar (PlanarConfiguration: 2)
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-08.tif"), new Dimension(73, 43)), // CMYK 8 bit/sample
+//                 new TestData(getClassLoaderResource("/tiff/depth/flower-separated-planar-16.tif"), new Dimension(73, 43))  // CMYK 16 bit/sample
+         );
     }
 
     private List<TestData> getUnsupportedTestData() {

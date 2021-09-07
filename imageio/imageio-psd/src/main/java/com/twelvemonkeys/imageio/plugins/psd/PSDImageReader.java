@@ -331,7 +331,7 @@ public final class PSDImageReader extends ImageReaderBase {
                 // Just stick to the raw type
         }
 
-        // Finally add the raw type
+        // Finally, add the raw type
         types.add(rawType);
 
         return types.iterator();
