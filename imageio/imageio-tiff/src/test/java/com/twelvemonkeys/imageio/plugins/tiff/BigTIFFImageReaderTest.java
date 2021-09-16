@@ -62,7 +62,8 @@ public class BigTIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageRea
                 new TestData(getClassLoaderResource("/bigtiff/BigTIFFMotorolaLongStrips.tif"), new Dimension(64, 64)),
                 new TestData(getClassLoaderResource("/bigtiff/BigTIFFLong8Tiles.tif"), new Dimension(64, 64)),
                 new TestData(getClassLoaderResource("/bigtiff/BigTIFFSubIFD4.tif"), new Dimension(64, 64)),
-                new TestData(getClassLoaderResource("/bigtiff/BigTIFFSubIFD8.tif"), new Dimension(64, 64))
+                new TestData(getClassLoaderResource("/bigtiff/BigTIFFSubIFD8.tif"), new Dimension(64, 64)),
+                new TestData(getClassLoaderResource("/bigtiff/G32DS.tif"), new Dimension(2464, 3248))
         );
     }
 
