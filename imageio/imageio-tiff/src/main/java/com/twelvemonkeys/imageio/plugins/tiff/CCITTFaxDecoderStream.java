@@ -30,13 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.lang.Validate;
-
 import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
@@ -149,23 +149,23 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         this(stream, columns, type, fillOrder, options, type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
     }
 
-    static int findCompressionType(final int type, final InputStream in) throws IOException {
-        // Discover possible incorrect type, revert to RLE
-        if (type == TIFFExtension.COMPRESSION_CCITT_T4 && in.markSupported()) {
-            int limit = 500;
+    static int findCompressionType(final int encodedType, final InputStream stream) throws IOException {
+        // Discover possible incorrect compression type, revert to RLE if no EOLs found
+        if (encodedType == TIFFExtension.COMPRESSION_CCITT_T4 && stream.markSupported()) {
+            int limit = 512;
 
             try {
-                in.mark(limit);
+                stream.mark(limit);
 
-                int first = in.read();
-                int second = in.read();
+                int first = stream.read();
+                int second = stream.read();
                 if (first == -1 || second == -1) {
                     // stream to short
-                    return type;
+                    return encodedType;
                 }
                 else if (first == 0 && (((byte) second) >> 4 == 1 || ((byte) second) == 1)) {
                     // correct, starts with EOL or byte aligned EOL
-                    return type;
+                    return encodedType;
                 }
                 short b = (short) (((((byte) first) << 8) + ((byte) second)) >> 4);
                 int limitBits = limit * 8;
@@ -173,7 +173,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 byte streamByte = (byte) read;
                 for (int i = 12; i < limitBits; i++) {
                     if (i % 8 == 0) {
-                        read = in.read();
+                        read = stream.read();
                         if (read == -1) {
                             // no EOL before stream end
                             return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
@@ -192,11 +192,11 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
             }
             finally {
-                in.reset();
+                stream.reset();
             }
         }
 
-        return type;
+        return encodedType;
     }
 
     private void fetch() throws IOException {
@@ -212,7 +212,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                     throw e;
                 }
 
-                // ..otherwise, just let client code try to read past the
+                // ...otherwise, just let client code try to read past the
                 // end of stream
                 decodedLength = -1;
             }

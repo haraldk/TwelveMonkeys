@@ -30,6 +30,45 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
+import static java.util.Arrays.asList;
+
+import java.awt.*;
+import java.awt.color.CMMException;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
+import java.io.*;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.plugins.jpeg.JPEGImageReadParam;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.CIELabColorConverter;
 import com.twelvemonkeys.imageio.color.CIELabColorConverter.Illuminant;
@@ -59,35 +98,6 @@ import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.xml.XMLSerializer;
-
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.imageio.*;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.plugins.jpeg.JPEGImageReadParam;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-import java.awt.*;
-import java.awt.color.CMMException;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.*;
-import java.io.*;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
-
-import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
-import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
-import static java.util.Arrays.asList;
 
 /**
  * ImageReader implementation for Aldus/Adobe Tagged Image File Format (TIFF).
@@ -164,6 +174,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     private CompoundDirectory IFDs;
     private Directory currentIFD;
+    private int overrideCCITTCompression = -1;
 
     TIFFImageReader(final ImageReaderSpi provider) {
         super(provider);
@@ -173,6 +184,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     protected void resetMembers() {
         IFDs = null;
         currentIFD = null;
+        overrideCCITTCompression = -1;
     }
 
     private void readMetadata() throws IOException {
@@ -377,6 +389,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         readMetadata();
         checkBounds(imageIndex);
         currentIFD = IFDs.getDirectory(imageIndex);
+        overrideCCITTCompression = -1; // Reset override for next image
     }
 
     @Override
@@ -2330,7 +2343,11 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
             case TIFFExtension.COMPRESSION_CCITT_T6:
-                return new CCITTFaxDecoderStream(stream, width, findCCITTType(compression, stream), fillOrder, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
+                // TODO: Find a better way to test for incorrect CCITT type ONCE per IFD
+                if (overrideCCITTCompression == -1) {
+                    overrideCCITTCompression = findCCITTType(compression, stream);
+                }
+                return new CCITTFaxDecoderStream(stream, width, overrideCCITTCompression, fillOrder, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
         }
