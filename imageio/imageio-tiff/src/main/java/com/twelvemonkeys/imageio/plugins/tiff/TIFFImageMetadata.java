@@ -30,6 +30,22 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader.guessPhotometricInterpretation;
+
+import java.lang.reflect.Array;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import javax.imageio.metadata.IIOInvalidTreeException;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
@@ -38,19 +54,6 @@ import com.twelvemonkeys.imageio.metadata.tiff.Rational;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.lang.Validate;
-
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import javax.imageio.metadata.IIOInvalidTreeException;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-import java.lang.reflect.Array;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 /**
  * TIFFImageMetadata.
@@ -354,8 +357,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
 
         // Handle ColorSpaceType (RGB/CMYK/YCbCr etc)...
-        Entry photometricTag = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
-        int photometricValue = getValueAsInt(photometricTag); // No default for this tag!
+        int photometricValue = getPhotometricInterpretationWithFallback(); // No default for this tag!
         int numChannelsValue = getSamplesPerPixelWithFallback();
 
         IIOMetadataNode colorSpaceType = new IIOMetadataNode("ColorSpaceType");
@@ -446,6 +448,13 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         return chroma;
     }
 
+    private int getPhotometricInterpretationWithFallback() {
+        Entry photometricTag = ifd.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION);
+
+        return photometricTag != null ? getValueAsInt(photometricTag)
+                                      : guessPhotometricInterpretation(getCompression(), getSamplesPerPixelWithFallback(), ifd.getEntryById(TIFF.TAG_EXTRA_SAMPLES), ifd.getEntryById(TIFF.TAG_COLOR_MAP));
+    }
+
     private int getSamplesPerPixelWithFallback() {
         // SamplePerPixel defaults to 1, but we'll check BitsPerSample to be sure
         Entry samplesPerPixelTag = ifd.getEntryById(TIFF.TAG_SAMPLES_PER_PIXEL);
@@ -456,15 +465,19 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                                : bitsPerSampleTag != null ? bitsPerSampleTag.valueCount() : 1;
     }
 
+    private int getCompression() {
+        Entry compressionTag = ifd.getEntryById(TIFF.TAG_COMPRESSION);
+        return compressionTag == null
+               ? TIFFBaseline.COMPRESSION_NONE
+               : getValueAsInt(compressionTag);
+    }
+
     @Override
     protected IIOMetadataNode getStandardCompressionNode() {
         IIOMetadataNode compression = new IIOMetadataNode("Compression");
         IIOMetadataNode compressionTypeName = addChildNode(compression, "CompressionTypeName", null);
 
-        Entry compressionTag = ifd.getEntryById(TIFF.TAG_COMPRESSION);
-        int compressionValue = compressionTag == null
-                               ? TIFFBaseline.COMPRESSION_NONE
-                               : getValueAsInt(compressionTag);
+        int compressionValue = getCompression();
 
         // Naming is identical to JAI ImageIO metadata as far as possible
         switch (compressionValue) {

@@ -29,19 +29,14 @@
  */
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.tiff.Rational;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
-import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import com.twelvemonkeys.lang.StringUtil;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+import static org.junit.Assert.*;
 
-import org.junit.Test;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 import javax.imageio.metadata.IIOInvalidTreeException;
@@ -50,14 +45,20 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-import static org.junit.Assert.*;
+import org.junit.Test;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.tiff.Rational;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+import com.twelvemonkeys.lang.StringUtil;
 
 /**
  * TIFFImageMetadataTest.
@@ -562,6 +563,16 @@ public class TIFFImageMetadataTest {
 
         // Just to make sure we haven't accidentally missed something
         IIOMetadataNode standardTree = (IIOMetadataNode) new TIFFImageMetadata(entries).getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        assertNotNull(standardTree);
+    }
+
+
+    @Test
+    public void testGuessMissingPhotometric() throws IOException {
+        IIOMetadata metadata = createMetadata("/tiff/guessPhotometric/group4.tif");
+
+        // Test that we don't blow up with a NPE due to missing photometric
+        IIOMetadataNode standardTree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
         assertNotNull(standardTree);
     }
 

@@ -712,38 +712,47 @@ public final class TIFFImageReader extends ImageReaderBase {
     private int getPhotometricInterpretationWithFallback() throws IIOException {
         // PhotometricInterpretation is a required tag, but as it can be guessed this does a fallback that is similar to JAI ImageIO.
         int interpretation = getValueAsIntWithDefault(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, "PhotometricInterpretation", -1);
+
         if (interpretation == -1) {
             int compression = getValueAsIntWithDefault(TIFF.TAG_COMPRESSION, TIFFBaseline.COMPRESSION_NONE);
             int samplesPerPixel = getValueAsIntWithDefault(TIFF.TAG_SAMPLES_PER_PIXEL, 1);
-            Entry extraSamplesEntry = currentIFD.getEntryById(TIFF.TAG_EXTRA_SAMPLES);
-            int extraSamples = extraSamplesEntry == null ? 0 : extraSamplesEntry.valueCount();
+            Entry extraSamples = currentIFD.getEntryById(TIFF.TAG_EXTRA_SAMPLES);
+            Entry colorMap = currentIFD.getEntryById(TIFF.TAG_COLOR_MAP);
 
-            if (compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE
-                    || compression == TIFFExtension.COMPRESSION_CCITT_T4
-                    || compression == TIFFExtension.COMPRESSION_CCITT_T6) {
-                interpretation = TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO;
-            }
-            else if (currentIFD.getEntryById(TIFF.TAG_COLOR_MAP) != null) {
-                interpretation = TIFFBaseline.PHOTOMETRIC_PALETTE;
-            }
-            else if ((samplesPerPixel - extraSamples) == 3) {
-                if (compression == TIFFExtension.COMPRESSION_JPEG
-                     || compression == TIFFExtension.COMPRESSION_OLD_JPEG) {
-                    interpretation = TIFFExtension.PHOTOMETRIC_YCBCR;
-                }
-                else {
-                    interpretation = TIFFBaseline.PHOTOMETRIC_RGB;
-                }
-            }
-            else if ((samplesPerPixel - extraSamples) == 4) {
-                interpretation = TIFFExtension.PHOTOMETRIC_SEPARATED;
-            }
-            else {
-                interpretation = TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO;
-            }
+            interpretation = guessPhotometricInterpretation(compression, samplesPerPixel, extraSamples, colorMap);
+
             processWarningOccurred("Missing PhotometricInterpretation, determining fallback: " + interpretation);
         }
+
         return interpretation;
+    }
+
+    static int guessPhotometricInterpretation(int compression, int samplesPerPixel, Entry extraSamples, Entry colorMap) {
+        int extraSamplesCount = extraSamples == null ? 0 : extraSamples.valueCount();
+
+        if (compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE
+                || compression == TIFFExtension.COMPRESSION_CCITT_T4
+                || compression == TIFFExtension.COMPRESSION_CCITT_T6) {
+            return TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO;
+        }
+        else if (colorMap != null) {
+            return TIFFBaseline.PHOTOMETRIC_PALETTE;
+        }
+        else if ((samplesPerPixel - extraSamplesCount) == 3) {
+            if (compression == TIFFExtension.COMPRESSION_JPEG
+                 || compression == TIFFExtension.COMPRESSION_OLD_JPEG) {
+                return TIFFExtension.PHOTOMETRIC_YCBCR;
+            }
+            else {
+                return TIFFBaseline.PHOTOMETRIC_RGB;
+            }
+        }
+        else if ((samplesPerPixel - extraSamplesCount) == 4) {
+            return TIFFExtension.PHOTOMETRIC_SEPARATED;
+        }
+        else {
+            return TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO;
+        }
     }
 
     private int getOpaqueSamplesPerPixel(final int photometricInterpretation) throws IIOException {
