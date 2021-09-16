@@ -2354,9 +2354,9 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.COMPRESSION_CCITT_T6:
                 // TODO: Find a better way to test for incorrect CCITT type ONCE per IFD
                 if (overrideCCITTCompression == -1) {
-                    overrideCCITTCompression = findCCITTType(compression, stream);
+                    overrideCCITTCompression = findCCITTType(compression, createFillOrderStream(fillOrder, stream));
                 }
-                return new CCITTFaxDecoderStream(stream, width, overrideCCITTCompression, fillOrder, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
+                return new CCITTFaxDecoderStream(createFillOrderStream(fillOrder, stream), width, overrideCCITTCompression, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
         }
