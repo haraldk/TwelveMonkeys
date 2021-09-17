@@ -153,7 +153,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType2() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_TYPE_2), 6,
-                TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L);
+                TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 0L);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -164,7 +164,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType3_1D() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_1D), 6,
-                TIFFExtension.COMPRESSION_CCITT_T4, 1, 0L);
+                TIFFExtension.COMPRESSION_CCITT_T4, 0L);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -175,7 +175,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType3_1D_FILL() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_1D_FILL), 6,
-                TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
+                TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_FILLBITS);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -184,7 +184,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testFidCompressionType() throws IOException {
+    public void testFindCompressionType() throws IOException {
         // RLE
         assertEquals(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, CCITTFaxDecoderStream.findCompressionType(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, new ByteArrayInputStream(DATA_RLE_UNALIGNED)));
 
@@ -193,8 +193,8 @@ public class CCITTFaxDecoderStreamTest {
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_1D_FILL)));
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D)));
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D_FILL)));
-        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_2D_lsb2msb)));
-        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ByteArrayInputStream(DATA_G3_LONG)));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ReverseInputStream(new ByteArrayInputStream(DATA_G3_2D_lsb2msb))));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, new ReverseInputStream(new ByteArrayInputStream(DATA_G3_LONG))));
 
         // Group 4/CCITT_T6
         assertEquals(TIFFExtension.COMPRESSION_CCITT_T6, CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T6, new ByteArrayInputStream(DATA_G4)));
@@ -208,7 +208,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType3_2D() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_2D), 6,
-                TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_2DENCODING);
+                TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_2DENCODING);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -219,7 +219,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType3_2D_FILL() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_2D_FILL), 6,
-                TIFFExtension.COMPRESSION_CCITT_T4, 1,
+                TIFFExtension.COMPRESSION_CCITT_T4,
                 TIFFExtension.GROUP3OPT_2DENCODING | TIFFExtension.GROUP3OPT_FILLBITS);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
@@ -230,8 +230,8 @@ public class CCITTFaxDecoderStreamTest {
 
     @Test
     public void testDecodeType3_2D_REVERSED() throws IOException {
-        InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_2D_lsb2msb), 6,
-                TIFFExtension.COMPRESSION_CCITT_T4, 2, TIFFExtension.GROUP3OPT_2DENCODING);
+        InputStream stream = new CCITTFaxDecoderStream(new ReverseInputStream(new ByteArrayInputStream(DATA_G3_2D_lsb2msb)), 6,
+                TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_2DENCODING);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -242,7 +242,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType4() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4), 6,
-                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+                TIFFExtension.COMPRESSION_CCITT_T6, 0L);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -265,7 +265,7 @@ public class CCITTFaxDecoderStreamTest {
         new DataInputStream(inputStream).readFully(data);
 
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(data),
-                6, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+                6, TIFFExtension.COMPRESSION_CCITT_T6, 0L);
 
         byte[] bytes = new byte[6]; // 6 x 6 pixel, 1 bpp => 6 bytes
         new DataInputStream(stream).readFully(bytes);
@@ -290,7 +290,7 @@ public class CCITTFaxDecoderStreamTest {
 
         byte[] encoded = imageOutput.toByteArray();
         InputStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encoded), 8,
-                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+                TIFFExtension.COMPRESSION_CCITT_T6, 0L);
         byte decoded = (byte) inputStream.read();
         assertEquals(data[0], decoded);
     }
@@ -307,7 +307,7 @@ public class CCITTFaxDecoderStreamTest {
         }
 
         InputStream inputStream = new CCITTFaxDecoderStream(stream,
-                24, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+                24, TIFFExtension.COMPRESSION_CCITT_T6, 0L);
         byte decoded = (byte) inputStream.read();
         assertEquals((byte) 0b10101010, decoded);
     }
@@ -315,7 +315,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType4ByteAligned() throws IOException {
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4_ALIGNED), 6,
-                TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L, true);
+                TIFFExtension.COMPRESSION_CCITT_T6, 0L, true);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -326,7 +326,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeType2NotByteAligned() throws IOException {
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_RLE_UNALIGNED), 6,
-                TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L, false);
+                TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 0L, false);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
@@ -348,7 +348,7 @@ public class CCITTFaxDecoderStreamTest {
         new DataInputStream(inputStream).readFully(data);
 
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(data),
-                1728, TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
+                1728, TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_FILLBITS);
 
         byte[] bytes = new byte[216 * 1168]; // 1728 x 1168 pixel, 1 bpp => 216 bytes * 1168
         new DataInputStream(stream).readFully(bytes);
