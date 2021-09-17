@@ -13,7 +13,7 @@
     </description>
 
     <properties>
-        <project.jpms.module.name>com.twelvemonkeys.imageio.jaiinterop</project.jpms.module.name>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.jpeg.jaiinterop</project.jpms.module.name>
     </properties>
 
     <build>
@@ -33,6 +33,7 @@
             <groupId>com.github.jai-imageio</groupId>
             <artifactId>jai-imageio-core</artifactId>
             <version>1.4.0</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>

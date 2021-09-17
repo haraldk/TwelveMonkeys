@@ -30,12 +30,12 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff.jaiinterop;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import com.twelvemonkeys.imageio.metadata.tiff.Rational;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
+import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadata;
 
-import java.awt.image.BufferedImage;
-import java.util.Arrays;
-import java.util.Iterator;
+import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
@@ -43,13 +43,12 @@ import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
+import java.awt.image.BufferedImage;
+import java.util.Arrays;
+import java.util.Iterator;
 
-import org.junit.Test;
-
-import com.twelvemonkeys.imageio.metadata.tiff.Rational;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadata;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Tests our TIFFImageMetadata works with JAI TIFFImageWriter.
@@ -61,10 +60,10 @@ import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadata;
 public class TIFFImageMetadataJAInteroperabilityTest {
     private static final String JAI_TIFF_PROVIDER_CLASS_NAME = "com.github.jaiimageio.impl.plugins.tiff.TIFFImageWriterSpi";
 
-    private ImageWriter getJAIImageWriter() {
+    private ImageWriter createImageWriter() {
         Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("TIFF");
 
-        if (writers.hasNext()) {
+        while (writers.hasNext()) {
             ImageWriter writer = writers.next();
 
             if (JAI_TIFF_PROVIDER_CLASS_NAME.equals(writer.getOriginatingProvider().getClass().getName())) {
@@ -84,7 +83,7 @@ public class TIFFImageMetadataJAInteroperabilityTest {
                                                                       new TIFFEntry(TIFF.TAG_Y_RESOLUTION, new Rational(200))));
 
         ImageTypeSpecifier type = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
-        ImageWriter writer = getJAIImageWriter();
+        ImageWriter writer = createImageWriter();
         IIOMetadata converted = writer.convertImageMetadata(ourMetadata, type, null);
 
         assertNotNull(converted);
