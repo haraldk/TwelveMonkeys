@@ -124,6 +124,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)), // B/W, CCITT T4
                 new TestData(getClassLoaderResource("/tiff/CCITTgetNextChangingElement.tif"), new Dimension(2402,195)),
                 new TestData(getClassLoaderResource("/tiff/ccitt-too-many-changes.tif"), new Dimension(24,153)),
+                new TestData(getClassLoaderResource("/tiff/ccitt/G32DS.tif"), new Dimension(2464,3248)), // B/W, FillOrder Right to Left
                 // CIELab
                 new TestData(getClassLoaderResource("/tiff/ColorCheckerCalculator.tif"), new Dimension(798, 546)), // CIELab 8 bit/sample
                 // Gray

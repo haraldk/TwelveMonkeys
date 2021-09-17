@@ -163,7 +163,7 @@ public class CCITTFaxEncoderStreamTest {
         byte[] encodedData = imageOutput.toByteArray();
 
         byte[] decodedData = new byte[data.length];
-        CCITTFaxDecoderStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 3200, TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
+        CCITTFaxDecoderStream inputStream = new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 3200, TIFFExtension.COMPRESSION_CCITT_T6, 0L);
         new DataInputStream(inputStream).readFully(decodedData);
         inputStream.close();
 
@@ -184,8 +184,12 @@ public class CCITTFaxEncoderStreamTest {
         outputSteam.close();
         byte[] encodedData = imageOutput.toByteArray();
 
+        InputStream inStream = new ByteArrayInputStream(encodedData);
+        if(fillOrder == TIFFExtension.FILL_RIGHT_TO_LEFT){
+            inStream = new ReverseInputStream(inStream);
+        }
         try (CCITTFaxDecoderStream inputStream =
-                     new CCITTFaxDecoderStream(new ByteArrayInputStream(encodedData), 6, type, fillOrder, options)) {
+                     new CCITTFaxDecoderStream(inStream, 6, type, options)) {
             new DataInputStream(inputStream).readFully(redecodedData);
         }
 

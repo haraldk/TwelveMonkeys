@@ -58,8 +58,6 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     private final boolean optionUncompressed;
     private final boolean optionByteAligned;
 
-    // Need to take fill order into account (?) (use flip table?)
-    private final int fillOrder;
     private final int type;
 
     private int decodedLength;
@@ -81,12 +79,10 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
      * @param columns the number of columns in the stream.
      * @param type the type of stream, must be one of {@code COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE},
      *             {@code COMPRESSION_CCITT_T4} or {@code COMPRESSION_CCITT_T6}.
-     * @param fillOrder fillOrder, must be {@code FILL_LEFT_TO_RIGHT} or
-     * {@code FILL_RIGHT_TO_LEFT}.
      * @param options CCITT T.4 or T.6 options.
      * @param byteAligned enable byte alignment used in PDF files (EncodedByteAlign).
      */
-    public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
+    public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type,
                                  final long options, final boolean byteAligned) {
         super(Validate.notNull(stream, "stream"));
 
@@ -95,10 +91,6 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                         type == TIFFExtension.COMPRESSION_CCITT_T4 ||
                         type == TIFFExtension.COMPRESSION_CCITT_T6,
                 type, "Only CCITT Modified Huffman RLE compression (2), CCITT T4 (3) or CCITT T6 (4) supported: %s");
-        this.fillOrder = Validate.isTrue(
-                fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT || fillOrder == TIFFExtension.FILL_RIGHT_TO_LEFT,
-                fillOrder, "Expected fill order 1  or 2: %s"
-        );
 
         // We know this is only used for b/w (1 bit)
         decodedRow = new byte[(columns + 7) / 8];
@@ -140,25 +132,22 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
      * @param columns the number of columns in the stream.
      * @param type the type of stream, must be one of {@code COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE},
      *             {@code COMPRESSION_CCITT_T4} or {@code COMPRESSION_CCITT_T6}.
-     * @param fillOrder fillOrder, must be {@code FILL_LEFT_TO_RIGHT} or
-     * {@code FILL_RIGHT_TO_LEFT}.
      * @param options CCITT T.4 or T.6 options.
      */
-    public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type, final int fillOrder,
+    public CCITTFaxDecoderStream(final InputStream stream, final int columns, final int type,
                                  final long options) {
-        this(stream, columns, type, fillOrder, options, type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
+        this(stream, columns, type, options, type == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
     }
 
     static int findCompressionType(final int encodedType, final InputStream stream) throws IOException {
         // Discover possible incorrect compression type, revert to RLE if no EOLs found
         if (encodedType == TIFFExtension.COMPRESSION_CCITT_T4 && stream.markSupported()) {
             int limit = 512;
-
             try {
                 stream.mark(limit);
-
                 int first = stream.read();
                 int second = stream.read();
+
                 if (first == -1 || second == -1) {
                     // stream to short
                     return encodedType;
@@ -178,7 +167,6 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                             // no EOL before stream end
                             return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
                         }
-                        streamByte = (byte) read;
                     }
 
                     b = (short) ((b << 1) + ((streamByte >> (7 - (i % 8))) & 0x01));
@@ -487,14 +475,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             bufferPos = 0;
         }
 
-        boolean isSet;
-
-        if (fillOrder == TIFFBaseline.FILL_LEFT_TO_RIGHT) {
-            isSet = ((buffer >> (7 - bufferPos)) & 1) == 1;
-        }
-        else {
-            isSet = ((buffer >> (bufferPos)) & 1) == 1;
-        }
+        boolean isSet = ((buffer >> (7 - bufferPos)) & 1) == 1;
 
         bufferPos++;
 
