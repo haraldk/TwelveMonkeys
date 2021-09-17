@@ -13,7 +13,7 @@
     </description>
 
     <properties>
-        <project.jpms.module.name>com.twelvemonkeys.imageio.jdkinterop</project.jpms.module.name>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.tiff.jdkinterop</project.jpms.module.name>
     </properties>
 
     <build>
