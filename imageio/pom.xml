@@ -55,6 +55,7 @@
         <module>imageio-reference</module>
         <module>imageio-jpeg-jep262-interop</module>
         <module>imageio-jpeg-jai-interop</module>
+        <module>imageio-tiff-jai-interop</module>
         <module>imageio-tiff-jdk-interop</module>
     </modules>
 

@@ -28,25 +28,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.jpeg.jdkinterop;
+package com.twelvemonkeys.imageio.plugins.tiff.jdkinterop;
 
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
-import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi;
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import static org.junit.Assert.fail;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.fail;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.spi.ImageReaderSpi;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
+import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
+import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 /**
  * Tests our TIFFImageReader delegating to the JDK JPEGImageReader.
