@@ -143,12 +143,13 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         // Discover possible incorrect compression type, revert to RLE if no EOLs found
         if (encodedType == TIFFExtension.COMPRESSION_CCITT_T4 && stream.markSupported()) {
             int limit = 512;
+
             try {
                 stream.mark(limit);
                 int first = stream.read();
                 int second = stream.read();
 
-                if (first == -1 || second == -1) {
+                if (second == -1) {
                     // stream to short
                     return encodedType;
                 }
@@ -156,10 +157,12 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                     // correct, starts with EOL or byte aligned EOL
                     return encodedType;
                 }
+
                 short b = (short) (((((byte) first) << 8) + ((byte) second)) >> 4);
                 int limitBits = limit * 8;
                 int read = second;
                 byte streamByte = (byte) read;
+
                 for (int i = 12; i < limitBits; i++) {
                     if (i % 8 == 0) {
                         read = stream.read();
@@ -176,6 +179,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                         return TIFFExtension.COMPRESSION_CCITT_T4;
                     }
                 }
+
                 // no EOL till limit
                 return TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE;
             }
@@ -465,7 +469,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
     int bufferPos = -1;
 
     private boolean readBit() throws IOException {
-        if (bufferPos < 0 || bufferPos > 7) {
+        if (bufferPos > 7 || bufferPos < 0) {
             buffer = in.read();
 
             if (buffer == -1) {
@@ -475,13 +479,9 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             bufferPos = 0;
         }
 
-        boolean isSet = ((buffer >> (7 - bufferPos)) & 1) == 1;
-
+        boolean isSet = (buffer & 0x80) != 0;
+        buffer <<= 1;
         bufferPos++;
-
-        if (bufferPos > 7) {
-            bufferPos = -1;
-        }
 
         return isSet;
     }
