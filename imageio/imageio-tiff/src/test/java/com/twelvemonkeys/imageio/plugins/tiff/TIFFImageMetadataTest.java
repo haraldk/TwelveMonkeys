@@ -238,8 +238,8 @@ public class TIFFImageMetadataTest {
         assertSingleNodeWithValue(entries, TIFF.TAG_ROWS_PER_STRIP, TIFF.TYPE_LONG, "5");
         assertSingleNodeWithValue(entries, TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCounts);
         assertSingleNodeWithValue(entries, TIFF.TAG_PLANAR_CONFIGURATION, TIFF.TYPE_SHORT, "1");
-        assertSingleNodeWithValue(entries, TIFF.TAG_X_POSITION, TIFF.TYPE_RATIONAL, "0");
-        assertSingleNodeWithValue(entries, TIFF.TAG_Y_POSITION, TIFF.TYPE_RATIONAL, "0");
+        assertSingleNodeWithValue(entries, TIFF.TAG_X_POSITION, TIFF.TYPE_RATIONAL, "0/1");
+        assertSingleNodeWithValue(entries, TIFF.TAG_Y_POSITION, TIFF.TYPE_RATIONAL, "0/1");
         assertSingleNodeWithValue(entries, 32995, TIFF.TYPE_SHORT, "0"); // Matteing tag, obsoleted by ExtraSamples tag in TIFF 6.0
     }
 
@@ -299,7 +299,7 @@ public class TIFFImageMetadataTest {
         // Validate there's one and only one resolution unit, x res and y res
         // Validate resolution unit == 1, x res & y res
         assertSingleNodeWithValue(fields, TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, String.valueOf(TIFFBaseline.RESOLUTION_UNIT_DPI));
-        assertSingleNodeWithValue(fields, TIFF.TAG_X_RESOLUTION, TIFF.TYPE_RATIONAL, "300");
+        assertSingleNodeWithValue(fields, TIFF.TAG_X_RESOLUTION, TIFF.TYPE_RATIONAL, "300/1");
         assertSingleNodeWithValue(fields, TIFF.TAG_Y_RESOLUTION, TIFF.TYPE_RATIONAL, "30001/100");
     }
 

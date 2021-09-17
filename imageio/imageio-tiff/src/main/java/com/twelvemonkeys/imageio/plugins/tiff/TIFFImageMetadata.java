@@ -100,7 +100,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
      */
-    public TIFFImageMetadata(final Collection<Entry> entries) {
+    public TIFFImageMetadata(final Collection<? extends Entry> entries) {
         this(new IFD(entries));
     }
 
@@ -196,7 +196,12 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             elementNode.setAttribute("value", String.valueOf((Short) value & 0xFFFF));
         }
         else if (unsigned && value instanceof Integer) {
-            elementNode.setAttribute("value", String.valueOf((Integer) value & 0xFFFFFFFFl));
+            elementNode.setAttribute("value", String.valueOf((Integer) value & 0xFFFFFFFFL));
+        }
+        else if (value instanceof Rational) {
+            // For compatibility with JAI format, we need denominator
+            String rational = String.valueOf(value);
+            elementNode.setAttribute("value", rational.indexOf('/') < 0 && !"NaN".equals(rational) ? rational + "/1" : rational);
         }
         else {
             elementNode.setAttribute("value", String.valueOf(value));
