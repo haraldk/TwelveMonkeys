@@ -30,16 +30,17 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.servlet.ServletUtil;
-
-import javax.servlet.ServletRequest;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+
+import javax.servlet.ServletRequest;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.servlet.ServletUtil;
 
 /**
  * This Servlet is able to render a cropped part of an image.
@@ -81,6 +82,7 @@ import java.awt.image.RenderedImage;
  */
 // TODO: Correct rounding errors, resulting in black borders when rotating 90
 //       degrees, and one of width or height is odd length...
+@Deprecated
 public class RotateFilter extends ImageFilter {
     /** {@code angle}*/
     protected final static String PARAM_ANGLE = "angle";

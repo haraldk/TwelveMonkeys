@@ -30,7 +30,11 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * AbstractCacheResponse
@@ -39,6 +43,7 @@ import java.util.*;
  * @author last modified by $Author: haku $
  * @version $Id: AbstractCacheResponse.java#1 $
  */
+@Deprecated
 public abstract class AbstractCacheResponse implements CacheResponse {
     private int status;
     private final Map<String, List<String>> headers = new LinkedHashMap<String, List<String>>(); // Insertion order

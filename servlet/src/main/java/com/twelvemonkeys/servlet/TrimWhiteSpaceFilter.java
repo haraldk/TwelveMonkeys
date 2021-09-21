@@ -30,11 +30,17 @@
 
 package com.twelvemonkeys.servlet;
 
-import javax.servlet.*;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 /**
  * Removes extra unneccessary white space from a servlet response.
@@ -112,6 +118,7 @@ import java.io.PrintWriter;
  * @author last modified by $Author: haku $
  * @version $Id: TrimWhiteSpaceFilter.java#2 $
  */
+@Deprecated
 public class TrimWhiteSpaceFilter extends GenericFilter {
 
     private boolean autoFlush = true;

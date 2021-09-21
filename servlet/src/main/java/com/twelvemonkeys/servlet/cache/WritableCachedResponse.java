@@ -38,6 +38,7 @@ import java.io.OutputStream;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: WritableCachedResponse.java#2 $
  */
+@Deprecated
 public interface WritableCachedResponse extends CachedResponse, CacheResponse {
     /**
      * Gets the {@code OutputStream} for this cached response.

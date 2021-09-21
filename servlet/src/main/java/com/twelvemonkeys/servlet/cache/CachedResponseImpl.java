@@ -30,13 +30,17 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.lang.Validate;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * CachedResponseImpl
@@ -44,6 +48,7 @@ import java.util.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CachedResponseImpl.java#4 $
  */
+@Deprecated
 class CachedResponseImpl implements CachedResponse {
     final protected Map<String, List<String>> headers;
     protected int headersSize;

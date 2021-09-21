@@ -41,6 +41,7 @@ import java.util.Map;
  * @author last modified by $Author: haku $
  * @version $Id: CacheRequest.java#1 $
  */
+@Deprecated
 public interface CacheRequest {
     URI getRequestURI();
 

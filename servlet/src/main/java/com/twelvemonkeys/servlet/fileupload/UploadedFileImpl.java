@@ -30,12 +30,12 @@
 
 package com.twelvemonkeys.servlet.fileupload;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadException;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileUploadException;
 
 /**
  * An {@code UploadedFile} implementation, based on
@@ -44,6 +44,7 @@ import java.io.InputStream;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: UploadedFileImpl.java#1 $
  */
+@Deprecated
 class UploadedFileImpl implements UploadedFile {
     private final FileItem item;
 

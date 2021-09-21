@@ -30,17 +30,22 @@
 
 package com.twelvemonkeys.servlet.fileupload;
 
+import java.io.File;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.FileUploadBase;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletRequestContext;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import java.io.File;
-import java.util.*;
 
 /**
  * An {@code HttpFileUploadRequest} implementation, based on
@@ -49,6 +54,7 @@ import java.util.*;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: HttpFileUploadRequestWrapper.java#1 $
  */
+@Deprecated
 class HttpFileUploadRequestWrapper extends HttpServletRequestWrapper implements HttpFileUploadRequest {
 
     private final Map<String, String[]> parameters = new HashMap<String, String[]>();

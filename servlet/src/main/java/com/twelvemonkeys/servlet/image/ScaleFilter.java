@@ -30,15 +30,16 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.servlet.ServletUtil;
-
-import javax.servlet.ServletRequest;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.lang.reflect.Field;
+
+import javax.servlet.ServletRequest;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.servlet.ServletUtil;
 
 
 /**
@@ -83,6 +84,7 @@ import java.lang.reflect.Field;
  * @version $Id: ScaleFilter.java#1 $
  *
  */
+@Deprecated
 public class ScaleFilter extends ImageFilter {
 
     /**

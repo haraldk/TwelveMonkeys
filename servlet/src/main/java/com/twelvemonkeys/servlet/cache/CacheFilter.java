@@ -30,18 +30,24 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.servlet.GenericFilter;
-import com.twelvemonkeys.servlet.ServletConfigException;
-import com.twelvemonkeys.servlet.ServletUtil;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.servlet.GenericFilter;
+import com.twelvemonkeys.servlet.ServletConfigException;
+import com.twelvemonkeys.servlet.ServletUtil;
 
 /**
  * A Filter that provides response caching, for HTTP {@code GET} requests.
@@ -58,6 +64,7 @@ import java.util.logging.Logger;
  * @version $Id: CacheFilter.java#4 $
  *
  */
+@Deprecated
 public class CacheFilter extends GenericFilter {
 
     HTTPCache cache;

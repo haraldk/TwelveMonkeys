@@ -30,9 +30,6 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.net.HTTPUtil;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,12 +37,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.net.HTTPUtil;
+
 /**
  * WritableCachedResponseImpl
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: WritableCachedResponseImpl.java#3 $
  */
+@Deprecated
 class WritableCachedResponseImpl implements WritableCachedResponse {
     private final CachedResponseImpl cachedResponse;
 

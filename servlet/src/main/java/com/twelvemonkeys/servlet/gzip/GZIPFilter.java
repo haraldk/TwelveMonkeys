@@ -30,7 +30,7 @@
 
 package com.twelvemonkeys.servlet.gzip;
 
-import com.twelvemonkeys.servlet.GenericFilter;
+import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -38,7 +38,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import com.twelvemonkeys.servlet.GenericFilter;
 
 /**
  * A filter to reduce the output size of web resources.
@@ -114,6 +115,7 @@ import java.io.IOException;
  * @author last modified by $Author: haku $
  * @version $Id: GZIPFilter.java#1 $
  */
+@Deprecated
 public class GZIPFilter extends GenericFilter {
 
     {

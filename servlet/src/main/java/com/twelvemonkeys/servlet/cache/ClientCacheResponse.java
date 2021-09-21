@@ -41,6 +41,7 @@ import java.io.OutputStream;
  * @author last modified by $Author: haku $
  * @version $Id: ClientCacheResponse.java#2 $
  */
+@Deprecated
 public final class ClientCacheResponse extends AbstractCacheResponse {
     // It's quite useless to cache the data either on disk or in memory, as it already is cached in the client's cache...
     // It would be nice if we could bypass that...

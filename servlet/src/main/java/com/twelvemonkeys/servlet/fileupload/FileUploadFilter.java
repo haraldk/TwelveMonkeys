@@ -30,20 +30,21 @@
 
 package com.twelvemonkeys.servlet.fileupload;
 
-import com.twelvemonkeys.io.FileUtil;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.servlet.GenericFilter;
-import com.twelvemonkeys.servlet.ServletUtil;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+
+import com.twelvemonkeys.io.FileUtil;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.servlet.GenericFilter;
+import com.twelvemonkeys.servlet.ServletUtil;
 
 /**
  * A servlet {@code Filter} for processing HTTP file upload requests, as
@@ -55,6 +56,7 @@ import java.net.URL;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: FileUploadFilter.java#1 $
  */
+@Deprecated
 public class FileUploadFilter extends GenericFilter {
     private File uploadDir;
     private long maxFileSize = 1024 * 1024; // 1 MByte

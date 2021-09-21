@@ -30,14 +30,15 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.servlet.GenericServlet;
+import java.io.IOException;
+import java.util.zip.CRC32;
 
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.io.IOException;
-import java.util.zip.CRC32;
+
+import com.twelvemonkeys.servlet.GenericServlet;
 
 /**
  * Creates a minimal 1 x 1 pixel PNG image, in a color specified by the
@@ -52,6 +53,7 @@ import java.util.zip.CRC32;
  * @author last modified by $Author: haku $
  * @version $Id: ColorServlet.java#2 $
  */
+@Deprecated
 public class ColorServlet extends GenericServlet {
     private final static String RGB_PARAME = "color";
 

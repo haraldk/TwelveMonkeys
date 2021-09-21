@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.servlet.cache;
 
+import java.io.IOException;
+
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * ServletResponseResolver
@@ -42,6 +43,7 @@ import java.io.IOException;
  * @author last modified by $Author: haku $
  * @version $Id: ServletResponseResolver.java#2 $
  */
+@Deprecated
 final class ServletResponseResolver implements ResponseResolver {
     final private ServletCacheRequest request;
     final private ServletCacheResponse response;

@@ -30,12 +30,13 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.servlet.ServletUtil;
-
-import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.twelvemonkeys.servlet.ServletUtil;
 
 /**
  * ServletCacheRequest
@@ -44,6 +45,7 @@ import java.util.Map;
  * @author last modified by $Author: haku $
  * @version $Id: ServletCacheRequest.java#1 $
  */
+@Deprecated
 public final class ServletCacheRequest extends AbstractCacheRequest {
     private final HttpServletRequest request;
 

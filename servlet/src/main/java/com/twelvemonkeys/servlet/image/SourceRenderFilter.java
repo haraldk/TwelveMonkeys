@@ -30,16 +30,17 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.servlet.ServletUtil;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
-import java.io.IOException;
+
+import com.twelvemonkeys.servlet.ServletUtil;
 
 /**
  * A {@link javax.servlet.Filter} that extracts request parameters, and sets the
@@ -53,6 +54,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: SourceRenderFilter.java#1 $
  */
+@Deprecated
 public class SourceRenderFilter extends ImageFilter {
     private String sizeWidthParam = "size.w";
     private String sizeHeightParam = "size.h";

@@ -30,15 +30,16 @@
 
 package com.twelvemonkeys.servlet.gzip;
 
-import com.twelvemonkeys.servlet.OutputStreamAdapter;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.zip.GZIPOutputStream;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
+import com.twelvemonkeys.servlet.OutputStreamAdapter;
 
 /**
  * GZIPResponseWrapper class description.
@@ -53,6 +54,7 @@ import java.util.zip.GZIPOutputStream;
  * @author last modified by $Author: haku $
  * @version $Id: GZIPResponseWrapper.java#1 $
  */
+@Deprecated
 public class GZIPResponseWrapper extends HttpServletResponseWrapper {
     // TODO: Remove/update ETags if needed? Read the spec (RFC 2616) on Vary/ETag for caching
 

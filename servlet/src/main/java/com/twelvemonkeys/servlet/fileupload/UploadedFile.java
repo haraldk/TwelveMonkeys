@@ -40,6 +40,7 @@ import java.io.InputStream;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: UploadedFile.java#1 $
  */
+@Deprecated
 public interface UploadedFile {
     /**
      * Returns the length of file, in bytes.

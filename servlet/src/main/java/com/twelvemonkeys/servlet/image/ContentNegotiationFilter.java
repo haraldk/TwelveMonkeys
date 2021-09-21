@@ -30,16 +30,6 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.lang.StringUtil;
-
-import javax.imageio.ImageIO;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -48,6 +38,17 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.lang.StringUtil;
 
 /**
  * This filter implements server side content negotiation and transcoding for
@@ -60,6 +61,7 @@ import java.util.Map;
 //  unneccessary conversion (as IE supports PNG, the latests FireFox supports
 //  JPEG and GIF, etc. even though they both don't explicitly list these formats
 //  in their Accept headers).
+@Deprecated
 public class ContentNegotiationFilter extends ImageFilter {
 
     private final static String MIME_TYPE_IMAGE_PREFIX = "image/";

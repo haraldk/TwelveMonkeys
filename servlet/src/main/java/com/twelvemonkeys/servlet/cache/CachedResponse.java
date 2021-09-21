@@ -39,6 +39,7 @@ import java.io.OutputStream;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CachedResponse.java#3 $
  */
+@Deprecated
 interface CachedResponse {
     /**
      * Writes the cached headers to the response

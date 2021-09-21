@@ -38,6 +38,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CachedEntity.java#3 $
  */
+@Deprecated
 interface CachedEntity {
 
     /**

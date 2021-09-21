@@ -30,14 +30,6 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.StringUtil;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,12 +37,22 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
+
+import com.twelvemonkeys.lang.StringUtil;
+
 /**
  * BrowserHelperFilter
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BrowserHelperFilter.java#1 $
  */
+@Deprecated
 public class BrowserHelperFilter extends GenericFilter {
     private static final String HTTP_HEADER_ACCEPT = "Accept";
     protected static final String HTTP_HEADER_USER_AGENT = "User-Agent";

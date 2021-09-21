@@ -36,6 +36,7 @@ import java.awt.*;
  * @author <a href="mailto:erlend@escenic.com">Erlend Hamnaberg</a>
  * @version $Revision: $
  */
+@Deprecated
 public class PercentAreaOfInterest extends DefaultAreaOfInterest {
 
     public PercentAreaOfInterest(Dimension pOriginalDimension) {
