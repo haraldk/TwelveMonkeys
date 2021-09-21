@@ -38,6 +38,7 @@ import javax.servlet.ServletException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: FileUploadException.java#1 $
  */
+@Deprecated
 public class FileUploadException extends ServletException {
     public FileUploadException(String pMessage) {
         super(pMessage);

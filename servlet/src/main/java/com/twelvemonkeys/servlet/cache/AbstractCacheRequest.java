@@ -30,9 +30,9 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.lang.Validate;
-
 import java.net.URI;
+
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * AbstractCacheRequest
@@ -41,6 +41,7 @@ import java.net.URI;
  * @author last modified by $Author: haku $
  * @version $Id: AbstractCacheRequest.java#1 $
  */
+@Deprecated
 public abstract class AbstractCacheRequest implements CacheRequest {
     private final URI requestURI;
     private final String method;

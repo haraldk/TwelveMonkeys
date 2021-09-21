@@ -39,6 +39,7 @@ import java.io.IOException;
  * @author last modified by $Author: haku $
  * @version $Id: ResponseResolver.java#2 $
  */
+@Deprecated
 public interface ResponseResolver {
     void resolve(CacheRequest pRequest, CacheResponse pResponse) throws IOException, CacheException;
 }

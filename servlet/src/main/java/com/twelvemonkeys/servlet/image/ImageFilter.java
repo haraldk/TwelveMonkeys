@@ -30,15 +30,20 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.servlet.GenericFilter;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletResponse;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.servlet.GenericFilter;
 
 /**
  * Abstract base class for image filters. Automatically decoding and encoding of
@@ -50,6 +55,7 @@ import java.io.IOException;
  * @version $Id: ImageFilter.java#2 $
  *
  */
+@Deprecated
 public abstract class ImageFilter extends GenericFilter {
     // TODO: Take the design back to the drawing board (see ImageServletResponseImpl)
     //      - Allow multiple filters to set size attribute

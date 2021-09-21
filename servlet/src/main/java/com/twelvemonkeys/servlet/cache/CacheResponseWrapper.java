@@ -30,15 +30,16 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.net.HTTPUtil;
-import com.twelvemonkeys.servlet.ServletResponseStreamDelegate;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponseWrapper;
+
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.net.HTTPUtil;
+import com.twelvemonkeys.servlet.ServletResponseStreamDelegate;
 
 /**
  * CacheResponseWrapper class description.
@@ -54,6 +55,7 @@ import java.io.PrintWriter;
  * @author last modified by $Author: haku $
  * @version $Id: CacheResponseWrapper.java#3 $
  */
+@Deprecated
 class CacheResponseWrapper extends HttpServletResponseWrapper {
     private ServletResponseStreamDelegate streamDelegate;
 

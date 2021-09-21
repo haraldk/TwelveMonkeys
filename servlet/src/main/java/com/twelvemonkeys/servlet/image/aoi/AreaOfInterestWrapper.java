@@ -30,14 +30,15 @@
 
 package com.twelvemonkeys.servlet.image.aoi;
 
-import com.twelvemonkeys.lang.Validate;
-
 import java.awt.*;
+
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * @author <a href="mailto:erlend@escenic.com">Erlend Hamnaberg</a>
  * @version $Revision: $
  */
+@Deprecated
 public class AreaOfInterestWrapper implements AreaOfInterest {
     private AreaOfInterest mDelegate;
 

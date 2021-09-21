@@ -30,9 +30,10 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * ServletCacheResponse
@@ -41,6 +42,7 @@ import java.io.OutputStream;
  * @author last modified by $Author: haku $
  * @version $Id: ServletCacheResponse.java#2 $
  */
+@Deprecated
 public final class ServletCacheResponse extends AbstractCacheResponse {
     private HttpServletResponse response;
 

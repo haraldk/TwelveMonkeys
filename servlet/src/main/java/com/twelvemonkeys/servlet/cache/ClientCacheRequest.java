@@ -42,6 +42,7 @@ import java.util.Map;
  * @author last modified by $Author: haku $
  * @version $Id: ClientCacheRequest.java#1 $
  */
+@Deprecated
 public final class ClientCacheRequest extends AbstractCacheRequest {
     private Map<String, List<String>> parameters;
     private Map<String, List<String>> headers;

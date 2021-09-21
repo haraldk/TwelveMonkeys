@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import javax.servlet.ServletRequest;
 import java.awt.image.BufferedImage;
 import java.awt.image.BufferedImageOp;
 import java.awt.image.RenderedImage;
+
+import javax.servlet.ServletRequest;
 
 /**
  * BufferedImageOpAdapter
@@ -42,6 +43,7 @@ import java.awt.image.RenderedImage;
  * @version $Id: BufferedImageOpAdapter.java#1 $
  * 
  */
+@Deprecated
 public class BufferedImageOpAdapter extends ImageFilter {
 
     private BufferedImageOp filter = null;

@@ -30,6 +30,14 @@
 
 package com.twelvemonkeys.servlet.cache;
 
+import java.io.*;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletResponse;
+
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.lang.Validate;
@@ -37,13 +45,6 @@ import com.twelvemonkeys.net.HTTPUtil;
 import com.twelvemonkeys.net.MIMEUtil;
 import com.twelvemonkeys.util.LRUHashMap;
 import com.twelvemonkeys.util.NullMap;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * A "simple" HTTP cache.
@@ -95,6 +96,7 @@ import java.util.logging.Logger;
 // TODO: Rewrite to use NIO for performance
 // TODO: Allow no tempdir for in-memory only cache
 // TODO: Specify max size of disk-cache
+@Deprecated
 public class HTTPCache {
     /**
      * The HTTP header {@code "Cache-Control"}

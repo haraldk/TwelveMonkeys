@@ -37,6 +37,7 @@ import java.awt.*;
  * @author <a href="mailto:erlend@hamnaberg.net">Erlend Hamnaberg</a>
  * @version $Revision: $
  */
+@Deprecated
 public class DefaultAreaOfInterest implements AreaOfInterest {
     private final int mOriginalWidth;
     private final int mOriginalHeight;

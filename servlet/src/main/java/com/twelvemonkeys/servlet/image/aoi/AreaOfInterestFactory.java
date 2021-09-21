@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author <a href="mailto:erlend@escenic.com">Erlend Hamnaberg</a>
  * @version $Revision: $
  */
+@Deprecated
 public class AreaOfInterestFactory {
     private final static AtomicReference<AreaOfInterestFactory> DEFAULT =
             new AtomicReference<AreaOfInterestFactory>(new AreaOfInterestFactory());

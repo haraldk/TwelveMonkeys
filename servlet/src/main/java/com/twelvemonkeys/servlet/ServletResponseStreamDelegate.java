@@ -30,14 +30,15 @@
 
 package com.twelvemonkeys.servlet;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletResponse;
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 
-import static com.twelvemonkeys.lang.Validate.notNull;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
 
 /**
  * A delegate for handling stream support in wrapped servlet responses.
@@ -50,6 +51,7 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * @author last modified by $Author: haku $
  * @version $Id: ServletResponseStreamDelegate.java#2 $
  */
+@Deprecated
 public class ServletResponseStreamDelegate {
     private Object out = null;
     protected final ServletResponse response;

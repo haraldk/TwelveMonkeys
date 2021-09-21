@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import javax.servlet.ServletRequest;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
+
+import javax.servlet.ServletRequest;
 
 /**
  * ComposeFilter
@@ -41,6 +42,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ComposeFilter.java#1 $
  */
+@Deprecated
 public class ComposeFilter extends ImageFilter {
     protected RenderedImage doFilter(BufferedImage pImage, ServletRequest pRequest, ImageServletResponse pResponse) throws IOException {
         // 1. Load different image, locally (using ServletContext.getResource)

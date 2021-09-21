@@ -38,6 +38,7 @@ import javax.servlet.ServletException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ServletConfigException.java#2 $
  */
+@Deprecated
 public class ServletConfigException extends ServletException {
 
     // TODO: Parameters for init-param at fault, and possibly servlet name?

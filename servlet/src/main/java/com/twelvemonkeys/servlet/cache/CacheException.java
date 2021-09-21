@@ -37,6 +37,7 @@ package com.twelvemonkeys.servlet.cache;
  * @author last modified by $Author: haku $
  * @version $Id: CacheException.java#1 $
  */
+@Deprecated
 public class CacheException extends Exception {
     public CacheException(Throwable pCause) {
         super(pCause);

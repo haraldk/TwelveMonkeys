@@ -30,11 +30,12 @@
 
 package com.twelvemonkeys.servlet.cache;
 
-import com.twelvemonkeys.lang.Validate;
-
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+
+import javax.servlet.http.HttpServletResponse;
+
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * CachedEntity
@@ -42,6 +43,7 @@ import java.util.List;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: CachedEntityImpl.java#3 $
  */
+@Deprecated
 class CachedEntityImpl implements CachedEntity {
     private String cacheURI;
     private HTTPCache cache;

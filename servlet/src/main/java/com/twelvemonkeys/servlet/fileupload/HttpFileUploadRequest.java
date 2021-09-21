@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: HttpFileUploadRequest.java#1 $
  */
+@Deprecated
 public interface HttpFileUploadRequest extends HttpServletRequest {
     /**
      * Returns the value of a request parameter as an {@code UploadedFile},

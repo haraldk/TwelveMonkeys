@@ -30,10 +30,11 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import javax.servlet.ServletResponse;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
+
+import javax.servlet.ServletResponse;
 
 /**
  * ImageServletResponse.
@@ -46,6 +47,7 @@ import java.io.IOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: ImageServletResponse.java#4 $
  */
+@Deprecated
 public interface ImageServletResponse extends ServletResponse {
     /**
      * Request attribute of type {@link java.awt.Dimension} controlling image

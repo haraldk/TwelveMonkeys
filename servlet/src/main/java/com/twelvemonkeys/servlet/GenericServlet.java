@@ -30,11 +30,12 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.BeanUtil;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import java.lang.reflect.InvocationTargetException;
+
+import com.twelvemonkeys.lang.BeanUtil;
 
 /**
  * Defines a generic, protocol-independent servlet.
@@ -52,6 +53,7 @@ import java.lang.reflect.InvocationTargetException;
  * 
  * @version $Id: GenericServlet.java#1 $
  */
+@Deprecated
 public abstract class GenericServlet extends javax.servlet.GenericServlet {
     // TODO: Rewrite to use ServletConfigurator instead of BeanUtil
 

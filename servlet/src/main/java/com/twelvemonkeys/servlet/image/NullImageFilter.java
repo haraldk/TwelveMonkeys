@@ -30,9 +30,10 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import javax.servlet.ServletRequest;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+
+import javax.servlet.ServletRequest;
 
 /**
  * An {@code ImageFilter} that does nothing. Useful for debugging purposes.
@@ -41,6 +42,7 @@ import java.awt.image.RenderedImage;
  * @version $Id: NullImageFilter.java $
  * 
  */
+@Deprecated
 public final class NullImageFilter extends ImageFilter {
     protected RenderedImage doFilter(BufferedImage pImage, ServletRequest pRequest, ImageServletResponse pResponse) {
         return pImage;

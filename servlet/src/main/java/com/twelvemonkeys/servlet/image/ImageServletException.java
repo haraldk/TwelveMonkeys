@@ -41,6 +41,7 @@ import javax.servlet.ServletException;
  *
  * @version $Id: ImageServletException.java#2 $
  */
+@Deprecated
 public class ImageServletException extends ServletException {
 
     public ImageServletException(String pMessage) {

@@ -42,6 +42,7 @@ import java.util.Map;
  * @author last modified by $Author: haku $
  * @version $Id: CacheResponse.java#1 $
  */
+@Deprecated
 public interface CacheResponse {
     OutputStream getOutputStream() throws IOException;
 

@@ -30,14 +30,6 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.util.convert.ConversionException;
-import com.twelvemonkeys.util.convert.Converter;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -48,6 +40,21 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletRequestWrapper;
+import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.util.convert.ConversionException;
+import com.twelvemonkeys.util.convert.Converter;
+
 
 /**
  * Various servlet related helper methods.
@@ -57,6 +64,7 @@ import java.util.Map;
  * @author last modified by $Author: haku $
  * @version $Id: ServletUtil.java#3 $
  */
+@Deprecated
 public final class ServletUtil {
 
     /**

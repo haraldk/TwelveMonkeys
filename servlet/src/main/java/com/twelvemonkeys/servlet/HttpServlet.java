@@ -30,11 +30,12 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.BeanUtil;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import java.lang.reflect.InvocationTargetException;
+
+import com.twelvemonkeys.lang.BeanUtil;
 
 /**
  * Defines a generic, HTTP specific servlet.
@@ -52,6 +53,7 @@ import java.lang.reflect.InvocationTargetException;
  * 
  * @version $Id: HttpServlet.java#1 $
  */
+@Deprecated
 public abstract class HttpServlet extends javax.servlet.http.HttpServlet {
     // TODO: Rewrite to use ServletConfigurator instead of BeanUtil
 

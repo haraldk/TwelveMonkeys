@@ -30,12 +30,13 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.ImageUtil;
-
-import javax.servlet.ServletRequest;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+
+import javax.servlet.ServletRequest;
+
+import com.twelvemonkeys.image.ImageUtil;
 
 /**
  * AWTImageFilterAdapter
@@ -44,6 +45,7 @@ import java.awt.image.RenderedImage;
  * @version $Id: AWTImageFilterAdapter.java#1 $
  * 
  */
+@Deprecated
 public class AWTImageFilterAdapter extends ImageFilter {
 
     private java.awt.image.ImageFilter imageFilter = null;

@@ -30,24 +30,6 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.servlet.ServletResponseStreamDelegate;
-import com.twelvemonkeys.servlet.ServletUtil;
-import com.twelvemonkeys.servlet.image.aoi.AreaOfInterest;
-import com.twelvemonkeys.servlet.image.aoi.AreaOfInterestFactory;
-
-import javax.imageio.*;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -59,6 +41,31 @@ import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Iterator;
+
+import javax.imageio.IIOException;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.servlet.ServletResponseStreamDelegate;
+import com.twelvemonkeys.servlet.ServletUtil;
+import com.twelvemonkeys.servlet.image.aoi.AreaOfInterest;
+import com.twelvemonkeys.servlet.image.aoi.AreaOfInterestFactory;
 
 /**
  * This {@link ImageServletResponse} implementation can be used with image
@@ -75,6 +82,7 @@ import java.util.Iterator;
 // TODO: This implementation has a problem if two filters does scaling, as the second will overwrite the SIZE attribute
 // TODO: Allow different scaling algorithm based on input image (use case: IndexColorModel does not scale well using default, smooth may be slow for large images)
 // TODO: Support pluggable pre- and post-processing steps
+@Deprecated
 class ImageServletResponseImpl extends HttpServletResponseWrapper implements ImageServletResponse {
     private ServletRequest originalRequest;
     private final ServletContext context;

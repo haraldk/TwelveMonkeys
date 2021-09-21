@@ -30,11 +30,12 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.Validate;
-
-import javax.servlet.ServletOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import javax.servlet.ServletOutputStream;
+
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * A {@code ServletOutputStream} implementation backed by a
@@ -71,6 +72,7 @@ import java.io.OutputStream;
  * @version $Id: OutputStreamAdapter.java#1 $
  *
  */
+@Deprecated
 public class OutputStreamAdapter extends ServletOutputStream {
 
     /** The wrapped {@code OutputStream}. */

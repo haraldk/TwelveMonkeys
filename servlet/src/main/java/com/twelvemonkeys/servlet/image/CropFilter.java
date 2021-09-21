@@ -30,12 +30,13 @@
 
 package com.twelvemonkeys.servlet.image;
 
-import com.twelvemonkeys.servlet.ServletUtil;
-
-import javax.servlet.ServletRequest;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
+
+import javax.servlet.ServletRequest;
+
+import com.twelvemonkeys.servlet.ServletUtil;
 
 /**
  * This Servlet is able to render a cropped part of an image.
@@ -96,6 +97,7 @@ import java.awt.image.RenderedImage;
  * @author last modified by $Author: haku $
  * @version $Id: CropFilter.java#1 $
  */
+@Deprecated
 public class CropFilter extends ScaleFilter {
     /** {@code cropX}*/
     protected final static String PARAM_CROP_X = "cropX";

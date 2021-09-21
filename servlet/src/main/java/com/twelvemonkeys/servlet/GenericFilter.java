@@ -30,13 +30,20 @@
 
 package com.twelvemonkeys.servlet;
 
-import com.twelvemonkeys.lang.BeanUtil;
-
-import javax.servlet.*;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Enumeration;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+
+import com.twelvemonkeys.lang.BeanUtil;
 
 /**
  * Defines a generic, protocol-independent filter.
@@ -72,6 +79,7 @@ import java.util.Enumeration;
  * @see Filter
  * @see FilterConfig
  */
+@Deprecated
 public abstract class GenericFilter implements Filter, FilterConfig, Serializable {
     // TODO: Rewrite to use ServletConfigurator instead of BeanUtil
 
