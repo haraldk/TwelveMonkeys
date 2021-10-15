@@ -36,6 +36,7 @@ jobs:
           jdkFile: ${{ runner.temp }}/java_package.tar.gz
           java-version: '8'
           cache: 'maven'
+      - run: java -version
       - name: Test
         run: mvn test
 
