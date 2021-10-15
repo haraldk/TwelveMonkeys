@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.twelvemonkeys</groupId>
+        <groupId>com.github.gotson</groupId>
         <artifactId>twelvemonkeys</artifactId>
         <version>3.8.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.twelvemonkeys.bom</groupId>
+    <groupId>com.github.gotson.bom</groupId>
     <artifactId>bom</artifactId>
     <packaging>pom</packaging>
     <name>TwelveMonkeys :: BOM</name>
@@ -20,130 +20,130 @@
         <dependencies>
             <!-- Common dependencies-->
             <dependency>
-                <groupId>com.twelvemonkeys.common</groupId>
+                <groupId>com.github.gotson.common</groupId>
                 <artifactId>common-lang</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.common</groupId>
+                <groupId>com.github.gotson.common</groupId>
                 <artifactId>common-io</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.common</groupId>
+                <groupId>com.github.gotson.common</groupId>
                 <artifactId>common-image</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- ImageIO common dependencies -->
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-metadata</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-clippath</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- ImageIO plugins -->
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-bmp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-hdr</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-icns</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-iff</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-jpeg</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-pcx</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-pdf</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-pict</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-pnm</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-psd</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-sgi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-tga</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-thumbsdb</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-tiff</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-webp</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-xwd</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- ImageIO 3rd party dependent plugins -->
             <dependency>
-                <groupId>com.twelvemonkeys.imageio</groupId>
+                <groupId>com.github.gotson.imageio</groupId>
                 <artifactId>imageio-batik</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <!-- Servlet -->
             <dependency>
-                <groupId>com.twelvemonkeys.servlet</groupId>
+                <groupId>com.github.gotson.servlet</groupId>
                 <artifactId>servlet</artifactId>
                 <version>${project.version}</version>
             </dependency>
