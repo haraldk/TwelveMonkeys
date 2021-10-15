@@ -31,28 +31,6 @@
 
 package com.twelvemonkeys.imageio.plugins.webp;
 
-import java.awt.*;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorConvertOp;
-import java.awt.image.ColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.WritableRaster;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageReaderSpi;
-
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.Directory;
@@ -65,6 +43,23 @@ import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.imageio.util.RasterUtils;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+import java.awt.*;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * WebPImageReader
@@ -292,7 +287,7 @@ final class WebPImageReader extends ImageReaderBase {
                         long chunkStart = imageInput.getStreamPosition();
 
                         if (nextChunk == WebP.CHUNK_ICCP) {
-                            iccProfile = ColorSpaces.readProfile(IIOUtil.createStreamAdapter(imageInput, chunkLength));
+                            iccProfile = ICC_Profile.getInstance(IIOUtil.createStreamAdapter(imageInput, chunkLength));
                         }
                         else {
                             processWarningOccurred(String.format("Expected 'ICCP' chunk, '%s' chunk encountered", fourCC(nextChunk)));
