@@ -6,9 +6,10 @@ jobs:
   test:
     name: test ${{ matrix.os }} jdk${{ matrix.java }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ 8, 11, 16 ]
+        java: [ 8, 11, 16, 17 ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
