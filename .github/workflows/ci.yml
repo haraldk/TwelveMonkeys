@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: |
-          download_url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=245050_d3c52aa6bfa54d3ca74e617f18309292"
+          download_url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=245038_d3c52aa6bfa54d3ca74e617f18309292"
           wget -O $RUNNER_TEMP/java_package.tar.gz $download_url
       - uses: actions/setup-java@v2
         with:
