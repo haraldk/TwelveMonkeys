@@ -25,6 +25,9 @@ jobs:
   test_oracle:
     name: test Oracle JDK 8
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        kcms: [true, false]
     steps:
       - uses: actions/checkout@v2
       - run: |
@@ -36,7 +39,14 @@ jobs:
           jdkFile: ${{ runner.temp }}/java_package.tar.gz
           java-version: '8'
           cache: 'maven'
-      - run: java -version
+      - name: Set MAVEN_OPTS
+        if: ${{ matrix.kcms }}
+        run: |
+          echo "MAVEN_OPTS=-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider" >> $GITHUB_ENV
+      - name: Display Java version
+        run: java -version
+      - name: Display Maven Opts
+        run: echo $MAVEN_OPTS
       - name: Test
         run: mvn test
 
