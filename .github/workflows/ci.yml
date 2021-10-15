@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ 8, 11, 17 ]
+        java: [ 8, 11, 16 ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
