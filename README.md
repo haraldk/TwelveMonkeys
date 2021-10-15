@@ -272,12 +272,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 <dependencies>
     ...
     <dependency>
-        <groupId>com.github.gotson.imageio</groupId>
+        <groupId>com.github.gotson.twelvemonkeys.imageio</groupId>
         <artifactId>imageio-jpeg</artifactId>
         <version>3.7.0</version>
     </dependency>
     <dependency>
-        <groupId>com.github.gotson.imageio</groupId>
+        <groupId>com.github.gotson.twelvemonkeys.imageio</groupId>
         <artifactId>imageio-tiff</artifactId>
         <version>3.7.0</version>
     </dependency>
@@ -287,7 +287,7 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     Make sure you add the IIOProviderContextListener to your web.xml, see above.
     -->
     <dependency>
-        <groupId>com.github.gotson.servlet</groupId>
+        <groupId>com.github.gotson.twelvemonkeys.servlet</groupId>
         <artifactId>servlet</artifactId>
         <version>3.7.0</version>
     </dependency>
