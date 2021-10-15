@@ -31,6 +31,28 @@
 
 package com.twelvemonkeys.imageio.plugins.webp;
 
+import java.awt.*;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.Directory;
@@ -44,22 +66,6 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.imageio.util.RasterUtils;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageReaderSpi;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.*;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 /**
  * WebPImageReader
  */
@@ -72,6 +78,7 @@ final class WebPImageReader extends ImageReaderBase {
     // Either VP8_, VP8L or VP8X chunk
     private VP8xChunk header;
     private ICC_Profile iccProfile;
+    private final List<AnimationFrame> frames = new ArrayList<>();
 
     WebPImageReader(ImageReaderSpi provider) {
         super(provider);
@@ -82,6 +89,7 @@ final class WebPImageReader extends ImageReaderBase {
         header = null;
         iccProfile = null;
         lsbBitReader = null;
+        frames.clear();
     }
 
     @Override
@@ -94,12 +102,82 @@ final class WebPImageReader extends ImageReaderBase {
     private void readHeader(int imageIndex) throws IOException {
         checkBounds(imageIndex);
 
-        // TODO: Consider just storing the chunks, parse until VP8, VP8L or VP8X chunk
+        readHeader();
+
+        if (header.containsANIM) {
+            readFrame(imageIndex);
+        }
+    }
+
+    private void readFrame(int frameIndex) throws IOException {
+        if (!header.containsANIM) {
+            throw new IndexOutOfBoundsException("imageIndex >= 1 for non-animated WebP: " + frameIndex);
+        }
+
+        if (frameIndex < frames.size()) {
+            return;
+        }
+
+        // Note: Always extended format if we have animation
+        // Seek to last frame, or end of header if no frames...
+        RIFFChunk frame = frames.isEmpty() ? header : frames.get(frames.size() - 1);
+        imageInput.seek(frame.offset + frame.length);
+
+        while (imageInput.getStreamPosition() < imageInput.length()) {
+            int nextChunk = imageInput.readInt();
+            long chunkLength = imageInput.readUnsignedInt();
+            long chunkStart = imageInput.getStreamPosition();
+
+            if (DEBUG) {
+                System.out.printf("chunk: '%s'\n", fourCC(nextChunk));
+                System.out.println("chunkLength: " + chunkLength);
+                System.out.println("chunkStart: " + chunkStart);
+            }
+
+            switch (nextChunk) {
+                case WebP.CHUNK_ANIM:
+                    // TODO: 32 bit bg color (hint!) + 16 bit loop count
+                    //  + expose bg color in std image metadata...
+                    break;
+
+                case WebP.CHUNK_ANMF:
+                    // TODO: Expose x/y offset in std image metadata
+                    int x = 2 * (int) lsbBitReader.readBits(24); // Might be more efficient to read as 3 bytes...
+                    int y = 2 * (int) lsbBitReader.readBits(24);
+                    int w = 1 + (int) lsbBitReader.readBits(24);
+                    int h = 1 + (int) lsbBitReader.readBits(24);
+
+                    Rectangle bounds = new Rectangle(x, y, w, h);
+
+                    // TODO: Expose duration/flags in image metadata
+                    int duration = (int) imageInput.readBits(24);
+                    int flags = imageInput.readUnsignedByte(); // 6 bit reserved + blend mode + disposal mode
+
+                    frames.add(new AnimationFrame(chunkLength, chunkStart, bounds, duration, flags));
+
+                    break;
+
+                default:
+                    // Skip
+                    break;
+            }
+
+            if (frameIndex < frames.size()) {
+                return;
+            }
+
+            imageInput.seek(chunkStart + chunkLength + (chunkLength & 1)); // Padded to even length
+        }
+
+        throw new IndexOutOfBoundsException(String.format("imageIndex > %d: %d", frames.size(), frameIndex));
+    }
+
+    private void readHeader() throws IOException {
         if (header != null) {
             return;
         }
 
-        // TODO: Generalize RIFF chunk parsing!
+        // TODO: Generalize RIFF chunk parsing! Visitor?
 
         // RIFF native order is Little Endian
         imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -125,10 +203,10 @@ final class WebPImageReader extends ImageReaderBase {
         switch (chunk) {
             case WebP.CHUNK_VP8_:
                 //https://tools.ietf.org/html/rfc6386#section-9.1
-                int frameType = lsbBitReader.readBit(); // 0 = key frame, 1 = interframe (not used in WebP)
+                int frameType = lsbBitReader.readBit(); // 0 = key frame, 1 = inter frame (not used in WebP)
 
                 if (frameType != 0) {
-                    throw new IIOException("Unexpected WebP frame type (expected 0): " + frameType);
+                    throw new IIOException("Unexpected WebP frame type, expected key frame (0): " + frameType);
                 }
 
                 int versionNumber = (int) lsbBitReader.readBits(3); // 0 - 3 = different profiles (see spec)
@@ -214,7 +292,7 @@ final class WebPImageReader extends ImageReaderBase {
                         long chunkStart = imageInput.getStreamPosition();
 
                         if (nextChunk == WebP.CHUNK_ICCP) {
-                            iccProfile = ICC_Profile.getInstance(IIOUtil.createStreamAdapter(imageInput, chunkLength));
+                            iccProfile = ColorSpaces.readProfile(IIOUtil.createStreamAdapter(imageInput, chunkLength));
                         }
                         else {
                             processWarningOccurred(String.format("Expected 'ICCP' chunk, '%s' chunk encountered", fourCC(nextChunk)));
@@ -250,20 +328,42 @@ final class WebPImageReader extends ImageReaderBase {
 
     @Override
     public int getNumImages(boolean allowSearch) throws IOException {
-        // TODO: Support ANIM/ANMF
-        return super.getNumImages(allowSearch);
+        assertInput();
+        readHeader();
+
+        if (header.containsANIM && allowSearch) {
+            if (isSeekForwardOnly()) {
+                throw new IllegalStateException("Illegal combination of allowSearch with seekForwardOnly");
+            }
+
+            readAllFrames();
+            return frames.size();
+        }
+
+        return header.containsANIM ? -1 : 1;
+    }
+
+    private void readAllFrames() throws IOException {
+        try {
+            readFrame(Integer.MAX_VALUE);
+        }
+        catch (IndexOutOfBoundsException ignore) {}
     }
 
     @Override
     public int getWidth(int imageIndex) throws IOException {
         readHeader(imageIndex);
-        return header.width;
+
+        return header.containsANIM ? frames.get(imageIndex).bounds.width
+                                   : header.width;
     }
 
     @Override
     public int getHeight(int imageIndex) throws IOException {
         readHeader(imageIndex);
-        return header.height;
+
+        return header.containsANIM ? frames.get(imageIndex).bounds.height
+                                   : header.height;
     }
 
     @Override
@@ -318,80 +418,15 @@ final class WebPImageReader extends ImageReaderBase {
                 break;
 
             case WebP.CHUNK_VP8X:
-                imageInput.seek(header.offset + header.length);
-
-                while (imageInput.getStreamPosition() < imageInput.length()) {
-                    int nextChunk = imageInput.readInt();
-                    long chunkLength = imageInput.readUnsignedInt();
-                    long chunkStart = imageInput.getStreamPosition();
-
-                    if (DEBUG) {
-                        System.out.printf("chunk: '%s'\n", fourCC(nextChunk));
-                        System.out.println("chunkLength: " + chunkLength);
-                        System.out.println("chunkStart: " + chunkStart);
-                    }
-
-                    switch (nextChunk) {
-                        case WebP.CHUNK_ALPH:
-                            int reserved = (int) imageInput.readBits(2);
-                            if (reserved != 0) {
-                                // Spec says SHOULD be 0
-                                processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
-                            }
-
-                            int preProcessing = (int) imageInput.readBits(2);
-                            int filtering = (int) imageInput.readBits(2);
-                            int compression = (int) imageInput.readBits(2);
-
-                            if (DEBUG) {
-                                System.out.println("preProcessing: " + preProcessing);
-                                System.out.println("filtering: " + filtering);
-                                System.out.println("compression: " + compression);
-                            }
-
-                            switch (compression) {
-                                case 0:
-                                    readUncompressedAlpha(destination.getAlphaRaster());
-                                    break;
-                                case 1:
-                                    opaqueAlpha(destination.getAlphaRaster()); // TODO: Remove when correctly implemented!
-                                    readVP8Lossless(destination.getAlphaRaster(), param);
-                                    break;
-                                default:
-                                    processWarningOccurred("Unknown WebP alpha compression: " + compression);
-                                    opaqueAlpha(destination.getAlphaRaster());
-                                    break;
-                            }
-
-                            break;
-
-                        case WebP.CHUNK_VP8_:
-                            readVP8(RasterUtils.asByteRaster(destination.getRaster())
-                                    .createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[]{0, 1, 2}), param);
-                            break;
-
-                        case WebP.CHUNK_VP8L:
-                            readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param);
-                            break;
-
-                        case WebP.CHUNK_ICCP:
-                            // Ignore, we already read this
-                        case WebP.CHUNK_EXIF:
-                        case WebP.CHUNK_XMP_:
-                            // Ignore, we'll read this later
-                            break;
-
-                        case WebP.CHUNK_ANIM:
-                        case WebP.CHUNK_ANMF:
-                            processWarningOccurred("Ignoring unsupported chunk: " + fourCC(nextChunk));
-                            break;
-
-                        default:
-                            processWarningOccurred("Ignoring unexpected chunk: " + fourCC(nextChunk));
-                            break;
-                    }
-
-                    imageInput.seek(chunkStart + chunkLength + (chunkLength & 1)); // Padded to even length
+                if (header.containsANIM) {
+                    AnimationFrame frame = frames.get(imageIndex);
+                    imageInput.seek(frame.offset + 16);
+                    opaqueAlpha(destination.getAlphaRaster());
+                    readVP8Extended(destination, param, frame.offset + frame.length);
+                }
+                else {
+                    imageInput.seek(header.offset + header.length);
+                    readVP8Extended(destination, param, imageInput.length());
                 }
 
                 break;
@@ -404,11 +439,88 @@ final class WebPImageReader extends ImageReaderBase {
 
         if (abortRequested()) {
             processReadAborted();
-        } else {
+        }
+        else {
             processImageComplete();
         }
 
         return destination;
+    }
+
+    private void readVP8Extended(BufferedImage destination, ImageReadParam param, long streamEnd) throws IOException {
+        while (imageInput.getStreamPosition() < streamEnd) {
+            int nextChunk = imageInput.readInt();
+            long chunkLength = imageInput.readUnsignedInt();
+            long chunkStart = imageInput.getStreamPosition();
+
+            if (DEBUG) {
+                System.out.printf("chunk: '%s'\n", fourCC(nextChunk));
+                System.out.println("chunkLength: " + chunkLength);
+                System.out.println("chunkStart: " + chunkStart);
+            }
+
+            switch (nextChunk) {
+                case WebP.CHUNK_ALPH:
+                    int reserved = (int) imageInput.readBits(2);
+                    if (reserved != 0) {
+                        // Spec says SHOULD be 0
+                        processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
+                    }
+
+                    int preProcessing = (int) imageInput.readBits(2);
+                    int filtering = (int) imageInput.readBits(2);
+                    int compression = (int) imageInput.readBits(2);
+
+                    if (DEBUG) {
+                        System.out.println("preProcessing: " + preProcessing);
+                        System.out.println("filtering: " + filtering);
+                        System.out.println("compression: " + compression);
+                    }
+
+                    switch (compression) {
+                        case 0:
+                            readUncompressedAlpha(destination.getAlphaRaster());
+                            break;
+                        case 1:
+                            opaqueAlpha(destination.getAlphaRaster()); // TODO: Remove when correctly implemented!
+//                            readVP8Lossless(destination.getAlphaRaster(), param);
+                            break;
+                        default:
+                            processWarningOccurred("Unknown WebP alpha compression: " + compression);
+                            opaqueAlpha(destination.getAlphaRaster());
+                            break;
+                    }
+
+                    break;
+
+                case WebP.CHUNK_VP8_:
+                    readVP8(RasterUtils.asByteRaster(destination.getRaster())
+                            .createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[]{ 0, 1, 2}), param);
+                    break;
+
+                case WebP.CHUNK_VP8L:
+                    readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param);
+                    break;
+
+                case WebP.CHUNK_ANIM:
+                case WebP.CHUNK_ANMF:
+                    if (!header.containsANIM) {
+                        processWarningOccurred("Ignoring unsupported chunk: " + fourCC(nextChunk));
+                    }
+                case WebP.CHUNK_ICCP:
+                    // Ignore, we already read this
+                case WebP.CHUNK_EXIF:
+                case WebP.CHUNK_XMP_:
+                    // Ignore, we'll read these later
+                    break;
+
+                default:
+                    processWarningOccurred("Ignoring unexpected chunk: " + fourCC(nextChunk));
+                    break;
+            }
+
+            imageInput.seek(chunkStart + chunkLength + (chunkLength & 1)); // Padded to even length
+        }
     }
 
     private void applyICCProfileIfNeeded(final BufferedImage destination) {
@@ -542,9 +654,5 @@ final class WebPImageReader extends ImageReaderBase {
                 imageInput.seek(chunkStart + chunkLength + (chunkLength & 1)); // Padded to even length
             }
         }
-    }
-
-    protected static void showIt(BufferedImage image, String title) {
-        ImageReaderBase.showIt(image, title);
     }
 }
