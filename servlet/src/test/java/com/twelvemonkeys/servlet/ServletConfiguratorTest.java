@@ -31,7 +31,6 @@
 package com.twelvemonkeys.servlet;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -247,7 +246,7 @@ public class ServletConfiguratorTest {
         // Verify
         verify(servlet, never()).setX(anyInt());
         verify(servlet, times(1)).setFoo("Foo");
-        verify(servlet, times(1)).setFoo(Matchers.<String>any()); // We don't want multiple invocations
+        verify(servlet, times(1)).setFoo(anyString()); // We don't want multiple invocations
     }
 
     // Test interface
@@ -289,7 +288,7 @@ public class ServletConfiguratorTest {
 
         // Verify
         verify(servlet, times(1)).setRequired("the required value");
-        verify(servlet, times(1)).setRequired(Matchers.<String>any()); // We don't want multiple invocations
+        verify(servlet, times(1)).setRequired(anyString()); // We don't want multiple invocations
     }
 
     @Test
@@ -308,7 +307,7 @@ public class ServletConfiguratorTest {
         ServletConfigurator.configure(servlet, config);
 
         // Verify
-        verify(servlet, never()).setNonRequired(Matchers.<String>any()); // Simply not configured
+        verify(servlet, never()).setNonRequired(anyString()); // Simply not configured
     }
 
     @Test(expected = ServletConfigException.class)
@@ -345,7 +344,7 @@ public class ServletConfiguratorTest {
 
         // Verify
         verify(servlet, times(1)).setNonRequired(new int[] {1, 2, 3});
-        verify(servlet, times(1)).setNonRequired(Matchers.<int[]>any());
+        verify(servlet, times(1)).setNonRequired((int[]) any());
     }
 
 

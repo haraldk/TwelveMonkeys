@@ -54,8 +54,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -225,7 +223,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             assertEquals(500, image.getHeight());
 
             // CSS and embedded resources all go!
-            verifyZeroInteractions(listener);
+            verifyNoInteractions(listener);
         }
         finally {
             reader.dispose();
@@ -266,7 +264,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             assertEquals(500, image.getHeight());
 
             // No more warnings now that the base URI is set
-            verifyZeroInteractions(listener);
+            verifyNoInteractions(listener);
         }
         finally {
             reader.dispose();

@@ -39,8 +39,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 public class KCMSSanitizerStrategyTest {
