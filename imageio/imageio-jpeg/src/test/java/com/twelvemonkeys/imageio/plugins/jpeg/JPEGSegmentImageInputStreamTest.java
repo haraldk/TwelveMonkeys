@@ -36,7 +36,6 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 
 import org.junit.Test;
-import org.mockito.internal.matchers.LessOrEqual;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -48,6 +47,7 @@ import java.net.URL;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -124,7 +124,7 @@ public class JPEGSegmentImageInputStreamTest {
             length++;
         }
 
-        assertThat(length, new LessOrEqual<>(10203L)); // In no case should length increase
+        assertThat(length, lessThanOrEqualTo(10203L)); // In no case should length increase
 
         assertEquals(9607L, length); // May change, if more chunks are passed to reader...
     }

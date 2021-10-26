@@ -69,7 +69,7 @@ public final class GenericFilterTest extends FilterAbstractTest {
 
         // TRUE
         filter = new GenericFilterImpl();
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put("once-per-request", "true");
 
         try {
@@ -84,7 +84,7 @@ public final class GenericFilterTest extends FilterAbstractTest {
 
         // TRUE
         filter = new GenericFilterImpl();
-        params = new HashMap<String, String>();
+        params = new HashMap<>();
         params.put("oncePerRequest", "true");
 
         try {
@@ -115,10 +115,7 @@ public final class GenericFilterTest extends FilterAbstractTest {
         try {
             chain.doFilter(makeRequest(), makeResponse());
         }
-        catch (IOException e) {
-            fail(e.getMessage());
-        }
-        catch (ServletException e) {
+        catch (IOException | ServletException e) {
             fail(e.getMessage());
         }
 
@@ -145,10 +142,7 @@ public final class GenericFilterTest extends FilterAbstractTest {
         try {
             chain.doFilter(makeRequest(), makeResponse());
         }
-        catch (IOException e) {
-            fail(e.getMessage());
-        }
-        catch (ServletException e) {
+        catch (IOException | ServletException e) {
             fail(e.getMessage());
         }
 

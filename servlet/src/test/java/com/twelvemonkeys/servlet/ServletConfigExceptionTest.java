@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import java.io.PrintWriter;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
 /**
@@ -62,8 +62,8 @@ public class ServletConfigExceptionTest {
             throw new ServletConfigException("FooBar!");
         }
         catch (ServletConfigException e) {
-            assertEquals(null, e.getRootCause()); // Old API
-            assertEquals(null, e.getCause());
+            assertNull(e.getRootCause()); // Old API
+            assertNull(e.getCause());
 
             e.printStackTrace(new PrintWriter(new NullOutputStream()));
         }
@@ -77,8 +77,8 @@ public class ServletConfigExceptionTest {
             throw e;
         }
         catch (ServletConfigException e) {
-            assertEquals(null, e.getRootCause()); // Old API
-            assertEquals(null, e.getCause());
+            assertNull(e.getRootCause()); // Old API
+            assertNull(e.getCause());
 
             e.printStackTrace(new PrintWriter(new NullOutputStream()));
         }
@@ -108,8 +108,8 @@ public class ServletConfigExceptionTest {
             throw new ServletConfigException("FooBar!", null);
         }
         catch (ServletConfigException e) {
-            assertEquals(null, e.getRootCause()); // Old API
-            assertEquals(null, e.getCause());
+            assertNull(e.getRootCause()); // Old API
+            assertNull(e.getCause());
 
             e.printStackTrace(new PrintWriter(new NullOutputStream()));
         }

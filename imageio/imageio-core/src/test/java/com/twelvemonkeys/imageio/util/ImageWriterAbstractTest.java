@@ -52,7 +52,6 @@ import java.net.URL;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.*;
 
 /**
@@ -104,7 +103,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
 
         return image;
     }
-    
+
     protected final RenderedImage getTestData(final int index) {
         return getTestData().get(index);
     }
@@ -219,7 +218,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         // At least imageStarted and imageComplete, plus any number of imageProgress
         InOrder ordered = inOrder(listener);
         ordered.verify(listener).imageStarted(writer, 0);
-        ordered.verify(listener, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(writer), anyFloat());
         ordered.verify(listener).imageComplete(writer);
     }
 
@@ -251,9 +250,9 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         ordered.verify(listenerToo).imageStarted(writer, 0);
         ordered.verify(listenerThree).imageStarted(writer, 0);
 
-        ordered.verify(listener, atLeastOnce()).imageProgress(eq(writer), anyInt());
-        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(writer), anyInt());
-        ordered.verify(listenerThree, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(writer), anyFloat());
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(writer), anyFloat());
+        ordered.verify(listenerThree, atLeastOnce()).imageProgress(eq(writer), anyFloat());
 
         ordered.verify(listener).imageComplete(writer);
         ordered.verify(listenerToo).imageComplete(writer);
@@ -290,7 +289,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
     }
 
     @Test
@@ -315,12 +314,12 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
 
         // At least imageStarted and imageComplete, plus any number of imageProgress
         InOrder ordered = inOrder(listenerToo);
         ordered.verify(listenerToo).imageStarted(writer, 0);
-        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(writer), anyInt());
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(writer), anyFloat());
         ordered.verify(listenerToo).imageComplete(writer);
 
     }
@@ -345,7 +344,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
     }
 
     @Test
@@ -371,7 +370,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
-        verifyZeroInteractions(listenerToo);
+        verifyNoInteractions(listener);
+        verifyNoInteractions(listenerToo);
     }
 }
