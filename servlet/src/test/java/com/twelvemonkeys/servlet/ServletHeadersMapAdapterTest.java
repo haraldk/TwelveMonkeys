@@ -48,8 +48,8 @@ import static org.mockito.Mockito.when;
  * @version $Id: ServletHeadersMapAdapterTest.java#1 $
  */
 public class ServletHeadersMapAdapterTest extends MapAbstractTest {
-    private static final List<String> HEADER_VALUE_ETAG = Arrays.asList("\"1234567890abcdef\"");
-    private static final List<String> HEADER_VALUE_DATE = Arrays.asList(new Date().toString());
+    private static final List<String> HEADER_VALUE_ETAG = Collections.singletonList("\"1234567890abcdef\"");
+    private static final List<String> HEADER_VALUE_DATE = Collections.singletonList(new Date().toString());
     private static final List<String> HEADER_VALUE_FOO = Arrays.asList("one", "two");
 
     public boolean isPutAddSupported() {
@@ -108,7 +108,7 @@ public class ServletHeadersMapAdapterTest extends MapAbstractTest {
     }
 
     protected static <T> ReturnNewEnumeration<T> returnEnumeration(final Collection<T> collection) {
-        return new ReturnNewEnumeration<T>(collection);
+        return new ReturnNewEnumeration<>(collection);
     }
 
     private static class ReturnNewEnumeration<T> implements Answer<Enumeration<T>> {

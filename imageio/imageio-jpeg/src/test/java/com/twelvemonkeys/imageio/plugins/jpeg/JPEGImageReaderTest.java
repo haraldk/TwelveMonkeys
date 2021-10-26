@@ -36,7 +36,6 @@ import com.twelvemonkeys.lang.StringUtil;
 
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
-import org.mockito.internal.matchers.GreaterThan;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -66,12 +65,11 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
 import static org.mockito.AdditionalMatchers.and;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -1456,7 +1454,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                     assertTrue(markerSequences.getLength() == 1 || markerSequences.getLength() == 2); // In case of JPEG encoded thumbnail, there will be 2
                     IIOMetadataNode markerSequence = (IIOMetadataNode) markerSequences.item(markerSequences.getLength() - 1); // The last will be the "main" image
                     assertNotNull(markerSequence);
-                    assertThat(markerSequence.getChildNodes().getLength(), new GreaterThan<>(0));
+                    assertThat(markerSequence.getChildNodes().getLength(), greaterThan(0));
 
                     NodeList unknowns = markerSequence.getElementsByTagName("unknown");
                     for (int j = 0; j < unknowns.getLength(); j++) {

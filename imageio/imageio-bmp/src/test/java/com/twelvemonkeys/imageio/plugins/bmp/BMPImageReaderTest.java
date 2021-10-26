@@ -32,8 +32,8 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNoException;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -295,7 +295,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         // At least imageStarted and imageComplete, plus any number of imageProgress
         InOrder ordered = inOrder(listener);
         ordered.verify(listener).imageStarted(reader, 0);
-        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyFloat());
         ordered.verify(listener).imageComplete(reader);
     }
 
@@ -318,7 +318,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         // At least imageStarted and imageComplete, plus any number of imageProgress
         InOrder ordered = inOrder(listener);
         ordered.verify(listener).imageStarted(reader, 0);
-        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyFloat());
         ordered.verify(listener).imageComplete(reader);
     }
 

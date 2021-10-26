@@ -31,7 +31,6 @@
 package com.twelvemonkeys.servlet;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -114,7 +113,7 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Arrays.asList("private")));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.singletonList("private")));
         when(config.getInitParameter("private")).thenReturn("99");
 
         ServletConfigurator.configure(servlet, config);
@@ -134,7 +133,7 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Arrays.asList("private")));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.singletonList("private")));
         when(config.getInitParameter("private")).thenReturn("private");
         when(config.getInitParameter("package-private")).thenReturn("package");
 
@@ -247,7 +246,7 @@ public class ServletConfiguratorTest {
         // Verify
         verify(servlet, never()).setX(anyInt());
         verify(servlet, times(1)).setFoo("Foo");
-        verify(servlet, times(1)).setFoo(Matchers.<String>any()); // We don't want multiple invocations
+        verify(servlet, times(1)).setFoo(anyString()); // We don't want multiple invocations
     }
 
     // Test interface
@@ -260,7 +259,7 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Arrays.asList("foo")));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.singletonList("foo")));
         when(config.getInitParameter("foo")).thenReturn("Foo");
 
         ServletConfigurator.configure(servlet, config);
@@ -282,14 +281,14 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Arrays.asList("required")));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.singletonList("required")));
         when(config.getInitParameter("required")).thenReturn("the required value");
 
         ServletConfigurator.configure(servlet, config);
 
         // Verify
         verify(servlet, times(1)).setRequired("the required value");
-        verify(servlet, times(1)).setRequired(Matchers.<String>any()); // We don't want multiple invocations
+        verify(servlet, times(1)).setRequired(anyString()); // We don't want multiple invocations
     }
 
     @Test
@@ -303,12 +302,12 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.<Object>emptyList()));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.emptyList()));
 
         ServletConfigurator.configure(servlet, config);
 
         // Verify
-        verify(servlet, never()).setNonRequired(Matchers.<String>any()); // Simply not configured
+        verify(servlet, never()).setNonRequired(anyString()); // Simply not configured
     }
 
     @Test(expected = ServletConfigException.class)
@@ -323,7 +322,7 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.<Object>emptyList()));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.emptyList()));
 
         ServletConfigurator.configure(servlet, config); // Should throw exception
     }
@@ -339,19 +338,19 @@ public class ServletConfiguratorTest {
 
         ServletConfig config = mock(ServletConfig.class);
         when(config.getServletName()).thenReturn("FooServlet");
-        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.<Object>emptyList()));
+        when(config.getInitParameterNames()).thenReturn(Collections.enumeration(Collections.emptyList()));
 
         ServletConfigurator.configure(servlet, config);
 
         // Verify
         verify(servlet, times(1)).setNonRequired(new int[] {1, 2, 3});
-        verify(servlet, times(1)).setNonRequired(Matchers.<int[]>any());
+        verify(servlet, times(1)).setNonRequired((int[]) any());
     }
 
 
     public interface Annotated {
         @InitParam(name = "foo")
-        public void annotated(String an);
+        void annotated(String an);
     }
 
     public abstract class AnnotatedServlet implements Servlet, Filter {
