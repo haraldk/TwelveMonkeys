@@ -1151,7 +1151,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         // At least imageStarted and imageComplete, plus any number of imageProgress
         InOrder ordered = inOrder(listener);
         ordered.verify(listener).imageStarted(reader, 0);
-        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyFloat());
         ordered.verify(listener).imageComplete(reader);
         reader.dispose();
     }
@@ -1184,9 +1184,9 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ordered.verify(listenerToo).imageStarted(reader, 0);
         ordered.verify(listenerThree).imageStarted(reader, 0);
 
-        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyInt());
-        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyInt());
-        ordered.verify(listenerThree, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listener, atLeastOnce()).imageProgress(eq(reader), anyFloat());
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyFloat());
+        ordered.verify(listenerThree, atLeastOnce()).imageProgress(eq(reader), anyFloat());
 
         ordered.verify(listener).imageComplete(reader);
         ordered.verify(listenerToo).imageComplete(reader);
@@ -1226,7 +1226,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
         reader.dispose();
     }
 
@@ -1253,11 +1253,11 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
 
         // Should not have called any methods on listener1...
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
 
         InOrder ordered = inOrder(listenerToo);
         ordered.verify(listenerToo).imageStarted(reader, 0);
-        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyInt());
+        ordered.verify(listenerToo, atLeastOnce()).imageProgress(eq(reader), anyFloat());
         ordered.verify(listenerToo).imageComplete(reader);
         reader.dispose();
     }
@@ -1281,7 +1281,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
         reader.dispose();
     }
 
@@ -1307,8 +1307,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         }
 
         // Should not have called any methods...
-        verifyZeroInteractions(listener);
-        verifyZeroInteractions(listenerToo);
+        verifyNoInteractions(listener);
+        verifyNoInteractions(listenerToo);
         reader.dispose();
     }
 
@@ -1333,7 +1333,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             }
         };
         doAnswer(abort).when(abortingListener).imageStarted(any(ImageReader.class), anyInt());
-        doAnswer(abort).when(abortingListener).imageProgress(any(ImageReader.class), anyInt());
+        doAnswer(abort).when(abortingListener).imageProgress(any(ImageReader.class), anyFloat());
 
         reader.addIIOReadProgressListener(abortingListener);
 

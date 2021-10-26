@@ -1,9 +1,11 @@
 dist: trusty
 language: java
 jdk:
-  - oraclejdk8  # Legacy
-  - oraclejdk11 # LTS
-  - oraclejdk15 # Latest
+  - oraclejdk8  # LTS until Mar 2022
+  - oraclejdk11 # LTS until Sep 2023
+  - oraclejdk15 # out of support
+  - oraclejdk16 # out of support
+  - oraclejdk17 # LTS until Sep 2026
 jobs:
   include:
     # Extra job, testing legacy CMM option

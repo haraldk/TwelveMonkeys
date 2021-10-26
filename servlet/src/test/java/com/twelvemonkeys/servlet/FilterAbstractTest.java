@@ -176,8 +176,8 @@ public abstract class FilterAbstractTest extends ObjectAbstractTest {
             private final Map<String, String> params;
 
             MockServletContext() {
-                attributes = new HashMap<String, Object>();
-                params = new HashMap<String, String>();
+                attributes = new HashMap<>();
+                params = new HashMap<>();
             }
 
             public Object getAttribute(String s) {
@@ -193,7 +193,7 @@ public abstract class FilterAbstractTest extends ObjectAbstractTest {
             }
 
             public String getInitParameter(String s) {
-                return (String) params.get(s);
+                return params.get(s);
             }
 
             public Enumeration getInitParameterNames() {

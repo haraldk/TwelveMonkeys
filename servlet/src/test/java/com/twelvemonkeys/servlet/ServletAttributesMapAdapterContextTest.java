@@ -85,7 +85,7 @@ public class ServletAttributesMapAdapterContextTest extends MapAbstractTest {
     }
 
     private Map<String, Object> createAttributes(boolean initialValues) {
-        Map<String, Object> map = new ConcurrentHashMap<String, Object>();
+        Map<String, Object> map = new ConcurrentHashMap<>();
 
         if (initialValues) {
             String[] sampleKeys = (String[]) getSampleKeys();
@@ -110,7 +110,7 @@ public class ServletAttributesMapAdapterContextTest extends MapAbstractTest {
     @Override
     public Object[] getNewSampleValues() {
         // Needs to be same length but different values
-        return new Object[] {new Date(-1l), "foo/bar", Arrays.asList(2, 3, 4)};
+        return new Object[] {new Date(-1L), "foo/bar", Arrays.asList(2, 3, 4)};
     }
 
     @Test
