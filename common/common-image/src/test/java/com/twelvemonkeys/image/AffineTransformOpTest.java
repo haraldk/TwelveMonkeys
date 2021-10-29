@@ -30,17 +30,26 @@
 
 package com.twelvemonkeys.image;
 
-import org.junit.Test;
+import static java.lang.Math.min;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
-import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
-import java.awt.image.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.DataBuffer;
+import java.awt.image.ImagingOpException;
+import java.awt.image.Raster;
+import java.awt.image.RasterOp;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import javax.imageio.ImageTypeSpecifier;
+
+import org.junit.Test;
 
 /**
  * AffineTransformOpTest.
@@ -101,6 +110,7 @@ public class AffineTransformOpTest {
 
     private final int width = 30;
     private final int height = 20;
+    private final double anchor = min(width, height) / 2.0;
 
     @Test
     public void testGetPoint2D() {
@@ -128,8 +138,8 @@ public class AffineTransformOpTest {
 
     @Test
     public void testFilterRotateBIStandard() {
-        BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
+        BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
         for (Integer type : TYPES) {
             BufferedImage image = new BufferedImage(width, height, type);
@@ -147,8 +157,8 @@ public class AffineTransformOpTest {
 
     @Test
     public void testFilterRotateBICustom() {
-        BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
+        BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
         for (ImageTypeSpecifier spec : SPECS) {
             BufferedImage image = spec.createBufferedImage(width, height);
@@ -197,8 +207,8 @@ public class AffineTransformOpTest {
 
     @Test
     public void testFilterRotateRasterStandard() {
-        RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
+        RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
         for (Integer type : TYPES) {
             Raster raster = new BufferedImage(width, height, type).getRaster();
@@ -221,8 +231,6 @@ public class AffineTransformOpTest {
                     fail("No result!");
                 }
                 else {
-                    System.err.println("AffineTransformOpTest.testFilterRotateRasterStandard");
-                    System.err.println("type: " + type);
                     continue;
                 }
             }
@@ -240,8 +248,8 @@ public class AffineTransformOpTest {
 
     @Test
     public void testFilterRotateRasterCustom() {
-        RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
-        RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, Math.min(width, height) / 2, Math.min(width, height) / 2), null);
+        RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
+        RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
         for (ImageTypeSpecifier spec : SPECS) {
             Raster raster = spec.createBufferedImage(width, height).getRaster();
@@ -264,8 +272,6 @@ public class AffineTransformOpTest {
                     fail("No result!");
                 }
                 else {
-                    System.err.println("AffineTransformOpTest.testFilterRotateRasterCustom");
-                    System.err.println("spec: " + spec);
                     continue;
                 }
             }
