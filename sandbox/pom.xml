@@ -76,7 +76,7 @@
             <dependency>
                 <groupId>com.twelvemonkeys.imageio</groupId>
                 <artifactId>imageio-core</artifactId>
-                <version>${project.version}</version>
+                <version>3.7.0</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
