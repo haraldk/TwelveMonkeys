@@ -30,11 +30,21 @@
 
 package com.twelvemonkeys.imageio.metadata.xmp;
 
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.MetadataReader;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.lang.Validate;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -43,13 +53,11 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
-import javax.imageio.IIOException;
-import javax.imageio.stream.ImageInputStream;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
-import java.util.*;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataReader;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * XMPReader
@@ -67,10 +75,9 @@ public final class XMPReader extends MetadataReader {
     public Directory read(final ImageInputStream input) throws IOException {
         Validate.notNull(input, "input");
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-
         try {
+            DocumentBuilderFactory factory = createDocumentBuilderFactory();
+
             // TODO: Consider parsing using SAX?
             // TODO: Determine encoding and parse using a Reader...
             // TODO: Refactor scanner to return inputstream?
@@ -78,9 +85,6 @@ public final class XMPReader extends MetadataReader {
             DocumentBuilder builder = factory.newDocumentBuilder();
             builder.setErrorHandler(new DefaultHandler());
             Document document = builder.parse(new InputSource(IIOUtil.createStreamAdapter(input)));
-
-//            XMLSerializer serializer = new XMLSerializer(System.err, System.getProperty("file.encoding"));
-//            serializer.serialize(document);
 
             String toolkit = getToolkit(document);
             Node rdfRoot = document.getElementsByTagNameNS(XMP.NS_RDF, "RDF").item(0);
@@ -92,8 +96,31 @@ public final class XMPReader extends MetadataReader {
             throw new IIOException(e.getMessage(), e);
         }
         catch (ParserConfigurationException e) {
-            throw new RuntimeException(e); // TODO: Or IOException?
+            throw new RuntimeException(e);
         }
+    }
+
+    private DocumentBuilderFactory createDocumentBuilderFactory() throws ParserConfigurationException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+
+        // Security: Disable XInclude & expanding entity references ("bombs"), not needed for XMP
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        // Security: Enable "secure processing", to prevent DoS attacks
+        factory.setAttribute(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+
+        // Security: Remove possibility to access external DTDs or Schema, not needed for XMP
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+
+        // Security: Disable loading of external DTD and entities, not needed for XMP
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+        return factory;
     }
 
     private String getToolkit(Document document) {
@@ -109,7 +136,7 @@ public final class XMPReader extends MetadataReader {
     }
 
     private XMPDirectory parseDirectories(final Node pParentNode, NodeList pNodes, String toolkit) {
-        Map<String, List<Entry>> subdirs = new LinkedHashMap<String, List<Entry>>();
+        Map<String, List<Entry>> subdirs = new LinkedHashMap<>();
 
         for (Node desc : asIterable(pNodes)) {
             if (desc.getParentNode() != pParentNode) {
@@ -127,7 +154,7 @@ public final class XMPReader extends MetadataReader {
                 // Lookup
                 List<Entry> dir = subdirs.get(node.getNamespaceURI());
                 if (dir == null) {
-                    dir = new ArrayList<Entry>();
+                    dir = new ArrayList<>();
                     subdirs.put(node.getNamespaceURI(), dir);
                 }
 
@@ -139,7 +166,7 @@ public final class XMPReader extends MetadataReader {
                 else {
                     // TODO: This method contains loads of duplication an should be cleaned up...
                     // Support attribute short-hand syntax
-                    Map<String, List<Entry>> subsubdirs = new LinkedHashMap<String, List<Entry>>();
+                    Map<String, List<Entry>> subsubdirs = new LinkedHashMap<>();
 
                     parseAttributesForKnownElements(subsubdirs, node);
 
@@ -161,7 +188,7 @@ public final class XMPReader extends MetadataReader {
             }
         }
 
-        List<Directory> entries = new ArrayList<Directory>(subdirs.size());
+        List<Directory> entries = new ArrayList<>(subdirs.size());
 
         // TODO: Should we still allow asking for a subdirectory by item id?
         for (Map.Entry<String, List<Entry>> entry : subdirs.entrySet()) {
@@ -179,7 +206,7 @@ public final class XMPReader extends MetadataReader {
 
     private RDFDescription parseAsResource(Node node) {
         // See: http://www.w3.org/TR/REC-rdf-syntax/#section-Syntax-parsetype-resource
-        List<Entry> entries = new ArrayList<Entry>();
+        List<Entry> entries = new ArrayList<>();
 
         for (Node child : asIterable(node.getChildNodes())) {
             if (child.getNodeType() != Node.ELEMENT_NODE) {
@@ -204,7 +231,7 @@ public final class XMPReader extends MetadataReader {
             List<Entry> dir = subdirs.get(attr.getNamespaceURI());
 
             if (dir == null) {
-                dir = new ArrayList<Entry>();
+                dir = new ArrayList<>();
                 subdirs.put(attr.getNamespaceURI(), dir);
             }
 
@@ -216,7 +243,7 @@ public final class XMPReader extends MetadataReader {
         for (Node child : asIterable(node.getChildNodes())) {
             if (XMP.NS_RDF.equals(child.getNamespaceURI()) && "Alt".equals(child.getLocalName())) {
                 // Support for <rdf:Alt><rdf:li> -> return a Map<String, Object> keyed on xml:lang
-                Map<String, Object> alternatives = new LinkedHashMap<String, Object>();
+                Map<String, Object> alternatives = new LinkedHashMap<>();
                 for (Node alternative : asIterable(child.getChildNodes())) {
                     if (XMP.NS_RDF.equals(alternative.getNamespaceURI()) && "li".equals(alternative.getLocalName())) {
                         NamedNodeMap attributes = alternative.getAttributes();
@@ -230,7 +257,7 @@ public final class XMPReader extends MetadataReader {
             else if (XMP.NS_RDF.equals(child.getNamespaceURI()) && ("Seq".equals(child.getLocalName()) || "Bag".equals(child.getLocalName()))) {
                 // Support for <rdf:Seq><rdf:li> -> return array
                 // Support for <rdf:Bag><rdf:li> -> return array/unordered collection (how can a serialized collection not have order?)
-                List<Object> seq = new ArrayList<Object>();
+                List<Object> seq = new ArrayList<>();
 
                 for (Node sequence : asIterable(child.getChildNodes())) {
                     if (XMP.NS_RDF.equals(sequence.getNamespaceURI()) && "li".equals(sequence.getLocalName())) {

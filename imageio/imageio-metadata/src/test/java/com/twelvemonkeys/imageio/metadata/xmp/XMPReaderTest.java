@@ -30,26 +30,32 @@
 
 package com.twelvemonkeys.imageio.metadata.xmp;
 
-import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-import org.junit.Test;
-
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+
+import org.junit.Test;
+
+import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
 
 /**
  * XMPReaderTest
@@ -482,5 +488,70 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
         assertThat(exif.getEntryById("http://ns.adobe.com/exif/1.0/PixelXDimension"), hasValue("426"));
         assertThat(exif.getEntryById("http://ns.adobe.com/exif/1.0/PixelYDimension"), hasValue("550"));
         assertThat(exif.getEntryById("http://ns.adobe.com/exif/1.0/NativeDigest"), hasValue("36864,40960,40961,37121,37122,40962,40963,37510,40964,36867,36868,33434,33437,34850,34852,34855,34856,37377,37378,37379,37380,37381,37382,37383,37384,37385,37386,37396,41483,41484,41486,41487,41488,41492,41493,41495,41728,41729,41730,41985,41986,41987,41988,41989,41990,41991,41992,41993,41994,41995,41996,42016,0,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,23,24,25,26,27,28,30;A7F21D25E2C562F152B2C4ECC9E534DA"));
+    }
+
+    @Test(timeout = 1500L)
+    public void testNoExternalRequest() throws Exception {
+        // TODO: Use dynamic port?
+        try (HTTPServer server = new HTTPServer(7777)) {
+            try {
+                createReader().read(getResourceAsIIS("/xmp/xmp-jpeg-xxe.xml"));
+            } catch (IOException ioe) {
+                if (ioe.getMessage().contains("501")) {
+                    throw new AssertionError("Reading should not cause external requests", ioe);
+                }
+
+                // Any other exception is a bug (but might happen if the parser does not support certain features)
+                throw ioe;
+            }
+        }
+    }
+
+    private static class HTTPServer implements AutoCloseable {
+        private final ServerSocket server;
+        private final Thread thread;
+
+        HTTPServer(int port) throws IOException {
+            server = new ServerSocket(port, 1);
+            thread = new Thread(new Runnable() {
+                @Override public void run() {
+                    serve();
+                }
+            });
+            thread.start();
+        }
+
+        private void serve() {
+            try {
+                Socket client = server.accept();
+
+                // Get the input stream, don't care about the request
+                try (InputStream inputStream = client.getInputStream()) {
+                    while (inputStream.available() > 0) {
+                        if (inputStream.read() == -1) {
+                            break;
+                        }
+                    }
+
+                    // Answer with 501, this will cause the client to throw IOException
+                    try (OutputStream outputStream = client.getOutputStream()) {
+                        outputStream.write("HTTP/1.0 501 Not Implemented\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                    }
+                }
+            }
+            catch (IOException e) {
+                if (server.isClosed() && e instanceof SocketException) {
+                    // Socket closed due to server close, all good
+                    return;
+                }
+
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override public void close() throws Exception {
+            server.close();
+            thread.join(); // It's advised against throwing InterruptedException here, but this is not production code...
+        }
     }
 }
