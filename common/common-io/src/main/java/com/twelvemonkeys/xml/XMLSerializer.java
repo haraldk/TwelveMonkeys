@@ -30,16 +30,23 @@
 
 package com.twelvemonkeys.xml;
 
-import com.twelvemonkeys.lang.StringUtil;
-import org.w3c.dom.*;
-import org.xml.sax.SAXException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.util.Date;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
-import java.nio.charset.Charset;
-import java.util.Date;
+
+import org.w3c.dom.*;
+import org.xml.sax.SAXException;
+
+import com.twelvemonkeys.lang.StringUtil;
 
 /**
  * XMLSerializer
@@ -290,7 +297,7 @@ public class XMLSerializer {
     }
 
     private static int appendAndEscape(final String pString, int pStart, final int pEnd, final StringBuilder pBuilder, final String pEntity) {
-        pBuilder.append(pString.substring(pStart, pEnd));
+        pBuilder.append(pString, pStart, pEnd);
         pBuilder.append(pEntity);
         return pEnd + 1;
     }
@@ -527,8 +534,7 @@ public class XMLSerializer {
             builder = factory.newDocumentBuilder();
         }
         catch (ParserConfigurationException e) {
-            //noinspection ThrowableInstanceNeverThrown BOGUS
-            throw (IOException) new IOException(e.getMessage()).initCause(e);
+            throw new IOException(e);
         }
 
         DOMImplementation dom = builder.getDOMImplementation();
