@@ -39,6 +39,7 @@ import com.twelvemonkeys.util.LRUHashMap;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -96,6 +97,8 @@ public final class ColorSpaces {
     @SuppressWarnings("WeakerAccess")
     public static final int CS_GENERIC_CMYK = 5001;
 
+    static final int ICC_PROFILE_HEADER_SIZE = 128;
+
     // Weak references to hold the color spaces while cached
     private static WeakReference<ICC_Profile> adobeRGB1998 = new WeakReference<>(null);
     private static WeakReference<ICC_Profile> genericCMYK = new WeakReference<>(null);
@@ -104,16 +107,8 @@ public final class ColorSpaces {
     private static final Map<Key, ICC_ColorSpace> cache = new LRUHashMap<>(10);
 
     static {
-        try {
-            // Force invocation of ProfileDeferralMgr.activateProfiles() to avoid JDK-6986863
-            ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData();
-        }
-        catch (Throwable disasters) {
-            System.err.println("ICC Color Profile not properly activated due to the exception below.");
-            System.err.println("Expect to see JDK-6986863 in action, and consider filing a bug report to your JRE provider.");
-
-            disasters.printStackTrace();
-        }
+        // In case we didn't activate through SPI already
+        ProfileDeferralActivator.activateProfiles();
     }
 
     private ColorSpaces() {}
@@ -148,9 +143,11 @@ public final class ColorSpaces {
 
     private static byte[] getProfileHeaderWithProfileId(final ICC_Profile profile) {
         // Get *entire profile data*... :-/
-        byte[] data = profile.getData();
+        return getProfileHeaderWithProfileId(profile.getData());
+    }
 
-        // Clear out preferred CMM, platform & creator, as these does not affect the profile in any way
+    private static byte[] getProfileHeaderWithProfileId(byte[] data) {
+        // Clear out preferred CMM, platform & creator, as these don't affect the profile in any way
         // - LCMS updates CMM + creator to "lcms" and platform to current platform
         // - KCMS keeps the values in the file...
         Arrays.fill(data, ICC_Profile.icHdrCmmId, ICC_Profile.icHdrCmmId + 4, (byte) 0);
@@ -167,7 +164,7 @@ public final class ColorSpaces {
         System.arraycopy(md5, 0, data, ICC_Profile.icHdrProfileID, md5.length);
 
         // ICC profile header is the first 128 bytes
-        return Arrays.copyOf(data, 128);
+        return Arrays.copyOf(data, ICC_PROFILE_HEADER_SIZE);
     }
 
     private static byte[] computeMD5(byte[] data) {
@@ -203,23 +200,33 @@ public final class ColorSpaces {
         Key key = new Key(profileHeader);
 
         synchronized (cache) {
-            ICC_ColorSpace cs = cache.get(key);
+            ICC_ColorSpace cs = getCachedCS(key);
 
             if (cs == null) {
                 cs = new ICC_ColorSpace(profile);
 
                 validateColorSpace(cs);
 
-                // On LCMS, validation *alters* the profile header, need to re-generate key
-                key = profileCleaner.validationAltersProfileHeader()
-                      ? new Key(getProfileHeaderWithProfileId(cs.getProfile()))
-                      : key;
-
                 cache.put(key, cs);
+
+                // On LCMS, validation *alters* the profile header, need to re-generate key
+                if (profileCleaner.validationAltersProfileHeader()) {
+                    cache.put(new Key(getProfileHeaderWithProfileId(cs.getProfile())), cs);
+                }
             }
 
             return cs;
         }
+    }
+
+    private static ICC_ColorSpace getCachedCS(Key profileKey) {
+        synchronized (cache) {
+            return cache.get(profileKey);
+        }
+    }
+
+    private static ICC_ColorSpace getCachedCS(final byte[] profileHeader) {
+        return getCachedCS(new Key(profileHeader));
     }
 
     private static void validateColorSpace(final ICC_ColorSpace cs) {
@@ -316,6 +323,137 @@ public final class ColorSpaces {
         validateColorSpace(new ICC_ColorSpace(profile));
 
         return profile;
+    }
+
+    public static ICC_Profile readProfileRaw(final InputStream input) throws IOException {
+        return ICC_Profile.getInstance(input);
+    }
+
+    public static ICC_Profile readProfile(final InputStream input) throws IOException {
+        // TODO: Implement this smarter?
+        //  Could read the header 128 bytes, get size + magic, then read read rest into array and feed the byte[] method...
+        ICC_Profile profile = ICC_Profile.getInstance(input);
+
+        if (profile == null) {
+            throw new IllegalArgumentException("Invalid ICC Profile Data");
+        }
+
+        return createProfile(profile.getData());
+    }
+
+    public static ICC_Profile createProfileRaw(final byte[] input) {
+        try {
+            return readProfileRaw(new ByteArrayInputStream(input));
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException("Invalid ICC Profile Data", e);
+        }
+    }
+
+    public static ICC_Profile createProfile(final byte[] input) {
+        Validate.notNull(input, "input");
+
+        if (input.length < ICC_PROFILE_HEADER_SIZE) { // Can't be less than size of ICC header
+            throw new IllegalArgumentException("Truncated ICC profile, length < 128: " + input.length);
+        }
+        int size = intBigEndian(input, 0);
+        if (size < 0 || size > input.length) {
+            throw new IllegalArgumentException("Truncated ICC profile, length < " + size + ": " + input.length);
+        }
+
+        if (input[36] != 'a' || input[37] != 'c' || input[38] != 's' || input[39] != 'p') {
+            throw new IllegalArgumentException("Not an ICC profile, missing file signature");
+        }
+
+        // Look up in cache before returning, these are already validated
+        byte[] profileHeader = getProfileHeaderWithProfileId(input);
+        int csType = getCsType(profileHeader);
+
+        ICC_ColorSpace internal = getInternalCS(csType, profileHeader);
+        if (internal != null) {
+            return internal.getProfile();
+        }
+
+        ICC_ColorSpace cached = getCachedCS(profileHeader);
+        if (cached != null) {
+            return cached.getProfile();
+        }
+
+        // WEIRDNESS: Unlike the InputStream version, the byte version
+        //  of ICC_Profile.getInstance() does not discard extra bytes at the end.
+        // We'll chop them off here for convenience
+        byte[] profileBytes = input.length == size ? input : Arrays.copyOf(input, size);
+        ICC_Profile profile = ICC_Profile.getInstance(profileBytes);
+
+        // We'll validate & cache by creating a color space and returning its profile...
+        // TODO: Rewrite with separate cache for profiles...
+        return createColorSpace(profile).getProfile();
+    }
+
+    private static int intBigEndian(byte[] data, int index) {
+        return (data[index] & 0xff) << 24 | (data[index + 1] & 0xff) << 16 | (data[index + 2] & 0xff) << 8 | (data[index + 3] & 0xff);
+    }
+
+    private static int getCsType(byte[] profileHeader) {
+        int csSig = intBigEndian(profileHeader, ICC_Profile.icHdrColorSpace);
+
+        // TODO: Wonder why they didn't just use the sig as type, when there is obviously a 1:1 mapping...
+
+        switch (csSig) {
+            case ICC_Profile.icSigXYZData:
+                return ColorSpace.TYPE_XYZ;
+            case ICC_Profile.icSigLabData:
+                return ColorSpace.TYPE_Lab;
+            case ICC_Profile.icSigLuvData:
+                return ColorSpace.TYPE_Luv;
+            case ICC_Profile.icSigYCbCrData:
+                return ColorSpace.TYPE_YCbCr;
+            case ICC_Profile.icSigYxyData:
+                return ColorSpace.TYPE_Yxy;
+            case ICC_Profile.icSigRgbData:
+                return ColorSpace.TYPE_RGB;
+            case ICC_Profile.icSigGrayData:
+                return ColorSpace.TYPE_GRAY;
+            case ICC_Profile.icSigHsvData:
+                return ColorSpace.TYPE_HSV;
+            case ICC_Profile.icSigHlsData:
+                return ColorSpace.TYPE_HLS;
+            case ICC_Profile.icSigCmykData:
+                return ColorSpace.TYPE_CMYK;
+            // Note: There is no TYPE_* 10...
+            case ICC_Profile.icSigCmyData:
+                return ColorSpace.TYPE_CMY;
+            case ICC_Profile.icSigSpace2CLR:
+                return ColorSpace.TYPE_2CLR;
+            case ICC_Profile.icSigSpace3CLR:
+                return ColorSpace.TYPE_3CLR;
+            case ICC_Profile.icSigSpace4CLR:
+                return ColorSpace.TYPE_4CLR;
+            case ICC_Profile.icSigSpace5CLR:
+                return ColorSpace.TYPE_5CLR;
+            case ICC_Profile.icSigSpace6CLR:
+                return ColorSpace.TYPE_6CLR;
+            case ICC_Profile.icSigSpace7CLR:
+                return ColorSpace.TYPE_7CLR;
+            case ICC_Profile.icSigSpace8CLR:
+                return ColorSpace.TYPE_8CLR;
+            case ICC_Profile.icSigSpace9CLR:
+                return ColorSpace.TYPE_9CLR;
+            case ICC_Profile.icSigSpaceACLR:
+                return ColorSpace.TYPE_ACLR;
+            case ICC_Profile.icSigSpaceBCLR:
+                return ColorSpace.TYPE_BCLR;
+            case ICC_Profile.icSigSpaceCCLR:
+                return ColorSpace.TYPE_CCLR;
+            case ICC_Profile.icSigSpaceDCLR:
+                return ColorSpace.TYPE_DCLR;
+            case ICC_Profile.icSigSpaceECLR:
+                return ColorSpace.TYPE_ECLR;
+            case ICC_Profile.icSigSpaceFCLR:
+                return ColorSpace.TYPE_FCLR;
+            default:
+                throw new IllegalArgumentException("Invalid ICC color space signature: " + csSig); // TODO: fourCC?
+        }
     }
 
     /**
@@ -465,7 +603,7 @@ public final class ColorSpaces {
         }
     }
 
-    // Cache header profile data to avoid excessive array creation/copying in static inner class for on-demand lazy init
+    // Cache header profile data to avoid excessive array creation/copying. Use static inner class for on-demand lazy init
     private static class sRGB {
         private static final byte[] header = getProfileHeaderWithProfileId(ICC_Profile.getInstance(ColorSpace.CS_sRGB));
     }

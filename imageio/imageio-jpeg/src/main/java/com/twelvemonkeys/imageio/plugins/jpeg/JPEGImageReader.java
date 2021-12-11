@@ -614,7 +614,7 @@ public final class JPEGImageReader extends ImageReaderBase {
         }
     }
 
-    private ICC_Profile ensureDisplayProfile(final ICC_Profile profile) {
+    private ICC_Profile ensureDisplayProfile(final ICC_Profile profile) throws IOException {
         // NOTE: This is probably not the right way to do it... :-P
         // TODO: Consider moving method to ColorSpaces class or new class in imageio.color package
 
@@ -630,7 +630,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
                 intToBigEndian(ICC_Profile.icSigDisplayClass, profileData, ICC_Profile.icHdrDeviceClass); // Header is first
 
-                return ICC_Profile.getInstance(profileData);
+                return ColorSpaces.createProfile(profileData);
             }
         }
 
@@ -954,7 +954,7 @@ public final class JPEGImageReader extends ImageReaderBase {
             int iccChunkDataSize = segment.data.length - segmentDataStart;
             int iccSize = segment.data.length < segmentDataStart + 4 ? 0 : intFromBigEndian(segment.data, segmentDataStart);
 
-            return readICCProfileSafe(stream, allowBadIndexes, iccSize, iccChunkDataSize);
+            return readICCProfileSafe(stream, allowBadIndexes);
         }
         else if (!segments.isEmpty()) {
             // NOTE: This is probably over-complicated, as I've never encountered ICC_PROFILE chunks out of order...
@@ -1012,25 +1012,20 @@ public final class JPEGImageReader extends ImageReaderBase {
                 }
             }
 
-            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))), allowBadIndexes, iccSize, iccChunkDataSize);
+            return readICCProfileSafe(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))), allowBadIndexes);
         }
 
         return null;
     }
 
-    private ICC_Profile readICCProfileSafe(final InputStream stream, final boolean allowBadProfile, final int iccSize, final int iccChunkDataSize) throws IOException {
-        if (iccSize < 0 || iccSize > iccChunkDataSize) {
-            processWarningOccurred(String.format("Truncated 'ICC_PROFILE' chunk(s), size: %d. Ignoring ICC profile.", iccSize));
-            return null;
-        }
-
+    private ICC_Profile readICCProfileSafe(final InputStream stream, final boolean allowBadProfile) {
         try {
-            ICC_Profile profile = ICC_Profile.getInstance(stream);
+            ICC_Profile profile = ColorSpaces.readProfileRaw(stream);
 
             // NOTE: Need to ensure we have a display profile *before* validating, for the caching to work
             return allowBadProfile ? profile : ColorSpaces.validateProfile(ensureDisplayProfile(profile));
         }
-        catch (RuntimeException e) {
+        catch (IOException | RuntimeException e) {
             // NOTE: Throws either IllegalArgumentException or CMMException, depending on platform.
             // Usual reason: Broken tools store truncated ICC profiles in a single ICC_PROFILE chunk...
             processWarningOccurred(String.format("Bad 'ICC_PROFILE' chunk(s): %s. Ignoring ICC profile.", e.getMessage()));

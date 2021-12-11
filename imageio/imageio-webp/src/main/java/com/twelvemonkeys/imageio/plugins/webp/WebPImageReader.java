@@ -287,7 +287,7 @@ final class WebPImageReader extends ImageReaderBase {
                         long chunkStart = imageInput.getStreamPosition();
 
                         if (nextChunk == WebP.CHUNK_ICCP) {
-                            iccProfile = ICC_Profile.getInstance(IIOUtil.createStreamAdapter(imageInput, chunkLength));
+                            iccProfile = ColorSpaces.readProfile(IIOUtil.createStreamAdapter(imageInput, chunkLength));
                         }
                         else {
                             processWarningOccurred(String.format("Expected 'ICCP' chunk, '%s' chunk encountered", fourCC(nextChunk)));
