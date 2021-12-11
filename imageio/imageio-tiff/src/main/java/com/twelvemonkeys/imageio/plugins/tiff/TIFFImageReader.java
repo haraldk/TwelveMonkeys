@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.CIELabColorConverter;
 import com.twelvemonkeys.imageio.color.CIELabColorConverter.Illuminant;
+import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.color.YCbCrConverter;
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
@@ -2493,12 +2494,12 @@ public final class TIFFImageReader extends ImageReaderBase {
         return value;
     }
 
-    private ICC_Profile getICCProfile() throws IOException {
+    private ICC_Profile getICCProfile() {
         Entry entry = currentIFD.getEntryById(TIFF.TAG_ICC_PROFILE);
 
         if (entry != null) {
             try {
-                return ColorSpaces.createProfile((byte[]) entry.getValue());
+                return ColorProfiles.createProfile((byte[]) entry.getValue());
             }
             catch (CMMException | IllegalArgumentException e) {
                 processWarningOccurred("Ignoring broken/incompatible ICC profile: " + e.getMessage());

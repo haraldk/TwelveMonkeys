@@ -30,7 +30,7 @@
 
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
-import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.psd.PSD;
@@ -353,7 +353,7 @@ public final class JPEGSegmentUtil {
                     Directory psd = new PSDReader().read(stream);
                     Entry iccEntry = psd.getEntryById(PSD.RES_ICC_PROFILE);
                     if (iccEntry != null) {
-                        ICC_Profile profile = ColorSpaces.createProfileRaw((byte[]) iccEntry.getValue());
+                        ICC_Profile profile = ColorProfiles.createProfile((byte[]) iccEntry.getValue());
                         System.err.println("ICC Profile: " + profile);
                     }
                     System.err.println("PSD: " + psd);

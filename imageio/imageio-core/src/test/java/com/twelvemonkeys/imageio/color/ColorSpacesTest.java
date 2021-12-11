@@ -35,7 +35,6 @@ import org.junit.Test;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
@@ -92,34 +91,6 @@ public class ColorSpacesTest {
     }
 
     @Test
-    public void testCreateColorSpaceFromBrokenProfileIsFixedCS_sRGB() {
-        ICC_Profile internal = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
-        ICC_Profile profile = createBrokenProfile(internal);
-        assertNotSame(internal, profile); // Sanity check
-
-        assertTrue(ColorSpaces.isOffendingColorProfile(profile));
-
-        ICC_ColorSpace created = ColorSpaces.createColorSpace(profile);
-        assertSame(ColorSpace.getInstance(ColorSpace.CS_sRGB), created);
-        assertTrue(created.isCS_sRGB());
-    }
-
-    private ICC_Profile createBrokenProfile(ICC_Profile internal) {
-        byte[] data = internal.getData();
-        data[ICC_Profile.icHdrRenderingIntent] = 1; // Intent: 1 == Relative Colormetric Little Endian
-        data[ICC_Profile.icHdrRenderingIntent + 1] = 0;
-        data[ICC_Profile.icHdrRenderingIntent + 2] = 0;
-        data[ICC_Profile.icHdrRenderingIntent + 3] = 0;
-        return ICC_Profile.getInstance(data);
-    }
-
-    @Test
-    public void testIsOffendingColorProfile() {
-        ICC_Profile broken = createBrokenProfile(ICC_Profile.getInstance(ColorSpace.CS_GRAY));
-        assertTrue(ColorSpaces.isOffendingColorProfile(broken));
-    }
-
-    @Test
     public void testCreateColorSpaceFromKnownProfileReturnsInternalCS_GRAY() {
         ICC_Profile profile = ICC_Profile.getInstance(ColorSpace.CS_GRAY);
         ICC_ColorSpace created = ColorSpaces.createColorSpace(profile);
@@ -167,11 +138,13 @@ public class ColorSpacesTest {
         assertEquals(ColorSpace.TYPE_CMYK, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK).getType());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testIsCS_sRGBTrue() {
         assertTrue(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_sRGB)));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testIsCS_sRGBFalse() {
         assertFalse(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_LINEAR_RGB)));
@@ -180,16 +153,19 @@ public class ColorSpacesTest {
         assertFalse(ColorSpaces.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_PYCC)));
     }
 
+    @SuppressWarnings("deprecation")
     @Test(expected = IllegalArgumentException.class)
     public void testIsCS_sRGBNull() {
         ColorSpaces.isCS_sRGB(null);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testIsCS_GRAYTrue() {
         assertTrue(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_GRAY)));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testIsCS_GRAYFalse() {
         assertFalse(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_sRGB)));
@@ -198,6 +174,7 @@ public class ColorSpacesTest {
         assertFalse(ColorSpaces.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_PYCC)));
     }
 
+    @SuppressWarnings("deprecation")
     @Test(expected = IllegalArgumentException.class)
     public void testIsCS_GRAYNull() {
         ColorSpaces.isCS_GRAY(null);
@@ -215,70 +192,5 @@ public class ColorSpacesTest {
         ICC_ColorSpace cs2 = ColorSpaces.createColorSpace(profile2);
 
         assertNotSame(cs1, cs2);
-    }
-
-    @Test
-    public void testReadProfileBytesSame() throws IOException {
-        ICC_Profile profile = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
-        ICC_Profile profile1 = ColorSpaces.createProfile(profile.getData());
-        ICC_Profile profile2 = ColorSpaces.createProfile(profile.getData());
-
-        assertEquals(profile1, profile2);
-        assertSame(profile1, profile2);
-    }
-
-    @Test
-    public void testReadProfileInputStreamSame() throws IOException {
-        ICC_Profile profile1 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
-        ICC_Profile profile2 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
-
-        assertEquals(profile1, profile2);
-        assertSame(profile1, profile2);
-    }
-
-    @Test
-    public void testReadProfileDifferent() throws IOException {
-        // These profiles are extracted from various JPEGs, and have the exact same profile header (but are different profiles)...
-        ICC_Profile profile1 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
-        ICC_Profile profile2 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/color_match_rgb.icc"));
-
-        assertNotSame(profile1, profile2);
-    }
-
-    @Test
-    public void testReadProfileBytesSameAsCached() throws IOException {
-        ICC_Profile profile = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
-        ICC_ColorSpace cs1 = ColorSpaces.createColorSpace(profile);
-        ICC_Profile profile2 = ColorSpaces.createProfile(profile.getData());
-
-        assertEquals(cs1.getProfile(), profile2);
-        assertSame(cs1.getProfile(), profile2);
-    }
-
-    @Test
-    public void testReadProfileInputStreamSameAsCached() throws IOException {
-        ICC_ColorSpace cs1 = ColorSpaces.createColorSpace(ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")));
-        ICC_Profile profile2 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
-
-        assertEquals(cs1.getProfile(), profile2);
-        assertSame(cs1.getProfile(), profile2);
-    }
-
-    @Test
-    public void testReadProfileBytesSameAsInternal()  {
-        ICC_Profile profile1 = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
-        ICC_Profile profile2 = ColorSpaces.createProfile(ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData());
-
-        assertEquals(profile1, profile2);
-        assertSame(profile1, profile2);
-    }
-
-    @Test
-    public void testReadProfileInputStreamSameAsInternal() throws IOException {
-        ICC_Profile profile1 = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
-        ICC_Profile profile2 = ColorSpaces.readProfile(new ByteArrayInputStream(ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData()));
-
-        assertEquals(profile1, profile2);
-        assertSame(profile1, profile2);
     }
 }
