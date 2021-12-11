@@ -253,7 +253,7 @@ public class CCITTFaxDecoderStreamTest {
     @Test
     public void testDecodeMissingRows() throws IOException {
         // See https://github.com/haraldk/TwelveMonkeys/pull/225 and https://github.com/haraldk/TwelveMonkeys/issues/232
-        InputStream inputStream = getClass().getResourceAsStream("/tiff/ccitt_tolessrows.tif");
+        InputStream inputStream = getResourceAsStream("/tiff/ccitt_tolessrows.tif");
 
         // Skip until StripOffsets: 8
         for (int i = 0; i < 8; i++) {
@@ -299,7 +299,7 @@ public class CCITTFaxDecoderStreamTest {
     public void testMoreChangesThanColumnsFile() throws IOException {
         // See https://github.com/haraldk/TwelveMonkeys/issues/328
         // 26 changes on 24 columns: H0w1b, H1w1b, ..., H1w0b
-        InputStream stream = getClass().getResourceAsStream("/tiff/ccitt-too-many-changes.tif");
+        InputStream stream = getResourceAsStream("/tiff/ccitt-too-many-changes.tif");
 
         // Skip bytes before StripOffsets: 86
         for (int i = 0; i < 86; i++) {
@@ -336,7 +336,7 @@ public class CCITTFaxDecoderStreamTest {
 
     @Test
     public void testG3AOE() throws IOException {
-        InputStream inputStream = getClass().getResourceAsStream("/tiff/ccitt/g3aoe.tif");
+        InputStream inputStream = getResourceAsStream("/tiff/ccitt/g3aoe.tif");
 
         // Skip until StripOffsets: 8
         for (int i = 0; i < 8; i++) {
@@ -352,5 +352,18 @@ public class CCITTFaxDecoderStreamTest {
 
         byte[] bytes = new byte[216 * 1168]; // 1728 x 1168 pixel, 1 bpp => 216 bytes * 1168
         new DataInputStream(stream).readFully(bytes);
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Test(expected = IOException.class)
+    public void testAIOBEInCorruptStreamShouldThrowIOException() throws IOException {
+        // From #645
+        try (InputStream ccittFaxDecoderStream = new CCITTFaxDecoderStream(getResourceAsStream("/ccitt/645.ccitt"), 7, 4, 0, false)) {
+            while(ccittFaxDecoderStream.read() != -1); // Just read until the end
+        }
+    }
+
+    private InputStream getResourceAsStream(String name) {
+        return getClass().getResourceAsStream(name);
     }
 }
