@@ -158,19 +158,18 @@ public final class IIOUtil {
     }
 
     /**
-     * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
+     * THIS METHOD WILL BE MOVED/RENAMED, DO NOT USE.
      *
      * @param registry the registry to unregister from.
      * @param provider the provider to unregister.
      * @param category the category to unregister from.
      */
     public static <T> void deregisterProvider(final ServiceRegistry registry, final IIOServiceProvider provider, final Class<T> category) {
-        // http://www.ibm.com/developerworks/java/library/j-jtp04298.html
         registry.deregisterServiceProvider(category.cast(provider), category);
     }
 
     /**
-     * THIS METHOD WILL ME MOVED/RENAMED, DO NOT USE.
+     * THIS METHOD WILL BE MOVED/RENAMED, DO NOT USE.
      *
      * @param registry the registry to lookup from.
      * @param providerClassName name of the provider class.

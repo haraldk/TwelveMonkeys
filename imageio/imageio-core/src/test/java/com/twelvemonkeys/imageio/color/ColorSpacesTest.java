@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.junit.Assert.*;
@@ -204,7 +205,7 @@ public class ColorSpacesTest {
 
     @Test
     public void testEqualHeadersDifferentProfile() throws IOException {
-        // These profiles are extracted from various JPEGs, and have the exact same profile header...
+        // These profiles are extracted from various JPEGs, and have the exact same profile header (but are different)...
         ICC_Profile profile1 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
         ICC_Profile profile2 = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/color_match_rgb.icc"));
 
@@ -214,5 +215,70 @@ public class ColorSpacesTest {
         ICC_ColorSpace cs2 = ColorSpaces.createColorSpace(profile2);
 
         assertNotSame(cs1, cs2);
+    }
+
+    @Test
+    public void testReadProfileBytesSame() throws IOException {
+        ICC_Profile profile = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        ICC_Profile profile1 = ColorSpaces.createProfile(profile.getData());
+        ICC_Profile profile2 = ColorSpaces.createProfile(profile.getData());
+
+        assertEquals(profile1, profile2);
+        assertSame(profile1, profile2);
+    }
+
+    @Test
+    public void testReadProfileInputStreamSame() throws IOException {
+        ICC_Profile profile1 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        ICC_Profile profile2 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+
+        assertEquals(profile1, profile2);
+        assertSame(profile1, profile2);
+    }
+
+    @Test
+    public void testReadProfileDifferent() throws IOException {
+        // These profiles are extracted from various JPEGs, and have the exact same profile header (but are different profiles)...
+        ICC_Profile profile1 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        ICC_Profile profile2 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/color_match_rgb.icc"));
+
+        assertNotSame(profile1, profile2);
+    }
+
+    @Test
+    public void testReadProfileBytesSameAsCached() throws IOException {
+        ICC_Profile profile = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        ICC_ColorSpace cs1 = ColorSpaces.createColorSpace(profile);
+        ICC_Profile profile2 = ColorSpaces.createProfile(profile.getData());
+
+        assertEquals(cs1.getProfile(), profile2);
+        assertSame(cs1.getProfile(), profile2);
+    }
+
+    @Test
+    public void testReadProfileInputStreamSameAsCached() throws IOException {
+        ICC_ColorSpace cs1 = ColorSpaces.createColorSpace(ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")));
+        ICC_Profile profile2 = ColorSpaces.readProfile(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+
+        assertEquals(cs1.getProfile(), profile2);
+        assertSame(cs1.getProfile(), profile2);
+    }
+
+    @Test
+    public void testReadProfileBytesSameAsInternal()  {
+        ICC_Profile profile1 = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
+        ICC_Profile profile2 = ColorSpaces.createProfile(ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData());
+
+        assertEquals(profile1, profile2);
+        assertSame(profile1, profile2);
+    }
+
+    @Test
+    public void testReadProfileInputStreamSameAsInternal() throws IOException {
+        ICC_Profile profile1 = ICC_Profile.getInstance(ColorSpace.CS_sRGB);
+        ICC_Profile profile2 = ColorSpaces.readProfile(new ByteArrayInputStream(ICC_Profile.getInstance(ColorSpace.CS_sRGB).getData()));
+
+        assertEquals(profile1, profile2);
+        assertSame(profile1, profile2);
     }
 }

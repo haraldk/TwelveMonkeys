@@ -30,45 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
-import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
-import static java.util.Arrays.asList;
-
-import java.awt.*;
-import java.awt.color.CMMException;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.*;
-import java.io.*;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.plugins.jpeg.JPEGImageReadParam;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
-
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.CIELabColorConverter;
 import com.twelvemonkeys.imageio.color.CIELabColorConverter.Illuminant;
@@ -98,6 +59,35 @@ import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.xml.XMLSerializer;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.imageio.*;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.plugins.jpeg.JPEGImageReadParam;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
+import java.awt.color.CMMException;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
+import java.io.*;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
+import static java.util.Arrays.asList;
 
 /**
  * ImageReader implementation for Aldus/Adobe Tagged Image File Format (TIFF).
@@ -2507,20 +2497,8 @@ public final class TIFFImageReader extends ImageReaderBase {
         Entry entry = currentIFD.getEntryById(TIFF.TAG_ICC_PROFILE);
 
         if (entry != null) {
-            byte[] value = (byte[]) entry.getValue();
-
-            // Validate ICC profile size vs actual value size
-            int size = (value[0] & 0xff) << 24 | (value[1] & 0xff) << 16 | (value[2] & 0xff) << 8 | (value[3] & 0xff);
-            if (size < 0 || size > value.length) {
-                processWarningOccurred("Ignoring truncated ICC profile: Bad ICC profile size (" + size + ")");
-                return null;
-            }
-
             try {
-                // WEIRDNESS: Reading profile from InputStream is somehow more compatible
-                // than reading from byte array (chops off extra bytes + validates profile).
-                ICC_Profile profile = ICC_Profile.getInstance(new ByteArrayInputStream(value));
-                return ColorSpaces.validateProfile(profile);
+                return ColorSpaces.createProfile((byte[]) entry.getValue());
             }
             catch (CMMException | IllegalArgumentException e) {
                 processWarningOccurred("Ignoring broken/incompatible ICC profile: " + e.getMessage());
