@@ -117,7 +117,9 @@ public class ColorProfilesTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testReadProfileRawBadData() throws IOException {
-        ColorProfiles.readProfileRaw(new ByteArrayInputStream(new byte[5]));
+        // NOTE: The array here is larger, as there's a bug in OpenJDK 15 & 16, that throws
+        // ArrayIndexOutOfBoundsException if the stream is shorter than the profile signature...
+        ColorProfiles.readProfileRaw(new ByteArrayInputStream(new byte[40]));
     }
 
     @Test(expected = IllegalArgumentException.class)
