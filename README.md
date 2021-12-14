@@ -288,6 +288,16 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
         <artifactId>servlet</artifactId>
         <version>3.8.0</version>
     </dependency>
+
+    <!--
+    Or Jakarta version, for Servlet API 5.0
+    -->
+    <dependency>
+        <groupId>com.twelvemonkeys.servlet</groupId>
+        <artifactId>servlet</artifactId>
+        <version>3.7.0</version>
+        <classifier>jakarta</classifier>
+    </dependency>
 </dependencies>
 ```
 
