@@ -31,19 +31,19 @@ As there is lots of legacy data out there, we see the need for open implementati
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format | ✔  | -  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |        | DCX      | Multi-page PCX fax document | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple QuickTime Picture Format | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
-|        | PNTG     | Apple MacPaint Picture Format | ✔  |     | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+|        | PNTG     | Apple MacPaint Picture Format | ✔  |  -  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [PNM](https://github.com/haraldk/TwelveMonkeys/wiki/PNM-Plugin)    | PAM      | NetPBM Portable Any Map | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |        | PBM      | NetPBM Portable Bit Map | ✔  | -     | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |        | PGM      | NetPBM Portable Grey Map | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |        | PPM      | NetPBM Portable Pix Map | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |        | PFM      | Portable Float Map | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
-| [PSD](https://github.com/haraldk/TwelveMonkeys/wiki/PSD-Plugin)    | **PSD**  | Adobe Photoshop Document | ✔  | - | Native & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
+| [PSD](https://github.com/haraldk/TwelveMonkeys/wiki/PSD-Plugin)    | **PSD**  | Adobe Photoshop Document | ✔  | (✔) | Native & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
 |        |  PSB     | Adobe Photoshop Large Document | ✔  | - | Native & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [SGI](https://github.com/haraldk/TwelveMonkeys/wiki/SGI-Plugin)    | SGI      | Silicon Graphics Image Format  | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [TGA](https://github.com/haraldk/TwelveMonkeys/wiki/TGA-Plugin)    | TGA      | Truevision TGA Image Format  | ✔  | ✔   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |ThumbsDB| Thumbs.db| MS Windows Thumbs DB | ✔  | -   | - | OLE2 Compound Document based format only
 | [TIFF](https://github.com/haraldk/TwelveMonkeys/wiki/TIFF-Plugin)   | **TIFF** | Aldus/Adobe Tagged Image File Format | ✔  | ✔ | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/tiff_metadata.html#ImageMetadata) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
-|        | BigTIFF  |  | ✔  | - | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/tiff_metadata.html#ImageMetadata) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
+|        | BigTIFF  |  | ✔  | ✔ | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/tiff_metadata.html#ImageMetadata) & [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
 | [WebP](https://github.com/haraldk/TwelveMonkeys/wiki/WebP-Plugin)   | **WebP** | Google WebP Format | ✔  | - | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) |  
 | XWD    | XWD      | X11 Window Dump Format | ✔  | -   | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 
@@ -271,12 +271,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     <dependency>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio-jpeg</artifactId>
-        <version>3.7.0</version>
+        <version>3.8.0</version>
     </dependency>
     <dependency>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio-tiff</artifactId>
-        <version>3.7.0</version>
+        <version>3.8.0</version>
     </dependency>
 
     <!--
@@ -286,7 +286,7 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     <dependency>
         <groupId>com.twelvemonkeys.servlet</groupId>
         <artifactId>servlet</artifactId>
-        <version>3.7.0</version>
+        <version>3.8.0</version>
     </dependency>
 </dependencies>
 ```
@@ -295,13 +295,13 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.7.0.jar
-    twelvemonkeys-common-io-3.7.0.jar
-    twelvemonkeys-common-image-3.7.0.jar
-    twelvemonkeys-imageio-core-3.7.0.jar
-    twelvemonkeys-imageio-metadata-3.7.0.jar
-    twelvemonkeys-imageio-jpeg-3.7.0.jar
-    twelvemonkeys-imageio-tiff-3.7.0.jar
+    twelvemonkeys-common-lang-3.8.0.jar
+    twelvemonkeys-common-io-3.8.0.jar
+    twelvemonkeys-common-image-3.8.0.jar
+    twelvemonkeys-imageio-core-3.8.0.jar
+    twelvemonkeys-imageio-metadata-3.8.0.jar
+    twelvemonkeys-imageio-jpeg-3.8.0.jar
+    twelvemonkeys-imageio-tiff-3.8.0.jar
 
 #### Deploying the plugins in a web app
 
@@ -367,44 +367,44 @@ Other "fat" JAR bundlers will probably have similar mechanisms to merge entries 
 
 ### Links to prebuilt binaries
 
-##### Latest version (3.7.0)
+##### Latest version (3.8.0)
 
 Requires Java 7 or later.
  
 Common dependencies
-* [common-lang-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.7.0/common-lang-3.7.0.jar)
-* [common-io-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.7.0/common-io-3.7.0.jar)
-* [common-image-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.7.0/common-image-3.7.0.jar)
+* [common-lang-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.8.0/common-lang-3.8.0.jar)
+* [common-io-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.8.0/common-io-3.8.0.jar)
+* [common-image-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.8.0/common-image-3.8.0.jar)
 
 ImageIO dependencies
-* [imageio-core-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.7.0/imageio-core-3.7.0.jar)
-* [imageio-metadata-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.7.0/imageio-metadata-3.7.0.jar)
+* [imageio-core-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.8.0/imageio-core-3.8.0.jar)
+* [imageio-metadata-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.8.0/imageio-metadata-3.8.0.jar)
 
 ImageIO plugins
-* [imageio-bmp-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.7.0/imageio-bmp-3.7.0.jar)
-* [imageio-hdr-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.7.0/imageio-hdr-3.7.0.jar)
-* [imageio-icns-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.7.0/imageio-icns-3.7.0.jar)
-* [imageio-iff-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.7.0/imageio-iff-3.7.0.jar)
-* [imageio-jpeg-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.7.0/imageio-jpeg-3.7.0.jar)
-* [imageio-pcx-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.7.0/imageio-pcx-3.7.0.jar)
-* [imageio-pict-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.7.0/imageio-pict-3.7.0.jar)
-* [imageio-pnm-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.7.0/imageio-pnm-3.7.0.jar)
-* [imageio-psd-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.7.0/imageio-psd-3.7.0.jar)
-* [imageio-sgi-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.7.0/imageio-sgi-3.7.0.jar)
-* [imageio-tga-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.7.0/imageio-tga-3.7.0.jar)
-* [imageio-thumbsdb-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.7.0/imageio-thumbsdb-3.7.0.jar)
-* [imageio-tiff-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.7.0/imageio-tiff-3.7.0.jar)
-* [imageio-webp-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-webp/3.7.0/imageio-webp-3.7.0.jar)
-* [imageio-xwd-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-xwd/3.7.0/imageio-xwd-3.7.0.jar)
+* [imageio-bmp-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.8.0/imageio-bmp-3.8.0.jar)
+* [imageio-hdr-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.8.0/imageio-hdr-3.8.0.jar)
+* [imageio-icns-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.8.0/imageio-icns-3.8.0.jar)
+* [imageio-iff-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.8.0/imageio-iff-3.8.0.jar)
+* [imageio-jpeg-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.8.0/imageio-jpeg-3.8.0.jar)
+* [imageio-pcx-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.8.0/imageio-pcx-3.8.0.jar)
+* [imageio-pict-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.8.0/imageio-pict-3.8.0.jar)
+* [imageio-pnm-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.8.0/imageio-pnm-3.8.0.jar)
+* [imageio-psd-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.8.0/imageio-psd-3.8.0.jar)
+* [imageio-sgi-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.8.0/imageio-sgi-3.8.0.jar)
+* [imageio-tga-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.8.0/imageio-tga-3.8.0.jar)
+* [imageio-thumbsdb-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.8.0/imageio-thumbsdb-3.8.0.jar)
+* [imageio-tiff-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.8.0/imageio-tiff-3.8.0.jar)
+* [imageio-webp-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-webp/3.8.0/imageio-webp-3.8.0.jar)
+* [imageio-xwd-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-xwd/3.8.0/imageio-xwd-3.8.0.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.7.0/imageio-batik-3.7.0.jar)
+* [imageio-batik-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.8.0/imageio-batik-3.8.0.jar)
 
 Photoshop Path support for ImageIO
-* [imageio-clippath-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.7.0/imageio-clippath-3.7.0.jar)
+* [imageio-clippath-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.8.0/imageio-clippath-3.8.0.jar)
 
 Servlet support
-* [servlet-3.7.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.7.0/servlet-3.7.0.jar)
+* [servlet-3.8.0.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.8.0/servlet-3.8.0.jar)
 
 ##### Old version (3.0.x)
 
