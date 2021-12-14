@@ -1,3 +1,0 @@
-- Keep filter and servlet specific implementations in servlet module
-- Move most of the implementation out of servlet module (HTTPCache + interfaces + abstract impl)
-- Move client cache implementation classes out of servlet module, and to separate package
