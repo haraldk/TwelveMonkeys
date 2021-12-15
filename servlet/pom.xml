@@ -13,37 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-lang</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-io</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-image</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-lang</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.twelvemonkeys.common</groupId>
-            <artifactId>common-io</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
             <version>2.4</version>
