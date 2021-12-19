@@ -387,6 +387,10 @@ public final class PSDMetadata extends AbstractMetadata {
             node.setAttribute("left", String.valueOf(psdLayerInfo.left));
             node.setAttribute("bottom", String.valueOf(psdLayerInfo.bottom));
             node.setAttribute("right", String.valueOf(psdLayerInfo.right));
+            node.setAttribute("layerId", String.valueOf(psdLayerInfo.getLayerId()));
+            node.setAttribute("groupLayerId", String.valueOf(psdLayerInfo.groupLayerId));
+            node.setAttribute("isGroup", String.valueOf(psdLayerInfo.isGroup));
+            node.setAttribute("isSectionDivider", String.valueOf(psdLayerInfo.isSectionDivider));
 
             node.setAttribute("blendMode", PSDUtil.intToStr(psdLayerInfo.blendMode.blendMode));
             node.setAttribute("opacity", String.valueOf(psdLayerInfo.blendMode.opacity)); // 0-255

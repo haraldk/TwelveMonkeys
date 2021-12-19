@@ -33,7 +33,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
 
 /**
  * PSDLayerInfo
@@ -57,6 +57,14 @@ final class PSDLayerInfo {
     private String unicodeLayerName;
     private int layerId;
 
+    static private Stack<List<PSDLayerInfo>> groupStack = new Stack<>();
+    static private List<PSDLayerInfo> group = null;
+    Integer groupLayerId;
+    Boolean isGroup = false;
+    Boolean isSectionDivider = false;
+
+    SectionDividerSetting sectionDividerSettingType;
+
     PSDLayerInfo(final boolean largeFormat, final ImageInputStream pInput) throws IOException {
         top = pInput.readInt();
         left = pInput.readInt();
@@ -64,7 +72,7 @@ final class PSDLayerInfo {
         right = pInput.readInt();
 
         int channels = pInput.readUnsignedShort();
-        
+
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
@@ -132,6 +140,7 @@ final class PSDLayerInfo {
 //            System.out.println("key: " + PSDUtil.intToStr(resourceKey));
 //            System.out.println("length: " + resourceLength);
 
+
             switch (resourceKey) {
                 case PSD.luni:
                     unicodeLayerName = PSDUtil.readUnicodeString(pInput);
@@ -144,7 +153,15 @@ final class PSDLayerInfo {
                     }
                     layerId = pInput.readInt();
                     break;
-
+                case PSD.lsct:
+                    sectionDividerSettingType = SectionDividerSetting.fromInt(pInput.readInt());
+                    if (resourceLength >= 16) {
+                        pInput.skipBytes(12);
+                    }
+                    else if (resourceLength >= 12) {
+                        pInput.skipBytes(8);
+                    }
+                    break;
                 default:
                     // TODO: Parse more data...
                     pInput.skipBytes(resourceLength);
@@ -161,6 +178,30 @@ final class PSDLayerInfo {
         if (pInput.getStreamPosition() != expectedEnd) {
             pInput.seek(expectedEnd);
         }
+
+        if(sectionDividerSettingType == SectionDividerSetting.BOUNDING_SECTION_DIVIDER){
+            if(group == null){
+                group = new LinkedList<>();
+                groupStack.add(group);
+            } else {
+                groupStack.add(group);
+                group = new LinkedList<>();
+            }
+            isSectionDivider = true;
+        } else if(sectionDividerSettingType == SectionDividerSetting.OPEN_FOLDER ||
+                sectionDividerSettingType == SectionDividerSetting.CLOSED_FOLDER){
+            for(PSDLayerInfo info : group){
+                info.groupLayerId = this.layerId;
+            }
+            group = groupStack.pop();
+            group.add(this);
+            this.isGroup = true;
+        } else {
+            if(group != null){
+                group.add(this);
+            }
+        }
+
     }
 
     String getLayerName() {
@@ -190,5 +231,23 @@ final class PSDLayerInfo {
 
         builder.append("]");
         return builder.toString();
+    }
+
+    enum SectionDividerSetting {
+        LAYER(0), OPEN_FOLDER(1), CLOSED_FOLDER(2), BOUNDING_SECTION_DIVIDER(3);
+        SectionDividerSetting(int value) { this.value = value;}
+
+        private final int value;
+        public int value() { return value; }
+
+        public static SectionDividerSetting fromInt(int value){
+            for(SectionDividerSetting rt : SectionDividerSetting.values()){
+                if(rt.value == value){
+                    return rt;
+                }
+            }
+
+            return null;
+        }
     }
 }

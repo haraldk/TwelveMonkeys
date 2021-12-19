@@ -104,7 +104,9 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 // CMYK, uncompressed + contains some uncommon MeSa (instead of 8BIM) resource blocks
                 new TestData(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"), new Dimension(400, 191)),
                 // 3 channel, RGB, 32 bit samples
-                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5))
+                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5)),
+                // group layer psd file
+                new TestData(getClassLoaderResource("/psd/group_layer.psd"), new Dimension(4000, 1600))
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
         );
     }
@@ -530,6 +532,43 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
             assertEquals(1, layerInfo.getLength()); // Sanity
             assertEquals("If_The_Layer_Name_Is_Really_Long_Oh_No_What_Do_I_Do", ((IIOMetadataNode) layerInfo.item(0)).getAttribute("name"));
+        }
+    }
+
+    @Test
+    public void testGroupLayerRead() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/group_layer.psd"))) {
+            imageReader.setInput(stream);
+
+            IIOMetadata metadata = imageReader.getImageMetadata(0);
+
+            List<PSDLayerInfo> layerInfos = ((PSDMetadata) metadata).layerInfo;
+
+            for(PSDLayerInfo layerInfo : layerInfos){
+                // one of green_bag layer, Group 1 copy
+                if(layerInfo.getLayerId() == 40){
+                    assertEquals(layerInfo.groupLayerId == 42, true);
+                    assertEquals(layerInfo.isGroup, false);
+                    assertEquals(layerInfo.isSectionDivider, false);
+                }
+
+                // green_bag group layer
+                if(layerInfo.getLayerId() == 42){
+                    assertEquals(layerInfo.groupLayerId == null, true);
+                    assertEquals(layerInfo.isGroup, true);
+                    assertEquals(layerInfo.isSectionDivider, false);
+                    assertEquals(layerInfo.isSectionDivider, false);
+                }
+
+                // green_bag layer divider
+                if(layerInfo.getLayerId() == 43){
+                    assertEquals(layerInfo.groupLayerId == null, true);
+                    assertEquals(layerInfo.isGroup, false);
+                    assertEquals(layerInfo.isSectionDivider, true);
+                }
+            }
         }
     }
 }
