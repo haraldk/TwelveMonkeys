@@ -104,9 +104,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 // CMYK, uncompressed + contains some uncommon MeSa (instead of 8BIM) resource blocks
                 new TestData(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"), new Dimension(400, 191)),
                 // 3 channel, RGB, 32 bit samples
-                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5)),
-                // group layer psd file
-                new TestData(getClassLoaderResource("/psd/group_layer.psd"), new Dimension(4000, 1600))
+                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5))
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
         );
     }
@@ -539,36 +537,46 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     public void testGroupLayerRead() throws IOException {
         PSDImageReader imageReader = createReader();
 
-        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/group_layer.psd"))) {
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/layer_group_32bit5x5.psd"))) {
             imageReader.setInput(stream);
 
             IIOMetadata metadata = imageReader.getImageMetadata(0);
-
             List<PSDLayerInfo> layerInfos = ((PSDMetadata) metadata).layerInfo;
 
-            for(PSDLayerInfo layerInfo : layerInfos){
-                // one of green_bag layer, Group 1 copy
-                if(layerInfo.getLayerId() == 40){
-                    assertEquals(layerInfo.groupLayerId == 42, true);
-                    assertEquals(layerInfo.isGroup, false);
-                    assertEquals(layerInfo.isSectionDivider, false);
+            assertEquals(layerInfos.size(), 5);
+
+            PSDLayerInfo groupedLayer = null;
+            PSDLayerInfo groupLayer = null;
+            PSDLayerInfo sectionDividerLayer = null;
+            for (PSDLayerInfo layerInfo : layerInfos) {
+                if (layerInfo.getLayerId() == 5) {
+                    groupedLayer = layerInfo;
                 }
 
-                // green_bag group layer
-                if(layerInfo.getLayerId() == 42){
-                    assertEquals(layerInfo.groupLayerId == null, true);
-                    assertEquals(layerInfo.isGroup, true);
-                    assertEquals(layerInfo.isSectionDivider, false);
-                    assertEquals(layerInfo.isSectionDivider, false);
+                if (layerInfo.getLayerId() == 6) {
+                    groupLayer = layerInfo;
                 }
 
-                // green_bag layer divider
-                if(layerInfo.getLayerId() == 43){
-                    assertEquals(layerInfo.groupLayerId == null, true);
-                    assertEquals(layerInfo.isGroup, false);
-                    assertEquals(layerInfo.isSectionDivider, true);
+                if (layerInfo.getLayerId() == 7) {
+                    sectionDividerLayer = layerInfo;
                 }
             }
+
+            assertNotNull(groupedLayer);
+            assertEquals((int) groupedLayer.groupLayerId, 6);
+            assertEquals(groupedLayer.group, false);
+            assertEquals(groupedLayer.sectionDivider, false);
+
+            assertNotNull(groupLayer);
+            assertNull(groupLayer.groupLayerId);
+            assertEquals(groupLayer.group, true);
+            assertEquals(groupLayer.sectionDivider, false);
+
+            assertNotNull(sectionDividerLayer);
+            assertNull(sectionDividerLayer.groupLayerId);
+            assertEquals(sectionDividerLayer.group, false);
+            assertEquals(sectionDividerLayer.sectionDivider, true);
+
         }
     }
 }

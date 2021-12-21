@@ -389,13 +389,19 @@ public final class PSDMetadata extends AbstractMetadata {
             node.setAttribute("right", String.valueOf(psdLayerInfo.right));
             node.setAttribute("layerId", String.valueOf(psdLayerInfo.getLayerId()));
             node.setAttribute("groupLayerId", String.valueOf(psdLayerInfo.groupLayerId));
-            node.setAttribute("isGroup", String.valueOf(psdLayerInfo.isGroup));
-            node.setAttribute("isSectionDivider", String.valueOf(psdLayerInfo.isSectionDivider));
 
             node.setAttribute("blendMode", PSDUtil.intToStr(psdLayerInfo.blendMode.blendMode));
             node.setAttribute("opacity", String.valueOf(psdLayerInfo.blendMode.opacity)); // 0-255
             node.setAttribute("clipping", getClippingValue(psdLayerInfo.blendMode.clipping)); // Enum: 0: Base, 1: Non-base, n: unknown
             node.setAttribute("flags", String.valueOf(psdLayerInfo.blendMode.flags));
+
+            if ((psdLayerInfo.group)){
+                node.setAttribute("group", String.valueOf(psdLayerInfo.group));
+            }
+
+            if ((psdLayerInfo.sectionDivider)) {
+                node.setAttribute("sectionDivider", String.valueOf(psdLayerInfo.sectionDivider));
+            }
 
             if ((psdLayerInfo.blendMode.flags & 0x01) != 0) {
                 node.setAttribute("transparencyProtected", "true");

@@ -33,7 +33,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
 
 /**
  * PSDLayerInfo
@@ -57,11 +57,9 @@ final class PSDLayerInfo {
     private String unicodeLayerName;
     private int layerId;
 
-    static private Stack<List<PSDLayerInfo>> groupStack = new Stack<>();
-    static private List<PSDLayerInfo> group = null;
     Integer groupLayerId;
-    Boolean isGroup = false;
-    Boolean isSectionDivider = false;
+    Boolean group = false;
+    Boolean sectionDivider = false;
 
     SectionDividerSetting sectionDividerSettingType;
 
@@ -154,13 +152,8 @@ final class PSDLayerInfo {
                     layerId = pInput.readInt();
                     break;
                 case PSD.lsct:
-                    sectionDividerSettingType = SectionDividerSetting.fromInt(pInput.readInt());
-                    if (resourceLength >= 16) {
-                        pInput.skipBytes(12);
-                    }
-                    else if (resourceLength >= 12) {
-                        pInput.skipBytes(8);
-                    }
+                    sectionDividerSettingType = SectionDividerSetting.valueOf(pInput.readInt());
+                    pInput.skipBytes(resourceLength - 4);
                     break;
                 default:
                     // TODO: Parse more data...
@@ -178,30 +171,6 @@ final class PSDLayerInfo {
         if (pInput.getStreamPosition() != expectedEnd) {
             pInput.seek(expectedEnd);
         }
-
-        if(sectionDividerSettingType == SectionDividerSetting.BOUNDING_SECTION_DIVIDER){
-            if(group == null){
-                group = new LinkedList<>();
-                groupStack.add(group);
-            } else {
-                groupStack.add(group);
-                group = new LinkedList<>();
-            }
-            isSectionDivider = true;
-        } else if(sectionDividerSettingType == SectionDividerSetting.OPEN_FOLDER ||
-                sectionDividerSettingType == SectionDividerSetting.CLOSED_FOLDER){
-            for(PSDLayerInfo info : group){
-                info.groupLayerId = this.layerId;
-            }
-            group = groupStack.pop();
-            group.add(this);
-            this.isGroup = true;
-        } else {
-            if(group != null){
-                group.add(this);
-            }
-        }
-
     }
 
     String getLayerName() {
@@ -233,14 +202,14 @@ final class PSDLayerInfo {
         return builder.toString();
     }
 
-    enum SectionDividerSetting {
+    public enum SectionDividerSetting {
         LAYER(0), OPEN_FOLDER(1), CLOSED_FOLDER(2), BOUNDING_SECTION_DIVIDER(3);
         SectionDividerSetting(int value) { this.value = value;}
 
         private final int value;
         public int value() { return value; }
 
-        public static SectionDividerSetting fromInt(int value){
+        public static SectionDividerSetting valueOf(int value){
             for(SectionDividerSetting rt : SectionDividerSetting.values()){
                 if(rt.value == value){
                     return rt;
