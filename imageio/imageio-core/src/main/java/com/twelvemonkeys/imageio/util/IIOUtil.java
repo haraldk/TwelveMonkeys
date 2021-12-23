@@ -45,6 +45,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -175,15 +176,22 @@ public final class IIOUtil {
      * @param providerClassName name of the provider class.
      * @param category provider category
      *
-     * @return the provider instance, or {@code null}.
+     * @return the provider instance, or {@code null} if not found
      */
     public static <T> T lookupProviderByName(final ServiceRegistry registry, final String providerClassName, Class<T> category) {
-        try {
-            return category.cast(registry.getServiceProviderByClass(Class.forName(providerClassName)));
+        // NOTE: While more verbose, this is more OSGi-friendly than using
+        // registry.getServiceProviderByClass(Class.forName(providerClassName))
+        Iterator<T> providers = registry.getServiceProviders(category, true);
+
+        while (providers.hasNext()) {
+            T provider = providers.next();
+
+            if (provider.getClass().getName().equals(providerClassName)) {
+                return provider;
+            }
         }
-        catch (ClassNotFoundException ignore) {
-            return null;
-        }
+
+        return null;
     }
 
     /**
