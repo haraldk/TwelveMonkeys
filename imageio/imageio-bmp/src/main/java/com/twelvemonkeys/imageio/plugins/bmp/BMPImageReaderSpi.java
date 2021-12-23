@@ -39,6 +39,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Iterator;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
@@ -59,10 +60,28 @@ public final class BMPImageReaderSpi extends ImageReaderSpiBase {
     public void onRegistration(final ServiceRegistry registry, final Class<?> category) {
         ImageReaderSpi defaultProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.bmp.BMPImageReaderSpi", ImageReaderSpi.class);
 
+        if (defaultProvider == null) {
+            defaultProvider = lookupDefaultProvider(registry);
+        }
+
         if (defaultProvider != null) {
             // Order before com.sun provider, to aid ImageIO in selecting our reader
             registry.setOrdering((Class<ImageReaderSpi>) category, this, defaultProvider);
         }
+    }
+
+    static ImageReaderSpi lookupDefaultProvider(final ServiceRegistry registry) {
+        Iterator<ImageReaderSpi> providers = registry.getServiceProviders(ImageReaderSpi.class, true);
+
+        while (providers.hasNext()) {
+            ImageReaderSpi provider = providers.next();
+
+            if (provider.getClass().getName().equals("com.sun.imageio.plugins.bmp.BMPImageReaderSpi")) {
+                return provider;
+            }
+        }
+
+        return null;
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {

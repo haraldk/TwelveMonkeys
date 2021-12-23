@@ -40,6 +40,7 @@ import javax.imageio.metadata.IIOMetadataFormat;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
@@ -85,6 +86,10 @@ public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
             delegateProvider = lookupProviderByName(registry, "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
         }
 
+        if (delegateProvider == null) {
+            lookupDelegateProvider(registry);
+        }
+
         if (delegateProvider != null) {
             // Order before com.sun provider, to aid ImageIO in selecting our reader
             registry.setOrdering((Class<ImageReaderSpi>) category, this, delegateProvider);
@@ -93,6 +98,20 @@ public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
             // Or, if no delegate is found, silently deregister from the registry
             IIOUtil.deregisterProvider(registry, this, category);
         }
+    }
+
+    static ImageReaderSpi lookupDelegateProvider(final ServiceRegistry registry) {
+        Iterator<ImageReaderSpi> providers = registry.getServiceProviders(ImageReaderSpi.class, true);
+
+        while (providers.hasNext()) {
+            ImageReaderSpi provider = providers.next();
+
+            if (provider.getClass().getName().equals("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi")) {
+                return provider;
+            }
+        }
+
+        return null;
     }
 
     @Override
