@@ -87,7 +87,7 @@ public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
         }
 
         if (delegateProvider == null) {
-            lookupDelegateProvider(registry);
+            delegateProvider = lookupDelegateProvider(registry);
         }
 
         if (delegateProvider != null) {

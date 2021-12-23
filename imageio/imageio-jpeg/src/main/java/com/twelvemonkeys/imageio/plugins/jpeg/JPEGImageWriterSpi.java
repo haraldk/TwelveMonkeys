@@ -84,7 +84,7 @@ public class JPEGImageWriterSpi extends ImageWriterSpiBase {
         }
 
         if (delegateProvider == null) {
-            lookupDelegateProvider(registry);
+            delegateProvider = lookupDelegateProvider(registry);
         }
 
         if (delegateProvider != null) {
