@@ -34,10 +34,7 @@ import com.twelvemonkeys.lang.Validate;
 
 import java.awt.*;
 import java.awt.color.ColorSpace;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.ComponentSampleModel;
-import java.awt.image.SampleModel;
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 
 import static java.awt.image.DataBuffer.getDataTypeSize;
 
@@ -98,5 +95,28 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
 
     private int getAlphaComponent() {
         return super.getNumComponents() - 1;
+    }
+
+    @Override
+    public Object getDataElements(final int rgb, final Object pixel) {
+        return super.getDataElements(rgb, pixel == null ? createDataArray() : pixel);
+    }
+
+    private Object createDataArray() {
+        switch (transferType) {
+            case DataBuffer.TYPE_BYTE:
+                return new byte[numComponents];
+            case DataBuffer.TYPE_SHORT:
+            case DataBuffer.TYPE_USHORT:
+                return new short[numComponents];
+            case DataBuffer.TYPE_INT:
+                return new int[numComponents];
+            case DataBuffer.TYPE_FLOAT:
+                return new float[numComponents];
+            case DataBuffer.TYPE_DOUBLE:
+                return new double[numComponents];
+        }
+
+        throw new IllegalArgumentException("This method has not been implemented for transferType " + transferType);
     }
 }
