@@ -40,20 +40,23 @@ import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.util.Hashtable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ExtraSamplesColorModelTest {
 
     private BufferedImage createExtraSamplesImage(int w, int h, ColorSpace cs, boolean hasAlpha, int extraComponents) {
         int samplesPerPixel = cs.getNumComponents() + (hasAlpha ? 1 : 0) + extraComponents;
 
-        ExtraSamplesColorModel colorModel = new ExtraSamplesColorModel(cs, hasAlpha, true, DataBuffer.TYPE_BYTE, extraComponents);
+        ExtraSamplesColorModel colorModel = createExtraSamplesColorModel(cs, hasAlpha, extraComponents);
         SampleModel sampleModel = new PixelInterleavedSampleModel(DataBuffer.TYPE_BYTE, w, h, samplesPerPixel, samplesPerPixel * w, createOffsets(samplesPerPixel));
 
         WritableRaster raster = Raster.createWritableRaster(sampleModel, new Point(0, 0));
 
         return new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), new Hashtable<>());
+    }
+
+    private ExtraSamplesColorModel createExtraSamplesColorModel(ColorSpace cs, boolean hasAlpha, int extraComponents) {
+        return new ExtraSamplesColorModel(cs, hasAlpha, true, DataBuffer.TYPE_BYTE, extraComponents);
     }
 
     private static int[] createOffsets(int samplesPerPixel) {
@@ -150,5 +153,20 @@ public class ExtraSamplesColorModelTest {
         image.setRGB(0, 0, 2, 1, new int[]{Color.BLACK.getRGB(), Color.WHITE.getRGB()}, 0, 2);
         assertEquals(Color.BLACK.getRGB(), image.getRGB(0, 0));
         assertEquals(Color.WHITE.getRGB(), image.getRGB(1, 0));
+    }
+
+    @Test
+    public void testEquals() {
+        ExtraSamplesColorModel original = createExtraSamplesColorModel(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), true, 1);
+        ExtraSamplesColorModel equal = createExtraSamplesColorModel(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), true, 1);
+
+        assertEquals(original, equal);
+        assertEquals(equal, original);
+
+        ExtraSamplesColorModel different = createExtraSamplesColorModel(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), true, 2);
+        ExtraSamplesColorModel differentToo = createExtraSamplesColorModel(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
+
+        assertNotEquals(original, different);
+        assertNotEquals(original, differentToo);
     }
 }

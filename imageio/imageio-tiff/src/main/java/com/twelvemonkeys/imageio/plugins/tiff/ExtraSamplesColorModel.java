@@ -35,6 +35,7 @@ import com.twelvemonkeys.lang.Validate;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
+import java.util.Objects;
 
 import static java.awt.image.DataBuffer.getDataTypeSize;
 
@@ -118,5 +119,45 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
         }
 
         throw new IllegalArgumentException("This method has not been implemented for transferType " + transferType);
+    }
+
+    @Override
+    public boolean equals(final Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || getClass() != other.getClass()) {
+            return false;
+        }
+
+        ExtraSamplesColorModel that = (ExtraSamplesColorModel) other;
+
+        if (hasAlpha() != that.hasAlpha() ||
+                isAlphaPremultiplied() != that.isAlphaPremultiplied() ||
+                getPixelSize() != that.getPixelSize() ||
+                getTransparency() != that.getTransparency() ||
+                numComponents != that.numComponents) {
+            return false;
+        }
+
+        int[] nBits = getComponentSize();
+        int[] nb = that.getComponentSize();
+
+        if ((nBits == null) || (nb == null)) {
+            return ((nBits == null) && (nb == null));
+        }
+
+        for (int i = 0; i < nBits.length; i++) {
+            if (nBits[i] != nb[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), numComponents, componentSize);
     }
 }
