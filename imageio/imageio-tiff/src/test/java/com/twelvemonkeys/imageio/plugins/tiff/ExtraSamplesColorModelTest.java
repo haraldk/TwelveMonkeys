@@ -53,7 +53,7 @@ public class ExtraSamplesColorModelTest {
 
         WritableRaster raster = Raster.createWritableRaster(sampleModel, new Point(0, 0));
 
-        return new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), new Hashtable());
+        return new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), new Hashtable<>());
     }
 
     private static int[] createOffsets(int samplesPerPixel) {
@@ -67,8 +67,8 @@ public class ExtraSamplesColorModelTest {
     @Test
     public void testImageWithExtraSamplesCanBeResampledGray() {
         for (int i = 1; i < 8; i++) {
-            BufferedImage bufferedImage = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_GRAY), false, i);
-            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(bufferedImage, null);
+            BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_GRAY), false, i);
+            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
             assertNotNull(resampled);
             assertEquals(5, resampled.getWidth());
@@ -79,8 +79,8 @@ public class ExtraSamplesColorModelTest {
     @Test
     public void testImageWithExtraSamplesCanBeResampledGrayAlpha() {
         for (int i = 1; i < 8; i++) {
-            BufferedImage bufferedImage = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_GRAY), true, i);
-            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(bufferedImage, null);
+            BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_GRAY), true, i);
+            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
             assertNotNull(resampled);
             assertEquals(5, resampled.getWidth());
@@ -91,8 +91,8 @@ public class ExtraSamplesColorModelTest {
     @Test
     public void testImageWithExtraSamplesCanBeResampledRGB() {
         for (int i = 1; i < 8; i++) {
-            BufferedImage bufferedImage = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, i);
-            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(bufferedImage, null);
+            BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, i);
+            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
             assertNotNull(resampled);
             assertEquals(5, resampled.getWidth());
@@ -103,8 +103,8 @@ public class ExtraSamplesColorModelTest {
     @Test
     public void testImageWithExtraSamplesCanBeResampledRGBAlpha() {
         for (int i = 1; i < 8; i++) {
-            BufferedImage bufferedImage = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), true, i);
-            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(bufferedImage, null);
+            BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), true, i);
+            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
             assertNotNull(resampled);
             assertEquals(5, resampled.getWidth());
@@ -115,8 +115,8 @@ public class ExtraSamplesColorModelTest {
     @Test
     public void testImageWithExtraSamplesCanBeResampledCMYK() {
         for (int i = 1; i < 8; i++) {
-            BufferedImage bufferedImage = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), false, i);
-            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(bufferedImage, null);
+            BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), false, i);
+            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
             assertNotNull(resampled);
             assertEquals(5, resampled.getWidth());
@@ -127,8 +127,8 @@ public class ExtraSamplesColorModelTest {
     @Test
     public void testImageWithExtraSamplesCanBeResampledCMYKAlpha() {
         for (int i = 1; i < 8; i++) {
-            BufferedImage bufferedImage = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), true, i);
-            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(bufferedImage, null);
+            BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpaces.CS_GENERIC_CMYK), true, i);
+            BufferedImage resampled = new ResampleOp(5, 5, ResampleOp.FILTER_LANCZOS).filter(image, null);
 
             assertNotNull(resampled);
             assertEquals(5, resampled.getWidth());
@@ -138,7 +138,7 @@ public class ExtraSamplesColorModelTest {
 
     @Test
     public void testSetRGB() {
-        BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
+        BufferedImage image = createExtraSamplesImage(1, 1, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
 
         image.setRGB(0, 0, Color.BLACK.getRGB());
         assertEquals(Color.BLACK.getRGB(), image.getRGB(0, 0));
@@ -146,7 +146,7 @@ public class ExtraSamplesColorModelTest {
 
     @Test
     public void testSetRGBs() {
-        BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
+        BufferedImage image = createExtraSamplesImage(2, 2, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
         image.setRGB(0, 0, 2, 1, new int[]{Color.BLACK.getRGB(), Color.WHITE.getRGB()}, 0, 2);
         assertEquals(Color.BLACK.getRGB(), image.getRGB(0, 0));
         assertEquals(Color.WHITE.getRGB(), image.getRGB(1, 0));
