@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.image.ResampleOp;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+
 import org.junit.Test;
 
 import java.awt.*;
@@ -133,5 +134,21 @@ public class ExtraSamplesColorModelTest {
             assertEquals(5, resampled.getWidth());
             assertEquals(5, resampled.getHeight());
         }
+    }
+
+    @Test
+    public void testSetRGB() {
+        BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
+
+        image.setRGB(0, 0, Color.BLACK.getRGB());
+        assertEquals(Color.BLACK.getRGB(), image.getRGB(0, 0));
+    }
+
+    @Test
+    public void testSetRGBs() {
+        BufferedImage image = createExtraSamplesImage(10, 10, ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, 1);
+        image.setRGB(0, 0, 2, 1, new int[]{Color.BLACK.getRGB(), Color.WHITE.getRGB()}, 0, 2);
+        assertEquals(Color.BLACK.getRGB(), image.getRGB(0, 0));
+        assertEquals(Color.WHITE.getRGB(), image.getRGB(1, 0));
     }
 }
