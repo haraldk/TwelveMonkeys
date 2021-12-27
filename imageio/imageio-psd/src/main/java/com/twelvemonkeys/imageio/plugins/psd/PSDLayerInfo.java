@@ -57,6 +57,12 @@ final class PSDLayerInfo {
     private String unicodeLayerName;
     private int layerId;
 
+    Integer groupLayerId;
+    Boolean group = false;
+    Boolean sectionDivider = false;
+
+    SectionDividerSetting sectionDividerSettingType;
+
     PSDLayerInfo(final boolean largeFormat, final ImageInputStream pInput) throws IOException {
         top = pInput.readInt();
         left = pInput.readInt();
@@ -64,7 +70,7 @@ final class PSDLayerInfo {
         right = pInput.readInt();
 
         int channels = pInput.readUnsignedShort();
-        
+
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
@@ -132,6 +138,7 @@ final class PSDLayerInfo {
 //            System.out.println("key: " + PSDUtil.intToStr(resourceKey));
 //            System.out.println("length: " + resourceLength);
 
+
             switch (resourceKey) {
                 case PSD.luni:
                     unicodeLayerName = PSDUtil.readUnicodeString(pInput);
@@ -144,7 +151,10 @@ final class PSDLayerInfo {
                     }
                     layerId = pInput.readInt();
                     break;
-
+                case PSD.lsct:
+                    sectionDividerSettingType = SectionDividerSetting.valueOf(pInput.readInt());
+                    pInput.skipBytes(resourceLength - 4);
+                    break;
                 default:
                     // TODO: Parse more data...
                     pInput.skipBytes(resourceLength);
@@ -190,5 +200,23 @@ final class PSDLayerInfo {
 
         builder.append("]");
         return builder.toString();
+    }
+
+    public enum SectionDividerSetting {
+        LAYER(0), OPEN_FOLDER(1), CLOSED_FOLDER(2), BOUNDING_SECTION_DIVIDER(3);
+        SectionDividerSetting(int value) { this.value = value;}
+
+        private final int value;
+        public int value() { return value; }
+
+        public static SectionDividerSetting valueOf(int value){
+            for(SectionDividerSetting rt : SectionDividerSetting.values()){
+                if(rt.value == value){
+                    return rt;
+                }
+            }
+
+            return null;
+        }
     }
 }

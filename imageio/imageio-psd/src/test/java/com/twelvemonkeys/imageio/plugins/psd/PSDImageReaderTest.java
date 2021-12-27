@@ -532,4 +532,51 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             assertEquals("If_The_Layer_Name_Is_Really_Long_Oh_No_What_Do_I_Do", ((IIOMetadataNode) layerInfo.item(0)).getAttribute("name"));
         }
     }
+
+    @Test
+    public void testGroupLayerRead() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/layer_group_32bit5x5.psd"))) {
+            imageReader.setInput(stream);
+
+            IIOMetadata metadata = imageReader.getImageMetadata(0);
+            List<PSDLayerInfo> layerInfos = ((PSDMetadata) metadata).layerInfo;
+
+            assertEquals(layerInfos.size(), 5);
+
+            PSDLayerInfo groupedLayer = null;
+            PSDLayerInfo groupLayer = null;
+            PSDLayerInfo sectionDividerLayer = null;
+            for (PSDLayerInfo layerInfo : layerInfos) {
+                if (layerInfo.getLayerId() == 5) {
+                    groupedLayer = layerInfo;
+                }
+
+                if (layerInfo.getLayerId() == 6) {
+                    groupLayer = layerInfo;
+                }
+
+                if (layerInfo.getLayerId() == 7) {
+                    sectionDividerLayer = layerInfo;
+                }
+            }
+
+            assertNotNull(groupedLayer);
+            assertEquals((int) groupedLayer.groupLayerId, 6);
+            assertEquals(groupedLayer.group, false);
+            assertEquals(groupedLayer.sectionDivider, false);
+
+            assertNotNull(groupLayer);
+            assertNull(groupLayer.groupLayerId);
+            assertEquals(groupLayer.group, true);
+            assertEquals(groupLayer.sectionDivider, false);
+
+            assertNotNull(sectionDividerLayer);
+            assertNull(sectionDividerLayer.groupLayerId);
+            assertEquals(sectionDividerLayer.group, false);
+            assertEquals(sectionDividerLayer.sectionDivider, true);
+
+        }
+    }
 }

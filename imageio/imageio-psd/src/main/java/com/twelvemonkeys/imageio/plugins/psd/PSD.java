@@ -708,4 +708,5 @@ interface PSD extends com.twelvemonkeys.imageio.metadata.psd.PSD {
     int PxSD = 'P' << 24 | 'x' << 16 | 'S' << 8 | 'D';
     int luni = 'l' << 24 | 'u' << 16 | 'n' << 8 | 'i';
     int lyid = 'l' << 24 | 'y' << 16 | 'i' << 8 | 'd';
+    int lsct = 'l' << 24 | 's' << 16 | 'c' << 8 | 't';
 }
