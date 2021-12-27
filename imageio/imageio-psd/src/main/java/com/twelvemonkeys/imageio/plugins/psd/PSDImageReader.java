@@ -947,8 +947,42 @@ public final class PSDImageReader extends ImageReaderBase {
 
                     if (pParseData && metadata.layerInfo == null) {
                         PSDLayerInfo[] layerInfos = new PSDLayerInfo[Math.abs(layerCount)];
+
+                        Stack<List<PSDLayerInfo>> groupStack = new Stack<>();
+                        List<PSDLayerInfo> groupedLayerInfo = null;
+
                         for (int i = 0; i < layerInfos.length; i++) {
-                            layerInfos[i] = new PSDLayerInfo(header.largeFormat, imageInput);
+                            PSDLayerInfo layerInfo = new PSDLayerInfo(header.largeFormat, imageInput);
+                            layerInfos[i] = layerInfo;
+
+                            if (layerInfo.sectionDividerSettingType == PSDLayerInfo.SectionDividerSetting.BOUNDING_SECTION_DIVIDER) {
+                                if (groupedLayerInfo == null) {
+                                    groupedLayerInfo = new LinkedList<>();
+                                    groupStack.add(groupedLayerInfo);
+                                } else {
+                                    groupStack.add(groupedLayerInfo);
+                                    groupedLayerInfo = new LinkedList<>();
+                                }
+                                layerInfo.sectionDivider = true;
+                            }
+                            else if (layerInfo.sectionDividerSettingType == PSDLayerInfo.SectionDividerSetting.OPEN_FOLDER ||
+                                    layerInfo.sectionDividerSettingType == PSDLayerInfo.SectionDividerSetting.CLOSED_FOLDER) {
+                                // can't happen but for defense logic
+                                if (groupedLayerInfo == null) {
+                                    continue;
+                                }
+                                for (PSDLayerInfo info : groupedLayerInfo) {
+                                    info.groupLayerId = layerInfo.getLayerId();
+                                }
+                                groupedLayerInfo = groupStack.pop();
+                                groupedLayerInfo.add(layerInfo);
+                                layerInfo.group = true;
+                            }
+                            else {
+                                if (groupedLayerInfo != null) {
+                                    groupedLayerInfo.add(layerInfo);
+                                }
+                            }
                         }
 
                         metadata.layerInfo = Arrays.asList(layerInfos);
