@@ -545,38 +545,24 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
             assertEquals(layerInfos.size(), 5);
 
-            PSDLayerInfo groupedLayer = null;
-            PSDLayerInfo groupLayer = null;
-            PSDLayerInfo sectionDividerLayer = null;
-            for (PSDLayerInfo layerInfo : layerInfos) {
-                if (layerInfo.getLayerId() == 5) {
-                    groupedLayer = layerInfo;
-                }
-
-                if (layerInfo.getLayerId() == 6) {
-                    groupLayer = layerInfo;
-                }
-
-                if (layerInfo.getLayerId() == 7) {
-                    sectionDividerLayer = layerInfo;
-                }
-            }
+            PSDLayerInfo sectionDividerLayer = layerInfos.get(1);
+            PSDLayerInfo groupedLayer = layerInfos.get(2);
+            PSDLayerInfo groupLayer = layerInfos.get(3);
 
             assertNotNull(groupedLayer);
-            assertEquals((int) groupedLayer.groupLayerId, 6);
-            assertEquals(groupedLayer.group, false);
-            assertEquals(groupedLayer.sectionDivider, false);
+            assertEquals(groupedLayer.groupId, 6);
+            assertFalse(groupedLayer.isGroup);
+            assertFalse(groupedLayer.isDivider);
 
             assertNotNull(groupLayer);
-            assertNull(groupLayer.groupLayerId);
-            assertEquals(groupLayer.group, true);
-            assertEquals(groupLayer.sectionDivider, false);
+            assertEquals(-1, groupLayer.groupId);
+            assertTrue(groupLayer.isGroup);
+            assertFalse(groupLayer.isDivider);
 
             assertNotNull(sectionDividerLayer);
-            assertNull(sectionDividerLayer.groupLayerId);
-            assertEquals(sectionDividerLayer.group, false);
-            assertEquals(sectionDividerLayer.sectionDivider, true);
-
+            assertEquals(-1, sectionDividerLayer.groupId);
+            assertFalse(sectionDividerLayer.isGroup);
+            assertTrue(sectionDividerLayer.isDivider);
         }
     }
 }
