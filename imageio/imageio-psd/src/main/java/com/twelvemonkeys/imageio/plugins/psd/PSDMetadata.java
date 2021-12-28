@@ -37,6 +37,7 @@ import com.twelvemonkeys.imageio.metadata.iptc.IPTC;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.FilterIterator;
+
 import org.w3c.dom.Node;
 
 import javax.imageio.metadata.IIOMetadataNode;
@@ -388,21 +389,21 @@ public final class PSDMetadata extends AbstractMetadata {
             node.setAttribute("bottom", String.valueOf(psdLayerInfo.bottom));
             node.setAttribute("right", String.valueOf(psdLayerInfo.right));
             node.setAttribute("layerId", String.valueOf(psdLayerInfo.getLayerId()));
-            node.setAttribute("groupLayerId", String.valueOf(psdLayerInfo.groupLayerId));
+            if (psdLayerInfo.groupId != -1) {
+                node.setAttribute("groupId", String.valueOf(psdLayerInfo.groupId));
+            }
 
             node.setAttribute("blendMode", PSDUtil.intToStr(psdLayerInfo.blendMode.blendMode));
             node.setAttribute("opacity", String.valueOf(psdLayerInfo.blendMode.opacity)); // 0-255
             node.setAttribute("clipping", getClippingValue(psdLayerInfo.blendMode.clipping)); // Enum: 0: Base, 1: Non-base, n: unknown
             node.setAttribute("flags", String.valueOf(psdLayerInfo.blendMode.flags));
 
-            if ((psdLayerInfo.group)){
-                node.setAttribute("group", String.valueOf(psdLayerInfo.group));
+            if ((psdLayerInfo.isGroup)) {
+                node.setAttribute("group", "true");
             }
-
-            if ((psdLayerInfo.sectionDivider)) {
-                node.setAttribute("sectionDivider", String.valueOf(psdLayerInfo.sectionDivider));
+            if ((psdLayerInfo.isDivider)) {
+                node.setAttribute("sectionDivider", "true");
             }
-
             if ((psdLayerInfo.blendMode.flags & 0x01) != 0) {
                 node.setAttribute("transparencyProtected", "true");
             }
