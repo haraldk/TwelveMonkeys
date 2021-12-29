@@ -398,10 +398,10 @@ public final class PSDMetadata extends AbstractMetadata {
             node.setAttribute("clipping", getClippingValue(psdLayerInfo.blendMode.clipping)); // Enum: 0: Base, 1: Non-base, n: unknown
             node.setAttribute("flags", String.valueOf(psdLayerInfo.blendMode.flags));
 
-            if ((psdLayerInfo.isGroup)) {
+            if (psdLayerInfo.isGroup) {
                 node.setAttribute("group", "true");
             }
-            if ((psdLayerInfo.isDivider)) {
+            if (psdLayerInfo.isDivider) {
                 node.setAttribute("sectionDivider", "true");
             }
             if ((psdLayerInfo.blendMode.flags & 0x01) != 0) {
