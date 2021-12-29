@@ -992,24 +992,27 @@ public final class PSDImageReader extends ImageReaderBase {
     private List<PSDLayerInfo> readLayerInfo(int layerCount) throws IOException {
         PSDLayerInfo[] layerInfos = new PSDLayerInfo[layerCount];
 
-        List<PSDLayerInfo> groupedLayerInfo = Collections.emptyList();
+        Stack<List<PSDLayerInfo>> groupStack = new Stack<>();
+        List<PSDLayerInfo> currentGroup = Collections.emptyList();
 
         for (int i = 0; i < layerInfos.length; i++) {
             PSDLayerInfo layerInfo = new PSDLayerInfo(header.largeFormat, imageInput);
             layerInfos[i] = layerInfo;
 
             if (layerInfo.isDivider) {
-                groupedLayerInfo = new LinkedList<>();
+                groupStack.push(currentGroup);
+                currentGroup = new ArrayList<>();
             }
             else if (layerInfo.isGroup) {
-                for (PSDLayerInfo info : groupedLayerInfo) {
+                for (PSDLayerInfo info : currentGroup) {
                     info.groupId = layerInfo.getLayerId();
                 }
 
-                groupedLayerInfo = Collections.emptyList();
+                currentGroup = groupStack.pop();
             }
-            else if (groupedLayerInfo != Collections.EMPTY_LIST) {
-                groupedLayerInfo.add(layerInfo);
+
+            if (currentGroup != Collections.EMPTY_LIST) {
+                currentGroup.add(layerInfo);
             }
         }
 
