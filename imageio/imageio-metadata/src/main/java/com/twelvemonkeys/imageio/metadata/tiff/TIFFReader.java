@@ -80,7 +80,7 @@ public final class TIFFReader extends MetadataReader {
 
     private final Set<Long> parsedIFDs = new TreeSet<>();
 
-    private long length;
+    private long inputLength;
     private boolean longOffsets;
     private int offsetSize;
 
@@ -127,7 +127,7 @@ public final class TIFFReader extends MetadataReader {
             throw new IIOException(String.format("Wrong TIFF magic in input data: %04x, expected: %04x", magic, TIFF.TIFF_MAGIC));
         }
 
-        length = input.length();
+        inputLength = input.length();
 
         return readLinkedIFDs(input);
     }
@@ -140,7 +140,7 @@ public final class TIFFReader extends MetadataReader {
         // Read linked IFDs
         while (ifdOffset != 0) {
             try {
-                if ((length > 0 && ifdOffset >= length) || !parsedIFDs.add(ifdOffset)) {
+                if ((inputLength > 0 && ifdOffset >= inputLength) || !isValidOffset(input, ifdOffset) || !parsedIFDs.add(ifdOffset)) {
                     // TODO: Issue warning
                     if (DEBUG) {
                         System.err.println("Bad IFD offset: " + ifdOffset);
@@ -218,7 +218,7 @@ public final class TIFFReader extends MetadataReader {
 
                     for (long ifdOffset : ifdOffsets) {
                         try {
-                            if ((length > 0 && ifdOffset >= length) || !parsedIFDs.add(ifdOffset)) {
+                            if ((inputLength > 0 && ifdOffset >= inputLength) || !isValidOffset(input, ifdOffset) || !parsedIFDs.add(ifdOffset)) {
                                 // TODO: Issue warning
                                 if (DEBUG) {
                                     System.err.println("Bad IFD offset: " + ifdOffset);
@@ -330,20 +330,14 @@ public final class TIFFReader extends MetadataReader {
         long valueLength = getValueLength(type, count);
 
         Object value;
+
         if (valueLength > 0 && valueLength <= offsetSize) {
             value = readValueInLine(pInput, type, count);
             pInput.skipBytes(offsetSize - valueLength);
         }
         else {
             long valueOffset = readOffset(pInput); // This is the *value* iff the value size is <= offsetSize
-
-            // Note: This a precaution
-            if (count >= Integer.MAX_VALUE || length > 0 && length < valueOffset + valueLength) {
-                value = new EOFException(String.format("TIFF value offset or size too large: %d/%d bytes (length: %d bytes)", valueOffset, valueLength, length));
-            }
-            else {
-                value = readValueAt(pInput, valueOffset, type, count);
-            }
+            value = readValueAt(pInput, valueOffset, valueLength, type, count);
         }
 
         return new TIFFEntry(tagId, type, value);
@@ -365,18 +359,52 @@ public final class TIFFReader extends MetadataReader {
         return (int) count;
     }
 
-    private Object readValueAt(final ImageInputStream pInput, final long pOffset, final short pType, final int pCount) throws IOException {
-        long pos = pInput.getStreamPosition();
+    private boolean isValidOffset(final ImageInputStream input, final long pos) throws IOException {
+        // TODO: If the position returns false, we could limit the length to pos for further reads...
         try {
-            pInput.seek(pOffset);
-            return readValue(pInput, pType, pCount, longOffsets);
+            input.mark();
+            input.seek(pos);
+
+            return input.read() >= 0;
+        }
+        catch (IOException e) {
+            return false;
+        }
+        finally {
+            input.reset();
+        }
+    }
+
+    private boolean isValidLengthAtOffset(final ImageInputStream input, long offset, long valueLength) throws IOException {
+        // NOTE: For values smaller than Short.MAX_VALUE, we simply try, and handle the potential EOFException when reading
+        return (inputLength < 0 || inputLength >= offset + valueLength)
+                && (valueLength < Short.MAX_VALUE || isValidOffset(input, offset + valueLength - 1));
+    }
+
+    private Object readValueAt(final ImageInputStream input, final long offset, final long length, final short type, final int count) throws IOException {
+        long pos = input.getStreamPosition();
+
+        try {
+            input.seek(offset);
+
+            // Avoid OOME due to corrupted/malicious data
+            if (count < Integer.MAX_VALUE && isValidLengthAtOffset(input, offset, length)) {
+                return readValue(input, type, count, longOffsets);
+            }
+            else {
+                throw new EOFException(String.format("TIFF value offset or size too large: @%08x/%d bytes (input length: %s)", offset, length, inputLength >= 0 ? inputLength + " bytes" : "unknown"));
+            }
         }
         catch (EOFException e) {
             // TODO: Add warning listener API and report problem to client code
+            if (DEBUG) {
+                System.err.println(e);
+            }
+
             return e;
         }
         finally {
-            pInput.seek(pos);
+            input.seek(pos);
         }
     }
 
