@@ -30,13 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
+import com.twelvemonkeys.lang.Validate;
+
 import java.io.EOFException;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-
-import com.twelvemonkeys.lang.Validate;
 
 /**
  * CCITT Modified Huffman RLE, Group 3 (T4) and Group 4 (T6) fax compression.
@@ -197,6 +197,10 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
             try {
                 decodeRow();
+            }
+            catch (ArrayIndexOutOfBoundsException e) {
+                // Mask the AIOOBE as an IOException
+                throw new IOException("Malformed CCITT stream", e);
             }
             catch (EOFException e) {
                 // TODO: Rewrite to avoid throw/catch for normal flow...

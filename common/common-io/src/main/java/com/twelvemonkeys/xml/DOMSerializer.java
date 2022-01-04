@@ -29,6 +29,9 @@
 
 package com.twelvemonkeys.xml;
 
+import java.io.OutputStream;
+import java.io.Writer;
+
 import org.w3c.dom.DOMConfiguration;
 import org.w3c.dom.DOMImplementationList;
 import org.w3c.dom.Document;
@@ -37,9 +40,6 @@ import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSOutput;
 import org.w3c.dom.ls.LSSerializer;
-
-import java.io.OutputStream;
-import java.io.Writer;
 
 /**
  * {@code DOMImplementationLS} backed implementation.
@@ -87,17 +87,6 @@ public final class DOMSerializer {
 
         output.setCharacterStream(pStream);
     }
-
-    /*
-    // TODO: Is it useful?
-    public void setNewLine(final String pNewLine) {
-        serializer.setNewLine(pNewLine);
-    }
-
-    public String getNewLine() {
-        return serializer.getNewLine();
-    }
-    */
 
     /**
      * Specifies wether the serializer should use indentation and optimize for
@@ -169,13 +158,7 @@ public final class DOMSerializer {
             try {
                 return DOMImplementationRegistry.newInstance();
             }
-            catch (ClassNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
-            catch (InstantiationException e) {
-                throw new IllegalStateException(e);
-            }
-            catch (IllegalAccessException e) {
+            catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 throw new IllegalStateException(e);
             }
         }

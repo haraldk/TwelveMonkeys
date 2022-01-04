@@ -946,14 +946,8 @@ public final class PSDImageReader extends ImageReaderBase {
                     metadata.layerCount = layerCount;
 
                     if (pParseData && metadata.layerInfo == null) {
-                        PSDLayerInfo[] layerInfos = new PSDLayerInfo[Math.abs(layerCount)];
-                        for (int i = 0; i < layerInfos.length; i++) {
-                            layerInfos[i] = new PSDLayerInfo(header.largeFormat, imageInput);
-                        }
-
-                        metadata.layerInfo = Arrays.asList(layerInfos);
+                        metadata.layerInfo = readLayerInfo(Math.abs(layerCount));
                         metadata.layersStart = imageInput.getStreamPosition();
-
                     }
 
                     long read = imageInput.getStreamPosition() - pos;
@@ -964,7 +958,6 @@ public final class PSDImageReader extends ImageReaderBase {
                 else {
                     metadata.layerInfo = Collections.emptyList();
                 }
-
 
                 // Global LayerMaskInfo (18 bytes or more..?)
                 // 4 (length), 2 (colorSpace), 8 (4 * 2 byte color components), 2 (opacity %), 1 (kind), variable (pad)
@@ -996,6 +989,36 @@ public final class PSDImageReader extends ImageReaderBase {
         }
     }
 
+    private List<PSDLayerInfo> readLayerInfo(int layerCount) throws IOException {
+        PSDLayerInfo[] layerInfos = new PSDLayerInfo[layerCount];
+
+        Stack<List<PSDLayerInfo>> groupStack = new Stack<>();
+        List<PSDLayerInfo> currentGroup = Collections.emptyList();
+
+        for (int i = 0; i < layerInfos.length; i++) {
+            PSDLayerInfo layerInfo = new PSDLayerInfo(header.largeFormat, imageInput);
+            layerInfos[i] = layerInfo;
+
+            if (layerInfo.isDivider) {
+                groupStack.push(currentGroup);
+                currentGroup = new ArrayList<>();
+            }
+            else if (layerInfo.isGroup) {
+                for (PSDLayerInfo info : currentGroup) {
+                    info.groupId = layerInfo.getLayerId();
+                }
+
+                currentGroup = groupStack.pop();
+            }
+
+            if (currentGroup != Collections.EMPTY_LIST) {
+                currentGroup.add(layerInfo);
+            }
+        }
+
+        return Arrays.asList(layerInfos);
+    }
+
     private BufferedImage readLayerData(final int layerIndex, final ImageReadParam param) throws IOException {
         final int width = getLayerWidth(layerIndex);
         final int height = getLayerHeight(layerIndex);
@@ -1010,7 +1033,7 @@ public final class PSDImageReader extends ImageReaderBase {
 
         // Even if raw/imageType has no alpha, the layers may still have alpha...
         ImageTypeSpecifier imageType = getRawImageTypeForLayer(layerIndex);
-        BufferedImage layer = getDestination(param, getImageTypes(layerIndex + 1), Math.max(1, width), Math.max(1, height));
+        BufferedImage layer = getDestination(param, getImageTypes(layerIndex + 1), width, height);
 
         imageInput.seek(findLayerStartPos(layerIndex));
 

@@ -247,6 +247,11 @@ public final class PSDMetadataFormat extends IIOMetadataFormatImpl {
         addAttribute("LayerInfo", "opacity", DATATYPE_INTEGER, false, "0");
         addAttribute("LayerInfo", "clipping", DATATYPE_STRING, false, "base", Arrays.asList("base", "non-base"));
         addAttribute("LayerInfo", "flags", DATATYPE_INTEGER, false, "0");
+        addAttribute("LayerInfo", "layerId", DATATYPE_INTEGER, false, null);
+        addAttribute("LayerInfo", "groupLayerId", DATATYPE_INTEGER, false, null);
+        addAttribute("LayerInfo", "group", DATATYPE_BOOLEAN, false, "false");
+        addAttribute("LayerInfo", "sectionDivider", DATATYPE_INTEGER, false, "false");
+
 
         // Redundant (derived from flags)
         addAttribute("LayerInfo", "transparencyProtected", DATATYPE_BOOLEAN, false, "false");

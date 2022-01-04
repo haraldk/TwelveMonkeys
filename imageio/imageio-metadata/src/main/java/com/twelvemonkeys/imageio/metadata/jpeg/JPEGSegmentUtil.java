@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
+import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.psd.PSD;
@@ -42,7 +43,6 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -353,8 +353,8 @@ public final class JPEGSegmentUtil {
                     Directory psd = new PSDReader().read(stream);
                     Entry iccEntry = psd.getEntryById(PSD.RES_ICC_PROFILE);
                     if (iccEntry != null) {
-                        ICC_ColorSpace colorSpace = new ICC_ColorSpace(ICC_Profile.getInstance((byte[]) iccEntry.getValue()));
-                        System.err.println("colorSpace: " + colorSpace);
+                        ICC_Profile profile = ColorProfiles.createProfile((byte[]) iccEntry.getValue());
+                        System.err.println("ICC Profile: " + profile);
                     }
                     System.err.println("PSD: " + psd);
                     System.err.println(TIFFReader.HexDump.dump(segment.data));

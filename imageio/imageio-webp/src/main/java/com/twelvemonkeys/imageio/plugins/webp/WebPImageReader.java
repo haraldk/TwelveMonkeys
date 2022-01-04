@@ -32,6 +32,7 @@
 package com.twelvemonkeys.imageio.plugins.webp;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
@@ -287,7 +288,7 @@ final class WebPImageReader extends ImageReaderBase {
                         long chunkStart = imageInput.getStreamPosition();
 
                         if (nextChunk == WebP.CHUNK_ICCP) {
-                            iccProfile = ICC_Profile.getInstance(IIOUtil.createStreamAdapter(imageInput, chunkLength));
+                            iccProfile = ColorProfiles.readProfile(IIOUtil.createStreamAdapter(imageInput, chunkLength));
                         }
                         else {
                             processWarningOccurred(String.format("Expected 'ICCP' chunk, '%s' chunk encountered", fourCC(nextChunk)));
@@ -365,7 +366,7 @@ final class WebPImageReader extends ImageReaderBase {
     public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
         readHeader(imageIndex);
 
-        if (iccProfile != null && !ColorSpaces.isCS_sRGB(iccProfile)) {
+        if (iccProfile != null && !ColorProfiles.isCS_sRGB(iccProfile)) {
             ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(iccProfile);
             int[] bandOffsets = header.containsALPH ? new int[] {0, 1, 2, 3} : new int[] {0, 1, 2};
             return ImageTypeSpecifiers.createInterleaved(colorSpace, bandOffsets, DataBuffer.TYPE_BYTE, header.containsALPH, false);
@@ -525,7 +526,7 @@ final class WebPImageReader extends ImageReaderBase {
 
             if (!iccProfile.equals(destinationProfile)) {
                 if (DEBUG) {
-                    System.err.println("Converting from " + iccProfile + " to " + (ColorSpaces.isCS_sRGB(destinationProfile) ? "sRGB" : destinationProfile));
+                    System.err.println("Converting from " + iccProfile + " to " + (ColorProfiles.isCS_sRGB(destinationProfile) ? "sRGB" : destinationProfile));
                 }
 
                 WritableRaster raster = colorModel.hasAlpha()

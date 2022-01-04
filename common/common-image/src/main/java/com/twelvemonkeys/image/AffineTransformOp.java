@@ -34,7 +34,13 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.ColorModel;
+import java.awt.image.ImagingOpException;
+import java.awt.image.Raster;
+import java.awt.image.RasterOp;
+import java.awt.image.WritableRaster;
 
 /**
  * This is a drop-in replacement for {@link java.awt.image.AffineTransformOp}.
@@ -70,6 +76,7 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
         delegate = new java.awt.image.AffineTransformOp(xform, interpolationType);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public BufferedImage filter(final BufferedImage src, BufferedImage dst) {
         try {
@@ -80,10 +87,9 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
                 dst = createCompatibleDestImage(src, src.getColorModel());
             }
 
-            Graphics2D g2d = null;
+            Graphics2D g2d = dst.createGraphics();
 
             try {
-                g2d = dst.createGraphics();
                 int interpolationType = delegate.getInterpolationType();
 
                 if (interpolationType > 0) {
@@ -109,9 +115,7 @@ public class AffineTransformOp implements BufferedImageOp, RasterOp {
                 return dst;
             }
             finally {
-                if (g2d != null) {
-                    g2d.dispose();
-                }
+                g2d.dispose();
             }
         }
     }

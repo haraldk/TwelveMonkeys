@@ -52,10 +52,15 @@ final class PSDLayerInfo {
     final PSDLayerBlendMode blendMode;
     final PSDLayerMaskData layerMaskData;
     final PSDChannelSourceDestinationRange[] ranges;
-    private final String layerName;
 
-    private String unicodeLayerName;
-    private int layerId;
+    private final String layerName;
+    private final String unicodeLayerName;
+
+    private final int layerId;
+
+    int groupId = -1;
+    final boolean isGroup;
+    final boolean isDivider;
 
     PSDLayerInfo(final boolean largeFormat, final ImageInputStream pInput) throws IOException {
         top = pInput.readInt();
@@ -64,7 +69,7 @@ final class PSDLayerInfo {
         right = pInput.readInt();
 
         int channels = pInput.readUnsignedShort();
-        
+
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
@@ -108,6 +113,10 @@ final class PSDLayerInfo {
             layerNameSize += skip;
         }
 
+        int layerId = -1;
+        String unicodeLayerName = null;
+        int sectionDividerSettingType = 0;
+
         // Parse "Additional layer data"
         long additionalLayerInfoStart = pInput.getStreamPosition();
         long expectedEnd = additionalLayerInfoStart + extraDataSize - layerMaskDataSize - 4 - layerBlendingDataSize - 4 - layerNameSize;
@@ -142,7 +151,18 @@ final class PSDLayerInfo {
                     if (resourceLength != 4) {
                         throw new IIOException(String.format("Expected layerId length == 4: %d", resourceLength));
                     }
+
                     layerId = pInput.readInt();
+                    break;
+
+                case PSD.lsct:
+                    if (resourceLength < 4) {
+                        throw new IIOException(String.format("Expected sectionDividerSetting length >= 4: %d", resourceLength));
+                    }
+
+                    sectionDividerSettingType = pInput.readInt();
+                    // length >= 12: '8BIM' + 4byte blend mode, length >= 16, 4byte sub type
+                    pInput.skipBytes(resourceLength - 4);
                     break;
 
                 default:
@@ -151,11 +171,16 @@ final class PSDLayerInfo {
                     break;
             }
 
-            // Re-align in case we got the length incorrect
+            // Re-align in case we got the resource length incorrect
             if (pInput.getStreamPosition() != resourceStart + resourceLength) {
                 pInput.seek(resourceStart + resourceLength);
             }
         }
+
+        this.layerId = layerId;
+        this.unicodeLayerName = unicodeLayerName;
+        isGroup = sectionDividerSettingType == 1 || sectionDividerSettingType == 2;
+        isDivider = sectionDividerSettingType == 3;
 
         // Re-align in case we got the length incorrect
         if (pInput.getStreamPosition() != expectedEnd) {
@@ -187,6 +212,17 @@ final class PSDLayerInfo {
         }
         builder.append(", ranges: ").append(Arrays.toString(ranges));
         builder.append(", layer name: \"").append(getLayerName()).append("\"");
+        builder.append(", layer id: ").append(getLayerId());
+
+        if (groupId != -1) {
+            builder.append(", group id: ").append(groupId);
+        }
+        if (isGroup) {
+            builder.append(", isGroup");
+        }
+        if (isDivider) {
+            builder.append(", isDivider");
+        }
 
         builder.append("]");
         return builder.toString();

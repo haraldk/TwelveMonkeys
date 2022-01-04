@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
 import javax.imageio.stream.ImageInputStream;
@@ -55,7 +56,7 @@ final class ICCProfile extends PSDImageResource {
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
         try (InputStream stream = IIOUtil.createStreamAdapter(pInput, size)) {
-            profile = ICC_Profile.getInstance(stream);
+            profile = ColorProfiles.readProfileRaw(stream);
         }
     }
 

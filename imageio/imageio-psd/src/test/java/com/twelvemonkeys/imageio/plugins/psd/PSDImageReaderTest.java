@@ -532,4 +532,90 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             assertEquals("If_The_Layer_Name_Is_Really_Long_Oh_No_What_Do_I_Do", ((IIOMetadataNode) layerInfo.item(0)).getAttribute("name"));
         }
     }
+
+    @Test
+    public void testGroupLayerRead() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/layer_group_32bit5x5.psd"))) {
+            imageReader.setInput(stream);
+
+            IIOMetadata metadata = imageReader.getImageMetadata(0);
+            List<PSDLayerInfo> layerInfos = ((PSDMetadata) metadata).layerInfo;
+
+            assertEquals(layerInfos.size(), 8);
+
+            // Normal layer, top level
+            PSDLayerInfo layer5 = layerInfos.get(0);
+            assertNotNull(layer5);
+            assertEquals("Layer 5", layer5.getLayerName());
+            assertEquals(2, layer5.getLayerId());
+            assertEquals(-1, layer5.groupId);
+            assertFalse(layer5.isGroup);
+            assertFalse(layer5.isDivider);
+
+            // Divider, invisible in UI, in "group 1" (group id 6)
+            PSDLayerInfo sectionDivider1 = layerInfos.get(1);
+            assertNotNull(sectionDivider1);
+            assertEquals("</Layer group>", sectionDivider1.getLayerName());
+            assertEquals(7, sectionDivider1.getLayerId());
+            assertEquals(6, sectionDivider1.groupId); // ...or -1?
+            assertFalse(sectionDivider1.isGroup);
+            assertTrue(sectionDivider1.isDivider);
+
+            // Normal layer, in "group 1" (group id 6)
+            PSDLayerInfo layer2 = layerInfos.get(2);
+            assertNotNull(layer2);
+            assertEquals("Layer 2", layer2.getLayerName());
+            assertEquals(5, layer2.getLayerId());
+            assertEquals(6, layer2.groupId);
+            assertFalse(layer2.isGroup);
+            assertFalse(layer2.isDivider);
+
+            // Divider, invisible in UI, in "group 1" (group id 9)
+            PSDLayerInfo sectionDivider2 = layerInfos.get(3);
+            assertNotNull(sectionDivider2);
+            assertEquals("</Layer group>", sectionDivider2.getLayerName());
+            assertEquals(10, sectionDivider2.getLayerId());
+            assertEquals(9, sectionDivider2.groupId); // ...or 6?
+            assertFalse(sectionDivider2.isGroup);
+            assertTrue(sectionDivider2.isDivider);
+
+            // Normal layer, in "nested group 1" (group id 9)
+            PSDLayerInfo groupedLayer = layerInfos.get(4);
+            assertNotNull(groupedLayer);
+            assertEquals("Nested Group Layer 1", groupedLayer.getLayerName());
+            assertEquals(8, groupedLayer.getLayerId());
+            assertEquals(9, groupedLayer.groupId);
+            assertFalse(groupedLayer.isGroup);
+            assertFalse(groupedLayer.isDivider);
+
+            // Group layer, in "group 1" (group id 6)
+            PSDLayerInfo nestedGroupLayer = layerInfos.get(5);
+            assertNotNull(nestedGroupLayer);
+            assertEquals("nested group 1", nestedGroupLayer.getLayerName());
+            assertEquals(9, nestedGroupLayer.getLayerId());
+            assertEquals(6, nestedGroupLayer.groupId);
+            assertTrue(nestedGroupLayer.isGroup);
+            assertFalse(nestedGroupLayer.isDivider);
+
+            // Group layer, top level
+            PSDLayerInfo groupLayer = layerInfos.get(6);
+            assertNotNull(groupLayer);
+            assertEquals("group 1", groupLayer.getLayerName());
+            assertEquals(6, groupLayer.getLayerId());
+            assertEquals(-1, groupLayer.groupId);
+            assertTrue(groupLayer.isGroup);
+            assertFalse(groupLayer.isDivider);
+
+            // Normal layer, top level
+            PSDLayerInfo layer1 = layerInfos.get(7);
+            assertNotNull(layer1);
+            assertEquals("Layer 1", layer1.getLayerName());
+            assertEquals(4, layer1.getLayerId());
+            assertEquals(-1, layer1.groupId);
+            assertFalse(layer1.isGroup);
+            assertFalse(layer1.isDivider);
+        }
+    }
 }
