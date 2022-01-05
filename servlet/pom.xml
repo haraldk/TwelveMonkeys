@@ -74,8 +74,8 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>twelvemonkeys-${project.artifactId}-${project.version}-jakarta</finalName>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>jakarta</shadedClassifierName>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>
                                 <includes>
