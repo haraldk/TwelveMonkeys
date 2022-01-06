@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.com/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.com/github/haraldk/TwelveMonkeys) 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio/badge.svg?color=slateblue)](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio)
+[![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/com.twelvemonkeys.imageio/imageio?label=maven%20snapshots&server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/com/twelvemonkeys/)
 [![StackOverflow](https://img.shields.io/badge/stack_overflow-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
 
