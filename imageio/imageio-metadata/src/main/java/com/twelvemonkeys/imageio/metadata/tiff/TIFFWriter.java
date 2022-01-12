@@ -292,7 +292,17 @@ public final class TIFFWriter extends MetadataWriter {
 
     private int getCount(final Entry entry) {
         Object value = entry.getValue();
-        return value instanceof String ? ((String) value).getBytes(StandardCharsets.UTF_8).length + 1 : entry.valueCount();
+        if(value instanceof String){
+            return ((String) value).getBytes(StandardCharsets.UTF_8).length + 1;
+        } else if(value instanceof String[]){
+            int sum = 0;
+            for (String string : (String[]) value){
+                sum += string.getBytes(StandardCharsets.UTF_8).length + 1;
+            }
+            return sum;
+        } else {
+            return entry.valueCount();
+        }
     }
 
     private void writeValueInline(final Object value, final short type, final ImageOutputStream stream) throws IOException {
@@ -410,7 +420,14 @@ public final class TIFFWriter extends MetadataWriter {
 
                         break;
                     }
-
+                case TIFF.TYPE_ASCII:
+                    String[] strings = (String[]) value;
+                    for (String string : strings) {
+                        byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
+                        stream.write(bytes);
+                        stream.write(0);
+                    }
+                    break;
                 default:
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
             }
