@@ -292,15 +292,17 @@ public final class TIFFWriter extends MetadataWriter {
 
     private int getCount(final Entry entry) {
         Object value = entry.getValue();
-        if(value instanceof String){
+        if (value instanceof String) {
             return ((String) value).getBytes(StandardCharsets.UTF_8).length + 1;
-        } else if(value instanceof String[]){
+        }
+        else if (value instanceof String[]) {
             int sum = 0;
-            for (String string : (String[]) value){
+            for (String string : (String[]) value) {
                 sum += string.getBytes(StandardCharsets.UTF_8).length + 1;
             }
             return sum;
-        } else {
+        }
+        else {
             return entry.valueCount();
         }
     }
@@ -423,9 +425,7 @@ public final class TIFFWriter extends MetadataWriter {
                 case TIFF.TYPE_ASCII:
                     String[] strings = (String[]) value;
                     for (String string : strings) {
-                        byte[] bytes = string.getBytes(StandardCharsets.UTF_8);
-                        stream.write(bytes);
-                        stream.write(0);
+                        writeString(stream, string);
                     }
                     break;
                 default:
@@ -440,9 +440,7 @@ public final class TIFFWriter extends MetadataWriter {
                     stream.writeByte(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_ASCII:
-                    byte[] bytes = ((String) value).getBytes(StandardCharsets.UTF_8);
-                    stream.write(bytes);
-                    stream.write(0);
+                    writeString(stream, (String) value);
                     break;
                 case TIFF.TYPE_SHORT:
                 case TIFF.TYPE_SSHORT:
@@ -477,6 +475,11 @@ public final class TIFFWriter extends MetadataWriter {
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
             }
         }
+    }
+
+    private void writeString(ImageOutputStream stream, String value) throws IOException {
+        stream.write(value.getBytes(StandardCharsets.UTF_8));
+        stream.write(0);
     }
 
     private void writeValueAt(final long dataOffset, final Object value, final short type, final ImageOutputStream stream) throws IOException {
