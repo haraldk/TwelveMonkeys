@@ -30,34 +30,15 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.ComponentColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.RenderedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import org.junit.Test;
+import org.w3c.dom.NodeList;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
@@ -66,14 +47,22 @@ import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
-import org.junit.Test;
-import org.w3c.dom.NodeList;
-
-import com.twelvemonkeys.imageio.color.ColorSpaces;
-import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * JPEGImageWriterTest
@@ -159,6 +148,20 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
                 return bytes;
             }
         }
+    }
+
+    // Unit/regression test for #559
+    @Test
+    public void testTranscodeMoreThan4DHTSegments() throws IOException {
+        ImageWriter writer = createWriter();
+        ImageReader reader = ImageIO.getImageReader(writer);
+
+        ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/5dhtsegments.jpg"), writer, ColorSpace.TYPE_RGB);
+
+        reader.reset();
+        reader.setInput(new ByteArrayImageInputStream(stream.toByteArray()));
+        BufferedImage image = reader.read(0);
+        assertNotNull(image);
     }
 
     @Test
