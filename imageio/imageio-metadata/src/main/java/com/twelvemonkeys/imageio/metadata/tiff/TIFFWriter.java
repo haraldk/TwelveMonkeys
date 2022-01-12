@@ -292,19 +292,26 @@ public final class TIFFWriter extends MetadataWriter {
 
     private int getCount(final Entry entry) {
         Object value = entry.getValue();
+
         if (value instanceof String) {
-            return ((String) value).getBytes(StandardCharsets.UTF_8).length + 1;
+            return computeStringLength((String) value);
         }
         else if (value instanceof String[]) {
-            int sum = 0;
-            for (String string : (String[]) value) {
-                sum += string.getBytes(StandardCharsets.UTF_8).length + 1;
-            }
-            return sum;
+            return computeStringLength((String[]) value);
         }
         else {
             return entry.valueCount();
         }
+    }
+
+    private int computeStringLength(String... values) {
+        int sum = 0;
+
+        for (String value : values) {
+            sum += value.getBytes(StandardCharsets.UTF_8).length + 1;
+        }
+
+        return sum;
     }
 
     private void writeValueInline(final Object value, final short type, final ImageOutputStream stream) throws IOException {
@@ -423,10 +430,7 @@ public final class TIFFWriter extends MetadataWriter {
                         break;
                     }
                 case TIFF.TYPE_ASCII:
-                    String[] strings = (String[]) value;
-                    for (String string : strings) {
-                        writeString(stream, string);
-                    }
+                    writeStrings(stream, (String[]) value);
                     break;
                 default:
                     throw new IllegalArgumentException("Unsupported TIFF type: " + type);
@@ -440,7 +444,7 @@ public final class TIFFWriter extends MetadataWriter {
                     stream.writeByte(((Number) value).intValue());
                     break;
                 case TIFF.TYPE_ASCII:
-                    writeString(stream, (String) value);
+                    writeStrings(stream, (String) value);
                     break;
                 case TIFF.TYPE_SHORT:
                 case TIFF.TYPE_SSHORT:
@@ -477,9 +481,11 @@ public final class TIFFWriter extends MetadataWriter {
         }
     }
 
-    private void writeString(ImageOutputStream stream, String value) throws IOException {
-        stream.write(value.getBytes(StandardCharsets.UTF_8));
-        stream.write(0);
+    private void writeStrings(ImageOutputStream stream, String... values) throws IOException {
+        for (String value : values) {
+            stream.write(value.getBytes(StandardCharsets.UTF_8));
+            stream.write(0);
+        }
     }
 
     private void writeValueAt(final long dataOffset, final Object value, final short type, final ImageOutputStream stream) throws IOException {

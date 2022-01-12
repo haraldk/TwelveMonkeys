@@ -47,10 +47,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * TIFFWriterTest
@@ -86,11 +83,13 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory directory = new AbstractDirectory(entries) {};
 
         ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
-        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
-        createWriter().write(directory, imageStream);
-        imageStream.flush();
 
-        assertEquals(output.size(), imageStream.getStreamPosition());
+        try (ImageOutputStream imageStream = ImageIO.createImageOutputStream(output)) {
+            createWriter().write(directory, imageStream);
+            imageStream.flush();
+
+            assertEquals(output.size(), imageStream.getStreamPosition());
+        }
 
         byte[] data = output.toByteArray();
 
@@ -131,14 +130,15 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory directory = new AbstractDirectory(entries) {};
 
         ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
-        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
 
-        imageStream.setByteOrder(ByteOrder.BIG_ENDIAN); // BE = Motorola
+        try (ImageOutputStream imageStream = ImageIO.createImageOutputStream(output)) {
+            imageStream.setByteOrder(ByteOrder.BIG_ENDIAN); // BE = Motorola
 
-        createWriter().write(directory, imageStream);
-        imageStream.flush();
+            createWriter().write(directory, imageStream);
+            imageStream.flush();
 
-        assertEquals(output.size(), imageStream.getStreamPosition());
+            assertEquals(output.size(), imageStream.getStreamPosition());
+        }
 
         byte[] data = output.toByteArray();
 
@@ -166,14 +166,15 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory directory = new AbstractDirectory(entries) {};
 
         ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
-        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
 
-        imageStream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // LE = Intel
+        try (ImageOutputStream imageStream = ImageIO.createImageOutputStream(output)) {
+            imageStream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // LE = Intel
 
-        createWriter().write(directory, imageStream);
-        imageStream.flush();
+            createWriter().write(directory, imageStream);
+            imageStream.flush();
 
-        assertEquals(output.size(), imageStream.getStreamPosition());
+            assertEquals(output.size(), imageStream.getStreamPosition());
+        }
 
         byte[] data = output.toByteArray();
 
@@ -205,12 +206,13 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory directory = new IFD(Collections.<Entry>singletonList(subIFD));
 
         ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
-        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
 
-        createWriter().write(directory, imageStream);
-        imageStream.flush();
+        try (ImageOutputStream imageStream = ImageIO.createImageOutputStream(output)) {
+            createWriter().write(directory, imageStream);
+            imageStream.flush();
 
-        assertEquals(output.size(), imageStream.getStreamPosition());
+            assertEquals(output.size(), imageStream.getStreamPosition());
+        }
 
         Directory read = new TIFFReader().read(new ByteArrayImageInputStream(output.toByteArray()));
 
@@ -224,13 +226,9 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory original = createReader().read(getDataAsIIS());
 
         ByteArrayOutputStream output = new FastByteArrayOutputStream(256);
-        ImageOutputStream imageOutput = ImageIO.createImageOutputStream(output);
 
-        try {
+        try (ImageOutputStream imageOutput = ImageIO.createImageOutputStream(output)) {
             createWriter().write(original, imageOutput);
-        }
-        finally {
-            imageOutput.close();
         }
 
         Directory read = createReader().read(new ByteArrayImageInputStream(output.toByteArray()));
@@ -259,22 +257,23 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
     @Test
     public void testWriteASCIIArray() throws IOException {
         ArrayList<Entry> entries = new ArrayList<>();
-        String[] strings = new String []{"Twelve", "Monkeys", "ImageIO"};
-        entries.add(new AbstractEntry(TIFF.TAG_SOFTWARE, strings) {});
-        Directory directory = new AbstractDirectory(entries) {};
+        String[] strings = new String [] {"Twelve", "Monkeys", "ImageIO"};
+        entries.add(new TIFFEntry(TIFF.TAG_SOFTWARE, strings));
+        Directory directory = new IFD(entries);
 
         ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
-        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
-        imageStream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // LE = Intel
-        createWriter().write(directory, imageStream);
-        imageStream.flush();
+
+        try (ImageOutputStream imageStream = ImageIO.createImageOutputStream(output)) {
+            imageStream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // LE = Intel
+            createWriter().write(directory, imageStream);
+        }
 
         byte[] data = output.toByteArray();
         Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
 
         assertNotNull(read.getEntryById(TIFF.TAG_SOFTWARE));
         assertTrue("value not an string array", read.getEntryById(TIFF.TAG_SOFTWARE).getValue() instanceof String[]);
-        assertArrayEquals("", strings, (String[]) read.getEntryById(TIFF.TAG_SOFTWARE).getValue());
+        assertArrayEquals(strings, (String[]) read.getEntryById(TIFF.TAG_SOFTWARE).getValue());
     }
 
     @Test
