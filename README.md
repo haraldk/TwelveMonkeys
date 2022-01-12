@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.com/haraldk/TwelveMonkeys.svg?branch=master)](https://travis-ci.com/github/haraldk/TwelveMonkeys) 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio/badge.svg?color=slateblue)](https://maven-badges.herokuapp.com/maven-central/com.twelvemonkeys.imageio/imageio)
+[![CI](https://github.com/haraldk/TwelveMonkeys/actions/workflows/ci.yml/badge.svg)](https://github.com/haraldk/TwelveMonkeys/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.twelvemonkeys.imageio/imageio?color=slateblue)](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio)
+[![Maven Snapshot](https://img.shields.io/nexus/s/com.twelvemonkeys.imageio/imageio?label=development&server=https%3A%2F%2Foss.sonatype.org&color=slateblue)](https://oss.sonatype.org/content/repositories/snapshots/com/twelvemonkeys/)
 [![StackOverflow](https://img.shields.io/badge/stack_overflow-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
 
