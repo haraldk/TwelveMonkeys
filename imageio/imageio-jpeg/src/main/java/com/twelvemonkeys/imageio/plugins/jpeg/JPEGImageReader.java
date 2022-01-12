@@ -104,6 +104,7 @@ public final class JPEGImageReader extends ImageReaderBase {
     // TODO: As we already parse the SOF segments, maybe we should stop delegating getWidth/getHeight etc?
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.debug"));
+    final static boolean FORCE_RASTER_CONVERSION = "force".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.jpeg.raster"));
 
     /** Internal constant for referring all APP segments */
     static final int ALL_APP_MARKERS = -1;
@@ -335,7 +336,7 @@ public final class JPEGImageReader extends ImageReaderBase {
 
         // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
         // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
-        else if (bogusAdobeDCT
+        else if (FORCE_RASTER_CONVERSION || bogusAdobeDCT
                 || profile != null && !ColorProfiles.isCS_sRGB(profile)
                 || (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE
                 || delegateCSTypeMismatch(jfif, adobeDCT, sof, sourceCSType)) {
