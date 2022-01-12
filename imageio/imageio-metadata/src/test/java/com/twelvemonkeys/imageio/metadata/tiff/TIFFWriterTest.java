@@ -47,8 +47,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * TIFFWriterTest
@@ -252,6 +254,27 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
 
         assertEquals(94, writer.computeIFDSize(entries));
         assertEquals(98, stream.getStreamPosition());
+    }
+
+    @Test
+    public void testWriteASCIIArray() throws IOException {
+        ArrayList<Entry> entries = new ArrayList<>();
+        String[] strings = new String []{"Twelve", "Monkeys", "ImageIO"};
+        entries.add(new AbstractEntry(TIFF.TAG_SOFTWARE, strings) {});
+        Directory directory = new AbstractDirectory(entries) {};
+
+        ByteArrayOutputStream output = new FastByteArrayOutputStream(1024);
+        ImageOutputStream imageStream = ImageIO.createImageOutputStream(output);
+        imageStream.setByteOrder(ByteOrder.LITTLE_ENDIAN); // LE = Intel
+        createWriter().write(directory, imageStream);
+        imageStream.flush();
+
+        byte[] data = output.toByteArray();
+        Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
+
+        assertNotNull(read.getEntryById(TIFF.TAG_SOFTWARE));
+        assertTrue("value not an string array", read.getEntryById(TIFF.TAG_SOFTWARE).getValue() instanceof String[]);
+        assertArrayEquals("", strings, (String[]) read.getEntryById(TIFF.TAG_SOFTWARE).getValue());
     }
 
     @Test
