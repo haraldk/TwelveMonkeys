@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+
 import org.w3c.dom.Node;
 
 import javax.imageio.IIOException;
@@ -158,21 +159,25 @@ class JPEGImage10Metadata extends AbstractMetadata {
 
                 case JPEG.DHT:
                     HuffmanTable huffmanTable = (HuffmanTable) segment;
-                    IIOMetadataNode dht = new IIOMetadataNode("dht");
 
-                    for (int i = 0; i < 4; i++) {
-                        for (int c = 0; c < 2; c++) {
-                            if (huffmanTable.isPresent(i, c)) {
-                                IIOMetadataNode dhtable = new IIOMetadataNode("dhtable");
-                                dhtable.setAttribute("class", String.valueOf(c));
-                                dhtable.setAttribute("htableId", String.valueOf(i));
-                                dhtable.setUserObject(huffmanTable.toNativeTable(i, c));
-                                dht.appendChild(dhtable);
-                            }
+                    IIOMetadataNode dcTables = new IIOMetadataNode("dht");
+                    IIOMetadataNode acTables = new IIOMetadataNode("dht");
+
+                    appendHuffmanTables(huffmanTable, 0, dcTables);
+                    appendHuffmanTables(huffmanTable, 1, acTables);
+
+                    markerSequence.appendChild(dcTables);
+
+                    // Native metadata has a limit of max 4 children of the DHT, we split by class only if we must...
+                    if (dcTables.getLength() + acTables.getLength() > 4) {
+                        markerSequence.appendChild(acTables);
+                    }
+                    else {
+                        while (acTables.hasChildNodes()) {
+                            dcTables.appendChild(acTables.removeChild(acTables.getFirstChild()));
                         }
                     }
 
-                    markerSequence.appendChild(dht);
                     break;
 
                 case JPEG.DQT:
@@ -268,6 +273,18 @@ class JPEGImage10Metadata extends AbstractMetadata {
 
                     break;
             }
+    }
+
+    private void appendHuffmanTables(HuffmanTable huffmanTable, int tableClass, IIOMetadataNode dht) {
+        for (int i = 0; i < 4; i++) {
+            if (huffmanTable.isPresent(i, tableClass)) {
+                IIOMetadataNode dhtable = new IIOMetadataNode("dhtable");
+                dhtable.setAttribute("class", String.valueOf(tableClass));
+                dhtable.setAttribute("htableId", String.valueOf(i));
+                dhtable.setUserObject(huffmanTable.toNativeTable(i, tableClass));
+                dht.appendChild(dhtable);
+            }
+        }
     }
 
     private void appendICCProfile(IIOMetadataNode app0JFIF) {

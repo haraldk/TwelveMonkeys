@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+
 import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -42,6 +43,7 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
@@ -50,14 +52,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * JPEGImage10MetadataCleanerTest.
+ * JPEGImage10MetadataTest.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: harald.kuhr$
- * @version $Id: JPEGImage10MetadataCleanerTest.java,v 1.0 08/08/16 harald.kuhr Exp$
+ * @author last modified by $Author: haraldk$
+ * @version $Id: JPEGImage10MetadataTest.java,v 1.0 12/01/2022 haraldk Exp$
  */
-public class JPEGImage10MetadataCleanerTest {
-
+public class JPEGImage10MetadataTest {
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
         ImageIO.setUseCache(false);
@@ -69,14 +70,14 @@ public class JPEGImage10MetadataCleanerTest {
         return lookupProviderByName(IIORegistry.getDefaultInstance(), "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi", ImageReaderSpi.class);
     }
 
-    // Unit/regression test for #276
+    // Unit/regression test for #276, #559
     @Test
-    public void cleanMetadataMoreThan4DHTSegments() throws Exception {
+    public void splitMoreThan4DHTSegments() throws Exception {
         List<String> testData = Arrays.asList("/jpeg/5dhtsegments.jpg", "/jpeg/6dhtsegments.jpg");
 
         for (String data : testData) {
-            try (ImageInputStream origInput = ImageIO.createImageInputStream(getClass().getResource(data));
-                 ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource(data))) {
+            try (ImageInputStream origInput = ImageIO.createImageInputStream(getClassResource(data));
+                 ImageInputStream input = ImageIO.createImageInputStream(getClassResource(data))) {
 
                 ImageReader origReader = SPI.delegateProvider.createReaderInstance();
                 origReader.setInput(origInput);
@@ -87,9 +88,7 @@ public class JPEGImage10MetadataCleanerTest {
                 IIOMetadata original = origReader.getImageMetadata(0);
                 IIOMetadataNode origTree = (IIOMetadataNode) original.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
 
-                JPEGImage10MetadataCleaner cleaner = new JPEGImage10MetadataCleaner((JPEGImageReader) reader);
-                IIOMetadata cleaned = cleaner.cleanMetadata(origReader.getImageMetadata(0));
-
+                JPEGImage10Metadata cleaned = (JPEGImage10Metadata) reader.getImageMetadata(0);
                 IIOMetadataNode cleanTree = (IIOMetadataNode) cleaned.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
 
                 NodeList origDHT = origTree.getElementsByTagName("dht");
@@ -123,5 +122,9 @@ public class JPEGImage10MetadataCleanerTest {
                 origReader.dispose();
             }
         }
+    }
+
+    private URL getClassResource(String name) {
+        return getClass().getResource(name);
     }
 }
