@@ -363,6 +363,20 @@ public class CCITTFaxDecoderStreamTest {
         }
     }
 
+    @Test
+    public void testFindCompressionTypeForMissingStartEOL() throws IOException {
+        // Type 4, missing leading EOL code
+        // starts with 1728px long white lines
+        byte[] data = new byte[]{
+                0x4d, (byte) 0x9a, (byte) 0x80, 0x01, 0x4d, (byte) 0x9a, (byte) 0x80, 0x01, 0x4d, (byte) 0x9a, (byte) 0x80, 0x01, 0x4d, (byte) 0x9a, (byte) 0x80, 0x01,
+                (byte) 0x91, 0x3c, 0x17, 0x6d, 0x02, (byte) 0xf2, (byte) 0xb0, 0x20, (byte) 0x01, (byte) 0xda, (byte) 0xa8, (byte) 0xb3, 0x17, 0x4e, 0x62, (byte) 0xcd, (byte) 0xa7
+        };
+        try (ByteArrayInputStream is = new ByteArrayInputStream(data)) {
+            int detectedType = CCITTFaxDecoderStream.findCompressionType(TIFFExtension.COMPRESSION_CCITT_T4, is);
+            assertEquals(TIFFExtension.COMPRESSION_CCITT_T4, detectedType);
+        }
+    }
+
     private InputStream getResourceAsStream(String name) {
         return getClass().getResourceAsStream(name);
     }
