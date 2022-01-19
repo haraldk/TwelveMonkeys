@@ -411,7 +411,8 @@ final class TGAImageReader extends ImageReaderBase {
             if (Arrays.equals(magic, TGA.MAGIC)) {
                 if (extOffset > 0) {
                     imageInput.seek(extOffset);
-                    extensions = TGAExtensions.read(imageInput);
+                    int extSize = imageInput.readUnsignedShort();
+                    extensions = extSize == 0 ? null : TGAExtensions.read(imageInput, extSize);
                 }
             }
         }

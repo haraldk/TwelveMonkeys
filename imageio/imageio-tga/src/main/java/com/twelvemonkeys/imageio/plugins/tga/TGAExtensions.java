@@ -69,9 +69,7 @@ final class TGAExtensions {
     TGAExtensions() {
     }
 
-    static TGAExtensions read(final ImageInputStream stream) throws IOException {
-        int extSize = stream.readUnsignedShort();
-
+    static TGAExtensions read(final ImageInputStream stream, final int extSize) throws IOException {
         // Should always be 495 for version 2.0, no newer version exists.
         // NOTE: Known AutoDesk 3ds Max issue, extension area size field is 494, but still good.
         if (extSize < EXT_AREA_SIZE - 1) {
