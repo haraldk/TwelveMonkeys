@@ -94,8 +94,9 @@ public final class TGAImageReaderSpi extends ImageReaderSpiBase {
             int colorMapDepth = stream.readUnsignedByte();
 
             if (colorMapSize == 0) {
-                // No color map, all 3 fields should be 0
-                if (colorMapStart != 0 || colorMapDepth != 0) {
+                // No color map, all 3 fields should be 0 (but some files contain bogus colorMapDepth)
+                if (colorMapStart != 0 || colorMapDepth != 0
+                        && colorMapDepth != 15 && colorMapDepth != 16 && colorMapDepth != 24 && colorMapDepth != 32)  {
                     return false;
                 }
             }
