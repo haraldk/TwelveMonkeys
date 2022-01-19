@@ -82,7 +82,10 @@ final class TGAExtensions {
         extensions.creationDate = readDate(stream);
         extensions.jobId = readString(stream, 41);
 
-        stream.skipBytes(6); // Job time, 3 shorts, hours/minutes/seconds elapsed
+        // Job time, 3 shorts, hours/minutes/seconds elapsed
+        stream.readShort();
+        stream.readShort();
+        stream.readShort();
 
         extensions.softwareId = readString(stream, 41);
 
