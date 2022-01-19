@@ -94,7 +94,9 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
                 new TestData(getClassLoaderResource("/tga/autodesk-3dsmax-extsize494.tga"), new Dimension(440, 200)),  // RLE compressed 32 bit BGRA bottom/up
 
                 new TestData(getClassLoaderResource("/tga/monochrome16_top_left.tga"), new Dimension(64, 64)),  // Uncompressed 16 bit monochrome
-                new TestData(getClassLoaderResource("/tga/monochrome16_top_left_rle.tga"), new Dimension(64, 64))  // RLE compressed 16 bit monochrome
+                new TestData(getClassLoaderResource("/tga/monochrome16_top_left_rle.tga"), new Dimension(64, 64)),  // RLE compressed 16 bit monochrome
+
+                new TestData(getClassLoaderResource("/tga/692c33d1-d0c3-4fe2-a059-f199d063bc7a.tga"), new Dimension(256, 256)) // Uncompressed BGR, with colorMapDepth set to 24
         );
     }
 
