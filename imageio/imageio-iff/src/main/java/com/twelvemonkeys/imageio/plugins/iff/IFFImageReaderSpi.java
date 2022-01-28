@@ -30,13 +30,12 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import java.io.IOException;
-import java.util.Locale;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-
-import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import java.io.IOException;
+import java.util.Locale;
 
 /**
  * IFFImageReaderSpi
@@ -67,9 +66,8 @@ public final class IFFImageReaderSpi extends ImageReaderSpiBase {
                 pInput.readInt();// Skip length field
 
                 int type = pInput.readInt();
-
-                // Is it ILBM or PBM
-                if (type == IFF.TYPE_ILBM || type == IFF.TYPE_PBM) {
+                if (type == IFF.TYPE_ILBM || type == IFF.TYPE_PBM
+                        || type == IFF.TYPE_RGB8) { // Impulse RGB8
                     return true;
                 }
 

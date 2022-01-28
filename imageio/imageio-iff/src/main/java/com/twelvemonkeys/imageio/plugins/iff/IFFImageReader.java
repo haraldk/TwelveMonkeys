@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.iff;
 
 import com.twelvemonkeys.image.ResampleOp;
 import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.io.enc.DecoderStream;
@@ -154,7 +155,7 @@ public final class IFFImageReader extends ImageReaderBase {
         int remaining = imageInput.readInt() - 4; // We'll read 4 more in a sec
 
         formType = imageInput.readInt();
-        if (formType != IFF.TYPE_ILBM && formType != IFF.TYPE_PBM/* && formType != IFF.TYPE_DEEP*/) {
+        if (formType != IFF.TYPE_ILBM && formType != IFF.TYPE_PBM && formType != IFF.TYPE_RGB8 && formType != IFF.TYPE_DEEP) {
             throw new IIOException(String.format("Only IFF FORM types 'ILBM' and 'PBM ' supported: %s", IFFUtil.toChunkStr(formType)));
         }
 
@@ -381,26 +382,32 @@ public final class IFFImageReader extends ImageReaderBase {
                 if (!isConvertToRGB()) {
                     if (colorMap != null) {
                         IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
-                        specifier = ImageTypeSpecifiers.createFromIndexColorModel(cm);
+                        return ImageTypeSpecifiers.createFromIndexColorModel(cm);
                     }
                     else {
-                        specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+                        return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
                     }
-                    break;
                 }
                 // NOTE: HAM modes falls through, as they are converted to RGB
             case 24:
                 // 24 bit RGB
-                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
-                break;
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+
+            case 25: // TYPE_RGB8: 24 bit + 1 bit mask (we'll convert to full alpha during decoding)
+                if (formType != IFF.TYPE_RGB8) {
+                    throw new IIOException(String.format("25 bit depth only supported for FORM type RGB8: %s", IFFUtil.toChunkStr(formType)));
+                }
+
+                return ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB),
+                        new int[] {0, 1, 2, 3}, DataBuffer.TYPE_BYTE, true, false);
+
             case 32:
                 // 32 bit ARGB
-                specifier = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
-                break;
+                return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+
             default:
                 throw new IIOException(String.format("Bit depth not implemented: %d", header.bitplanes));
         }
-        return specifier;
     }
 
     private boolean isConvertToRGB() {
@@ -411,15 +418,17 @@ public final class IFFImageReader extends ImageReaderBase {
         imageInput.seek(bodyStart);
         byteRunStream = null;
 
-        // NOTE: colorMap may be null for 8 bit (gray), 24 bit or 32 bit only
-        if (colorMap != null) {
+        if (formType == IFF.TYPE_RGB8) {
+            readRGB8(pParam, imageInput);
+        }
+        else if (colorMap != null) {
+            // NOTE: colorMap may be null for 8 bit (gray), 24 bit or 32 bit only
             IndexColorModel cm = colorMap.getIndexColorModel(header, isEHB());
             readIndexed(pParam, imageInput, cm);
         }
         else {
             readTrueColor(pParam, imageInput);
         }
-
     }
 
     private void readIndexed(final ImageReadParam pParam, final ImageInputStream pInput, final IndexColorModel pModel) throws IOException {
@@ -481,12 +490,7 @@ public final class IFFImageReader extends ImageReaderBase {
         Raster sourceRow = raster.createChild(aoi.x, 0, aoi.width, 1, 0, 0, sourceBands);
 
         final byte[] row = new byte[width * 8];
-
-//        System.out.println("PlaneData length: " + planeData.length);
-//        System.out.println("Row length: " + row.length);
-
         final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
-
         final int planes = header.bitplanes;
 
         Object dataElements = null;
@@ -536,8 +540,6 @@ public final class IFFImageReader extends ImageReaderBase {
                 // Rasters are compatible, just write to destination
                 if (sourceXSubsampling == 1) {
                     destination.setRect(offset.x, dstY, sourceRow);
-//                    dataElements = raster.getDataElements(aoi.x, 0, aoi.width, 1, dataElements);
-//                    destination.setDataElements(offset.x, offset.y + (srcY - aoi.y) / sourceYSubsampling, aoi.width, 1, dataElements);
                 }
                 else {
                     for (int srcX = 0; srcX < sourceRow.getWidth(); srcX += sourceXSubsampling) {
@@ -570,6 +572,71 @@ public final class IFFImageReader extends ImageReaderBase {
                             raster.createChild(aoi.x, 0, aoi.width, 1, 0, 0, null),
                             destination.createWritableChild(offset.x, offset.y + srcY - aoi.y, aoi.width, 1, 0, 0, null)
                     );
+                }
+            }
+
+            processImageProgress(srcY * 100f / header.width);
+            if (abortRequested()) {
+                processReadAborted();
+                break;
+            }
+        }
+    }
+
+    private void readRGB8(ImageReadParam pParam, ImageInputStream pInput) throws IOException {
+        final int width = header.width;
+        final int height = header.height;
+
+        final Rectangle aoi = getSourceRegion(pParam, width, height);
+        final Point offset = pParam == null ? new Point(0, 0) : pParam.getDestinationOffset();
+
+        // Set everything to default values
+        int sourceXSubsampling = 1;
+        int sourceYSubsampling = 1;
+        int[] sourceBands = null;
+        int[] destinationBands = null;
+
+        // Get values from the ImageReadParam, if any
+        if (pParam != null) {
+            sourceXSubsampling = pParam.getSourceXSubsampling();
+            sourceYSubsampling = pParam.getSourceYSubsampling();
+
+            sourceBands = pParam.getSourceBands();
+            destinationBands = pParam.getDestinationBands();
+        }
+
+        // Ensure band settings from param are compatible with images
+        checkReadParamBandSettings(pParam, 4, image.getSampleModel().getNumBands());
+
+        WritableRaster destination = image.getRaster();
+        if (destinationBands != null || offset.x != 0 || offset.y != 0) {
+            destination = destination.createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), offset.x, offset.y, destinationBands);
+        }
+
+        WritableRaster raster = image.getRaster().createCompatibleWritableRaster(width, 1);
+        Raster sourceRow = raster.createChild(aoi.x, 0, aoi.width, 1, 0, 0, sourceBands);
+
+        int planeWidth = width * 4;
+
+        final byte[] data = ((DataBufferByte) raster.getDataBuffer()).getData();
+        final int channels = (header.bitplanes + 7) / 8;
+
+        Object dataElements = null;
+
+        for (int srcY = 0; srcY < height; srcY++) {
+            readPlaneData(pInput, data, 0, planeWidth);
+
+            if (srcY >= aoi.y && (srcY - aoi.y) % sourceYSubsampling == 0) {
+                int dstY = (srcY - aoi.y) / sourceYSubsampling;
+                if (sourceXSubsampling == 1) {
+                    destination.setRect(0, dstY, sourceRow);
+                }
+                else {
+                    for (int srcX = 0; srcX < sourceRow.getWidth(); srcX += sourceXSubsampling) {
+                        dataElements = sourceRow.getDataElements(srcX, 0, dataElements);
+                        int dstX = srcX / sourceXSubsampling;
+                        destination.setDataElements(dstX, dstY, dataElements);
+                    }
                 }
             }
 
@@ -720,6 +787,24 @@ public final class IFFImageReader extends ImageReaderBase {
 
                 byteRunStream.readFully(pData, pOffset, pPlaneWidth);
                 break;
+
+            case 4: // Compression type 4 means different things for different FORM types... :-P
+                if (formType == IFF.TYPE_RGB8) {
+                    // Impulse RGB8 RLE compression: 24 bit RGB + 1 bit mask + 7 bit run count
+                    if (byteRunStream == null) {
+                        byteRunStream = new DataInputStream(
+                                new DecoderStream(
+                                        IIOUtil.createStreamAdapter(pInput, body.chunkLength),
+                                        new RGB8RLEDecoder(),
+                                        pPlaneWidth * 4
+                                )
+                        );
+                    }
+
+                    byteRunStream.readFully(pData, pOffset, pPlaneWidth);
+
+                    break;
+                }
 
             default:
                 throw new IIOException(String.format("Unknown compression type: %d", header.compressionType));
