@@ -88,7 +88,11 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
                 // 16 color indexed, multi palette (PCHG) - Ok
                 new TestData(getClassLoaderResource("/iff/Manhattan.PCHG"), new Dimension(704, 440)),
                 // 16 color indexed, multi palette (PCHG + SHAM) - Ok
-                new TestData(getClassLoaderResource("/iff/Somnambulist-2.SHAM"), new Dimension(704, 440))
+                new TestData(getClassLoaderResource("/iff/Somnambulist-2.SHAM"), new Dimension(704, 440)),
+                // Impulse RGB8 format straight from Imagine 2.0
+                new TestData(getClassLoaderResource("/iff/glowsphere2.rgb8"), new Dimension(640, 480)),
+                // Impulse RGB8 format written by ASDG ADPro, with cross boundary runs, which is probably not as per spec...
+                new TestData(getClassLoaderResource("/iff/tunnel04-adpro-cross-boundary-runs.rgb8"), new Dimension(640, 480))
         );
     }
 

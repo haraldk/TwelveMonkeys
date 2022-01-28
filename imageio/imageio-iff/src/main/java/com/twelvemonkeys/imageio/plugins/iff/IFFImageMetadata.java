@@ -62,6 +62,7 @@ final class IFFImageMetadata extends AbstractMetadata {
             case 6:
             case 7:
             case 24:
+            case 25:
             case 32:
                 csType.setAttribute("name", "RGB");
                 break;
@@ -145,6 +146,7 @@ final class IFFImageMetadata extends AbstractMetadata {
         // PlanarConfiguration
         IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
         switch (formType) {
+            case TYPE_RGB8:
             case TYPE_PBM:
                 planarConfiguration.setAttribute("value", "PixelInterleaved");
                 break;
@@ -187,10 +189,16 @@ final class IFFImageMetadata extends AbstractMetadata {
                 return Integer.toString(bitplanes);
             case 24:
                 return "8 8 8";
+            case 25:
+                if (formType != TYPE_RGB8) {
+                    throw new IllegalArgumentException(String.format("25 bit depth only supported for FORM type RGB8: %s", IFFUtil.toChunkStr(formType)));
+                }
+
+                return "8 8 8 1";
             case 32:
                 return "8 8 8 8";
             default:
-                throw new IllegalArgumentException("Ubknown bit count: " + bitplanes);
+                throw new IllegalArgumentException("Unknown bit count: " + bitplanes);
         }
     }
 
@@ -246,13 +254,14 @@ final class IFFImageMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardTransparencyNode() {
-        if ((colorMap == null || !colorMap.hasAlpha()) && header.bitplanes != 32) {
+        // TODO: Make sure 25 bit is only RGB8...
+        if ((colorMap == null || !colorMap.hasAlpha()) && header.bitplanes != 32 && header.bitplanes != 25) {
             return null;
         }
 
         IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
 
-        if (header.bitplanes == 32) {
+        if (header.bitplanes == 25 || header.bitplanes == 32) {
             IIOMetadataNode alpha = new IIOMetadataNode("Alpha");
             alpha.setAttribute("value", "nonpremultiplied");
             transparency.appendChild(alpha);
