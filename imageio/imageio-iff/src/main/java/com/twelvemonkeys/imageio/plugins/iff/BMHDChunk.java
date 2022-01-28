@@ -30,11 +30,10 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-
-import javax.imageio.IIOException;
 
 /**
  * BMHDChunk
@@ -110,11 +109,11 @@ final class BMHDChunk extends IFFChunk {
     int pageWidth;
     int pageHeight;
 
-    protected BMHDChunk(int pChunkLength) {
+    BMHDChunk(int pChunkLength) {
         super(IFF.CHUNK_BMHD, pChunkLength);
     }
 
-    protected BMHDChunk(int pWidth, int pHeight, int pBitplanes, int pMaskType, int pCompressionType, int pTransparentIndex) {
+    BMHDChunk(int pWidth, int pHeight, int pBitplanes, int pMaskType, int pCompressionType, int pTransparentIndex) {
         super(IFF.CHUNK_BMHD, 20);
         width = pWidth;
         height = pHeight;
