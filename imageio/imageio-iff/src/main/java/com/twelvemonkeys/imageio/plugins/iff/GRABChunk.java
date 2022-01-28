@@ -50,11 +50,11 @@ final class GRABChunk extends IFFChunk {
 
     Point2D point;
 
-    protected GRABChunk(int pChunkLength) {
+    GRABChunk(int pChunkLength) {
         super(IFF.CHUNK_GRAB, pChunkLength);
     }
 
-    protected GRABChunk(Point2D pPoint) {
+    GRABChunk(Point2D pPoint) {
         super(IFF.CHUNK_GRAB, 4);
         point = pPoint;
     }

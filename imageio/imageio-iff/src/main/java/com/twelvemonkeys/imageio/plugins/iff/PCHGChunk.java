@@ -72,7 +72,7 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
     private int totalChanges;
     private int minReg;
 
-    public PCHGChunk(int pChunkLength) {
+    PCHGChunk(int pChunkLength) {
         super(IFF.CHUNK_PCHG, pChunkLength);
     }
 

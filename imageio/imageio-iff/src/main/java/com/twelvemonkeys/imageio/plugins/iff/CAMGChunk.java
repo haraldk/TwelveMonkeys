@@ -30,11 +30,10 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-
-import javax.imageio.IIOException;
 
 /**
  * CAMGChunk
@@ -49,7 +48,7 @@ final class CAMGChunk extends IFFChunk {
 
     int camg;
 
-    public CAMGChunk(int pLength) {
+    CAMGChunk(int pLength) {
         super(IFF.CHUNK_CAMG, pLength);
     }
 
