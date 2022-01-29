@@ -44,12 +44,12 @@ final class GenericChunk extends IFFChunk {
 
     byte[] data;
 
-    protected GenericChunk(int pChunkId, int pChunkLength) {
+    GenericChunk(int pChunkId, int pChunkLength) {
         super(pChunkId, pChunkLength);
         data = new byte[chunkLength];
     }
 
-    protected GenericChunk(int pChunkId, byte[] pChunkData) {
+    GenericChunk(int pChunkId, byte[] pChunkData) {
         super(pChunkId, pChunkData.length);
         data = pChunkData;
     }
