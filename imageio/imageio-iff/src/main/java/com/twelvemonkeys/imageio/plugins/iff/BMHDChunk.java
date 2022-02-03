@@ -109,64 +109,65 @@ final class BMHDChunk extends IFFChunk {
     int pageWidth;
     int pageHeight;
 
-    BMHDChunk(int pChunkLength) {
-        super(IFF.CHUNK_BMHD, pChunkLength);
+    BMHDChunk(int chunkLength) {
+        super(IFF.CHUNK_BMHD, chunkLength);
     }
 
-    BMHDChunk(int pWidth, int pHeight, int pBitplanes, int pMaskType, int pCompressionType, int pTransparentIndex) {
+    BMHDChunk(int width, int height, int bitplanes, int maskType, int compressionType, int transparentIndex) {
         super(IFF.CHUNK_BMHD, 20);
-        width = pWidth;
-        height = pHeight;
+        this.width = width;
+        this.height = height;
         xPos = 0;
         yPos = 0;
-        bitplanes = pBitplanes;
-        maskType = pMaskType;
-        compressionType = pCompressionType;
-        transparentIndex = pTransparentIndex;
+        this.bitplanes = bitplanes;
+        this.maskType = maskType;
+        this.compressionType = compressionType;
+        this.transparentIndex = transparentIndex;
         xAspect = 1;
         yAspect = 1;
-        pageWidth = Math.min(pWidth, Short.MAX_VALUE); // For some reason, these are signed?
-        pageHeight = Math.min(pHeight, Short.MAX_VALUE);
+        pageWidth = Math.min(width, Short.MAX_VALUE); // For some reason, these are signed?
+        pageHeight = Math.min(height, Short.MAX_VALUE);
     }
 
     @Override
-    void readChunk(final DataInput pInput) throws IOException {
+    void readChunk(final DataInput input) throws IOException {
         if (chunkLength != 20) {
             throw new IIOException("Unknown BMHD chunk length: " + chunkLength);
         }
-        width = pInput.readUnsignedShort();
-        height = pInput.readUnsignedShort();
-        xPos = pInput.readShort();
-        yPos = pInput.readShort();
-        bitplanes = pInput.readUnsignedByte();
-        maskType = pInput.readUnsignedByte();
-        compressionType = pInput.readUnsignedByte();
-        pInput.readByte(); // PAD
-        transparentIndex = pInput.readUnsignedShort();
-        xAspect = pInput.readUnsignedByte();
-        yAspect = pInput.readUnsignedByte();
-        pageWidth = pInput.readShort();
-        pageHeight = pInput.readShort();
+
+        width = input.readUnsignedShort();
+        height = input.readUnsignedShort();
+        xPos = input.readShort();
+        yPos = input.readShort();
+        bitplanes = input.readUnsignedByte();
+        maskType = input.readUnsignedByte();
+        compressionType = input.readUnsignedByte();
+        input.readByte(); // PAD
+        transparentIndex = input.readUnsignedShort();
+        xAspect = input.readUnsignedByte();
+        yAspect = input.readUnsignedByte();
+        pageWidth = input.readShort();
+        pageHeight = input.readShort();
     }
 
     @Override
-    void writeChunk(final DataOutput pOutput) throws IOException {
-        pOutput.writeInt(chunkId);
-        pOutput.writeInt(chunkLength);
+    void writeChunk(final DataOutput output) throws IOException {
+        output.writeInt(chunkId);
+        output.writeInt(chunkLength);
 
-        pOutput.writeShort(width);
-        pOutput.writeShort(height);
-        pOutput.writeShort(xPos);
-        pOutput.writeShort(yPos);
-        pOutput.writeByte(bitplanes);
-        pOutput.writeByte(maskType);
-        pOutput.writeByte(compressionType);
-        pOutput.writeByte(0); // PAD
-        pOutput.writeShort(transparentIndex);
-        pOutput.writeByte(xAspect);
-        pOutput.writeByte(yAspect);
-        pOutput.writeShort(pageWidth);
-        pOutput.writeShort(pageHeight);
+        output.writeShort(width);
+        output.writeShort(height);
+        output.writeShort(xPos);
+        output.writeShort(yPos);
+        output.writeByte(bitplanes);
+        output.writeByte(maskType);
+        output.writeByte(compressionType);
+        output.writeByte(0); // PAD
+        output.writeShort(transparentIndex);
+        output.writeByte(xAspect);
+        output.writeByte(yAspect);
+        output.writeShort(pageWidth);
+        output.writeShort(pageHeight);
     }
 
     @Override

@@ -48,21 +48,21 @@ final class CAMGChunk extends IFFChunk {
 
     int camg;
 
-    CAMGChunk(int pLength) {
-        super(IFF.CHUNK_CAMG, pLength);
+    CAMGChunk(int chunkLength) {
+        super(IFF.CHUNK_CAMG, chunkLength);
     }
 
     @Override
-    void readChunk(final DataInput pInput) throws IOException {
+    void readChunk(final DataInput input) throws IOException {
         if (chunkLength != 4) {
             throw new IIOException("Unknown CAMG chunk length: " + chunkLength);
         }
 
-        camg = pInput.readInt();
+        camg = input.readInt();
     }
 
     @Override
-    void writeChunk(final DataOutput pOutput) {
+    void writeChunk(final DataOutput output) {
         throw new InternalError("Not implemented: writeChunk()");
     }
 

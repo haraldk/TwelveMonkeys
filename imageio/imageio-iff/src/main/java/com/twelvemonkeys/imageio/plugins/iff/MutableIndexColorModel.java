@@ -80,9 +80,9 @@ final class MutableIndexColorModel extends ColorModel {
             // TODO: Move validation to chunk (when reading)
             if (index >= rgbs.length) {
                 // TODO: Issue IIO warning
-                System.err.printf("warning - palette change register out of range\n");
+                System.err.println("warning - palette change register out of range");
                 System.err.printf("    change structure %d  index=%d (max %d)\n", i, index, getMapSize() - 1);
-                System.err.printf("    ignoring it... colors might get messed up from here\n");
+                System.err.println("    ignoring it... colors might get messed up from here");
             }
             else if (index != MP_REG_IGNORE) {
                 updateRGB(index, ((changes[i].r & 0xff) << 16) | ((changes[i].g & 0xff) << 8) | (changes[i].b & 0xff));

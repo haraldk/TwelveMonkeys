@@ -38,8 +38,8 @@ package com.twelvemonkeys.imageio.plugins.iff;
  * @version $Id: SHAMChunk.java,v 1.0 30.03.12 14:53 haraldk Exp$
  */
 final class SHAMChunk extends AbstractMultiPaletteChunk {
-    SHAMChunk(int pChunkLength) {
-        super(IFF.CHUNK_SHAM, pChunkLength);
+    SHAMChunk(int chunkLength) {
+        super(IFF.CHUNK_SHAM, chunkLength);
     }
 
     @Override

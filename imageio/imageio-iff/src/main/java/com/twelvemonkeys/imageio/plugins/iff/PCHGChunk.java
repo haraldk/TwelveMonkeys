@@ -72,42 +72,43 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
     private int totalChanges;
     private int minReg;
 
-    PCHGChunk(int pChunkLength) {
-        super(IFF.CHUNK_PCHG, pChunkLength);
+    PCHGChunk(int chunkLength) {
+        super(IFF.CHUNK_PCHG, chunkLength);
     }
 
     @Override
-    void readChunk(final DataInput pInput) throws IOException {
-        int compression = pInput.readUnsignedShort();
-        int flags = pInput.readUnsignedShort();
-        startLine = pInput.readShort();
-        lineCount = pInput.readUnsignedShort();
-        changedLines = pInput.readUnsignedShort();
-        minReg = pInput.readUnsignedShort();
-        int maxReg = pInput.readUnsignedShort();
-        /*int maxChangesPerLine = */pInput.readUnsignedShort(); // We don't really care, as we're not limited by the Amiga display hardware
-        totalChanges = pInput.readInt();
+    void readChunk(final DataInput input) throws IOException {
+        int compression = input.readUnsignedShort();
+        int flags = input.readUnsignedShort();
+        startLine = input.readShort();
+        lineCount = input.readUnsignedShort();
+        changedLines = input.readUnsignedShort();
+        minReg = input.readUnsignedShort();
+        int maxReg = input.readUnsignedShort();
+        /*int maxChangesPerLine = */
+        input.readUnsignedShort(); // We don't really care, as we're not limited by the Amiga display hardware
+        totalChanges = input.readInt();
 
         byte[] data;
 
         switch (compression) {
             case PCHG_COMP_NONE:
                 data = new byte[chunkLength - 20];
-                pInput.readFully(data);
+                input.readFully(data);
 
                 break;
             case PCHG_COMP_HUFFMAN:
                 // NOTE: Huffman decompression is completely untested, due to lack of source data (read: Probably broken).
-                int compInfoSize = pInput.readInt();
-                int originalDataSize = pInput.readInt();
+                int compInfoSize = input.readInt();
+                int originalDataSize = input.readInt();
 
                 short[] compTree = new short[compInfoSize / 2];
                 for (int i = 0; i < compTree.length; i++) {
-                    compTree[i] = pInput.readShort();
+                    compTree[i] = input.readShort();
                 }
 
                 byte[] compData = new byte[chunkLength - 20 - 8 - compInfoSize];
-                pInput.readFully(compData);
+                input.readFully(compData);
 
                 data = new byte[originalDataSize];
 

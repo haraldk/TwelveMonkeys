@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2022, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,32 +30,73 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
-
-import static com.twelvemonkeys.lang.Validate.isTrue;
+import java.io.IOException;
 
 /**
- * BODYChunk
+ * DGBLChunk
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: BODYChunk.java,v 1.0 28.feb.2006 01:25:49 haku Exp$
+ * @version $Id: DGBLChunk.java,v 1.0 28.feb.2006 02:10:07 haku Exp$
  */
-final class BODYChunk extends IFFChunk {
-    final long chunkOffset;
+final class DGBLChunk extends IFFChunk {
 
-    BODYChunk(int chunkId, int chunkLength, long chunkOffset) {
-        super(isTrue(chunkId == IFF.CHUNK_BODY || chunkId == IFF.CHUNK_DBOD, chunkId, "Illegal body chunk: '%s'"), chunkLength);
-        this.chunkOffset = chunkOffset;
+    /*
+    //
+    struct DGBL = {
+//
+// Size of source display
+//
+      UWORD  DisplayWidth,DisplayHeight;
+//
+// Type of compression
+//
+      UWORD  Compression;
+//
+// Pixel aspect, a ration w:h
+//
+      UBYTE  xAspect,yAspect;
+    };
+
+     */
+    int displayWidth;
+    int displayHeight;
+    int compressionType;
+    int xAspect;
+    int yAspect;
+
+    DGBLChunk(int chunkLength) {
+        super(IFF.CHUNK_DGBL, chunkLength);
     }
 
     @Override
-    void readChunk(final DataInput input) {
-        throw new InternalError("BODY chunk should only be read from IFFImageReader");
+    void readChunk(final DataInput input) throws IOException {
+        if (chunkLength != 8) {
+            throw new IIOException("Unknown DBGL chunk length: " + chunkLength);
+        }
+
+        displayWidth = input.readUnsignedShort();
+        displayHeight = input.readUnsignedShort();
+        compressionType = input.readUnsignedShort();
+        xAspect = input.readUnsignedByte();
+        yAspect = input.readUnsignedByte();
     }
 
     @Override
-    void writeChunk(final DataOutput output)  {
-        throw new InternalError("BODY chunk should only be written from IFFImageWriter");
+    void writeChunk(final DataOutput output) {
+        throw new InternalError("Not implemented: writeChunk()");
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                "{displayWidth=" + displayWidth +
+                ", displayHeight=" + displayHeight +
+                ", compression=" + compressionType +
+                ", xAspect=" + xAspect +
+                ", yAspect=" + yAspect +
+                '}';
     }
 }

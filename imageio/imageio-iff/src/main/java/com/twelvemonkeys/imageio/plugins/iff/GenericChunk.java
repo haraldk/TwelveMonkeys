@@ -44,31 +44,31 @@ final class GenericChunk extends IFFChunk {
 
     byte[] data;
 
-    GenericChunk(int pChunkId, int pChunkLength) {
-        super(pChunkId, pChunkLength);
-        data = new byte[chunkLength];
+    GenericChunk(int chunkId, int chunkLength) {
+        super(chunkId, chunkLength);
+        data = new byte[this.chunkLength];
     }
 
-    GenericChunk(int pChunkId, byte[] pChunkData) {
-        super(pChunkId, pChunkData.length);
-        data = pChunkData;
-    }
-
-    @Override
-    void readChunk(final DataInput pInput) throws IOException {
-        pInput.readFully(data, 0, data.length);
-
-        skipData(pInput, chunkLength, data.length);
+    GenericChunk(int chunkId, byte[] chunkData) {
+        super(chunkId, chunkData.length);
+        data = chunkData;
     }
 
     @Override
-    void writeChunk(final DataOutput pOutput) throws IOException {
-        pOutput.writeInt(chunkId);
-        pOutput.writeInt(chunkLength);
-        pOutput.write(data, 0, data.length);
+    void readChunk(final DataInput input) throws IOException {
+        input.readFully(data, 0, data.length);
+
+        skipData(input, chunkLength, data.length);
+    }
+
+    @Override
+    void writeChunk(final DataOutput output) throws IOException {
+        output.writeInt(chunkId);
+        output.writeInt(chunkLength);
+        output.write(data, 0, data.length);
 
         if (data.length % 2 != 0) {
-            pOutput.writeByte(0); // PAD
+            output.writeByte(0); // PAD
         }
     }
 

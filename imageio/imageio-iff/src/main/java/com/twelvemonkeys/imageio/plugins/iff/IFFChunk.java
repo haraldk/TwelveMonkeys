@@ -44,25 +44,25 @@ abstract class IFFChunk {
     int chunkId;
     int chunkLength;
 
-    protected IFFChunk(int pChunkId, int pChunkLength) {
-        chunkId = pChunkId;
-        chunkLength = pChunkLength;
+    protected IFFChunk(int chunkId, int chunkLength) {
+        this.chunkId = chunkId;
+        this.chunkLength = chunkLength;
     }
 
-    abstract void readChunk(DataInput pInput) throws IOException;
+    abstract void readChunk(DataInput input) throws IOException;
 
-    abstract void writeChunk(DataOutput pOutput) throws IOException;
+    abstract void writeChunk(DataOutput output) throws IOException;
 
-    protected static void skipData(final DataInput pInput, final int chunkLength, final int dataReadSoFar) throws IOException {
+    protected static void skipData(final DataInput input, final int chunkLength, final int dataReadSoFar) throws IOException {
         int toSkip = chunkLength - dataReadSoFar;
 
         while (toSkip > 0) {
-            toSkip -= pInput.skipBytes(toSkip);
+            toSkip -= input.skipBytes(toSkip);
         }
 
         // Read pad
         if (chunkLength % 2 != 0) {
-            pInput.readByte();
+            input.readByte();
         }
     }
 

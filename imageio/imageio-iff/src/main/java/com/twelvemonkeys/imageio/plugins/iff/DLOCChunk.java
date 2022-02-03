@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Harald Kuhr
+ * Copyright (c) 2022, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,32 +30,51 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
-
-import static com.twelvemonkeys.lang.Validate.isTrue;
+import java.io.IOException;
 
 /**
- * BODYChunk
+ * DLOCChunk.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: BODYChunk.java,v 1.0 28.feb.2006 01:25:49 haku Exp$
+ * @author last modified by $Author: haraldk$
+ * @version $Id: DLOCChunk.java,v 1.0 31/01/2022 haraldk Exp$
  */
-final class BODYChunk extends IFFChunk {
-    final long chunkOffset;
+final class DLOCChunk extends IFFChunk {
+    int width;
+    int height;
+    int x;
+    int y;
 
-    BODYChunk(int chunkId, int chunkLength, long chunkOffset) {
-        super(isTrue(chunkId == IFF.CHUNK_BODY || chunkId == IFF.CHUNK_DBOD, chunkId, "Illegal body chunk: '%s'"), chunkLength);
-        this.chunkOffset = chunkOffset;
+     DLOCChunk(final int chunkLength) {
+        super(IFF.CHUNK_DLOC, chunkLength);
     }
 
     @Override
-    void readChunk(final DataInput input) {
-        throw new InternalError("BODY chunk should only be read from IFFImageReader");
+    void readChunk(final DataInput input) throws IOException {
+        if (chunkLength != 8) {
+            throw new IIOException("Unknown DLOC chunk length: " + chunkLength);
+        }
+
+        width = input.readUnsignedShort();
+        height = input.readUnsignedShort();
+        x = input.readShort();
+        y = input.readShort();
     }
 
     @Override
-    void writeChunk(final DataOutput output)  {
-        throw new InternalError("BODY chunk should only be written from IFFImageWriter");
+    void writeChunk(final DataOutput output) {
+        throw new InternalError("Not implemented: writeChunk()");
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                "{width=" + width +
+                ", height=" + height +
+                ", x=" + x +
+                ", y=" + y + '}';
     }
 }

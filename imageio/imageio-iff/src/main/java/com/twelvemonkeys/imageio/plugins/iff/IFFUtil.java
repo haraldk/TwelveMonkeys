@@ -56,11 +56,11 @@ final class IFFUtil {
      * @return the rotation table
      */
     static private long[] rtable(int n) {
-        return new long[]{
-                0x00000000l << n, 0x00000001l << n, 0x00000100l << n, 0x00000101l << n,
-                0x00010000l << n, 0x00010001l << n, 0x00010100l << n, 0x00010101l << n,
-                0x01000000l << n, 0x01000001l << n, 0x01000100l << n, 0x01000101l << n,
-                0x01010000l << n, 0x01010001l << n, 0x01010100l << n, 0x01010101l << n
+        return new long[] {
+                0x00000000L     , 0x00000001L << n, 0x00000100L << n, 0x00000101L << n,
+                0x00010000L << n, 0x00010001L << n, 0x00010100L << n, 0x00010101L << n,
+                0x01000000L << n, 0x01000001L << n, 0x01000100L << n, 0x01000101L << n,
+                0x01010000L << n, 0x01010001L << n, 0x01010100L << n, 0x01010101L << n
         };
     }
 
@@ -75,16 +75,16 @@ final class IFFUtil {
      * Bits from the source are rotated 90 degrees clockwise written to the
      * destination.
      *
-     * @param pSrc     source pixel data
-     * @param pSrcPos  starting index of 8 x 8 bit source tile
-     * @param pSrcStep byte offset between adjacent rows in source
-     * @param pDst     destination pixel data
-     * @param pDstPos  starting index of 8 x 8 bit destination tile
-     * @param pDstStep byte offset between adjacent rows in destination
+     * @param src     source pixel data
+     * @param srcPos  starting index of 8 x 8 bit source tile
+     * @param srcStep byte offset between adjacent rows in source
+     * @param dst     destination pixel data
+     * @param dstPos  starting index of 8 x 8 bit destination tile
+     * @param dstStep byte offset between adjacent rows in destination
      */
-    static void bitRotateCW(final byte[] pSrc, int pSrcPos, int pSrcStep,
-                            final byte[] pDst, int pDstPos, int pDstStep) {
-        int idx = pSrcPos;
+    static void bitRotateCW(final byte[] src, int srcPos, int srcStep,
+                            final byte[] dst, int dstPos, int dstStep) {
+        int idx = srcPos;
 
         int lonyb;
         int hinyb;
@@ -92,41 +92,41 @@ final class IFFUtil {
         long hi = 0;
 
         for (int i = 0; i < 8; i++) {
-            lonyb = pSrc[idx] & 0xF;
-            hinyb = (pSrc[idx] >> 4) & 0xF;
+            lonyb = src[idx] & 0xF;
+            hinyb = (src[idx] >> 4) & 0xF;
             lo |= RTABLE[i][lonyb];
             hi |= RTABLE[i][hinyb];
-            idx += pSrcStep;
+            idx += srcStep;
         }
 
-        idx = pDstPos;
+        idx = dstPos;
 
-        pDst[idx] = (byte)((hi >> 24) & 0xFF);
-        idx += pDstStep;
-        if (idx < pDst.length) {
-            pDst[idx] = (byte)((hi >> 16) & 0xFF);
-            idx += pDstStep;
-            if (idx < pDst.length) {
-                pDst[idx] = (byte)((hi >> 8) & 0xFF);
-                idx += pDstStep;
-                if (idx < pDst.length) {
-                    pDst[idx] = (byte)(hi & 0xFF);
-                    idx += pDstStep;
+        dst[idx] = (byte)((hi >> 24) & 0xFF);
+        idx += dstStep;
+        if (idx < dst.length) {
+            dst[idx] = (byte)((hi >> 16) & 0xFF);
+            idx += dstStep;
+            if (idx < dst.length) {
+                dst[idx] = (byte)((hi >> 8) & 0xFF);
+                idx += dstStep;
+                if (idx < dst.length) {
+                    dst[idx] = (byte)(hi & 0xFF);
+                    idx += dstStep;
                 }
             }
         }
 
-        if (idx < pDst.length) {
-            pDst[idx] = (byte)((lo >> 24) & 0xFF);
-            idx += pDstStep;
-            if (idx < pDst.length) {
-                pDst[idx] = (byte)((lo >> 16) & 0xFF);
-                idx += pDstStep;
-                if (idx < pDst.length) {
-                    pDst[idx] = (byte)((lo >> 8) & 0xFF);
-                    idx += pDstStep;
-                    if (idx < pDst.length) {
-                        pDst[idx] = (byte)(lo & 0xFF);
+        if (idx < dst.length) {
+            dst[idx] = (byte)((lo >> 24) & 0xFF);
+            idx += dstStep;
+            if (idx < dst.length) {
+                dst[idx] = (byte)((lo >> 16) & 0xFF);
+                idx += dstStep;
+                if (idx < dst.length) {
+                    dst[idx] = (byte)((lo >> 8) & 0xFF);
+                    idx += dstStep;
+                    if (idx < dst.length) {
+                        dst[idx] = (byte)(lo & 0xFF);
                     }
                 }
             }
@@ -137,16 +137,16 @@ final class IFFUtil {
      * Rotate bits counterclockwise.
      * The IFFImageWriter uses this to convert pixel bits from chunky to planar.
      *
-     * @param pSrc     source pixel data (only lower 8 bits used)
-     * @param pSrcPos  starting index of 8 x 8 bit source tile
-     * @param pSrcStep byte offset between adjacent rows in source
-     * @param pDst     destination pixel data
-     * @param pDstPos  starting index of 8 x 8 bit destination tile
-     * @param pDstStep byte offset between adjacent rows in destination
+     * @param src     source pixel data (only lower 8 bits used)
+     * @param srcPos  starting index of 8 x 8 bit source tile
+     * @param srcStep byte offset between adjacent rows in source
+     * @param dst     destination pixel data
+     * @param dstPos  starting index of 8 x 8 bit destination tile
+     * @param dstStep byte offset between adjacent rows in destination
      */
-    static void bitRotateCCW(final int[] pSrc, int pSrcPos, int pSrcStep,
-                             final byte[] pDst, int pDstPos, int pDstStep) {
-        int idx = pSrcPos;
+    static void bitRotateCCW(final int[] src, int srcPos, @SuppressWarnings("SameParameterValue") int srcStep,
+                             final byte[] dst, int dstPos, int dstStep) {
+        int idx = srcPos;
 
         int lonyb;
         int hinyb;
@@ -154,48 +154,49 @@ final class IFFUtil {
         long hi = 0;
 
         for (int i = 7; i >= 0; i--) {
-            lonyb = pSrc[idx] & 0xF;
-            hinyb = (pSrc[idx] >> 4) & 0xF;
+            lonyb = src[idx] & 0xF;
+            hinyb = (src[idx] >> 4) & 0xF;
             lo |= RTABLE[i][lonyb];
             hi |= RTABLE[i][hinyb];
-            idx += pSrcStep;
+            idx += srcStep;
         }
 
-        idx = pDstPos;
+        idx = dstPos;
 
-        pDst[idx] = (byte)(lo & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((lo >> 8) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((lo >> 16) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((lo >> 24) & 0xFF);
+        dst[idx] = (byte)(lo & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((lo >> 8) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((lo >> 16) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((lo >> 24) & 0xFF);
 
-        idx += pDstStep;
+        idx += dstStep;
 
-        pDst[idx] = (byte)(hi & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((hi >>  8) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((hi >> 16) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((hi >> 24) & 0xFF);
+        dst[idx] = (byte)(hi & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((hi >>  8) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((hi >> 16) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((hi >> 24) & 0xFF);
     }
 
     /**
      * Rotate bits counterclockwise.
      * The IFFImageWriter uses this to convert pixel bits from chunky to planar.
      *
-     * @param pSrc     source pixel data
-     * @param pSrcPos  starting index of 8 x 8 bit source tile
-     * @param pSrcStep byte offset between adjacent rows in source
-     * @param pDst     destination pixel data
-     * @param pDstPos  starting index of 8 x 8 bit destination tile
-     * @param pDstStep byte offset between adjacent rows in destination
+     * @param src     source pixel data
+     * @param srcPos  starting index of 8 x 8 bit source tile
+     * @param srcStep byte offset between adjacent rows in source
+     * @param dst     destination pixel data
+     * @param dstPos  starting index of 8 x 8 bit destination tile
+     * @param dstStep byte offset between adjacent rows in destination
      */
-    static void bitRotateCCW(final byte[] pSrc, int pSrcPos, int pSrcStep,
-                             final byte[] pDst, int pDstPos, int pDstStep) {
-        int idx = pSrcPos;
+    @SuppressWarnings("unused")
+    static void bitRotateCCW(final byte[] src, int srcPos, int srcStep,
+                             final byte[] dst, int dstPos, int dstStep) {
+        int idx = srcPos;
 
         int lonyb;
         int hinyb;
@@ -203,57 +204,57 @@ final class IFFUtil {
         long hi = 0;
 
         for (int i = 7; i >= 0; i--) {
-            lonyb = pSrc[idx] & 0xF;
-            hinyb = (pSrc[idx] >> 4) & 0xF;
+            lonyb = src[idx] & 0xF;
+            hinyb = (src[idx] >> 4) & 0xF;
             lo |= RTABLE[i][lonyb];
             hi |= IFFUtil.RTABLE[i][hinyb];
-            idx += pSrcStep;
+            idx += srcStep;
         }
 
-        idx = pDstPos;
+        idx = dstPos;
 
-        pDst[idx] = (byte)(lo & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((lo >> 8) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((lo >> 16) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((lo >> 24) & 0xFF);
+        dst[idx] = (byte)(lo & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((lo >> 8) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((lo >> 16) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((lo >> 24) & 0xFF);
 
-        idx += pDstStep;
+        idx += dstStep;
 
-        pDst[idx] = (byte)(hi & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((hi >>  8) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((hi >> 16) & 0xFF);
-        idx += pDstStep;
-        pDst[idx] = (byte)((hi >> 24) & 0xFF);
+        dst[idx] = (byte)(hi & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((hi >>  8) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((hi >> 16) & 0xFF);
+        idx += dstStep;
+        dst[idx] = (byte)((hi >> 24) & 0xFF);
     }
 
     /**
      * Converts a byte array to an int.
      *
-     * @param pBytes a byte array of length 4
+     * @param bytes a byte array of length 4
      * @return the bytes converted to an int
      *
      * @throws ArrayIndexOutOfBoundsException if length is < 4
      */
-    static int toInt(final byte[] pBytes) {
-        return (pBytes[0] & 0xff) << 24 | (pBytes[1] & 0xff) << 16
-                | (pBytes[2] & 0xff) << 8 | (pBytes[3] & 0xff);
+    static int toInt(final byte[] bytes) {
+        return (bytes[0] & 0xff) << 24 | (bytes[1] & 0xff) << 16
+                | (bytes[2] & 0xff) << 8 | (bytes[3] & 0xff);
     }
 
     /**
      * Converts an int to a four letter String.
      *
-     * @param pChunkId the chunk identifier
+     * @param chunkId the chunk identifier
      * @return a String
      */
-    static String toChunkStr(int pChunkId) {
-        return new String(new byte[] {(byte) ((pChunkId & 0xff000000) >> 24),
-                                      (byte) ((pChunkId & 0x00ff0000) >> 16),
-                                      (byte) ((pChunkId & 0x0000ff00) >>  8),
-                                      (byte) ((pChunkId & 0x000000ff))});
+    static String toChunkStr(int chunkId) {
+        return new String(new byte[] {(byte) ((chunkId & 0xff000000) >> 24),
+                                      (byte) ((chunkId & 0x00ff0000) >> 16),
+                                      (byte) ((chunkId & 0x0000ff00) >>  8),
+                                      (byte) ((chunkId & 0x000000ff))});
     }
 }

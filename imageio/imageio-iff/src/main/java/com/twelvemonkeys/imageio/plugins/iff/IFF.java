@@ -49,6 +49,8 @@ interface IFF {
     // TODO:
     /** IFF DEEP form type (TVPaint) */
     int TYPE_DEEP  = ('D' << 24) + ('E' << 16) + ('E' << 8) + 'P';
+    /** IFF TVPP form type (TVPaint Project) */
+    int TYPE_TVPP =  ('T' << 24) + ('V' << 16) + ('P' << 8) + 'P';
     /** IFF RGB8 form type (TurboSilver) */
     int TYPE_RGB8  = ('R' << 24) + ('G' << 16) + ('B' << 8) + '8';
     /** IFF RGBN form type (TurboSilver) */
@@ -92,7 +94,7 @@ interface IFF {
     int CHUNK_COPY = ('(' << 24) + ('c' << 16) + (')' << 8) + ' ';
 
     /** EA IFF 85 Generic annotation chunk (usually used for Software) */
-    int CHUNK_ANNO = ('A' << 24) + ('N' << 16) + ('N' << 8) + 'O';;
+    int CHUNK_ANNO = ('A' << 24) + ('N' << 16) + ('N' << 8) + 'O';
 
     /** Third-party defined UTF-8 text. */
     int CHUNK_UTF8 = ('U' << 24) + ('T' << 16) + ('F' << 8) + '8';
@@ -129,6 +131,16 @@ interface IFF {
     int CHUNK_SHAM = ('S' << 24) + ('H' << 16) + ('A' << 8) + 'M';
     /** ACBM body chunk */
     int CHUNK_ABIT = ('A' << 24) + ('B' << 16) + ('I' << 8) + 'T';
-    /** unofficial direct color */
+    /** Unofficial direct color */
     int CHUNK_DCOL = ('D' << 24) + ('C' << 16) + ('O' << 8) + 'L';
+    /** TVPaint Deep GloBaL information */
+    int CHUNK_DGBL = ('D' << 24) + ('G' << 16) + ('B' << 8) + 'L';
+    /** TVPaint Deep Pixel ELements */
+    int CHUNK_DPEL = ('D' << 24) + ('P' << 16) + ('E' << 8) + 'L';
+    /** TVPaint Deep LOCation information */
+    int CHUNK_DLOC = ('D' << 24) + ('L' << 16) + ('O' << 8) + 'C';
+    /** TVPaint Deep BODy */
+    int CHUNK_DBOD = ('D' << 24) + ('B' << 16) + ('O' << 8) + 'D';
+    /** TVPaint Deep CHanGe buffer */
+    int CHUNK_DCHG = ('D' << 24) + ('C' << 16) + ('H' << 8) + 'G';
 }

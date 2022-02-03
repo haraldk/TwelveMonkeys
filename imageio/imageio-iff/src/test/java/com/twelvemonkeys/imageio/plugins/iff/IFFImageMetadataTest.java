@@ -1,26 +1,24 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import static org.junit.Assert.*;
-
-import java.awt.image.IndexColorModel;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 import org.w3c.dom.Node;
 
+import javax.imageio.IIOException;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+import java.awt.image.IndexColorModel;
+import java.nio.charset.StandardCharsets;
+
+import static org.junit.Assert.*;
+
 public class IFFImageMetadataTest {
     @Test
-    public void testStandardFeatures() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardFeatures() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        final IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        final IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         // Standard metadata format
         assertTrue(metadata.isStandardMetadataFormatSupported());
@@ -49,10 +47,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardChromaGray() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardChromaGray() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode chroma = metadata.getStandardChromaNode();
         assertNotNull(chroma);
@@ -75,10 +74,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardChromaRGB() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardChromaRGB() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode chroma = metadata.getStandardChromaNode();
         assertNotNull(chroma);
@@ -101,16 +101,17 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardChromaPalette() {
-        BMHDChunk header = new BMHDChunk(300, 200, 1, BMHDChunk.MASK_TRANSPARENT_COLOR, BMHDChunk.COMPRESSION_BYTE_RUN, 1);
+    public void testStandardChromaPalette() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 1, BMHDChunk.MASK_TRANSPARENT_COLOR, BMHDChunk.COMPRESSION_BYTE_RUN, 1));
 
         byte[] bw = {0, (byte) 0xff};
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, new IndexColorModel(header.bitplanes, bw.length, bw, bw, bw, header.transparentIndex), null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, new IndexColorModel(header.bitplanes(), bw.length, bw, bw, bw, header.transparentIndex()));
 
         IIOMetadataNode chroma = metadata.getStandardChromaNode();
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
-        assertEquals(4, chroma.getLength());
+        assertEquals(5, chroma.getLength());
 
         IIOMetadataNode colorSpaceType = (IIOMetadataNode) chroma.getFirstChild();
         assertEquals("ColorSpaceType", colorSpaceType.getNodeName());
@@ -138,14 +139,21 @@ public class IFFImageMetadataTest {
             assertEquals(rgb, item0.getAttribute("blue"));
         }
 
-        // TODO: BackgroundIndex == 1??
+        // BackgroundIndex == 1
+        IIOMetadataNode backgroundIndex = (IIOMetadataNode) palette.getNextSibling();
+        assertEquals("BackgroundIndex", backgroundIndex.getNodeName());
+        assertEquals("1", backgroundIndex.getAttribute("value"));
+
+        // No more elements
+        assertNull(backgroundIndex.getNextSibling());
     }
 
     @Test
-    public void testStandardCompressionRLE() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardCompressionRLE() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode compression = metadata.getStandardCompressionNode();
         assertNotNull(compression);
@@ -164,19 +172,21 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardCompressionNone() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_NONE, 0);
+    public void testStandardCompressionNone() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_NONE, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         assertNull(metadata.getStandardCompressionNode()); // No compression, all default...
     }
 
     @Test
-    public void testStandardDataILBM_Gray() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDataILBM_Gray() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode data = metadata.getStandardDataNode();
         assertNotNull(data);
@@ -199,10 +209,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDataILBM_RGB() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDataILBM_RGB() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode data = metadata.getStandardDataNode();
         assertNotNull(data);
@@ -225,10 +236,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDataILBM_RGBA() {
-        BMHDChunk header = new BMHDChunk(300, 200, 32, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDataILBM_RGBA() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 32, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode data = metadata.getStandardDataNode();
         assertNotNull(data);
@@ -251,12 +263,13 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDataILBM_Palette() {
+    public void testStandardDataILBM_Palette() throws IIOException {
         for (int i = 1; i <= 8; i++) {
-            BMHDChunk header = new BMHDChunk(300, 200, i, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+            Form header = Form.ofType(IFF.TYPE_ILBM)
+                              .with(new BMHDChunk(300, 200, i, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
             byte[] rgb = new byte[2 << i]; // Colors doesn't really matter here
-            IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, new IndexColorModel(header.bitplanes, rgb.length, rgb, rgb, rgb, 0), null, Collections.<GenericChunk>emptyList());
+            IFFImageMetadata metadata = new IFFImageMetadata(header, new IndexColorModel(header.bitplanes(), rgb.length, rgb, rgb, rgb, 0));
 
             IIOMetadataNode data = metadata.getStandardDataNode();
             assertNotNull(data);
@@ -280,10 +293,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDataPBM_Gray() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDataPBM_Gray() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_PBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_PBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode data = metadata.getStandardDataNode();
         assertNotNull(data);
@@ -306,10 +320,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDataPBM_RGB() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDataPBM_RGB() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_PBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_PBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode data = metadata.getStandardDataNode();
         assertNotNull(data);
@@ -333,40 +348,57 @@ public class IFFImageMetadataTest {
 
 
     @Test
-    public void testStandardDimensionNoViewport() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDimensionNoViewport() throws IIOException {
+        BMHDChunk bitmapHeader = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+        bitmapHeader.xAspect = 0;
+        bitmapHeader.yAspect = 0;
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(bitmapHeader);
+
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode dimension = metadata.getStandardDimensionNode();
         assertNull(dimension);
     }
 
     @Test
-    public void testStandardDimensionNormal() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDimensionNormal() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0))
+                          .with(new CAMGChunk(4));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, new CAMGChunk(4), Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode dimension = metadata.getStandardDimensionNode();
-        assertNotNull(dimension);
-        assertEquals("Dimension", dimension.getNodeName());
-        assertEquals(1, dimension.getLength());
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
-        assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
-        assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
+        // No Dimension node is okay, or one with an aspect ratio of 1.0
+        if (dimension != null) {
+            assertEquals("Dimension", dimension.getNodeName());
+            assertEquals(1, dimension.getLength());
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+            IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
+            assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
+            assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
+
+            assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        }
     }
 
     @Test
-    public void testStandardDimensionHires() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDimensionHires() throws IIOException {
+        BMHDChunk bitmapHeader = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+        bitmapHeader.xAspect = 2;
+        bitmapHeader.yAspect = 1;
+
         CAMGChunk viewPort = new CAMGChunk(4);
         viewPort.camg = 0x8000;
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, viewPort, Collections.<GenericChunk>emptyList());
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(bitmapHeader)
+                          .with(viewPort);
+
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode dimension = metadata.getStandardDimensionNode();
         assertNotNull(dimension);
@@ -381,13 +413,19 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDimensionInterlaced() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDimensionInterlaced() throws IIOException {
+        BMHDChunk bitmapHeader = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+        bitmapHeader.xAspect = 1;
+        bitmapHeader.yAspect = 2;
 
         CAMGChunk viewPort = new CAMGChunk(4);
         viewPort.camg = 0x4;
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, viewPort, Collections.<GenericChunk>emptyList());
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(bitmapHeader)
+                          .with(viewPort);
+
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode dimension = metadata.getStandardDimensionNode();
         assertNotNull(dimension);
@@ -402,13 +440,14 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDimensionHiresInterlaced() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
-
+    public void testStandardDimensionHiresInterlaced() throws IIOException {
         CAMGChunk viewPort = new CAMGChunk(4);
         viewPort.camg = 0x8004;
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0))
+                          .with(viewPort);
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, viewPort, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode dimension = metadata.getStandardDimensionNode();
         assertNotNull(dimension);
@@ -423,10 +462,11 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardDocument() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardDocument() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode document = metadata.getStandardDocumentNode();
         assertNotNull(document);
@@ -441,13 +481,15 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardText() {
-        BMHDChunk header = new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
-
+    public void testStandardText() throws IIOException {
+        int[] chunks = {IFF.CHUNK_ANNO, IFF.CHUNK_UTF8};
         String[] texts = {"annotation", "äñnótâtïøñ"};
-        List<GenericChunk> meta = Arrays.asList(new GenericChunk(IFF.CHUNK_ANNO, texts[0].getBytes(StandardCharsets.US_ASCII)),
-                                                new GenericChunk(IFF.CHUNK_UTF8, texts[1].getBytes(StandardCharsets.UTF_8)));
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, meta);
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0))
+                .with(new GenericChunk(chunks[0], texts[0].getBytes(StandardCharsets.US_ASCII)))
+                .with(new GenericChunk(chunks[1], texts[1].getBytes(StandardCharsets.UTF_8)));
+
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode text = metadata.getStandardTextNode();
         assertNotNull(text);
@@ -457,26 +499,28 @@ public class IFFImageMetadataTest {
         for (int i = 0; i < texts.length; i++) {
             IIOMetadataNode textEntry = (IIOMetadataNode) text.item(i);
             assertEquals("TextEntry", textEntry.getNodeName());
-            assertEquals(IFFUtil.toChunkStr(meta.get(i).chunkId), textEntry.getAttribute("keyword"));
+            assertEquals(IFFUtil.toChunkStr(chunks[i]), textEntry.getAttribute("keyword"));
             assertEquals(texts[i], textEntry.getAttribute("value"));
         }
     }
 
     @Test
-    public void testStandardTransparencyRGB() {
-        BMHDChunk header = new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardTransparencyRGB() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
         assertNull(transparency); // No transparency, just defaults
     }
 
     @Test
-    public void testStandardTransparencyRGBA() {
-        BMHDChunk header = new BMHDChunk(300, 200, 32, BMHDChunk.MASK_HAS_MASK, BMHDChunk.COMPRESSION_BYTE_RUN, 0);
+    public void testStandardTransparencyRGBA() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 32, BMHDChunk.MASK_HAS_MASK, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, null, null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
 
         IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
         assertNotNull(transparency);
@@ -491,11 +535,12 @@ public class IFFImageMetadataTest {
     }
 
     @Test
-    public void testStandardTransparencyPalette() {
-        BMHDChunk header = new BMHDChunk(300, 200, 1, BMHDChunk.MASK_TRANSPARENT_COLOR, BMHDChunk.COMPRESSION_BYTE_RUN, 1);
+    public void testStandardTransparencyPalette() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_ILBM)
+                          .with(new BMHDChunk(300, 200, 1, BMHDChunk.MASK_TRANSPARENT_COLOR, BMHDChunk.COMPRESSION_BYTE_RUN, 1));
 
         byte[] bw = {0, (byte) 0xff};
-        IFFImageMetadata metadata = new IFFImageMetadata(IFF.TYPE_ILBM, header, new IndexColorModel(header.bitplanes, bw.length, bw, bw, bw, header.transparentIndex), null, Collections.<GenericChunk>emptyList());
+        IFFImageMetadata metadata = new IFFImageMetadata(header, new IndexColorModel(header.bitplanes(), bw.length, bw, bw, bw, header.transparentIndex()));
 
         IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
         assertNotNull(transparency);
@@ -507,5 +552,132 @@ public class IFFImageMetadataTest {
         assertEquals("1", pixelAspectRatio.getAttribute("value"));
 
         assertNull(pixelAspectRatio.getNextSibling()); // No more children
+    }
+
+    @Test
+    public void testStandardRGB8() throws IIOException {
+        Form header = Form.ofType(IFF.TYPE_RGB8)
+                          .with(new BMHDChunk(300, 200, 25, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+
+        // Chroma
+        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        assertNotNull(chroma);
+        assertEquals("Chroma", chroma.getNodeName());
+        assertEquals(3, chroma.getLength());
+
+        IIOMetadataNode colorSpaceType = (IIOMetadataNode) chroma.getFirstChild();
+        assertEquals("ColorSpaceType", colorSpaceType.getNodeName());
+        assertEquals("RGB", colorSpaceType.getAttribute("name"));
+
+        IIOMetadataNode numChannels = (IIOMetadataNode) colorSpaceType.getNextSibling();
+        assertEquals("NumChannels", numChannels.getNodeName());
+        assertEquals("4", numChannels.getAttribute("value"));
+
+        IIOMetadataNode blackIsZero = (IIOMetadataNode) numChannels.getNextSibling();
+        assertEquals("BlackIsZero", blackIsZero.getNodeName());
+        assertEquals("TRUE", blackIsZero.getAttribute("value"));
+
+        assertNull(blackIsZero.getNextSibling()); // No more children
+
+        // Data
+        IIOMetadataNode data = metadata.getStandardDataNode();
+        assertNotNull(data);
+        assertEquals("Data", data.getNodeName());
+        assertEquals(3, data.getLength());
+
+        IIOMetadataNode planarConfiguration = (IIOMetadataNode) data.getFirstChild();
+        assertEquals("PlanarConfiguration", planarConfiguration.getNodeName());
+        assertEquals("PixelInterleaved", planarConfiguration.getAttribute("value"));
+
+        IIOMetadataNode sampleFormat = (IIOMetadataNode) planarConfiguration.getNextSibling();
+        assertEquals("SampleFormat", sampleFormat.getNodeName());
+        assertEquals("UnsignedIntegral", sampleFormat.getAttribute("value"));
+
+        IIOMetadataNode bitsPerSample = (IIOMetadataNode) sampleFormat.getNextSibling();
+        assertEquals("BitsPerSample", bitsPerSample.getNodeName());
+        assertEquals("8 8 8 1", bitsPerSample.getAttribute("value"));
+
+        assertNull(bitsPerSample.getNextSibling()); // No more children
+
+        // Transparency
+        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        assertNotNull(transparency);
+        assertEquals("Transparency", transparency.getNodeName());
+        assertEquals(1, transparency.getLength());
+
+        IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+        assertEquals("Alpha", alpha.getNodeName());
+        assertEquals("nonpremultiplied", alpha.getAttribute("value"));
+
+        assertNull(alpha.getNextSibling()); // No more children
+    }
+
+    @Test
+    public void testStandardDEEP() throws IIOException {
+        DPELChunk dpel = new DPELChunk(20);
+        dpel.typeDepths = new DPELChunk.TypeDepth[4];
+        for (int i = 0; i < dpel.typeDepths.length; i++) {
+            dpel.typeDepths[i] = new DPELChunk.TypeDepth(i == 0 ? 11 : i, 8);
+        }
+
+        Form header = Form.ofType(IFF.TYPE_DEEP)
+                          .with(new DGBLChunk(8))
+                          .with(dpel);
+        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+
+        // Chroma
+        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        assertNotNull(chroma);
+        assertEquals("Chroma", chroma.getNodeName());
+        assertEquals(3, chroma.getLength());
+
+        IIOMetadataNode colorSpaceType = (IIOMetadataNode) chroma.getFirstChild();
+        assertEquals("ColorSpaceType", colorSpaceType.getNodeName());
+        assertEquals("RGB", colorSpaceType.getAttribute("name"));
+
+        IIOMetadataNode numChannels = (IIOMetadataNode) colorSpaceType.getNextSibling();
+        assertEquals("NumChannels", numChannels.getNodeName());
+        assertEquals("4", numChannels.getAttribute("value"));
+
+        IIOMetadataNode blackIsZero = (IIOMetadataNode) numChannels.getNextSibling();
+        assertEquals("BlackIsZero", blackIsZero.getNodeName());
+        assertEquals("TRUE", blackIsZero.getAttribute("value"));
+
+        // TODO: BackgroundColor = 0x666666
+
+        assertNull(blackIsZero.getNextSibling()); // No more children
+
+        // Data
+        IIOMetadataNode data = metadata.getStandardDataNode();
+        assertNotNull(data);
+        assertEquals("Data", data.getNodeName());
+        assertEquals(3, data.getLength());
+
+        IIOMetadataNode planarConfiguration = (IIOMetadataNode) data.getFirstChild();
+        assertEquals("PlanarConfiguration", planarConfiguration.getNodeName());
+        assertEquals("PixelInterleaved", planarConfiguration.getAttribute("value"));
+
+        IIOMetadataNode sampleFormat = (IIOMetadataNode) planarConfiguration.getNextSibling();
+        assertEquals("SampleFormat", sampleFormat.getNodeName());
+        assertEquals("UnsignedIntegral", sampleFormat.getAttribute("value"));
+
+        IIOMetadataNode bitsPerSample = (IIOMetadataNode) sampleFormat.getNextSibling();
+        assertEquals("BitsPerSample", bitsPerSample.getNodeName());
+        assertEquals("8 8 8 8", bitsPerSample.getAttribute("value"));
+
+        assertNull(bitsPerSample.getNextSibling()); // No more children
+
+        // Transparency
+        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        assertNotNull(transparency);
+        assertEquals("Transparency", transparency.getNodeName());
+        assertEquals(1, transparency.getLength());
+
+        IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+        assertEquals("Alpha", alpha.getNodeName());
+        assertEquals("premultiplied", alpha.getAttribute("value"));
+
+        assertNull(alpha.getNextSibling()); // No more children
     }
 }

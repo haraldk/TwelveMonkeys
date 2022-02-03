@@ -13,31 +13,29 @@ import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 final class IFFImageMetadata extends AbstractMetadata {
-    private final int formType;
-    private final BMHDChunk header;
+    private final Form header;
     private final IndexColorModel colorMap;
-    private final CAMGChunk viewPort;
     private final List<GenericChunk> meta;
 
-    IFFImageMetadata(int formType, BMHDChunk header, IndexColorModel colorMap, CAMGChunk viewPort, List<GenericChunk> meta) {
-        this.formType = isTrue(validFormType(formType), formType, "Unknown IFF Form type: %s");
+    IFFImageMetadata(Form header, IndexColorModel colorMap) {
         this.header = notNull(header, "header");
+        isTrue(validFormType(header.formType), header.formType, "Unknown IFF Form type: %s");
         this.colorMap = colorMap;
-        this.viewPort = viewPort;
-        this.meta = meta;
+        this.meta = header.meta;
     }
 
     private boolean validFormType(int formType) {
         switch (formType) {
+            default:
+                return false;
             case TYPE_ACBM:
             case TYPE_DEEP:
             case TYPE_ILBM:
             case TYPE_PBM:
             case TYPE_RGB8:
             case TYPE_RGBN:
+            case TYPE_TVPP:
                 return true;
-            default:
-                return false;
         }
     }
 
@@ -48,7 +46,7 @@ final class IFFImageMetadata extends AbstractMetadata {
         IIOMetadataNode csType = new IIOMetadataNode("ColorSpaceType");
         chroma.appendChild(csType);
 
-        switch (header.bitplanes) {
+        switch (header.bitplanes()) {
             case 8:
                 if (colorMap == null) {
                     csType.setAttribute("name", "GRAY");
@@ -73,10 +71,10 @@ final class IFFImageMetadata extends AbstractMetadata {
         // NOTE: Channels in chroma node reflects channels in color model (see data node, for channels in data)
         IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
         chroma.appendChild(numChannels);
-        if (colorMap == null && header.bitplanes == 8) {
+        if (colorMap == null && header.bitplanes() == 8) {
             numChannels.setAttribute("value", Integer.toString(1));
         }
-        else if (header.bitplanes == 32) {
+        else if (header.bitplanes() == 25 || header.bitplanes() == 32) {
             numChannels.setAttribute("value", Integer.toString(4));
         }
         else {
@@ -103,9 +101,16 @@ final class IFFImageMetadata extends AbstractMetadata {
                 paletteEntry.setAttribute("green", Integer.toString(colorMap.getGreen(i)));
                 paletteEntry.setAttribute("blue", Integer.toString(colorMap.getBlue(i)));
             }
+
+            if (colorMap.getTransparentPixel() != -1) {
+               IIOMetadataNode backgroundIndex = new IIOMetadataNode("BackgroundIndex");
+               chroma.appendChild(backgroundIndex);
+               backgroundIndex.setAttribute("value", Integer.toString(colorMap.getTransparentPixel()));
+            }
         }
 
-        // TODO: Background color is the color of the transparent index in the color model?
+        // TODO: TVPP TVPaint Project files have a MIXR chunk with a background color
+        //  and also a BGP1 (background pen 1?) and BGP2 chunks
 //        if (extensions != null && extensions.getBackgroundColor() != 0) {
 //            Color background = new Color(extensions.getBackgroundColor(), true);
 //
@@ -122,7 +127,7 @@ final class IFFImageMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardCompressionNode() {
-        if (header.compressionType == BMHDChunk.COMPRESSION_NONE) {
+        if (header.compressionType() == BMHDChunk.COMPRESSION_NONE) {
             return null; // All defaults
         }
 
@@ -145,7 +150,9 @@ final class IFFImageMetadata extends AbstractMetadata {
 
         // PlanarConfiguration
         IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
-        switch (formType) {
+        switch (header.formType) {
+            case TYPE_DEEP:
+            case TYPE_TVPP:
             case TYPE_RGB8:
             case TYPE_PBM:
                 planarConfiguration.setAttribute("value", "PixelInterleaved");
@@ -154,7 +161,7 @@ final class IFFImageMetadata extends AbstractMetadata {
                 planarConfiguration.setAttribute("value", "PlaneInterleaved");
                 break;
             default:
-                planarConfiguration.setAttribute("value", "Unknown " + IFFUtil.toChunkStr(formType));
+                planarConfiguration.setAttribute("value", "Unknown " + IFFUtil.toChunkStr(header.formType));
                 break;
         }
         data.appendChild(planarConfiguration);
@@ -165,7 +172,7 @@ final class IFFImageMetadata extends AbstractMetadata {
 
         // BitsPerSample
         IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
-        String value = bitsPerSampleValue(header.bitplanes);
+        String value = bitsPerSampleValue(header.bitplanes());
         bitsPerSample.setAttribute("value", value);
         data.appendChild(bitsPerSample);
 
@@ -173,7 +180,6 @@ final class IFFImageMetadata extends AbstractMetadata {
         // SampleMSB not in format
 
         return data;
-
     }
 
     private String bitsPerSampleValue(int bitplanes) {
@@ -190,8 +196,8 @@ final class IFFImageMetadata extends AbstractMetadata {
             case 24:
                 return "8 8 8";
             case 25:
-                if (formType != TYPE_RGB8) {
-                    throw new IllegalArgumentException(String.format("25 bit depth only supported for FORM type RGB8: %s", IFFUtil.toChunkStr(formType)));
+                if (header.formType != TYPE_RGB8) {
+                    throw new IllegalArgumentException(String.format("25 bit depth only supported for FORM type RGB8: %s", IFFUtil.toChunkStr(header.formType)));
                 }
 
                 return "8 8 8 1";
@@ -204,7 +210,7 @@ final class IFFImageMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardDimensionNode() {
-        if (viewPort == null) {
+        if (header.xAspect() == 0 || header.yAspect() == 0) {
             return null;
         }
 
@@ -212,7 +218,7 @@ final class IFFImageMetadata extends AbstractMetadata {
 
         // PixelAspectRatio
         IIOMetadataNode pixelAspectRatio = new IIOMetadataNode("PixelAspectRatio");
-        pixelAspectRatio.setAttribute("value", String.valueOf((viewPort.isHires() ? 2f : 1f) / (viewPort.isLaced() ? 2f : 1f)));
+        pixelAspectRatio.setAttribute("value", String.valueOf(header.xAspect() / (float) header.yAspect()));
         dimension.appendChild(pixelAspectRatio);
 
         // TODO: HorizontalScreenSize?
@@ -254,16 +260,15 @@ final class IFFImageMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardTransparencyNode() {
-        // TODO: Make sure 25 bit is only RGB8...
-        if ((colorMap == null || !colorMap.hasAlpha()) && header.bitplanes != 32 && header.bitplanes != 25) {
+        if ((colorMap == null || !colorMap.hasAlpha()) && header.bitplanes() != 32 && header.bitplanes() != 25) {
             return null;
         }
 
         IIOMetadataNode transparency = new IIOMetadataNode("Transparency");
 
-        if (header.bitplanes == 25 || header.bitplanes == 32) {
+        if (header.bitplanes() == 25 || header.bitplanes() == 32) {
             IIOMetadataNode alpha = new IIOMetadataNode("Alpha");
-            alpha.setAttribute("value", "nonpremultiplied");
+            alpha.setAttribute("value", header.premultiplied() ? "premultiplied" : "nonpremultiplied");
             transparency.appendChild(alpha);
         }
 

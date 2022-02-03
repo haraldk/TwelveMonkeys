@@ -92,7 +92,12 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
                 // Impulse RGB8 format straight from Imagine 2.0
                 new TestData(getClassLoaderResource("/iff/glowsphere2.rgb8"), new Dimension(640, 480)),
                 // Impulse RGB8 format written by ASDG ADPro, with cross boundary runs, which is probably not as per spec...
-                new TestData(getClassLoaderResource("/iff/tunnel04-adpro-cross-boundary-runs.rgb8"), new Dimension(640, 480))
+                new TestData(getClassLoaderResource("/iff/tunnel04-adpro-cross-boundary-runs.rgb8"), new Dimension(640, 480)),
+                // TVPaint (TecSoft) DEEP format
+                new TestData(getClassLoaderResource("/iff/arch.deep"), new Dimension(800, 600)),
+                // TVPaint Project (TVPP is effectively same as the DEEP format, but multiple layers, background color etc.)
+                // TODO: This file contains one more image/layer, second DBOD chunk @1868908, len: 1199144!
+                new TestData(getClassLoaderResource("/iff/warm-and-bright.pro"), new Dimension(800, 600))
         );
     }
 
@@ -103,7 +108,7 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
 
     @Override
     protected List<String> getSuffixes() {
-        return Arrays.asList("iff", "ilbm", "ham", "ham8", "lbm");
+        return Arrays.asList("iff", "ilbm", "ham", "ham8", "lbm", "rgb8", "deep");
     }
 
     @Override
@@ -138,9 +143,14 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
 
         for (int i = 0; i < 32; i++) {
             // Make sure the color model is really EHB
-            assertEquals("red", (reds[i] & 0xff) / 2, reds[i + 32] & 0xff);
-            assertEquals("blue", (blues[i] & 0xff) / 2, blues[i + 32] & 0xff);
-            assertEquals("green", (greens[i] & 0xff) / 2, greens[i + 32] & 0xff);
+            try {
+                assertEquals("red", (reds[i] & 0xff) / 2, reds[i + 32] & 0xff);
+                assertEquals("blue", (blues[i] & 0xff) / 2, blues[i + 32] & 0xff);
+                assertEquals("green", (greens[i] & 0xff) / 2, greens[i + 32] & 0xff);
+            }
+            catch (AssertionError err) {
+                throw new AssertionError("Color " + i + " " + err.getMessage(), err);
+            }
         }
     }
 }
