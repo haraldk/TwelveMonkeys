@@ -40,11 +40,11 @@ import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
  * @version $Id: IFFProviderInfo.java,v 1.0 20/03/15 harald.kuhr Exp$
  */
 final class IFFProviderInfo extends ReaderWriterProviderInfo {
-    protected IFFProviderInfo() {
+    IFFProviderInfo() {
         super(
                 IFFProviderInfo.class,
                 new String[] {"iff", "IFF"},
-                new String[] {"iff", "lbm", "ham", "ham8", "ilbm"},
+                new String[] {"iff", "lbm", "ham", "ham8", "ilbm", "rgb8", "deep"},
                 new String[] {"image/iff", "image/x-iff"},
                 "com.twelvemonkeys.imageio.plugins.iff.IFFImageReader",
                 new String[]{"com.twelvemonkeys.imageio.plugins.iff.IFFImageReaderSpi"},

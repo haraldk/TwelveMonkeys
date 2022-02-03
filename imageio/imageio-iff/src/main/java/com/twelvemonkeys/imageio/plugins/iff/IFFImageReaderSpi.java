@@ -53,40 +53,41 @@ public final class IFFImageReaderSpi extends ImageReaderSpiBase {
     }
 
     @Override
-    public boolean canDecodeInput(Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
+    public boolean canDecodeInput(final Object source) throws IOException {
+        return source instanceof ImageInputStream && canDecode((ImageInputStream) source);
     }
 
-    private static boolean canDecode(ImageInputStream pInput) throws IOException {
-        pInput.mark();
+    private static boolean canDecode(final ImageInputStream input) throws IOException {
+        input.mark();
 
         try {
             // Is it IFF
-            if (pInput.readInt() == IFF.CHUNK_FORM) {
-                pInput.readInt();// Skip length field
+            if (input.readInt() == IFF.CHUNK_FORM) {
+                input.readInt();// Skip length field
 
-                int type = pInput.readInt();
+                int type = input.readInt();
                 if (type == IFF.TYPE_ILBM || type == IFF.TYPE_PBM
-                        || type == IFF.TYPE_RGB8) { // Impulse RGB8
+                        || type == IFF.TYPE_RGB8 // Impulse RGB8 format
+                        || type == IFF.TYPE_DEEP || type == IFF.TYPE_TVPP) { // TVPaint DEEP format
                     return true;
                 }
 
             }
         }
         finally {
-            pInput.reset();
+            input.reset();
         }
 
         return false;
     }
 
     @Override
-    public ImageReader createReaderInstance(Object pExtension) throws IOException {
+    public ImageReader createReaderInstance(final Object extension) {
         return new IFFImageReader(this);
     }
 
     @Override
-    public String getDescription(Locale pLocale) {
+    public String getDescription(Locale locale) {
         return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image reader";
     }
 }

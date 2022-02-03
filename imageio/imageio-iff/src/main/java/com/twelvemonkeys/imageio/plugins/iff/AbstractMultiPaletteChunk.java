@@ -69,14 +69,14 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
     protected WeakReference<IndexColorModel> originalPalette;
     protected MutableIndexColorModel mutablePalette;
 
-    public AbstractMultiPaletteChunk(int pChunkId, int pChunkLength) {
-        super(pChunkId, pChunkLength);
+    public AbstractMultiPaletteChunk(int chunkId, int chunkLength) {
+        super(chunkId, chunkLength);
     }
 
     @Override
-    void readChunk(final DataInput pInput) throws IOException {
+    void readChunk(final DataInput input) throws IOException {
         if (chunkId == IFF.CHUNK_SHAM) {
-            pInput.readUnsignedShort(); // Version, typically 0, skipped
+            input.readUnsignedShort(); // Version, typically 0, skipped
         }
 
         int rows = chunkLength / 32;    /* sizeof(word) * 16 */
@@ -91,7 +91,7 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
             }
 
             for (int i = 0; i < 16; i++ ) {
-                int data = pInput.readUnsignedShort();
+                int data = input.readUnsignedShort();
 
                 changes[row][i].index = i;
                 changes[row][i].r = (byte) (((data & 0x0f00) >> 8) * FACTOR_4BIT);
@@ -102,7 +102,7 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
     }
 
     @Override
-    void writeChunk(DataOutput pOutput) {
+    void writeChunk(DataOutput output) {
         throw new UnsupportedOperationException("Method writeChunk not implemented");
     }
 

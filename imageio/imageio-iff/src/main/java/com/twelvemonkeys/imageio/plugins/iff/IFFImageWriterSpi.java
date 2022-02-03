@@ -30,13 +30,11 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import java.io.IOException;
-import java.util.Locale;
+import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
-
-import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
+import java.util.Locale;
 
 /**
  * IFFImageWriterSpi
@@ -53,19 +51,19 @@ public class IFFImageWriterSpi extends ImageWriterSpiBase {
         super(new IFFProviderInfo());
     }
 
-    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
         // TODO: Probably can't store 16 bit types etc...
         // TODO: Can't store CMYK (well.. it does, but they can't be read back) 
         return true;
     }
 
     @Override
-    public ImageWriter createWriterInstance(Object pExtension) throws IOException {
+    public ImageWriter createWriterInstance(Object extension) {
         return new IFFImageWriter(this);
     }
 
     @Override
-    public String getDescription(Locale pLocale) {
+    public String getDescription(Locale locale) {
         return "Commodore Amiga/Electronic Arts Image Interchange Format (IFF) image writer";
     }
 }

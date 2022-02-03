@@ -38,7 +38,7 @@ package com.twelvemonkeys.imageio.plugins.iff;
  * @version $Id: CTBLChunk.java,v 1.0 30.03.12 14:53 haraldk Exp$
  */
 final class CTBLChunk extends AbstractMultiPaletteChunk {
-    CTBLChunk(int pChunkLength) {
-        super(IFF.CHUNK_CTBL, pChunkLength);
+    CTBLChunk(int chunkLength) {
+        super(IFF.CHUNK_CTBL, chunkLength);
     }
 }

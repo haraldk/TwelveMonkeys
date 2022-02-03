@@ -30,30 +30,21 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.IndexColorModel;
-import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageWriterSpi;
-
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
+
+import javax.imageio.*;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageWriterSpi;
+import java.awt.*;
+import java.awt.image.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Writer for Commodore Amiga (Electronic Arts) IFF ILBM (InterLeaved BitMap) format.
@@ -68,8 +59,8 @@ import com.twelvemonkeys.io.enc.PackBitsEncoder;
  */
 public final class IFFImageWriter extends ImageWriterBase {
 
-    IFFImageWriter(ImageWriterSpi pProvider) {
-        super(pProvider);
+    IFFImageWriter(ImageWriterSpi provider) {
+        super(provider);
     }
 
     @Override
@@ -83,23 +74,29 @@ public final class IFFImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void write(IIOMetadata pStreamMetadata, IIOImage pImage, ImageWriteParam pParam) throws IOException {
+    public ImageWriteParam getDefaultWriteParam() {
+        return new IFFWriteParam(getLocale());
+    }
+
+    @Override
+    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
         assertOutput();
 
-        if (pImage.hasRaster()) {
+        if (image.hasRaster()) {
             throw new UnsupportedOperationException("Cannot write raster");
         }
 
         processImageStarted(0);
 
+        RenderedImage renderedImage = image.getRenderedImage();
+        boolean compress = shouldCompress(renderedImage, param);
+
         // Prepare image data to be written
         ByteArrayOutputStream imageData = new FastByteArrayOutputStream(1024);
-        packImageData(imageData, pImage.getRenderedImage(), pParam);
-
-        //System.out.println("Image data: " + imageData.size());
+        packImageData(imageData, renderedImage, compress);
 
         // Write metadata
-        writeMeta(pImage.getRenderedImage(), imageData.size());
+        writeMeta(renderedImage, imageData.size(), compress);
 
         // Write image data
         writeBody(imageData);
@@ -107,34 +104,31 @@ public final class IFFImageWriter extends ImageWriterBase {
         processImageComplete();
     }
 
-    private void writeBody(ByteArrayOutputStream pImageData) throws IOException {
+    private void writeBody(ByteArrayOutputStream imageData) throws IOException {
         imageOutput.writeInt(IFF.CHUNK_BODY);
-        imageOutput.writeInt(pImageData.size());
+        imageOutput.writeInt(imageData.size());
 
-        // NOTE: This is much faster than imageOutput.write(pImageData.toByteArray())
+        // NOTE: This is much faster than imageOutput.write(imageData.toByteArray())
         // as the data array is not duplicated
         try (OutputStream adapter = IIOUtil.createStreamAdapter(imageOutput)) {
-            pImageData.writeTo(adapter);
+            imageData.writeTo(adapter);
         }
 
-        if (pImageData.size() % 2 == 0) {
+        if (imageData.size() % 2 == 0) {
             imageOutput.writeByte(0); // PAD
         }
 
         imageOutput.flush();
     }
 
-    private void packImageData(OutputStream pOutput, RenderedImage pImage, ImageWriteParam pParam) throws IOException {
-        // TODO: Allow param to dictate uncompressed
-        // TODO: Allow param to dictate type PBM?
+    private void packImageData(OutputStream outputStream, RenderedImage image, final boolean compress) throws IOException {
         // TODO: Subsample/AOI
-        final boolean compress = shouldCompress(pImage);
-        final OutputStream output = compress ? new EncoderStream(pOutput, new PackBitsEncoder(), true) : pOutput;
-        final ColorModel model = pImage.getColorModel();
-        final Raster raster = pImage.getData();
+        final OutputStream output = compress ? new EncoderStream(outputStream, new PackBitsEncoder(), true) : outputStream;
+        final ColorModel model = image.getColorModel();
+        final Raster raster = image.getData();
 
-        final int width = pImage.getWidth();
-        final int height = pImage.getHeight();
+        final int width = image.getWidth();
+        final int height = image.getHeight();
 
         // Store each row of pixels
         // 0. Loop pr channel
@@ -142,7 +136,6 @@ public final class IFFImageWriter extends ImageWriterBase {
         // 2. Perform byteRun1 compression for each plane separately
         // 3. Write the plane data for each plane
 
-        //final int planeWidth = (width + 7) / 8;
         final int planeWidth = 2 * ((width + 15) / 16);
         final byte[] planeData = new byte[8 * planeWidth];
         final int channels = (model.getPixelSize() + 7) / 8;
@@ -167,10 +160,6 @@ public final class IFFImageWriter extends ImageWriterBase {
 
                 for (int p = 0; p < planesPerChannel; p++) {
                     output.write(planeData, p * planeWidth, planeWidth);
-
-                    if (!compress && planeWidth % 2 != 0) {
-                        output.write(0); // PAD
-                    }
                 }
             }
 
@@ -182,17 +171,16 @@ public final class IFFImageWriter extends ImageWriterBase {
         output.flush();
     }
 
-    private void writeMeta(RenderedImage pImage, int pBodyLength) throws IOException {
+    private void writeMeta(RenderedImage image, int bodyLength, boolean compress) throws IOException {
         // Annotation ANNO chunk, 8 + annoData.length bytes
         String annotation = String.format("Written by %s IFFImageWriter %s", getOriginatingProvider().getVendorName(), getOriginatingProvider().getVersion());
         GenericChunk anno = new GenericChunk(IFFUtil.toInt("ANNO".getBytes()), annotation.getBytes());
 
-        ColorModel cm = pImage.getColorModel();
+        ColorModel cm = image.getColorModel();
         IndexColorModel icm = null;
 
         // Bitmap header BMHD chunk, 8 + 20 bytes
-        // By default, don't compress narrow images
-        int compression = shouldCompress(pImage) ? BMHDChunk.COMPRESSION_BYTE_RUN : BMHDChunk.COMPRESSION_NONE;
+        int compression = compress ? BMHDChunk.COMPRESSION_BYTE_RUN : BMHDChunk.COMPRESSION_NONE;
 
         BMHDChunk header;
         if (cm instanceof IndexColorModel) {
@@ -200,12 +188,12 @@ public final class IFFImageWriter extends ImageWriterBase {
             icm = (IndexColorModel) cm;
             int trans = icm.getTransparency() == Transparency.BITMASK ? BMHDChunk.MASK_TRANSPARENT_COLOR : BMHDChunk.MASK_NONE;
             int transPixel = icm.getTransparency() == Transparency.BITMASK ? icm.getTransparentPixel() : 0;
-            header = new BMHDChunk(pImage.getWidth(), pImage.getHeight(), icm.getPixelSize(),
+            header = new BMHDChunk(image.getWidth(), image.getHeight(), icm.getPixelSize(),
                                    trans, compression, transPixel);
         }
         else {
             //System.out.println(cm.getClass().getName());
-            header = new BMHDChunk(pImage.getWidth(), pImage.getHeight(), cm.getPixelSize(),
+            header = new BMHDChunk(image.getWidth(), image.getHeight(), cm.getPixelSize(),
                                    BMHDChunk.MASK_NONE, compression, 0);
         }
 
@@ -217,7 +205,7 @@ public final class IFFImageWriter extends ImageWriterBase {
         }
 
         // ILBM(4) + anno(8+len) + header(8+20) + cmap(8+len)? + body(8+len);
-        int size = 4 + 8 + anno.chunkLength + 28 + 8 + pBodyLength;
+        int size = 4 + 8 + anno.chunkLength + 28 + 8 + bodyLength;
         if (cmap != null) {
             size += 8 + cmap.chunkLength;
         }
@@ -231,21 +219,30 @@ public final class IFFImageWriter extends ImageWriterBase {
         header.writeChunk(imageOutput);
 
         if (cmap != null) {
-            //System.out.println("CMAP written");
             cmap.writeChunk(imageOutput);
         }
-
     }
 
-    private boolean shouldCompress(RenderedImage pImage) {
-        return pImage.getWidth() >= 32;
+    private boolean shouldCompress(final RenderedImage image, final ImageWriteParam param) {
+        if (param != null && param.canWriteCompressed()) {
+            switch (param.getCompressionMode()) {
+                case ImageWriteParam.MODE_DISABLED:
+                    return false;
+                case ImageWriteParam.MODE_EXPLICIT:
+                    return IFFWriteParam.COMPRESSION_TYPES[1].equals(param.getCompressionType());
+                default:
+                    // Fall through
+            }
+        }
+
+        return image.getWidth() >= 32;
     }
 
-    public static void main(String[] pArgs) throws IOException {
-        BufferedImage image = ImageIO.read(new File(pArgs[0]));
+    public static void main(String[] args) throws IOException {
+        BufferedImage image = ImageIO.read(new File(args[0]));
 
         ImageWriter writer = new IFFImageWriter(new IFFImageWriterSpi());
-        writer.setOutput(ImageIO.createImageOutputStream(new File(pArgs[1])));
+        writer.setOutput(ImageIO.createImageOutputStream(new File(args[1])));
         //writer.addIIOWriteProgressListener(new ProgressListenerBase() {
         //    int mCurrPct = 0;
         //

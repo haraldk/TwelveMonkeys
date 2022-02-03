@@ -31,9 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
 import javax.imageio.IIOException;
-import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.awt.image.WritableRaster;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -69,7 +67,7 @@ final class CMAPChunk extends IFFChunk {
     }
 
     @Override
-    void readChunk(final DataInput pInput) throws IOException {
+    void readChunk(final DataInput input) throws IOException {
         int numColors = chunkLength / 3;
 
         reds = new byte[numColors];
@@ -77,9 +75,9 @@ final class CMAPChunk extends IFFChunk {
         blues = reds.clone();
 
         for (int i = 0; i < numColors; i++) {
-            reds[i] = pInput.readByte();
-            greens[i] = pInput.readByte();
-            blues[i] = pInput.readByte();
+            reds[i] = input.readByte();
+            greens[i] = input.readByte();
+            blues[i] = input.readByte();
         }
 
         // TODO: When reading in a CMAP for 8-bit-per-gun display or
@@ -92,25 +90,25 @@ final class CMAPChunk extends IFFChunk {
 
         // All chunks are WORD aligned (even sized), may need to read pad...
         if (chunkLength % 2 != 0) {
-            pInput.readByte();
+            input.readByte();
         }
     }
 
     @Override
-    void writeChunk(final DataOutput pOutput) throws IOException {
-        pOutput.writeInt(chunkId);
-        pOutput.writeInt(chunkLength);
+    void writeChunk(final DataOutput output) throws IOException {
+        output.writeInt(chunkId);
+        output.writeInt(chunkLength);
 
         final int length = model.getMapSize();
 
         for (int i = 0; i < length; i++) {
-            pOutput.writeByte(model.getRed(i));
-            pOutput.writeByte(model.getGreen(i));
-            pOutput.writeByte(model.getBlue(i));
+            output.writeByte(model.getRed(i));
+            output.writeByte(model.getGreen(i));
+            output.writeByte(model.getBlue(i));
         }
 
         if (chunkLength % 2 != 0) {
-            pOutput.writeByte(0); // PAD
+            output.writeByte(0); // PAD
         }
     }
 
@@ -119,25 +117,11 @@ final class CMAPChunk extends IFFChunk {
         return super.toString() + " {colorMap=" + model + "}";
     }
 
-    BufferedImage createPaletteImage(final BMHDChunk header, boolean isEHB) throws IIOException {
-        // Create a 1 x colors.length image
-        IndexColorModel cm = getIndexColorModel(header, isEHB);
-        WritableRaster raster = cm.createCompatibleWritableRaster(cm.getMapSize(), 1);
-        byte[] pixel = null;
-
-        for (int x = 0; x < cm.getMapSize(); x++) {
-            pixel = (byte[]) cm.getDataElements(cm.getRGB(x), pixel);
-            raster.setDataElements(x, 0, pixel);
-        }
-
-        return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
-    }
-
-    public IndexColorModel getIndexColorModel(final BMHDChunk header, boolean isEHB) throws IIOException {
+    public IndexColorModel getIndexColorModel(final Form.ILBMForm header) throws IIOException {
         if (model == null) {
             int numColors = reds.length; // All arrays are same size
 
-            if (isEHB) {
+            if (header.isEHB()) {
                 if (numColors == 32) {
                     reds = Arrays.copyOf(reds,  numColors * 2);
                     blues = Arrays.copyOf(blues,  numColors * 2);
@@ -160,8 +144,9 @@ final class CMAPChunk extends IFFChunk {
             // Would it work to double to numbers of colors, and create an indexcolormodel,
             // with alpha, where all colors above the original color is all transparent?
             // This is a waste of time and space, of course...
-            int transparent = header.maskType == BMHDChunk.MASK_TRANSPARENT_COLOR ? header.transparentIndex : -1;
-            int bitplanes = header.bitplanes == 25 ? 8 : header.bitplanes;
+            int transparent = header.transparentIndex();
+            int bitplanes = header.bitplanes() == 25 ? 8 : header.bitplanes();
+
             model = new IndexColorModel(bitplanes, reds.length, reds, greens, blues, transparent); // https://github.com/haraldk/TwelveMonkeys/issues/15
         }
 

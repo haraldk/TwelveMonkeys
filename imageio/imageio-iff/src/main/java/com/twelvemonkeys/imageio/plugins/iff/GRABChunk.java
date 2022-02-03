@@ -50,25 +50,25 @@ final class GRABChunk extends IFFChunk {
 
     Point2D point;
 
-    GRABChunk(int pChunkLength) {
-        super(IFF.CHUNK_GRAB, pChunkLength);
+    GRABChunk(int chunkLength) {
+        super(IFF.CHUNK_GRAB, chunkLength);
     }
 
-    GRABChunk(Point2D pPoint) {
+    GRABChunk(Point2D point) {
         super(IFF.CHUNK_GRAB, 4);
-        point = pPoint;
+        this.point = point;
     }
 
-    void readChunk(DataInput pInput) throws IOException {
+    void readChunk(DataInput input) throws IOException {
         if (chunkLength != 4) {
             throw new IIOException("Unknown GRAB chunk size: " + chunkLength);
         }
-        point = new Point(pInput.readShort(), pInput.readShort());
+        point = new Point(input.readShort(), input.readShort());
     }
 
-    void writeChunk(DataOutput pOutput) throws IOException {
-        pOutput.writeShort((int) point.getX());
-        pOutput.writeShort((int) point.getY());
+    void writeChunk(DataOutput output) throws IOException {
+        output.writeShort((int) point.getX());
+        output.writeShort((int) point.getY());
     }
 
     public String toString() {
