@@ -37,9 +37,6 @@ final class XS24Chunk extends IFFChunk {
             throw new IIOException("Bad XS24 chunk: " + width + " * " + height + " * 3 > chunk length (" + chunkLength + ")");
         }
 
-        System.err.println("chunkLength: " + chunkLength);
-        System.err.println("dataLength: " + dataLength);
-
         data = new byte[dataLength];
 
         input.readFully(data);
