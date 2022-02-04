@@ -1,11 +1,12 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.IIOException;
-import java.awt.*;
 import java.awt.color.ColorSpace;
-import java.awt.image.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBuffer;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -59,17 +60,9 @@ final class XS24Chunk extends IFFChunk {
     }
 
     public BufferedImage thumbnail() {
-        WritableRaster raster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, height, width * 3, 3, new int[] {0, 1, 2}, null);
-//         WritableRaster raster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, height, width * 3, 3, new int[] {2, 1, 0}, null);
-        ColorModel colorModel = new ComponentColorModel(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
-//         raster.setDataElements(0, 0, width, height, data);
-        System.arraycopy(data, 0, ((DataBufferByte) raster.getDataBuffer()).getData(), 0, data.length);
-
-//         BufferedImage thumbnail = ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), new int[] {1, 2, 0}, DataBuffer.TYPE_BYTE, false, false)
-// //         BufferedImage thumbnail = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR)
-//                                                      .createBufferedImage(width, height);
-//         thumbnail.getRaster().setDataElements(0, 0, width, height, data);
-//         return thumbnail;
-        return new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
+        BufferedImage thumbnail = ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), new int[] {1, 2, 0}, DataBuffer.TYPE_BYTE, false, false)
+                                                     .createBufferedImage(width, height);
+        thumbnail.getRaster().setDataElements(0, 0, width, height, data);
+        return thumbnail;
     }
 }
