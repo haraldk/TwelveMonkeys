@@ -143,4 +143,6 @@ interface IFF {
     int CHUNK_DBOD = ('D' << 24) + ('B' << 16) + ('O' << 8) + 'D';
     /** TVPaint Deep CHanGe buffer */
     int CHUNK_DCHG = ('D' << 24) + ('C' << 16) + ('H' << 8) + 'G';
+    /** TVPaint 24 bit thumbnail */
+    int CHUNK_XS24 = ('X' << 24) + ('S' << 16) + ('2' << 8) + '4';
 }

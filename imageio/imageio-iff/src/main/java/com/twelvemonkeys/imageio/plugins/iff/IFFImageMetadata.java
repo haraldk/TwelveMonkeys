@@ -255,7 +255,6 @@ final class IFFImageMetadata extends AbstractMetadata {
         }
 
         return text;
-
     }
 
     @Override
