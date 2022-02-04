@@ -105,7 +105,6 @@ public final class IFFImageReader extends ImageReaderBase {
     //   - Contains definitions of some "new" chunks, as well as alternative FORM types
     // http://amigan.1emu.net/index/iff.html
 
-    // TODO: XS24 chunk seems to be a raw 24 bit thumbnail for TVPaint images: XS24 <4 byte len> <2 byte width> <2 byte height> <pixel data...>
     // TODO: Allow reading rasters for HAM6/HAM8 and multipalette images that are expanded to RGB (24 bit) during read.
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.iff.debug"));
@@ -189,6 +188,12 @@ public final class IFFImageReader extends ImageReaderBase {
                     header = header.with(deepPixel);
                     break;
 
+                case IFF.CHUNK_XS24:
+                    XS24Chunk thumbnail = new XS24Chunk(length);
+                    thumbnail.readChunk(imageInput);
+                    header = header.with(thumbnail);
+                    break;
+
                 case IFF.CHUNK_CMAP:
                     CMAPChunk colorMap = new CMAPChunk(length);
                     colorMap.readChunk(imageInput);
@@ -227,8 +232,8 @@ public final class IFFImageReader extends ImageReaderBase {
 
                 case IFF.CHUNK_BODY:
                 case IFF.CHUNK_DBOD:
-                    BODYChunk body = new BODYChunk(chunkId, length, imageInput.getStreamPosition());
                     // NOTE: We don't read the body here, it's done later in the read(int, ImageReadParam) method
+                    BODYChunk body = new BODYChunk(chunkId, length, imageInput.getStreamPosition());
                     header = header.with(body);
 
                     // Done reading meta
@@ -275,6 +280,60 @@ public final class IFFImageReader extends ImageReaderBase {
         processImageComplete();
 
         return result;
+    }
+
+    @Override
+    public boolean readerSupportsThumbnails() {
+        return true;
+    }
+
+    @Override
+    public boolean hasThumbnails(final int imageIndex) throws IOException {
+        init(imageIndex);
+        return header.hasThumbnail();
+    }
+
+    @Override
+    public int getNumThumbnails(final int imageIndex) throws IOException {
+        init(imageIndex);
+        return header.hasThumbnail() ? 1 : 0;
+    }
+
+    @Override
+    public int getThumbnailWidth(final int imageIndex, final int thumbnailIndex) throws IOException {
+        init(imageIndex);
+        if (!header.hasThumbnail() || thumbnailIndex > 1) {
+            throw new IndexOutOfBoundsException("thumbnailIndex out of bounds: " + thumbnailIndex);
+        }
+
+        return header.thumbnailWidth();
+    }
+
+    @Override
+    public int getThumbnailHeight(final int imageIndex, final int thumbnailIndex) throws IOException {
+        init(imageIndex);
+        if (!header.hasThumbnail() || thumbnailIndex > 1) {
+            throw new IndexOutOfBoundsException("thumbnailIndex out of bounds: " + thumbnailIndex);
+        }
+
+        return header.thumbnailHeight();
+    }
+
+    @Override
+    public BufferedImage readThumbnail(final int imageIndex, final int thumbnailIndex) throws IOException {
+        init(imageIndex);
+        if (!header.hasThumbnail() || thumbnailIndex > 1) {
+            throw new IndexOutOfBoundsException("thumbnailIndex out of bounds: " + thumbnailIndex);
+        }
+
+        processThumbnailStarted(imageIndex, thumbnailIndex);
+
+        BufferedImage thumbnail = header.thumbnail();
+
+        processThumbnailProgress(100f);
+        processThumbnailComplete();
+
+        return thumbnail;
     }
 
     @Override

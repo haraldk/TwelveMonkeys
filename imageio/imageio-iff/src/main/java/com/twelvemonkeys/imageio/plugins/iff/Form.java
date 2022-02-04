@@ -1,6 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
 import javax.imageio.IIOException;
+import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 import java.util.ArrayList;
@@ -59,6 +60,14 @@ abstract class Form {
         throw new UnsupportedOperationException();
     }
 
+    public abstract boolean hasThumbnail();
+
+    public abstract int thumbnailWidth();
+
+    public abstract int thumbnailHeight();
+
+    public abstract BufferedImage thumbnail();
+
     abstract long bodyOffset();
     abstract long bodyLength();
 
@@ -102,18 +111,20 @@ abstract class Form {
         private final CAMGChunk viewMode;
         private final CMAPChunk colorMap;
         private final AbstractMultiPaletteChunk multiPalette;
+        private final XS24Chunk thumbnail;
         private final BODYChunk body;
 
         ILBMForm(int formType) {
-            this(formType, null, null, null, null, null);
+            this(formType, null, null, null, null, null, null);
         }
 
-        private ILBMForm(final int formType, final BMHDChunk bitmapHeader, final CAMGChunk viewMode, final CMAPChunk colorMap, final AbstractMultiPaletteChunk multiPalette, final BODYChunk body) {
+        private ILBMForm(final int formType, final BMHDChunk bitmapHeader, final CAMGChunk viewMode, final CMAPChunk colorMap, final AbstractMultiPaletteChunk multiPalette, final XS24Chunk thumbnail, final BODYChunk body) {
             super(formType);
             this.bitmapHeader = bitmapHeader;
             this.viewMode = viewMode;
             this.colorMap = colorMap;
             this.multiPalette = multiPalette;
+            this.thumbnail = thumbnail;
             this.body = body;
         }
 
@@ -181,6 +192,26 @@ abstract class Form {
         }
 
         @Override
+        public boolean hasThumbnail() {
+            return thumbnail != null;
+        }
+
+        @Override
+        public int thumbnailWidth() {
+            return thumbnail != null ? thumbnail.width : -1;
+        }
+
+        @Override
+        public int thumbnailHeight() {
+            return thumbnail != null ? thumbnail.height : -1;
+        }
+
+        @Override
+        public BufferedImage thumbnail() {
+            return thumbnail != null ? thumbnail.thumbnail() : null;
+        }
+
+        @Override
         long bodyOffset() {
             return body.chunkOffset;
         }
@@ -197,21 +228,21 @@ abstract class Form {
                     throw new IIOException("Multiple BMHD chunks not allowed");
                 }
 
-                return new ILBMForm(formType, (BMHDChunk) chunk, null, colorMap, multiPalette, body);
+                return new ILBMForm(formType, (BMHDChunk) chunk, null, colorMap, multiPalette, thumbnail, body);
             }
             else if (chunk instanceof CAMGChunk) {
                 if (viewMode != null) {
                     throw new IIOException("Multiple CAMG chunks not allowed");
                 }
 
-                return new ILBMForm(formType, bitmapHeader, (CAMGChunk) chunk, colorMap, multiPalette, body);
+                return new ILBMForm(formType, bitmapHeader, (CAMGChunk) chunk, colorMap, multiPalette, thumbnail, body);
             }
             else if (chunk instanceof CMAPChunk) {
                 if (colorMap != null) {
                     throw new IIOException("Multiple CMAP chunks not allowed");
                 }
 
-                return new ILBMForm(formType, bitmapHeader, viewMode, (CMAPChunk) chunk, multiPalette, body);
+                return new ILBMForm(formType, bitmapHeader, viewMode, (CMAPChunk) chunk, multiPalette, thumbnail, body);
             }
             else if (chunk instanceof AbstractMultiPaletteChunk) {
                 // NOTE: We prefer PHCG over SHAM/CTBL style palette changes, if both are present
@@ -223,14 +254,21 @@ abstract class Form {
                     return this;
                 }
 
-                return new ILBMForm(formType, bitmapHeader, viewMode, colorMap, (AbstractMultiPaletteChunk) chunk, body);
+                return new ILBMForm(formType, bitmapHeader, viewMode, colorMap, (AbstractMultiPaletteChunk) chunk, thumbnail, body);
+            }
+            else if (chunk instanceof XS24Chunk) {
+                if (thumbnail != null) {
+                    throw new IIOException("Multiple XS24 chunks not allowed");
+                }
+
+                return new ILBMForm(formType, bitmapHeader, viewMode, colorMap, multiPalette, (XS24Chunk) chunk, body);
             }
             else if (chunk instanceof BODYChunk) {
                 if (body != null) {
                     throw new IIOException("Multiple " + toChunkStr(chunk.chunkId) + " chunks not allowed");
                 }
 
-                return new ILBMForm(formType, bitmapHeader, viewMode, colorMap, multiPalette, (BODYChunk) chunk);
+                return new ILBMForm(formType, bitmapHeader, viewMode, colorMap, multiPalette, thumbnail, (BODYChunk) chunk);
             }
             else if (chunk instanceof GRABChunk) {
                 // Ignored for now
@@ -257,17 +295,19 @@ abstract class Form {
         private final DGBLChunk deepGlobal;
         private final DLOCChunk deepLocation;
         private final DPELChunk deepPixel;
+        private final XS24Chunk thumbnail;
         private final BODYChunk body;
 
         DEEPForm(int formType) {
-            this(formType, null, null, null, null);
+            this(formType, null, null, null, null, null);
         }
 
-        private DEEPForm(final int formType, final DGBLChunk deepGlobal, final DLOCChunk deepLocation, final DPELChunk deepPixel, final BODYChunk body) {
+        private DEEPForm(final int formType, final DGBLChunk deepGlobal, final DLOCChunk deepLocation, final DPELChunk deepPixel, final XS24Chunk thumbnail, final BODYChunk body) {
             super(formType);
             this.deepGlobal = deepGlobal;
             this.deepLocation = deepLocation;
             this.deepPixel = deepPixel;
+            this.thumbnail = thumbnail;
             this.body = body;
         }
 
@@ -313,6 +353,26 @@ abstract class Form {
         }
 
         @Override
+        public boolean hasThumbnail() {
+            return thumbnail != null;
+        }
+
+        @Override
+        public int thumbnailWidth() {
+            return thumbnail != null ? thumbnail.width : -1;
+        }
+
+        @Override
+        public int thumbnailHeight() {
+            return thumbnail != null ? thumbnail.height : -1;
+        }
+
+        @Override
+        public BufferedImage thumbnail() {
+            return thumbnail != null ? thumbnail.thumbnail() : null;
+        }
+
+        @Override
         long bodyOffset() {
             return body.chunkOffset;
         }
@@ -329,28 +389,35 @@ abstract class Form {
                     throw new IIOException("Multiple DGBL chunks not allowed");
                 }
 
-                return new DEEPForm(formType, (DGBLChunk) chunk, null, null, body);
+                return new DEEPForm(formType, (DGBLChunk) chunk, null, null, thumbnail, body);
             }
             else if (chunk instanceof DLOCChunk) {
                 if (deepLocation != null) {
                     throw new IIOException("Multiple DLOC chunks not allowed");
                 }
 
-                return new DEEPForm(formType, deepGlobal, (DLOCChunk) chunk, deepPixel, body);
+                return new DEEPForm(formType, deepGlobal, (DLOCChunk) chunk, deepPixel, thumbnail, body);
             }
             else if (chunk instanceof DPELChunk) {
                 if (deepPixel != null) {
                     throw new IIOException("Multiple DPEL chunks not allowed");
                 }
 
-                return new DEEPForm(formType, deepGlobal, deepLocation, (DPELChunk) chunk, body);
+                return new DEEPForm(formType, deepGlobal, deepLocation, (DPELChunk) chunk, thumbnail, body);
+            }
+            else if (chunk instanceof XS24Chunk) {
+                if (thumbnail != null) {
+                    throw new IIOException("Multiple XS24 chunks not allowed");
+                }
+
+                return new DEEPForm(formType, deepGlobal, deepLocation, deepPixel, (XS24Chunk) chunk, body);
             }
             else if (chunk instanceof BODYChunk) {
                 if (body != null) {
                     throw new IIOException("Multiple " + toChunkStr(chunk.chunkId) + " chunks not allowed");
                 }
 
-                return new DEEPForm(formType, deepGlobal, deepLocation, deepPixel, (BODYChunk) chunk);
+                return new DEEPForm(formType, deepGlobal, deepLocation, deepPixel, thumbnail, (BODYChunk) chunk);
             }
 
             return (DEEPForm) super.with(chunk);
