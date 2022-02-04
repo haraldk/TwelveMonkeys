@@ -1,12 +1,9 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
-import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.IIOException;
-import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -60,7 +57,7 @@ final class XS24Chunk extends IFFChunk {
     }
 
     public BufferedImage thumbnail() {
-        BufferedImage thumbnail = ImageTypeSpecifiers.createInterleaved(ColorSpaces.getColorSpace(ColorSpace.CS_sRGB), new int[] {1, 2, 0}, DataBuffer.TYPE_BYTE, false, false)
+        BufferedImage thumbnail = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR)
                                                      .createBufferedImage(width, height);
         thumbnail.getRaster().setDataElements(0, 0, width, height, data);
         return thumbnail;
