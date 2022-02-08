@@ -30,8 +30,11 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
+
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,11 +79,11 @@ final class PNMHeaderParser extends HeaderParser {
             tokenBuffer.delete(0, tokenBuffer.length());
 
             while (tokenBuffer.length() < 16) {
-                char read = (char) input.readByte();
+                byte read = input.readByte();
 
                 if (read == '#') {
                     // Read rest of the line as comment
-                    String comment = input.readLine();
+                    String comment = readComment(input);
 
                     if (!comment.trim().isEmpty()) {
                         comments.add(comment);
@@ -88,13 +91,13 @@ final class PNMHeaderParser extends HeaderParser {
 
                     break;
                 }
-                else if (Character.isWhitespace(read)) {
+                else if (Character.isWhitespace((char) read)) {
                     if (tokenBuffer.length() > 0) {
                         break;
                     }
                 }
                 else {
-                    tokenBuffer.append(read);
+                    tokenBuffer.append((char) read);
                 }
             }
 
@@ -118,5 +121,24 @@ final class PNMHeaderParser extends HeaderParser {
         }
 
         return new PNMHeader(fileType, tupleType, width, height, tupleType.getSamplesPerPixel(), maxSample, comments);
+    }
+
+    private static String readComment(final ImageInputStream input) throws IOException {
+        ByteArrayOutputStream commentBuffer = new FastByteArrayOutputStream(128);
+
+        int read;
+        do {
+            switch (read = input.read()) {
+                case -1:
+                case '\n':
+                case '\r':
+                    read = -1;
+                    break;
+                default:
+                    commentBuffer.write(read);
+            }
+        } while (read != -1);
+
+        return commentBuffer.toString("UTF8");
     }
 }
