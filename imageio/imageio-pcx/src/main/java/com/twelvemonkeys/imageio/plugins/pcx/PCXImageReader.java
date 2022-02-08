@@ -140,10 +140,9 @@ public final class PCXImageReader extends ImageReaderBase {
                     if (palette != null) {
                         return ImageTypeSpecifiers.createFromIndexColorModel(palette);
                     }
-                    else {
-                        // PCX Gray has 1 channel and no palette
-                        return ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
-                    }
+
+                    // PCX Gray has 1 channel and no palette
+                    return ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
                 }
 
                 // PCX RGB has channels for 24 bit RGB, will be validated by ImageTypeSpecifier

@@ -64,17 +64,10 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/pcx/input.pcx"), new Dimension(70, 46)), // RLE encoded RGB
-                new TestData(getClassLoaderResource("/pcx/lena.pcx"), new Dimension(512, 512)), // RLE encoded RGB
-                new TestData(getClassLoaderResource("/pcx/lena2.pcx"), new Dimension(512, 512)), // RLE encoded, 256 color indexed (8 bps/1 channel)
-                new TestData(getClassLoaderResource("/pcx/lena3.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel)
-                new TestData(getClassLoaderResource("/pcx/lena4.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (1 bps/4 channels)
-                new TestData(getClassLoaderResource("/pcx/lena5.pcx"), new Dimension(512, 512)), // RLE encoded, 256 color indexed (8 bps/1 channel)
-                new TestData(getClassLoaderResource("/pcx/lena6.pcx"), new Dimension(512, 512)), // RLE encoded, 8 color indexed (1 bps/3 channels)
-                new TestData(getClassLoaderResource("/pcx/lena7.pcx"), new Dimension(512, 512)), // RLE encoded, 4 color indexed (1 bps/2 channels)
-                new TestData(getClassLoaderResource("/pcx/lena8.pcx"), new Dimension(512, 512)), // RLE encoded, 4 color indexed (2 bps/1 channel)
-                new TestData(getClassLoaderResource("/pcx/lena9.pcx"), new Dimension(512, 512)), // RLE encoded, 2 color indexed (1 bps/1 channel)
-                new TestData(getClassLoaderResource("/pcx/lena10.pcx"), new Dimension(512, 512)), // RLE encoded, 16 color indexed (4 bps/1 channel) (uses only 8 colors)
+                new TestData(getClassLoaderResource("/pcx/input.pcx"), new Dimension(70, 46)), // RLE encoded RGB, v5
+                new TestData(getClassLoaderResource("/pcx/rose.pcx"), new Dimension(38, 48)), // RLE encoded, 16 color indexed (1 bps/4 channels), v5
+                new TestData(getClassLoaderResource("/pcx/animals.pcx"), new Dimension(239, 157)), // RLE encoded, 8 color indexed (1 bps/3 channels), v3
+                // TODO: Find good test images for the various combinations of bits/sample & channels
                 new TestData(getClassLoaderResource("/pcx/DARKSTAR.PCX"), new Dimension(88, 52)), // RLE encoded monochrome (1 bps/1 channel)
                 new TestData(getClassLoaderResource("/pcx/MARBLES.PCX"), new Dimension(1419, 1001)), // RLE encoded RGB
                 new TestData(getClassLoaderResource("/pcx/no-palette-monochrome.pcx"), new Dimension(128, 152)), // RLE encoded monochrome (1 bps/1 channel)
