@@ -142,11 +142,12 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
         }
     }
 
+    @Override
     @Test
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
-        TestData data = getTestData().get(1);
-        assertReadWithSourceRegionParamEqualImage(new Rectangle(200, 0, 4, 4), data, 0);
-        assertReadWithSourceRegionParamEqualImage(new Rectangle(100, 100, 4, 4), data, 0);
-        assertReadWithSourceRegionParamEqualImage(new Rectangle(0, 200, 4, 4), data, 0);
+        TestData data = getTestData().get(0);
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(66, 0, 4, 4), data, 0);
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(32, 20, 4, 4), data, 0);
+        assertReadWithSourceRegionParamEqualImage(new Rectangle(0, 42, 4, 4), data, 0);
     }
 }
