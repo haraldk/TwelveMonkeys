@@ -54,7 +54,7 @@ public class PAMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
-                new TestData(getClassLoaderResource("/pam/lena.pam"), new Dimension(128, 128)),     // P7 RGB
+                new TestData(getClassLoaderResource("/pam/snail2.pam"), new Dimension(256, 256)),   // P7 RGB
                 new TestData(getClassLoaderResource("/pam/rgba.pam"), new Dimension(4, 2))          // P7 RGB_ALPHA
         );
     }

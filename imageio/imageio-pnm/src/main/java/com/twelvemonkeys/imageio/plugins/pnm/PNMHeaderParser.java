@@ -70,41 +70,49 @@ final class PNMHeaderParser extends HeaderParser {
 
         List<String> comments = new ArrayList<>();
 
+        StringBuilder tokenBuffer = new StringBuilder();
+
         while (width == 0 || height == 0 || maxSample == 0) {
-            String line = input.readLine();
+            tokenBuffer.delete(0, tokenBuffer.length());
 
-            if (line == null) {
-                throw new IIOException("Unexpeced end of stream");
-            }
+            while (tokenBuffer.length() < 16) {
+                char read = (char) input.readByte();
 
-            int commentStart = line.indexOf('#');
-            if (commentStart >= 0) {
-                String comment = line.substring(commentStart + 1).trim();
-                if (!comment.isEmpty()) {
-                    comments.add(comment);
+                if (read == '#') {
+                    // Read rest of the line as comment
+                    String comment = input.readLine();
+
+                    if (!comment.trim().isEmpty()) {
+                        comments.add(comment);
+                    }
+
+                    break;
                 }
-
-                line = line.substring(0, commentStart);
+                else if (Character.isWhitespace(read)) {
+                    if (tokenBuffer.length() > 0) {
+                        break;
+                    }
+                }
+                else {
+                    tokenBuffer.append(read);
+                }
             }
 
-            line = line.trim();
+            String token = tokenBuffer.toString().trim();
 
-            if (!line.isEmpty()) {
+            if (!token.isEmpty()) {
                 // We have tokens...
-                String[] tokens = line.split("\\s");
-                for (String token : tokens) {
-                    if (width == 0) {
-                        width = Integer.parseInt(token);
-                    }
-                    else if (height == 0) {
-                        height = Integer.parseInt(token);
-                    }
-                    else if (maxSample == 0) {
-                        maxSample = Integer.parseInt(token);
-                    }
-                    else {
-                        throw new IIOException("Unknown PNM token: " + token);
-                    }
+                if (width == 0) {
+                    width = Integer.parseInt(token);
+                }
+                else if (height == 0) {
+                    height = Integer.parseInt(token);
+                }
+                else if (maxSample == 0) {
+                    maxSample = Integer.parseInt(token);
+                }
+                else {
+                    throw new IIOException("Unknown PNM token: " + token);
                 }
             }
         }
