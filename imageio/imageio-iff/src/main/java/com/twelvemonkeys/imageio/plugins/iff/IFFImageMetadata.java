@@ -210,7 +210,7 @@ final class IFFImageMetadata extends AbstractMetadata {
 
     @Override
     protected IIOMetadataNode getStandardDimensionNode() {
-        if (header.xAspect() == 0 || header.yAspect() == 0) {
+        if (header.aspect() == 0) {
             return null;
         }
 
@@ -218,7 +218,7 @@ final class IFFImageMetadata extends AbstractMetadata {
 
         // PixelAspectRatio
         IIOMetadataNode pixelAspectRatio = new IIOMetadataNode("PixelAspectRatio");
-        pixelAspectRatio.setAttribute("value", String.valueOf(header.xAspect() / (float) header.yAspect()));
+        pixelAspectRatio.setAttribute("value", String.valueOf(header.aspect()));
         dimension.appendChild(pixelAspectRatio);
 
         // TODO: HorizontalScreenSize?

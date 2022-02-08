@@ -27,8 +27,7 @@ abstract class Form {
 
     abstract int width();
     abstract int height();
-    abstract int xAspect();
-    abstract int yAspect();
+    abstract float aspect();
     abstract int bitplanes();
     abstract int compressionType();
 
@@ -111,7 +110,7 @@ abstract class Form {
         private final CAMGChunk viewMode;
         private final CMAPChunk colorMap;
         private final AbstractMultiPaletteChunk multiPalette;
-        private final XS24Chunk thumbnail;
+        private final XS24Chunk thumbnail; // TVPaint puts these into normal IFF ILBM 24 bit files as well as DEEP/TVPP
         private final BODYChunk body;
 
         ILBMForm(int formType) {
@@ -149,13 +148,8 @@ abstract class Form {
         }
 
         @Override
-        int xAspect() {
-            return bitmapHeader.xAspect;
-        }
-
-        @Override
-        int yAspect() {
-            return bitmapHeader.yAspect;
+        float aspect() {
+            return bitmapHeader.yAspect == 0 ? 0 : (bitmapHeader.xAspect / (float) bitmapHeader.yAspect);
         }
 
         @Override
@@ -343,13 +337,8 @@ abstract class Form {
         }
 
         @Override
-        int xAspect() {
-            return deepGlobal.xAspect;
-        }
-
-        @Override
-        int yAspect() {
-            return deepGlobal.yAspect;
+        float aspect() {
+            return deepGlobal.yAspect == 0 ? 0 : deepGlobal.xAspect / (float) deepGlobal.yAspect;
         }
 
         @Override
@@ -413,9 +402,10 @@ abstract class Form {
                 return new DEEPForm(formType, deepGlobal, deepLocation, deepPixel, (XS24Chunk) chunk, body);
             }
             else if (chunk instanceof BODYChunk) {
-                if (body != null) {
-                    throw new IIOException("Multiple " + toChunkStr(chunk.chunkId) + " chunks not allowed");
-                }
+                // TODO: Make a better approach!
+//                 if (body != null) {
+//                     throw new IIOException("Multiple " + toChunkStr(chunk.chunkId) + " chunks not allowed");
+//                 }
 
                 return new DEEPForm(formType, deepGlobal, deepLocation, deepPixel, thumbnail, (BODYChunk) chunk);
             }
