@@ -49,12 +49,14 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
+import static com.twelvemonkeys.imageio.util.RasterUtils.asByteRaster;
 
 public final class PNMImageReader extends ImageReaderBase {
     // TODO: Allow reading unknown tuple types as Raster!
@@ -73,6 +75,7 @@ public final class PNMImageReader extends ImageReaderBase {
 
     private void readHeader() throws IOException {
         if (header == null) {
+            imageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
             header = HeaderParser.parse(imageInput);
 
             imageInput.flushBefore(imageInput.getStreamPosition());
@@ -122,27 +125,19 @@ public final class PNMImageReader extends ImageReaderBase {
             case GRAYSCALE_ALPHA:
             case BLACKANDWHITE:
             case GRAYSCALE:
-                // PGM: Linear or non-linear gray?
-                ColorSpace gray = ColorSpace.getInstance(ColorSpace.CS_GRAY);
-
-                if (header.getTransferType() == DataBuffer.TYPE_FLOAT) {
-                    return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
-                }
                 if (header.getMaxSample() <= PNM.MAX_VAL_16BIT) {
                     return hasAlpha ? ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType, false)
                                     : ImageTypeSpecifiers.createGrayscale(bitsPerSample, transferType);
                 }
 
+                // PGM: Linear or non-linear gray?
+                ColorSpace gray = ColorSpace.getInstance(ColorSpace.CS_GRAY);
                 return ImageTypeSpecifiers.createInterleaved(gray, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
 
             case RGB:
             case RGB_ALPHA:
                 // Using sRGB seems sufficient for PPM, as it is very close to ITU-R Recommendation BT.709 (same gamut and white point CIE D65)
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-                if (header.getTransferType() == DataBuffer.TYPE_FLOAT) {
-                    return ImageTypeSpecifiers.createInterleaved(sRGB, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
-                }
-
                 return ImageTypeSpecifiers.createInterleaved(sRGB, createBandOffsets(samplesPerPixel), transferType, hasAlpha, false);
 
             case CMYK:
@@ -185,10 +180,9 @@ public final class PNMImageReader extends ImageReaderBase {
             case RGB_ALPHA:
                 if (header.getTransferType() == DataBuffer.TYPE_BYTE) {
                     specifiers.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
-                    // TODO: Why does ColorConvertOp choke on these (Ok, because it misinterprets the alpha channel for a color component, but how do we make it work)?
-//                    specifiers.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+                    specifiers.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+                    specifiers.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE));
                     specifiers.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
-//                    specifiers.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE));
                 }
 
                 break;
@@ -214,11 +208,6 @@ public final class PNMImageReader extends ImageReaderBase {
         Rectangle srcRegion = new Rectangle();
         Rectangle destRegion = new Rectangle();
         computeRegions(param, width, height, destination, srcRegion, destRegion);
-
-        WritableRaster destRaster = clipToRect(destination.getRaster(), destRegion, param != null
-                                                                                    ? param.getDestinationBands()
-                                                                                    : null);
-        checkReadParamBandSettings(param, rawType.getNumBands(), destRaster.getNumBands());
 
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
         // Clip to source region
@@ -247,10 +236,10 @@ public final class PNMImageReader extends ImageReaderBase {
                 throw new AssertionError("Unsupported transfer type: " + transferType);
         }
 
-        ColorConvertOp colorConvert = null;
-        if (!destination.getColorModel().isCompatibleRaster(rowRaster)) {
-            colorConvert = new ColorConvertOp(rawType.getColorModel().getColorSpace(), destination.getColorModel().getColorSpace(), null);
-        }
+        WritableRaster destRaster = transferType == DataBuffer.TYPE_BYTE ? asByteRaster(destination.getRaster())
+                                                                         : destination.getRaster();
+        destRaster = clipToRect(destRaster, destRegion, param != null ? param.getDestinationBands() : null);
+        checkReadParamBandSettings(param, rawType.getNumBands(), destRaster.getNumBands());
 
         int xSub = param == null ? 1 : param.getSourceXSubsampling();
         int ySub = param == null ? 1 : param.getSourceYSubsampling();
@@ -262,7 +251,7 @@ public final class PNMImageReader extends ImageReaderBase {
         for (int y = 0; y < height; y++) {
             switch (transferType) {
                 case DataBuffer.TYPE_BYTE:
-                    readRowByte(destRaster, clippedRow, colorConvert, rowDataByte, header.getBitsPerSample(), samplesPerPixel, input, y, srcRegion, xSub, ySub);
+                    readRowByte(destRaster, clippedRow,  rowDataByte, header.getBitsPerSample(), samplesPerPixel, input, y, srcRegion, xSub, ySub);
                     break;
                 case DataBuffer.TYPE_USHORT:
                     readRowUShort(destRaster, clippedRow, rowDataUShort, samplesPerPixel, input, y, srcRegion, xSub, ySub);
@@ -285,6 +274,10 @@ public final class PNMImageReader extends ImageReaderBase {
                 // We're done
                 break;
             }
+        }
+
+        if (destination.isAlphaPremultiplied()) {
+            rawType.getColorModel().coerceData(destRaster, true);
         }
 
         processImageComplete();
@@ -338,7 +331,6 @@ public final class PNMImageReader extends ImageReaderBase {
 
     private void readRowByte(final WritableRaster destRaster,
                              Raster rowRaster,
-                             final ColorConvertOp colorConvert,
                              final byte[] rowDataByte,
                              final int bitsPerSample, final int samplesPerPixel,
                              final DataInput input, final int y,
@@ -357,12 +349,7 @@ public final class PNMImageReader extends ImageReaderBase {
         normalize(rowDataByte, 0, rowDataByte.length / xSub);
 
         int destY = (y - srcRegion.y) / ySub;
-        if (colorConvert != null) {
-            colorConvert.filter(rowRaster, destRaster.createWritableChild(0, destY, rowRaster.getWidth(), 1, 0, 0, null));
-        }
-        else {
-            destRaster.setDataElements(0, destY, rowRaster);
-        }
+        destRaster.setDataElements(0, destY, rowRaster);
     }
 
     private void readRowUShort(final WritableRaster destRaster,

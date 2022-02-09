@@ -57,7 +57,7 @@ public final class PNMImageReaderSpi extends ImageReaderSpiBase {
         stream.mark();
 
         try {
-            short magic = stream.readShort();
+            short magic = (short) ((stream.readByte() & 0xFF) << 8 | (stream.readByte() & 0xFF));
 
             switch (magic) {
                 case PNM.PBM_PLAIN:

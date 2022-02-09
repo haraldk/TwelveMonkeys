@@ -33,7 +33,9 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.junit.Test;
 
+import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -119,5 +121,30 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
         expected.setRGB(2, 1, new Color(0, 0, 0).getRGB());
 
         assertImageDataEquals("Images differ from reference", expected, reader.read(0));
+    }
+
+    @Test
+    public void testTypes() throws IOException {
+        ImageReader reader = createReader();
+        TestData data = new TestData(getClassLoaderResource("/ppm/colors.ppm"), new Dimension(3, 2));
+        reader.setInput(data.getInputStream());
+
+        int[] types = new int[] {BufferedImage.TYPE_INT_RGB, BufferedImage.TYPE_INT_BGR, BufferedImage.TYPE_3BYTE_BGR};
+
+        for (int type : types) {
+            BufferedImage expected = new BufferedImage(3, 2, type);
+
+            expected.setRGB(0, 0, new Color(255, 0, 0).getRGB());
+            expected.setRGB(1, 0, new Color(0, 255, 0).getRGB());
+            expected.setRGB(2, 0, new Color(0, 0, 255).getRGB());
+
+            expected.setRGB(0, 1, new Color(255, 255, 0).getRGB());
+            expected.setRGB(1, 1, new Color(255, 255, 255).getRGB());
+            expected.setRGB(2, 1, new Color(0, 0, 0).getRGB());
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(type));
+            assertImageDataEquals("Images differ from reference for type: " + type, expected, reader.read(0, param));
+        }
     }
 }
