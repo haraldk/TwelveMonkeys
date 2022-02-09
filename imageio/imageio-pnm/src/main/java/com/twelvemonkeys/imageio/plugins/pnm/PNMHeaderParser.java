@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 
-import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -78,12 +77,12 @@ final class PNMHeaderParser extends HeaderParser {
         while (width == 0 || height == 0 || maxSample == 0) {
             tokenBuffer.delete(0, tokenBuffer.length());
 
-            while (tokenBuffer.length() < 16) {
+            while (tokenBuffer.length() < 16) { // Limit reads if we should read across into the binary part...
                 byte read = input.readByte();
 
                 if (read == '#') {
                     // Read rest of the line as comment
-                    String comment = readComment(input);
+                    String comment = readLineUTF8(input);
 
                     if (!comment.trim().isEmpty()) {
                         comments.add(comment);
@@ -111,11 +110,8 @@ final class PNMHeaderParser extends HeaderParser {
                 else if (height == 0) {
                     height = Integer.parseInt(token);
                 }
-                else if (maxSample == 0) {
-                    maxSample = Integer.parseInt(token);
-                }
                 else {
-                    throw new IIOException("Unknown PNM token: " + token);
+                    maxSample = Integer.parseInt(token);
                 }
             }
         }
@@ -123,22 +119,27 @@ final class PNMHeaderParser extends HeaderParser {
         return new PNMHeader(fileType, tupleType, width, height, tupleType.getSamplesPerPixel(), maxSample, comments);
     }
 
-    private static String readComment(final ImageInputStream input) throws IOException {
-        ByteArrayOutputStream commentBuffer = new FastByteArrayOutputStream(128);
+    // Similar to DataInput.readLine, except it uses UTF8 encoding
+    private static String readLineUTF8(final ImageInputStream input) throws IOException {
+        ByteArrayOutputStream buffer = new FastByteArrayOutputStream(128);
 
-        int read;
+        int value;
         do {
-            switch (read = input.read()) {
-                case -1:
-                case '\n':
+            switch (value = input.read()) {
                 case '\r':
-                    read = -1;
+                    // Check for CR + LF pattern and skip, otherwise fall through
+                    if (input.read() != '\n') {
+                        input.seek(input.getStreamPosition() - 1);
+                    }
+                case '\n':
+                case -1:
+                    value = -1;
                     break;
                 default:
-                    commentBuffer.write(read);
+                    buffer.write(value);
             }
-        } while (read != -1);
+        } while (value != -1);
 
-        return commentBuffer.toString("UTF8");
+        return buffer.toString("UTF8");
     }
 }

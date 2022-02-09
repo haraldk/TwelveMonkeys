@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Locale;
 
 public final class PAMImageReaderSpi extends ImageReaderSpiBase {
@@ -53,13 +54,16 @@ public final class PAMImageReaderSpi extends ImageReaderSpiBase {
         }
 
         ImageInputStream stream = (ImageInputStream) source;
+        ByteOrder order = stream.getByteOrder();
         stream.mark();
 
         try {
+            stream.setByteOrder(ByteOrder.BIG_ENDIAN);
             return stream.readShort() == PNM.PAM && stream.readInt() != PNM.XV_THUMBNAIL_MAGIC;
         }
         finally {
             stream.reset();
+            stream.setByteOrder(order);
         }
     }
 
