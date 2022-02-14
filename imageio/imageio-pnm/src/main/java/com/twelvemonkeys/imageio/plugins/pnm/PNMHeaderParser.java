@@ -30,10 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -72,74 +70,45 @@ final class PNMHeaderParser extends HeaderParser {
 
         List<String> comments = new ArrayList<>();
 
-        StringBuilder tokenBuffer = new StringBuilder();
-
         while (width == 0 || height == 0 || maxSample == 0) {
-            tokenBuffer.delete(0, tokenBuffer.length());
+            String line = input.readLine();
 
-            while (tokenBuffer.length() < 16) { // Limit reads if we should read across into the binary part...
-                byte read = input.readByte();
-
-                if (read == '#') {
-                    // Read rest of the line as comment
-                    String comment = readLineUTF8(input).trim();
-
-                    if (!comment.isEmpty()) {
-                        comments.add(comment);
-                    }
-
-                    break;
-                }
-                else if (Character.isWhitespace((char) read)) {
-                    if (tokenBuffer.length() > 0) {
-                        break;
-                    }
-                }
-                else {
-                    tokenBuffer.append((char) read);
-                }
+            if (line == null) {
+                throw new IIOException("Unexpected end of stream");
             }
 
-            String token = tokenBuffer.toString().trim();
+            int commentStart = line.indexOf('#');
+            if (commentStart >= 0) {
+                String comment = line.substring(commentStart + 1).trim();
+                if (!comment.isEmpty()) {
+                    comments.add(comment);
+                }
 
-            if (!token.isEmpty()) {
+                line = line.substring(0, commentStart);
+            }
+
+            line = line.trim();
+
+            if (!line.isEmpty()) {
                 // We have tokens...
-                if (width == 0) {
-                    width = Integer.parseInt(token);
-                }
-                else if (height == 0) {
-                    height = Integer.parseInt(token);
-                }
-                else {
-                    maxSample = Integer.parseInt(token);
+                String[] tokens = line.split("\\s");
+                for (String token : tokens) {
+                    if (width == 0) {
+                        width = Integer.parseInt(token);
+                    }
+                    else if (height == 0) {
+                        height = Integer.parseInt(token);
+                    }
+                    else if (maxSample == 0) {
+                        maxSample = Integer.parseInt(token);
+                    }
+                    else {
+                        throw new IIOException("Unknown PNM token: " + token);
+                    }
                 }
             }
         }
 
         return new PNMHeader(fileType, tupleType, width, height, tupleType.getSamplesPerPixel(), maxSample, comments);
-    }
-
-    // Similar to DataInput.readLine, except it uses UTF8 encoding
-    private static String readLineUTF8(final ImageInputStream input) throws IOException {
-        ByteArrayOutputStream buffer = new FastByteArrayOutputStream(128);
-
-        int value;
-        do {
-            switch (value = input.read()) {
-                case '\r':
-                    // Check for CR + LF pattern and skip, otherwise fall through
-                    if (input.read() != '\n') {
-                        input.seek(input.getStreamPosition() - 1);
-                    }
-                case '\n':
-                case -1:
-                    value = -1;
-                    break;
-                default:
-                    buffer.write(value);
-            }
-        } while (value != -1);
-
-        return buffer.toString("UTF8");
     }
 }
