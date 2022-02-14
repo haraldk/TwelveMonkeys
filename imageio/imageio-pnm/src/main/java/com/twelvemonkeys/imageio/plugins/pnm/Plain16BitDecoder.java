@@ -58,17 +58,13 @@ final class Plain16BitDecoder extends InputStream {
         }
 
         // Each number is one byte. Skip whitespace.
-        if (currentLine == null || !currentLine.hasNext()) {
+        while (currentLine == null || !currentLine.hasNext()) {
             String line = reader.readLine();
             if (line == null) {
                 return -1;
             }
 
             currentLine = new StringTokenIterator(line);
-
-            if (!currentLine.hasNext()) {
-                return -1;
-            }
         }
 
         int next = Integer.parseInt(currentLine.next()) & 0xffff;

@@ -50,17 +50,13 @@ final class Plain8BitDecoder extends InputStream {
     @Override
     public int read() throws IOException {
         // Each number is one byte. Skip whitespace.
-        if (currentLine == null || !currentLine.hasNext()) {
+        while (currentLine == null || !currentLine.hasNext()) {
             String line = reader.readLine();
             if (line == null) {
                 return -1;
             }
 
             currentLine = new StringTokenIterator(line);
-
-            if (!currentLine.hasNext()) {
-                return -1;
-            }
         }
 
         return Integer.parseInt(currentLine.next()) & 0xff;
