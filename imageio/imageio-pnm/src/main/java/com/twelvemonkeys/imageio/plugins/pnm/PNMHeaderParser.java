@@ -82,9 +82,9 @@ final class PNMHeaderParser extends HeaderParser {
 
                 if (read == '#') {
                     // Read rest of the line as comment
-                    String comment = readLineUTF8(input);
+                    String comment = readLineUTF8(input).trim();
 
-                    if (!comment.trim().isEmpty()) {
+                    if (!comment.isEmpty()) {
                         comments.add(comment);
                     }
 
