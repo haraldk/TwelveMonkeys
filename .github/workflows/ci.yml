@@ -23,7 +23,7 @@ jobs:
         run: mvn test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
-        if: !cancelled()
+        if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
 
@@ -54,7 +54,7 @@ jobs:
         run: mvn test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v2
-        if: !cancelled()
+        if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
 
