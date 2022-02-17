@@ -19,8 +19,13 @@ jobs:
           java-version: ${{ matrix.java }}
           java-package: jdk
           cache: 'maven'
-      - name: Test
+      - name: Run Tests
         run: mvn test
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        if: !cancelled()
+        with:
+          report_paths: "**/target/surefire-reports/TEST*.xml"
 
   test_oracle:
     name: 'test Oracle JDK 8 (KCMS: ${{ matrix.kcms }})'
@@ -45,8 +50,13 @@ jobs:
           echo "MAVEN_OPTS=-Dsun.java2d.cmm=sun.java2d.cmm.kcms.KcmsServiceProvider" >> $GITHUB_ENV
       - name: Display Java version
         run: java -version
-      - name: Test
+      - name: Run Tests
         run: mvn test
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        if: !cancelled()
+        with:
+          report_paths: "**/target/surefire-reports/TEST*.xml"
 
   release:
     name: Deploy
