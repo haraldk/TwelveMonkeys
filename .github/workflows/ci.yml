@@ -26,10 +26,10 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
-          check_name: OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
+          check_name: Unit Test Results for OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
   test_oracle:
-    name: Test Oracle JDK 8 KCMS=${{ matrix.kcms }}
+    name: Test Oracle JDK 8 with KCMS=${{ matrix.kcms }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -58,7 +58,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
-          check_name: Oracle JDK 8 KCMS=${{ matrix.kcms }}
+          check_name: Unit Test Results for Oracle JDK 8 with KCMS=${{ matrix.kcms }}
 
   release:
     name: Deploy
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Apache Maven Central
+      - name: Set up Maven Central
         uses: actions/setup-java@v2
         with: # running setup-java again overwrites the settings.xml
           distribution: 'temurin'
@@ -81,7 +81,7 @@ jobs:
       - name: Get Project Version
         run: |
           echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-      - name: Publish to Apache Maven Central
+      - name: Publish to Maven Central
         if: ${{ endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
         run: mvn deploy -P release -DskipTests
         env:
