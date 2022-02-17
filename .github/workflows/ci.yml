@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 
 jobs:
   test:
-    name: test ${{ matrix.os }} jdk${{ matrix.java }}
+    name: Test OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -26,9 +26,10 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
+          check_name: OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
   test_oracle:
-    name: 'test Oracle JDK 8 (KCMS: ${{ matrix.kcms }})'
+    name: Test Oracle JDK 8 KCMS=${{ matrix.kcms }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -57,6 +58,7 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
+          check_name: Oracle JDK 8 KCMS=${{ matrix.kcms }}
 
   release:
     name: Deploy
