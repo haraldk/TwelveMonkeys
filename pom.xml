@@ -6,7 +6,8 @@
     <artifactId>twelvemonkeys</artifactId>
     <version>3.8.3-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Twelvemonkeys</name>
+    <name>TwelveMonkeys</name>
+    <description>TwelveMonkeys parent POM</description>
 
     <url>https://github.com/haraldk/TwelveMonkeys</url>
 
@@ -22,7 +23,6 @@
         <module>common</module>
         <module>servlet</module>
         <module>imageio</module>
-        <!--<module>swing</module>-->
         <module>contrib</module>
         <module>bom</module>
     </modules>
