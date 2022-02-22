@@ -4,7 +4,7 @@
 
     <groupId>com.twelvemonkeys</groupId>
     <artifactId>twelvemonkeys</artifactId>
-    <version>3.8.2-SNAPSHOT</version>
+    <version>3.8.2</version>
     <packaging>pom</packaging>
     <name>TwelveMonkeys</name>
     <description>TwelveMonkeys parent POM</description>
