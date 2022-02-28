@@ -1004,12 +1004,12 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         //      - If set, set res unit to pixels per cm as this better reflects values?
         //      - Or, convert to DPI, if we already had values in DPI??
         //      Also, if we have only aspect, set these values, and use unknown as unit?
-        // TODO: ImageOrientation => Orientation
         NodeList children = dimensionNode.getChildNodes();
 
         Float aspect = null;
         Float xRes = null;
         Float yRes = null;
+        Integer orientation = null;
 
         for (int i = 0; i < children.getLength(); i++) {
             Node child = children.item(i);
@@ -1023,6 +1023,9 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             }
             else if ("VerticalPixelSize".equals(nodeName)) {
                 yRes = Float.parseFloat(getAttribute(child, "value"));
+            }
+            else if ("ImageOrientation".equals(nodeName)) {
+                orientation = toTIFFOrientation(getAttribute(child, "value"));
             }
         }
 
@@ -1070,6 +1073,11 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                     new TIFFEntry(TIFF.TAG_RESOLUTION_UNIT, TIFF.TYPE_SHORT, TIFFBaseline.RESOLUTION_UNIT_NONE));
         }
         // Else give up...
+
+        if (orientation != null) {
+            entries.put(TIFF.TAG_ORIENTATION,
+                    new TIFFEntry(TIFF.TAG_ORIENTATION, TIFF.TYPE_SHORT, orientation.shortValue()));
+        }
     }
 
     private void mergeFromStandardDocumentNode(final Node documentNode, final Map<Integer, Entry> entries) {
@@ -1192,6 +1200,34 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         }
         else {
             throw new IIOInvalidTreeException("Expected \"TIFFIFD\" or \"TIFFField\" node: " + name, node);
+        }
+    }
+
+    private Integer toTIFFOrientation(String imageOrientation) {
+        if (imageOrientation == null) {
+            // malformed, empty or not readable value
+            return null;
+        }
+        switch (imageOrientation.toLowerCase()) {
+            case "normal":
+                return TIFFBaseline.ORIENTATION_TOPLEFT;
+            case "fliph":
+                return TIFFExtension.ORIENTATION_TOPRIGHT;
+            case "rotate180":
+                return TIFFExtension.ORIENTATION_BOTRIGHT;
+            case "flipv":
+                return TIFFExtension.ORIENTATION_BOTLEFT;
+            case "fliphrotate90":
+                return TIFFExtension.ORIENTATION_LEFTTOP;
+            case "rotate270":
+                return TIFFExtension.ORIENTATION_RIGHTTOP;
+            case "flipvrotate90":
+                return TIFFExtension.ORIENTATION_RIGHTBOT;
+            case "rotate90":
+                return TIFFExtension.ORIENTATION_LEFTBOT;
+            default:
+                // malformed, invalid value
+                return null;
         }
     }
 
