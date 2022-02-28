@@ -1025,32 +1025,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                 yRes = Float.parseFloat(getAttribute(child, "value"));
             }
             else if ("ImageOrientation".equals(nodeName)) {
-                switch (getAttribute(child, "value").toLowerCase()) {
-                    case "normal":
-                        orientation = TIFFBaseline.ORIENTATION_TOPLEFT;
-                        break;
-                    case "fliph":
-                        orientation = TIFFExtension.ORIENTATION_TOPRIGHT;
-                        break;
-                    case "rotate180":
-                        orientation = TIFFExtension.ORIENTATION_BOTRIGHT;
-                        break;
-                    case "flipv":
-                        orientation = TIFFExtension.ORIENTATION_BOTLEFT;
-                        break;
-                    case "fliphrotate90":
-                        orientation = TIFFExtension.ORIENTATION_LEFTTOP;
-                        break;
-                    case "rotate270":
-                        orientation = TIFFExtension.ORIENTATION_RIGHTTOP;
-                        break;
-                    case "flipvrotate90":
-                        orientation = TIFFExtension.ORIENTATION_RIGHTBOT;
-                        break;
-                    case "rotate90":
-                        orientation = TIFFExtension.ORIENTATION_LEFTBOT;
-                        break;
-                }
+                orientation = toTIFFOrientation(getAttribute(child, "value"));
             }
         }
 
@@ -1225,6 +1200,34 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         }
         else {
             throw new IIOInvalidTreeException("Expected \"TIFFIFD\" or \"TIFFField\" node: " + name, node);
+        }
+    }
+
+    private Integer toTIFFOrientation(String imageOrientation) {
+        if (imageOrientation == null) {
+            // malformed, empty or not readable value
+            return null;
+        }
+        switch (imageOrientation.toLowerCase()) {
+            case "normal":
+                return TIFFBaseline.ORIENTATION_TOPLEFT;
+            case "fliph":
+                return TIFFExtension.ORIENTATION_TOPRIGHT;
+            case "rotate180":
+                return TIFFExtension.ORIENTATION_BOTRIGHT;
+            case "flipv":
+                return TIFFExtension.ORIENTATION_BOTLEFT;
+            case "fliphrotate90":
+                return TIFFExtension.ORIENTATION_LEFTTOP;
+            case "rotate270":
+                return TIFFExtension.ORIENTATION_RIGHTTOP;
+            case "flipvrotate90":
+                return TIFFExtension.ORIENTATION_RIGHTBOT;
+            case "rotate90":
+                return TIFFExtension.ORIENTATION_LEFTBOT;
+            default:
+                // malformed, invalid value
+                return null;
         }
     }
 
