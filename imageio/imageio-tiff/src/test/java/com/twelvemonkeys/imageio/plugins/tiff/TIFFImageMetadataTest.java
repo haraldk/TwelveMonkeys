@@ -324,6 +324,10 @@ public class TIFFImageMetadataTest {
         dimensionNode.appendChild(verticalPixelSize);
         verticalPixelSize.setAttribute("value", String.valueOf(300 / 25.4));
 
+        IIOMetadataNode orientation = new IIOMetadataNode("ImageOrientation");
+        dimensionNode.appendChild(orientation);
+        orientation.setAttribute("value", "FlipV");
+
         metadata.mergeTree(standardFormat, newTree);
 
         Directory ifd = metadata.getIFD();
@@ -332,6 +336,8 @@ public class TIFFImageMetadataTest {
         assertEquals(new Rational(300), ifd.getEntryById(TIFF.TAG_X_RESOLUTION).getValue());
         assertNotNull(ifd.getEntryById(TIFF.TAG_Y_RESOLUTION));
         assertEquals(new Rational(300), ifd.getEntryById(TIFF.TAG_Y_RESOLUTION).getValue());
+        assertNotNull(ifd.getEntryById(TIFF.TAG_ORIENTATION));
+        assertEquals(TIFFExtension.ORIENTATION_BOTLEFT, ((Number) ifd.getEntryById(TIFF.TAG_ORIENTATION).getValue()).intValue());
 
         // Should keep DPI as unit
         assertNotNull(ifd.getEntryById(TIFF.TAG_RESOLUTION_UNIT));
