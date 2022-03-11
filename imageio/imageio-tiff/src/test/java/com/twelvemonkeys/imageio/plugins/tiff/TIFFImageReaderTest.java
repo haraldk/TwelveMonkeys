@@ -142,6 +142,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-palette-08.tif"), new Dimension(73, 43)), // Palette 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-palette-16.tif"), new Dimension(73, 43)), // Palette 16 bit/sample
                 // RGB Interleaved (PlanarConfiguration: 1)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-04.tif"), new Dimension(73, 43)), // RGB 4 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-10.tif"), new Dimension(73, 43)), // RGB 10 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-12.tif"), new Dimension(73, 43)), // RGB 12 bit/sample
@@ -194,6 +196,8 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/depth/flower-palette-08.tif"), new Dimension(73, 43)), // Palette 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-palette-16.tif"), new Dimension(73, 43)), // Palette 16 bit/sample
                 // RGB Interleaved (PlanarConfiguration: 1)
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
+                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-04.tif"), new Dimension(73, 43)), // RGB 4 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-08.tif"), new Dimension(73, 43)), // RGB 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-10.tif"), new Dimension(73, 43)), // RGB 10 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-12.tif"), new Dimension(73, 43)), // RGB 12 bit/sample
@@ -221,9 +225,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
 
     private List<TestData> getUnsupportedTestData() {
         return Arrays.asList(
-                // RGB Interleaved (PlanarConfiguration: 1)
-                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
-                new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-contig-04.tif"), new Dimension(73, 43)), // RGB 4 bit/sample
                 // RGB Planar (PlanarConfiguration: 2)
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-02.tif"), new Dimension(73, 43)), // RGB 2 bit/sample
                 new TestData(getClassLoaderResource("/tiff/depth/flower-rgb-planar-04.tif"), new Dimension(73, 43)) // RGB 4 bit/sample
@@ -886,7 +887,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             for (int i = 0; i < data.getImageCount(); i++) {
                 try {
                     reader.read(i);
-                    fail("Sample should be moved from unsupported to normal test case");
+                    fail("Sample should be moved from unsupported to normal test case: " + data);
                 }
                 catch (IIOException e) {
                     assertThat(e.getMessage().toLowerCase(), containsString("unsupported"));
