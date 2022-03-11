@@ -572,10 +572,10 @@ public final class TIFFImageReader extends ImageReaderBase {
                             return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, false, false);
                         }
                         else if (bitsPerSample == 2 && planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY) {
-                            return ImageTypeSpecifiers.createPacked(cs, 0x30, 0xC, 0x3, 0, DataBuffer.TYPE_BYTE, isAlphaPremultiplied);
+                            return ImageTypeSpecifiers.createPacked(cs, 0x30, 0xC, 0x3, 0, DataBuffer.TYPE_BYTE, false);
                         }
                         else if (bitsPerSample == 4 && planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY) {
-                            return ImageTypeSpecifiers.createPacked(cs, 0xF00, 0xF0, 0xF, 0, DataBuffer.TYPE_USHORT, isAlphaPremultiplied);
+                            return ImageTypeSpecifiers.createPacked(cs, 0xF00, 0xF0, 0xF, 0, DataBuffer.TYPE_USHORT, false);
                         }
                         else if (bitsPerSample > 8 && bitsPerSample % 2 == 0) {
                             ColorModel colorModel = new ComponentColorModel(cs, new int[] {bitsPerSample, bitsPerSample, bitsPerSample}, false, false, Transparency.OPAQUE, dataType);
