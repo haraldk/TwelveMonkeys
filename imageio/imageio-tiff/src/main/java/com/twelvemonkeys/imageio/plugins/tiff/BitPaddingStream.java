@@ -63,7 +63,7 @@ final class BitPaddingStream extends FilterInputStream {
 
     private final byte[] inputBuffer;
     private final ByteBuffer buffer;
-    private int componentSize;
+    private final int componentSize;
 
     BitPaddingStream(final InputStream stream, int samplesPerPixel, final int bitsPerSample, final int colsInTile, final ByteOrder byteOrder) {
         super(notNull(stream, "stream"));
@@ -169,6 +169,7 @@ final class BitPaddingStream extends FilterInputStream {
         return length;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean fillBuffer() throws IOException {
         if (!readFully(inputBuffer)) {
             return false;

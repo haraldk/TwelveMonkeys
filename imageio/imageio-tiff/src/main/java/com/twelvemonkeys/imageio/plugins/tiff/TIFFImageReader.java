@@ -571,8 +571,13 @@ public final class TIFFImageReader extends ImageReaderBase {
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, false, false);
                         }
+                        else if (bitsPerSample == 2 && planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY) {
+                            return ImageTypeSpecifiers.createPacked(cs, 0x30, 0xC, 0x3, 0, DataBuffer.TYPE_BYTE, isAlphaPremultiplied);
+                        }
+                        else if (bitsPerSample == 4 && planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY) {
+                            return ImageTypeSpecifiers.createPacked(cs, 0xF00, 0xF0, 0xF, 0, DataBuffer.TYPE_USHORT, isAlphaPremultiplied);
+                        }
                         else if (bitsPerSample > 8 && bitsPerSample % 2 == 0) {
-                            // TODO: Support variable bits/sample?
                             ColorModel colorModel = new ComponentColorModel(cs, new int[] {bitsPerSample, bitsPerSample, bitsPerSample}, false, false, Transparency.OPAQUE, dataType);
                             SampleModel sampleModel = planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY
                                                       ? colorModel.createCompatibleSampleModel(1, 1)
@@ -583,11 +588,14 @@ public final class TIFFImageReader extends ImageReaderBase {
                         if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
                             return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, true, isAlphaPremultiplied);
                         }
-                        else if (significantSamples == 4 && bitsPerSample == 4) {
+                        else if (bitsPerSample == 2 && planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY) {
+                            return ImageTypeSpecifiers.createPacked(cs, 0xC0, 0x30, 0xC, 0x3, DataBuffer.TYPE_BYTE, isAlphaPremultiplied);
+                        }
+                        else if (bitsPerSample == 4 && planarConfiguration == TIFFBaseline.PLANARCONFIG_CHUNKY) {
                             return ImageTypeSpecifiers.createPacked(cs, 0xF000, 0xF00, 0xF0, 0xF, DataBuffer.TYPE_USHORT, isAlphaPremultiplied);
                         }
                     default:
-                        throw new IIOException(String.format("Unsupported SamplesPerPixel/BitsPerSample combination for RGB TIFF (expected 3/8, 4/8, 3/16 or 4/16): %d/%d", samplesPerPixel, bitsPerSample));
+                        throw new IIOException(String.format("Unsupported SamplesPerPixel/BitsPerSample combination for RGB TIFF (expected 3 or 4/a multiple of 2): %d/%d", samplesPerPixel, bitsPerSample));
                 }
             case TIFFBaseline.PHOTOMETRIC_PALETTE:
                 // Palette
@@ -1055,7 +1063,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                 int bands = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? rawType.getNumBands() : 1;
                 int fillOrder = getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, TIFFBaseline.FILL_LEFT_TO_RIGHT);
                 int bitsPerSample = getBitsPerSample();
-                boolean needsBitPadding = bitsPerSample > 16 && bitsPerSample % 16 != 0 || bitsPerSample > 8 && bitsPerSample % 8 != 0 || bitsPerSample == 6;
+                boolean needsBitPadding = bitsPerSample > 16 && bitsPerSample % 16 != 0 || bitsPerSample > 8 && bitsPerSample % 8 != 0
+                        || numBands == 1 && bitsPerSample == 6 // IndexColorModel or Gray
+                        || numBands == 3 && (bitsPerSample == 2 || bitsPerSample == 4); // RGB/YCbCr/etc.
                 boolean needsAdapter = compression != TIFFBaseline.COMPRESSION_NONE || fillOrder != TIFFBaseline.FILL_LEFT_TO_RIGHT
                         || interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || needsBitPadding;
 
@@ -1098,7 +1108,9 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                                 if (needsBitPadding) {
                                     // We'll pad "odd" bitsPerSample streams to the smallest data type (byte/short/int) larger than the input
-                                    adapter = new BitPaddingStream(adapter, numBands, bitsPerSample, colsInTile, imageInput.getByteOrder());
+                                    adapter = bitsPerSample < 8
+                                              ? new BitPaddingStream(adapter, 1, numBands * bitsPerSample, colsInTile, imageInput.getByteOrder())
+                                              : new BitPaddingStream(adapter, numBands, bitsPerSample, colsInTile, imageInput.getByteOrder());
                                 }
 
                                 // According to the spec, short/long/etc should follow order of containing stream
@@ -2004,7 +2016,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                     if (needsWidening) {
                         readFully(input, rowDataShort);
-                        toFloat(rowDataFloat, rowDataShort);
+                        toFloat(rowDataShort, rowDataFloat);
                     }
                     else {
                         readFully(input, rowDataFloat);
@@ -2033,7 +2045,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void toFloat(final float[] rowDataFloat, final short[] rowDataShort) {
+    private void toFloat(final short[] rowDataShort, final float[] rowDataFloat) {
         for (int i = 0; i < rowDataFloat.length; i++) {
             rowDataFloat[i] = Half.shortBitsToFloat(rowDataShort[i]);
         }
