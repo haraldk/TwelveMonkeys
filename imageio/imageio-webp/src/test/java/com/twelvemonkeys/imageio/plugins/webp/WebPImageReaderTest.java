@@ -1,20 +1,22 @@
 package com.twelvemonkeys.imageio.plugins.webp;
 
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import static java.util.Arrays.asList;
 
-import org.junit.Test;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.List;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 
-import static java.util.Arrays.asList;
+import org.junit.Test;
+
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 /**
  * WebPImageReaderTest
@@ -97,6 +99,31 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
 
             BufferedImage image = reader.read(0, null);
             assertRGBEquals("RGB values differ, incorrect Y'CbCr -> RGB conversion", 0xFF72AED5, image.getRGB(80, 80), 1);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadFromUnknownStreamLength() throws IOException {
+        // See #672, image was not decoded and returned all black, when the stream length was unknown (-1).
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(getClassLoaderResource("/webp/photo-iccp-adobergb.webp").openStream()) {
+            @Override public long length() {
+                return -1;
+            }
+        }) {
+            reader.setInput(stream);
+
+            // We'll read a small portion of the image into a destination type that use sRGB
+            ImageReadParam param = new ImageReadParam();
+            param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
+            param.setSourceRegion(new Rectangle(10, 10, 20, 20));
+
+            BufferedImage image = reader.read(0, param);
+            assertRGBEquals("RGB values differ, image all black?", 0xFFEC9800, image.getRGB(5, 5), 8);
         }
         finally {
             reader.dispose();

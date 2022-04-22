@@ -31,6 +31,28 @@
 
 package com.twelvemonkeys.imageio.plugins.webp;
 
+import java.awt.*;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.WritableRaster;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
@@ -45,23 +67,6 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.imageio.util.RasterUtils;
 
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageReaderSpi;
-import java.awt.*;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.*;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 /**
  * WebPImageReader
  */
@@ -72,6 +77,7 @@ final class WebPImageReader extends ImageReaderBase {
     private LSBBitReader lsbBitReader;
 
     // Either VP8_, VP8L or VP8X chunk
+    private long fileSize;
     private VP8xChunk header;
     private ICC_Profile iccProfile;
     private final List<AnimationFrame> frames = new ArrayList<>();
@@ -82,6 +88,7 @@ final class WebPImageReader extends ImageReaderBase {
 
     @Override
     protected void resetMembers() {
+        fileSize = -1;
         header = null;
         iccProfile = null;
         lsbBitReader = null;
@@ -119,7 +126,7 @@ final class WebPImageReader extends ImageReaderBase {
         RIFFChunk frame = frames.isEmpty() ? header : frames.get(frames.size() - 1);
         imageInput.seek(frame.offset + frame.length);
 
-        while (imageInput.getStreamPosition() < imageInput.length()) {
+        while (imageInput.getStreamPosition() < fileSize) {
             int nextChunk = imageInput.readInt();
             long chunkLength = imageInput.readUnsignedInt();
             long chunkStart = imageInput.getStreamPosition();
@@ -184,7 +191,7 @@ final class WebPImageReader extends ImageReaderBase {
             throw new IIOException(String.format("Not a WebP file, invalid 'RIFF' magic: '%s'", fourCC(riff)));
         }
 
-        imageInput.readUnsignedInt(); // Skip file size NOTE: LITTLE endian!
+        fileSize = 8 + imageInput.readUnsignedInt(); // 8 + RIFF container length (LITTLE endian) == file size
 
         int webp = imageInput.readInt();
         if (webp != WebP.WEBP_MAGIC) {
@@ -282,7 +289,7 @@ final class WebPImageReader extends ImageReaderBase {
 
                 if (header.containsICCP) {
                     // ICCP chunk must be first chunk, if present
-                    while (iccProfile == null && imageInput.getStreamPosition() < imageInput.length()) {
+                    while (iccProfile == null && imageInput.getStreamPosition() < fileSize) {
                         int nextChunk = imageInput.readInt();
                         long chunkLength = imageInput.readUnsignedInt();
                         long chunkStart = imageInput.getStreamPosition();
@@ -305,6 +312,7 @@ final class WebPImageReader extends ImageReaderBase {
         }
 
         if (DEBUG) {
+            System.out.println("file size: " + fileSize + " (stream length: " + imageInput.length() + ")");
             System.out.println("header: " + header);
         }
     }
@@ -422,7 +430,7 @@ final class WebPImageReader extends ImageReaderBase {
                 }
                 else {
                     imageInput.seek(header.offset + header.length);
-                    readVP8Extended(destination, param, imageInput.length());
+                    readVP8Extended(destination, param, fileSize);
                 }
 
                 break;
@@ -591,7 +599,7 @@ final class WebPImageReader extends ImageReaderBase {
             // TODO: WebP spec says possible EXIF and XMP chunks are always AFTER image data
             imageInput.seek(header.offset + header.length);
 
-            while (imageInput.getStreamPosition() < imageInput.length()) {
+            while (imageInput.getStreamPosition() < fileSize) {
                 int nextChunk = imageInput.readInt();
                 long chunkLength = imageInput.readUnsignedInt();
                 long chunkStart = imageInput.getStreamPosition();
