@@ -213,13 +213,11 @@ public final class PCXImageReader extends ImageReaderBase {
             byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
 
             for (int y = 0; y < height; y++) {
-                switch (header.getBitsPerPixel()) {
-                    case 1:
-                        readRowByte(input, srcRegion, xSub, ySub, planeData, 0, planeWidth * header.getChannels(), destRaster, clippedRow, y);
-                        break;
-                    default:
-                        throw new AssertionError();
+                if (header.getBitsPerPixel() != 1) {
+                    throw new AssertionError();
                 }
+
+                readRowByte(input, srcRegion, xSub, ySub, planeData, 0, planeWidth * header.getChannels(), destRaster, clippedRow, y);
 
                 int pixelPos = 0;
                 for (int planePos = 0; planePos < planeWidth; planePos++) {
