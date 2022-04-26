@@ -30,19 +30,20 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
-
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Locale;
+
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 /**
  * PICTImageReaderSpi
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: PICTImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haku Exp$
+ * @version $Id: PICTImageReaderSpi.java,v 1.0 28.feb.2006 19:21:05 haraldk Exp$
  */
 public final class PICTImageReaderSpi extends ImageReaderSpiBase {
 
@@ -61,7 +62,7 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
 
         ImageInputStream stream = (ImageInputStream) pSource;
 
-        // PICT format don't have good magic and our method often gives false positives,
+        // PICT format doesn't have good magic and our method often gives false positives,
         // We'll check for other known formats (BMP, GIF, JPEG, PNG, PSD, TIFF) first
         if (isOtherFormat(stream)) {
             return false;
@@ -76,7 +77,7 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
             }
             else {
                 // We need to reset AND set mark again, to make sure the reset call in
-                // the finally block will not consume existing marks
+                // the finally-block will not consume existing marks
                 stream.reset();
                 stream.mark();
 
@@ -149,8 +150,8 @@ public final class PICTImageReaderSpi extends ImageReaderSpiBase {
     }
 
     static void skipNullHeader(final ImageInputStream pStream) throws IOException {
-        // NOTE: Only skip if FILE FORMAT, not needed for Mac OS DnD
-        // Spec says "platform dependent", may not be all nulls..
+        // NOTE: Only skip if FILE FORMAT, not needed for macOS DnD
+        // Spec says "platform dependent", may not be all nulls...
         pStream.skipBytes(PICT.PICT_NULL_HEADER_SIZE);
     }
 
