@@ -1,16 +1,16 @@
 package com.twelvemonkeys.imageio.metadata.tiff;
 
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
 
 /**
  * HalfTest.
@@ -97,7 +97,7 @@ public class HalfTest {
     }
 
     @Test(expected = NullPointerException.class)
-    public void testParseHAlfNull() {
+    public void testParseHalfNull() {
         Half.parseHalf(null);
     }
 
