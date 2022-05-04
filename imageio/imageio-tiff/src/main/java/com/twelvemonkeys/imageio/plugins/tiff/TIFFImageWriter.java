@@ -30,21 +30,26 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageWriterBase;
-import com.twelvemonkeys.imageio.color.ColorProfiles;
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.tiff.Rational;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter;
-import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-import com.twelvemonkeys.io.enc.EncoderStream;
-import com.twelvemonkeys.io.enc.PackBitsEncoder;
-import com.twelvemonkeys.lang.Validate;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configureStreamByteOrder;
+
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.image.*;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOWriteWarningListener;
@@ -54,18 +59,21 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.image.*;
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configureStreamByteOrder;
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageWriterBase;
+import com.twelvemonkeys.imageio.color.ColorProfiles;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter;
+import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.io.enc.EncoderStream;
+import com.twelvemonkeys.io.enc.PackBitsEncoder;
+import com.twelvemonkeys.lang.Validate;
 
 /**
  * TIFFImageWriter
@@ -103,8 +111,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // CCITT compressions T.4 and T.6
     // Support storing multiple images in one stream (multi-page TIFF)
     // Support more of the ImageIO metadata (ie. compression from metadata, etc)
-
-    private static final Rational STANDARD_DPI = new Rational(72);
 
     /**
      * Flag for active sequence writing
@@ -411,7 +417,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
             case TIFFExtension.COMPRESSION_LZW:
                 stream = IIOUtil.createStreamAdapter(imageOutput);
-                stream = new EncoderStream(stream, new LZWEncoder(((image.getTileWidth() * samplesPerPixel * bitPerSample + 7) / 8) * image.getTileHeight()));
+                stream = new EncoderStream(stream, new LZWEncoder((((long) image.getTileWidth() * samplesPerPixel * bitPerSample + 7) / 8) * image.getTileHeight()));
                 if (entries.containsKey(TIFF.TAG_PREDICTOR) && entries.get(TIFF.TAG_PREDICTOR).getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING)) {
                     stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), samplesPerPixel, bitPerSample, imageOutput.getByteOrder());
                 }
@@ -587,15 +593,16 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
                     case DataBuffer.TYPE_USHORT:
                     case DataBuffer.TYPE_SHORT:
+                        final int shortStride = stride / 2;
                         if (numComponents == 1) {
 //                            System.err.println("Writing USHORT -> " + numBands * 2 + "_BYTES");
 
                             for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
                                 for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                    int yOff = y * stride / 2;
+                                    final int yOff = y * shortStride;
 
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
-                                        final int xOff = yOff + x;
+                                        int xOff = yOff + x;
 
                                         buffer.putShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
                                     }
@@ -637,15 +644,15 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
                     case DataBuffer.TYPE_INT:
                         // TODO: This is incorrect for 32 bits/sample, only works for packed (INT_(A)RGB)
+                        final int intStride = stride / 4;
                         if (1 == numComponents) {
 //                            System.err.println("Writing INT -> " + numBands * 4 + "_BYTES");
-
                             for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
                                 for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                    int yOff = y * stride / 4;
+                                    int yOff = y * intStride;
 
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
-                                        final int xOff = yOff + x;
+                                        int xOff = yOff + x;
 
                                         buffer.putInt(dataBuffer.getElem(b, xOff));
                                     }
