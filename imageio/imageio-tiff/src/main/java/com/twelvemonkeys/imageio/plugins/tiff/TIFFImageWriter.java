@@ -182,6 +182,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
+        short offsetType = tiffWriter.offsetSize() == 4 ? TIFF.TYPE_LONG : TIFF.TYPE_LONG8;
+
         Map<Integer, Entry> entries = new LinkedHashMap<>();
         // Copy metadata to output
         Directory metadataIFD = metadata.getIFD();
@@ -195,9 +197,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
         entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, renderedImage.getHeight()));
         // StripByteCounts - for no compression, entire image data...
-        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, -1)); // Updated later
+        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, -1)); // Updated later
         // StripOffsets - can be offset to single strip only
-        entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, -1)); // Updated later
+        entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, -1)); // Updated later
 
         // TODO: If tiled, write tile indexes etc
         // Depending on param.getTilingMode
@@ -213,8 +215,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
             long stripOffset = streamPosition + tiffWriter.offsetSize() + ifdSize + tiffWriter.offsetSize();
             long stripByteCount = ((long) renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7L) / 8L;
 
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
@@ -265,8 +267,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
 
