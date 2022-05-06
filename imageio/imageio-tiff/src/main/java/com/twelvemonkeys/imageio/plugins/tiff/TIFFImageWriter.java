@@ -30,36 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configureStreamByteOrder;
-
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.image.*;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-
-import javax.imageio.*;
-import javax.imageio.event.IIOWriteWarningListener;
-import javax.imageio.metadata.IIOInvalidTreeException;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.spi.ImageWriterSpi;
-import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
-
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.color.ColorProfiles;
@@ -74,6 +44,26 @@ import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
 import com.twelvemonkeys.lang.Validate;
+
+import javax.imageio.*;
+import javax.imageio.event.IIOWriteWarningListener;
+import javax.imageio.metadata.IIOInvalidTreeException;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.image.*;
+import java.io.*;
+import java.util.*;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configureStreamByteOrder;
 
 /**
  * TIFFImageWriter
@@ -534,8 +524,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
         final int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
         final int numBands = renderedImage.getSampleModel().getNumBands();
 
-        final ByteBuffer buffer = ByteBuffer.allocate((tileWidth * numBands * sampleSize + 7) / 8);
-
         for (int yTile = minTileY; yTile < maxYTiles; yTile++) {
             for (int xTile = minTileX; xTile < maxXTiles; xTile++) {
                 final Raster tile = renderedImage.getTile(xTile, yTile);
@@ -573,21 +561,17 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int s = 0; s < numBands; s++) {
                                         if (sampleSize == 8 || shift == 0) {
                                             // Normal interleaved/planar case
-                                            buffer.put((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+                                            stream.writeByte((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+
                                         }
                                         else {
                                             // "Packed" case
-                                            buffer.put((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
+                                            stream.writeByte((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
                                         }
                                     }
                                 }
 
-                                flushBuffer(buffer, stream);
-
-                                if (stream instanceof DataOutputStream) {
-                                    DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                    dataOutputStream.flush();
-                                }
+                                flushStream(stream);
                             }
                         }
 
@@ -606,15 +590,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
                                         int xOff = yOff + x;
 
-                                        buffer.putShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
+                                        stream.writeShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
                                     }
 
-                                    flushBuffer(buffer, stream);
-
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
+                                    flushStream(stream);
                                 }
                             }
                         }
@@ -645,7 +624,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                         break;
 
                     case DataBuffer.TYPE_INT:
-                        // TODO: This is incorrect for 32 bits/sample, only works for packed (INT_(A)RGB)
+                        // TODO: This is incorrect for general 32 bits/sample, only works for packed (INT_(A)RGB) and single channel
                         final int intStride = stride / 4;
                         if (1 == numComponents) {
 //                            System.err.println("Writing INT -> " + numBands * 4 + "_BYTES");
@@ -656,15 +635,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
                                         int xOff = yOff + x;
 
-                                        buffer.putInt(dataBuffer.getElem(b, xOff));
+                                        stream.writeInt(dataBuffer.getElem(b, xOff));
                                     }
 
-                                    flushBuffer(buffer, stream);
-
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
+                                    flushStream(stream);
                                 }
                             }
                         }
@@ -680,15 +654,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                         int element = dataBuffer.getElem(b, xOff);
 
                                         for (int s = 0; s < numBands; s++) {
-                                            buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
+                                            stream.writeByte((byte) ((element >> bitOffsets[s]) & 0xff));
                                         }
                                     }
 
-                                    flushBuffer(buffer, stream);
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
+                                    flushStream(stream);
                                 }
                             }
                         }
@@ -699,11 +669,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 }
             }
 
-            // TODO: Need to flush/start new compression for each row, for proper LZW/PackBits/Deflate/ZLib
-            if (stream instanceof DataOutputStream) {
-                DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                dataOutputStream.flush();
-            }
+            flushStream(stream);
 
             // TODO: Report better progress
             processImageProgress((100f * (yTile + 1)) / maxYTiles);
@@ -717,12 +683,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
         processImageComplete();
     }
 
-    // TODO: Would be better to solve this on stream level... But writers would then have to explicitly flush the buffer before done.
-    private void flushBuffer(final ByteBuffer buffer, final DataOutput stream) throws IOException {
-        buffer.flip();
-        stream.write(buffer.array(), buffer.arrayOffset(), buffer.remaining());
-
-        buffer.clear();
+    private void flushStream(DataOutput stream) throws IOException {
+        // Need to flush/start new compression for each row, for proper LZW/PackBits/Deflate/ZLib compression
+        if (stream instanceof DataOutputStream) {
+            DataOutputStream dataOutputStream = (DataOutputStream) stream;
+            dataOutputStream.flush();
+        }
     }
 
     // Metadata
@@ -902,14 +868,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 case TIFF.TAG_ARTIST:
                 case TIFF.TAG_HOST_COMPUTER:
                 case TIFF.TAG_COPYRIGHT:
-                // Extension
+                    // Extension
                 case TIFF.TAG_DOCUMENT_NAME:
                 case TIFF.TAG_PAGE_NAME:
                 case TIFF.TAG_X_POSITION:
                 case TIFF.TAG_Y_POSITION:
                 case TIFF.TAG_PAGE_NUMBER:
                 case TIFF.TAG_XMP:
-                // Private/Custom
+                    // Private/Custom
                 case TIFF.TAG_IPTC:
                 case TIFF.TAG_PHOTOSHOP:
                 case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:
