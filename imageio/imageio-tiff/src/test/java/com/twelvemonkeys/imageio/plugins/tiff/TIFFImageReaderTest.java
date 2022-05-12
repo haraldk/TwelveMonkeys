@@ -173,7 +173,19 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-24bit-rgb.tif"), new Dimension(512, 512)),  // Lossless JPEG RGB, 8 bit/sample
                 // Custom PIXTIFF ZIP (Compression: 50013)
                 new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313)),  // ZIP Gray, 8 bit/sample
-                new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)) // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
+                new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
+                // Planar YCbCr full chroma
+                new TestData(getClassLoaderResource("/tiff/planar-yuv444-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv444-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, LZW compressed, striped
+                // Planar YCbCr subsampled
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-bt601-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, Rec.601 coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-bt601-lzw.tif"), new Dimension(256, 64)), // YCbCr, Rec.601 coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv420-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv420-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-lzw.tif"), new Dimension(256, 64)) // YCbCr, JPEG coefficients,LZW compressed, striped
         );
     }
 
