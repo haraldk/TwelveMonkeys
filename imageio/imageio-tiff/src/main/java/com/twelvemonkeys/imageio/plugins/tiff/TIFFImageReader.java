@@ -1092,19 +1092,14 @@ public final class TIFFImageReader extends ImageReaderBase {
                                                       : createStreamAdapter(imageInput);
 
                                 adapter = createFillOrderStream(fillOrder, adapter);
-                                adapter = createDecompressorStream(compression, stripTileWidth, numBands, adapter);
-                                adapter = createUnpredictorStream(predictor, stripTileWidth, numBands, bitsPerSample, adapter, imageInput.getByteOrder());
 
-                                if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_BYTE) {
-                                    adapter = new YCbCrUpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile);
-                                }
-                                else if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR && rowRaster.getTransferType() == DataBuffer.TYPE_USHORT) {
-                                    adapter = new YCbCr16UpsamplerStream(adapter, yCbCrSubsampling, yCbCrPos, colsInTile, imageInput.getByteOrder());
-                                }
-                                else if (interpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
-                                    // Handled in getRawImageType
-                                    throw new AssertionError();
-                                }
+                                // For subsampled planar, the compressed data will not be full width
+                                int compressedStripTileWidth = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR && b > 0 && yCbCrSubsampling != null
+                                                               ? ((stripTileWidth + yCbCrSubsampling[0] - 1) / yCbCrSubsampling[0])
+                                                               : stripTileWidth;
+                                adapter = createDecompressorStream(compression, compressedStripTileWidth, numBands, adapter);
+                                adapter = createUnpredictorStream(predictor, compressedStripTileWidth, numBands, bitsPerSample, adapter, imageInput.getByteOrder());
+                                adapter = createYCbCrUpsamplerStream(interpretation, planarConfiguration, b, rowRaster.getTransferType(), yCbCrSubsampling, yCbCrPos, colsInTile, adapter, imageInput.getByteOrder());
 
                                 if (needsBitPadding) {
                                     // We'll pad "odd" bitsPerSample streams to the smallest data type (byte/short/int) larger than the input
@@ -1127,6 +1122,11 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                             // Read a full strip/tile
                             readStripTileData(clippedRow, srcRegion, xSub, ySub, b, numBands, interpretation, destRaster, col, srcRow, colsInTile, rowsInTile, input);
+                        }
+
+                        // Need to do color normalization after reading all bands for planar
+                        if (planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR) {
+                            normalizeColorPlanar(interpretation, destRaster);
                         }
 
                         col += colsInTile;
@@ -1567,7 +1567,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 break;
 
-                // Known, but unsupported compression types
+            // Known, but unsupported compression types
             case TIFFCustom.COMPRESSION_NEXT:
             case TIFFCustom.COMPRESSION_CCITTRLEW:
             case TIFFCustom.COMPRESSION_THUNDERSCAN:
@@ -1582,8 +1582,8 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFCustom.COMPRESSION_SGILOG:
             case TIFFCustom.COMPRESSION_SGILOG24:
             case TIFFCustom.COMPRESSION_JPEG2000: // Doable with JPEG2000 plugin?
-
                 throw new IIOException("Unsupported TIFF Compression value: " + compression);
+
             default:
                 throw new IIOException("Unknown TIFF Compression value: " + compression);
         }
@@ -1593,6 +1593,28 @@ public final class TIFFImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    private InputStream createYCbCrUpsamplerStream(int photometricInterpretation, int planarConfiguration, int plane, int transferType,
+                                                   int[] yCbCrSubsampling, int yCbCrPos, int colsInTile, InputStream stream, ByteOrder byteOrder) {
+        if (photometricInterpretation == TIFFExtension.PHOTOMETRIC_YCBCR) {
+            if (planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR && transferType == DataBuffer.TYPE_BYTE) {
+                // For planar YCbCr, only the chroma planes are subsampled
+                return plane > 0 && (yCbCrSubsampling[0] != 1 || yCbCrSubsampling[1] != 1)
+                       ? new YCbCrPlanarUpsamplerStream(stream, yCbCrSubsampling, yCbCrPos, colsInTile) : stream;
+            }
+            else if (transferType == DataBuffer.TYPE_BYTE) {
+                return new YCbCrUpsamplerStream(stream, yCbCrSubsampling, yCbCrPos, colsInTile);
+            }
+            else if (transferType == DataBuffer.TYPE_USHORT) {
+                return new YCbCr16UpsamplerStream(stream, yCbCrSubsampling, yCbCrPos, colsInTile, byteOrder);
+            }
+
+            // Handled in getRawImageType
+            throw new AssertionError();
+        }
+
+        return stream;
     }
 
     private boolean containsZero(long[] byteCounts) {
@@ -1919,12 +1941,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
             }
 
-//                if (banded) {
-//                    // TODO: Normalize colors for tile (need to know tile region and sample model)
-//                    // Unfortunately, this will disable acceleration...
-//                }
-
             break;
+
             case DataBuffer.TYPE_USHORT:
             case DataBuffer.TYPE_SHORT:
                 /*for (int band = 0; band < bands; band++)*/ {
@@ -1962,6 +1980,7 @@ public final class TIFFImageReader extends ImageReaderBase {
             }
 
             break;
+
             case DataBuffer.TYPE_INT:
                 /*for (int band = 0; band < bands; band++)*/ {
                 int[] rowDataInt = ((DataBufferInt) dataBuffer).getData(band);
@@ -2098,6 +2117,102 @@ public final class TIFFImageReader extends ImageReaderBase {
             for (int k = 0; k < rowDataShort.length; k++) {
                 rowDataShort[k] = input.readShort();
             }
+        }
+    }
+
+    private void normalizeColorPlanar(int photometricInterpretation, WritableRaster raster) throws IIOException {
+        // TODO: Other transfer types?
+        if (raster.getTransferType() != DataBuffer.TYPE_BYTE) {
+            return;
+        }
+
+        byte[] pixel = null;
+
+        switch (photometricInterpretation) {
+            case TIFFExtension.PHOTOMETRIC_YCBCR:
+
+                // Default:  CCIR Recommendation 601-1: 299/1000, 587/1000 and 114/1000
+                double[] coefficients = getValueAsDoubleArray(TIFF.TAG_YCBCR_COEFFICIENTS, "YCbCrCoefficients", false, 3);
+
+                // "Default" [0, 255, 128, 255, 128, 255] for YCbCr (real default is [0, 255, 0, 255, 0, 255] for RGB)
+                double[] referenceBW = getValueAsDoubleArray(TIFF.TAG_REFERENCE_BLACK_WHITE, "ReferenceBlackWhite", false, 6);
+
+                if ((coefficients == null || Arrays.equals(coefficients, CCIR_601_1_COEFFICIENTS))
+                        && (referenceBW == null || Arrays.equals(referenceBW, REFERENCE_BLACK_WHITE_YCC_DEFAULT))) {
+
+                    // Fast, default conversion
+                    for (int y = 0; y < raster.getHeight(); y++) {
+                        for (int x = 0; x < raster.getWidth(); x++) {
+                            pixel = (byte[]) raster.getDataElements(x, y, pixel);
+                            YCbCrConverter.convertJPEGYCbCr2RGB(pixel, pixel, 0);
+                            raster.setDataElements(x, y, pixel);
+                        }
+                    }
+                }
+                else {
+                    // If one of the values are null, we'll need the other here...
+                    if (coefficients == null) {
+                        coefficients = CCIR_601_1_COEFFICIENTS;
+                    }
+
+                    if (referenceBW != null && Arrays.equals(referenceBW, REFERENCE_BLACK_WHITE_YCC_DEFAULT)) {
+                        referenceBW = null;
+                    }
+
+                    for (int y = 0; y < raster.getHeight(); y++) {
+                        for (int x = 0; x < raster.getWidth(); x++) {
+                            pixel = (byte[]) raster.getDataElements(x, y, pixel);
+                            YCbCrConverter.convertYCbCr2RGB(pixel, pixel, coefficients, referenceBW, 0);
+                            raster.setDataElements(x, y, pixel);
+                        }
+                    }
+                }
+
+                break;
+
+            case TIFFExtension.PHOTOMETRIC_CIELAB:
+            case TIFFExtension.PHOTOMETRIC_ICCLAB:
+            case TIFFExtension.PHOTOMETRIC_ITULAB:
+                // TODO: White point may be encoded in separate tag
+                CIELabColorConverter converter = new CIELabColorConverter(
+                        photometricInterpretation == TIFFExtension.PHOTOMETRIC_CIELAB
+                        ? Illuminant.D65
+                        : Illuminant.D50
+                );
+
+                float[] temp = new float[3];
+
+                for (int y = 0; y < raster.getHeight(); y++) {
+                    for (int x = 0; x < raster.getWidth(); x++) {
+                        pixel = (byte[]) raster.getDataElements(x, y, pixel);
+
+                        float LStar = (pixel[0] & 0xff) * 100f / 255.0f;
+                        float aStar;
+                        float bStar;
+
+                        if (photometricInterpretation == TIFFExtension.PHOTOMETRIC_CIELAB) {
+                            // -128...127
+                            aStar = pixel[1];
+                            bStar = pixel[2];
+                        }
+                        else {
+                            // Assumes same data for ICC and ITU (unsigned)
+                            // 0...255
+                            aStar = (pixel[1] & 0xff) - 128;
+                            bStar = (pixel[2] & 0xff) - 128;
+                        }
+
+                        converter.toRGB(LStar, aStar, bStar, temp);
+
+                        pixel[0] = (byte) temp[0];
+                        pixel[1] = (byte) temp[1];
+                        pixel[2] = (byte) temp[2];
+
+                        raster.setDataElements(x, y, pixel);
+                    }
+                }
+
+                break;
         }
     }
 
@@ -2705,8 +2820,14 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                     try {
                         long start = System.currentTimeMillis();
-                   int width = reader.getWidth(imageNo);
-                   int height = reader.getHeight(imageNo);
+//                   int width = reader.getWidth(imageNo);
+//                   int height = reader.getHeight(imageNo);
+                        if (param.canSetSourceRenderSize()) {
+                            int thumbSize = 512;
+                            float aspectRatio = reader.getAspectRatio(imageNo);
+                            param.setSourceRenderSize(aspectRatio > 1f ? new Dimension(thumbSize, (int) Math.ceil(thumbSize / aspectRatio))
+                                                                       : new Dimension((int) Math.ceil(thumbSize * aspectRatio), thumbSize));
+                        }
 //                    param.setSourceRegion(new Rectangle(width / 4, height / 4, width / 2, height / 2));
 //                    param.setSourceRegion(new Rectangle(100, 300, 400, 400));
 //                    param.setSourceRegion(new Rectangle(95, 105, 100, 100));
