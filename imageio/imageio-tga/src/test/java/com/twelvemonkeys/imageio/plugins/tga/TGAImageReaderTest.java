@@ -33,9 +33,14 @@ package com.twelvemonkeys.imageio.plugins.tga;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.junit.Test;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -43,7 +48,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * TGAImageReaderTest
@@ -136,5 +141,34 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
         }
 
         reader.dispose();
+    }
+
+    @Test
+    public void testMetadataTextEntries() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/autodesk-3dsmax-extsize494.tga"))) {
+            reader.setInput(input);
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+            NodeList textEntries = root.getElementsByTagName("TextEntry");
+            boolean softwareFound = false;
+
+            for (int i = 0; i < root.getLength(); i++) {
+                IIOMetadataNode software = (IIOMetadataNode) textEntries.item(i);
+
+                if ("Software".equals(software.getAttribute("keyword"))) {
+                    assertEquals("Autodesk 3ds max 1.0", software.getAttribute("value"));
+                    softwareFound = true;
+                    break;
+                }
+            }
+
+            assertTrue("No Software TextEntry", softwareFound);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 }
