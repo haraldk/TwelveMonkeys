@@ -291,9 +291,7 @@ final class TGAMetadata extends AbstractMetadata {
         IIOMetadataNode text = new IIOMetadataNode("Text");
 
         // NOTE: Names corresponds to equivalent fields in TIFF
-        if (header.getIdentification() != null && !header.getIdentification().isEmpty()) {
-            appendTextEntry(text, "DocumentName", header.getIdentification());
-        }
+        appendTextEntry(text, "DocumentName", header.getIdentification());
 
         if (extensions != null) {
             appendTextEntry(text, "Software", extensions.getSoftwareVersion() == null ? extensions.getSoftware() : (extensions.getSoftware() + " " + extensions.getSoftwareVersion()));
