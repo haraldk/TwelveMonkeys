@@ -136,7 +136,7 @@ final class TGAImageReader extends ImageReaderBase {
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
 
-                boolean hasAlpha = header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha();
+                boolean hasAlpha = header.getAttributeBits() > 0 && (extensions == null || extensions.hasAlpha());
                 boolean isAlphaPremultiplied = extensions != null && extensions.isAlphaPremultiplied();
 
                 switch (header.getPixelDepth()) {
