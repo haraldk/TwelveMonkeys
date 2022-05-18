@@ -30,9 +30,14 @@ import static com.twelvemonkeys.contrib.tiff.TIFFUtilities.applyOrientation;
 public class EXIFUtilities {
     /**
      * Reads image and metadata, applies Exif orientation to image, and returns everything as an {@code IIOImage}.
+     * The returned {@code IIOImage} will always contain an image and no raster, and
+     * the {@code RenderedImage} may be safely cast to a {@code BufferedImage}.
+     *
+     * If no registered {@code ImageReader} claims to be able to read the input, {@code null} is returned.
      *
      * @param input a {@code URL}
-     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info.
+     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info, or
+     * {@code null}.
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final URL input) throws IOException {
@@ -43,9 +48,14 @@ public class EXIFUtilities {
 
     /**
      * Reads image and metadata, applies Exif orientation to image, and returns everything as an {@code IIOImage}.
+     * The returned {@code IIOImage} will always contain an image and no raster, and
+     * the {@code RenderedImage} may be safely cast to a {@code BufferedImage}.
+     *
+     * If no registered {@code ImageReader} claims to be able to read the input, {@code null} is returned.
      *
      * @param input an {@code InputStream}
-     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info.
+     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info, or
+     * {@code null}.
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final InputStream input) throws IOException {
@@ -56,9 +66,14 @@ public class EXIFUtilities {
 
     /**
      * Reads image and metadata, applies Exif orientation to image, and returns everything as an {@code IIOImage}.
+     * The returned {@code IIOImage} will always contain an image and no raster, and
+     * the {@code RenderedImage} may be safely cast to a {@code BufferedImage}.
+     *
+     * If no registered {@code ImageReader} claims to be able to read the input, {@code null} is returned.
      *
      * @param input a {@code File}
-     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info.
+     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info or
+     * {@code null}.
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final File input) throws IOException {
@@ -69,9 +84,14 @@ public class EXIFUtilities {
 
     /**
      * Reads image and metadata, applies Exif orientation to image, and returns everything as an {@code IIOImage}.
+     * The returned {@code IIOImage} will always contain an image and no raster, and
+     * the {@code RenderedImage} may be safely cast to a {@code BufferedImage}.
+     *
+     * If no registered {@code ImageReader} claims to be able to read the input, {@code null} is returned.
      *
      * @param input an {@code ImageInputStream}
-     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info.
+     * @return an {@code IIOImage} containing the correctly oriented image and metadata including rotation info, or
+     * {@code null}.
      * @throws IOException if an error occurs during reading.
      */
     public static IIOImage readWithOrientation(final ImageInputStream input) throws IOException {
