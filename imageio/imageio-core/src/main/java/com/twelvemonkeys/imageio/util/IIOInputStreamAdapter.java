@@ -81,7 +81,7 @@ class IIOInputStreamAdapter extends InputStream {
 
     private IIOInputStreamAdapter(ImageInputStream pInput, long pLength, boolean pHasLength) {
         Validate.notNull(pInput, "stream");
-        Validate.isTrue(!pHasLength || pLength >= 0, pLength, "length < 0: %f");
+        Validate.isTrue(!pHasLength || pLength >= 0, pLength, "length < 0: %d");
 
         input = pInput;
         left = pLength;
