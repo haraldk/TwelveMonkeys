@@ -59,15 +59,12 @@ import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
-import com.twelvemonkeys.xml.XMLSerializer;
 
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
@@ -1145,7 +1142,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                     }
                 }
 
-
                 break;
 
             case TIFFExtension.COMPRESSION_JPEG:
@@ -1225,10 +1221,10 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     // TODO: Refactor + duplicate this for all JPEG-in-TIFF cases
                                     switch (raster.getTransferType()) {
                                         case DataBuffer.TYPE_BYTE:
-                                            normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                            normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
                                             break;
                                         case DataBuffer.TYPE_USHORT:
-                                            normalizeColor(interpretation, ((DataBufferUShort) raster.getDataBuffer()).getData());
+                                            normalizeColor(interpretation, numBands, ((DataBufferUShort) raster.getDataBuffer()).getData());
                                             break;
                                         default:
                                             throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
@@ -1391,7 +1387,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
-                                        normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
                                         destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                     }
                                 }
@@ -1541,7 +1537,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
-                                        normalizeColor(interpretation, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
                                         destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                     }
                                 }
@@ -1901,9 +1897,15 @@ public final class TIFFImageReader extends ImageReaderBase {
             throws IOException {
 
         DataBuffer dataBuffer = tileRowRaster.getDataBuffer();
-        int bands = dataBuffer.getNumBanks();
-        boolean banded = bands > 1;
+        boolean banded = dataBuffer.getNumBanks() > 1;
         int bitsPerSample = getBitsPerSample();
+
+        WritableRaster destChannel = banded
+                                     ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
+                                     : raster;
+        Raster srcChannel = banded
+                            ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
+                            : tileRowRaster;
 
         switch (tileRowRaster.getTransferType()) {
             case DataBuffer.TYPE_BYTE:
@@ -1912,12 +1914,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                 int bank = banded ? ((BandedSampleModel) tileRowRaster.getSampleModel()).getBankIndices()[band] : band;
 
                 byte[] rowDataByte = ((DataBufferByte) dataBuffer).getData(bank);
-                WritableRaster destChannel = banded
-                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                             : raster;
-                Raster srcChannel = banded
-                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                    : tileRowRaster;
 
                 for (int row = startRow; row < startRow + rowsInTile; row++) {
                     if (row >= srcRegion.y + srcRegion.height) {
@@ -1928,7 +1924,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                     if (row % ySub == 0 && row >= srcRegion.y) {
                         if (!banded) {
-                            normalizeColor(interpretation, rowDataByte);
+                            normalizeColor(interpretation, numBands, rowDataByte);
                         }
 
                         // Subsample horizontal
@@ -1950,13 +1946,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                                        ? ((DataBufferUShort) dataBuffer).getData(band)
                                        : ((DataBufferShort) dataBuffer).getData(band);
 
-                WritableRaster destChannel = banded
-                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                             : raster;
-                Raster srcChannel = banded
-                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                    : tileRowRaster;
-
                 for (int row = startRow; row < startRow + rowsInTile; row++) {
                     if (row >= srcRegion.y + srcRegion.height) {
                         break; // We're done with this tile
@@ -1965,7 +1954,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                     readFully(input, rowDataShort);
 
                     if (row >= srcRegion.y) {
-                        normalizeColor(interpretation, rowDataShort);
+                        normalizeColor(interpretation, numBands, rowDataShort);
 
                         // Subsample horizontal
                         subsampleRow(rowDataShort, srcRegion.x * numBands, colsInTile,
@@ -1985,13 +1974,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                 /*for (int band = 0; band < bands; band++)*/ {
                 int[] rowDataInt = ((DataBufferInt) dataBuffer).getData(band);
 
-                WritableRaster destChannel = banded
-                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                             : raster;
-                Raster srcChannel = banded
-                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                    : tileRowRaster;
-
                 for (int row = startRow; row < startRow + rowsInTile; row++) {
                     if (row >= srcRegion.y + srcRegion.height) {
                         break; // We're done with this tile
@@ -2000,7 +1982,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                     readFully(input, rowDataInt);
 
                     if (row >= srcRegion.y) {
-                        normalizeColor(interpretation, rowDataInt);
+                        normalizeColor(interpretation, numBands, rowDataInt);
 
                         // Subsample horizontal
                         subsampleRow(rowDataInt, srcRegion.x * numBands, colsInTile,
@@ -2020,14 +2002,6 @@ public final class TIFFImageReader extends ImageReaderBase {
                 float[] rowDataFloat = ((DataBufferFloat) tileRowRaster.getDataBuffer()).getData(band);
                 short[] rowDataShort = needsWidening ? new short[rowDataFloat.length] : null;
 
-                WritableRaster destChannel = banded
-                                             ? raster.createWritableChild(raster.getMinX(), raster.getMinY(), raster.getWidth(), raster.getHeight(), 0, 0, new int[] {band})
-                                             : raster;
-                Raster srcChannel = banded
-                                    ? tileRowRaster.createChild(tileRowRaster.getMinX(), 0, tileRowRaster.getWidth(), 1, 0, 0, new int[] {band})
-                                    : tileRowRaster;
-
-
                 for (int row = startRow; row < startRow + rowsInTile; row++) {
                     if (row >= srcRegion.y + srcRegion.height) {
                         break; // We're done with this tile
@@ -2042,7 +2016,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                     }
 
                     if (row >= srcRegion.y) {
-                        normalizeColor(interpretation, rowDataFloat);
+                        normalizeColor(interpretation, numBands, rowDataFloat);
 
                         // Subsample horizontal
                         if (xSub != 1) {
@@ -2216,7 +2190,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, byte[] data) throws IOException {
+    private void normalizeColor(int photometricInterpretation, int numBands, byte[] data) throws IOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // NOTE: Preserve WhiteIsZero for 1 bit monochrome, for CCITT compatibility
@@ -2240,7 +2214,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 );
                 float[] temp = new float[3];
 
-                for (int i = 0; i < data.length; i += 3) {
+                for (int i = 0; i < data.length; i += numBands) {
                     // Unsigned scaled form 0...100
                     float LStar = (data[i] & 0xff) * 100f / 255.0f;
                     float aStar;
@@ -2301,7 +2275,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, short[] data) throws IIOException {
+    private void normalizeColor(int photometricInterpretation, int numBands, short[] data) throws IIOException {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // Inverse values
@@ -2324,7 +2298,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 float[] temp = new float[3];
                 float scaleL = photometricInterpretation == TIFFExtension.PHOTOMETRIC_CIELAB ? 65535f : 65280f; // Is for ICC lab, assumes the same for ITU....
 
-                for (int i = 0; i < data.length; i += 3) {
+                for (int i = 0; i < data.length; i += numBands) {
                     // Unsigned scaled form 0...100
                     float LStar = (data[i] & 0xffff) * 100.0f / scaleL;
                     float aStar;
@@ -2372,7 +2346,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
         }
     }
-    private void normalizeColor(int photometricInterpretation, int[] data) {
+    private void normalizeColor(int photometricInterpretation, @SuppressWarnings("unused") int numBands, int[] data) {
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
                 // Inverse values
@@ -2391,7 +2365,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, float[] data) {
+    private void normalizeColor(int photometricInterpretation, @SuppressWarnings("unused") int numBands, float[] data) {
         // TODO: Allow param to decide tone mapping strategy, like in the HDRImageReader
         clamp(data);
 
@@ -2770,10 +2744,11 @@ public final class TIFFImageReader extends ImageReaderBase {
             });
             reader.addIIOReadProgressListener(new ProgressListenerBase() {
                 private static final int MAX_W = 78;
-                int lastProgress = 0;
+                int lastProgress;
 
                 @Override
                 public void imageStarted(ImageReader source, int imageIndex) {
+                    lastProgress = 0;
                     System.out.print("[");
                 }
 
@@ -2781,12 +2756,14 @@ public final class TIFFImageReader extends ImageReaderBase {
                 public void imageProgress(ImageReader source, float percentageDone) {
                     int steps = ((int) (percentageDone * MAX_W) / 100);
 
-                    for (int i = lastProgress; i < steps; i++) {
-                        System.out.print(".");
-                    }
+                    if (steps > lastProgress) {
+                        for (int i = lastProgress; i < steps; i++) {
+                            System.out.print(".");
+                        }
 
-                    System.out.flush();
-                    lastProgress = steps;
+                        System.out.flush();
+                        lastProgress = steps;
+                    }
                 }
 
                 @Override
@@ -2839,18 +2816,18 @@ public final class TIFFImageReader extends ImageReaderBase {
                         BufferedImage image = reader.read(imageNo, param);
                         System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 
-                        IIOMetadata metadata = reader.getImageMetadata(imageNo);
-                        if (metadata != null) {
-                            if (metadata.getNativeMetadataFormatName() != null) {
-                                Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
-                                replaceBytesWithUndefined((IIOMetadataNode) tree);
-                                new XMLSerializer(System.out, "UTF-8").serialize(tree, false);
-                            }
-                        /*else*/
-                            if (metadata.isStandardMetadataFormatSupported()) {
-                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
-                            }
-                        }
+//                        IIOMetadata metadata = reader.getImageMetadata(imageNo);
+//                        if (metadata != null) {
+//                            if (metadata.getNativeMetadataFormatName() != null) {
+//                                Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+//                                replaceBytesWithUndefined((IIOMetadataNode) tree);
+//                                new XMLSerializer(System.out, "UTF-8").serialize(tree, false);
+//                            }
+//                        /*else*/
+//                            if (metadata.isStandardMetadataFormatSupported()) {
+//                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
+//                            }
+//                        }
 
                         System.err.println("image: " + image);
 
