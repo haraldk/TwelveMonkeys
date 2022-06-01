@@ -53,6 +53,7 @@ import static org.mockito.Mockito.*;
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedImageInputStreamTest.java,v 1.0 Jun 30, 2008 3:07:42 PM haraldk Exp$
  */
+@SuppressWarnings("deprecation")
 public class BufferedImageInputStreamTest {
     private final Random random = new Random(3450972865211L);
 
@@ -433,7 +434,7 @@ public class BufferedImageInputStreamTest {
      * and {@code pFirstOffset == pSecondOffset}.
      * Otherwise {@code false}.
      */
-    static boolean rangeEquals(byte[] pFirst, int pFirstOffset, byte[] pSecond, int pSecondOffset, int pLength) {
+    public static boolean rangeEquals(byte[] pFirst, int pFirstOffset, byte[] pSecond, int pSecondOffset, int pLength) {
         if (pFirst == pSecond && pFirstOffset == pSecondOffset) {
             return true;
         }
