@@ -175,6 +175,9 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313)),  // ZIP Gray, 8 bit/sample
                 new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
                 // Planar YCbCr full chroma
+                new TestData(getClassLoaderResource("/tiff/lab-a-8.tiff"), new Dimension(589, 340)), // Lab + Alpha, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/lab-a-16.tiff"), new Dimension(589, 340)), // Lab + Alpha, 16 bit uncompressed, striped
+                // Planar YCbCr full chroma
                 new TestData(getClassLoaderResource("/tiff/planar-yuv444-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
                 new TestData(getClassLoaderResource("/tiff/planar-yuv444-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, LZW compressed, striped
                 // Planar YCbCr subsampled
