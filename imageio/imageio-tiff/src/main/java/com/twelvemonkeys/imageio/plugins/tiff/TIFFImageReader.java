@@ -49,20 +49,24 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.metadata.xmp.XMPReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.stream.DirectImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.FileUtil;
-import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
 
 import org.w3c.dom.NodeList;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
@@ -70,16 +74,25 @@ import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.CMMException;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_Profile;
+import java.awt.color.*;
 import java.awt.image.*;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInput;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
@@ -940,7 +953,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         final int compression = getValueAsIntWithDefault(TIFF.TAG_COMPRESSION, TIFFBaseline.COMPRESSION_NONE);
         final int predictor = getValueAsIntWithDefault(TIFF.TAG_PREDICTOR, 1);
         final int planarConfiguration = getValueAsIntWithDefault(TIFF.TAG_PLANAR_CONFIGURATION, TIFFBaseline.PLANARCONFIG_CHUNKY);
-        final int numBands = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? 1 : rawType.getNumBands();
+        final int samplesInTile = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? 1 : rawType.getNumBands();
 
         // NOTE: We handle strips as tiles of tileWidth == width by tileHeight == rowsPerStrip
         //       Strips are top/down, tiles are left/right, top/down
@@ -1061,8 +1074,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                 int fillOrder = getValueAsIntWithDefault(TIFF.TAG_FILL_ORDER, TIFFBaseline.FILL_LEFT_TO_RIGHT);
                 int bitsPerSample = getBitsPerSample();
                 boolean needsBitPadding = bitsPerSample > 16 && bitsPerSample % 16 != 0 || bitsPerSample > 8 && bitsPerSample % 8 != 0
-                        || numBands == 1 && bitsPerSample == 6 // IndexColorModel or Gray
-                        || numBands == 3 && (bitsPerSample == 2 || bitsPerSample == 4); // RGB/YCbCr/etc.
+                        || samplesInTile == 1 && bitsPerSample == 6 // IndexColorModel or Gray
+                        || samplesInTile == 3 && (bitsPerSample == 2 || bitsPerSample == 4); // RGB/YCbCr/etc.
                 boolean needsAdapter = compression != TIFFBaseline.COMPRESSION_NONE || fillOrder != TIFFBaseline.FILL_LEFT_TO_RIGHT
                         || interpretation == TIFFExtension.PHOTOMETRIC_YCBCR || needsBitPadding;
 
@@ -1076,12 +1089,24 @@ public final class TIFFImageReader extends ImageReaderBase {
                         for (int b = 0; b < bands; b++) {
                             int i = b * tilesDown * tilesAcross + y * tilesAcross + x;
 
+                            // Clip the stripTile rowRaster to not exceed the srcRegion
+                            clip.width = Math.min(colsInTile, srcRegion.width);
+                            Raster clippedRow = clipRowToRect(rowRaster, clip,
+                                    param != null ? param.getSourceBands() : null,
+                                    param != null ? param.getSourceXSubsampling() : 1);
+
                             imageInput.seek(stripTileOffsets[i]);
 
-                            DataInput input;
+                            ImageInputStream input;
                             if (!needsAdapter) {
                                 // No need for transformation, fast-forward
-                                input = imageInput;
+                                long byteCount = stripTileHeight * (((long) stripTileWidth * bitsPerSample * samplesInTile + 7L) / 8L);
+
+                                if (stripTileByteCounts != null && stripTileByteCounts[i] < byteCount) {
+                                    processWarningOccurred("strip/tileByteCount < required ( " + byteCount + "):" + stripTileByteCounts[i]);
+                                }
+
+                                input = new SubImageInputStream(imageInput, byteCount);
                             }
                             else {
                                 InputStream adapter = stripTileByteCounts != null
@@ -1094,31 +1119,34 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 int compressedStripTileWidth = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR && b > 0 && yCbCrSubsampling != null
                                                                ? ((stripTileWidth + yCbCrSubsampling[0] - 1) / yCbCrSubsampling[0])
                                                                : stripTileWidth;
-                                adapter = createDecompressorStream(compression, compressedStripTileWidth, numBands, adapter);
-                                adapter = createUnpredictorStream(predictor, compressedStripTileWidth, numBands, bitsPerSample, adapter, imageInput.getByteOrder());
+                                adapter = createDecompressorStream(compression, compressedStripTileWidth, samplesInTile, adapter);
+                                adapter = createUnpredictorStream(predictor, compressedStripTileWidth, samplesInTile, bitsPerSample, adapter, imageInput.getByteOrder());
                                 adapter = createYCbCrUpsamplerStream(interpretation, planarConfiguration, b, rowRaster.getTransferType(), yCbCrSubsampling, yCbCrPos, colsInTile, adapter, imageInput.getByteOrder());
 
                                 if (needsBitPadding) {
                                     // We'll pad "odd" bitsPerSample streams to the smallest data type (byte/short/int) larger than the input
                                     adapter = bitsPerSample < 8
-                                              ? new BitPaddingStream(adapter, 1, numBands * bitsPerSample, colsInTile, imageInput.getByteOrder())
-                                              : new BitPaddingStream(adapter, numBands, bitsPerSample, colsInTile, imageInput.getByteOrder());
+                                              ? new BitPaddingStream(adapter, 1, samplesInTile * bitsPerSample, colsInTile, imageInput.getByteOrder())
+                                              : new BitPaddingStream(adapter, samplesInTile, bitsPerSample, colsInTile, imageInput.getByteOrder());
                                 }
 
                                 // According to the spec, short/long/etc should follow order of containing stream
-                                input = imageInput.getByteOrder() == ByteOrder.BIG_ENDIAN
-                                        ? new DataInputStream(adapter)
-                                        : new LittleEndianDataInputStream(adapter);
+                                input = new DirectImageInputStream(adapter);
                             }
 
-                            // Clip the stripTile rowRaster to not exceed the srcRegion
-                            clip.width = Math.min(colsInTile, srcRegion.width);
-                            Raster clippedRow = clipRowToRect(rowRaster, clip,
-                                    param != null ? param.getSourceBands() : null,
-                                    param != null ? param.getSourceXSubsampling() : 1);
+                            try (ImageInputStream stream = input) {
+                                // Temporary set byte order to match the color model for USHORT_4444/555/565/etc...
+                                if (rawType.getColorModel() instanceof DirectColorModel && rawType.getColorModel().getTransferType() == DataBuffer.TYPE_USHORT) {
+                                    stream.setByteOrder(ByteOrder.BIG_ENDIAN);
+                                }
+                                else {
+                                    // ...otherwise keep the order from the parent stream
+                                    stream.setByteOrder(imageInput.getByteOrder());
+                                }
 
-                            // Read a full strip/tile
-                            readStripTileData(clippedRow, srcRegion, xSub, ySub, b, numBands, interpretation, destRaster, col, srcRow, colsInTile, rowsInTile, input);
+                                // Read a full strip/tile
+                                readStripTileData(clippedRow, srcRegion, xSub, ySub, b, samplesInTile, interpretation, destRaster, col, srcRow, colsInTile, rowsInTile, input);
+                            }
                         }
 
                         // Need to do color normalization after reading all bands for planar
@@ -1221,10 +1249,10 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     // TODO: Refactor + duplicate this for all JPEG-in-TIFF cases
                                     switch (raster.getTransferType()) {
                                         case DataBuffer.TYPE_BYTE:
-                                            normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                            normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
                                             break;
                                         case DataBuffer.TYPE_USHORT:
-                                            normalizeColor(interpretation, numBands, ((DataBufferUShort) raster.getDataBuffer()).getData());
+                                            normalizeColor(interpretation, samplesInTile, ((DataBufferUShort) raster.getDataBuffer()).getData());
                                             break;
                                         default:
                                             throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
@@ -1387,7 +1415,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
-                                        normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
                                         destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                     }
                                 }
@@ -1537,7 +1565,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
-                                        normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
                                         destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                     }
                                 }
@@ -1787,7 +1815,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     private IIOMetadataNode getNode(final IIOMetadataNode parent, final String tagName) {
         NodeList nodes = parent.getElementsByTagName(tagName);
-        return nodes != null && nodes.getLength() >= 1 ? (IIOMetadataNode) nodes.item(0) : null;
+        return nodes.getLength() >= 1 ? (IIOMetadataNode) nodes.item(0) : null;
     }
 
     private ImageReader createJPEGDelegate() throws IOException {
@@ -1893,7 +1921,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     private void readStripTileData(final Raster tileRowRaster, final Rectangle srcRegion, final int xSub, final int ySub,
                                    final int band, final int numBands, final int interpretation,
                                    final WritableRaster raster, final int startCol, final int startRow,
-                                   final int colsInTile, final int rowsInTile, final DataInput input)
+                                   final int colsInTile, final int rowsInTile, final ImageInputStream input)
             throws IOException {
 
         DataBuffer dataBuffer = tileRowRaster.getDataBuffer();
@@ -1951,7 +1979,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                         break; // We're done with this tile
                     }
 
-                    readFully(input, rowDataShort);
+                    input.readFully(rowDataShort, 0, rowDataShort.length);
 
                     if (row >= srcRegion.y) {
                         normalizeColor(interpretation, numBands, rowDataShort);
@@ -1979,7 +2007,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                         break; // We're done with this tile
                     }
 
-                    readFully(input, rowDataInt);
+                    input.readFully(rowDataInt, 0, rowDataInt.length);
 
                     if (row >= srcRegion.y) {
                         normalizeColor(interpretation, numBands, rowDataInt);
@@ -2008,11 +2036,11 @@ public final class TIFFImageReader extends ImageReaderBase {
                     }
 
                     if (needsWidening) {
-                        readFully(input, rowDataShort);
+                        input.readFully(rowDataShort, 0, rowDataShort.length);
                         toFloat(rowDataShort, rowDataFloat);
                     }
                     else {
-                        readFully(input, rowDataFloat);
+                        input.readFully(rowDataFloat, 0, rowDataFloat.length);
                     }
 
                     if (row >= srcRegion.y) {
@@ -2051,45 +2079,6 @@ public final class TIFFImageReader extends ImageReaderBase {
             }
             else if (rowDataFloat[i] < 0f) {
                 rowDataFloat[i] = 0f;
-            }
-        }
-    }
-
-    // TODO: Candidate util method (with off/len + possibly byte order)
-    private void readFully(final DataInput input, final float[] rowDataFloat) throws IOException {
-        if (input instanceof ImageInputStream) {
-            ImageInputStream imageInputStream = (ImageInputStream) input;
-            imageInputStream.readFully(rowDataFloat, 0, rowDataFloat.length);
-        }
-        else {
-            for (int k = 0; k < rowDataFloat.length; k++) {
-                rowDataFloat[k] = input.readFloat();
-            }
-        }
-    }
-
-    // TODO: Candidate util method (with off/len + possibly byte order)
-    private void readFully(final DataInput input, final int[] rowDataInt) throws IOException {
-        if (input instanceof ImageInputStream) {
-            ImageInputStream imageInputStream = (ImageInputStream) input;
-            imageInputStream.readFully(rowDataInt, 0, rowDataInt.length);
-        }
-        else {
-            for (int k = 0; k < rowDataInt.length; k++) {
-                rowDataInt[k] = input.readInt();
-            }
-        }
-    }
-
-    // TODO: Candidate util method (with off/len + possibly byte order)
-    private void readFully(final DataInput input, final short[] rowDataShort) throws IOException {
-        if (input instanceof ImageInputStream) {
-            ImageInputStream imageInputStream = (ImageInputStream) input;
-            imageInputStream.readFully(rowDataShort, 0, rowDataShort.length);
-        }
-        else {
-            for (int k = 0; k < rowDataShort.length; k++) {
-                rowDataShort[k] = input.readShort();
             }
         }
     }
