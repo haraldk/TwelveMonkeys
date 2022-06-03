@@ -30,26 +30,19 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataTest.createTIFFFieldNode;
-import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertRGBEquals;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNotNull;
-import static org.mockito.Mockito.*;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.tiff.Rational;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
+import com.twelvemonkeys.io.NullOutputStream;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URL;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.junit.Test;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -67,19 +60,26 @@ import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.ImageOutputStreamImpl;
+import java.awt.*;
+import java.awt.color.*;
+import java.awt.image.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URL;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import org.junit.Test;
-import org.w3c.dom.NodeList;
-
-import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.tiff.Rational;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
-import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
-import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
-import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.io.NullOutputStream;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataTest.createTIFFFieldNode;
+import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertRGBEquals;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNotNull;
+import static org.mockito.Mockito.*;
 
 /**
  * TIFFImageWriterTest
@@ -161,6 +161,29 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         Entry yResolution = ifds.getEntryById(TIFF.TAG_Y_RESOLUTION);
         assertNotNull(yResolution);
         assertEquals(resolutionValue, yResolution.getValue());
+    }
+
+    @Test
+    public void testByteCountsForUncompressed() throws IOException {
+        // See issue #863
+        BufferedImage image = ImageTypeSpecifiers.createGrayscale(2, DataBuffer.TYPE_BYTE)
+                                                 .createBufferedImage(43, 2); // 43 + 2 = 86 bits/line;
+
+        ImageWriter writer = createWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+            writer.setOutput(stream);
+            writer.write(image);
+        }
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(buffer.toByteArray())) {
+            Directory entries = new TIFFReader().read(stream);
+            Entry byteCountsEntry = entries.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
+            assertNotNull(byteCountsEntry);
+
+            assertEquals(22, ((Number) byteCountsEntry.getValue()).intValue()); // 86 bits/line, needs 88 bits * 2 => 22 bytes
+        }
     }
 
     @Test
@@ -1340,33 +1363,39 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
     }
 
     // Special purpose output stream that acts as a sink
-    private static class NullImageOutputStream extends ImageOutputStreamImpl {
-        @Override public void write(int b) {
+    private static final class NullImageOutputStream extends ImageOutputStreamImpl {
+        @Override
+        public void write(int b) {
         }
 
-        @Override public void write(byte[] b, int off, int len) {
+        @Override
+        public void write(byte[] b, int off, int len) {
         }
 
-        @Override public int read() throws IOException {
+        @Override
+        public int read() {
             return 0;
         }
 
-        @Override public int read(byte[] b, int off, int len) throws IOException {
+        @Override
+        public int read(byte[] b, int off, int len) {
             return 0;
         }
     }
 
     // Special purpose data buffer that does not require memory, to allow very large images
-    private static class NullDataBuffer extends DataBuffer {
+    private static final class NullDataBuffer extends DataBuffer {
         public NullDataBuffer(int type, int size) {
             super(type, size);
         }
 
-        @Override public int getElem(int bank, int i) {
+        @Override
+        public int getElem(int bank, int i) {
             return 0;
         }
 
-        @Override public void setElem(int bank, int i, int val) {
+        @Override
+        public void setElem(int bank, int i, int val) {
         }
     }
 }
