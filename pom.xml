@@ -138,10 +138,13 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.jpms.module.name>com.twelvemonkeys.${project.artifactId}</project.jpms.module.name>
+	<project.build.finalName>twelvemonkeys-${project.artifactId}-${project.version}</project.build.finalName>
     </properties>
 
     <build>
-        <finalName>twelvemonkeys-${project.artifactId}-${project.version}</finalName>
+		<!-- I found that moditect had issue with setting the build finalName. . . 
+		      ... perhaps report it to the moditect folks as a bug? -->
+	    <!--<finalName>${project.build.finalName}</finalName>-->
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -193,6 +196,29 @@
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
+		<plugin>
+			<groupId>org.moditect</groupId>
+			<artifactId>moditect-maven-plugin</artifactId>
+			<version>1.0.0.RC2</version>
+			<executions>
+				<execution>
+					<id>add-module-info</id>
+					<phase>package</phase>
+					<goals>
+						<goal>add-module-info</goal>
+					</goals>
+					<configurations>
+						<configuration>
+						<jvmVersion>9</jvmVersion>
+						<overwriteExistingFiles>true</overwriteExistingFiles>
+						<module>
+							<moduleInfoFile>src/main/java/module-info.java9</moduleInfoFile>
+						</module>
+						</configuration>
+					</configurations>
+				</execution>
+			</executions>
+		</plugin>
         </plugins>
 
         <pluginManagement>
@@ -220,6 +246,7 @@
                         </execution>
                     </executions>
                 </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
