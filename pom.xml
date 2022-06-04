@@ -207,7 +207,6 @@
 					<goals>
 						<goal>add-module-info</goal>
 					</goals>
-					<configurations>
 						<configuration>
 						<jvmVersion>9</jvmVersion>
 						<overwriteExistingFiles>true</overwriteExistingFiles>
@@ -215,7 +214,6 @@
 							<moduleInfoFile>src/main/java/module-info.java9</moduleInfoFile>
 						</module>
 						</configuration>
-					</configurations>
 				</execution>
 			</executions>
 		</plugin>
