@@ -35,7 +35,6 @@ import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
-import com.twelvemonkeys.imageio.metadata.tiff.Rational;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter;
@@ -55,12 +54,18 @@ import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.*;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
@@ -103,8 +108,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // CCITT compressions T.4 and T.6
     // Support storing multiple images in one stream (multi-page TIFF)
     // Support more of the ImageIO metadata (ie. compression from metadata, etc)
-
-    private static final Rational STANDARD_DPI = new Rational(72);
 
     /**
      * Flag for active sequence writing
@@ -176,6 +179,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
         }
 
+        short offsetType = tiffWriter.offsetSize() == 4 ? TIFF.TYPE_LONG : TIFF.TYPE_LONG8;
+
         Map<Integer, Entry> entries = new LinkedHashMap<>();
         // Copy metadata to output
         Directory metadataIFD = metadata.getIFD();
@@ -189,9 +194,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
         // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
         entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, renderedImage.getHeight()));
         // StripByteCounts - for no compression, entire image data...
-        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, -1)); // Updated later
+        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, -1)); // Updated later
         // StripOffsets - can be offset to single strip only
-        entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, -1)); // Updated later
+        entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, -1)); // Updated later
 
         // TODO: If tiled, write tile indexes etc
         // Depending on param.getTilingMode
@@ -205,10 +210,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
             long ifdSize = tiffWriter.computeIFDSize(entries.values());
             long stripOffset = streamPosition + tiffWriter.offsetSize() + ifdSize + tiffWriter.offsetSize();
-            long stripByteCount = ((long) renderedImage.getWidth() * renderedImage.getHeight() * pixelSize + 7L) / 8L;
+            long stripByteCount = renderedImage.getHeight() * (((long) renderedImage.getWidth() * pixelSize + 7L) / 8L);
 
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
@@ -259,8 +264,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
         // Update IFD0-pointer, and write IFD
         if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, stripByteCount));
+            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, stripOffset));
+            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, stripByteCount));
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
 
@@ -411,7 +416,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
             case TIFFExtension.COMPRESSION_LZW:
                 stream = IIOUtil.createStreamAdapter(imageOutput);
-                stream = new EncoderStream(stream, new LZWEncoder(((image.getTileWidth() * samplesPerPixel * bitPerSample + 7) / 8) * image.getTileHeight()));
+                stream = new EncoderStream(stream, new LZWEncoder((((long) image.getTileWidth() * samplesPerPixel * bitPerSample + 7) / 8) * image.getTileHeight()));
                 if (entries.containsKey(TIFF.TAG_PREDICTOR) && entries.get(TIFF.TAG_PREDICTOR).getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING)) {
                     stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), samplesPerPixel, bitPerSample, imageOutput.getByteOrder());
                 }
@@ -526,8 +531,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
         final int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
         final int numBands = renderedImage.getSampleModel().getNumBands();
 
-        final ByteBuffer buffer = ByteBuffer.allocate((tileWidth * numBands * sampleSize + 7) / 8);
-
         for (int yTile = minTileY; yTile < maxYTiles; yTile++) {
             for (int xTile = minTileX; xTile < maxXTiles; xTile++) {
                 final Raster tile = renderedImage.getTile(xTile, yTile);
@@ -565,21 +568,17 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int s = 0; s < numBands; s++) {
                                         if (sampleSize == 8 || shift == 0) {
                                             // Normal interleaved/planar case
-                                            buffer.put((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+                                            stream.writeByte((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
+
                                         }
                                         else {
                                             // "Packed" case
-                                            buffer.put((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
+                                            stream.writeByte((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
                                         }
                                     }
                                 }
 
-                                flushBuffer(buffer, stream);
-
-                                if (stream instanceof DataOutputStream) {
-                                    DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                    dataOutputStream.flush();
-                                }
+                                flushStream(stream);
                             }
                         }
 
@@ -587,25 +586,21 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
                     case DataBuffer.TYPE_USHORT:
                     case DataBuffer.TYPE_SHORT:
+                        final int shortStride = stride / 2;
                         if (numComponents == 1) {
 //                            System.err.println("Writing USHORT -> " + numBands * 2 + "_BYTES");
 
                             for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
                                 for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                    int yOff = y * stride / 2;
+                                    final int yOff = y * shortStride;
 
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
-                                        final int xOff = yOff + x;
+                                        int xOff = yOff + x;
 
-                                        buffer.putShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
+                                        stream.writeShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
                                     }
 
-                                    flushBuffer(buffer, stream);
-
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
+                                    flushStream(stream);
                                 }
                             }
                         }
@@ -636,26 +631,21 @@ public final class TIFFImageWriter extends ImageWriterBase {
                         break;
 
                     case DataBuffer.TYPE_INT:
-                        // TODO: This is incorrect for 32 bits/sample, only works for packed (INT_(A)RGB)
+                        // TODO: This is incorrect for general 32 bits/sample, only works for packed (INT_(A)RGB) and single channel
+                        final int intStride = stride / 4;
                         if (1 == numComponents) {
 //                            System.err.println("Writing INT -> " + numBands * 4 + "_BYTES");
-
                             for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
                                 for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                    int yOff = y * stride / 4;
+                                    int yOff = y * intStride;
 
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
-                                        final int xOff = yOff + x;
+                                        int xOff = yOff + x;
 
-                                        buffer.putInt(dataBuffer.getElem(b, xOff));
+                                        stream.writeInt(dataBuffer.getElem(b, xOff));
                                     }
 
-                                    flushBuffer(buffer, stream);
-
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
+                                    flushStream(stream);
                                 }
                             }
                         }
@@ -671,15 +661,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                         int element = dataBuffer.getElem(b, xOff);
 
                                         for (int s = 0; s < numBands; s++) {
-                                            buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
+                                            stream.writeByte((byte) ((element >> bitOffsets[s]) & 0xff));
                                         }
                                     }
 
-                                    flushBuffer(buffer, stream);
-                                    if (stream instanceof DataOutputStream) {
-                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                                        dataOutputStream.flush();
-                                    }
+                                    flushStream(stream);
                                 }
                             }
                         }
@@ -690,11 +676,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 }
             }
 
-            // TODO: Need to flush/start new compression for each row, for proper LZW/PackBits/Deflate/ZLib
-            if (stream instanceof DataOutputStream) {
-                DataOutputStream dataOutputStream = (DataOutputStream) stream;
-                dataOutputStream.flush();
-            }
+            flushStream(stream);
 
             // TODO: Report better progress
             processImageProgress((100f * (yTile + 1)) / maxYTiles);
@@ -708,12 +690,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
         processImageComplete();
     }
 
-    // TODO: Would be better to solve this on stream level... But writers would then have to explicitly flush the buffer before done.
-    private void flushBuffer(final ByteBuffer buffer, final DataOutput stream) throws IOException {
-        buffer.flip();
-        stream.write(buffer.array(), buffer.arrayOffset(), buffer.remaining());
-
-        buffer.clear();
+    private void flushStream(DataOutput stream) throws IOException {
+        // Need to flush/start new compression for each row, for proper LZW/PackBits/Deflate/ZLib compression
+        if (stream instanceof DataOutputStream) {
+            DataOutputStream dataOutputStream = (DataOutputStream) stream;
+            dataOutputStream.flush();
+        }
     }
 
     // Metadata
@@ -893,14 +875,14 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 case TIFF.TAG_ARTIST:
                 case TIFF.TAG_HOST_COMPUTER:
                 case TIFF.TAG_COPYRIGHT:
-                // Extension
+                    // Extension
                 case TIFF.TAG_DOCUMENT_NAME:
                 case TIFF.TAG_PAGE_NAME:
                 case TIFF.TAG_X_POSITION:
                 case TIFF.TAG_Y_POSITION:
                 case TIFF.TAG_PAGE_NUMBER:
                 case TIFF.TAG_XMP:
-                // Private/Custom
+                    // Private/Custom
                 case TIFF.TAG_IPTC:
                 case TIFF.TAG_PHOTOSHOP:
                 case TIFF.TAG_PHOTOSHOP_IMAGE_SOURCE_DATA:

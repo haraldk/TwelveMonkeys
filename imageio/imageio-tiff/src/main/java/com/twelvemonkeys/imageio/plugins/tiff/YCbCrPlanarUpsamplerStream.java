@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Harald Kuhr
+ * Copyright (c) 2022, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ import java.io.InputStream;
  * @author last modified by $Author: haraldk$
  * @version $Id: YCbCrUpsamplerStream.java,v 1.0 31.01.13 09:25 haraldk Exp$
  */
-final class YCbCrUpsamplerStream extends FilterInputStream {
+final class YCbCrPlanarUpsamplerStream extends FilterInputStream {
 
     private final int horizChromaSub;
     private final int vertChromaSub;
@@ -52,8 +52,6 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     private final int columns;
 
     private final int units;
-    private final int unitSize;
-    private final int padding;
     private final byte[] decodedRows;
     int decodedLength;
     int decodedPos;
@@ -62,7 +60,7 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
     int bufferLength;
     int bufferPos;
 
-    public YCbCrUpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns) {
+    public YCbCrPlanarUpsamplerStream(final InputStream stream, final int[] chromaSub, final int yCbCrPos, final int columns) {
         super(Validate.notNull(stream, "stream"));
 
         Validate.notNull(chromaSub, "chromaSub");
@@ -73,19 +71,10 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
         this.yCbCrPos = yCbCrPos;
         this.columns = columns;
 
-        // In TIFF, subsampled streams are stored in "units" of horiz * vert pixels.
-        // For a 4:2 subsampled stream like this:
-        //
-        //   Y0 Y1 Y2 Y3   Cb0   Cr0   Y8 Y9 Y10 Y11   Cb1   Cr1
-        //   Y4 Y5 Y6 Y7               Y12Y13Y14 Y15
-        //
-        // In the stream, the order is: Y0,Y1,Y2..Y7,Cb0,Cr0, Y8...Y15,Cb1,Cr1, Y16...
-
-        unitSize = horizChromaSub * vertChromaSub + 2;
         units = (columns + horizChromaSub - 1) / horizChromaSub;    // If columns % horizChromasSub != 0...
-        padding = units * horizChromaSub - columns;                 // ...each coded row will be padded to fill unit
-        decodedRows = new byte[columns * vertChromaSub * 3];
-        buffer = new byte[unitSize * units];
+        // ...each coded row will be padded to fill unit
+        decodedRows = new byte[columns * vertChromaSub];
+        buffer = new byte[units];
     }
 
     private void fetch() throws IOException {
@@ -114,32 +103,25 @@ final class YCbCrUpsamplerStream extends FilterInputStream {
         decodedLength = decodedRows.length;
 
         for (int u = 0; u < units; u++) {
-            if (bufferPos >= bufferLength) {
+            if (u >= bufferLength) {
                 throw new EOFException("Unexpected end of stream");
             }
 
             // Decode one unit
-            byte cb = buffer[bufferPos + unitSize - 2];
-            byte cr = buffer[bufferPos + unitSize - 1];
+            byte c = buffer[u];
 
             for (int y = 0; y < vertChromaSub; y++) {
                 for (int x = 0; x < horizChromaSub; x++) {
                     // Skip padding at end of row
                     int column = horizChromaSub * u + x;
                     if (column >= columns) {
-                        bufferPos += padding;
                         break;
                     }
 
-                    int pixelOff = 3 * (column + columns * y);
-
-                    decodedRows[pixelOff] = buffer[bufferPos++];
-                    decodedRows[pixelOff + 1] = cb;
-                    decodedRows[pixelOff + 2] = cr;
+                    int pixelOff = column + columns * y;
+                    decodedRows[pixelOff] = c;
                 }
             }
-
-            bufferPos += 2; // Skip CbCr bytes at end of unit
         }
 
         bufferPos = bufferLength;

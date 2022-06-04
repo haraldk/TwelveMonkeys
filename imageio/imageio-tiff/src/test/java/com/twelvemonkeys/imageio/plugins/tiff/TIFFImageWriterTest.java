@@ -36,6 +36,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.Rational;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.NullOutputStream;
@@ -43,7 +44,12 @@ import com.twelvemonkeys.io.NullOutputStream;
 import org.junit.Test;
 import org.w3c.dom.NodeList;
 
-import javax.imageio.*;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteProgressListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
@@ -53,10 +59,15 @@ import javax.imageio.stream.FileCacheImageOutputStream;
 import javax.imageio.stream.FileImageOutputStream;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.ImageOutputStreamImpl;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
-import java.io.*;
+import java.awt.color.*;
+import java.awt.image.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -150,6 +161,29 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         Entry yResolution = ifds.getEntryById(TIFF.TAG_Y_RESOLUTION);
         assertNotNull(yResolution);
         assertEquals(resolutionValue, yResolution.getValue());
+    }
+
+    @Test
+    public void testByteCountsForUncompressed() throws IOException {
+        // See issue #863
+        BufferedImage image = ImageTypeSpecifiers.createGrayscale(2, DataBuffer.TYPE_BYTE)
+                                                 .createBufferedImage(43, 2); // 43 + 2 = 86 bits/line;
+
+        ImageWriter writer = createWriter();
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+            writer.setOutput(stream);
+            writer.write(image);
+        }
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(buffer.toByteArray())) {
+            Directory entries = new TIFFReader().read(stream);
+            Entry byteCountsEntry = entries.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS);
+            assertNotNull(byteCountsEntry);
+
+            assertEquals(22, ((Number) byteCountsEntry.getValue()).intValue()); // 86 bits/line, needs 88 bits * 2 => 22 bytes
+        }
     }
 
     @Test
@@ -638,7 +672,12 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
             int maxH = Math.min(300, image.getHeight());
             for (int y = 0; y < maxH; y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
-                    assertRGBEquals(String.format("Pixel differ: @%d,%d", x, y), orig.getRGB(x, y), image.getRGB(x, y), 0);
+                    try {
+                        assertRGBEquals("", orig.getRGB(x, y), image.getRGB(x, y), 0);
+                    }
+                    catch (AssertionError err) {
+                        fail(String.format("Pixel differ: @%d,%d %s", x, y, err.getMessage()));
+                    }
                 }
             }
 
@@ -1266,6 +1305,50 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         }
     }
 
+    @Test
+    public void testShortOverflowHuge() throws IOException {
+        int width = 34769;
+        int height = 33769;
+
+        // Create a huge image without actually allocating memory...
+        DataBuffer buffer = new NullDataBuffer(DataBuffer.TYPE_USHORT, width * height);
+        WritableRaster raster = Raster.createWritableRaster(new ComponentSampleModel(buffer.getDataType(), width, height, 1, width, new int[] {0}), buffer, null);
+        ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, buffer.getDataType());
+        BufferedImage image = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
+
+        // Write image without any exception
+        TIFFImageWriter writer = createWriter();
+        try (ImageOutputStream stream = new NullImageOutputStream()) {
+            writer.setOutput(stream);
+            writer.write(image);
+        }
+        finally {
+            writer.dispose();
+        }
+    }
+
+    @Test
+    public void testIntOverflowHuge() throws IOException {
+        int width = 34769;
+        int height = 33769;
+
+        // Create a huge image without actually allocating memory...
+        DataBuffer buffer = new NullDataBuffer(DataBuffer.TYPE_INT, width * height);
+        WritableRaster raster = Raster.createWritableRaster(new ComponentSampleModel(buffer.getDataType(), width, height, 1, width, new int[] {0}), buffer, null);
+        ColorModel colorModel = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, buffer.getDataType());
+        BufferedImage image = new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
+
+        // Write image without any exception
+        TIFFImageWriter writer = createWriter();
+        try (ImageOutputStream stream = new NullImageOutputStream()) {
+            writer.setOutput(stream);
+            writer.write(image);
+        }
+        finally {
+            writer.dispose();
+        }
+    }
+
     private static class ImageInfo {
         final int width;
         final int height;
@@ -1276,6 +1359,43 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
             this.width = width;
             this.height = height;
             this.compression = compression;
+        }
+    }
+
+    // Special purpose output stream that acts as a sink
+    private static final class NullImageOutputStream extends ImageOutputStreamImpl {
+        @Override
+        public void write(int b) {
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+        }
+
+        @Override
+        public int read() {
+            return 0;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) {
+            return 0;
+        }
+    }
+
+    // Special purpose data buffer that does not require memory, to allow very large images
+    private static final class NullDataBuffer extends DataBuffer {
+        public NullDataBuffer(int type, int size) {
+            super(type, size);
+        }
+
+        @Override
+        public int getElem(int bank, int i) {
+            return 0;
+        }
+
+        @Override
+        public void setElem(int bank, int i, int val) {
         }
     }
 }

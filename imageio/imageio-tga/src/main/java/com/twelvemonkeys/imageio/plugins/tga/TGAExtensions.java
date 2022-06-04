@@ -33,10 +33,10 @@ package com.twelvemonkeys.imageio.plugins.tga;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 
 import static com.twelvemonkeys.imageio.plugins.tga.TGA.EXT_AREA_SIZE;
+import static com.twelvemonkeys.imageio.plugins.tga.TGAHeader.readString;
 
 /**
  * TGAExtensions.
@@ -147,25 +147,6 @@ final class TGAExtensions {
         calendar.set(year, month - 1, date, hourOfDay, minute, second);
 
         return calendar;
-    }
-
-    private static String readString(final ImageInputStream stream, final int maxLength) throws IOException {
-        byte[] data = new byte[maxLength];
-        stream.readFully(data);
-
-        return asZeroTerminatedASCIIString(data);
-    }
-
-    private static String asZeroTerminatedASCIIString(final byte[] data) {
-        int len = data.length;
-
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] == 0) {
-                len = i;
-            }
-        }
-
-        return new String(data, 0, len, StandardCharsets.US_ASCII);
     }
 
     public boolean hasAlpha() {

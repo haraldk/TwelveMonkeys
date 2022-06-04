@@ -136,7 +136,7 @@ final class TGAImageReader extends ImageReaderBase {
             case TGA.IMAGETYPE_TRUECOLOR_RLE:
                 ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
 
-                boolean hasAlpha = header.getAttributeBits() > 0 && extensions != null && extensions.hasAlpha();
+                boolean hasAlpha = header.getAttributeBits() > 0 && (extensions == null || extensions.hasAlpha());
                 boolean isAlphaPremultiplied = extensions != null && extensions.isAlphaPremultiplied();
 
                 switch (header.getPixelDepth()) {
@@ -393,27 +393,22 @@ final class TGAImageReader extends ImageReaderBase {
 
             // Read header
             header = TGAHeader.read(imageInput);
-
-//            System.err.println("header: " + header);
-
             imageInput.flushBefore(imageInput.getStreamPosition());
 
             // Read footer, if 2.0 format (ends with TRUEVISION-XFILE\0)
             skipToEnd(imageInput);
             imageInput.seek(imageInput.getStreamPosition() - 26);
 
-            long extOffset = imageInput.readInt();
-            /*long devOffset = */imageInput.readInt(); // Ignored for now
+            long extOffset = imageInput.readUnsignedInt();
+            /*long devOffset = */imageInput.readUnsignedInt(); // Ignored for now
 
             byte[] magic = new byte[18];
             imageInput.readFully(magic);
 
-            if (Arrays.equals(magic, TGA.MAGIC)) {
-                if (extOffset > 0) {
-                    imageInput.seek(extOffset);
-                    int extSize = imageInput.readUnsignedShort();
-                    extensions = extSize == 0 ? null : TGAExtensions.read(imageInput, extSize);
-                }
+            if (Arrays.equals(magic, TGA.MAGIC) && extOffset > 0) {
+                imageInput.seek(extOffset);
+                int extSize = imageInput.readUnsignedShort();
+                extensions = extSize == 0 ? null : TGAExtensions.read(imageInput, extSize);
             }
         }
 

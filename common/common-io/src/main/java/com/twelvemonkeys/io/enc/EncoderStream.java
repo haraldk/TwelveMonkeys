@@ -45,41 +45,39 @@ import java.nio.ByteBuffer;
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/enc/EncoderStream.java#2 $
  */
 public final class EncoderStream extends FilterOutputStream {
-    // TODO: This class need a test case ASAP!!!
 
-    protected final Encoder encoder;
+    private final Encoder encoder;
     private final boolean flushOnWrite;
 
-    protected final ByteBuffer buffer;
+    private final ByteBuffer buffer;
 
     /**
      * Creates an output stream filter built on top of the specified
      * underlying output stream.
      *
-     * @param pStream the underlying output stream
-     * @param pEncoder the encoder to use
+     * @param stream the underlying output stream
+     * @param encoder the encoder to use
      */
-    public EncoderStream(final OutputStream pStream, final Encoder pEncoder) {
-        this(pStream, pEncoder, false);
+    public EncoderStream(final OutputStream stream, final Encoder encoder) {
+        this(stream, encoder, false);
     }
 
     /**
      * Creates an output stream filter built on top of the specified
      * underlying output stream.
      *
-     * @param pStream the underlying output stream
-     * @param pEncoder the encoder to use
-     * @param pFlushOnWrite if {@code true}, calls to the byte-array
+     * @param stream the underlying output stream
+     * @param encoder the encoder to use
+     * @param flushOnWrite if {@code true}, calls to the byte-array
      * {@code write} methods will automatically flush the buffer.
      */
-    public EncoderStream(final OutputStream pStream, final Encoder pEncoder, final boolean pFlushOnWrite) {
-        super(pStream);
+    public EncoderStream(final OutputStream stream, final Encoder encoder, final boolean flushOnWrite) {
+        super(stream);
 
-        encoder = pEncoder;
-        flushOnWrite = pFlushOnWrite;
+        this.encoder = encoder;
+        this.flushOnWrite = flushOnWrite;
 
         buffer = ByteBuffer.allocate(1024);
-        buffer.flip();
     }
 
     public void close() throws IOException {
@@ -104,33 +102,33 @@ public final class EncoderStream extends FilterOutputStream {
         }
     }
 
-    public final void write(final byte[] pBytes) throws IOException {
-        write(pBytes, 0, pBytes.length);
+    public void write(final byte[] bytes) throws IOException {
+        write(bytes, 0, bytes.length);
     }
 
     // TODO: Verify that this works for the general case (it probably won't)...
     // TODO: We might need a way to explicitly flush the encoder, or specify
     // that the encoder can't buffer. In that case, the encoder should probably
-    // tell the EncoderStream how large buffer it prefers... 
-    public void write(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
-        if (!flushOnWrite && pLength < buffer.remaining()) {
+    // tell the EncoderStream how large buffer it prefers...
+    public void write(final byte[] values, final int offset, final int length) throws IOException {
+        if (!flushOnWrite && length < buffer.remaining()) {
             // Buffer data
-            buffer.put(pBytes, pOffset, pLength);
+            buffer.put(values, offset, length);
         }
         else {
             // Encode data already in the buffer
             encodeBuffer();
 
             // Encode rest without buffering
-            encoder.encode(out, ByteBuffer.wrap(pBytes, pOffset, pLength));
+            encoder.encode(out, ByteBuffer.wrap(values, offset, length));
         }
     }
 
-    public void write(final int pByte) throws IOException {
+    public void write(final int value) throws IOException {
         if (!buffer.hasRemaining()) {
             encodeBuffer(); // Resets bufferPos to 0
         }
 
-        buffer.put((byte) pByte);
+        buffer.put((byte) value);
     }
 }

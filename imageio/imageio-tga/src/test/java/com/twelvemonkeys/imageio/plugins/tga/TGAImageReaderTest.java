@@ -33,17 +33,23 @@ package com.twelvemonkeys.imageio.plugins.tga;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.junit.Test;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * TGAImageReaderTest
@@ -76,20 +82,20 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
                 new TestData(getClassLoaderResource("/tga/CTC24.TGA"), new Dimension(128, 128)), // RLE compressed 24 bit BGR
                 new TestData(getClassLoaderResource("/tga/CTC32.TGA"), new Dimension(128, 128)), // RLE compressed 32 bit BGRA
 
-                // Further samples from http://www.fileformat.info/format/tga/sample/index.htm
+                // More samples from http://www.fileformat.info/format/tga/sample/index.htm
                 new TestData(getClassLoaderResource("/tga/FLAG_B16.TGA"), new Dimension(124, 124)), // Uncompressed 16 bit BGR bottom/up
                 new TestData(getClassLoaderResource("/tga/FLAG_B24.TGA"), new Dimension(124, 124)), // Uncompressed 24 bit BGR bottom/up
-                new TestData(getClassLoaderResource("/tga/FLAG_B32.TGA"), new Dimension(124, 124)), // Uncompressed 32 bit BGRA bottom/up
+                new TestData(getClassLoaderResource("/tga/FLAG_B32.TGA"), new Dimension(124, 124)), // Uncompressed 32 bit BGRX bottom/up
                 new TestData(getClassLoaderResource("/tga/FLAG_T16.TGA"), new Dimension(124, 124)), // Uncompressed 16 bit BGR top/down
 //                new TestData(getClassLoaderResource("/tga/FLAG_T24.TGA"), new Dimension(124, 124)), // Uncompressed 24 bit BGR top/down (missing from file set)
-                new TestData(getClassLoaderResource("/tga/FLAG_T32.TGA"), new Dimension(124, 124)), // Uncompressed 32 bit BGRA top/down
+                new TestData(getClassLoaderResource("/tga/FLAG_T32.TGA"), new Dimension(124, 124)), // Uncompressed 32 bit BGRX top/down
 
                 new TestData(getClassLoaderResource("/tga/XING_B16.TGA"), new Dimension(240, 164)), // Uncompressed 16 bit BGR bottom/up
                 new TestData(getClassLoaderResource("/tga/XING_B24.TGA"), new Dimension(240, 164)), // Uncompressed 24 bit BGR bottom/up
-                new TestData(getClassLoaderResource("/tga/XING_B32.TGA"), new Dimension(240, 164)), // Uncompressed 32 bit BGRA bottom/up
+                new TestData(getClassLoaderResource("/tga/XING_B32.TGA"), new Dimension(240, 164)), // Uncompressed 32 bit BGRX bottom/up
                 new TestData(getClassLoaderResource("/tga/XING_T16.TGA"), new Dimension(240, 164)), // Uncompressed 16 bit BGR top/down
                 new TestData(getClassLoaderResource("/tga/XING_T24.TGA"), new Dimension(240, 164)), // Uncompressed 24 bit BGR top/down
-                new TestData(getClassLoaderResource("/tga/XING_T32.TGA"), new Dimension(240, 164)), // Uncompressed 32 bit BGRA top/down
+                new TestData(getClassLoaderResource("/tga/XING_T32.TGA"), new Dimension(240, 164)), // Uncompressed 32 bit BGRX top/down
 
                 new TestData(getClassLoaderResource("/tga/autodesk-3dsmax-extsize494.tga"), new Dimension(440, 200)),  // RLE compressed 32 bit BGRA bottom/up, with extension area size 494
 
@@ -97,7 +103,8 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
                 new TestData(getClassLoaderResource("/tga/monochrome16_top_left_rle.tga"), new Dimension(64, 64)),  // RLE compressed 16 bit monochrome
 
                 new TestData(getClassLoaderResource("/tga/692c33d1-d0c3-4fe2-a059-f199d063bc7a.tga"), new Dimension(256, 256)), // Uncompressed BGR, with colorMapDepth set to 24
-                new TestData(getClassLoaderResource("/tga/0112eccd-2c29-4368-bcef-59c823b6e5d1.tga"), new Dimension(256, 256)) // RLE compressed BGR, with extension area size 0
+                new TestData(getClassLoaderResource("/tga/0112eccd-2c29-4368-bcef-59c823b6e5d1.tga"), new Dimension(256, 256)), // RLE compressed BGR, with extension area size 0
+                new TestData(getClassLoaderResource("/tga/alpha-no-extension.tga"), new Dimension(167, 64)) // Uncompressed BGRA, without extension area
         );
     }
 
@@ -136,5 +143,71 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
         }
 
         reader.dispose();
+    }
+
+    @Test
+    public void testAlpha() throws IOException {
+        ImageReader reader = createReader();
+
+        // These samples have "attribute bits" that are *NOT* alpha, according to the extension area
+        for (String sample : Arrays.asList("/tga/UTC16.TGA", "/tga/UTC32.TGA", "/tga/CTC16.TGA", "/tga/CTC32.TGA")) {
+            try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource(sample))) {
+                reader.setInput(input);
+
+                BufferedImage image = reader.read(0);
+
+                String message = String.format("RGB value differs for sample '%s'", sample);
+                assertRGBEquals(message, 0xffff0000, image.getRGB(0, 0), 0);
+                assertRGBEquals(message, 0xff00ff00, image.getRGB(8, 0), 0);
+                assertRGBEquals(message, 0xff0000ff, image.getRGB(16, 0), 0);
+                assertRGBEquals(message, 0xff000000, image.getRGB(24, 0), 0);
+                assertRGBEquals(message, 0xffff0000, image.getRGB(32, 0), 0);
+                assertRGBEquals(message, 0xff00ff00, image.getRGB(40, 0), 0);
+                assertRGBEquals(message, 0xff0000ff, image.getRGB(48, 0), 0);
+                assertRGBEquals(message, 0xffffffff, image.getRGB(56, 0), 0);
+            }
+        }
+
+        // This sample has "attribute bits" that *ARE* alpha, and there is no extension area
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/alpha-no-extension.tga"))) {
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+
+            String message = "RGB value differs for sample '/tga/alpha-no-extension.tga'";
+            assertRGBEquals(message, 0x00ffffff, image.getRGB(0, 0), 0);
+            assertRGBEquals(message, 0xffffffff, image.getRGB(48, 14), 0);
+        }
+
+        reader.dispose();
+    }
+
+    @Test
+    public void testMetadataTextEntries() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/autodesk-3dsmax-extsize494.tga"))) {
+            reader.setInput(input);
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode root = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+            NodeList textEntries = root.getElementsByTagName("TextEntry");
+            boolean softwareFound = false;
+
+            for (int i = 0; i < root.getLength(); i++) {
+                IIOMetadataNode software = (IIOMetadataNode) textEntries.item(i);
+
+                if ("Software".equals(software.getAttribute("keyword"))) {
+                    assertEquals("Autodesk 3ds max 1.0", software.getAttribute("value"));
+                    softwareFound = true;
+                    break;
+                }
+            }
+
+            assertTrue("No Software TextEntry", softwareFound);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 }

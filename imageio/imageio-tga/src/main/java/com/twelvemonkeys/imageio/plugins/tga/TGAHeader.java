@@ -253,10 +253,7 @@ final class TGAHeader {
 
         // Image ID section, not *really* part of the header, but let's get rid of it...
         if (imageIdLength > 0) {
-            byte[] idBytes = new byte[imageIdLength];
-            imageInput.readFully(idBytes);
-
-            header.identification = new String(idBytes, StandardCharsets.US_ASCII);
+            header.identification = readString(imageInput, imageIdLength);
         }
 
         // Color map, not *really* part of the header
@@ -265,6 +262,26 @@ final class TGAHeader {
         }
 
         return header;
+    }
+
+    static String readString(final ImageInputStream stream, final int maxLength) throws IOException {
+        byte[] data = new byte[maxLength];
+        stream.readFully(data);
+
+        return asZeroTerminatedASCIIString(data);
+    }
+
+    private static String asZeroTerminatedASCIIString(final byte[] data) {
+        int len = data.length;
+
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] == 0) {
+                len = i;
+                break;
+            }
+        }
+
+        return new String(data, 0, len, StandardCharsets.US_ASCII);
     }
 
     private static IndexColorModel readColorMap(final DataInput stream, final TGAHeader header) throws IOException {

@@ -44,7 +44,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -56,7 +56,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
@@ -173,7 +176,22 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/jpeg-lossless-24bit-rgb.tif"), new Dimension(512, 512)),  // Lossless JPEG RGB, 8 bit/sample
                 // Custom PIXTIFF ZIP (Compression: 50013)
                 new TestData(getClassLoaderResource("/tiff/pixtiff/40-8bit-gray-zip.tif"), new Dimension(801, 1313)),  // ZIP Gray, 8 bit/sample
-                new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)) // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
+                new TestData(getClassLoaderResource("/tiff/part.tif"), new Dimension(50, 50)), // Gray/BlackIsZero, uncompressed, striped signed int (SampleFormat 2)
+                // Planar YCbCr full chroma
+                new TestData(getClassLoaderResource("/tiff/lab-a-8.tiff"), new Dimension(589, 340)), // Lab + Alpha, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/lab-a-16.tiff"), new Dimension(589, 340)), // Lab + Alpha, 16 bit uncompressed, striped
+                // Planar YCbCr full chroma
+                new TestData(getClassLoaderResource("/tiff/planar-yuv444-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv444-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, LZW compressed, striped
+                // Planar YCbCr subsampled
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-bt601-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, Rec.601 coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-bt601-lzw.tif"), new Dimension(256, 64)), // YCbCr, Rec.601 coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv422-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv420-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv420-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-lzw.tif"), new Dimension(256, 64)) // YCbCr, JPEG coefficients,LZW compressed, striped
         );
     }
 
@@ -875,6 +893,32 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         }
 
         assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
+    }
+
+    @Test
+    public void testReadLittleEndian4444ARGB() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/little-endian-rgba-4444.tiff"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = null;
+            try {
+                image = reader.read(0);
+            }
+            catch (IOException e) {
+                failBecause("Image could not be read", e);
+            }
+
+            assertNotNull(image);
+            assertEquals(589, image.getWidth());
+            assertEquals(340, image.getHeight());
+
+            assertRGBEquals("Red", 0xffff1111, image.getRGB(124, 42), 4);
+            assertRGBEquals("Green", 0xff66ee11, image.getRGB(476, 100), 4);
+            assertRGBEquals("Yellow", 0xffffff00, image.getRGB(312, 186), 4);
+            assertRGBEquals("Blue", 0xff1155dd, image.getRGB(366, 192), 4);
+        }
     }
 
     @Test

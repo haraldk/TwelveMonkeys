@@ -291,12 +291,10 @@ final class TGAMetadata extends AbstractMetadata {
         IIOMetadataNode text = new IIOMetadataNode("Text");
 
         // NOTE: Names corresponds to equivalent fields in TIFF
-        if (header.getIdentification() != null && !header.getIdentification().isEmpty()) {
-            appendTextEntry(text, "DocumentName", header.getIdentification());
-        }
+        appendTextEntry(text, "DocumentName", header.getIdentification());
 
         if (extensions != null) {
-            appendTextEntry(text, "Software", extensions.getSoftwareVersion() == null ? extensions.getSoftware() : extensions.getSoftware() + " " + extensions.getSoftwareVersion());
+            appendTextEntry(text, "Software", extensions.getSoftwareVersion() == null ? extensions.getSoftware() : (extensions.getSoftware() + " " + extensions.getSoftwareVersion()));
             appendTextEntry(text, "Artist", extensions.getAuthorName());
             appendTextEntry(text, "UserComment", extensions.getAuthorComments());
         }
@@ -305,7 +303,7 @@ final class TGAMetadata extends AbstractMetadata {
     }
 
     private void appendTextEntry(final IIOMetadataNode parent, final String keyword, final String value) {
-        if (value != null) {
+        if (value != null && !value.isEmpty()) {
             IIOMetadataNode textEntry = new IIOMetadataNode("TextEntry");
             parent.appendChild(textEntry);
             textEntry.setAttribute("keyword", keyword);

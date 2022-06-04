@@ -173,10 +173,14 @@ public final class TIFFEntry extends AbstractEntry {
                 return "TileByteCounts";
             case TIFF.TAG_COPYRIGHT:
                 return "Copyright";
+            case TIFF.TAG_YCBCR_COEFFICIENTS:
+                return "YCbCrCoefficients";
             case TIFF.TAG_YCBCR_SUB_SAMPLING:
                 return "YCbCrSubSampling";
             case TIFF.TAG_YCBCR_POSITIONING:
                 return "YCbCrPositioning";
+            case TIFF.TAG_REFERENCE_BLACK_WHITE:
+                return "ReferenceBlackWhite";
             case TIFF.TAG_COLOR_MAP:
                 return "ColorMap";
             case TIFF.TAG_INK_SET:
