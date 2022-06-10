@@ -45,6 +45,7 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -638,12 +639,18 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             assertNotNull(layer2);
             assertEquals(400, layer2.getWidth());
             assertEquals(191, layer2.getHeight());
+            assertEquals(ColorSpace.TYPE_CMYK, layer2.getColorModel().getColorSpace().getType());
+            assertEquals(5, layer2.getColorModel().getNumComponents());
 
-            assertRGBEquals("RGB differ at (0,0)", 0xff090b0b, layer2.getRGB(0, 0), 4);
-            assertRGBEquals("RGB differ at (399,0)", 0xff090b0b, layer2.getRGB(399, 0), 4);
+            // For cross-platform testing: as the PSD does not have embedded CMYK profile, we'll use built-in RGB conversion
+            ColorModel cmykAlpha = new ComponentColorModel(new FakeCMYKColorSpace(), true, false, Transparency.TRANSLUCENT, DataBuffer.TYPE_USHORT);
+            layer2 = new BufferedImage(cmykAlpha, layer2.getRaster(), cmykAlpha.isAlphaPremultiplied(), null);
+
+            assertRGBEquals("RGB differ at (0,0)", 0xff060808, layer2.getRGB(0, 0), 4);
+            assertRGBEquals("RGB differ at (399,0)", 0xff060808, layer2.getRGB(399, 0), 4);
             assertRGBEquals("RGB differ at (200,95)", 0x00ffffff, layer2.getRGB(200, 95), 4); // Transparent
-            assertRGBEquals("RGB differ at (0,191)", 0xff090b0b, layer2.getRGB(0, 190), 4);
-            assertRGBEquals("RGB differ at (399,191)", 0xff090b0b, layer2.getRGB(399, 190), 4);
+            assertRGBEquals("RGB differ at (0,191)", 0xff060808, layer2.getRGB(0, 190), 4);
+            assertRGBEquals("RGB differ at (399,191)", 0xff060808, layer2.getRGB(399, 190), 4);
 
             assertEquals(400, imageReader.getWidth(3));
             assertEquals(191, imageReader.getHeight(3));
@@ -652,12 +659,17 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             assertNotNull(layer3);
             assertEquals(400, layer3.getWidth());
             assertEquals(191, layer3.getHeight());
+            assertEquals(ColorSpace.TYPE_CMYK, layer3.getColorModel().getColorSpace().getType());
+            assertEquals(5, layer3.getColorModel().getNumComponents());
 
-            assertRGBEquals("RGB differ at (0,0)", 0xffeec335, layer3.getRGB(0, 0), 4);
-            assertRGBEquals("RGB differ at (399,0)", 0xffeec335, layer3.getRGB(399, 0), 4);
-            assertRGBEquals("RGB differ at (200,95)", 0xffdb3b3b, layer3.getRGB(200, 95), 4); // Red
-            assertRGBEquals("RGB differ at (0,191)", 0xffeec335, layer3.getRGB(0, 190), 4);
-            assertRGBEquals("RGB differ at (399,191)", 0xffeec335, layer3.getRGB(399, 190), 4);
+            // For cross-platform testing: as the PSD does not have embedded CMYK profile, we'll use built-in RGB conversion
+            layer3 = new BufferedImage(cmykAlpha, layer3.getRaster(), cmykAlpha.isAlphaPremultiplied(), null);
+
+            assertRGBEquals("RGB differ at (0,0)", 0xfff5cb0c, layer3.getRGB(0, 0), 4);
+            assertRGBEquals("RGB differ at (399,0)", 0xfff5cb0c, layer3.getRGB(399, 0), 4);
+            assertRGBEquals("RGB differ at (200,95)", 0xffff152a, layer3.getRGB(200, 95), 4); // Red
+            assertRGBEquals("RGB differ at (0,191)", 0xfff5cb0c, layer3.getRGB(0, 190), 4);
+            assertRGBEquals("RGB differ at (399,191)", 0xfff5cb0c, layer3.getRGB(399, 190), 4);
         }
     }
 
@@ -680,6 +692,32 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
             assertRGBEquals("RGB differ at (0,0)", 0xff888888, image.getRGB(0, 0), 4);
             assertRGBEquals("RGB differ at (4,4)", 0xff888888, image.getRGB(4, 4), 4);
+        }
+    }
+
+    final static class FakeCMYKColorSpace extends ColorSpace {
+        FakeCMYKColorSpace() {
+            super(ColorSpace.TYPE_CMYK, 4);
+        }
+
+        public float[] toRGB(float[] cmyk) {
+            return new float[] {
+                    (1 - cmyk[0]) * (1 - cmyk[3]),
+                    (1 - cmyk[1]) * (1 - cmyk[3]),
+                    (1 - cmyk[2]) * (1 - cmyk[3])
+            };
+        }
+
+        public float[] fromRGB(float[] rgb) {
+            throw new UnsupportedOperationException();
+        }
+
+        public float[] toCIEXYZ(float[] cmyk) {
+            throw new UnsupportedOperationException();
+        }
+
+        public float[] fromCIEXYZ(float[] cieXYZ) {
+            throw new UnsupportedOperationException();
         }
     }
 }
