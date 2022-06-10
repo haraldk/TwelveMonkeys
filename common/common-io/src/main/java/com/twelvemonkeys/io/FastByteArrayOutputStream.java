@@ -34,6 +34,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 
 /**
  * An unsynchronized {@code ByteArrayOutputStream} implementation. This version
@@ -42,11 +43,8 @@ import java.io.OutputStream;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: FastByteArrayOutputStream.java#2 $
  */
-// TODO: Performance test of a stream impl that uses list of fixed size blocks, rather than contiguous block 
+// TODO: Performance test of a stream impl that uses list of fixed size blocks, rather than contiguous block
 public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
-    /** Max grow size (unless if writing more than this amount of bytes) */
-    protected int maxGrowSize = 1024 * 1024; // 1 MB
-
     /**
      * Creates a {@code ByteArrayOutputStream} with the given initial buffer
      * size.
@@ -97,10 +95,8 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
 
     private void growIfNeeded(int pNewCount) {
         if (pNewCount > buf.length) {
-            int newSize = Math.max(Math.min(buf.length << 1, buf.length + maxGrowSize), pNewCount);
-            byte[] newBuf = new byte[newSize];
-            System.arraycopy(buf, 0, newBuf, 0, count);
-            buf = newBuf;
+            int newSize = Math.max(buf.length << 1, pNewCount);
+            buf = Arrays.copyOf(buf, newSize);
         }
     }
 
@@ -113,10 +109,7 @@ public final class FastByteArrayOutputStream extends ByteArrayOutputStream {
     // Non-synchronized version of toByteArray
     @Override
     public byte[] toByteArray() {
-        byte[] newBuf = new byte[count];
-        System.arraycopy(buf, 0, newBuf, 0, count);
-
-        return newBuf;
+        return Arrays.copyOf(buf, count);
     }
 
     /**
