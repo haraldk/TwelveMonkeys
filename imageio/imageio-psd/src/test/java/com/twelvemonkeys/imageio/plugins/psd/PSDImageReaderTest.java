@@ -45,10 +45,13 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.image.BufferedImage;
+import java.awt.image.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -616,6 +619,67 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             assertEquals(-1, layer1.groupId);
             assertFalse(layer1.isGroup);
             assertFalse(layer1.isDivider);
+        }
+    }
+
+    @Test
+    public void test16bitLr16AndZIPPredictor() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"))) {
+            imageReader.setInput(stream);
+
+            assertEquals(5, imageReader.getNumImages(true));
+
+            assertEquals(400, imageReader.getWidth(2));
+            assertEquals(191, imageReader.getHeight(2));
+
+            BufferedImage layer2 = imageReader.read(2);// Read the 16 bit ZIP Predictor based layer
+            assertNotNull(layer2);
+            assertEquals(400, layer2.getWidth());
+            assertEquals(191, layer2.getHeight());
+
+            assertRGBEquals("RGB differ at (0,0)", 0xff090b0b, layer2.getRGB(0, 0), 4);
+            assertRGBEquals("RGB differ at (399,0)", 0xff090b0b, layer2.getRGB(399, 0), 4);
+            assertRGBEquals("RGB differ at (200,95)", 0x00ffffff, layer2.getRGB(200, 95), 4); // Transparent
+            assertRGBEquals("RGB differ at (0,191)", 0xff090b0b, layer2.getRGB(0, 190), 4);
+            assertRGBEquals("RGB differ at (399,191)", 0xff090b0b, layer2.getRGB(399, 190), 4);
+
+            assertEquals(400, imageReader.getWidth(3));
+            assertEquals(191, imageReader.getHeight(3));
+
+            BufferedImage layer3 = imageReader.read(3);// Read the 16 bit ZIP Predictor based layer
+            assertNotNull(layer3);
+            assertEquals(400, layer3.getWidth());
+            assertEquals(191, layer3.getHeight());
+
+            assertRGBEquals("RGB differ at (0,0)", 0xffeec335, layer3.getRGB(0, 0), 4);
+            assertRGBEquals("RGB differ at (399,0)", 0xffeec335, layer3.getRGB(399, 0), 4);
+            assertRGBEquals("RGB differ at (200,95)", 0xffdb3b3b, layer3.getRGB(200, 95), 4); // Red
+            assertRGBEquals("RGB differ at (0,191)", 0xffeec335, layer3.getRGB(0, 190), 4);
+            assertRGBEquals("RGB differ at (399,191)", 0xffeec335, layer3.getRGB(399, 190), 4);
+        }
+    }
+
+    @Test
+    public void test32bitLr32AndZIPPredictor() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/psd/32bit5x5.psd"))) {
+            imageReader.setInput(stream);
+
+            assertEquals(4, imageReader.getNumImages(true));
+
+            assertEquals(5, imageReader.getWidth(1));
+            assertEquals(5, imageReader.getHeight(1));
+
+            BufferedImage image = imageReader.read(1);// Read the 32 bit ZIP Predictor based layer
+            assertNotNull(image);
+            assertEquals(5, image.getWidth());
+            assertEquals(5, image.getHeight());
+
+            assertRGBEquals("RGB differ at (0,0)", 0xff888888, image.getRGB(0, 0), 4);
+            assertRGBEquals("RGB differ at (4,4)", 0xff888888, image.getRGB(4, 4), 4);
         }
     }
 }

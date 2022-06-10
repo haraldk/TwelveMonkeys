@@ -85,19 +85,4 @@ final class PSDEXIF1Data extends PSDDirectoryResource {
         output.writeInt((int) (afterExif - beforeExif));
         output.seek(afterExif);
     }
-
-    @Override
-    public String toString() {
-        Directory directory = getDirectory();
-
-        if (directory == null) {
-            return super.toString();
-        }
-
-        StringBuilder builder = toStringBuilder();
-        builder.append(", ").append(directory);
-        builder.append("]");
-
-        return builder.toString();
-    }
 }

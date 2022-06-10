@@ -34,7 +34,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -77,7 +77,7 @@ final class PSDThumbnail extends PSDImageResource {
 
         // This data isn't really useful, unless we're dealing with raw bytes
         widthBytes = pInput.readInt();
-        int totalSize = pInput.readInt(); // Hmm.. Is this really useful at all?
+        int totalSize = pInput.readInt(); // Hmm... Is this really useful at all?
 
         // Consistency check
         int sizeCompressed = pInput.readInt();

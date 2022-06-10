@@ -53,19 +53,4 @@ final class PSDIPTCData extends PSDDirectoryResource {
     Directory parseDirectory() throws IOException {
         return new IPTCReader().read(new ByteArrayImageInputStream(data));
     }
-
-    @Override
-    public String toString() {
-        Directory directory = getDirectory();
-
-        if (directory == null) {
-            return super.toString();
-        }
-
-        StringBuilder builder = toStringBuilder();
-        builder.append(", ").append(directory);
-        builder.append("]");
-
-        return builder.toString();
-    }
 }
