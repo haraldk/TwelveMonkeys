@@ -30,21 +30,10 @@
 
 package com.twelvemonkeys.imageio.plugins.svg;
 
-import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.spi.ImageReaderSpi;
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.StringUtil;
 
 import org.apache.batik.anim.dom.SVGDOMImplementation;
 import org.apache.batik.anim.dom.SVGOMDocument;
@@ -68,10 +57,19 @@ import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.svg.SVGSVGElement;
 
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.lang.StringUtil;
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.spi.ImageReaderSpi;
+import java.awt.*;
+import java.awt.geom.*;
+import java.awt.image.*;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Image reader for SVG document fragments.
@@ -79,12 +77,13 @@ import com.twelvemonkeys.lang.StringUtil;
  * @author Harald Kuhr
  * @author Inpspired by code from the Batik Team
  * @version $Id: $
- * @see <A href="http://www.mail-archive.com/batik-dev@xml.apache.org/msg00992.html">batik-dev</A>
+ * @see <a href="http://www.mail-archive.com/batik-dev@xml.apache.org/msg00992.html">batik-dev</a>
  */
 public class SVGImageReader extends ImageReaderBase {
 
     final static boolean DEFAULT_ALLOW_EXTERNAL_RESOURCES =
-            "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources"));
+            "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.svg.allowExternalResources",
+                    System.getProperty("com.twelvemonkeys.imageio.plugins.svg.allowexternalresources")));
 
     private Rasterizer rasterizer;
     private boolean allowExternalResources = DEFAULT_ALLOW_EXTERNAL_RESOURCES;
@@ -150,29 +149,23 @@ public class SVGImageReader extends ImageReaderBase {
         BufferedImage destination = getDestination(pParam, getImageTypes(pIndex), size.width, size.height);
 
         // Read in the image, using the Batik Transcoder
+        processImageStarted(pIndex);
+
+        BufferedImage image = rasterizer.getImage();
+
+        Graphics2D g = destination.createGraphics();
         try {
-            processImageStarted(pIndex);
-
-            BufferedImage image = rasterizer.getImage();
-
-            Graphics2D g = destination.createGraphics();
-            try {
-                g.setComposite(AlphaComposite.Src);
-                g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
-                g.drawImage(image, 0, 0, null); // TODO: Dest offset?
-            }
-            finally {
-                g.dispose();
-            }
-
-            processImageComplete();
-
-            return destination;
+            g.setComposite(AlphaComposite.Src);
+            g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_DISABLE);
+            g.drawImage(image, 0, 0, null); // TODO: Dest offset?
         }
-        catch (TranscoderException e) {
-            Throwable cause = unwrapException(e);
-            throw new IIOException(cause.getMessage(), cause);
+        finally {
+            g.dispose();
         }
+
+        processImageComplete();
+
+        return destination;
     }
 
     private static Throwable unwrapException(TranscoderException ex) {
@@ -187,11 +180,11 @@ public class SVGImageReader extends ImageReaderBase {
 
         // Set dimensions
         Dimension size = pParam.getSourceRenderSize();
-        Dimension origSize = new Dimension(getWidth(0), getHeight(0));
+        Rectangle viewBox = rasterizer.getViewBox();
         if (size == null) {
             // SVG is not a pixel based format, but we'll scale it, according to
             // the subsampling for compatibility
-            size = getSourceRenderSizeFromSubsamping(pParam, origSize);
+            size = getSourceRenderSizeFromSubsamping(pParam, viewBox.getSize());
         }
 
         if (size != null) {
@@ -211,8 +204,8 @@ public class SVGImageReader extends ImageReaderBase {
             }
             else {
                 // Need to resize here...
-                double xScale = size.getWidth() / origSize.getWidth();
-                double yScale =  size.getHeight() / origSize.getHeight();
+                double xScale = size.getWidth() / viewBox.getWidth();
+                double yScale =  size.getHeight() / viewBox.getHeight();
 
                 hints.put(ImageTranscoder.KEY_WIDTH, (float) (region.getWidth() * xScale));
                 hints.put(ImageTranscoder.KEY_HEIGHT, (float) (region.getHeight() * yScale));
@@ -220,7 +213,7 @@ public class SVGImageReader extends ImageReaderBase {
         }
         else if (size != null) {
             // Allow non-uniform scaling
-            hints.put(ImageTranscoder.KEY_AOI, new Rectangle(origSize));
+            hints.put(ImageTranscoder.KEY_AOI, viewBox);
         }
 
         // Background color
@@ -235,7 +228,7 @@ public class SVGImageReader extends ImageReaderBase {
     private Dimension getSourceRenderSizeFromSubsamping(ImageReadParam pParam, Dimension pOrigSize) {
         if (pParam.getSourceXSubsampling() > 1 || pParam.getSourceYSubsampling() > 1) {
             return new Dimension((int) (pOrigSize.width / (float) pParam.getSourceXSubsampling()),
-                                 (int) (pOrigSize.height / (float) pParam.getSourceYSubsampling()));
+                    (int) (pOrigSize.height / (float) pParam.getSourceYSubsampling()));
         }
         return null;
     }
@@ -246,22 +239,13 @@ public class SVGImageReader extends ImageReaderBase {
 
     public int getWidth(int pIndex) throws IOException {
         checkBounds(pIndex);
-        try {
-            return rasterizer.getDefaultWidth();
-        }
-        catch (TranscoderException e) {
-            throw new IIOException(e.getMessage(), e);
-        }
+
+        return rasterizer.getDefaultWidth();
     }
 
     public int getHeight(int pIndex) throws IOException {
         checkBounds(pIndex);
-        try {
-            return rasterizer.getDefaultHeight();
-        }
-        catch (TranscoderException e) {
-            throw new IIOException(e.getMessage(), e);
-        }
+        return rasterizer.getDefaultHeight();
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) {
@@ -275,12 +259,11 @@ public class SVGImageReader extends ImageReaderBase {
      * and needs major refactoring!
      * </p>
      */
-    private class Rasterizer extends SVGAbstractTranscoder /*ImageTranscoder*/ {
-
+    private class Rasterizer extends SVGAbstractTranscoder {
         private BufferedImage image;
         private TranscoderInput transcoderInput;
-        private float defaultWidth;
-        private float defaultHeight;
+        private final Rectangle2D viewBox = new Rectangle2D.Float();
+        private final Dimension defaultSize = new Dimension();
         private boolean initialized = false;
         private SVGOMDocument document;
         private String uri;
@@ -341,52 +324,64 @@ public class SVGImageReader extends ImageReaderBase {
             // ----
             SVGSVGElement rootElement = svgDoc.getRootElement();
 
-            // get the 'width' and 'height' attributes of the SVG document
-            UnitProcessor.Context uctx
-                    = UnitProcessor.createContext(ctx, rootElement);
+            // Get the viewBox
+            String viewBoxStr = rootElement.getAttributeNS(null, SVGConstants.SVG_VIEW_BOX_ATTRIBUTE);
+            if (viewBoxStr.length() != 0) {
+                float[] rect = ViewBox.parseViewBoxAttribute(rootElement, viewBoxStr, null);
+                viewBox.setFrame(rect[0], rect[1], rect[2], rect[3]);
+            }
+
+            // Get the 'width' and 'height' attributes of the SVG document
+            double width = 0;
+            double height = 0;
+            UnitProcessor.Context uctx = UnitProcessor.createContext(ctx, rootElement);
             String widthStr = rootElement.getAttributeNS(null, SVGConstants.SVG_WIDTH_ATTRIBUTE);
             String heightStr = rootElement.getAttributeNS(null, SVGConstants.SVG_HEIGHT_ATTRIBUTE);
             if (!StringUtil.isEmpty(widthStr)) {
-                defaultWidth = UnitProcessor.svgToUserSpace(widthStr, SVGConstants.SVG_WIDTH_ATTRIBUTE, UnitProcessor.HORIZONTAL_LENGTH, uctx);
+                width = UnitProcessor.svgToUserSpace(widthStr, SVGConstants.SVG_WIDTH_ATTRIBUTE, UnitProcessor.HORIZONTAL_LENGTH, uctx);
             }
-            if(!StringUtil.isEmpty(heightStr)){
-                defaultHeight = UnitProcessor.svgToUserSpace(heightStr, SVGConstants.SVG_HEIGHT_ATTRIBUTE, UnitProcessor.VERTICAL_LENGTH, uctx);
+            if (!StringUtil.isEmpty(heightStr)) {
+                height = UnitProcessor.svgToUserSpace(heightStr, SVGConstants.SVG_HEIGHT_ATTRIBUTE, UnitProcessor.VERTICAL_LENGTH, uctx);
             }
 
-            boolean hasWidth = defaultWidth > 0.0;
-            boolean hasHeight = defaultHeight > 0.0;
+            boolean hasWidth = width > 0.0;
+            boolean hasHeight = height > 0.0;
 
             if (!hasWidth || !hasHeight) {
-                String viewBoxStr = rootElement.getAttributeNS
-                        (null, SVGConstants.SVG_VIEW_BOX_ATTRIBUTE);
-                if (viewBoxStr.length() != 0) {
-                    float[] rect = ViewBox.parseViewBoxAttribute(rootElement, viewBoxStr, null);
-                    // if one dimension is given, calculate other by aspect ratio in viewBox
-                    // or use viewBox if no dimension is given
+                if (!viewBox.isEmpty()) {
+                    // If one dimension is given, calculate other by aspect ratio in viewBox
                     if (hasWidth) {
-                        defaultHeight = defaultWidth * rect[3] / rect[2];
+                        height = width * viewBox.getHeight() / viewBox.getWidth();
                     }
                     else if (hasHeight) {
-                        defaultWidth = defaultHeight * rect[2] / rect[3];
+                        width = height * viewBox.getWidth() / viewBox.getHeight();
                     }
                     else {
-                        defaultWidth = rect[2];
-                        defaultHeight = rect[3];
+                        // ...or use viewBox if no dimension is given
+                        width = viewBox.getWidth();
+                        height = viewBox.getHeight();
                     }
                 }
                 else {
+                    // No viewBox, just assume square size
                     if (hasHeight) {
-                        defaultWidth = defaultHeight;
+                        width = height;
                     }
                     else if (hasWidth) {
-                        defaultHeight = defaultWidth;
+                        height = width;
                     }
                     else {
-                        // fallback to batik default sizes
-                        defaultWidth = 400;
-                        defaultHeight = 400;
+                        // ...or finally fall back to Batik default sizes
+                        width = 400;
+                        height = 400;
                     }
                 }
+            }
+
+            // We now have a size, in the rare case we don't have a viewBox; set it to this size
+            defaultSize.setSize(width, height);
+            if (viewBox.isEmpty()) {
+                viewBox.setRect(0, 0, width, height);
             }
 
             // Hack to work around exception above
@@ -401,7 +396,7 @@ public class SVGImageReader extends ImageReaderBase {
             ctx = null;
         }
 
-        private BufferedImage readImage() throws TranscoderException {
+        private BufferedImage readImage() throws IOException {
             init();
 
             if (abortRequested()) {
@@ -426,7 +421,8 @@ public class SVGImageReader extends ImageReaderBase {
                 }
 
                 if (gvtRoot == null) {
-                    throw exception;
+                    Throwable cause = unwrapException(exception);
+                    throw new IIOException(cause.getMessage(), cause);
                 }
             }
             ctx = context;
@@ -444,7 +440,7 @@ public class SVGImageReader extends ImageReaderBase {
 
 
             // ----
-            setImageSize(defaultWidth, defaultHeight);
+            setImageSize(defaultSize.width, defaultSize.height);
 
             if (abortRequested()) {
                 processReadAborted();
@@ -458,18 +454,17 @@ public class SVGImageReader extends ImageReaderBase {
 
             try {
                 Px = ViewBox.getViewTransform(ref, root, width, height, null);
-
             }
             catch (BridgeException ex) {
-                throw new TranscoderException(ex);
+                throw new IIOException(ex.getMessage(), ex);
             }
 
-            if (Px.isIdentity() && (width != defaultWidth || height != defaultHeight)) {
+            if (Px.isIdentity() && (width != defaultSize.width || height != defaultSize.height)) {
                 // The document has no viewBox, we need to resize it by hand.
                 // we want to keep the document size ratio
                 float xscale, yscale;
-                xscale = width / defaultWidth;
-                yscale = height / defaultHeight;
+                xscale = width / defaultSize.width;
+                yscale = height / defaultSize.height;
                 float scale = Math.min(xscale, yscale);
                 Px = AffineTransform.getScaleInstance(scale, scale);
             }
@@ -519,7 +514,7 @@ public class SVGImageReader extends ImageReaderBase {
                 }
             }
             catch (BridgeException ex) {
-                throw new TranscoderException(ex);
+                throw new IIOException(ex.getMessage(), ex);
             }
 
             this.root = gvtRoot;
@@ -588,7 +583,7 @@ public class SVGImageReader extends ImageReaderBase {
                 return dest;
             }
             catch (Exception ex) {
-                throw new TranscoderException(ex.getMessage(), ex);
+                throw new IIOException(ex.getMessage(), ex);
             }
             finally {
                 if (context != null) {
@@ -597,7 +592,7 @@ public class SVGImageReader extends ImageReaderBase {
             }
         }
 
-        private synchronized void init() throws TranscoderException {
+        private synchronized void init() throws IIOException {
             if (!initialized) {
                 if (transcoderInput == null) {
                     throw new IllegalStateException("input == null");
@@ -605,11 +600,17 @@ public class SVGImageReader extends ImageReaderBase {
 
                 initialized = true;
 
-                super.transcode(transcoderInput, null);
+                try {
+                    super.transcode(transcoderInput, null);
+                }
+                catch (TranscoderException e) {
+                    Throwable cause = unwrapException(e);
+                    throw new IIOException(cause.getMessage(), cause);
+                }
             }
         }
 
-        private BufferedImage getImage() throws TranscoderException {
+        private BufferedImage getImage() throws IOException {
             if (image == null) {
                 image = readImage();
             }
@@ -617,14 +618,19 @@ public class SVGImageReader extends ImageReaderBase {
             return image;
         }
 
-        int getDefaultWidth() throws TranscoderException {
+        int getDefaultWidth() throws IOException {
             init();
-            return (int) Math.ceil(defaultWidth);
+            return defaultSize.width;
         }
 
-        int getDefaultHeight() throws TranscoderException {
+        int getDefaultHeight() throws IOException {
             init();
-            return (int) Math.ceil(defaultHeight);
+            return defaultSize.height;
+        }
+
+        Rectangle getViewBox() throws IOException {
+            init();
+            return viewBox.getBounds();
         }
 
         void setInput(final TranscoderInput pInput) {
