@@ -393,10 +393,10 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             assertRGBEquals("Expected transparent corner", 0, image.getRGB(218, 0), 0);
             assertRGBEquals("Expected transparent corner", 0, image.getRGB(0, 255), 0);
             assertRGBEquals("Expected transparent corner", 0, image.getRGB(218, 255), 0);
-            assertRGBEquals("Expected green head", 0xffa4c639, image.getRGB(109, 20), 0);
-            assertRGBEquals("Expected green center", 0xffa4c639, image.getRGB(109, 128), 0);
-            assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(80, 246), 0);
-            assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(130, 246), 0);
+            assertRGBEquals("Expected green head", 0xffa4c639, image.getRGB(109, 20), 25);
+            assertRGBEquals("Expected green center", 0xffa4c639, image.getRGB(109, 128), 25);
+            assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(80, 246), 25);
+            assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(130, 246), 25);
             assertRGBEquals("Expected white edge", 0xffffffff, image.getRGB(0, 128), 0);
             assertRGBEquals("Expected white edge", 0xffffffff, image.getRGB(218, 128), 0);
         }
