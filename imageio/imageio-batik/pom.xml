@@ -27,9 +27,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
-                        <com.twelvemonkeys.imageio.plugins.svg.allowexternalresources>
+                        <com.twelvemonkeys.imageio.plugins.svg.allowExternalResources>
                             true
-                        </com.twelvemonkeys.imageio.plugins.svg.allowexternalresources>
+                        </com.twelvemonkeys.imageio.plugins.svg.allowExternalResources>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

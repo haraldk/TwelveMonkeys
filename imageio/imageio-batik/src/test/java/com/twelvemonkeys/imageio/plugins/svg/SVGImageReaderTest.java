@@ -43,8 +43,7 @@ import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.ImagingOpException;
+import java.awt.image.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -53,7 +52,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 /**
@@ -192,12 +194,12 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         TestData redSquare = new TestData(getClassLoaderResource("/svg/red-square.svg"), dim);
         reader.setInput(redSquare.getInputStream());
         BufferedImage imageRed = reader.read(0, param);
-        assertEquals(0xFF0000, imageRed.getRGB(50, 50) & 0xFFFFFF);
+        assertRGBEquals("Expected all red", 0xFF0000, imageRed.getRGB(50, 50) & 0xFFFFFF, 0);
 
         TestData blueSquare = new TestData(getClassLoaderResource("/svg/blue-square.svg"), dim);
         reader.setInput(blueSquare.getInputStream());
         BufferedImage imageBlue = reader.read(0, param);
-        assertEquals(0x0000FF, imageBlue.getRGB(50, 50) & 0xFFFFFF);
+        assertRGBEquals("Expected all blue", 0x0000FF, imageBlue.getRGB(50, 50) & 0xFFFFFF, 0);
     }
 
     @Test
@@ -332,6 +334,72 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             // a SecurityException when External Resources are blocked
             // because the API invocation gets preference
             reader.read(0, param);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadWitSourceRenderSize() throws IOException {
+        URL resource = getClassLoaderResource("/svg/circle.svg");
+
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setSourceRenderSize(new Dimension(100, 100));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(100, image.getWidth());
+            assertEquals(100, image.getHeight());
+
+            // Some quick samples
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(0, 0), 0);
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(99, 0), 0);
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(0, 99), 0);
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(99, 99), 0);
+            assertRGBEquals("Expected red center", 0xffff0000, image.getRGB(50, 50), 0);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadWitSourceRenderSizeViewBoxNegativeXY() throws IOException {
+        // TODO: Fix the reader so that this also works with /svg/Android_robot.svg, probably needs some translation to compensate for the viewBox
+        URL resource = getClassLoaderResource("/svg/Android_robot.svg");
+
+        SVGImageReader reader = createReader();
+
+        TestData data = new TestData(resource, (Dimension) null);
+        try (ImageInputStream stream = data.getInputStream()) {
+            reader.setInput(stream);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setSourceRenderSize(new Dimension(219, 256)); // Aspect scaled to 256 boxed
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(219, image.getWidth());
+            assertEquals(256, image.getHeight());
+
+            // Some quick samples
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(0, 0), 0);
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(218, 0), 0);
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(0, 255), 0);
+            assertRGBEquals("Expected transparent corner", 0, image.getRGB(218, 255), 0);
+            assertRGBEquals("Expected green head", 0xffa4c639, image.getRGB(109, 20), 0);
+            assertRGBEquals("Expected green center", 0xffa4c639, image.getRGB(109, 128), 0);
+            assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(80, 246), 0);
+            assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(130, 246), 0);
+            assertRGBEquals("Expected white edge", 0xffffffff, image.getRGB(0, 128), 0);
+            assertRGBEquals("Expected white edge", 0xffffffff, image.getRGB(218, 128), 0);
         }
         finally {
             reader.dispose();
