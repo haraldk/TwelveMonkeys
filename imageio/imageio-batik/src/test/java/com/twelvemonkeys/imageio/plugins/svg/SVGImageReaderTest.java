@@ -372,7 +372,6 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
 
     @Test
     public void testReadWitSourceRenderSizeViewBoxNegativeXY() throws IOException {
-        // TODO: Fix the reader so that this also works with /svg/Android_robot.svg, probably needs some translation to compensate for the viewBox
         URL resource = getClassLoaderResource("/svg/Android_robot.svg");
 
         SVGImageReader reader = createReader();
