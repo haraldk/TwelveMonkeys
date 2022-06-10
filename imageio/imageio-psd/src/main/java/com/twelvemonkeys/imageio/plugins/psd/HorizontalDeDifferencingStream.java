@@ -28,7 +28,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.tiff;
+package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.lang.Validate;
 
@@ -40,8 +40,6 @@ import java.nio.ByteOrder;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.HorizontalDifferencingStream.isValidBPS;
-
 /**
  * A decoder for data converted using "horizontal differencing predictor".
  *
@@ -50,7 +48,7 @@ import static com.twelvemonkeys.imageio.plugins.tiff.HorizontalDifferencingStrea
  * @version $Id: HorizontalDeDifferencingStream.java,v 1.0 11.03.13 14:20 haraldk Exp$
  */
 final class HorizontalDeDifferencingStream extends InputStream {
-    /// TODO: Create shared version with PSD, or see if we can avoid some duplication?
+    /// TODO: Create shared version with TIFF, or see if we can avoid some duplication?
     // See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
 
     private final int columns;
@@ -70,6 +68,21 @@ final class HorizontalDeDifferencingStream extends InputStream {
 
         buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8).order(byteOrder);
         buffer.flip();
+    }
+
+    static boolean isValidBPS(final int bitsPerSample) {
+        switch (bitsPerSample) {
+            case 1:
+            case 2:
+            case 4:
+            case 8:
+            case 16:
+            case 32:
+            case 64:
+                return true;
+            default:
+                return false;
+        }
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

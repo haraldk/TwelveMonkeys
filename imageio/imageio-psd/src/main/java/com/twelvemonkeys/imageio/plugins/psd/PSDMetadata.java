@@ -41,7 +41,7 @@ import com.twelvemonkeys.util.FilterIterator;
 import org.w3c.dom.Node;
 
 import javax.imageio.metadata.IIOMetadataNode;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -101,6 +101,8 @@ public final class PSDMetadata extends AbstractMetadata {
         super(true, NATIVE_METADATA_FORMAT_NAME, NATIVE_METADATA_FORMAT_CLASS_NAME, null, null);
     }
 
+    // TODO: Allow creating correct metadata for layers too!
+
     /// Native format support
 
     @Override
@@ -148,7 +150,7 @@ public final class PSDMetadata extends AbstractMetadata {
 
         for (PSDImageResource imageResource : imageResources) {
             // TODO: Always add name (if set) and id (as resourceId) to all nodes?
-            // Resource Id is useful for people with access to the PSD spec..
+            // Resource Id is useful for people with access to the PSD spec...
 
             if (imageResource instanceof ICCProfile) {
                 ICCProfile profile = (ICCProfile) imageResource;
@@ -674,6 +676,13 @@ public final class PSDMetadata extends AbstractMetadata {
         IIOMetadataNode formatVersion = new IIOMetadataNode("FormatVersion");
         formatVersion.setAttribute("value", header.largeFormat ? "2" : "1"); // PSD format version is always 1, PSB is 2
         document_node.appendChild(formatVersion);
+
+        // TODO: For images other than image 0
+//        IIOMetadataNode subimageInterpretation = new IIOMetadataNode("SubimageInterpretation");
+//        subimageInterpretation.setAttribute("value", "CompositingLayer");
+//        document_node.appendChild(subimageInterpretation);
+
+        // TODO: Layer name?
 
         // Get EXIF data if present
         Iterator<PSDEXIF1Data> exif = getResources(PSDEXIF1Data.class);

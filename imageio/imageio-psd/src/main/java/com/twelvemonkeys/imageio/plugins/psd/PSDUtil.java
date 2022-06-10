@@ -30,16 +30,22 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.stream.DirectImageInputStream;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.zip.ZipInputStream;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.util.Enumeration;
+import java.util.zip.InflaterInputStream;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter;
+import static java.nio.ByteOrder.BIG_ENDIAN;
 
 /**
  * PSDUtil
@@ -89,19 +95,49 @@ final class PSDUtil {
         return StringUtil.decode(bytes, 0, bytes.length, "UTF-16");
     }
 
-    static DataInputStream createPackBitsStream(final ImageInputStream pInput, long pLength) {
-        return new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(pInput, pLength), new PackBitsDecoder()));
-    }
-
-    static DataInputStream createZipStream(final ImageInputStream pInput, long pLength) {
-        return new DataInputStream(new ZipInputStream(IIOUtil.createStreamAdapter(pInput, pLength)));
-    }
-
-    static DataInputStream createZipPredictorStream(final ImageInputStream pInput, long pLength) {
-        throw new UnsupportedOperationException("Method createZipPredictonStream not implemented");
-    }
-
     public static float fixedPointToFloat(int pFP) {
         return ((pFP & 0xffff0000) >> 16) + (pFP & 0xffff) / (float) 0xffff;
+    }
+
+    static ImageInputStream createDecompressorStream(final ImageInputStream stream, int compression, int columns, int bitsPerSample,
+                                                     final int[] byteCounts, long compressedLength) throws IOException {
+        switch (compression) {
+            case PSD.COMPRESSION_NONE:
+                return new SubImageInputStream(stream, stream.length());
+
+            case PSD.COMPRESSION_RLE:
+                return new DirectImageInputStream(new SequenceInputStream(new LazyPackBitsStreamEnumeration(byteCounts, stream)));
+
+            case PSD.COMPRESSION_ZIP:
+                return new DirectImageInputStream(new InflaterInputStream(createStreamAdapter(stream, compressedLength)));
+
+            case PSD.COMPRESSION_ZIP_PREDICTION:
+                return new DirectImageInputStream(new HorizontalDeDifferencingStream(new InflaterInputStream(createStreamAdapter(stream, compressedLength)), columns, 1, bitsPerSample, BIG_ENDIAN));
+
+            default:
+        }
+
+        throw new IllegalArgumentException("Unknown PSD compression: " + compression);
+    }
+
+    private static class LazyPackBitsStreamEnumeration implements Enumeration<InputStream> {
+        private final ImageInputStream stream;
+        private final int[] byteCounts;
+        private int index;
+
+        public LazyPackBitsStreamEnumeration(int[] byteCounts, ImageInputStream stream) {
+            this.byteCounts = byteCounts;
+            this.stream = stream;
+        }
+
+        @Override
+        public boolean hasMoreElements() {
+            return index < byteCounts.length;
+        }
+
+        @Override
+        public InputStream nextElement() {
+            return new DecoderStream(createStreamAdapter(stream, byteCounts[index++]), new PackBitsDecoder());
+        }
     }
 }

@@ -31,10 +31,10 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
-import com.twelvemonkeys.lang.StringUtil;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * PSDDirectoryResource
@@ -69,15 +69,24 @@ abstract class PSDDirectoryResource extends PSDImageResource {
     public String toString() {
         StringBuilder builder = toStringBuilder();
 
-        int length = Math.min(256, data.length);
-        String data = StringUtil.decode(this.data, 0, length, "UTF-8").replace('\n', ' ').replaceAll("\\s+", " ");
-        builder.append(", data: \"").append(data);
-
-        if (length < this.data.length) {
-            builder.append("...");
+        if (directory != null) {
+            builder.append(", ").append(directory);
+            builder.append("]");
         }
+        else {
+            int length = Math.min(256, data.length);
+            String data = new String(this.data, 0, length, StandardCharsets.US_ASCII)
+                                  .replace('\uFFFD', '.')
+                                  .replaceAll("\\s+", " ")
+                                  .replaceAll("[^\\p{Print}]", ".");
+            builder.append(", data: \"").append(data);
 
-        builder.append("\"]");
+            if (length < this.data.length) {
+                builder.append("...");
+            }
+
+            builder.append("\"]");
+        }
 
         return builder.toString();
     }
