@@ -33,30 +33,34 @@ package com.twelvemonkeys.imageio.plugins.wmf;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.plugins.svg.SVGImageReader;
 import com.twelvemonkeys.imageio.plugins.svg.SVGReadParam;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.wmf.tosvg.WMFTranscoder;
 
 import javax.imageio.IIOException;
-import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
-import java.awt.image.BufferedImage;
-import java.io.*;
+import java.awt.image.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
 /**
  * WMFImageReader class description.
- * 
+ *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haku $
  * @version $Id: WMFImageReader.java,v 1.0 29.jul.2004 13:00:59 haku Exp $
  */
 // TODO: Probably possible to do less wrapping/unwrapping of data...
-// TODO: Consider using temp file instead of in-memory stream
 public final class WMFImageReader extends ImageReaderBase {
 
     private SVGImageReader reader = null;
@@ -90,7 +94,7 @@ public final class WMFImageReader extends ImageReaderBase {
         return image;
     }
 
-    private synchronized void init() throws IOException {
+    private void init() throws IOException {
         // Need the extra test, to avoid throwing an IOException from the Transcoder
         if (imageInput == null) {
             throw new IllegalStateException("input == null");
@@ -98,10 +102,9 @@ public final class WMFImageReader extends ImageReaderBase {
 
         if (reader == null) {
             WMFTranscoder transcoder = new WMFTranscoder();
+            ByteArrayOutputStream output = new ByteArrayOutputStream(8192);
 
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            Writer writer = new OutputStreamWriter(output, "UTF8");
-            try {
+            try (Writer writer = new OutputStreamWriter(output, StandardCharsets.UTF_8)) {
                 TranscoderInput in = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
                 TranscoderOutput out = new TranscoderOutput(writer);
 
@@ -114,7 +117,7 @@ public final class WMFImageReader extends ImageReaderBase {
             }
 
             reader = new SVGImageReader(getOriginatingProvider());
-            reader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(output.toByteArray())));
+            reader.setInput(new ByteArrayImageInputStream(output.toByteArray()));
         }
     }
 
@@ -137,5 +140,4 @@ public final class WMFImageReader extends ImageReaderBase {
         init();
         return reader.getImageTypes(pImageIndex);
     }
-
 }
