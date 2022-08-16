@@ -30,22 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-import com.twelvemonkeys.io.LittleEndianDataInputStream;
-import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.xml.XMLSerializer;
-
-import javax.imageio.*;
-import javax.imageio.event.IIOReadUpdateListener;
-import javax.imageio.event.IIOReadWarningListener;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
@@ -55,6 +39,27 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Iterator;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.event.IIOReadUpdateListener;
+import javax.imageio.event.IIOReadWarningListener;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.io.LittleEndianDataInputStream;
+import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 /**
  * ImageReader for Microsoft Windows Bitmap (BMP) format.
@@ -77,7 +82,7 @@ public final class BMPImageReader extends ImageReaderBase {
         super(new BMPImageReaderSpi());
     }
 
-    protected BMPImageReader(final ImageReaderSpi pProvider) {
+    BMPImageReader(final ImageReaderSpi pProvider) {
         super(pProvider);
     }
 
@@ -358,14 +363,18 @@ public final class BMPImageReader extends ImageReaderBase {
 
         processImageStarted(imageIndex);
         for (int y = 0; y < height; y++) {
-            switch (header.getBitCount()) {
+            int bitCount = header.getBitCount();
+            switch (bitCount) {
                 case 1:
                 case 2:
                 case 4:
                 case 8:
                 case 24:
                     byte[] rowDataByte = ((DataBufferByte) rowRaster.getDataBuffer()).getData();
-                    readRowByte(input, height, srcRegion, xSub, ySub, rowDataByte, destRaster, clippedRow, y);
+                    int bitsPerSample = bitCount == 24 ? 8 : bitCount;
+                    int samplesPerPixel = bitCount == 24 ? 3 : 1;
+
+                    readRowByte(input, height, srcRegion, xSub, ySub, bitsPerSample, samplesPerPixel, rowDataByte, destRaster, clippedRow, y);
                     break;
 
                 case 16:
@@ -379,7 +388,7 @@ public final class BMPImageReader extends ImageReaderBase {
                     break;
 
                 default:
-                    throw new AssertionError("Unsupported pixel depth: " + header.getBitCount());
+                    throw new AssertionError("Unsupported pixel depth: " + bitCount);
             }
 
             processImageProgress(100f * y / height);
@@ -476,6 +485,7 @@ public final class BMPImageReader extends ImageReaderBase {
     }
 
     private void readRowByte(final DataInput input, final int height, final Rectangle srcRegion, final int xSub, final int ySub,
+                             int bitsPerSample, int samplesPerPixel,
                              final byte[] rowDataByte, final WritableRaster destChannel, final Raster srcChannel, final int y) throws IOException {
         // Flip into position?
         int srcY = !header.topDown ? height - 1 - y : y;
@@ -492,9 +502,7 @@ public final class BMPImageReader extends ImageReaderBase {
 
         // Subsample horizontal
         if (xSub != 1) {
-            for (int x = 0; x < srcRegion.width / xSub; x++) {
-                rowDataByte[srcRegion.x + x] = rowDataByte[srcRegion.x + x * xSub];
-            }
+            IIOUtil.subsampleRow(rowDataByte, srcRegion.x, srcRegion.width, rowDataByte, 0, samplesPerPixel, bitsPerSample, xSub);
         }
 
         destChannel.setDataElements(0, dstY, srcChannel);
