@@ -30,18 +30,19 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
-import javax.imageio.ImageReader;
-import javax.imageio.spi.ImageReaderSpi;
-import javax.imageio.spi.ServiceRegistry;
-import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Locale;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+import javax.imageio.ImageReader;
+import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.spi.ServiceRegistry;
+import javax.imageio.stream.ImageInputStream;
+
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 /**
  * BMPImageReaderSpi
@@ -116,7 +117,7 @@ public final class BMPImageReaderSpi extends ImageReaderSpiBase {
         }
     }
 
-    public ImageReader createReaderInstance(final Object pExtension) throws IOException {
+    public ImageReader createReaderInstance(final Object pExtension) {
         return new BMPImageReader(this);
     }
 
