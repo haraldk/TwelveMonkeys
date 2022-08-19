@@ -54,8 +54,8 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
     // Our IndexColorModel delegate
     private final IndexColorModel icm;
 
+    private final int extraSamples;
     private final int samples;
-    private final boolean hasAlpha;
 
     /**
      * Creates a {@code DiscreteAlphaIndexColorModel}, delegating color map look-ups
@@ -86,33 +86,33 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
         );
 
         this.icm = icm;
+        this.extraSamples = extraSamples;
         this.samples = 1 + extraSamples;
-        this.hasAlpha = hasAlpha;
     }
 
     @Override
     public int getNumComponents() {
-        return samples;
+        return getNumColorComponents() + extraSamples;
     }
 
     @Override
-    public final int getRed(final int pixel) {
+    public int getRed(final int pixel) {
         return icm.getRed(pixel);
     }
 
     @Override
-    public final int getGreen(final int pixel) {
+    public int getGreen(final int pixel) {
         return icm.getGreen(pixel);
     }
 
     @Override
-    public final int getBlue(final int pixel) {
+    public int getBlue(final int pixel) {
         return icm.getBlue(pixel);
     }
 
     @Override
-    public final int getAlpha(final int pixel) {
-        return hasAlpha ? (int) ((((float) pixel) / ((1 << getComponentSize(3))-1)) * 255.0f + 0.5f) : 0xff;
+    public int getAlpha(final int pixel) {
+        return hasAlpha() ? (int) ((((float) pixel) / ((1 << getComponentSize(3)) - 1)) * 255.0f + 0.5f) : 0xff;
     }
 
     private int getSample(final Object inData, final int index) {
@@ -120,15 +120,15 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
 
         switch (transferType) {
             case DataBuffer.TYPE_BYTE:
-                byte bdata[] = (byte[]) inData;
+                byte[] bdata = (byte[]) inData;
                 pixel = bdata[index] & 0xff;
                 break;
             case DataBuffer.TYPE_USHORT:
-                short sdata[] = (short[]) inData;
+                short[] sdata = (short[]) inData;
                 pixel = sdata[index] & 0xffff;
                 break;
             case DataBuffer.TYPE_INT:
-                int idata[] = (int[]) inData;
+                int[] idata = (int[]) inData;
                 pixel = idata[index];
                 break;
             default:
@@ -139,27 +139,27 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
     }
 
     @Override
-    public final int getRed(final Object inData) {
+    public int getRed(final Object inData) {
         return getRed(getSample(inData, 0));
     }
 
     @Override
-    public final int getGreen(final Object inData) {
+    public int getGreen(final Object inData) {
         return getGreen(getSample(inData, 0));
     }
 
     @Override
-    public final int getBlue(final Object inData) {
+    public int getBlue(final Object inData) {
         return getBlue(getSample(inData, 0));
     }
 
     @Override
-    public final int getAlpha(final Object inData) {
-        return hasAlpha ? getAlpha(getSample(inData, 1)) : 0xff;
+    public int getAlpha(final Object inData) {
+        return hasAlpha() ? getAlpha(getSample(inData, 1)) : 0xff;
     }
 
     @Override
-    public final SampleModel createCompatibleSampleModel(final int w, final int h) {
+    public SampleModel createCompatibleSampleModel(final int w, final int h) {
         return new PixelInterleavedSampleModel(transferType, w, h, samples, w * samples, createOffsets(samples));
     }
 
@@ -174,17 +174,17 @@ public final class DiscreteAlphaIndexColorModel extends ColorModel {
     }
 
     @Override
-    public final boolean isCompatibleSampleModel(final SampleModel sm) {
+    public boolean isCompatibleSampleModel(final SampleModel sm) {
         return sm instanceof PixelInterleavedSampleModel && sm.getNumBands() == samples;
     }
 
     @Override
-    public final WritableRaster createCompatibleWritableRaster(final int w, final int h) {
+    public WritableRaster createCompatibleWritableRaster(final int w, final int h) {
         return Raster.createWritableRaster(createCompatibleSampleModel(w, h), new Point(0, 0));
     }
 
     @Override
-    public final boolean isCompatibleRaster(final Raster raster) {
+    public boolean isCompatibleRaster(final Raster raster) {
         int size = raster.getSampleModel().getSampleSize(0);
         return ((raster.getTransferType() == transferType) &&
                 (raster.getNumBands() == samples) && ((1 << size) >= icm.getMapSize()));
