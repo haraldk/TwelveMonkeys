@@ -30,19 +30,18 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Locale;
+import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Locale;
 
-import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
 
 /**
  * BMPImageReaderSpi
