@@ -37,7 +37,9 @@ import java.awt.image.*;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class DiscreteAlphaIndexColorModelTest {
 
@@ -202,6 +204,25 @@ public class DiscreteAlphaIndexColorModelTest {
         assertTrue(colorModel.isCompatibleRaster(raster));
         assertThat(raster, CoreMatchers.is(WritableRaster.class)); // Specific subclasses are in sun.awt package
         assertThat(raster.getTransferType(), CoreMatchers.equalTo(DataBuffer.TYPE_BYTE));
+    }
+
+    @Test
+    public void testNumComponents() {
+        int[] colors = createIntLut(1 << 8);
+        IndexColorModel icm = new IndexColorModel(8, colors.length, colors, 0, false, -1, DataBuffer.TYPE_BYTE);
+
+        ColorModel colorModelDiscreteAlpha = new DiscreteAlphaIndexColorModel(icm, 1, true);
+        ColorModel colorModelDiscreteAlphaExtra = new DiscreteAlphaIndexColorModel(icm, 2, true);
+        ColorModel colorModelNoAlphaExtra = new DiscreteAlphaIndexColorModel(icm, 42, false);
+
+        assertEquals(3, colorModelDiscreteAlpha.getNumColorComponents());
+        assertEquals(4, colorModelDiscreteAlpha.getNumComponents());
+
+        assertEquals(3, colorModelDiscreteAlphaExtra.getNumColorComponents());
+        assertEquals(5, colorModelDiscreteAlphaExtra.getNumComponents()); // Questionable
+
+        assertEquals(3, colorModelNoAlphaExtra.getNumColorComponents());
+        assertEquals(45, colorModelNoAlphaExtra.getNumComponents()); // Questionable
     }
 
     private static int[] createIntLut(final int count) {
