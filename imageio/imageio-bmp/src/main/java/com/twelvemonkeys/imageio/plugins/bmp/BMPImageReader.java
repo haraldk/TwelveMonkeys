@@ -30,15 +30,14 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.image.*;
-import java.io.DataInput;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.util.Collections;
-import java.util.Iterator;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.io.LittleEndianDataInputStream;
+import com.twelvemonkeys.io.enc.DecoderStream;
+import com.twelvemonkeys.xml.XMLSerializer;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -51,15 +50,15 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
-
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.IIOUtil;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-import com.twelvemonkeys.io.LittleEndianDataInputStream;
-import com.twelvemonkeys.io.enc.DecoderStream;
-import com.twelvemonkeys.xml.XMLSerializer;
+import java.awt.*;
+import java.awt.color.*;
+import java.awt.image.*;
+import java.io.DataInput;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.Iterator;
 
 /**
  * ImageReader for Microsoft Windows Bitmap (BMP) format.
