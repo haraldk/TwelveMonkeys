@@ -153,7 +153,7 @@ final class WebPImageReader extends ImageReaderBase {
                     Rectangle bounds = new Rectangle(x, y, w, h);
 
                     // TODO: Expose duration/flags in image metadata
-                    int duration = (int) imageInput.readBits(24);
+                    int duration = (int) lsbBitReader.readBits(24);
                     int flags = imageInput.readUnsignedByte(); // 6 bit reserved + blend mode + disposal mode
 
                     frames.add(new AnimationFrame(chunkLength, chunkStart, bounds, duration, flags));

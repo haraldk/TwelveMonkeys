@@ -155,7 +155,7 @@ public final class VP8LDecoder {
                 System.err.println("transformType: COLOR_INDEXING_TRANSFORM");
 
                 // 8 bit value for color table size
-                int colorTableSize = imageInput.readUnsignedByte() + 1; // 1-256
+                int colorTableSize = ((int) lsbBitReader.readBits(8)) + 1; // 1-256
                 System.err.println("colorTableSize: " + colorTableSize);
 
                 // If the index is equal or larger than color_table_size,
