@@ -52,9 +52,6 @@ public final class VP8LDecoder {
     private final ImageInputStream imageInput;
     private final LSBBitReader lsbBitReader;
 
-    private final List<Transform> transforms = new ArrayList<>();
-    private ColorCache colorCache;
-
     public VP8LDecoder(final ImageInputStream imageInput, final boolean debug) {
         this.imageInput = imageInput;
         lsbBitReader = new LSBBitReader(imageInput);
@@ -67,8 +64,9 @@ public final class VP8LDecoder {
         int ySize = raster.getHeight();
 
         // Read transforms
+        ArrayList<Transform> transforms = new ArrayList<>();
         while (topLevel && lsbBitReader.readBit() == 1) {
-            xSize = readTransform(xSize, ySize);
+            xSize = readTransform(xSize, ySize, transforms);
         }
 
         // Read color cache size
@@ -83,6 +81,8 @@ public final class VP8LDecoder {
         // Read Huffman codes
         readHuffmanCodes(colorCacheBits, topLevel);
 
+        ColorCache colorCache = null;
+
         if (colorCacheBits > 0) {
             colorCache = new ColorCache(colorCacheBits);
         }
@@ -91,7 +91,7 @@ public final class VP8LDecoder {
 //        decodeImageData(raster, )
     }
 
-    private int readTransform(int xSize, int ySize) throws IOException {
+    private int readTransform(int xSize, int ySize, List<Transform> transforms) throws IOException {
         int transformType = (int) lsbBitReader.readBits(2);
 
         // TODO: Each transform type can only be present once in the stream.
