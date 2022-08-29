@@ -32,6 +32,8 @@
 package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import com.twelvemonkeys.imageio.plugins.webp.LSBBitReader;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.huffman.HuffmanCodeGroup;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.huffman.HuffmanInfo;
 import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.ColorIndexingTransform;
 import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.ColorTransform;
 import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.PredictorTransform;
@@ -46,6 +48,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.util.RasterUtils.asByteRaster;
+import static java.lang.Math.max;
 
 /**
  * VP8LDecoder.
@@ -83,7 +87,7 @@ public final class VP8LDecoder {
         }
 
         // Read Huffman codes
-        readHuffmanCodes(colorCacheBits, topLevel);
+        HuffmanInfo huffmanInfo = readHuffmanCodes(xSize, ySize, colorCacheBits, topLevel);
 
         ColorCache colorCache = null;
 
@@ -191,8 +195,50 @@ public final class VP8LDecoder {
         return xSize;
     }
 
-    private void readHuffmanCodes(int colorCacheBits, boolean allowRecursion) {
+    private HuffmanInfo readHuffmanCodes(int xSize, int ySize, int colorCacheBits, boolean readMetaCodes)
+            throws IOException {
+        int huffmanGroupNum = 1;
+        int huffmanXSize;
+        int huffmanYSize;
 
+        int metaCodeBits = 0;
+
+        WritableRaster huffmanMetaCodes = null;
+        if (readMetaCodes && lsbBitReader.readBit() == 1) {
+            //read in meta codes
+            metaCodeBits = (int) lsbBitReader.readBits(3) + 2;
+            huffmanXSize = subSampleSize(xSize, metaCodeBits);
+            huffmanYSize = subSampleSize(ySize, metaCodeBits);
+
+            //Raster with elements as BARG (only the RG components encode the meta group)
+            WritableRaster packedRaster = Raster.createPackedRaster(DataBuffer.TYPE_INT, huffmanXSize, huffmanYSize,
+                    new int[] {0x0000ff00, 0x000000ff, 0xff000000, 0x00ff0000}, null);
+            readVP8Lossless(asByteRaster(packedRaster), false);
+
+            int[] data = ((DataBufferInt) packedRaster.getDataBuffer()).getData();
+            //Max metaGroup is number of meta groups
+            int maxCode = Integer.MIN_VALUE;
+            for (int code : data) {
+                maxCode = max(maxCode, code & 0xffff);
+            }
+            huffmanGroupNum = maxCode + 1;
+
+            /*
+                New Raster with just RG components exposed as single band allowing simple access of metaGroupIndex with
+                x,y lookup
+            */
+            huffmanMetaCodes = Raster.createPackedRaster(packedRaster.getDataBuffer(), huffmanXSize, huffmanYSize,
+                    huffmanXSize, new int[] {0xffff}, null);
+
+        }
+
+        HuffmanCodeGroup[] huffmanGroups = new HuffmanCodeGroup[huffmanGroupNum];
+
+        for (int i = 0; i < huffmanGroups.length; i++) {
+            huffmanGroups[i] = new HuffmanCodeGroup(lsbBitReader, colorCacheBits);
+        }
+
+        return new HuffmanInfo(huffmanMetaCodes, metaCodeBits, huffmanGroups);
     }
 
     private static int subSampleSize(final int size, final int samplingBits) {
