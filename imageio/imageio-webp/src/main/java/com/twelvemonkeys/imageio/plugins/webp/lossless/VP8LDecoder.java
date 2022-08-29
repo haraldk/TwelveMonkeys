@@ -32,6 +32,12 @@
 package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import com.twelvemonkeys.imageio.plugins.webp.LSBBitReader;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.ColorIndexingTransform;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.ColorTransform;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.PredictorTransform;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.SubtractGreenTransform;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.Transform;
+import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.TransformType;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
@@ -40,7 +46,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.twelvemonkeys.imageio.util.RasterUtils.asByteRaster;
 import static java.lang.Math.*;
 
 /**
@@ -97,58 +102,38 @@ public final class VP8LDecoder {
         // TODO: Each transform type can only be present once in the stream.
 
         switch (transformType) {
-            case TransformType.PREDICTOR_TRANSFORM: {
+            case TransformType.PREDICTOR_TRANSFORM:
                 System.err.println("transformType: PREDICTOR_TRANSFORM");
-//                    int sizeBits = (int) readBits(3) + 2;
-                int sizeBits = (int) lsbBitReader.readBits(3) + 2;
-                int size = 1 << sizeBits;
-
-                int blockWidth = size;
-                int blockHeight = size;
-
-//                    int blockSize = divRoundUp(width, size);
-                int blockSize = divRoundUp(xSize, size);
-
-                for (int y = 0; y < ySize; y++) {
-                    for (int x = 0; x < xSize; x++) {
-                        int blockIndex = (y >> sizeBits) * blockSize + (x >> sizeBits);
-                    }
-                }
-
-                // Special rules:
-                // Top-left pixel of image is predicted BLACK
-                // Rest of top pixels is predicted L
-                // Rest of leftmost pixels are predicted T
-                // Rightmost pixels using TR, uses LEFTMOST pixel on SAME ROW (same distance as TR in memory!)
-
-//                    WritableRaster data = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, blockWidth, blockHeight, blockWidth, 1, new int[] {0}, null);
-//                    readVP8Lossless(data, false);
-//
-                break;
-            }
+                //Intentional Fallthrough
             case TransformType.COLOR_TRANSFORM: {
                 // The two first transforms contains the exact same data, can be combined
-                System.err.println("transformType: COLOR_TRANSFORM");
+                if (transformType == TransformType.COLOR_TRANSFORM) {
+                    System.err.println("transformType: COLOR_TRANSFORM");
+                }
 
-                int sizeBits = (int) lsbBitReader.readBits(3) + 2;
-//                int size = 1 << sizeBits;
-
-                // TODO: Understand difference between spec divRoundUp and impl VP8LSubSampleSize
+                byte sizeBits = (byte) (lsbBitReader.readBits(3) + 2);
 
                 int blockWidth = subSampleSize(xSize, sizeBits);
                 int blockHeight = subSampleSize(ySize, sizeBits);
-                WritableRaster data = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, blockWidth, blockHeight, blockWidth, 1, new int[] {0}, null);
-                readVP8Lossless(data, false);
+                WritableRaster raster =
+                        Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, blockWidth, blockHeight, 4 * blockWidth, 4,
+                                new int[] {0, 1, 2, 3}, null);
+                readVP8Lossless(raster, false);
 
-                transforms.add(new Transform(transformType, ((DataBufferByte) data.getDataBuffer()).getData()));
+                //Keep data as raster for convenient (x,y) indexing
+                if (transformType == TransformType.PREDICTOR_TRANSFORM) {
+                    transforms.add(0, new PredictorTransform(raster, sizeBits));
+                }
+                else {
+                    transforms.add(0, new ColorTransform(raster, sizeBits));
+                }
 
                 break;
             }
             case TransformType.SUBTRACT_GREEN: {
                 System.err.println("transformType: SUBTRACT_GREEN");
                 // No data here
-
-//                    addGreenToBlueAndRed();
+                transforms.add(0, new SubtractGreenTransform());
                 break;
             }
             case TransformType.COLOR_INDEXING_TRANSFORM: {
@@ -167,41 +152,36 @@ public final class VP8LDecoder {
 
                 System.err.println("safeColorTableSize: " + safeColorTableSize);
 
-                int[] colorTable = new int[safeColorTableSize];
+                byte[] colorTable = new byte[safeColorTableSize * 4];
 
                 // The color table can be obtained by reading an image,
                 // without the RIFF header, image size, and transforms,
                 // assuming a height of one pixel and a width of
                 // color_table_size. The color table is always
                 // subtraction-coded to reduce image entropy.
-                // TODO: Read *without transforms*, using SUBTRACT_GREEN only!
-                readVP8Lossless(asByteRaster(
-                        Raster.createPackedRaster(
-                                new DataBufferInt(colorTable, colorTableSize),
-                                colorTableSize, 1, colorTableSize,
-                                new int[] {0}, null
-                        )
-                ), false);
+                readVP8Lossless(
+                        Raster.createInterleavedRaster(
+                                new DataBufferByte(colorTable, colorTableSize * 4),
+                                colorTableSize, 1, colorTableSize * 4,
+                                4, new int[] {0, 1, 2, 3}, null)
+                        , false);
 
-                // TODO: We may not really need this value...
-                // What we need is the number of pixels packed into each green sample (byte)
-                int widthBits = colorTableSize > 16 ? 0 :
-                                colorTableSize > 4 ? 1 :
-                                colorTableSize > 2 ? 2 : 3;
+
+                //resolve subtraction code
+                for (int i = 4; i < colorTable.length; i++) {
+                    colorTable[i] += colorTable[i - 4];
+                }
+
+                // The number of pixels packed into each green sample (byte)
+                byte widthBits = (byte) (colorTableSize > 16 ? 0 :
+                                         colorTableSize > 4 ? 1 :
+                                         colorTableSize > 2 ? 2 : 3);
 
                 xSize = subSampleSize(xSize, widthBits);
 
-                /*
-                // TODO: read ARGB
-                int argb = 0;
-
-                // Inverse transform
-                // TODO: Expand to mutliple pixels?
-                argb = colorTable[GREEN(argb)];
-                */
-
+                // The colors components are stored in ARGB order at 4*index, 4*index + 1, 4*index + 2, 4*index + 3
                 // TODO: Can we use this to produce an image with IndexColorModel instead of expanding the values in-memory?
-                transforms.add(new Transform(transformType, colorTable));
+                transforms.add(0, new ColorIndexingTransform(colorTable, widthBits));
 
                 break;
             }
