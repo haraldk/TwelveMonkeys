@@ -87,6 +87,11 @@ public final class VP8LDecoder {
     public void readVP8Lossless(final WritableRaster raster, final boolean topLevel) throws IOException {
         //https://github.com/webmproject/libwebp/blob/666bd6c65483a512fe4c2eb63fbc198b6fb4fae4/src/dec/vp8l_dec.c#L1114
 
+        //Skip past already read parts of header (signature, width, height, alpha, version) 5 Bytes in total
+        if (topLevel) {
+            imageInput.seek(imageInput.getStreamPosition() + 5);
+        }
+
         int xSize = raster.getWidth();
         int ySize = raster.getHeight();
 
