@@ -13,6 +13,24 @@ public class ColorTransform implements Transform {
 
     @Override
     public void applyInverse(WritableRaster raster) {
+        int width = raster.getWidth();
+        int height = raster.getHeight();
+
+        byte[] rgba = new byte[4];
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+
+                data.getDataElements(x >> bits, y >> bits, rgba);
+                ColorTransformElement trans = new ColorTransformElement(rgba);
+
+                raster.getDataElements(x, y, rgba);
+
+                trans.inverseTransform(rgba);
+
+                raster.setDataElements(x, y, rgba);
+            }
+        }
     }
 
     // NOTE: For encoding!
@@ -43,47 +61,33 @@ public class ColorTransform implements Transform {
         return (byte) ((t * c) >> 5);
     }
 
-    private static void inverseTransform(final byte red, final byte green, final byte blue,
-                                         final ColorTransformElement trans,
-                                         final int[] newRedBlue) {
-        // Applying inverse transform is just subtracting the
-        // color transform deltas
-        // Transformed values of red and blue components
-        int tmp_red = red;
-        int tmp_blue = blue;
+    private static final class ColorTransformElement {
 
-        tmp_red -= colorTransformDelta((byte) trans.green_to_red, green);
-        tmp_blue -= colorTransformDelta((byte) trans.green_to_blue, green);
-        tmp_blue -= colorTransformDelta((byte) trans.red_to_blue, red); // Spec has red & 0xff
-
-        newRedBlue[0] = tmp_red & 0xff;
-        newRedBlue[1] = tmp_blue & 0xff;
-    }
-
-    private static void inverseTransform(final byte[] rgb, final ColorTransformElement trans) {
-        // Applying inverse transform is just subtracting the
-        // color transform deltas
-        // Transformed values of red and blue components
-        int tmp_red = rgb[0];
-        int tmp_blue = rgb[2];
-
-        tmp_red -= colorTransformDelta((byte) trans.green_to_red, rgb[1]);
-        tmp_blue -= colorTransformDelta((byte) trans.green_to_blue, rgb[1]);
-        tmp_blue -= colorTransformDelta((byte) trans.red_to_blue, rgb[0]); // Spec has red & 0xff
-
-        rgb[0] = (byte) (tmp_red & 0xff);
-        rgb[2] = (byte) (tmp_blue & 0xff);
-    }
-
-    static final class ColorTransformElement {
         final int green_to_red;
         final int green_to_blue;
         final int red_to_blue;
 
-        ColorTransformElement(final int green_to_red, final int green_to_blue, final int red_to_blue) {
-            this.green_to_red = green_to_red;
-            this.green_to_blue = green_to_blue;
-            this.red_to_blue = red_to_blue;
+        ColorTransformElement(final byte[] rgba) {
+            this.green_to_red = rgba[2];
+            this.green_to_blue = rgba[1];
+            this.red_to_blue = rgba[0];
+        }
+
+        private void inverseTransform(final byte[] rgb) {
+            // Applying inverse transform is just adding (!, different from specification) the
+            // color transform deltas 3
+
+            // Transformed values of red and blue components
+            int tmp_red = rgb[0];
+            int tmp_blue = rgb[2];
+
+            tmp_red += colorTransformDelta((byte) this.green_to_red, rgb[1]);
+            tmp_blue += colorTransformDelta((byte) this.green_to_blue, rgb[1]);
+            tmp_blue += colorTransformDelta((byte) this.red_to_blue, (byte) tmp_red); // Spec has red & 0xff
+
+            rgb[0] = (byte) (tmp_red & 0xff);
+            rgb[2] = (byte) (tmp_blue & 0xff);
         }
     }
+
 }

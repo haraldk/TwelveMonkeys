@@ -120,6 +120,10 @@ public final class VP8LDecoder {
         // Use the Huffman trees to decode the LZ77 encoded data.
         decodeImage(writableChild, huffmanInfo, colorCache);
 
+        for (Transform transform : transforms) {
+            transform.applyInverse(raster);
+        }
+
     }
 
     private void decodeImage(WritableRaster raster, HuffmanInfo huffmanInfo, ColorCache colorCache) throws IOException {
