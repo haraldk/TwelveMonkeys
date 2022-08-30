@@ -142,6 +142,16 @@ final class WebPImageReader extends ImageReaderBase {
                 case WebP.CHUNK_ANIM:
                     // TODO: 32 bit bg color (hint!) + 16 bit loop count
                     //  + expose bg color in std image metadata...
+
+/*
+                                        int b = (int) lsbBitReader.readBits(8);
+                                        int g = (int) lsbBitReader.readBits(8);
+                                        int r = (int) lsbBitReader.readBits(8);
+                                        int a = (int) lsbBitReader.readBits(8);
+
+                                        Color bg = new Color(r, g, b, a);
+                                        short loopCount = (short) lsbBitReader.readBits(16);
+*/
                     break;
 
                 case WebP.CHUNK_ANMF:
