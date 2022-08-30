@@ -38,6 +38,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
 import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -465,35 +466,7 @@ final class WebPImageReader extends ImageReaderBase {
 
             switch (nextChunk) {
                 case WebP.CHUNK_ALPH:
-                    int reserved = (int) imageInput.readBits(2);
-                    if (reserved != 0) {
-                        // Spec says SHOULD be 0
-                        processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
-                    }
-
-                    int preProcessing = (int) imageInput.readBits(2);
-                    int filtering = (int) imageInput.readBits(2);
-                    int compression = (int) imageInput.readBits(2);
-
-                    if (DEBUG) {
-                        System.out.println("preProcessing: " + preProcessing);
-                        System.out.println("filtering: " + filtering);
-                        System.out.println("compression: " + compression);
-                    }
-
-                    switch (compression) {
-                        case 0:
-                            readUncompressedAlpha(destination.getAlphaRaster());
-                            break;
-                        case 1:
-                            opaqueAlpha(destination.getAlphaRaster()); // TODO: Remove when correctly implemented!
-//                            readVP8Lossless(destination.getAlphaRaster(), param);
-                            break;
-                        default:
-                            processWarningOccurred("Unknown WebP alpha compression: " + compression);
-                            opaqueAlpha(destination.getAlphaRaster());
-                            break;
-                    }
+                    readAlpha(destination, param);
 
                     break;
 
@@ -524,6 +497,106 @@ final class WebPImageReader extends ImageReaderBase {
             }
 
             imageInput.seek(chunkStart + chunkLength + (chunkLength & 1)); // Padded to even length
+        }
+    }
+
+    private void readAlpha(BufferedImage destination, ImageReadParam param) throws IOException {
+        int reserved = (int) imageInput.readBits(2);
+        if (reserved != 0) {
+            // Spec says SHOULD be 0
+            processWarningOccurred(
+                    String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
+        }
+
+        int preProcessing = (int) imageInput.readBits(2);
+        int filtering = (int) imageInput.readBits(2);
+        int compression = (int) imageInput.readBits(2);
+
+        if (DEBUG) {
+            System.out.println("preProcessing: " + preProcessing);
+            System.out.println("filtering: " + filtering);
+            System.out.println("compression: " + compression);
+        }
+
+        WritableRaster alphaRaster = destination.getAlphaRaster();
+        switch (compression) {
+            case 0:
+                readUncompressedAlpha(alphaRaster);
+                break;
+            case 1:
+                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
+                        destination.getWidth(), destination.getHeight(), 4, null);
+                //Simulate header
+                imageInput.seek(imageInput.getStreamPosition() - 5);
+                readVP8Lossless(tempRaster, param);
+                //Copy from green (band 1) in temp to alpha in destination
+                alphaRaster.setRect(tempRaster.createChild(0, 0, tempRaster.getWidth(),
+                        tempRaster.getHeight(), 0, 0, new int[] {1}));
+                break;
+            default:
+                processWarningOccurred("Unknown WebP alpha compression: " + compression);
+                opaqueAlpha(alphaRaster);
+                break;
+        }
+
+        if (filtering != AlphaFiltering.NONE) {
+            for (int y = 0; y < destination.getHeight(); y++) {
+                for (int x = 0; x < destination.getWidth(); x++) {
+                    int predictorAlpha = getPredictorAlpha(alphaRaster, filtering, y, x);
+                    alphaRaster.setSample(x, y, 0, alphaRaster.getSample(x, y, 0) + predictorAlpha % 256);
+                }
+            }
+        }
+    }
+
+    private int getPredictorAlpha(WritableRaster alphaRaster, int filtering, int y, int x) {
+        switch (filtering) {
+            case AlphaFiltering.NONE:
+                return 0;
+            case AlphaFiltering.HORIZONTAL:
+                if (x == 0) {
+                    if (y == 0) {
+                        return 0;
+                    }
+                    else {
+                        return alphaRaster.getSample(0, y - 1, 0);
+                    }
+                }
+                else {
+                    return alphaRaster.getSample(x - 1, y, 0);
+                }
+            case AlphaFiltering.VERTICAL:
+                if (y == 0) {
+                    if (x == 0) {
+                        return 0;
+                    }
+                    else {
+                        return alphaRaster.getSample(x - 1, 0, 0);
+                    }
+                }
+                else {
+                    return alphaRaster.getSample(x, y - 1, 0);
+                }
+            case AlphaFiltering.GRADIENT:
+                if (x == 0 && y == 0) {
+                    return 0;
+                }
+                else if (x == 0) {
+                    return alphaRaster.getSample(0, y - 1, 0);
+                }
+                else if (y == 0) {
+                    return alphaRaster.getSample(x - 1, 0, 0);
+                }
+                else {
+                    int left = alphaRaster.getSample(x - 1, y, 0);
+                    int top = alphaRaster.getSample(x, y - 1, 0);
+                    int topLeft = alphaRaster.getSample(x - 1, y - 1, 0);
+
+                    return Math.max(0, Math.min(left + top - topLeft, 255));
+                }
+            default:
+                processWarningOccurred("Unknown WebP alpha filtering: " + filtering);
+                return 0;
         }
     }
 
