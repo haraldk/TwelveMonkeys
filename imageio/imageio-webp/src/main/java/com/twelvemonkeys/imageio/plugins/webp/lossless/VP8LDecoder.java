@@ -249,8 +249,6 @@ public final class VP8LDecoder {
 
                 }
                 else { //colorCache
-                    //Color cache should never be null here
-                    assert colorCache != null;
                     decodeCached(raster, colorCache, rgba, y, x, code);
 
                 }
@@ -356,13 +354,9 @@ public final class VP8LDecoder {
 
         switch (transformType) {
             case TransformType.PREDICTOR_TRANSFORM:
-                System.err.println("transformType: PREDICTOR_TRANSFORM");
                 //Intentional Fallthrough
             case TransformType.COLOR_TRANSFORM: {
                 // The two first transforms contains the exact same data, can be combined
-                if (transformType == TransformType.COLOR_TRANSFORM) {
-                    System.err.println("transformType: COLOR_TRANSFORM");
-                }
 
                 byte sizeBits = (byte) (lsbBitReader.readBits(3) + 2);
 
@@ -384,17 +378,14 @@ public final class VP8LDecoder {
                 break;
             }
             case TransformType.SUBTRACT_GREEN: {
-                System.err.println("transformType: SUBTRACT_GREEN");
                 // No data here
                 transforms.add(0, new SubtractGreenTransform());
                 break;
             }
             case TransformType.COLOR_INDEXING_TRANSFORM: {
-                System.err.println("transformType: COLOR_INDEXING_TRANSFORM");
 
                 // 8 bit value for color table size
                 int colorTableSize = ((int) lsbBitReader.readBits(8)) + 1; // 1-256
-                System.err.println("colorTableSize: " + colorTableSize);
 
                 // If the index is equal or larger than color_table_size,
                 // the argb color value should be set to 0x00000000
@@ -403,7 +394,6 @@ public final class VP8LDecoder {
                                          colorTableSize > 4 ? 16 :
                                          colorTableSize > 2 ? 4 : 2;
 
-                System.err.println("safeColorTableSize: " + safeColorTableSize);
 
                 byte[] colorTable = new byte[safeColorTableSize * 4];
 
