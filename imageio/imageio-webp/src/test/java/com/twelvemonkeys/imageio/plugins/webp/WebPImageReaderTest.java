@@ -39,14 +39,26 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                 new TestData(getClassLoaderResource("/webp/small_13x1.webp"), new Dimension(13, 1)),
                 new TestData(getClassLoaderResource("/webp/small_31x13.webp"), new Dimension(31, 13)),
                 new TestData(getClassLoaderResource("/webp/test.webp"), new Dimension(128, 128)),
-                new TestData(getClassLoaderResource("/webp/very_short.webp"), new Dimension(63, 66))
-                // TODO: Support lossless
-//                 // Lossless
-//                 new TestData(getClassLoaderResource("/webp/1_webp_ll.webp"), new Dimension(400, 301)),
-//                 // Extended format: Alpha + VP8
-//                 new TestData(getClassLoaderResource("/webp/1_webp_a.webp"), new Dimension(400, 301)),
-//                 // Extendad format: Anim
-//                new TestData(getClassLoaderResource("/webp/animated-webp-supported.webp"), new Dimension(400, 400))
+                new TestData(getClassLoaderResource("/webp/very_short.webp"), new Dimension(63, 66)),
+                // Lossless
+                new TestData(getClassLoaderResource("/webp/1_webp_ll.webp"), new Dimension(400, 301)),
+                new TestData(getClassLoaderResource("/webp/2_webp_ll.webp"), new Dimension(386, 395)),
+                new TestData(getClassLoaderResource("/webp/2_webp_ll_alt.webp"), new Dimension(386, 395)),
+                new TestData(getClassLoaderResource("/webp/3_webp_ll.webp"), new Dimension(800, 600)),
+                new TestData(getClassLoaderResource("/webp/4_webp_ll.webp"), new Dimension(421, 163)),
+                new TestData(getClassLoaderResource("/webp/5_webp_ll.webp"), new Dimension(300, 300)),
+                // Extended format: Alpha + VP8
+                new TestData(getClassLoaderResource("/webp/1_webp_a.webp"), new Dimension(400, 301)),
+                new TestData(getClassLoaderResource("/webp/2_webp_a.webp"), new Dimension(386, 395)),
+                new TestData(getClassLoaderResource("/webp/3_webp_a.webp"), new Dimension(800, 600)),
+                new TestData(getClassLoaderResource("/webp/4_webp_a.webp"), new Dimension(421, 163)),
+                new TestData(getClassLoaderResource("/webp/5_webp_a.webp"), new Dimension(300, 300)),
+                // Extended format: Anim
+                new TestData(getClassLoaderResource("/webp/animated-webp-supported.webp"), new Dimension(400, 400),
+                        new Dimension(400, 400), new Dimension(400, 400), new Dimension(400, 394),
+                        new Dimension(371, 394), new Dimension(394, 382), new Dimension(400, 388),
+                        new Dimension(394, 383), new Dimension(394, 394), new Dimension(372, 394),
+                        new Dimension(400, 400), new Dimension(320, 382))
         );
     }
 
