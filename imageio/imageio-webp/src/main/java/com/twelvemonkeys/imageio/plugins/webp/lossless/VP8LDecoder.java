@@ -42,7 +42,9 @@ import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.Transform;
 import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.TransformType;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
 import java.awt.image.*;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -84,7 +86,8 @@ public final class VP8LDecoder {
         lsbBitReader = new LSBBitReader(imageInput);
     }
 
-    public void readVP8Lossless(final WritableRaster raster, final boolean topLevel) throws IOException {
+    public void readVP8Lossless(final WritableRaster raster, final boolean topLevel, ImageReadParam param, int width,
+                                int height) throws IOException {
         //https://github.com/webmproject/libwebp/blob/666bd6c65483a512fe4c2eb63fbc198b6fb4fae4/src/dec/vp8l_dec.c#L1114
 
         //Skip past already read parts of header (signature, width, height, alpha, version) 5 Bytes in total
@@ -92,13 +95,12 @@ public final class VP8LDecoder {
             imageInput.seek(imageInput.getStreamPosition() + 5);
         }
 
-        int xSize = raster.getWidth();
-        int ySize = raster.getHeight();
+        int xSize = width;
 
         // Read transforms
         ArrayList<Transform> transforms = new ArrayList<>();
         while (topLevel && lsbBitReader.readBit() == 1) {
-            xSize = readTransform(xSize, ySize, transforms);
+            xSize = readTransform(xSize, height, transforms);
         }
 
         // Read color cache size
@@ -111,7 +113,7 @@ public final class VP8LDecoder {
         }
 
         // Read Huffman codes
-        HuffmanInfo huffmanInfo = readHuffmanCodes(xSize, ySize, colorCacheBits, topLevel);
+        HuffmanInfo huffmanInfo = readHuffmanCodes(xSize, height, colorCacheBits, topLevel);
 
         ColorCache colorCache = null;
 
@@ -119,16 +121,89 @@ public final class VP8LDecoder {
             colorCache = new ColorCache(colorCacheBits);
         }
 
-        //If multiple indices packed into one pixel xSize is different from raster width
-        WritableRaster writableChild = raster.createWritableChild(0, 0, xSize, ySize, 0, 0, null);
+        WritableRaster fullSizeRaster;
+        WritableRaster decodeRaster;
+        if (topLevel) {
 
-        // Use the Huffman trees to decode the LZ77 encoded data.
-        decodeImage(writableChild, huffmanInfo, colorCache);
+            Rectangle bounds = new Rectangle(width, height);
+            fullSizeRaster = getRasterForDecoding(raster, param, bounds);
 
-        for (Transform transform : transforms) {
-            transform.applyInverse(raster);
+            //If multiple indices packed into one pixel xSize is different from raster width
+            decodeRaster = fullSizeRaster.createWritableChild(0, 0, xSize, height, 0, 0, null);
+        }
+        else {
+            //All recursive calls have Rasters of the correct sizes with origin (0, 0)
+            decodeRaster = fullSizeRaster = raster;
         }
 
+        // Use the Huffman trees to decode the LZ77 encoded data.
+        decodeImage(decodeRaster, huffmanInfo, colorCache);
+
+        for (Transform transform : transforms) {
+            transform.applyInverse(fullSizeRaster);
+        }
+
+        if (fullSizeRaster != raster && param != null) {
+            //Copy into destination raster with settings applied
+            Rectangle sourceRegion = param.getSourceRegion();
+            int sourceXSubsampling = param.getSourceXSubsampling();
+            int sourceYSubsampling = param.getSourceYSubsampling();
+            int subsamplingXOffset = param.getSubsamplingXOffset();
+            int subsamplingYOffset = param.getSubsamplingYOffset();
+            Point destinationOffset = param.getDestinationOffset();
+
+            if (sourceRegion == null) {
+                sourceRegion = raster.getBounds();
+            }
+
+            if (sourceXSubsampling == 1 && sourceYSubsampling == 1) {
+                //Only apply offset (and limit to requested region)
+                raster.setRect(destinationOffset.x, destinationOffset.y, fullSizeRaster);
+            }
+            else {
+                //Manual copy, more efficient way might exist
+                byte[] rgba = new byte[4];
+                int xEnd = raster.getWidth() + raster.getMinX();
+                int yEnd = raster.getHeight() + raster.getMinY();
+                for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset;
+                     xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
+                    for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset;
+                         yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
+                        fullSizeRaster.getDataElements(xSrc, ySrc, rgba);
+                        raster.setDataElements(xDst, yDst, rgba);
+                    }
+                }
+            }
+        }
+    }
+
+    private WritableRaster getRasterForDecoding(WritableRaster raster, ImageReadParam param, Rectangle bounds) {
+        //If the ImageReadParam requires only a subregion of the image, and if the whole image does not fit into the
+        // Raster or subsampling is requested, we need a temporary Raster as we can only decode the whole image at once
+
+        boolean originSet = false;
+        if (param != null) {
+            if (param.getSourceRegion() != null && !param.getSourceRegion().contains(bounds) ||
+                    param.getSourceXSubsampling() != 1 || param.getSourceYSubsampling() != 1) {
+                //Can't reuse existing
+                return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height,
+                        4 * bounds.width, 4, new int[] {0, 1, 2, 3}, null);
+            }
+            else {
+                bounds.setLocation(param.getDestinationOffset());
+                originSet = true;
+
+            }
+        }
+        if (!raster.getBounds().contains(bounds)) {
+            //Can't reuse existing
+            return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height, 4 * bounds.width,
+                    4, new int[] {0, 1, 2, 3}, null);
+        }
+        return originSet ?
+               //Recenter to (0, 0)
+               raster.createWritableChild(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, null) :
+               raster;
     }
 
     private void decodeImage(WritableRaster raster, HuffmanInfo huffmanInfo, ColorCache colorCache) throws IOException {
@@ -296,7 +371,7 @@ public final class VP8LDecoder {
                 WritableRaster raster =
                         Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, blockWidth, blockHeight, 4 * blockWidth, 4,
                                 new int[] {0, 1, 2, 3}, null);
-                readVP8Lossless(raster, false);
+                readVP8Lossless(raster, false, null, blockWidth, blockHeight);
 
                 //Keep data as raster for convenient (x,y) indexing
                 if (transformType == TransformType.PREDICTOR_TRANSFORM) {
@@ -342,7 +417,7 @@ public final class VP8LDecoder {
                                 new DataBufferByte(colorTable, colorTableSize * 4),
                                 colorTableSize, 1, colorTableSize * 4,
                                 4, new int[] {0, 1, 2, 3}, null)
-                        , false);
+                        , false, null, colorTableSize, 1);
 
 
                 //resolve subtraction code
@@ -388,7 +463,7 @@ public final class VP8LDecoder {
             //Raster with elements as BARG (only the RG components encode the meta group)
             WritableRaster packedRaster = Raster.createPackedRaster(DataBuffer.TYPE_INT, huffmanXSize, huffmanYSize,
                     new int[] {0x0000ff00, 0x000000ff, 0xff000000, 0x00ff0000}, null);
-            readVP8Lossless(asByteRaster(packedRaster), false);
+            readVP8Lossless(asByteRaster(packedRaster), false, null, huffmanXSize, huffmanYSize);
 
             int[] data = ((DataBufferInt) packedRaster.getDataBuffer()).getData();
             //Max metaGroup is number of meta groups

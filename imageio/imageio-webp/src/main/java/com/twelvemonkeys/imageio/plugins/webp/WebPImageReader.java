@@ -427,7 +427,7 @@ final class WebPImageReader extends ImageReaderBase {
                     AnimationFrame frame = frames.get(imageIndex);
                     imageInput.seek(frame.offset + 16);
                     opaqueAlpha(destination.getAlphaRaster());
-                    readVP8Extended(destination, param, frame.offset + frame.length);
+                    readVP8Extended(destination, param, frame.offset + frame.length, frame.bounds.width, frame.bounds.height);
                 }
                 else {
                     imageInput.seek(header.offset + header.length);
@@ -453,6 +453,11 @@ final class WebPImageReader extends ImageReaderBase {
     }
 
     private void readVP8Extended(BufferedImage destination, ImageReadParam param, long streamEnd) throws IOException {
+        readVP8Extended(destination, param, streamEnd, header.width, header.height);
+    }
+
+    private void readVP8Extended(BufferedImage destination, ImageReadParam param, long streamEnd, final int width,
+                                 final int height) throws IOException {
         while (imageInput.getStreamPosition() < streamEnd) {
             int nextChunk = imageInput.readInt();
             long chunkLength = imageInput.readUnsignedInt();
@@ -466,7 +471,7 @@ final class WebPImageReader extends ImageReaderBase {
 
             switch (nextChunk) {
                 case WebP.CHUNK_ALPH:
-                    readAlpha(destination, param);
+                    readAlpha(destination, param, width, height);
 
                     break;
 
@@ -476,7 +481,7 @@ final class WebPImageReader extends ImageReaderBase {
                     break;
 
                 case WebP.CHUNK_VP8L:
-                    readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param);
+                    readVP8Lossless(RasterUtils.asByteRaster(destination.getRaster()), param, width, height);
                     break;
 
                 case WebP.CHUNK_ANIM:
@@ -500,7 +505,7 @@ final class WebPImageReader extends ImageReaderBase {
         }
     }
 
-    private void readAlpha(BufferedImage destination, ImageReadParam param) throws IOException {
+    private void readAlpha(BufferedImage destination, ImageReadParam param, final int width, final int height) throws IOException {
         int reserved = (int) imageInput.readBits(2);
         if (reserved != 0) {
             // Spec says SHOULD be 0
@@ -525,10 +530,11 @@ final class WebPImageReader extends ImageReaderBase {
                 break;
             case 1:
                 WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                        destination.getWidth(), destination.getHeight(), 4, null);
+                        destination.getWidth(), destination.getHeight(), 4,
+                        destination.getRaster().getBounds().getLocation());
                 //Simulate header
                 imageInput.seek(imageInput.getStreamPosition() - 5);
-                readVP8Lossless(tempRaster, param);
+                readVP8Lossless(tempRaster, param, width, height);
                 //Copy from green (band 1) in temp to alpha in destination
                 alphaRaster.setRect(tempRaster.createChild(0, 0, tempRaster.getWidth(),
                         tempRaster.getHeight(), 0, 0, new int[] {1}));
@@ -638,8 +644,13 @@ final class WebPImageReader extends ImageReaderBase {
     }
 
     private void readVP8Lossless(final WritableRaster raster, final ImageReadParam param) throws IOException {
+        readVP8Lossless(raster, param, header.width, header.height);
+    }
+
+    private void readVP8Lossless(final WritableRaster raster, final ImageReadParam param,
+                                 final int width, final int height) throws IOException {
         VP8LDecoder decoder = new VP8LDecoder(imageInput, DEBUG);
-        decoder.readVP8Lossless(raster, true);
+        decoder.readVP8Lossless(raster, true, param, width, height);
     }
 
     private void readVP8(final WritableRaster raster, final ImageReadParam param) throws IOException {
