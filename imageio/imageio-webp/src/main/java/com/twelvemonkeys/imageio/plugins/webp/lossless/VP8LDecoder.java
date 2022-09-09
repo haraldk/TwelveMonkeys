@@ -57,6 +57,7 @@ import static java.lang.Math.max;
  * VP8LDecoder.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author Simon Kammermeier
  */
 public final class VP8LDecoder {
 
