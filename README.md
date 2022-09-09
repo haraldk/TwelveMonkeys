@@ -523,7 +523,7 @@ q: What about JAI? Several of the formats are already supported by JAI.
 
 a: While JAI (and jai-imageio in particular) have support for some of the same formats, JAI has some major issues.
 The most obvious being:
-- It's not actively developed. No issues has been fixed for years.
+- It's not actively developed. No issue has been fixed for years.
 - To get full format support, you need native libs.
 Native libs does not exist for several popular platforms/architectures, and further the native libs are not open source.
 Some environments may also prevent deployment of native libs, which brings us back to square one.
