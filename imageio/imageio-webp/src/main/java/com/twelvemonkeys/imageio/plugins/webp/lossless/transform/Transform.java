@@ -29,32 +29,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless;
+package com.twelvemonkeys.imageio.plugins.webp.lossless.transform;
+
+import java.awt.image.WritableRaster;
 
 /**
- * PredictorMode.
+ * Transform.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
-public interface PredictorMode {
-    // Special rules:
-    // Top-left pixel of image is predicted BLACK
-    // Rest of top pixels is predicted L
-    // Rest of leftmost pixels are predicted T
-    // Rightmost pixels using TR, uses LEFTMOST pixel on SAME ROW (same distance as TR in memory!)
+public interface Transform {
 
-    int BLACK = 0; // 0xff000000 (represents solid black color in ARGB)
-    int L = 1; // L
-    int T = 2; // T
-    int TR = 3; // TR
-    int TL = 4; // TL
-    int AVG_L_TR_T = 5; // Average2(Average2(L, TR), T)
-    int AVG_L_TL = 6; // Average2(L, TL)
-    int AVG_L_T = 7; // Average2(L, T)
-    int AVG_TL_T = 8; // Average2(TL, T)
-    int AVG_T_TR = 9; // Average2(T, TR)
-    int AVG_L_TL_T_TR = 10; // Average2(Average2(L, TL), Average2(T, TR))
-    int SELECT = 11; // Select(L, T, TL)
-    int CLAMP_ADD_SUB_FULL = 12; // ClampAddSubtractFull(L, T, TL)
-    int CLAMP_ADD_SUB_HALF = 13; //	ClampAddSubtractHalf(Average2(L, T), TL)
+    void applyInverse(WritableRaster raster);
 }

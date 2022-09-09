@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless;
+package com.twelvemonkeys.imageio.plugins.webp.lossless.transform;
 
 /**
  * TransformType.
@@ -37,7 +37,7 @@ package com.twelvemonkeys.imageio.plugins.webp.lossless;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 // Hmm.. Why doesn't SUBTRACT_GREEN follow the convention?
-interface TransformType {
+public interface TransformType {
     int PREDICTOR_TRANSFORM = 0;
     int COLOR_TRANSFORM = 1;
     int SUBTRACT_GREEN = 2;

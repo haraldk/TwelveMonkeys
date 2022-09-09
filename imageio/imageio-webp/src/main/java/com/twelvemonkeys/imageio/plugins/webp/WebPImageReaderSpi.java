@@ -75,10 +75,8 @@ public final class WebPImageReaderSpi extends ImageReaderSpiBase {
             int chunk = stream.readInt();
 
             switch (chunk) {
-                // TODO. Support lossless
-//                 case WebP.CHUNK_VP8L:
+                case WebP.CHUNK_VP8L:
                 case WebP.CHUNK_VP8X:
-                    return containsSupportedChunk(stream, chunk);
                 case WebP.CHUNK_VP8_:
                     return true;
                 default:
@@ -89,30 +87,6 @@ public final class WebPImageReaderSpi extends ImageReaderSpiBase {
             stream.setByteOrder(originalOrder);
             stream.reset();
         }
-    }
-
-    private static boolean containsSupportedChunk(ImageInputStream stream, int chunk) throws IOException {
-        // Temporary: Seek for VP8_, either first or second (after ICCP), or inside ANMF...
-        try {
-            while (chunk != WebP.CHUNK_VP8L && chunk != WebP.CHUNK_ALPH) {
-                long length = stream.readUnsignedInt();
-                stream.seek(stream.getStreamPosition() + length);
-                chunk = stream.readInt();
-
-                // Look inside ANMF chunks...
-                if (chunk == WebP.CHUNK_ANMF) {
-                    stream.seek(stream.getStreamPosition() + 4 + 16);
-                    chunk = stream.readInt();
-                }
-
-                if (chunk == WebP.CHUNK_VP8_) {
-                    return true;
-                }
-            }
-        }
-        catch (EOFException ignore) {}
-
-        return false;
     }
 
     @Override
