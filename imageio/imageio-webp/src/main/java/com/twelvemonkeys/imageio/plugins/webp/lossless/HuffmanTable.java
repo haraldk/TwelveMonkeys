@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.huffman;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import com.twelvemonkeys.imageio.plugins.webp.LSBBitReader;
 
@@ -65,7 +65,7 @@ import java.util.List;
  *
  * @author Simon Kammermeier
  */
-public class HuffmanTable {
+final class HuffmanTable {
 
     private static final int LEVEL1_BITS = 8;
     /**

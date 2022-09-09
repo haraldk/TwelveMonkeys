@@ -29,16 +29,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.transform;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 
 /**
  * Transform.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
-public interface Transform {
+interface Transform {
 
     void applyInverse(WritableRaster raster);
 }

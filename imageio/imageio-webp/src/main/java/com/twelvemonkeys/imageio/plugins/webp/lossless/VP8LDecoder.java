@@ -32,14 +32,6 @@
 package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import com.twelvemonkeys.imageio.plugins.webp.LSBBitReader;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.huffman.HuffmanCodeGroup;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.huffman.HuffmanInfo;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.ColorIndexingTransform;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.ColorTransform;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.PredictorTransform;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.SubtractGreenTransform;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.Transform;
-import com.twelvemonkeys.imageio.plugins.webp.lossless.transform.TransformType;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;

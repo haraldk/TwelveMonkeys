@@ -29,14 +29,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.transform;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import java.awt.image.*;
 
 /**
  * @author Simon Kammermeier
  */
-public class ColorTransform implements Transform {
+final class ColorTransform implements Transform {
     private final Raster data;
     private final byte bits;
 

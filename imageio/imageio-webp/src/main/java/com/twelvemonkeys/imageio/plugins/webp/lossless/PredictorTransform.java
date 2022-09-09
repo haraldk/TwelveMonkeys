@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.transform;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import java.awt.image.*;
 
@@ -40,7 +40,7 @@ import static java.lang.Math.min;
 /**
  * @author Simon Kammermeier
  */
-public class PredictorTransform implements Transform {
+final class PredictorTransform implements Transform {
     private final Raster data;
     private final byte bits;
 

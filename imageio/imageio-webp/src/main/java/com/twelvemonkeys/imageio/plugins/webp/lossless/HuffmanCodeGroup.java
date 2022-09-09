@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.huffman;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import com.twelvemonkeys.imageio.plugins.webp.LSBBitReader;
 
@@ -38,7 +38,7 @@ import java.io.IOException;
 /**
  * @author Simon Kammermeier
  */
-public class HuffmanCodeGroup {
+final class HuffmanCodeGroup {
     /**
      * Used for green, backward reference length and color cache
      */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Harald Kuhr
+ * Copyright (c) 2017, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -29,49 +29,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.transform;
-
-import java.awt.image.*;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 /**
- * @author Simon Kammermeier
+ * TransformType.
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
-public class ColorIndexingTransform implements Transform {
-
-    private final byte[] colorTable;
-    private final byte bits;
-
-    public ColorIndexingTransform(byte[] colorTable, byte bits) {
-        this.colorTable = colorTable;
-        this.bits = bits;
-    }
-
-    @Override
-    public void applyInverse(WritableRaster raster) {
-
-        int width = raster.getWidth();
-        int height = raster.getHeight();
-
-        byte[] rgba = new byte[4];
-
-        for (int y = 0; y < height; y++) {
-            //Reversed so no used elements are overridden (in case of packing)
-            for (int x = width - 1; x >= 0; x--) {
-
-                int componentSize = 8 >> bits;
-                int packed = 1 << bits;
-                int xC = x / packed;
-                int componentOffset = componentSize * (x % packed);
-
-                int sample = raster.getSample(xC, y, 1);
-
-                int index = sample >> componentOffset & ((1 << componentSize) - 1);
-
-                //Arraycopy for 4 elements might not be beneficial
-                System.arraycopy(colorTable, index * 4, rgba, 0, 4);
-                raster.setDataElements(x, y, rgba);
-
-            }
-        }
-    }
+// Hmm.. Why doesn't SUBTRACT_GREEN follow the convention?
+interface TransformType {
+    int PREDICTOR_TRANSFORM = 0;
+    int COLOR_TRANSFORM = 1;
+    int SUBTRACT_GREEN = 2;
+    int COLOR_INDEXING_TRANSFORM = 3;
 }

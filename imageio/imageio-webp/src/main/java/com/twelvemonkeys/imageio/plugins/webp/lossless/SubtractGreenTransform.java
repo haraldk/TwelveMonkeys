@@ -29,23 +29,33 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.webp.lossless.huffman;
+package com.twelvemonkeys.imageio.plugins.webp.lossless;
 
 import java.awt.image.*;
 
 /**
  * @author Simon Kammermeier
  */
-public class HuffmanInfo {
-    public Raster huffmanMetaCodes; //Raster allows intuitive lookup by x and y
+final class SubtractGreenTransform implements Transform {
 
-    public int metaCodeBits;
+    private static void addGreenToBlueAndRed(byte[] rgb) {
+        rgb[0] = (byte) ((rgb[0] + rgb[1]) & 0xff);
+        rgb[2] = (byte) ((rgb[2] + rgb[1]) & 0xff);
+    }
 
-    public HuffmanCodeGroup[] huffmanGroups;
+    @Override
+    public void applyInverse(WritableRaster raster) {
+        int width = raster.getWidth();
+        int height = raster.getHeight();
 
-    public HuffmanInfo(Raster huffmanMetaCodes, int metaCodeBits, HuffmanCodeGroup[] huffmanGroups) {
-        this.huffmanMetaCodes = huffmanMetaCodes;
-        this.metaCodeBits = metaCodeBits;
-        this.huffmanGroups = huffmanGroups;
+        byte[] rgba = new byte[4];
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                raster.getDataElements(x, y, rgba);
+                addGreenToBlueAndRed(rgba);
+                raster.setDataElements(x, y, rgba);
+            }
+        }
     }
 }
