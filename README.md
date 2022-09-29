@@ -50,7 +50,7 @@ As there is lots of legacy data out there, we see the need for open implementati
 
 
 **Important note on using Batik:** *Please read [The Apache™ XML Graphics Project - Security](https://xmlgraphics.apache.org/security.html), 
-and make sure you use version 1.14 or later.*
+and make sure you use an updated and secure version.*
 
 Note that GIF, PNG and WBMP formats are already supported through the ImageIO API, using the
 [JDK standard plugins](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/package-summary.html).
