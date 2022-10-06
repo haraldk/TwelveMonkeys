@@ -74,16 +74,13 @@ public final class VP8LDecoder {
     private final ImageInputStream imageInput;
     private final LSBBitReader lsbBitReader;
 
-    public VP8LDecoder(final ImageInputStream imageInput, final boolean debug) {
+    public VP8LDecoder(final ImageInputStream imageInput, @SuppressWarnings("unused") final boolean debug) {
         this.imageInput = imageInput;
-        lsbBitReader = new LSBBitReader(imageInput);
+        this.lsbBitReader = new LSBBitReader(imageInput);
     }
 
-    public void readVP8Lossless(final WritableRaster raster, final boolean topLevel, ImageReadParam param, int width,
-                                int height) throws IOException {
-        //https://github.com/webmproject/libwebp/blob/666bd6c65483a512fe4c2eb63fbc198b6fb4fae4/src/dec/vp8l_dec.c#L1114
-
-        //Skip past already read parts of header (signature, width, height, alpha, version) 5 Bytes in total
+    public void readVP8Lossless(final WritableRaster raster, final boolean topLevel, ImageReadParam param, int width, int height) throws IOException {
+        // Skip past already read parts of header (signature, width, height, alpha, version) 5 Bytes in total
         if (topLevel) {
             imageInput.seek(imageInput.getStreamPosition() + 5);
         }
@@ -100,6 +97,7 @@ public final class VP8LDecoder {
         int colorCacheBits = 0;
         if (lsbBitReader.readBit() == 1) {
             colorCacheBits = (int) lsbBitReader.readBits(4);
+
             if (colorCacheBits < 1 || colorCacheBits > 11) {
                 throw new IIOException("Corrupt WebP stream, colorCacheBits < 1 || > 11: " + colorCacheBits);
             }
@@ -116,16 +114,16 @@ public final class VP8LDecoder {
 
         WritableRaster fullSizeRaster;
         WritableRaster decodeRaster;
-        if (topLevel) {
 
+        if (topLevel) {
             Rectangle bounds = new Rectangle(width, height);
             fullSizeRaster = getRasterForDecoding(raster, param, bounds);
 
-            //If multiple indices packed into one pixel xSize is different from raster width
+            // If multiple indices packed into one pixel xSize is different from raster width
             decodeRaster = fullSizeRaster.createWritableChild(0, 0, xSize, height, 0, 0, null);
         }
         else {
-            //All recursive calls have Rasters of the correct sizes with origin (0, 0)
+            // All recursive calls have Rasters of the correct sizes with origin (0, 0)
             decodeRaster = fullSizeRaster = raster;
         }
 
@@ -137,7 +135,7 @@ public final class VP8LDecoder {
         }
 
         if (fullSizeRaster != raster && param != null) {
-            //Copy into destination raster with settings applied
+            // Copy into destination raster with settings applied
             Rectangle sourceRegion = param.getSourceRegion();
             int sourceXSubsampling = param.getSourceXSubsampling();
             int sourceYSubsampling = param.getSourceYSubsampling();
@@ -150,18 +148,17 @@ public final class VP8LDecoder {
             }
 
             if (sourceXSubsampling == 1 && sourceYSubsampling == 1) {
-                //Only apply offset (and limit to requested region)
+                // Only apply offset (and limit to requested region)
                 raster.setRect(destinationOffset.x, destinationOffset.y, fullSizeRaster);
             }
             else {
-                //Manual copy, more efficient way might exist
+                // Manual copy, more efficient way might exist
                 byte[] rgba = new byte[4];
                 int xEnd = raster.getWidth() + raster.getMinX();
                 int yEnd = raster.getHeight() + raster.getMinY();
-                for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset;
-                     xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
-                    for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset;
-                         yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
+
+                for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset; xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
+                    for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset; yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
                         fullSizeRaster.getDataElements(xSrc, ySrc, rgba);
                         raster.setDataElements(xDst, yDst, rgba);
                     }
@@ -171,14 +168,14 @@ public final class VP8LDecoder {
     }
 
     private WritableRaster getRasterForDecoding(WritableRaster raster, ImageReadParam param, Rectangle bounds) {
-        //If the ImageReadParam requires only a subregion of the image, and if the whole image does not fit into the
+        // If the ImageReadParam requires only a subregion of the image, and if the whole image does not fit into the
         // Raster or subsampling is requested, we need a temporary Raster as we can only decode the whole image at once
-
         boolean originSet = false;
+
         if (param != null) {
             if (param.getSourceRegion() != null && !param.getSourceRegion().contains(bounds) ||
                     param.getSourceXSubsampling() != 1 || param.getSourceYSubsampling() != 1) {
-                //Can't reuse existing
+                // Can't reuse existing
                 return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height,
                         4 * bounds.width, 4, new int[] {0, 1, 2, 3}, null);
             }
@@ -189,12 +186,13 @@ public final class VP8LDecoder {
             }
         }
         if (!raster.getBounds().contains(bounds)) {
-            //Can't reuse existing
+            // Can't reuse existing
             return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height, 4 * bounds.width,
                     4, new int[] {0, 1, 2, 3}, null);
         }
+
         return originSet ?
-               //Recenter to (0, 0)
+               // Recenter to (0, 0)
                raster.createWritableChild(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, null) :
                raster;
     }
@@ -210,47 +208,39 @@ public final class VP8LDecoder {
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-
                 if ((x & huffmanMask) == 0 && huffmanInfo.huffmanMetaCodes != null) {
-                    //Crossed border into new metaGroup
+                    // Crossed border into new metaGroup
                     int index = huffmanInfo.huffmanMetaCodes.getSample(x >> huffmanInfo.metaCodeBits, y >> huffmanInfo.metaCodeBits, 0);
                     curCodeGroup = huffmanInfo.huffmanGroups[index];
                 }
 
                 short code = curCodeGroup.mainCode.readSymbol(lsbBitReader);
 
-                if (code < 256) { //Literal
+                if (code < 256) { // Literal
                     decodeLiteral(raster, colorCache, curCodeGroup, rgba, y, x, code);
-
                 }
-                else if (code < 256 + 24) { //backward reference
-
+                else if (code < 256 + 24) { // backward reference
                     int length = decodeBwRef(raster, colorCache, width, curCodeGroup, rgba, code, x, y);
 
-                    //Decrement one because for loop already increments by one
+                    // Decrement one because for loop already increments by one
                     x--;
                     y = y + ((x + length) / width);
                     x = (x + length) % width;
 
-
-                    //Reset Huffman meta group
+                    // Reset Huffman meta group
                     if (y < height && x < width && huffmanInfo.huffmanMetaCodes != null) {
                         int index = huffmanInfo.huffmanMetaCodes.getSample(x >> huffmanInfo.metaCodeBits, y >> huffmanInfo.metaCodeBits, 0);
                         curCodeGroup = huffmanInfo.huffmanGroups[index];
                     }
-
-
                 }
-                else { //colorCache
+                else { // colorCache
                     decodeCached(raster, colorCache, rgba, y, x, code);
-
                 }
             }
         }
     }
 
     private void decodeCached(WritableRaster raster, ColorCache colorCache, byte[] rgba, int y, int x, short code) {
-
         int argb = colorCache.lookup(code - 256 - 24);
 
         rgba[0] = (byte) ((argb >> 16) & 0xff);
@@ -265,11 +255,13 @@ public final class VP8LDecoder {
         byte red = (byte) curCodeGroup.redCode.readSymbol(lsbBitReader);
         byte blue = (byte) curCodeGroup.blueCode.readSymbol(lsbBitReader);
         byte alpha = (byte) curCodeGroup.alphaCode.readSymbol(lsbBitReader);
+
         rgba[0] = red;
         rgba[1] = (byte) code;
         rgba[2] = blue;
         rgba[3] = alpha;
         raster.setDataElements(x, y, rgba);
+
         if (colorCache != null) {
             colorCache.insert((alpha & 0xff) << 24 | (red & 0xff) << 16 | (code & 0xff) << 8 | (blue & 0xff));
         }
@@ -284,16 +276,15 @@ public final class VP8LDecoder {
         int xSrc, ySrc;
 
         if (distanceCode > 120) {
-            //Linear distance
+            // Linear distance
             int distance = distanceCode - 120;
             ySrc = y - (distance / width);
             xSrc = x - (distance % width);
         }
         else {
-            //See comment of distances array
+            // See comment of distances array
             xSrc = x - (8 - (DISTANCES[distanceCode - 1] & 0xf));
             ySrc = y - (DISTANCES[distanceCode - 1] >> 4);
-
         }
 
         if (xSrc < 0) {
@@ -306,14 +297,15 @@ public final class VP8LDecoder {
         }
 
         for (int l = length; l > 0; x++, l--) {
-            //Check length and xSrc, ySrc not falling outside raster? (Should not occur if image is correct)
-
+            // Check length and xSrc, ySrc not falling outside raster? (Should not occur if image is correct)
             if (x == width) {
                 x = 0;
                 y++;
             }
+
             raster.getDataElements(xSrc++, ySrc, rgba);
             raster.setDataElements(x, y, rgba);
+
             if (xSrc == width) {
                 xSrc = 0;
                 ySrc++;
@@ -322,22 +314,21 @@ public final class VP8LDecoder {
                 colorCache.insert((rgba[3] & 0xff) << 24 | (rgba[0] & 0xff) << 16 | (rgba[1] & 0xff) << 8 | (rgba[2] & 0xff));
             }
         }
+
         return length;
     }
 
     private int lz77decode(int prefixCode) throws IOException {
-        //According to specification
-
+        // According to specification
         if (prefixCode < 4) {
             return prefixCode + 1;
         }
         else {
             int extraBits = (prefixCode - 2) >> 1;
             int offset = (2 + (prefixCode & 1)) << extraBits;
+
             return offset + (int) lsbBitReader.readBits(extraBits) + 1;
-
         }
-
     }
 
     private int readTransform(int xSize, int ySize, List<Transform> transforms) throws IOException {
@@ -347,7 +338,7 @@ public final class VP8LDecoder {
 
         switch (transformType) {
             case TransformType.PREDICTOR_TRANSFORM:
-                //Intentional Fallthrough
+                // Intentional Fallthrough
             case TransformType.COLOR_TRANSFORM: {
                 // The two first transforms contains the exact same data, can be combined
 
@@ -360,7 +351,7 @@ public final class VP8LDecoder {
                                 new int[] {0, 1, 2, 3}, null);
                 readVP8Lossless(raster, false, null, blockWidth, blockHeight);
 
-                //Keep data as raster for convenient (x,y) indexing
+                // Keep data as raster for convenient (x,y) indexing
                 if (transformType == TransformType.PREDICTOR_TRANSFORM) {
                     transforms.add(0, new PredictorTransform(raster, sizeBits));
                 }
@@ -376,7 +367,6 @@ public final class VP8LDecoder {
                 break;
             }
             case TransformType.COLOR_INDEXING_TRANSFORM: {
-
                 // 8 bit value for color table size
                 int colorTableSize = ((int) lsbBitReader.readBits(8)) + 1; // 1-256
 
@@ -386,7 +376,6 @@ public final class VP8LDecoder {
                 int safeColorTableSize = colorTableSize > 16 ? 256 :
                                          colorTableSize > 4 ? 16 :
                                          colorTableSize > 2 ? 4 : 2;
-
 
                 byte[] colorTable = new byte[safeColorTableSize * 4];
 
@@ -398,12 +387,10 @@ public final class VP8LDecoder {
                 readVP8Lossless(
                         Raster.createInterleavedRaster(
                                 new DataBufferByte(colorTable, colorTableSize * 4),
-                                colorTableSize, 1, colorTableSize * 4,
-                                4, new int[] {0, 1, 2, 3}, null)
-                        , false, null, colorTableSize, 1);
+                                colorTableSize, 1, colorTableSize * 4, 4, new int[] {0, 1, 2, 3}, null),
+                        false, null, colorTableSize, 1);
 
-
-                //resolve subtraction code
+                // resolve subtraction code
                 for (int i = 4; i < colorTable.length; i++) {
                     colorTable[i] += colorTable[i - 4];
                 }
@@ -428,8 +415,7 @@ public final class VP8LDecoder {
         return xSize;
     }
 
-    private HuffmanInfo readHuffmanCodes(int xSize, int ySize, int colorCacheBits, boolean readMetaCodes)
-            throws IOException {
+    private HuffmanInfo readHuffmanCodes(int xSize, int ySize, int colorCacheBits, boolean readMetaCodes) throws IOException {
         int huffmanGroupNum = 1;
         int huffmanXSize;
         int huffmanYSize;
@@ -437,32 +423,30 @@ public final class VP8LDecoder {
         int metaCodeBits = 0;
 
         WritableRaster huffmanMetaCodes = null;
+
         if (readMetaCodes && lsbBitReader.readBit() == 1) {
-            //read in meta codes
+            // read in meta codes
             metaCodeBits = (int) lsbBitReader.readBits(3) + 2;
             huffmanXSize = subSampleSize(xSize, metaCodeBits);
             huffmanYSize = subSampleSize(ySize, metaCodeBits);
 
-            //Raster with elements as BARG (only the RG components encode the meta group)
+            // Raster with elements as BARG (only the RG components encode the meta group)
             WritableRaster packedRaster = Raster.createPackedRaster(DataBuffer.TYPE_INT, huffmanXSize, huffmanYSize,
                     new int[] {0x0000ff00, 0x000000ff, 0xff000000, 0x00ff0000}, null);
             readVP8Lossless(asByteRaster(packedRaster), false, null, huffmanXSize, huffmanYSize);
 
             int[] data = ((DataBufferInt) packedRaster.getDataBuffer()).getData();
-            //Max metaGroup is number of meta groups
+            // Max metaGroup is number of meta groups
             int maxCode = Integer.MIN_VALUE;
             for (int code : data) {
                 maxCode = max(maxCode, code & 0xffff);
             }
             huffmanGroupNum = maxCode + 1;
 
-            /*
-                New Raster with just RG components exposed as single band allowing simple access of metaGroupIndex with
-                x,y lookup
-            */
+            // New Raster with just RG components exposed as single band
+            // allowing simple access of metaGroupIndex with x,y lookup
             huffmanMetaCodes = Raster.createPackedRaster(packedRaster.getDataBuffer(), huffmanXSize, huffmanYSize,
                     huffmanXSize, new int[] {0xffff}, null);
-
         }
 
         HuffmanCodeGroup[] huffmanGroups = new HuffmanCodeGroup[huffmanGroupNum];

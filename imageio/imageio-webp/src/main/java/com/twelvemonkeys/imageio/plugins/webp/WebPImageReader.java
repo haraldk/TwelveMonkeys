@@ -31,29 +31,6 @@
 
 package com.twelvemonkeys.imageio.plugins.webp;
 
-import java.awt.*;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorConvertOp;
-import java.awt.image.ColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import javax.imageio.IIOException;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageTypeSpecifier;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.spi.ImageReaderSpi;
-
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorProfiles;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
@@ -67,6 +44,25 @@ import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.imageio.util.RasterUtils;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.spi.ImageReaderSpi;
+import java.awt.*;
+import java.awt.color.*;
+import java.awt.image.*;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
  * WebPImageReader
@@ -216,7 +212,7 @@ final class WebPImageReader extends ImageReaderBase {
 
         switch (chunk) {
             case WebP.CHUNK_VP8_:
-                //https://tools.ietf.org/html/rfc6386#section-9.1
+                // https://tools.ietf.org/html/rfc6386#section-9.1
                 int frameType = lsbBitReader.readBit(); // 0 = key frame, 1 = inter frame (not used in WebP)
 
                 if (frameType != 0) {
@@ -436,7 +432,6 @@ final class WebPImageReader extends ImageReaderBase {
                 if (header.containsANIM) {
                     AnimationFrame frame = frames.get(imageIndex);
                     imageInput.seek(frame.offset + 16);
-                    opaqueAlpha(destination.getAlphaRaster());
                     readVP8Extended(destination, param, frame.offset + frame.length, frame.bounds.width, frame.bounds.height);
                 }
                 else {
@@ -466,8 +461,7 @@ final class WebPImageReader extends ImageReaderBase {
         readVP8Extended(destination, param, streamEnd, header.width, header.height);
     }
 
-    private void readVP8Extended(BufferedImage destination, ImageReadParam param, long streamEnd, final int width,
-                                 final int height) throws IOException {
+    private void readVP8Extended(BufferedImage destination, ImageReadParam param, long streamEnd, final int width, final int height) throws IOException {
         while (imageInput.getStreamPosition() < streamEnd) {
             int nextChunk = imageInput.readInt();
             long chunkLength = imageInput.readUnsignedInt();
@@ -482,12 +476,11 @@ final class WebPImageReader extends ImageReaderBase {
             switch (nextChunk) {
                 case WebP.CHUNK_ALPH:
                     readAlpha(destination, param, width, height);
-
                     break;
 
                 case WebP.CHUNK_VP8_:
                     readVP8(RasterUtils.asByteRaster(destination.getRaster())
-                            .createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[]{ 0, 1, 2}), param);
+                            .createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[] {0, 1, 2}), param);
                     break;
 
                 case WebP.CHUNK_VP8L:
@@ -519,8 +512,7 @@ final class WebPImageReader extends ImageReaderBase {
         int reserved = (int) imageInput.readBits(2);
         if (reserved != 0) {
             // Spec says SHOULD be 0
-            processWarningOccurred(
-                    String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
+            processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
         }
 
         int preProcessing = (int) imageInput.readBits(2);
@@ -539,15 +531,14 @@ final class WebPImageReader extends ImageReaderBase {
                 readUncompressedAlpha(alphaRaster);
                 break;
             case 1:
-                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE,
-                        destination.getWidth(), destination.getHeight(), 4,
-                        destination.getRaster().getBounds().getLocation());
-                //Simulate header
+                // Simulate header
                 imageInput.seek(imageInput.getStreamPosition() - 5);
+
+                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, destination.getWidth(), destination.getHeight(), 4, null);
                 readVP8Lossless(tempRaster, param, width, height);
-                //Copy from green (band 1) in temp to alpha in destination
-                alphaRaster.setRect(tempRaster.createChild(0, 0, tempRaster.getWidth(),
-                        tempRaster.getHeight(), 0, 0, new int[] {1}));
+
+                // Copy from green (band 1) in temp to alpha in destination
+                alphaRaster.setRect(tempRaster.createChild(0, 0, tempRaster.getWidth(), tempRaster.getHeight(), 0, 0, new int[] {1}));
                 break;
             default:
                 processWarningOccurred("Unknown WebP alpha compression: " + compression);
@@ -571,34 +562,21 @@ final class WebPImageReader extends ImageReaderBase {
                 return 0;
             case AlphaFiltering.HORIZONTAL:
                 if (x == 0) {
-                    if (y == 0) {
-                        return 0;
-                    }
-                    else {
-                        return alphaRaster.getSample(0, y - 1, 0);
-                    }
+                    return y == 0 ? 0 : alphaRaster.getSample(0, y - 1, 0);
                 }
                 else {
                     return alphaRaster.getSample(x - 1, y, 0);
                 }
             case AlphaFiltering.VERTICAL:
                 if (y == 0) {
-                    if (x == 0) {
-                        return 0;
-                    }
-                    else {
-                        return alphaRaster.getSample(x - 1, 0, 0);
-                    }
+                    return x == 0 ? 0 : alphaRaster.getSample(x - 1, 0, 0);
                 }
                 else {
                     return alphaRaster.getSample(x, y - 1, 0);
                 }
             case AlphaFiltering.GRADIENT:
-                if (x == 0 && y == 0) {
-                    return 0;
-                }
-                else if (x == 0) {
-                    return alphaRaster.getSample(0, y - 1, 0);
+                if (x == 0) {
+                    return y == 0 ? 0 : alphaRaster.getSample(0, y - 1, 0);
                 }
                 else if (y == 0) {
                     return alphaRaster.getSample(x - 1, 0, 0);
@@ -608,7 +586,7 @@ final class WebPImageReader extends ImageReaderBase {
                     int top = alphaRaster.getSample(x, y - 1, 0);
                     int topLeft = alphaRaster.getSample(x - 1, y - 1, 0);
 
-                    return Math.max(0, Math.min(left + top - topLeft, 255));
+                    return max(0, min(left + top - topLeft, 255));
                 }
             default:
                 processWarningOccurred("Unknown WebP alpha filtering: " + filtering);
@@ -647,6 +625,7 @@ final class WebPImageReader extends ImageReaderBase {
         }
     }
 
+    @SuppressWarnings("RedundantThrows")
     private void readUncompressedAlpha(final WritableRaster alphaRaster) throws IOException {
         // Hardly used in practice, need to find a sample file
         processWarningOccurred("Uncompressed WebP alpha not implemented");
