@@ -30,21 +30,14 @@
 
 package com.twelvemonkeys.imageio.util;
 
-import static com.twelvemonkeys.lang.Validate.isTrue;
-import static com.twelvemonkeys.lang.Validate.notNull;
-
-import java.awt.color.ColorSpace;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.DataBuffer;
-import java.awt.image.DirectColorModel;
-import java.awt.image.IndexColorModel;
-import java.awt.image.MultiPixelPackedSampleModel;
-import java.awt.image.SampleModel;
+import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
 
 import javax.imageio.ImageTypeSpecifier;
+import java.awt.color.*;
+import java.awt.image.*;
 
-import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
+import static com.twelvemonkeys.lang.Validate.isTrue;
+import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
  * Factory class for creating {@code ImageTypeSpecifier}s.
@@ -58,28 +51,52 @@ import com.twelvemonkeys.imageio.color.DiscreteAlphaIndexColorModel;
  */
 public final class ImageTypeSpecifiers {
 
+    private static final ImageTypeSpecifier TYPE_INT_RGB = createPackedOddBits(ColorSpace.getInstance(ColorSpace.CS_sRGB), 24,
+                                                                               0xFF0000,
+                                                                               0x00FF00,
+                                                                               0x0000FF,
+                                                                               0x0,
+                                                                               DataBuffer.TYPE_INT,
+                                                                               false);
+    private static final ImageTypeSpecifier TYPE_INT_BGR = createPackedOddBits(ColorSpace.getInstance(ColorSpace.CS_sRGB), 24,
+                                                                               0x0000FF,
+                                                                               0x00FF00,
+                                                                               0xFF0000,
+                                                                               0x0,
+                                                                               DataBuffer.TYPE_INT,
+                                                                               false);
+    private static final ImageTypeSpecifier TYPE_USHORT_565_RGB = createPackedOddBits(ColorSpace.getInstance(ColorSpace.CS_sRGB), 16,
+                                                                                      0xF800,
+                                                                                      0x07E0,
+                                                                                      0x001F,
+                                                                                      0x0,
+                                                                                      DataBuffer.TYPE_USHORT,
+                                                                                      false);
+    private static final ImageTypeSpecifier TYPE_USHORT_555_RGB = createPackedOddBits(ColorSpace.getInstance(ColorSpace.CS_sRGB), 15,
+                                                                                      0x7C00,
+                                                                                      0x03E0,
+                                                                                      0x001F,
+                                                                                      0x0,
+                                                                                      DataBuffer.TYPE_USHORT,
+                                                                                      false);
+
     private ImageTypeSpecifiers() {}
 
     public static ImageTypeSpecifier createFromBufferedImageType(final int bufferedImageType) {
         switch (bufferedImageType) {
-            // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for the USHORT types
+            // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for the INT_RGB and USHORT types
+            case BufferedImage.TYPE_INT_RGB:
+                return TYPE_INT_RGB;
+
+            case BufferedImage.TYPE_INT_BGR:
+                return TYPE_INT_BGR;
+
             case BufferedImage.TYPE_USHORT_565_RGB:
-                return createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                        0xF800,
-                        0x07E0,
-                        0x001F,
-                        0x0,
-                        DataBuffer.TYPE_USHORT,
-                        false);
+                return TYPE_USHORT_565_RGB;
 
             case BufferedImage.TYPE_USHORT_555_RGB:
-                return createPacked(ColorSpace.getInstance(ColorSpace.CS_sRGB),
-                        0x7C00,
-                        0x03E0,
-                        0x001F,
-                        0x0,
-                        DataBuffer.TYPE_USHORT,
-                        false);
+                return TYPE_USHORT_555_RGB;
+
             default:
         }
 
@@ -90,21 +107,39 @@ public final class ImageTypeSpecifiers {
                                                   final int redMask, final int greenMask,
                                                   final int blueMask, final int alphaMask,
                                                   final int transferType, boolean isAlphaPremultiplied) {
-        if (transferType == DataBuffer.TYPE_BYTE || transferType == DataBuffer.TYPE_USHORT) {
+        int bits = calculateRequiredBits(redMask | greenMask | blueMask | alphaMask);
+        if (bits != 32) {
             // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround for BYTE/USHORT types
-            notNull(colorSpace, "colorSpace");
-            isTrue(colorSpace.getType() == ColorSpace.TYPE_RGB, colorSpace, "ColorSpace must be TYPE_RGB");
-            isTrue(redMask != 0 || greenMask != 0 || blueMask != 0 || alphaMask != 0, "No mask has at least 1 bit set");
-
-            int bits = transferType == DataBuffer.TYPE_BYTE ? 8 : 16;
-
-            ColorModel colorModel = new DirectColorModel(colorSpace, bits, redMask, greenMask, blueMask, alphaMask,
-                    isAlphaPremultiplied, transferType);
-
-            return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+            return createPackedOddBits(colorSpace, bits, redMask, greenMask, blueMask, alphaMask, transferType, isAlphaPremultiplied);
         }
 
         return ImageTypeSpecifier.createPacked(colorSpace, redMask, greenMask, blueMask, alphaMask, transferType, isAlphaPremultiplied);
+    }
+
+    private static int calculateRequiredBits(int mask) {
+        // See https://graphics.stanford.edu/~seander/bithacks.html#IntegerLogObvious
+        int r = 1;
+
+        while ((mask >>>= 1) != 0) {
+            r++;
+        }
+
+        return r;
+    }
+
+    static ImageTypeSpecifier createPackedOddBits(final ColorSpace colorSpace, int bits,
+                                                  final int redMask, final int greenMask,
+                                                  final int blueMask, final int alphaMask,
+                                                  final int transferType, boolean isAlphaPremultiplied) {
+        // ImageTypeSpecifier unconditionally uses bits == 32, we'll use a workaround
+        notNull(colorSpace, "colorSpace");
+        isTrue(colorSpace.getType() == ColorSpace.TYPE_RGB, colorSpace, "ColorSpace must be TYPE_RGB");
+        isTrue(redMask != 0 || greenMask != 0 || blueMask != 0 || alphaMask != 0, "No mask has at least 1 bit set");
+
+        ColorModel colorModel = new DirectColorModel(colorSpace, bits, redMask, greenMask, blueMask, alphaMask,
+                                                     isAlphaPremultiplied, transferType);
+
+        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
     }
 
     public static ImageTypeSpecifier createInterleaved(final ColorSpace colorSpace,
@@ -234,5 +269,21 @@ public final class ImageTypeSpecifiers {
     public static ImageTypeSpecifier createDiscreteExtraSamplesIndexedFromIndexColorModel(final IndexColorModel pColorModel, int extraSamples, boolean hasAlpha) {
         ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel, extraSamples, hasAlpha);
         return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+    }
+
+    public static ImageTypeSpecifier createFromRenderedImage(RenderedImage image) {
+        if (image == null) {
+            throw new IllegalArgumentException("image == null!");
+        }
+
+        if (image instanceof BufferedImage) {
+            int bufferedImageType = ((BufferedImage) image).getType();
+
+            if (bufferedImageType != BufferedImage.TYPE_CUSTOM) {
+                return createFromBufferedImageType(bufferedImageType);
+            }
+        }
+
+        return new ImageTypeSpecifier(image);
     }
 }
