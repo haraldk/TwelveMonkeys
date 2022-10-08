@@ -9,7 +9,7 @@ import static com.twelvemonkeys.lang.Validate.notNull;
 final class WebPImageMetadata extends StandardImageMetadataSupport {
     WebPImageMetadata(ImageTypeSpecifier type, VP8xChunk header) {
         super(builder(type)
-                      .withCompressionName(notNull(header, "header").isLossless ? "VP8L" : "VP8")
+                      .withCompressionTypeName(notNull(header, "header").isLossless ? "VP8L" : "VP8")
                       .withCompressionLossless(header.isLossless)
                       .withPixelAspectRatio(1.0)
                       .withFormatVersion("1.0")

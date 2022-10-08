@@ -7,16 +7,24 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport.SubimageInterpreta
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import org.junit.Test;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.*;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import static com.twelvemonkeys.imageio.StandardImageMetadataSupport.builder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class StandardImageMetadataSupportTest {
@@ -48,6 +56,173 @@ public class StandardImageMetadataSupportTest {
         assertNotNull(metadata);
     }
 
+    @Test
+    public void compressionValuesUnspecified() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .build();
+
+        assertNull(metadata.getStandardCompressionNode());
+    }
+
+    @Test
+    public void compressionValuesNone() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withCompressionTypeName("nOnE") // Case-insensitive
+                .build();
+
+        assertNull(metadata.getStandardCompressionNode());
+    }
+
+    @Test
+    public void compressionValuesName() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withCompressionTypeName("foo")
+                .build();
+
+        IIOMetadataNode compressionNode = metadata.getStandardCompressionNode();
+        assertNotNull(compressionNode);
+
+        IIOMetadataNode compressionName = (IIOMetadataNode) compressionNode.getElementsByTagName("CompressionTypeName").item(0);
+        assertEquals("foo", compressionName.getAttribute("value"));
+
+        // Defaults to lossless true
+        IIOMetadataNode compressionLossless = (IIOMetadataNode) compressionNode.getElementsByTagName("Lossless").item(0);
+        assertEquals("TRUE", compressionLossless.getAttribute("value"));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void withCompressionLossyIllegal() {
+        builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withCompressionLossless(false);
+    }
+
+    @Test
+    public void compressionValuesLossy() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withCompressionTypeName("bar")
+                .withCompressionLossless(false)
+                .build();
+
+        IIOMetadataNode compressionNode = metadata.getStandardCompressionNode();
+        assertNotNull(compressionNode);
+
+        IIOMetadataNode compressionName = (IIOMetadataNode) compressionNode.getElementsByTagName("CompressionTypeName").item(0);
+        assertEquals("bar", compressionName.getAttribute("value"));
+
+        IIOMetadataNode compressionLossless = (IIOMetadataNode) compressionNode.getElementsByTagName("Lossless").item(0);
+        assertEquals("FALSE", compressionLossless.getAttribute("value"));
+    }
+
+    @Test
+    public void withDocumentValuesDefault() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .build();
+
+        IIOMetadataNode documentNode = metadata.getStandardDocumentNode();
+        assertNull(documentNode);
+    }
+
+    @Test
+    public void withDocumentValues() {
+        Calendar creationTime = Calendar.getInstance();
+        creationTime.set(2022, Calendar.SEPTEMBER, 8, 14, 5, 0);
+
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withFormatVersion("42")
+                .withDocumentCreationTime(creationTime)
+                .build();
+
+        IIOMetadataNode documentNode = metadata.getStandardDocumentNode();
+        assertNotNull(documentNode);
+
+        IIOMetadataNode formatVersion = (IIOMetadataNode) documentNode.getElementsByTagName("FormatVersion").item(0);
+        assertEquals("42", formatVersion.getAttribute("value"));
+
+        IIOMetadataNode imageCreationTime = (IIOMetadataNode) documentNode.getElementsByTagName("ImageCreationTime").item(0);
+        assertEquals("2022", imageCreationTime.getAttribute("year"));
+        assertEquals("9", imageCreationTime.getAttribute("month"));
+        assertEquals("8", imageCreationTime.getAttribute("day"));
+        assertEquals("14", imageCreationTime.getAttribute("hour"));
+        assertEquals("5", imageCreationTime.getAttribute("minute"));
+        assertEquals("0", imageCreationTime.getAttribute("second"));
+    }
+
+    @Test
+    public void withTextValuesDefault() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .build();
+
+        IIOMetadataNode textNode = metadata.getStandardTextNode();
+        assertNull(textNode);
+    }
+
+    @Test
+    public void withTextValuesSingle() {
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withTextEntry("foo", "bar")
+                .build();
+
+        IIOMetadataNode textNode = metadata.getStandardTextNode();
+        assertNotNull(textNode);
+
+        IIOMetadataNode textEntry = (IIOMetadataNode) textNode.getElementsByTagName("TextEntry").item(0);
+        assertEquals("foo", textEntry.getAttribute("keyword"));
+        assertEquals("bar", textEntry.getAttribute("value"));
+    }
+
+    @Test
+    public void withTextValuesMap() {
+        Map<String, String> entries = new HashMap<>();
+        entries.put("foo", "bar");
+        entries.put("bar", "xyzzy");
+
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withTextEntries(entries)
+                .build();
+
+        IIOMetadataNode textNode = metadata.getStandardTextNode();
+        assertNotNull(textNode);
+
+        NodeList textEntries = textNode.getElementsByTagName("TextEntry");
+        assertEquals(entries.size(), textEntries.getLength());
+
+        int i = 0;
+        for (Entry<String, String> entry : entries.entrySet()) {
+            IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+            assertEquals(entry.getKey(), textEntry.getAttribute("keyword"));
+            assertEquals(entry.getValue(), textEntry.getAttribute("value"));
+
+            i++;
+        }
+    }
+
+    @Test
+    public void withTextValuesList() {
+        List<Entry<String, String>> entries = Arrays.<Entry<String, String>>asList(
+                new SimpleEntry<>((String) null, "foo"), // No key allowed
+                new SimpleEntry<>("foo", "bar"),
+                new SimpleEntry<>("bar", "xyzzy"),
+                new SimpleEntry<>("bar", "nothing happens...") // Duplicates allowed
+        );
+
+        StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withTextEntries(entries)
+                .build();
+
+        IIOMetadataNode textNode = metadata.getStandardTextNode();
+        assertNotNull(textNode);
+
+        NodeList textEntries = textNode.getElementsByTagName("TextEntry");
+        assertEquals(entries.size(), textEntries.getLength());
+
+        for (int i = 0; i < entries.size(); i++) {
+            Entry<String, String> entry = entries.get(i);
+            IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
+
+            assertEquals(entry.getKey(), textEntry.getAttribute("keyword"));
+            assertEquals(entry.getValue(), textEntry.getAttribute("value"));
+        }
+    }
 
     @Test
     public void withPlanarColorspaceType() {

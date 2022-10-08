@@ -8,7 +8,7 @@ import javax.imageio.metadata.IIOMetadataNode;
 public class HDRMetadata extends StandardImageMetadataSupport {
     public HDRMetadata(ImageTypeSpecifier type, HDRHeader header) {
         super(builder(type)
-                      .withCompressionName("RLE")
+                      .withCompressionTypeName("RLE")
                       .withTextEntry("Software", header.getSoftware()));
     }
 

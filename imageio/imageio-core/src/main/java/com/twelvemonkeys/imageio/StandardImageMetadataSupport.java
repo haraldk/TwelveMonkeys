@@ -122,18 +122,14 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
             return this;
         }
 
-        public Builder withCompressionName(String compressionName) {
+        public Builder withCompressionTypeName(String compressionName) {
             this.compressionName = notNull(compressionName, "compressionName").equalsIgnoreCase("none") ? null : compressionName;
 
             return this;
         }
 
         public Builder withCompressionLossless(boolean lossless) {
-            if (!lossless && compressionName == null) {
-                throw new IllegalStateException("Lossy compression requires compression name");
-            }
-
-            this.compressionLossless = lossless;
+            this.compressionLossless = isTrue(lossless || compressionName != null, lossless, "Lossy compression requires compression name");
 
             return this;
         }

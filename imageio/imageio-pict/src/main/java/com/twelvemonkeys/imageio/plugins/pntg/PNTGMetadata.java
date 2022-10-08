@@ -45,7 +45,7 @@ final class PNTGMetadata extends StandardImageMetadataSupport {
     public PNTGMetadata(ImageTypeSpecifier type) {
         super(builder(type)
                       .withBlackIsZero(false)
-                      .withCompressionName("PackBits")
+                      .withCompressionTypeName("PackBits")
                       .withFormatVersion("1.0"));
     }
 }

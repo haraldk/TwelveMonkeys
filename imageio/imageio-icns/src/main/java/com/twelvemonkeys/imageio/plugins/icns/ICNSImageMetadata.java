@@ -36,6 +36,6 @@ import javax.imageio.ImageTypeSpecifier;
 
 final class ICNSImageMetadata extends StandardImageMetadataSupport {
     ICNSImageMetadata(ImageTypeSpecifier type, String compressionName) {
-        super(builder(type).withCompressionName(compressionName));
+        super(builder(type).withCompressionTypeName(compressionName));
     }
 }

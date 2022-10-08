@@ -8,7 +8,7 @@ final class SGIMetadata extends StandardImageMetadataSupport {
     public SGIMetadata(ImageTypeSpecifier type, SGIHeader header) {
         super(builder(type)
                       .withSignificantBitsPerSample(computeSignificantBits(header))
-                      .withCompressionName(compressionName(header))
+                      .withCompressionTypeName(compressionName(header))
                       .withOrientation(ImageOrientation.FlipV)
                       .withTextEntry("DocumentName", header.getName())
         );

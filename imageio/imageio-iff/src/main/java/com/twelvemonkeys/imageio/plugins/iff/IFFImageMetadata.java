@@ -52,7 +52,7 @@ final class IFFImageMetadata extends StandardImageMetadataSupport {
 
     private IFFImageMetadata(Builder builder, Form header, IndexColorModel palette) {
         super(builder.withPalette(palette)
-                     .withCompressionName(compressionName(header))
+                     .withCompressionTypeName(compressionName(header))
                      .withBitsPerSample(bitsPerSample(header))
                      .withPlanarConfiguration(planarConfiguration(header))
                      .withPixelAspectRatio(header.aspect() != 0 ? header.aspect() : null)

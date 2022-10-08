@@ -10,7 +10,7 @@ import java.util.Map;
 final class TGAMetadata extends StandardImageMetadataSupport {
     TGAMetadata(ImageTypeSpecifier type, TGAHeader header, TGAExtensions extensions) {
         super(builder(type)
-                      .withCompressionName(compressionName(header))
+                      .withCompressionTypeName(compressionName(header))
                       .withPixelAspectRatio(pixelAspectRatio(extensions))
                       .withOrientation(orientation(header))
                       .withFormatVersion(extensions == null ? "1.0" : "2.0")

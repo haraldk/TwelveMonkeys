@@ -8,7 +8,7 @@ final class PCXMetadata extends StandardImageMetadataSupport {
     public PCXMetadata(ImageTypeSpecifier type, PCXHeader header) {
         super(builder(type)
                       .withPlanarConfiguration(planarConfiguration(header))
-                      .withCompressionName(compressionName(header))
+                      .withCompressionTypeName(compressionName(header))
                       .withFormatVersion(String.valueOf(header.getVersion())));
     }
 
