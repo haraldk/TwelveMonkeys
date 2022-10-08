@@ -1,8 +1,38 @@
+/*
+ * Copyright (c) 2022, Harald Kuhr
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * * Neither the name of the copyright holder nor the names of its
+ *   contributors may be used to endorse or promote products derived from
+ *   this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package com.twelvemonkeys.imageio.plugins.pntg;
 
-import com.twelvemonkeys.imageio.AbstractMetadata;
+import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 
-import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.ImageTypeSpecifier;
 
 /**
  * PNTGMetadata.
@@ -11,76 +41,11 @@ import javax.imageio.metadata.IIOMetadataNode;
  * @author last modified by $Author: haraldk$
  * @version $Id: PNTGMetadata.java,v 1.0 23/03/2021 haraldk Exp$
  */
-public class PNTGMetadata extends AbstractMetadata {
-    @Override
-    protected IIOMetadataNode getStandardChromaNode() {
-        IIOMetadataNode chroma = new IIOMetadataNode("Chroma");
-
-        IIOMetadataNode csType = new IIOMetadataNode("ColorSpaceType");
-        chroma.appendChild(csType);
-        csType.setAttribute("name", "GRAY");
-
-        // NOTE: Channels in chroma node reflects channels in color model (see data node, for channels in data)
-        IIOMetadataNode numChannels = new IIOMetadataNode("NumChannels");
-        chroma.appendChild(numChannels);
-        numChannels.setAttribute("value", "1");
-
-        IIOMetadataNode blackIsZero = new IIOMetadataNode("BlackIsZero");
-        chroma.appendChild(blackIsZero);
-        blackIsZero.setAttribute("value", "FALSE");
-
-        return chroma;
-    }
-
-    @Override
-    protected IIOMetadataNode getStandardCompressionNode() {
-        IIOMetadataNode compressionNode = new IIOMetadataNode("Compression");
-
-        IIOMetadataNode compressionTypeName = new IIOMetadataNode("CompressionTypeName");
-        compressionTypeName.setAttribute("value", "PackBits"); // RLE?
-        compressionNode.appendChild(compressionTypeName);
-        compressionNode.appendChild(new IIOMetadataNode("Lossless"));
-        // "value" defaults to TRUE
-
-        return compressionNode;
-    }
-
-    @Override
-    protected IIOMetadataNode getStandardDataNode() {
-        IIOMetadataNode data = new IIOMetadataNode("Data");
-
-        // PlanarConfiguration
-        IIOMetadataNode planarConfiguration = new IIOMetadataNode("PlanarConfiguration");
-        planarConfiguration.setAttribute("value", "PixelInterleaved");
-        data.appendChild(planarConfiguration);
-
-        IIOMetadataNode sampleFormat = new IIOMetadataNode("SampleFormat");
-        sampleFormat.setAttribute("value", "UnsignedIntegral");
-        data.appendChild(sampleFormat);
-
-        IIOMetadataNode bitsPerSample = new IIOMetadataNode("BitsPerSample");
-        bitsPerSample.setAttribute("value", "1");
-        data.appendChild(bitsPerSample);
-
-        return data;
-    }
-
-    @Override
-    protected IIOMetadataNode getStandardDocumentNode() {
-        IIOMetadataNode document = new IIOMetadataNode("Document");
-
-        IIOMetadataNode formatVersion = new IIOMetadataNode("FormatVersion");
-        document.appendChild(formatVersion);
-        formatVersion.setAttribute("value",  "1.0");
-
-        // TODO: We could get the file creation time from MacBinary header here...
-
-        return document;
-    }
-
-    @Override
-    protected IIOMetadataNode getStandardTextNode() {
-        // TODO: We could get the file name from MacBinary header here...
-        return super.getStandardTextNode();
+final class PNTGMetadata extends StandardImageMetadataSupport {
+    public PNTGMetadata(ImageTypeSpecifier type) {
+        super(builder(type)
+                      .withBlackIsZero(false)
+                      .withCompressionName("PackBits")
+                      .withFormatVersion("1.0"));
     }
 }

@@ -30,12 +30,17 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import org.junit.Test;
 
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
-import java.awt.image.BufferedImage;
+import java.awt.image.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 /**
@@ -46,6 +51,9 @@ import static org.junit.Assume.assumeFalse;
  * @version $Id: TGAImageWriteParamTest.java,v 1.0 08/04/2021 haraldk Exp$
  */
 public class TGAImageWriteParamTest {
+
+    private static final ImageTypeSpecifier TYPE_3BYTE_BGR = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+
     @Test
     public void testDefaultCopyFromMetadata() {
         TGAImageWriteParam param = new TGAImageWriteParam();
@@ -107,8 +115,8 @@ public class TGAImageWriteParamTest {
         ImageWriteParam param = new ImageWriteParam(null);
         assumeFalse(param.canWriteCompressed());
 
-        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), false), null)));
-        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true), null)));
+        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, false), null)));
+        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, true), null)));
     }
 
     @Test
@@ -116,7 +124,7 @@ public class TGAImageWriteParamTest {
         ImageWriteParam param = new TGAImageWriteParam();
         param.setCompressionMode(ImageWriteParam.MODE_COPY_FROM_METADATA);
 
-        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true), null)));
+        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, true), null)));
     }
 
     @Test
@@ -124,7 +132,7 @@ public class TGAImageWriteParamTest {
         ImageWriteParam param = new TGAImageWriteParam();
         param.setCompressionMode(ImageWriteParam.MODE_COPY_FROM_METADATA);
 
-        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true), null)));
+        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, true), null)));
     }
 
     @Test
@@ -132,12 +140,12 @@ public class TGAImageWriteParamTest {
         TGAImageWriteParam param = new TGAImageWriteParam();
         param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 
-        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), false), null)));
-        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true), null)));
+        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, false), null)));
+        assertFalse(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, true), null)));
 
         param.setCompressionType("RLE");
-        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), false), null)));
-        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true), null)));
+        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, false), null)));
+        assertTrue(TGAImageWriteParam.isRLE(param, new TGAMetadata(TYPE_3BYTE_BGR, TGAHeader.from(TYPE_3BYTE_BGR, true), null)));
     }
 
 }

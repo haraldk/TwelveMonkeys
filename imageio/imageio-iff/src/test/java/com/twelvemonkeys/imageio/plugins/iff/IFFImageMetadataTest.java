@@ -1,24 +1,37 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 import java.nio.charset.StandardCharsets;
 
+import static java.awt.image.BufferedImage.*;
 import static org.junit.Assert.*;
 
 public class IFFImageMetadataTest {
+
+    private static final ImageTypeSpecifier TYPE_8_BIT_GRAY = ImageTypeSpecifiers.createFromBufferedImageType(TYPE_BYTE_GRAY);
+    private static final ImageTypeSpecifier TYPE_8_BIT_PALETTE = ImageTypeSpecifiers.createFromBufferedImageType(TYPE_BYTE_INDEXED);
+    private static final ImageTypeSpecifier TYPE_24_BIT_RGB = ImageTypeSpecifiers.createFromBufferedImageType(TYPE_3BYTE_BGR);
+    private static final ImageTypeSpecifier TYPE_32_BIT_ARGB = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+    private static final ImageTypeSpecifier TYPE_32_BIT_ARGB_DEEP = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE);
+
     @Test
     public void testStandardFeatures() throws IIOException {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        final IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        final IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
         // Standard metadata format
         assertTrue(metadata.isStandardMetadataFormatSupported());
@@ -51,9 +64,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_GRAY, header, header.colorMap());
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -78,9 +91,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -106,9 +119,10 @@ public class IFFImageMetadataTest {
                           .with(new BMHDChunk(300, 200, 1, BMHDChunk.MASK_TRANSPARENT_COLOR, BMHDChunk.COMPRESSION_BYTE_RUN, 1));
 
         byte[] bw = {0, (byte) 0xff};
-        IFFImageMetadata metadata = new IFFImageMetadata(header, new IndexColorModel(header.bitplanes(), bw.length, bw, bw, bw, header.transparentIndex()));
+        ImageTypeSpecifier fromIndexColorModel = ImageTypeSpecifiers.createFromIndexColorModel(new IndexColorModel(header.bitplanes(), bw.length, bw, bw, bw, header.transparentIndex()));
+        IFFImageMetadata metadata = new IFFImageMetadata(fromIndexColorModel, header, header.colorMap());
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(5, chroma.getLength());
@@ -119,7 +133,7 @@ public class IFFImageMetadataTest {
 
         IIOMetadataNode numChannels = (IIOMetadataNode) colorSpaceType.getNextSibling();
         assertEquals("NumChannels", numChannels.getNodeName());
-        assertEquals("3", numChannels.getAttribute("value"));
+        assertEquals("4", numChannels.getAttribute("value"));
 
         IIOMetadataNode blackIsZero = (IIOMetadataNode) numChannels.getNextSibling();
         assertEquals("BlackIsZero", blackIsZero.getNodeName());
@@ -153,9 +167,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
-        IIOMetadataNode compression = metadata.getStandardCompressionNode();
+        IIOMetadataNode compression = getStandardNode(metadata, "Compression");
         assertNotNull(compression);
         assertEquals("Compression", compression.getNodeName());
         assertEquals(2, compression.getLength());
@@ -176,9 +190,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_NONE, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
-        assertNull(metadata.getStandardCompressionNode()); // No compression, all default...
+        assertNull(getStandardNode(metadata, "Compression")); // No compression, all default...
     }
 
     @Test
@@ -186,9 +200,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_GRAY, header, header.colorMap());
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -213,9 +227,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -240,9 +254,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 32, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_32_BIT_ARGB, header, header.colorMap());
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -269,9 +283,10 @@ public class IFFImageMetadataTest {
                               .with(new BMHDChunk(300, 200, i, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
             byte[] rgb = new byte[2 << i]; // Colors doesn't really matter here
-            IFFImageMetadata metadata = new IFFImageMetadata(header, new IndexColorModel(header.bitplanes(), rgb.length, rgb, rgb, rgb, 0));
+            ImageTypeSpecifier fromIndexColorModel = ImageTypeSpecifiers.createFromIndexColorModel(new IndexColorModel(header.bitplanes(), rgb.length, rgb, rgb, rgb, 0));
+            IFFImageMetadata metadata = new IFFImageMetadata(fromIndexColorModel, header, header.colorMap());
 
-            IIOMetadataNode data = metadata.getStandardDataNode();
+            IIOMetadataNode data = getStandardNode(metadata, "Data");
             assertNotNull(data);
             assertEquals("Data", data.getNodeName());
             assertEquals(3, data.getLength());
@@ -297,9 +312,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_PBM)
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_GRAY, header, header.colorMap());
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -324,9 +339,9 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_PBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -356,10 +371,20 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(bitmapHeader);
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
-        assertNull(dimension);
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
+
+        if (dimension != null) {
+            assertEquals("Dimension", dimension.getNodeName());
+            assertEquals(1, dimension.getLength());
+
+            IIOMetadataNode imageOrientation = (IIOMetadataNode) dimension.getFirstChild();
+            assertEquals("ImageOrientation", imageOrientation.getNodeName());
+            assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+            assertNull(imageOrientation.getNextSibling()); // No more children
+        }
     }
 
     @Test
@@ -368,20 +393,24 @@ public class IFFImageMetadataTest {
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0))
                           .with(new CAMGChunk(4));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
 
         // No Dimension node is okay, or one with an aspect ratio of 1.0
         if (dimension != null) {
             assertEquals("Dimension", dimension.getNodeName());
-            assertEquals(1, dimension.getLength());
+            assertEquals(2, dimension.getLength());
 
             IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
             assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
             assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
 
-            assertNull(pixelAspectRatio.getNextSibling()); // No more children
+            IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+            assertEquals("ImageOrientation", imageOrientation.getNodeName());
+            assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+            assertNull(imageOrientation.getNextSibling()); // No more children
         }
     }
 
@@ -398,18 +427,22 @@ public class IFFImageMetadataTest {
                           .with(bitmapHeader)
                           .with(viewPort);
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
         assertNotNull(dimension);
         assertEquals("Dimension", dimension.getNodeName());
-        assertEquals(1, dimension.getLength());
+        assertEquals(2, dimension.getLength());
 
         IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
         assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
         assertEquals("2.0", pixelAspectRatio.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+        assertNull(imageOrientation.getNextSibling()); // No more children
     }
 
     @Test
@@ -425,18 +458,22 @@ public class IFFImageMetadataTest {
                           .with(bitmapHeader)
                           .with(viewPort);
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
         assertNotNull(dimension);
         assertEquals("Dimension", dimension.getNodeName());
-        assertEquals(1, dimension.getLength());
+        assertEquals(2, dimension.getLength());
 
         IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
         assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
         assertEquals("0.5", pixelAspectRatio.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+        assertNull(imageOrientation.getNextSibling()); // No more children
     }
 
     @Test
@@ -447,18 +484,22 @@ public class IFFImageMetadataTest {
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0))
                           .with(viewPort);
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
         assertNotNull(dimension);
         assertEquals("Dimension", dimension.getNodeName());
-        assertEquals(1, dimension.getLength());
+        assertEquals(2, dimension.getLength());
 
         IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
         assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
         assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+        assertNull(imageOrientation.getNextSibling()); // No more children
     }
 
     @Test
@@ -466,32 +507,33 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode document = metadata.getStandardDocumentNode();
+        IIOMetadataNode document = getStandardNode(metadata, "Document");
         assertNotNull(document);
         assertEquals("Document", document.getNodeName());
         assertEquals(1, document.getLength());
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) document.getFirstChild();
-        assertEquals("FormatVersion", pixelAspectRatio.getNodeName());
-        assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
+        IIOMetadataNode formatVersion = (IIOMetadataNode) document.getFirstChild();
+        assertEquals("FormatVersion", formatVersion.getNodeName());
+        assertEquals("1.0", formatVersion.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        assertNull(formatVersion.getNextSibling()); // No more children
     }
 
     @Test
     public void testStandardText() throws IIOException {
-        int[] chunks = {IFF.CHUNK_ANNO, IFF.CHUNK_UTF8};
-        String[] texts = {"annotation", "äñnótâtïøñ"};
+        int[] chunks = {IFF.CHUNK_ANNO, IFF.CHUNK_ANNO, IFF.CHUNK_UTF8};
+        String[] texts = {"annotation", "dupe", "äñnótâtïøñ"};
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 8, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0))
                 .with(new GenericChunk(chunks[0], texts[0].getBytes(StandardCharsets.US_ASCII)))
-                .with(new GenericChunk(chunks[1], texts[1].getBytes(StandardCharsets.UTF_8)));
+                .with(new GenericChunk(chunks[1], texts[1].getBytes(StandardCharsets.US_ASCII)))
+                .with(new GenericChunk(chunks[2], texts[2].getBytes(StandardCharsets.UTF_8)));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_8_BIT_PALETTE, header, header.colorMap());
 
-        IIOMetadataNode text = metadata.getStandardTextNode();
+        IIOMetadataNode text = getStandardNode(metadata, "Text");
         assertNotNull(text);
         assertEquals("Text", text.getNodeName());
         assertEquals(texts.length, text.getLength());
@@ -509,10 +551,21 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 24, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_24_BIT_RGB, header, header.colorMap());
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
-        assertNull(transparency); // No transparency, just defaults
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
+
+        if (transparency != null) {
+            assertEquals("Transparency", transparency.getNodeName());
+            assertEquals(1, transparency.getLength());
+
+            IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+            assertEquals("Alpha", alpha.getNodeName());
+            assertEquals("none", alpha.getAttribute("value"));
+
+            assertNull(alpha.getNextSibling()); // No more children
+        }
+        // Otherwise, no transparency, just defaults
     }
 
     @Test
@@ -520,18 +573,18 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_ILBM)
                           .with(new BMHDChunk(300, 200, 32, BMHDChunk.MASK_HAS_MASK, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
 
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_32_BIT_ARGB, header, header.colorMap());
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
         assertEquals(1, transparency.getLength());
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) transparency.getFirstChild();
-        assertEquals("Alpha", pixelAspectRatio.getNodeName());
-        assertEquals("nonpremultiplied", pixelAspectRatio.getAttribute("value"));
+        IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+        assertEquals("Alpha", alpha.getNodeName());
+        assertEquals("nonpremultiplied", alpha.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        assertNull(alpha.getNextSibling()); // No more children
     }
 
     @Test
@@ -540,28 +593,33 @@ public class IFFImageMetadataTest {
                           .with(new BMHDChunk(300, 200, 1, BMHDChunk.MASK_TRANSPARENT_COLOR, BMHDChunk.COMPRESSION_BYTE_RUN, 1));
 
         byte[] bw = {0, (byte) 0xff};
-        IFFImageMetadata metadata = new IFFImageMetadata(header, new IndexColorModel(header.bitplanes(), bw.length, bw, bw, bw, header.transparentIndex()));
+        ImageTypeSpecifier fromIndexColorModel = ImageTypeSpecifiers.createFromIndexColorModel(new IndexColorModel(header.bitplanes(), bw.length, bw, bw, bw, header.transparentIndex()));
+        IFFImageMetadata metadata = new IFFImageMetadata(fromIndexColorModel, header, header.colorMap());
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
-        assertEquals(1, transparency.getLength());
+        assertEquals(2, transparency.getLength());
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) transparency.getFirstChild();
-        assertEquals("TransparentIndex", pixelAspectRatio.getNodeName());
-        assertEquals("1", pixelAspectRatio.getAttribute("value"));
+        IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+        assertEquals("Alpha", alpha.getNodeName());
+        assertEquals("nonpremultiplied", alpha.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode transparentIndex = (IIOMetadataNode) alpha.getNextSibling();
+        assertEquals("TransparentIndex", transparentIndex.getNodeName());
+        assertEquals("1", transparentIndex.getAttribute("value"));
+
+        assertNull(transparentIndex.getNextSibling()); // No more children
     }
 
     @Test
     public void testStandardRGB8() throws IIOException {
         Form header = Form.ofType(IFF.TYPE_RGB8)
                           .with(new BMHDChunk(300, 200, 25, BMHDChunk.MASK_NONE, BMHDChunk.COMPRESSION_BYTE_RUN, 0));
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_32_BIT_ARGB, header, header.colorMap());
 
         // Chroma
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -581,7 +639,7 @@ public class IFFImageMetadataTest {
         assertNull(blackIsZero.getNextSibling()); // No more children
 
         // Data
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -601,7 +659,7 @@ public class IFFImageMetadataTest {
         assertNull(bitsPerSample.getNextSibling()); // No more children
 
         // Transparency
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
         assertEquals(1, transparency.getLength());
@@ -624,10 +682,10 @@ public class IFFImageMetadataTest {
         Form header = Form.ofType(IFF.TYPE_DEEP)
                           .with(new DGBLChunk(8))
                           .with(dpel);
-        IFFImageMetadata metadata = new IFFImageMetadata(header, null);
+        IFFImageMetadata metadata = new IFFImageMetadata(TYPE_32_BIT_ARGB_DEEP, header, header.colorMap());
 
         // Chroma
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -649,7 +707,7 @@ public class IFFImageMetadataTest {
         assertNull(blackIsZero.getNextSibling()); // No more children
 
         // Data
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -669,7 +727,7 @@ public class IFFImageMetadataTest {
         assertNull(bitsPerSample.getNextSibling()); // No more children
 
         // Transparency
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
         assertEquals(1, transparency.getLength());
@@ -679,5 +737,14 @@ public class IFFImageMetadataTest {
         assertEquals("premultiplied", alpha.getAttribute("value"));
 
         assertNull(alpha.getNextSibling()); // No more children
+    }
+
+    // TODO: Test RGB8 + ColorMap
+
+    private IIOMetadataNode getStandardNode(IIOMetadata metadata, String nodeName) {
+        IIOMetadataNode asTree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList nodes = asTree.getElementsByTagName(nodeName);
+
+        return nodes.getLength() > 0 ? (IIOMetadataNode) nodes.item(0) : null;
     }
 }

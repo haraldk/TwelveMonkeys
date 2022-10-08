@@ -37,12 +37,16 @@ import com.twelvemonkeys.io.LittleEndianDataOutputStream;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.lang.Validate;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.DataOutput;
 import java.io.File;
@@ -65,8 +69,7 @@ final class TGAImageWriter extends ImageWriterBase {
     public IIOMetadata getDefaultImageMetadata(final ImageTypeSpecifier imageType, final ImageWriteParam param) {
         Validate.notNull(imageType, "imageType");
 
-        TGAHeader header = TGAHeader.from(imageType.createBufferedImage(1, 1), isRLE(param, null));
-        return new TGAMetadata(header, null);
+        return new TGAMetadata(imageType, TGAHeader.from(imageType, isRLE(param, null)), null);
     }
 
     @Override
@@ -107,7 +110,8 @@ final class TGAImageWriter extends ImageWriterBase {
 
         final boolean compressed = isRLE(param, image.getMetadata());
         RenderedImage renderedImage = image.getRenderedImage();
-        TGAHeader header = TGAHeader.from(renderedImage, compressed);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromRenderedImage(renderedImage);
+        TGAHeader header = TGAHeader.from(type, renderedImage.getWidth(), renderedImage.getHeight(), compressed);
 
         header.write(imageOutput);
 
@@ -117,7 +121,7 @@ final class TGAImageWriter extends ImageWriterBase {
                                    ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[] {2, 1, 0, 3}, DataBuffer.TYPE_BYTE, true, false).createBufferedImage(renderedImage.getWidth(), 1).getRaster()
                                    : renderedImage.getSampleModel().getTransferType() == DataBuffer.TYPE_INT
                                      ? ImageTypeSpecifiers.createInterleaved(ColorSpace.getInstance(ColorSpace.CS_sRGB), new int[] {2, 1, 0}, DataBuffer.TYPE_BYTE, false, false).createBufferedImage(renderedImage.getWidth(), 1).getRaster()
-                                     : ImageTypeSpecifier.createFromRenderedImage(renderedImage).createBufferedImage(renderedImage.getWidth(), 1).getRaster();
+                                     : type.createBufferedImage(renderedImage.getWidth(), 1).getRaster();
 
         final DataBuffer buffer = rowRaster.getDataBuffer();
 
@@ -135,7 +139,7 @@ final class TGAImageWriter extends ImageWriterBase {
                         break;
                     }
 
-                    DataOutput imageOutput = compressed ? createRLEStream(header, this.imageOutput) : this.imageOutput;
+                    DataOutput imageOutput = compressed ? createRLEStream(this.imageOutput, header.getPixelDepth()) : this.imageOutput;
 
                     switch (buffer.getDataType()) {
                         case DataBuffer.TYPE_BYTE:
@@ -174,8 +178,8 @@ final class TGAImageWriter extends ImageWriterBase {
         processImageComplete();
     }
 
-    private static LittleEndianDataOutputStream createRLEStream(final TGAHeader header, final ImageOutputStream stream) {
-        return new LittleEndianDataOutputStream(new EncoderStream(IIOUtil.createStreamAdapter(stream), new RLEEncoder(header.getPixelDepth())));
+    private static LittleEndianDataOutputStream createRLEStream(final ImageOutputStream stream, int pixelDepth) {
+        return new LittleEndianDataOutputStream(new EncoderStream(IIOUtil.createStreamAdapter(stream), new RLEEncoder(pixelDepth)));
     }
 
     // TODO: Refactor to common util

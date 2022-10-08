@@ -45,7 +45,7 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -377,10 +377,12 @@ public final class PCXImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
-        checkBounds(imageIndex);
-        readHeader();
-
-        return new PCXMetadata(header, getVGAPalette());
+//        checkBounds(imageIndex);
+//        readHeader();
+//
+//        return new PCXMetadata(header, getVGAPalette());
+        ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        return new PCXMetadata(rawType, header);
     }
 
     private IndexColorModel getVGAPalette() throws IOException {

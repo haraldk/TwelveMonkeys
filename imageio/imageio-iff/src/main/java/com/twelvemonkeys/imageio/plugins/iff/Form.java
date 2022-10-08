@@ -1,13 +1,13 @@
 package com.twelvemonkeys.imageio.plugins.iff;
 
 import javax.imageio.IIOException;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.plugins.iff.IFF.*;
 import static com.twelvemonkeys.imageio.plugins.iff.IFFUtil.toChunkStr;
+import static com.twelvemonkeys.lang.Validate.isTrue;
 
 /**
  * Form.
@@ -27,7 +27,7 @@ abstract class Form {
 
     abstract int width();
     abstract int height();
-    abstract float aspect();
+    abstract double aspect();
     abstract int bitplanes();
     abstract int compressionType();
 
@@ -118,13 +118,26 @@ abstract class Form {
         }
 
         private ILBMForm(final int formType, final BMHDChunk bitmapHeader, final CAMGChunk viewMode, final CMAPChunk colorMap, final AbstractMultiPaletteChunk multiPalette, final XS24Chunk thumbnail, final BODYChunk body) {
-            super(formType);
+            super(isTrue(validFormType(formType), formType, "Unknown IFF Form type: %s"));
             this.bitmapHeader = bitmapHeader;
             this.viewMode = viewMode;
             this.colorMap = colorMap;
             this.multiPalette = multiPalette;
             this.thumbnail = thumbnail;
             this.body = body;
+        }
+
+        private static boolean validFormType(int formType) {
+            switch (formType) {
+                case TYPE_ACBM:
+                case TYPE_ILBM:
+                case TYPE_PBM:
+                case TYPE_RGB8:
+                case TYPE_RGBN:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         @Override
@@ -148,8 +161,8 @@ abstract class Form {
         }
 
         @Override
-        float aspect() {
-            return bitmapHeader.yAspect == 0 ? 0 : (bitmapHeader.xAspect / (float) bitmapHeader.yAspect);
+        double aspect() {
+            return bitmapHeader.yAspect == 0 ? 0 : (bitmapHeader.xAspect / (double) bitmapHeader.yAspect);
         }
 
         @Override
@@ -297,7 +310,7 @@ abstract class Form {
         }
 
         private DEEPForm(final int formType, final DGBLChunk deepGlobal, final DLOCChunk deepLocation, final DPELChunk deepPixel, final XS24Chunk thumbnail, final BODYChunk body) {
-            super(formType);
+            super(isTrue(validFormType(formType), formType, "Unknown IFF Form type: %s"));
             this.deepGlobal = deepGlobal;
             this.deepLocation = deepLocation;
             this.deepPixel = deepPixel;
@@ -305,6 +318,15 @@ abstract class Form {
             this.body = body;
         }
 
+        private static boolean validFormType(int formType) {
+            switch (formType) {
+                case TYPE_DEEP:
+                case TYPE_TVPP:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
         @Override
         int width() {
@@ -337,8 +359,8 @@ abstract class Form {
         }
 
         @Override
-        float aspect() {
-            return deepGlobal.yAspect == 0 ? 0 : deepGlobal.xAspect / (float) deepGlobal.yAspect;
+        double aspect() {
+            return deepGlobal.yAspect == 0 ? 0 : deepGlobal.xAspect / (double) deepGlobal.yAspect;
         }
 
         @Override

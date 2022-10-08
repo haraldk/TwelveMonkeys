@@ -30,14 +30,18 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
-import java.awt.image.BufferedImage;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 import java.util.Calendar;
 
 import static org.junit.Assert.*;
@@ -50,10 +54,15 @@ import static org.junit.Assert.*;
  * @version $Id: TGAMetadataTest.java,v 1.0 08/04/2021 haraldk Exp$
  */
 public class TGAMetadataTest {
+
+    private static final ImageTypeSpecifier TYPE_BYTE_GRAY = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+
+    private static final ImageTypeSpecifier TYPE_3BYTE_BGR = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+
     @Test
     public void testStandardFeatures() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), false);
-        final TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_3BYTE_BGR, false);
+        final TGAMetadata metadata = new TGAMetadata(TYPE_3BYTE_BGR, header, null);
 
         // Standard metadata format
         assertTrue(metadata.isStandardMetadataFormatSupported());
@@ -83,10 +92,10 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardChromaGray() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), false);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  false);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, null);
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -108,10 +117,10 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardChromaRGB() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), false);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_3BYTE_BGR,  false);
+        TGAMetadata metadata = new TGAMetadata(TYPE_3BYTE_BGR, header, null);
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -135,10 +144,11 @@ public class TGAMetadataTest {
     public void testStandardChromaPalette() {
         byte[] bw = {0, (byte) 0xff};
         IndexColorModel indexColorModel = new IndexColorModel(8, bw.length, bw, bw, bw, -1);
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_INDEXED, indexColorModel), false);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromIndexColorModel(indexColorModel);
+        TGAHeader header = TGAHeader.from(type, false);
+        TGAMetadata metadata = new TGAMetadata(type, header, null);
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(4, chroma.getLength());
@@ -174,10 +184,10 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardCompressionRLE() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_3BYTE_BGR,  true);
+        TGAMetadata metadata = new TGAMetadata(TYPE_3BYTE_BGR, header, null);
 
-        IIOMetadataNode compression = metadata.getStandardCompressionNode();
+        IIOMetadataNode compression = getStandardNode(metadata, "Compression");
         assertNotNull(compression);
         assertEquals("Compression", compression.getNodeName());
         assertEquals(2, compression.getLength());
@@ -195,18 +205,18 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardCompressionNone() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), false);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_3BYTE_BGR,  false);
+        TGAMetadata metadata = new TGAMetadata(TYPE_3BYTE_BGR, header, null);
 
-        assertNull(metadata.getStandardCompressionNode()); // No compression, all default...
+        assertNull(getStandardNode(metadata, "Compression")); // No compression, all default...
     }
 
     @Test
     public void testStandardDataGray() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  true);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, null);
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -228,10 +238,10 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardDataRGB() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_3BYTE_BGR,  true);
+        TGAMetadata metadata = new TGAMetadata(TYPE_3BYTE_BGR, header, null);
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -253,10 +263,11 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardDataRGBA() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
+        TGAHeader header = TGAHeader.from(type, true);
+        TGAMetadata metadata = new TGAMetadata(type, header, null);
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -280,10 +291,11 @@ public class TGAMetadataTest {
     public void testStandardDataPalette() {
         byte[] rgb = new byte[1 << 8]; // Colors doesn't really matter here
         IndexColorModel indexColorModel = new IndexColorModel(8, rgb.length, rgb, rgb, rgb, 0);
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_INDEXED, indexColorModel), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromIndexColorModel(indexColorModel);
+        TGAHeader header = TGAHeader.from(type, true);
+        TGAMetadata metadata = new TGAMetadata(type, header, null);
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -305,53 +317,56 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardDimensionNormal() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  true);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, null);
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
         assertNotNull(dimension);
         assertEquals("Dimension", dimension.getNodeName());
         assertEquals(2, dimension.getLength());
 
-        IIOMetadataNode imageOrientation = (IIOMetadataNode) dimension.getFirstChild();
-        assertEquals("ImageOrientation", imageOrientation.getNodeName());
-        assertEquals("Normal", imageOrientation.getAttribute("value"));
-
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) imageOrientation.getNextSibling();
+        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
         assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
         assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+
+        assertNull(imageOrientation.getNextSibling()); // No more children
     }
 
     @Test
     public void testStandardDimensionFlipH() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), true);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  true);
         header.origin = TGA.ORIGIN_LOWER_LEFT;
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, null);
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
         assertNotNull(dimension);
         assertEquals("Dimension", dimension.getNodeName());
         assertEquals(2, dimension.getLength());
 
-        IIOMetadataNode imageOrientation = (IIOMetadataNode) dimension.getFirstChild();
-        assertEquals("ImageOrientation", imageOrientation.getNodeName());
-        assertEquals("FlipH", imageOrientation.getAttribute("value"));
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) imageOrientation.getNextSibling();
+        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
         assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
         assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("FlipH", imageOrientation.getAttribute("value"));
+
+
+        assertNull(imageOrientation.getNextSibling()); // No more children
     }
 
     @Test
     public void testStandardDocument() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  true);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, null);
 
-        IIOMetadataNode document = metadata.getStandardDocumentNode();
+        IIOMetadataNode document = getStandardNode(metadata, "Document");
         assertNotNull(document);
         assertEquals("Document", document.getNodeName());
         assertEquals(1, document.getLength());
@@ -365,13 +380,13 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardDocumentExtensions() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), true);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  true);
         TGAExtensions extensions = new TGAExtensions();
         extensions.creationDate = Calendar.getInstance();
         extensions.creationDate.set(2021, Calendar.APRIL, 8, 18, 55, 0);
-        TGAMetadata metadata = new TGAMetadata(header, extensions);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, extensions);
 
-        IIOMetadataNode document = metadata.getStandardDocumentNode();
+        IIOMetadataNode document = getStandardNode(metadata, "Document");
         assertNotNull(document);
         assertEquals("Document", document.getNodeName());
         assertEquals(2, document.getLength());
@@ -394,7 +409,7 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardText() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), true);
+        TGAHeader header = TGAHeader.from(TYPE_BYTE_GRAY,  true);
         header.identification = "MY_FILE.TGA";
 
         TGAExtensions extensions = new TGAExtensions();
@@ -402,9 +417,9 @@ public class TGAMetadataTest {
         extensions.authorName = "Harald K";
         extensions.authorComments = "Comments, comments... ";
 
-        TGAMetadata metadata = new TGAMetadata(header, extensions);
+        TGAMetadata metadata = new TGAMetadata(TYPE_BYTE_GRAY, header, extensions);
 
-        IIOMetadataNode text = metadata.getStandardTextNode();
+        IIOMetadataNode text = getStandardNode(metadata, "Text");
         assertNotNull(text);
         assertEquals("Text", text.getNodeName());
         assertEquals(4, text.getLength());
@@ -432,10 +447,10 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardTransparencyRGB() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_3BYTE_BGR), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        TGAHeader header = TGAHeader.from(TYPE_3BYTE_BGR,  true);
+        TGAMetadata metadata = new TGAMetadata(TYPE_3BYTE_BGR, header, null);
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
         assertEquals(1, transparency.getLength());
@@ -449,10 +464,11 @@ public class TGAMetadataTest {
 
     @Test
     public void testStandardTransparencyRGBA() {
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+        TGAHeader header = TGAHeader.from(type, true);
+        TGAMetadata metadata = new TGAMetadata(type, header, null);
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
         assertEquals(1, transparency.getLength());
@@ -468,19 +484,30 @@ public class TGAMetadataTest {
     public void testStandardTransparencyPalette() {
         byte[] bw = {0, (byte) 0xff};
         IndexColorModel indexColorModel = new IndexColorModel(8, bw.length, bw, bw, bw, 1);
-        TGAHeader header = TGAHeader.from(new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_INDEXED, indexColorModel), true);
-        TGAMetadata metadata = new TGAMetadata(header, null);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromIndexColorModel(indexColorModel);
+        TGAHeader header = TGAHeader.from(type, true);
+        TGAMetadata metadata = new TGAMetadata(type, header, null);
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
-        assertEquals(1, transparency.getLength());
+        assertEquals(2, transparency.getLength());
 
         IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
         assertEquals("Alpha", alpha.getNodeName());
         assertEquals("nonpremultiplied", alpha.getAttribute("value"));
 
-        assertNull(alpha.getNextSibling()); // No more children
+        IIOMetadataNode transparentIndex = (IIOMetadataNode) alpha.getNextSibling();
+        assertEquals("TransparentIndex", transparentIndex.getNodeName());
+        assertEquals("1", transparentIndex.getAttribute("value"));
+
+        assertNull(transparentIndex.getNextSibling()); // No more children
     }
 
+    private IIOMetadataNode getStandardNode(IIOMetadata metadata, String nodeName) {
+        IIOMetadataNode asTree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList nodes = asTree.getElementsByTagName(nodeName);
+
+        return nodes.getLength() > 0 ? (IIOMetadataNode) nodes.item(0) : null;
+    }
 }

@@ -40,11 +40,8 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
+import java.awt.color.*;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -244,10 +241,7 @@ public final class HDRImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        checkBounds(imageIndex);
-        readHeader();
-
-        return new HDRMetadata(header);
+        return new HDRMetadata(getRawImageType(imageIndex), header);
     }
 
     public static void main(final String[] args) throws IOException {

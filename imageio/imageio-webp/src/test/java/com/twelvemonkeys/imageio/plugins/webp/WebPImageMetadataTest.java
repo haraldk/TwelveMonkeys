@@ -1,11 +1,17 @@
 package com.twelvemonkeys.imageio.plugins.webp;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
+import java.awt.image.*;
 
 import static org.junit.Assert.*;
 
@@ -17,10 +23,14 @@ import static org.junit.Assert.*;
  * @version $Id: WebPImageMetadataTest.java,v 1.0 21/11/2020 haraldk Exp$
  */
 public class WebPImageMetadataTest {
+
+    private static final ImageTypeSpecifier TYPE_3BYTE_BGR = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR);
+    private static final ImageTypeSpecifier TYPE_4BYTE_ABGR = ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR);
+
     @Test
     public void testStandardFeatures() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8_, 27, 33);
-        final WebPImageMetadata metadata = new WebPImageMetadata(header);
+        final WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
         // Standard metadata format
         assertTrue(metadata.isStandardMetadataFormatSupported());
@@ -51,9 +61,9 @@ public class WebPImageMetadataTest {
     @Test
     public void testStandardChromaRGB() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8_, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -77,9 +87,9 @@ public class WebPImageMetadataTest {
     public void testStandardChromaRGBA() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
         header.containsALPH = true;
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_4BYTE_ABGR, header);
 
-        IIOMetadataNode chroma = metadata.getStandardChromaNode();
+        IIOMetadataNode chroma = getStandardNode(metadata, "Chroma");
         assertNotNull(chroma);
         assertEquals("Chroma", chroma.getNodeName());
         assertEquals(3, chroma.getLength());
@@ -103,9 +113,9 @@ public class WebPImageMetadataTest {
     @Test
     public void testStandardCompressionVP8() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8_, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode compression = metadata.getStandardCompressionNode();
+        IIOMetadataNode compression = getStandardNode(metadata, "Compression");
         assertNotNull(compression);
         assertEquals("Compression", compression.getNodeName());
         assertEquals(2, compression.getLength());
@@ -125,9 +135,9 @@ public class WebPImageMetadataTest {
     public void testStandardCompressionVP8L() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8L, 27, 33);
         header.isLossless = true;
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode compression = metadata.getStandardCompressionNode();
+        IIOMetadataNode compression = getStandardNode(metadata, "Compression");
         assertNotNull(compression);
         assertEquals("Compression", compression.getNodeName());
         assertEquals(2, compression.getLength());
@@ -146,9 +156,9 @@ public class WebPImageMetadataTest {
     @Test
     public void testStandardCompressionVP8X() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode compression = metadata.getStandardCompressionNode();
+        IIOMetadataNode compression = getStandardNode(metadata, "Compression");
         assertNotNull(compression);
         assertEquals("Compression", compression.getNodeName());
         assertEquals(2, compression.getLength());
@@ -168,9 +178,9 @@ public class WebPImageMetadataTest {
     public void testStandardCompressionVP8XLossless() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
         header.isLossless = true;
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode compression = metadata.getStandardCompressionNode();
+        IIOMetadataNode compression = getStandardNode(metadata, "Compression");
         assertNotNull(compression);
         assertEquals("Compression", compression.getNodeName());
         assertEquals(2, compression.getLength());
@@ -189,9 +199,9 @@ public class WebPImageMetadataTest {
     @Test
     public void testStandardDataRGB() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8_, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -215,9 +225,9 @@ public class WebPImageMetadataTest {
     public void testStandardDataRGBA() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
         header.containsALPH = true;
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_4BYTE_ABGR, header);
 
-        IIOMetadataNode data = metadata.getStandardDataNode();
+        IIOMetadataNode data = getStandardNode(metadata, "Data");
         assertNotNull(data);
         assertEquals("Data", data.getNodeName());
         assertEquals(3, data.getLength());
@@ -240,78 +250,109 @@ public class WebPImageMetadataTest {
     @Test
     public void testStandardDimensionNormal() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode dimension = metadata.getStandardDimensionNode();
+        IIOMetadataNode dimension = getStandardNode(metadata, "Dimension");
         assertNotNull(dimension);
         assertEquals("Dimension", dimension.getNodeName());
         assertEquals(2, dimension.getLength());
 
-        IIOMetadataNode imageOrientation = (IIOMetadataNode) dimension.getFirstChild();
-        assertEquals("ImageOrientation", imageOrientation.getNodeName());
-        assertEquals("Normal", imageOrientation.getAttribute("value"));
-
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) imageOrientation.getNextSibling();
+        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) dimension.getFirstChild();
         assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
         assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        IIOMetadataNode imageOrientation = (IIOMetadataNode) pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("Normal", imageOrientation.getAttribute("value"));
+
+        assertNull(imageOrientation.getNextSibling()); // No more children
     }
 
     @Test
     public void testStandardDocument() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode document = metadata.getStandardDocumentNode();
+        IIOMetadataNode document = getStandardNode(metadata, "Document");
         assertNotNull(document);
         assertEquals("Document", document.getNodeName());
         assertEquals(1, document.getLength());
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) document.getFirstChild();
-        assertEquals("FormatVersion", pixelAspectRatio.getNodeName());
-        assertEquals("1.0", pixelAspectRatio.getAttribute("value"));
+        IIOMetadataNode formatVersion = (IIOMetadataNode) document.getFirstChild();
+        assertEquals("FormatVersion", formatVersion.getNodeName());
+        assertEquals("1.0", formatVersion.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        assertNull(formatVersion.getNextSibling()); // No more children
     }
 
     @Test
     public void testStandardText() {
+        // No text node yet...
     }
 
     @Test
     public void testStandardTransparencyVP8() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
-        assertNull(transparency); // No transparency, just defaults
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
+
+        if (transparency != null) {
+            assertNotNull(transparency);
+            assertEquals("Transparency", transparency.getNodeName());
+            assertEquals(1, transparency.getLength());
+
+            IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+            assertEquals("Alpha", alpha.getNodeName());
+            assertEquals("none", alpha.getAttribute("value"));
+
+            assertNull(alpha.getNextSibling()); // No more children
+        }
+        // Else no transparency, just defaults
     }
 
     @Test
     public void testStandardTransparencyVP8L() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_3BYTE_BGR, header);
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
-        assertNull(transparency); // No transparency, just defaults
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
+        if (transparency != null) {
+            assertNotNull(transparency);
+            assertEquals("Transparency", transparency.getNodeName());
+            assertEquals(1, transparency.getLength());
+
+            IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+            assertEquals("Alpha", alpha.getNodeName());
+            assertEquals("none", alpha.getAttribute("value"));
+
+            assertNull(alpha.getNextSibling()); // No more children
+        }
+        // Else no transparency, just defaults
     }
 
     @Test
     public void testStandardTransparencyVP8X() {
         VP8xChunk header = new VP8xChunk(WebP.CHUNK_VP8X, 27, 33);
         header.containsALPH = true;
-        WebPImageMetadata metadata = new WebPImageMetadata(header);
+        WebPImageMetadata metadata = new WebPImageMetadata(TYPE_4BYTE_ABGR, header);
 
-        IIOMetadataNode transparency = metadata.getStandardTransparencyNode();
+        IIOMetadataNode transparency = getStandardNode(metadata, "Transparency");
         assertNotNull(transparency);
         assertEquals("Transparency", transparency.getNodeName());
         assertEquals(1, transparency.getLength());
 
-        IIOMetadataNode pixelAspectRatio = (IIOMetadataNode) transparency.getFirstChild();
-        assertEquals("Alpha", pixelAspectRatio.getNodeName());
-        assertEquals("nonpremultiplied", pixelAspectRatio.getAttribute("value"));
+        IIOMetadataNode alpha = (IIOMetadataNode) transparency.getFirstChild();
+        assertEquals("Alpha", alpha.getNodeName());
+        assertEquals("nonpremultiplied", alpha.getAttribute("value"));
 
-        assertNull(pixelAspectRatio.getNextSibling()); // No more children
+        assertNull(alpha.getNextSibling()); // No more children
+    }
+
+    private IIOMetadataNode getStandardNode(IIOMetadata metadata, String nodeName) {
+        IIOMetadataNode asTree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+        NodeList nodes = asTree.getElementsByTagName(nodeName);
+
+        return nodes.getLength() > 0 ? (IIOMetadataNode) nodes.item(0) : null;
     }
 }

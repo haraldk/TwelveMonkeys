@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Harald Kuhr
+ * Copyright (c) 2021, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

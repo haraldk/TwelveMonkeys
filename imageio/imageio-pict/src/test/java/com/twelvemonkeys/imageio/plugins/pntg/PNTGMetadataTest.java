@@ -1,6 +1,10 @@
 package com.twelvemonkeys.imageio.plugins.pntg;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import org.junit.Test;
+
+import java.awt.image.*;
 
 /**
  * PNTGMetadataTest.
@@ -12,6 +16,6 @@ import org.junit.Test;
 public class PNTGMetadataTest {
     @Test
     public void testCreate() {
-        new PNTGMetadata();
+        new PNTGMetadata(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_BINARY));
     }
 }

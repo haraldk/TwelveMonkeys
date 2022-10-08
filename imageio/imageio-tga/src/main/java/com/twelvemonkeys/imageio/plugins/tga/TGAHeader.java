@@ -31,18 +31,16 @@
 package com.twelvemonkeys.imageio.plugins.tga;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.image.ColorModel;
-import java.awt.image.IndexColorModel;
-import java.awt.image.RenderedImage;
+import java.awt.image.*;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
-import static java.awt.color.ColorSpace.TYPE_GRAY;
-import static java.awt.color.ColorSpace.TYPE_RGB;
+import static java.awt.color.ColorSpace.*;
 
 final class TGAHeader {
 
@@ -118,10 +116,14 @@ final class TGAHeader {
                 '}';
     }
 
-    static TGAHeader from(final RenderedImage image, final boolean compressed)  {
-        notNull(image, "image");
+    static TGAHeader from(final ImageTypeSpecifier type, final boolean compressed)  {
+        return from(type, 0, 0, compressed);
+    }
 
-        ColorModel colorModel = image.getColorModel();
+    static TGAHeader from(final ImageTypeSpecifier type, int width, int height, final boolean compressed)  {
+        notNull(type, "type");
+
+        ColorModel colorModel = type.getColorModel();
         IndexColorModel colorMap = colorModel instanceof IndexColorModel ? (IndexColorModel) colorModel : null;
 
         TGAHeader header = new TGAHeader();
@@ -135,8 +137,8 @@ final class TGAHeader {
         header.x = 0;
         header.y = 0;
 
-        header.width = image.getWidth(); // TODO: Param source region/subsampling might affect this
-        header.height = image.getHeight(); // // TODO: Param source region/subsampling might affect this
+        header.width = width;
+        header.height = height;
         header.pixelDepth = colorModel.getPixelSize() == 15 ? 16 : colorModel.getPixelSize();
 
         header.origin = TGA.ORIGIN_UPPER_LEFT; // TODO: Allow parameter to control this?

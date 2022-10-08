@@ -35,11 +35,16 @@ import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.DataInputStream;
 import java.io.File;
@@ -61,10 +66,9 @@ import java.util.List;
  * @see <a href="http://en.wikipedia.org/wiki/Apple_Icon_Image_format">Apple Icon Image format (Wikipedia)</a>
  */
 public final class ICNSImageReader extends ImageReaderBase {
-    // TODO: Support ToC resource for faster parsing/faster determine number of icons?
     // TODO: Subsampled reading for completeness, even if never used?
-    private List<IconResource> icons = new ArrayList<IconResource>();
-    private List<IconResource> masks = new ArrayList<IconResource>();
+    private final List<IconResource> icons = new ArrayList<>();
+    private final List<IconResource> masks = new ArrayList<>();
     private IconResource lastResourceRead;
 
     private int length;
@@ -136,7 +140,7 @@ public final class ICNSImageReader extends ImageReaderBase {
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
         IconResource resource = readIconResource(imageIndex);
 
-        List<ImageTypeSpecifier> specifiers = new ArrayList<ImageTypeSpecifier>();
+        List<ImageTypeSpecifier> specifiers = new ArrayList<>();
 
         switch (resource.depth()) {
             case 1:
@@ -230,13 +234,8 @@ public final class ICNSImageReader extends ImageReaderBase {
                 packedSize -= 4;
             }
 
-            InputStream input = IIOUtil.createStreamAdapter(imageInput, packedSize);
-
-            try {
+            try (InputStream input = IIOUtil.createStreamAdapter(imageInput, packedSize)) {
                 ICNSUtil.decompress(new DataInputStream(input), data, 0, (data.length * 24) / 32); // 24 bit data
-            }
-            finally {
-                input.close();
             }
         }
         else {
@@ -491,7 +490,7 @@ public final class ICNSImageReader extends ImageReaderBase {
 
         String format;
 
-        if (Arrays.equals(ICNS.PNG_MAGIC, magic)) {
+        if (Arrays.equals(ICNS.PNG_MAGIC, Arrays.copyOfRange(magic, 0, ICNS.PNG_MAGIC.length))) {
             format = "PNG";
         }
         else if (Arrays.equals(ICNS.JPEG_2000_MAGIC, magic)) {
@@ -527,7 +526,6 @@ public final class ICNSImageReader extends ImageReaderBase {
         IconResource resource = IconResource.read(imageInput);
 
         if (resource.isTOC()) {
-            // TODO: IconResource.readTOC()?
             int resourceCount = (resource.length - ICNS.RESOURCE_HEADER_SIZE) / ICNS.RESOURCE_HEADER_SIZE;
             long pos = resource.start + resource.length;
 
@@ -570,6 +568,23 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
     }
 
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        IconResource resource = readIconResource(imageIndex);
+
+        String compressionName;
+        if (resource.isForeignFormat()) {
+            // Special handling of PNG/JPEG 2000 icons
+            imageInput.seek(resource.start + ICNS.RESOURCE_HEADER_SIZE);
+            compressionName = getForeignFormat(imageInput);
+        }
+        else {
+            compressionName = resource.isCompressed() ? "RLE" : "None";
+        }
+
+        return new ICNSImageMetadata(getRawImageType(imageIndex), compressionName);
+    }
+
     private static final class ICNSBitMaskColorModel extends IndexColorModel {
         static final IndexColorModel INSTANCE = new ICNSBitMaskColorModel();
 
@@ -578,7 +593,6 @@ public final class ICNSImageReader extends ImageReaderBase {
         }
     }
 
-    @SuppressWarnings({"UnusedAssignment"})
     public static void main(String[] args) throws IOException {
         int argIndex = 0;
 

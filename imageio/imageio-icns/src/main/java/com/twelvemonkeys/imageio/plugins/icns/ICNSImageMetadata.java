@@ -28,26 +28,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.twelvemonkeys.imageio.plugins.pict;
+package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 
 import javax.imageio.ImageTypeSpecifier;
 
-/**
- * PICTMetadata.
- *
- * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @author last modified by $Author: haraldk$
- * @version $Id: PICTMetadata.java,v 1.0 23/03/2021 haraldk Exp$
- */
-final class PICTMetadata extends StandardImageMetadataSupport {
-    PICTMetadata(final ImageTypeSpecifier type, final int version, final double screenImageXRatio, final double screenImageYRatio) {
-        super(builder(type)
-                      .withPixelAspectRatio(screenImageXRatio > 0.0d && screenImageYRatio > 0.0d ? screenImageXRatio / screenImageYRatio : 1)
-                      .withFormatVersion(Integer.toString(version))
-        );
-        // As this is a vector-ish format, some of the data makes no sense... :-P
-        // It is, however, consistent with the getRawImageTyp/getImageTypes
+final class ICNSImageMetadata extends StandardImageMetadataSupport {
+    ICNSImageMetadata(ImageTypeSpecifier type, String compressionName) {
+        super(builder(type).withCompressionName(compressionName));
     }
 }

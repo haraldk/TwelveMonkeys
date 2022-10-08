@@ -34,7 +34,13 @@ import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteWarningListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
@@ -104,6 +110,7 @@ public final class ICNSImageWriter extends ImageWriterBase {
         sequenceIndex = 0;
     }
 
+    @SuppressWarnings("RedundantThrows")
     @Override
     public void endWriteSequence() throws IOException {
         assertOutput();

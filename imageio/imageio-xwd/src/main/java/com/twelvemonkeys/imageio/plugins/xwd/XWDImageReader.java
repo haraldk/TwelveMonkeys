@@ -9,7 +9,7 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -48,10 +48,7 @@ final class XWDImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        checkBounds(imageIndex);
-        readHeader();
-
-        return new XWDImageMetadata(header);
+        return new XWDImageMetadata(getRawImageType(imageIndex), header);
     }
 
     @Override

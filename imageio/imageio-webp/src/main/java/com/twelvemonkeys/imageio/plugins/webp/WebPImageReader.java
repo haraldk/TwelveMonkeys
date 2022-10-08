@@ -661,10 +661,7 @@ final class WebPImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
-        readHeader(imageIndex);
-        readMeta();
-
-        return new WebPImageMetadata(header);
+        return new WebPImageMetadata(getRawImageType(imageIndex), header);
     }
 
     private void readMeta() throws IOException {

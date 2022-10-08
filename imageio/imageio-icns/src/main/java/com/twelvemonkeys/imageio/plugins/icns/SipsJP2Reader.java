@@ -38,8 +38,13 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.image.BufferedImage;
-import java.io.*;
+import java.awt.image.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Iterator;
 
 /**
@@ -140,16 +145,11 @@ final class SipsJP2Reader {
     }
 
     private static String checkErrorMessage(final Process process) throws IOException {
-        InputStream stream = process.getErrorStream();
-        
-        try {
+        try (InputStream stream = process.getErrorStream()) {
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
             String message = reader.readLine();
 
             return message != null && message.startsWith("Error: ") ? message.substring(7) : null;
-        }
-        finally {
-            stream.close();
         }
     }
 
@@ -159,18 +159,12 @@ final class SipsJP2Reader {
         };
     }
 
-
     private static File dumpToFile(final ImageInputStream stream) throws IOException {
         File tempFile = File.createTempFile("imageio-icns-", ".png");
         tempFile.deleteOnExit();
 
-        FileOutputStream out = new FileOutputStream(tempFile);
-
-        try {
+        try (FileOutputStream out = new FileOutputStream(tempFile)) {
             FileUtil.copy(IIOUtil.createStreamAdapter(stream), out);
-        }
-        finally {
-            out.close();
         }
 
         return tempFile;

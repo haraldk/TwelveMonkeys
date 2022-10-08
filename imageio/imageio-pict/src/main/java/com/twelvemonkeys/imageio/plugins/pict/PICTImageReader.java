@@ -67,18 +67,28 @@ import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Area;
+import java.awt.color.*;
+import java.awt.geom.*;
 import java.awt.image.*;
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.*;
 
 /**
  * Reader for Apple Mac Paint Picture (PICT) format.
@@ -2611,7 +2621,9 @@ public final class PICTImageReader extends ImageReaderBase {
         return getYPtCoord(getPICTFrame().height);
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(int pIndex) {
+    public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+
         // TODO: The images look slightly different in Preview.. Could indicate the color space is wrong...
         return Collections.singletonList(
                 ImageTypeSpecifiers.createPacked(
@@ -2623,10 +2635,10 @@ public final class PICTImageReader extends ImageReaderBase {
 
     @Override
     public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
-        checkBounds(imageIndex);
+        ImageTypeSpecifier rawType = getRawImageType(imageIndex);
         getPICTFrame(); // TODO: Would probably be better to use readPictHeader here, but it isn't cached
 
-        return new PICTMetadata(version, screenImageXRatio, screenImageYRatio);
+        return new PICTMetadata(rawType, version, screenImageXRatio, screenImageYRatio);
     }
 
     protected static void showIt(final BufferedImage pImage, final String pTitle) {

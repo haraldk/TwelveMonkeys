@@ -33,7 +33,7 @@ package com.twelvemonkeys.imageio.plugins.sgi;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 final class SGIHeader {
     private int compression;
@@ -157,6 +157,6 @@ final class SGIHeader {
             }
         }
 
-        return new String(bytes, 0, len, Charset.forName("ASCII"));
+        return new String(bytes, 0, len, StandardCharsets.US_ASCII);
     }
 }
