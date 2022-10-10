@@ -6,10 +6,11 @@ import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.*;
 import java.awt.color.*;
 import java.awt.image.*;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static com.twelvemonkeys.imageio.StandardImageMetadataSupport.ColorSpaceType.*;
@@ -42,7 +43,7 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
     protected final String formatVersion;
     protected final SubimageInterpretation subimageInterpretation;
     private final Calendar documentCreationTime; // TODO: This field should be a LocalDateTime or other java.time type, Consider a long timestamp + TimeZone to avoid messing up the API...
-    private final Collection<Map.Entry<String, String>> textEntries;
+    private final Collection<TextEntry> textEntries;
 
     protected StandardImageMetadataSupport(Builder builder) {
         notNull(builder, "builder");
@@ -98,7 +99,7 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
         private String formatVersion;
         private SubimageInterpretation subimageInterpretation;
         private Calendar documentCreationTime; // TODO: This field should be a LocalDateTime or other java.time type
-        private final Collection<Map.Entry<String, String>> textEntries = new ArrayList<>();
+        private final Collection<TextEntry> textEntries = new ArrayList<>();
 
         protected Builder(ImageTypeSpecifier type) {
             this.type = notNull(type, "type");
@@ -193,10 +194,21 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
         }
 
         public Builder withTextEntries(Map<String, String> entries) {
-            return withTextEntries(notNull(entries, "entries").entrySet());
+            return withTextEntries(toTextEntries(notNull(entries, "entries").entrySet()));
         }
 
-        public Builder withTextEntries(Collection<Map.Entry<String, String>> entries) {
+        private Collection<TextEntry> toTextEntries(Collection<Map.Entry<String, String>> entries) {
+            TextEntry[] result = new TextEntry[entries.size()];
+
+            int i = 0;
+            for (Map.Entry<String, String> entry : entries) {
+                result[i++] = new TextEntry(entry.getKey(), entry.getValue());
+            }
+
+            return Arrays.asList(result);
+        }
+
+        public Builder withTextEntries(Collection<TextEntry> entries) {
             this.textEntries.addAll(notNull(entries, "entries"));
 
             return this;
@@ -204,7 +216,7 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
 
         public Builder withTextEntry(String keyword, String value) {
             if (value != null && !value.isEmpty()) {
-                this.textEntries.add(new SimpleImmutableEntry<>(notNull(keyword, "keyword"), value));
+                this.textEntries.add(new TextEntry(notNull(keyword, "keyword"), value));
             }
 
             return this;
@@ -389,6 +401,28 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
         throw new IllegalArgumentException("Unknown ColorSpace type: " + colorSpace);
     }
 
+    protected static final class TextEntry {
+        static final List<String> COMPRESSIONS = Arrays.asList("none", "lzw", "zip", "bzip", "other");
+
+        final String keyword;
+        final String value;
+        final String language;
+        final String encoding;
+        final String compression;
+
+        public TextEntry(final String keyword, final String value) {
+            this(keyword, value, null, null, null);
+        }
+
+        public TextEntry(final String keyword, final String value, final String language, final String encoding, final String compression) {
+            this.keyword = keyword;
+            this.value = notNull(value, "value");
+            this.language = language;
+            this.encoding = encoding;
+            this.compression = isTrue(compression == null || COMPRESSIONS.contains(compression), compression, String.format("Unknown compression: %s (expected: %s)", compression, COMPRESSIONS));
+        }
+    }
+
     @Override
     protected IIOMetadataNode getStandardCompressionNode() {
         if (compressionName == null) {
@@ -547,11 +581,22 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
         // DocumentName, ImageDescription, Make, Model, PageName, Software, Artist, HostComputer, InkNames, Copyright:
         // /Text/TextEntry@keyword = field name, /Text/TextEntry@value = field value.
 
-        for (Map.Entry<String, String> entry : textEntries) {
+        for (TextEntry entry : textEntries) {
             IIOMetadataNode textEntryNode = new IIOMetadataNode("TextEntry");
             textNode.appendChild(textEntryNode);
-            textEntryNode.setAttribute("keyword", entry.getKey());
-            textEntryNode.setAttribute("value", entry.getValue());
+            if (entry.keyword != null) {
+                textEntryNode.setAttribute("keyword", entry.keyword);
+            }
+            textEntryNode.setAttribute("value", entry.value);
+            if (entry.language != null) {
+                textEntryNode.setAttribute("language", entry.language);
+            }
+            if (entry.encoding != null) {
+                textEntryNode.setAttribute("encoding", entry.encoding);
+            }
+            if (entry.compression != null) {
+                textEntryNode.setAttribute("compression", entry.compression);
+            }
         }
 
         return textNode;

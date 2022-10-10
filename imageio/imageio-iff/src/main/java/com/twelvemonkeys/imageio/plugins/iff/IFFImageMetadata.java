@@ -35,10 +35,8 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.image.*;
 import java.nio.charset.StandardCharsets;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.twelvemonkeys.imageio.plugins.iff.IFF.*;
 import static com.twelvemonkeys.imageio.plugins.iff.IFFUtil.toChunkStr;
@@ -119,15 +117,15 @@ final class IFFImageMetadata extends StandardImageMetadataSupport {
         }
     }
 
-    private static List<Map.Entry<String, String>> textEntries(Form header) {
+    private static List<TextEntry> textEntries(Form header) {
         if (header.meta.isEmpty()) {
             return emptyList();
         }
 
-        List<Map.Entry<String, String>> text = new ArrayList<>();
+        List<TextEntry> text = new ArrayList<>();
         for (GenericChunk chunk : header.meta) {
-            text.add(new SimpleImmutableEntry<>(toChunkStr(chunk.chunkId),
-                                                new String(chunk.data, chunk.chunkId == IFF.CHUNK_UTF8 ? StandardCharsets.UTF_8 : StandardCharsets.US_ASCII)));
+            text.add(new TextEntry(toChunkStr(chunk.chunkId),
+                    new String(chunk.data, chunk.chunkId == IFF.CHUNK_UTF8 ? StandardCharsets.UTF_8:StandardCharsets.US_ASCII)));
         }
 
         return text;

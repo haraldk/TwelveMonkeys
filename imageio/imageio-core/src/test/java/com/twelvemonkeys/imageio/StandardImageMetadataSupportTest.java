@@ -4,6 +4,7 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport.ColorSpaceType;
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport.ImageOrientation;
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport.PlanarConfiguration;
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport.SubimageInterpretation;
+import com.twelvemonkeys.imageio.StandardImageMetadataSupport.TextEntry;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import org.junit.Test;
@@ -12,7 +13,6 @@ import org.w3c.dom.NodeList;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.*;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
@@ -22,10 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static com.twelvemonkeys.imageio.StandardImageMetadataSupport.builder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class StandardImageMetadataSupportTest {
     @Test(expected = IllegalArgumentException.class)
@@ -52,7 +49,8 @@ public class StandardImageMetadataSupportTest {
     @Test
     public void builderValid() {
         IIOMetadata metadata = builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB))
-                                       .build();
+                .build();
+
         assertNotNull(metadata);
     }
 
@@ -198,11 +196,12 @@ public class StandardImageMetadataSupportTest {
 
     @Test
     public void withTextValuesList() {
-        List<Entry<String, String>> entries = Arrays.<Entry<String, String>>asList(
-                new SimpleEntry<>((String) null, "foo"), // No key allowed
-                new SimpleEntry<>("foo", "bar"),
-                new SimpleEntry<>("bar", "xyzzy"),
-                new SimpleEntry<>("bar", "nothing happens...") // Duplicates allowed
+        List<TextEntry> entries = Arrays.asList(
+                new TextEntry(null, "foo"), // No key allowed
+                new TextEntry("foo", "bar"),
+                new TextEntry("bar", "xyzzy"),
+                new TextEntry("bar", "nothing happens..."), // Duplicates allowed
+                new TextEntry("everything", "válüè", "unknown", "UTF-8", "zip")
         );
 
         StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
@@ -216,11 +215,25 @@ public class StandardImageMetadataSupportTest {
         assertEquals(entries.size(), textEntries.getLength());
 
         for (int i = 0; i < entries.size(); i++) {
-            Entry<String, String> entry = entries.get(i);
+            TextEntry entry = entries.get(i);
             IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
 
-            assertEquals(entry.getKey(), textEntry.getAttribute("keyword"));
-            assertEquals(entry.getValue(), textEntry.getAttribute("value"));
+            assertAttributeEqualOrAbsent(entry.keyword, textEntry, "keyword");
+
+            assertEquals(entry.value, textEntry.getAttribute("value"));
+
+            assertAttributeEqualOrAbsent(entry.language, textEntry, "language");
+            assertAttributeEqualOrAbsent(entry.encoding, textEntry, "encoding");
+            assertAttributeEqualOrAbsent(entry.compression, textEntry, "compression");
+        }
+    }
+
+    private static void assertAttributeEqualOrAbsent(final String expectedValue, IIOMetadataNode node, final String attribute) {
+        if (expectedValue != null) {
+            assertEquals(expectedValue, node.getAttribute(attribute));
+        }
+        else {
+            assertFalse(node.hasAttribute(attribute));
         }
     }
 
@@ -236,8 +249,9 @@ public class StandardImageMetadataSupportTest {
 
         for (ColorSpaceType value : ColorSpaceType.values()) {
             StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
-                                                                                           .withColorSpaceType(value)
-                                                                                           .build();
+                    .withColorSpaceType(value)
+                    .build();
+
             assertNotNull(metadata);
 
             IIOMetadataNode documentNode = metadata.getStandardChromaNode();
@@ -256,8 +270,9 @@ public class StandardImageMetadataSupportTest {
 
         for (PlanarConfiguration value : PlanarConfiguration.values()) {
             StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR))
-                                                                                           .withPlanarConfiguration(value)
-                                                                                           .build();
+                    .withPlanarConfiguration(value)
+                    .build();
+
             assertNotNull(metadata);
 
             IIOMetadataNode documentNode = metadata.getStandardDataNode();
@@ -276,8 +291,9 @@ public class StandardImageMetadataSupportTest {
 
         for (ImageOrientation value : ImageOrientation.values()) {
             StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
-                                                                                           .withOrientation(value)
-                                                                                           .build();
+                    .withOrientation(value)
+                    .build();
+
             assertNotNull(metadata);
 
             IIOMetadataNode documentNode = metadata.getStandardDimensionNode();
@@ -300,8 +316,9 @@ public class StandardImageMetadataSupportTest {
 
         for (SubimageInterpretation value : SubimageInterpretation.values()) {
             StandardImageMetadataSupport metadata = (StandardImageMetadataSupport) builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB))
-                                                                                           .withSubimageInterpretation(value)
-                                                                                           .build();
+                    .withSubimageInterpretation(value)
+                    .build();
+
             assertNotNull(metadata);
 
             IIOMetadataNode documentNode = metadata.getStandardDocumentNode();
