@@ -32,23 +32,24 @@ package com.twelvemonkeys.imageio.color;
 
 import org.junit.Test;
 
-import java.awt.color.ICC_Profile;
+import java.awt.color.*;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.junit.Assert.assertArrayEquals;
 
 public class LCMSSanitizerStrategyTest {
 
     @Test(expected = IllegalArgumentException.class)
-    public void testFixProfileNullProfile() throws Exception {
+    public void testFixProfileNullProfile() {
         new LCMSSanitizerStrategy().fixProfile(null);
     }
 
     @Test
     public void testFixProfile() throws Exception {
-        ICC_Profile profile = mock(ICC_Profile.class);
-        new LCMSSanitizerStrategy().fixProfile(profile);
+        ICC_Profile profile = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+        byte[] header = profile.getData(ICC_Profile.icSigHead);
 
-        verifyNoMoreInteractions(profile);
+        new KCMSSanitizerStrategy().fixProfile(profile);
+
+        assertArrayEquals(header, profile.getData(ICC_Profile.icSigHead));
     }
 }
