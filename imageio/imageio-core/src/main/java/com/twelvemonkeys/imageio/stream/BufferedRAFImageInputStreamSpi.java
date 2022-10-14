@@ -48,7 +48,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedRAFImageInputStreamSpi.java,v 1.0 May 15, 2008 2:14:59 PM haraldk Exp$
  */
-public class BufferedRAFImageInputStreamSpi extends ImageInputStreamSpi {
+public final class BufferedRAFImageInputStreamSpi extends ImageInputStreamSpi {
     public BufferedRAFImageInputStreamSpi() {
         this(new StreamProviderInfo());
     }
@@ -69,9 +69,10 @@ public class BufferedRAFImageInputStreamSpi extends ImageInputStreamSpi {
         }
     }
 
-    public ImageInputStream createInputStreamInstance(final Object input, final boolean pUseCache, final File pCacheDir) {
+    @Override
+    public ImageInputStream createInputStreamInstance(final Object input, final boolean useCacheFile, final File cacheDir) {
         if (input instanceof RandomAccessFile) {
-            return new BufferedFileImageInputStream((RandomAccessFile) input);
+            return new BufferedChannelImageInputStream((RandomAccessFile) input);
         }
 
         throw new IllegalArgumentException("Expected input of type RandomAccessFile: " + input);
@@ -82,7 +83,8 @@ public class BufferedRAFImageInputStreamSpi extends ImageInputStreamSpi {
         return false;
     }
 
-    public String getDescription(final Locale pLocale) {
+    @Override
+    public String getDescription(final Locale locale) {
         return "Service provider that instantiates an ImageInputStream from a RandomAccessFile";
     }
 

@@ -33,9 +33,7 @@ package com.twelvemonkeys.imageio.stream;
 import com.twelvemonkeys.imageio.spi.ProviderInfo;
 
 import javax.imageio.spi.ImageInputStreamSpi;
-import javax.imageio.stream.FileCacheImageInputStream;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +50,7 @@ import java.util.Locale;
  * @version $Id: URLImageInputStreamSpi.java,v 1.0 May 15, 2008 2:14:59 PM haraldk Exp$
  */
  // TODO: URI instead of URL?
-public class URLImageInputStreamSpi extends ImageInputStreamSpi {
+public final class URLImageInputStreamSpi extends ImageInputStreamSpi {
     public URLImageInputStreamSpi() {
         this(new StreamProviderInfo());
     }
@@ -64,53 +62,28 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
     // TODO: Create a URI or URLImageInputStream class, with a getUR[I|L] method, to allow for multiple file formats
     // The good thing with that is that it does not clash with the built-in Sun-stuff or other people's hacks
     // The bad thing is that most people don't expect there to be an UR[I|L]ImageInputStreamSpi..
-    public ImageInputStream createInputStreamInstance(final Object pInput, final boolean pUseCache, final File pCacheDir) throws IOException {
-        if (pInput instanceof URL) {
-            URL url = (URL) pInput;
+    @Override
+    public ImageInputStream createInputStreamInstance(final Object input, final boolean useCacheFile, final File cacheDir) throws IOException {
+        if (input instanceof URL) {
+            URL url = (URL) input;
 
             // Special case for file protocol, a lot faster than FileCacheImageInputStream
             if ("file".equals(url.getProtocol())) {
                 try {
-                    return new BufferedFileImageInputStream(new File(url.toURI()));
+                    return new BufferedChannelImageInputStream(new File(url.toURI()));
                 }
-                catch (URISyntaxException ignore) {
-                    // This should never happen, but if it does, we'll fall back to using the stream  
-                    ignore.printStackTrace();
+                catch (URISyntaxException shouldNeverHappen) {
+                    // This should never happen, but if it does, we'll fall back to using the stream
+                    shouldNeverHappen.printStackTrace();
                 }
             }
 
             // Otherwise revert to cached
-            final InputStream urlStream = url.openStream();
-            if (pUseCache) {
-                return new FileCacheImageInputStream(urlStream, pCacheDir) {
-                    @Override
-                    public void close() throws IOException {
-                        try {
-                            super.close();
-                        }
-                        finally {
-                            urlStream.close(); // NOTE: If this line throws IOE, it will shadow the original..
-                        }
-                    }
-                };
-            }
-            else {
-                return new MemoryCacheImageInputStream(urlStream) {
-                    @Override
-                    public void close() throws IOException {
-                        try {
-                            super.close();
-                        }
-                        finally {
-                            urlStream.close(); // NOTE: If this line throws IOE, it will shadow the original..
-                        }
-                    }
-                };
-            }
+            InputStream urlStream = url.openStream();
+            return new BufferedChannelImageInputStream(useCacheFile ? new DiskCache(urlStream, cacheDir) : new MemoryCache(urlStream));
         }
-        else {
-            throw new IllegalArgumentException("Expected input of type URL: " + pInput);
-        }
+
+        throw new IllegalArgumentException("Expected input of type URL: " + input);
     }
 
     @Override
@@ -118,7 +91,7 @@ public class URLImageInputStreamSpi extends ImageInputStreamSpi {
         return true;
     }
 
-    public String getDescription(final Locale pLocale) {
+    public String getDescription(final Locale locale) {
         return "Service provider that instantiates an ImageInputStream from a URL";
     }
 }

@@ -125,7 +125,7 @@ public final class DirectImageInputStream extends ImageInputStreamImpl {
 
     @Override
     public void close() throws IOException {
-        // We could seek to EOF here, but the usual case
+        // We could seek to EOF here, but the usual case is we know where the next chunk of data is
 
         stream.close();
         super.close();

@@ -37,18 +37,19 @@ import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Iterator;
 import java.util.Locale;
 
 /**
  * BufferedFileImageInputStreamSpi
- * Experimental
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedFileImageInputStreamSpi.java,v 1.0 May 15, 2008 2:14:59 PM haraldk Exp$
  */
-public class BufferedFileImageInputStreamSpi extends ImageInputStreamSpi {
+public final class BufferedFileImageInputStreamSpi extends ImageInputStreamSpi {
     public BufferedFileImageInputStreamSpi() {
         this(new StreamProviderInfo());
     }
@@ -69,12 +70,13 @@ public class BufferedFileImageInputStreamSpi extends ImageInputStreamSpi {
         }
     }
 
-    public ImageInputStream createInputStreamInstance(final Object input, final boolean pUseCache, final File pCacheDir) {
+    @Override
+    public ImageInputStream createInputStreamInstance(final Object input, final boolean useCacheFile, final File cacheDir) throws IOException {
         if (input instanceof File) {
             try {
-                return new BufferedFileImageInputStream((File) input);
+                return new BufferedChannelImageInputStream((File) input);
             }
-            catch (FileNotFoundException e) {
+            catch (FileNotFoundException | NoSuchFileException e) {
                 // For consistency with the JRE bundled SPIs, we'll return null here,
                 // even though the spec does not say that's allowed.
                 // The problem is that the SPIs can only declare that they support an input type like a File,
@@ -91,7 +93,8 @@ public class BufferedFileImageInputStreamSpi extends ImageInputStreamSpi {
         return false;
     }
 
-    public String getDescription(final Locale pLocale) {
+    @Override
+    public String getDescription(final Locale locale) {
         return "Service provider that instantiates an ImageInputStream from a File";
     }
 

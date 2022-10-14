@@ -36,18 +36,17 @@ import org.junit.function.ThrowingRunnable;
 import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.util.Random;
 
 import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTest.rangeEquals;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.only;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * BufferedFileImageInputStreamTestCase
@@ -56,8 +55,7 @@ import static org.mockito.Mockito.verify;
  * @author last modified by $Author: haraldk$
  * @version $Id: BufferedFileImageInputStreamTestCase.java,v 1.0 Apr 21, 2009 10:58:48 AM haraldk Exp$
  */
-@Deprecated
-public class BufferedFileImageInputStreamTest {
+public class BufferedChannelImageInputStreamTest {
     private final Random random = new Random(170984354357234566L);
 
     private File randomDataToFile(byte[] data) throws IOException {
@@ -70,36 +68,35 @@ public class BufferedFileImageInputStreamTest {
 
     @Test
     public void testCreate() throws IOException {
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(File.createTempFile("empty", ".tmp"))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(File.createTempFile("empty", ".tmp")))) {
             assertEquals("Data length should be same as stream length", 0, stream.length());
         }
     }
 
-    @SuppressWarnings("resource")
     @Test
-    public void testCreateNullFile() throws IOException {
+    public void testCreateNullFileInputStream() {
         try {
-            new BufferedFileImageInputStream((File) null);
+            new BufferedChannelImageInputStream((FileInputStream) null);
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("file"));
+            assertTrue("Exception message does not contain parameter name", message.contains("inputstream"));
             assertTrue("Exception message does not contain null", message.contains("null"));
         }
     }
 
     @Test
-    public void testCreateNullRAF() {
+    public void testCreateNullByteChannel() {
         try {
-            new BufferedFileImageInputStream((RandomAccessFile) null);
+            new BufferedChannelImageInputStream((SeekableByteChannel) null);
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("raf"));
+            assertTrue("Exception message does not contain parameter name", message.contains("channel"));
             assertTrue("Exception message does not contain null", message.contains("null"));
         }
     }
@@ -109,7 +106,7 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 1024];
         File file = randomDataToFile(data);
 
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             assertEquals("File length should be same as stream length", file.length(), stream.length());
 
             for (byte value : data) {
@@ -123,7 +120,7 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 1024];
         File file = randomDataToFile(data);
 
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             assertEquals("File length should be same as stream length", file.length(), stream.length());
 
             byte[] result = new byte[1024];
@@ -140,7 +137,7 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 14];
         File file = randomDataToFile(data);
 
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             assertEquals("File length should be same as stream length", file.length(), stream.length());
 
             byte[] result = new byte[7];
@@ -158,7 +155,7 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[1024 * 18];
         File file = randomDataToFile(data);
 
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             assertEquals("File length should be same as stream length", file.length(), stream.length());
 
             byte[] result = new byte[9];
@@ -179,7 +176,7 @@ public class BufferedFileImageInputStreamTest {
         byte[] data = new byte[256];
         File file = randomDataToFile(data);
 
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             assertEquals("File length should be same as stream length", file.length(), stream.length());
 
             byte[] buffer = new byte[data.length * 2];
@@ -197,7 +194,7 @@ public class BufferedFileImageInputStreamTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        try (ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             for (int i = 1; i <= 64; i++) {
                 assertEquals(String.format("bit %d differ", i), (value << (i - 1L)) >>> 63L, stream.readBit());
             }
@@ -211,7 +208,7 @@ public class BufferedFileImageInputStreamTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        try (ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             for (int i = 1; i <= 64; i++) {
                 stream.seek(0);
                 assertEquals(String.format("bit %d differ", i), value >>> (64L - i), stream.readBits(i));
@@ -227,7 +224,7 @@ public class BufferedFileImageInputStreamTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        try (ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             for (int i = 1; i <= 60; i++) {
                 stream.seek(0);
                 stream.setBitOffset(i % 8);
@@ -243,7 +240,7 @@ public class BufferedFileImageInputStreamTest {
         File file = randomDataToFile(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
             for (int i = 0; i < bytes.length / 2; i++) {
@@ -281,7 +278,7 @@ public class BufferedFileImageInputStreamTest {
         File file = randomDataToFile(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
             for (int i = 0; i < bytes.length / 4; i++) {
@@ -319,7 +316,7 @@ public class BufferedFileImageInputStreamTest {
         File file = randomDataToFile(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
             for (int i = 0; i < bytes.length / 8; i++) {
@@ -356,7 +353,7 @@ public class BufferedFileImageInputStreamTest {
         byte[] bytes = new byte[9];
         File file = randomDataToFile(bytes);
 
-        try (final ImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             stream.seek(1000);
 
             assertEquals(-1, stream.read());
@@ -403,10 +400,22 @@ public class BufferedFileImageInputStreamTest {
     }
 
     @Test
-    public void testClose() throws IOException {
+    public void testCloseStream() throws IOException {
         // Create wrapper stream
-        RandomAccessFile mock = mock(RandomAccessFile.class);
-        ImageInputStream stream = new BufferedFileImageInputStream(mock);
+        FileInputStream mock = mock(FileInputStream.class);
+        when(mock.getChannel()).thenCallRealMethod();
+        ImageInputStream stream = new BufferedChannelImageInputStream(mock);
+        reset(mock);
+
+        stream.close();
+        verify(mock, only()).close();
+    }
+
+    @Test
+    public void testCloseChannel() throws IOException {
+        // Create wrapper stream
+        SeekableByteChannel mock = mock(SeekableByteChannel.class);
+        ImageInputStream stream = new BufferedChannelImageInputStream(mock);
 
         stream.close();
         verify(mock, only()).close();
@@ -417,11 +426,11 @@ public class BufferedFileImageInputStreamTest {
         // See #606 for details.
         // Bug in JDK WBMPImageReader, uses read(byte[], int, int) instead of readFully(byte[], int, int).
         // Ie: Relies on read to return all bytes at once, without blocking
-        int size = BufferedFileImageInputStream.DEFAULT_BUFFER_SIZE * 7;
+        int size = BufferedChannelImageInputStream.DEFAULT_BUFFER_SIZE * 7;
         byte[] bytes = new byte[size];
         File file = randomDataToFile(bytes);
 
-        try (BufferedFileImageInputStream stream = new BufferedFileImageInputStream(file)) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             byte[] result = new byte[size];
             int head = stream.read(result, 0, 12);          // Provoke a buffered read
             int len = stream.read(result, 12, size - 12);   // Rest of buffer + direct read

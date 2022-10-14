@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Harald Kuhr
+ * Copyright (c) 2022, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,70 +32,109 @@ package com.twelvemonkeys.imageio.stream;
 
 import javax.imageio.stream.ImageInputStreamImpl;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
 import static java.lang.Math.max;
 
 /**
- * A buffered replacement for {@link javax.imageio.stream.FileImageInputStream}
- * that provides greatly improved performance for shorter reads, like single
- * byte or bit reads.
- * As with {@code javax.imageio.stream.FileImageInputStream}, either
- * {@link File} or {@link RandomAccessFile} can be used as input.
- *
- * @see javax.imageio.stream.FileImageInputStream
- * @deprecated Use {@link BufferedChannelImageInputStream} instead.
+ * A buffered {@link javax.imageio.stream.ImageInputStream} that is backed by a {@link java.nio.channels.SeekableByteChannel}
+ * and provides greatly improved performance
+ * compared to {@link javax.imageio.stream.FileCacheImageInputStream} or {@link javax.imageio.stream.MemoryCacheImageInputStream}
+ * for shorter reads, like single byte or bit reads.
  */
-// TODO: Create a memory-mapped version?
-//  Or not... From java.nio.channels.FileChannel.map:
-//      For most operating systems, mapping a file into memory is more
-//      expensive than reading or writing a few tens of kilobytes of data via
-//      the usual {@link #read read} and {@link #write write} methods.  From the
-//      standpoint of performance it is generally only worth mapping relatively
-//      large files into memory.
-@Deprecated
-public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
+final class BufferedChannelImageInputStream extends ImageInputStreamImpl {
     static final int DEFAULT_BUFFER_SIZE = 8192;
 
-    private byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+    private ByteBuffer byteBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
+    private byte[] buffer = byteBuffer.array();
     private int bufferPos;
     private int bufferLimit;
 
     private final ByteBuffer integralCache = ByteBuffer.allocate(8);
     private final byte[] integralCacheArray = integralCache.array();
 
-    private RandomAccessFile raf;
+    private SeekableByteChannel channel;
 
     /**
-     * Constructs a <code>BufferedFileImageInputStream</code> that will read from a given <code>File</code>.
+     * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code File}.
      *
-     * @param file a <code>File</code> to read from.
-     * @throws IllegalArgumentException if <code>file</code> is <code>null</code>.
-     * @throws FileNotFoundException    if <code>file</code> is a directory or cannot be opened for reading
-     *                                  for any reason.
+     * @param file a {@code File} to read from.
+     * @throws IllegalArgumentException if {@code file} is {@code null}.
+     * @throws SecurityException        if a security manager is installed, and it denies read access to the file.
+     * @throws IOException              if an I/O error occurs while opening the file.
      */
-    public BufferedFileImageInputStream(final File file) throws FileNotFoundException {
-        this(new RandomAccessFile(notNull(file, "file"), "r"));
+    public BufferedChannelImageInputStream(final File file) throws IOException {
+        this(notNull(file, "file").toPath());
     }
 
     /**
-     * Constructs a <code>BufferedFileImageInputStream</code> that will read from a given <code>RandomAccessFile</code>.
+     * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code Path}.
      *
-     * @param raf a <code>RandomAccessFile</code> to read from.
-     * @throws IllegalArgumentException if <code>raf</code> is <code>null</code>.
+     * @param file a {@code Path} to read from.
+     * @throws IllegalArgumentException      if {@code file} is {@code null}.
+     * @throws UnsupportedOperationException if the {@code file} is associated with a provider that does not support creating file channels.
+     * @throws IOException                   if an I/O error occurs while opening the file.
+     * @throws SecurityException             if a security manager is installed, and it denies read access to the file.
      */
-    public BufferedFileImageInputStream(final RandomAccessFile raf) {
-        this.raf = notNull(raf, "raf");
+    public BufferedChannelImageInputStream(final Path file) throws IOException {
+        this(FileChannel.open(notNull(file, "file"), StandardOpenOption.READ));
+    }
+
+    /**
+     * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code RandomAccessFile}.
+     * <p>
+     * Closing this stream will close the {@code RandomAccessFile}.
+     * </p>
+     *
+     * @param file a {@code RandomAccessFile} to read from.
+     * @throws IllegalArgumentException if {@code file} is {@code null}.
+     */
+    public BufferedChannelImageInputStream(final RandomAccessFile file) {
+        // Assumption: Closing the FileChannel will also close its backing RandomAccessFile
+        // (it does in the OpenJDK implementation, and it makes sense, although I can't see this is documented behaviour).
+        this(notNull(file, "file").getChannel());
+    }
+
+    /**
+     * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code FileInputStream}.
+     * <p>
+     * Closing this stream will close the {@code FileInputStream}.
+     * </p>
+     *
+     * @param inputStream a {@code FileInputStream} to read from.
+     * @throws IllegalArgumentException if {@code inputStream} is {@code null}.
+     */
+    public BufferedChannelImageInputStream(final FileInputStream inputStream) {
+        // Assumption: Closing the FileChannel will also close its backing FileInputStream (it does in the OpenJDK implementation, although I can't see this is documented).
+        this(notNull(inputStream, "inputStream").getChannel());
+    }
+
+    /**
+     * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code SeekableByteChannel}.
+     * <p>
+     * Closing this stream will close the {@code SeekableByteChannel}.
+     * </p>
+     *
+     * @param channel a {@code SeekableByteChannel} to read from.
+     * @throws IllegalArgumentException if {@code channel} is {@code null}.
+     */
+    public BufferedChannelImageInputStream(final SeekableByteChannel channel) {
+        this.channel = notNull(channel, "channel");
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean fillBuffer() throws IOException {
-        int length = raf.read(buffer, 0, buffer.length);
+        byteBuffer.rewind();
+        int length = channel.read(byteBuffer);
         bufferPos = 0;
         bufferLimit = max(length, 0);
 
@@ -155,11 +194,23 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
     private int readDirect(final byte[] bytes, final int offset, final int length) throws IOException {
         // Invalidate the buffer, as its contents is no longer in sync with the stream's position.
         bufferLimit = 0;
-        int read = raf.read(bytes, offset, length);
 
-        if (read > 0) {
-            streamPos += read;
+        ByteBuffer wrapped = ByteBuffer.wrap(bytes, offset, length);
+        int read = 0;
+        while (wrapped.hasRemaining()) {
+            int count = channel.read(wrapped);
+            if (count == -1) {
+                if (read == 0) {
+                    return -1;
+                }
+
+                break;
+            }
+
+            read += count;
         }
+
+        streamPos += read;
 
         return read;
     }
@@ -181,7 +232,7 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
         // WTF?! This method is allowed to throw IOException in the interface...
         try {
             checkClosed();
-            return raf.length();
+            return channel.size();
         }
         catch (IOException ignore) {
         }
@@ -193,9 +244,10 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
         super.close();
 
         buffer = null;
+        byteBuffer = null;
 
-        raf.close();
-        raf = null;
+        channel.close();
+        channel = null;
     }
 
     // Need to override the readShort(), readInt() and readLong() methods,
@@ -253,9 +305,19 @@ public final class BufferedFileImageInputStream extends ImageInputStreamImpl {
         else {
             // Will invalidate buffer
             bufferLimit = 0;
-            raf.seek(position);
+            channel.position(position);
         }
 
         streamPos = position;
+    }
+
+    @Override
+    public void flushBefore(final long pos) throws IOException {
+        super.flushBefore(pos);
+
+        if (channel instanceof MemoryCache) {
+            // In case of memory cache, free up memory
+            ((MemoryCache) channel).flushBefore(pos);
+        }
     }
 }

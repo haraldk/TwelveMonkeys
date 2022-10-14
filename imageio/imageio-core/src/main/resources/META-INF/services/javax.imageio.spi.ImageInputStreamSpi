@@ -1,4 +1,5 @@
 com.twelvemonkeys.imageio.stream.BufferedFileImageInputStreamSpi
 com.twelvemonkeys.imageio.stream.BufferedRAFImageInputStreamSpi
+com.twelvemonkeys.imageio.stream.BufferedInputStreamImageInputStreamSpi
 # Use SPI loading as a hook for early profile activation
 com.twelvemonkeys.imageio.color.ProfileDeferralActivator$Spi

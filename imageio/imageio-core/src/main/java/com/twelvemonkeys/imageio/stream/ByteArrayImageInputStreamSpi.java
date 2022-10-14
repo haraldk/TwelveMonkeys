@@ -45,7 +45,7 @@ import java.util.Locale;
  * @author last modified by $Author: haraldk$
  * @version $Id: ByteArrayImageInputStreamSpi.java,v 1.0 May 15, 2008 2:12:12 PM haraldk Exp$
  */
-public class ByteArrayImageInputStreamSpi extends ImageInputStreamSpi {
+public final class ByteArrayImageInputStreamSpi extends ImageInputStreamSpi {
 
     public ByteArrayImageInputStreamSpi() {
         this(new StreamProviderInfo());
@@ -55,16 +55,17 @@ public class ByteArrayImageInputStreamSpi extends ImageInputStreamSpi {
         super(providerInfo.getVendorName(), providerInfo.getVersion(), byte[].class);
     }
 
-    public ImageInputStream createInputStreamInstance(Object pInput, boolean pUseCache, File pCacheDir) {
-        if (pInput instanceof byte[]) {
-            return new ByteArrayImageInputStream((byte[]) pInput);
+    @Override
+    public ImageInputStream createInputStreamInstance(Object input, boolean useCacheFile, File cacheDir) {
+        if (input instanceof byte[]) {
+            return new ByteArrayImageInputStream((byte[]) input);
         }
-        else {
-            throw new IllegalArgumentException("Expected input of type byte[]: " + pInput);
-        }
+
+        throw new IllegalArgumentException("Expected input of type byte[]: " + input);
     }
 
-    public String getDescription(Locale pLocale) {
+    @Override
+    public String getDescription(Locale locale) {
         return "Service provider that instantiates an ImageInputStream from a byte array";
     }
 
