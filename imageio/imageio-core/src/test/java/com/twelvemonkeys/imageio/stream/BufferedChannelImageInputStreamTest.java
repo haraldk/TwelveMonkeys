@@ -402,18 +402,16 @@ public class BufferedChannelImageInputStreamTest {
     @Test
     public void testCloseStream() throws IOException {
         // Create wrapper stream
-        FileInputStream mock = mock(FileInputStream.class);
-        when(mock.getChannel()).thenCallRealMethod();
-        ImageInputStream stream = new BufferedChannelImageInputStream(mock);
-        reset(mock);
+        FileInputStream input = spy(new FileInputStream(randomDataToFile(new byte[0])));
+        ImageInputStream stream = new BufferedChannelImageInputStream(input);
+        reset(input);
 
         stream.close();
-        verify(mock, only()).close();
+        verify(input, only()).close();
     }
 
     @Test
     public void testCloseChannel() throws IOException {
-        // Create wrapper stream
         SeekableByteChannel mock = mock(SeekableByteChannel.class);
         ImageInputStream stream = new BufferedChannelImageInputStream(mock);
 
