@@ -39,7 +39,6 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
-import com.twelvemonkeys.io.NullOutputStream;
 
 import org.junit.Test;
 import org.w3c.dom.NodeList;
@@ -557,7 +556,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         IIOWriteProgressListener progress = mock(IIOWriteProgressListener.class, "progress");
         writer.addIIOWriteProgressListener(progress);
 
-        try (ImageOutputStream output = ImageIO.createImageOutputStream(new NullOutputStream())) {
+        try (ImageOutputStream output = new NullImageOutputStream()) {
             writer.setOutput(output);
 
             try {
@@ -615,7 +614,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
     public void testWriteParamJPEGQuality() throws IOException {
         ImageWriter writer = createWriter();
 
-        try (ImageOutputStream output = ImageIO.createImageOutputStream(new NullOutputStream())) {
+        try (ImageOutputStream output = new NullImageOutputStream()) {
             writer.setOutput(output);
 
             try {
@@ -1366,20 +1365,29 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
     private static final class NullImageOutputStream extends ImageOutputStreamImpl {
         @Override
         public void write(int b) {
+            streamPos++;
         }
 
         @Override
         public void write(byte[] b, int off, int len) {
+            streamPos += len;
         }
 
         @Override
         public int read() {
+            streamPos++;
             return 0;
         }
 
         @Override
         public int read(byte[] b, int off, int len) {
+            streamPos += len;
             return 0;
+        }
+
+        @Override
+        public long length() {
+            return streamPos;
         }
     }
 
