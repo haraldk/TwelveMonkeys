@@ -32,40 +32,46 @@ package com.twelvemonkeys.imageio.color;
 
 import org.junit.Test;
 
-import java.awt.color.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
 import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.mockito.Mockito.*;
 
 public class KCMSSanitizerStrategyTest {
     private static final byte[] XYZ = new byte[] {'X', 'Y', 'Z', ' '};
 
     @Test(expected = IllegalArgumentException.class)
-    public void testFixProfileNullProfile() {
+    public void testFixProfileNullProfile() throws Exception {
         new KCMSSanitizerStrategy().fixProfile(null);
     }
 
     @Test
-    public void testFixProfile() {
+    public void testFixProfile() throws Exception {
         new KCMSSanitizerStrategy().fixProfile(((ICC_ColorSpace) ColorSpace.getInstance(ColorSpace.CS_sRGB)).getProfile());
     }
 
     @Test
-    public void testFixProfileUpdateHeader() throws IOException {
-        ICC_Profile profile = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc"));
+    public void testFixProfileUpdateHeader() throws Exception {
+        byte[] header = new byte[128];
+        header[ICC_Profile.icHdrRenderingIntent + 3] = 1;
+        ICC_Profile profile = mock(ICC_Profile.class);
+        when(profile.getData(ICC_Profile.icSigHead)).thenReturn(header);
 
-        // Mangle the profile slightly...
-        byte[] header = profile.getData(ICC_Profile.icSigHead);
-        header[ICC_Profile.icHdrRenderingIntent + 3] = 42;
-
+        // Can't test that the values are actually changed, as the LCMS-backed implementation
+        // of ICC_Profile does not change based on this invocation.
         new KCMSSanitizerStrategy().fixProfile(profile);
 
-        assertArrayEquals(new byte[] {0, 0, 0, ICC_Profile.icPerceptual}, Arrays.copyOfRange(profile.getData(ICC_Profile.icSigHead), ICC_Profile.icHdrRenderingIntent, ICC_Profile.icHdrRenderingIntent + 4));
+        // Verify that the method was invoked
+        verify(profile).setData(eq(ICC_Profile.icSigHead), any(byte[].class));
     }
 
     @Test
     public void testFixProfileCorbisRGB() throws IOException {
+        // TODO: Consider re-writing this using mocks, to avoid dependencies on the CMS implementation
         ICC_Profile corbisRGB = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/Corbis RGB.icc"));
 
         new KCMSSanitizerStrategy().fixProfile(corbisRGB);
