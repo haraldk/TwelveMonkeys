@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.9.0</version>
+        <version>3.10.0-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-tiff-jdk-interop</artifactId>
     <name>TwelveMonkeys :: ImageIO :: TIFF/JDK JPEG Interop</name>
