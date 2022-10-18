@@ -25,6 +25,6 @@ final class PCXMetadata extends StandardImageMetadataSupport {
                 return "RLE";
         }
 
-        return "Uknown";
+        return "Unknown";
     }
 }
