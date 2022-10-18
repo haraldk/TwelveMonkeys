@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.9.0</version>
+        <version>3.9.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg-jep262-interop</artifactId>
     <name>TwelveMonkeys :: ImageIO :: JPEG/JEP-262 Interop</name>
