@@ -53,7 +53,7 @@ public final class BufferedInputStreamImageInputStreamSpi extends ImageInputStre
             }
 
             // Otherwise, create a cache for backwards seeking
-            return new BufferedChannelImageInputStream(useCacheFile ? new DiskCache(channel, cacheDir): new MemoryCache(channel));
+            return new BufferedChannelImageInputStream(useCacheFile ? new FileCache(channel, cacheDir) : new MemoryCache(channel));
         }
 
         throw new IllegalArgumentException("Expected input of type InputStream: " + input);

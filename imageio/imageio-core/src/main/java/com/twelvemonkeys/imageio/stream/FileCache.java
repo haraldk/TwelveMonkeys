@@ -26,19 +26,19 @@ import static java.nio.file.StandardOpenOption.WRITE;
 //      the usual {@link #read read} and {@link #write write} methods.  From the
 //      standpoint of performance it is generally only worth mapping relatively
 //      large files into memory.
-final class DiskCache implements SeekableByteChannel {
+final class FileCache implements Cache {
     final static int BLOCK_SIZE = 1 << 13;
 
     private final FileChannel cache;
     private final ReadableByteChannel channel;
 
     // TODO: Perhaps skip this constructor?
-    DiskCache(InputStream stream, File cacheDir) throws IOException {
+    FileCache(InputStream stream, File cacheDir) throws IOException {
         // Stream will be closed with channel, documented behavior
         this(Channels.newChannel(notNull(stream, "stream")), cacheDir);
     }
 
-    public DiskCache(ReadableByteChannel channel, File cacheDir) throws IOException {
+    public FileCache(ReadableByteChannel channel, File cacheDir) throws IOException {
         this.channel = notNull(channel, "channel");
         isTrue(cacheDir == null || cacheDir.isDirectory(), cacheDir, "%s is not a directory");
 
@@ -65,12 +65,7 @@ final class DiskCache implements SeekableByteChannel {
 
     @Override
     public void close() throws IOException {
-        try {
-            cache.close();
-        }
-        finally {
-            channel.close();
-        }
+        cache.close();
     }
 
     @Override
@@ -109,6 +104,9 @@ final class DiskCache implements SeekableByteChannel {
     @Override
     public SeekableByteChannel truncate(long size) {
         throw new NonWritableChannelException();
+    }
+
+    @Override public void flushBefore(long pos) {
     }
 }
 

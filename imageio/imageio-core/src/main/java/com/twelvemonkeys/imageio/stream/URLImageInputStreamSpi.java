@@ -80,7 +80,7 @@ public final class URLImageInputStreamSpi extends ImageInputStreamSpi {
 
             // Otherwise revert to cached
             InputStream urlStream = url.openStream();
-            return new BufferedChannelImageInputStream(useCacheFile ? new DiskCache(urlStream, cacheDir) : new MemoryCache(urlStream));
+            return new BufferedChannelImageInputStream(useCacheFile ? new FileCache(urlStream, cacheDir) : new MemoryCache(urlStream));
         }
 
         throw new IllegalArgumentException("Expected input of type URL: " + input);
