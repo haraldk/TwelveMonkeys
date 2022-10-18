@@ -13,7 +13,6 @@ final class PCXMetadata extends StandardImageMetadataSupport {
     }
 
     private static PlanarConfiguration planarConfiguration(PCXHeader header) {
-        System.out.println("header = " + header);
         return header.getChannels() > 1 ? PlanarConfiguration.LineInterleaved : null;
     }
 
