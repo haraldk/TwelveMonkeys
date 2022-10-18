@@ -13,7 +13,7 @@ import java.util.List;
 import static com.twelvemonkeys.lang.Validate.notNull;
 import static java.lang.Math.min;
 
-public final class MemoryCache implements SeekableByteChannel {
+final class MemoryCache implements Cache {
 
     final static int BLOCK_SIZE = 1 << 13;
 
@@ -78,12 +78,7 @@ public final class MemoryCache implements SeekableByteChannel {
 
     @Override
     public void close() throws IOException {
-        try {
-            cache.clear();
-        }
-        finally {
-            channel.close();
-        }
+        cache.clear();
     }
 
     @Override
@@ -135,7 +130,8 @@ public final class MemoryCache implements SeekableByteChannel {
         throw new NonWritableChannelException();
     }
 
-    void flushBefore(long pos) {
+    @Override
+    public void flushBefore(long pos) {
         if (pos < start) {
             throw new IndexOutOfBoundsException("pos < flushed position");
         }

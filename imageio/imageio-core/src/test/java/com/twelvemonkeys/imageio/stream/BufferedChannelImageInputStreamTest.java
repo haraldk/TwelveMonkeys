@@ -47,7 +47,7 @@ import java.util.Random;
 import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTest.rangeEquals;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.only;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -403,14 +403,11 @@ public class BufferedChannelImageInputStreamTest {
 
     @Test
     public void testCloseChannel() throws IOException {
-        // NOTE: As the stream-based constructor is chained to the channel-based one,
-        // we'll rely on the fact that closing the channel will close the stream.
-
-        SeekableByteChannel mock = mock(SeekableByteChannel.class);
-        ImageInputStream stream = new BufferedChannelImageInputStream(mock);
+        SeekableByteChannel channel = mock(SeekableByteChannel.class);
+        ImageInputStream stream = new BufferedChannelImageInputStream(channel);
 
         stream.close();
-        verify(mock, only()).close();
+        verify(channel, never()).close();
     }
 
     @Test

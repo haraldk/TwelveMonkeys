@@ -57,7 +57,7 @@ import static org.mockito.Mockito.verify;
  * @version $Id: BufferedFileImageInputStreamTestCase.java,v 1.0 Apr 21, 2009 10:58:48 AM haraldk Exp$
  */
 // TODO: Remove this test, and instead test the disk cache directly!
-public class BufferedChannelImageInputStreamDiskCacheTest {
+public class BufferedChannelImageInputStreamFileCacheTest {
     private final Random random = new Random(170984354357234566L);
 
     private InputStream randomDataToInputStream(byte[] data) {
@@ -68,7 +68,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
 
     @Test
     public void testCreate() throws IOException {
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(new ByteArrayInputStream(new byte[0]), null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(new ByteArrayInputStream(new byte[0]), null))) {
             assertEquals("Stream length should be unknown", -1, stream.length());
         }
     }
@@ -76,7 +76,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
     @Test
     public void testCreateNullStream() throws IOException {
         try {
-            new DiskCache((InputStream) null, null);
+            new FileCache((InputStream) null, null);
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException expected) {
@@ -90,7 +90,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
     @Test
     public void testCreateNullChannel() throws IOException {
         try {
-            new DiskCache((ReadableByteChannel) null, null);
+            new FileCache((ReadableByteChannel) null, null);
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException expected) {
@@ -106,7 +106,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] data = new byte[1024 * 1024];
         InputStream input = randomDataToInputStream(data);
 
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             assertEquals("Stream length should be unknown", -1, stream.length());
 
             for (byte value : data) {
@@ -122,7 +122,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] data = new byte[1024 * 1024];
         InputStream input = randomDataToInputStream(data);
 
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             assertEquals("Stream length should be unknown", -1, stream.length());
 
             byte[] result = new byte[1024];
@@ -141,7 +141,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] data = new byte[1024 * 14];
         InputStream input = randomDataToInputStream(data);
 
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             assertEquals("Stream length should be unknown", -1, stream.length());
 
             byte[] result = new byte[7];
@@ -159,7 +159,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] data = new byte[1024 * 18];
         InputStream input = randomDataToInputStream(data);
 
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             assertEquals("Stream length should be unknown", -1, stream.length());
 
             byte[] result = new byte[9];
@@ -180,7 +180,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] data = new byte[256];
         InputStream input = randomDataToInputStream(data);
 
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             assertEquals("Stream length should be unknown", -1, stream.length());
 
             byte[] buffer = new byte[data.length * 2];
@@ -198,7 +198,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        try (ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             for (int i = 1; i <= 64; i++) {
                 assertEquals(String.format("bit %d differ", i), (value << (i - 1L)) >>> 63L, stream.readBit());
             }
@@ -212,7 +212,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        try (ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             for (int i = 1; i <= 64; i++) {
                 stream.seek(0);
                 assertEquals(String.format("bit %d differ", i), value >>> (64L - i), stream.readBits(i));
@@ -228,7 +228,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         long value = ByteBuffer.wrap(bytes).getLong();
 
         // Create stream
-        try (ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             for (int i = 1; i <= 60; i++) {
                 stream.seek(0);
                 stream.setBitOffset(i % 8);
@@ -244,7 +244,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         InputStream input = randomDataToInputStream(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
             for (int i = 0; i < bytes.length / 2; i++) {
@@ -282,7 +282,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         InputStream input = randomDataToInputStream(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
             for (int i = 0; i < bytes.length / 4; i++) {
@@ -320,7 +320,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         InputStream input = randomDataToInputStream(bytes);
         ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             stream.setByteOrder(ByteOrder.BIG_ENDIAN);
 
             for (int i = 0; i < bytes.length / 8; i++) {
@@ -357,7 +357,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] bytes = new byte[9];
         InputStream input = randomDataToInputStream(bytes);
 
-        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             stream.seek(1000);
 
             assertEquals(-1, stream.read());
@@ -406,11 +406,11 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
     @Test
     public void testClose() throws IOException {
         // Create wrapper stream
-        InputStream mock = mock(InputStream.class);
-        ImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(mock, null));
+        Cache cache = mock(Cache.class);
+        ImageInputStream stream = new BufferedChannelImageInputStream(cache);
 
         stream.close();
-        verify(mock, only()).close();
+        verify(cache, only()).close();
     }
 
     @Test
@@ -422,7 +422,7 @@ public class BufferedChannelImageInputStreamDiskCacheTest {
         byte[] bytes = new byte[size];
         InputStream input = randomDataToInputStream(bytes);
 
-        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new DiskCache(input, null))) {
+        try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             byte[] result = new byte[size];
             int head = stream.read(result, 0, 12);          // Provoke a buffered read
             int len = stream.read(result, 12, size - 12);   // Rest of buffer + direct read

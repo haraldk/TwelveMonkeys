@@ -406,11 +406,11 @@ public class BufferedChannelImageInputStreamMemoryCacheTest {
     @Test
     public void testClose() throws IOException {
         // Create wrapper stream
-        InputStream mock = mock(InputStream.class);
-        ImageInputStream stream = new BufferedChannelImageInputStream(new MemoryCache(mock));
+        Cache cache = mock(Cache.class);
+        ImageInputStream stream = new BufferedChannelImageInputStream(cache);
 
         stream.close();
-        verify(mock, only()).close();
+        verify(cache, only()).close();
     }
 
     @Test

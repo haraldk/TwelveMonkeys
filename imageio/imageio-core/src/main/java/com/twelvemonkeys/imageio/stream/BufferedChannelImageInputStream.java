@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.stream;
 
 import javax.imageio.stream.ImageInputStreamImpl;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -52,6 +53,10 @@ import static java.lang.Math.max;
  * for shorter reads, like single byte or bit reads.
  */
 final class BufferedChannelImageInputStream extends ImageInputStreamImpl {
+    private static final Closeable CLOSEABLE_STUB = new Closeable() {
+        @Override public void close() {}
+    };
+
     static final int DEFAULT_BUFFER_SIZE = 8192;
 
     private ByteBuffer byteBuffer = ByteBuffer.allocate(DEFAULT_BUFFER_SIZE);
@@ -63,6 +68,7 @@ final class BufferedChannelImageInputStream extends ImageInputStreamImpl {
     private final byte[] integralCacheArray = integralCache.array();
 
     private SeekableByteChannel channel;
+    private Closeable closeable;
 
     /**
      * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code File}.
@@ -86,49 +92,62 @@ final class BufferedChannelImageInputStream extends ImageInputStreamImpl {
      * @throws SecurityException             if a security manager is installed, and it denies read access to the file.
      */
     public BufferedChannelImageInputStream(final Path file) throws IOException {
-        this(FileChannel.open(notNull(file, "file"), StandardOpenOption.READ));
+        this(FileChannel.open(notNull(file, "file"), StandardOpenOption.READ), true);
     }
 
     /**
      * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code RandomAccessFile}.
-     * <p>
-     * Closing this stream will close the {@code RandomAccessFile}.
-     * </p>
      *
      * @param file a {@code RandomAccessFile} to read from.
      * @throws IllegalArgumentException if {@code file} is {@code null}.
      */
     public BufferedChannelImageInputStream(final RandomAccessFile file) {
-        // Assumption: Closing the FileChannel will also close its backing RandomAccessFile
-        // (it does in the OpenJDK implementation, and it makes sense, although I can't see this is documented behaviour).
-        this(notNull(file, "file").getChannel());
+        // Closing the RAF is inconsistent, but emulates the behavior of javax.imageio.stream.FileImageInputStream
+        this(notNull(file, "file").getChannel(), true);
     }
 
     /**
      * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code FileInputStream}.
      * <p>
-     * Closing this stream will close the {@code FileInputStream}.
+     * Closing this stream will <em>not</em> close the {@code FileInputStream}.
      * </p>
      *
      * @param inputStream a {@code FileInputStream} to read from.
      * @throws IllegalArgumentException if {@code inputStream} is {@code null}.
      */
     public BufferedChannelImageInputStream(final FileInputStream inputStream) {
-        // Assumption: Closing the FileChannel will also close its backing FileInputStream (it does in the OpenJDK implementation, although I can't see this is documented).
-        this(notNull(inputStream, "inputStream").getChannel());
+        this(notNull(inputStream, "inputStream").getChannel(), false);
     }
 
     /**
      * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code SeekableByteChannel}.
      * <p>
-     * Closing this stream will close the {@code SeekableByteChannel}.
+     * Closing this stream will <em>not</em> close the {@code SeekableByteChannel}.
      * </p>
      *
      * @param channel a {@code SeekableByteChannel} to read from.
      * @throws IllegalArgumentException if {@code channel} is {@code null}.
      */
     public BufferedChannelImageInputStream(final SeekableByteChannel channel) {
+        this(notNull(channel, "channel"), false);
+    }
+
+    /**
+     * Constructs a {@code BufferedChannelImageInputStream} that will read from a given {@code Cache}.
+     * <p>
+     * Closing this stream will close the {@code Cache}.
+     * </p>
+     *
+     * @param cache a {@code SeekableByteChannel} to read from.
+     * @throws IllegalArgumentException if {@code channel} is {@code null}.
+     */
+    BufferedChannelImageInputStream(final Cache cache) {
+        this(notNull(cache, "cache"), true);
+    }
+
+    private BufferedChannelImageInputStream(final SeekableByteChannel channel, boolean closeChannelOnClose) {
         this.channel = notNull(channel, "channel");
+        this.closeable = closeChannelOnClose ? this.channel : CLOSEABLE_STUB;
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -246,8 +265,14 @@ final class BufferedChannelImageInputStream extends ImageInputStreamImpl {
         buffer = null;
         byteBuffer = null;
 
-        channel.close();
         channel = null;
+
+        try {
+            closeable.close();
+        }
+        finally {
+            closeable = null;
+        }
     }
 
     // Need to override the readShort(), readInt() and readLong() methods,
@@ -315,9 +340,9 @@ final class BufferedChannelImageInputStream extends ImageInputStreamImpl {
     public void flushBefore(final long pos) throws IOException {
         super.flushBefore(pos);
 
-        if (channel instanceof MemoryCache) {
+        if (channel instanceof Cache) {
             // In case of memory cache, free up memory
-            ((MemoryCache) channel).flushBefore(pos);
+            ((Cache) channel).flushBefore(pos);
         }
     }
 }
