@@ -48,18 +48,18 @@ public final class ByteArrayImageInputStream extends ImageInputStreamImpl {
     private final int dataOffset;
     private final int dataLength;
 
-    public ByteArrayImageInputStream(final byte[] pData) {
-        this(pData, 0, pData != null ? pData.length : -1);
+    public ByteArrayImageInputStream(final byte[] data) {
+        this(data, 0, data != null ? data.length : -1);
     }
 
-    public ByteArrayImageInputStream(final byte[] pData, int offset, int length) {
-        data = notNull(pData, "data");
-        dataOffset = isBetween(0, pData.length, offset, "offset");
-        dataLength = isBetween(0, pData.length - offset, length, "length");
+    public ByteArrayImageInputStream(final byte[] data, int offset, int length) {
+        this.data = notNull(data, "data");
+        dataOffset = isMax(data.length, offset, "offset");
+        dataLength = isMax(data.length - offset, length, "length");
     }
 
-    private static int isBetween(final int low, final int high, final int value, final String name) {
-        return isTrue(value >= low && value <= high, value, String.format("%s out of range [%d, %d]: %d", name, low, high, value));
+    private static int isMax(final int high, final int value, final String name) {
+        return isTrue(value >= 0 && value <= high, value, String.format("%s out of range [0, %d]: %d", name, high, value));
     }
 
     public int read() throws IOException {
@@ -72,14 +72,14 @@ public final class ByteArrayImageInputStream extends ImageInputStreamImpl {
         return data[((int) streamPos++) + dataOffset] & 0xff;
     }
 
-    public int read(byte[] pBuffer, int pOffset, int pLength) throws IOException {
+    public int read(byte[] buffer, int offset, int len) throws IOException {
         if (streamPos >= dataLength) {
             return -1;
         }
 
-        int length = (int) Math.min(this.dataLength - streamPos, pLength);
+        int length = (int) Math.min(dataLength - streamPos, len);
         bitOffset = 0;
-        System.arraycopy(data, (int) streamPos + dataOffset, pBuffer, pOffset, length);
+        System.arraycopy(data, (int) streamPos + dataOffset, buffer, offset, length);
         streamPos += length;
 
         return length;
