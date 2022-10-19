@@ -55,7 +55,7 @@ final class ColorIndexingTransform implements Transform {
         byte[] rgba = new byte[4];
 
         for (int y = 0; y < height; y++) {
-            //Reversed so no used elements are overridden (in case of packing)
+            // Reversed so no used elements are overridden (in case of packing)
             for (int x = width - 1; x >= 0; x--) {
 
                 int componentSize = 8 >> bits;
@@ -67,7 +67,7 @@ final class ColorIndexingTransform implements Transform {
 
                 int index = sample >> componentOffset & ((1 << componentSize) - 1);
 
-                //Arraycopy for 4 elements might not be beneficial
+                // Arraycopy for 4 elements might not be beneficial
                 System.arraycopy(colorTable, index * 4, rgba, 0, 4);
                 raster.setDataElements(x, y, rgba);
 

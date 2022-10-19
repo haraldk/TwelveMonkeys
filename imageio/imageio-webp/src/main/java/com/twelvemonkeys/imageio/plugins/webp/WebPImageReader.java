@@ -96,7 +96,9 @@ final class WebPImageReader extends ImageReaderBase {
     public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
         super.setInput(input, seekForwardOnly, ignoreMetadata);
 
-        lsbBitReader = new LSBBitReader(imageInput);
+        if (imageInput != null) {
+            lsbBitReader = new LSBBitReader(imageInput);
+        }
     }
 
     private void readHeader(int imageIndex) throws IOException {
@@ -272,19 +274,19 @@ final class WebPImageReader extends ImageReaderBase {
                 }
 
                 // RsV|I|L|E|X|A|R
-                int reserved = (int) imageInput.readBits(2);
+                int reserved = lsbBitReader.readBit();
                 if (reserved != 0) {
                     // Spec says SHOULD be 0
                     throw new IIOException(String.format("Unexpected 'VP8X' chunk reserved value, expected 0: %d", reserved));
                 }
 
-                header.containsICCP = imageInput.readBit() == 1;
-                header.containsALPH = imageInput.readBit() == 1; // L -> aLpha
-                header.containsEXIF = imageInput.readBit() == 1;
-                header.containsXMP_ = imageInput.readBit() == 1;
-                header.containsANIM = imageInput.readBit() == 1; // A -> Anim
+                header.containsANIM = lsbBitReader.readBit() == 1; // A -> Anim
+                header.containsXMP_ = lsbBitReader.readBit() == 1;
+                header.containsEXIF = lsbBitReader.readBit() == 1;
+                header.containsALPH = lsbBitReader.readBit() == 1; // L -> aLpha
+                header.containsICCP = lsbBitReader.readBit() == 1;
 
-                reserved = (int) imageInput.readBits(25); // 1 + 24 bits reserved
+                reserved = (int) lsbBitReader.readBits(26); // 2 + 24 bits reserved
                 if (reserved != 0) {
                     // Spec says SHOULD be 0
                     throw new IIOException(String.format("Unexpected 'VP8X' chunk reserved value, expected 0: %d", reserved));
@@ -509,15 +511,15 @@ final class WebPImageReader extends ImageReaderBase {
     }
 
     private void readAlpha(BufferedImage destination, ImageReadParam param, final int width, final int height) throws IOException {
-        int reserved = (int) imageInput.readBits(2);
+        int reserved = (int) lsbBitReader.readBits(2);
         if (reserved != 0) {
             // Spec says SHOULD be 0
             processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
         }
 
-        int preProcessing = (int) imageInput.readBits(2);
-        int filtering = (int) imageInput.readBits(2);
-        int compression = (int) imageInput.readBits(2);
+        int preProcessing = (int) lsbBitReader.readBits(2);
+        int filtering = (int) lsbBitReader.readBits(2);
+        int compression = (int) lsbBitReader.readBits(2);
 
         if (DEBUG) {
             System.out.println("preProcessing: " + preProcessing);

@@ -35,6 +35,8 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 /**
  * LSBBitReader
  *
@@ -45,18 +47,17 @@ public final class LSBBitReader {
     // TODO: Consider creating an ImageInputStream wrapper with the WebP implementation of readBit(s)?
 
     private final ImageInputStream imageInput;
-    private int bitOffset = 64;
-    private long streamPosition = -1;
+    int bitOffset = 64;
+    long streamPosition = -1;
 
     /**
-     * Pre buffers up to the next 8 Bytes in input.
+     * Pre-buffers up to the next 8 Bytes in input.
      * Contains valid bits in bits 63 to {@code bitOffset} (inclusive).
-     * Should always be refilled to have at least 56 valid bits (if possible)
      */
     private long buffer;
 
     public LSBBitReader(ImageInputStream imageInput) {
-        this.imageInput = imageInput;
+        this.imageInput = notNull(imageInput);
     }
 
     /**
@@ -89,20 +90,16 @@ public final class LSBBitReader {
         if (bits > 56) {
             throw new IllegalArgumentException("Tried peeking over 56");
         }
+
         return readBits(bits, true);
     }
 
-    //Driver
     private long readBits(int bits, boolean peek) throws IOException {
         if (bits <= 56) {
-
-            /*
-                Could eliminate if we never read from the underlying InputStream outside this class after the object is
-                 created
-            */
-            long inputStreamPosition = imageInput.getStreamPosition();
-            if (streamPosition != inputStreamPosition) {
-                //Need to reset buffer as stream was read in the meantime
+            // Could eliminate if we never read from the underlying InputStream
+            // outside this class after the object is created
+            if (streamPosition != imageInput.getStreamPosition()) {
+                // Need to reset buffer as stream was read in the meantime
                 resetBuffer();
             }
 
@@ -110,21 +107,23 @@ public final class LSBBitReader {
 
             if (!peek) {
                 bitOffset += bits;
-                refillBuffer();
+
+                if (bitOffset >= 8) {
+                    refillBuffer();
+                }
             }
 
             return ret;
         }
         else {
-            //FIXME Untested
+            // Peek always false in this case
             long lower = readBits(56);
             return (readBits(bits - 56) << (56)) | lower;
         }
     }
 
     private void refillBuffer() throws IOException {
-
-        //Set to stream position consistent with buffered bytes
+        // Set to stream position consistent with buffered bytes
         imageInput.seek(streamPosition + 8);
         for (; bitOffset >= 8; bitOffset -= 8) {
             try {
@@ -138,17 +137,16 @@ public final class LSBBitReader {
                 return;
             }
         }
-        /*
-            Reset to guarantee stream position consistent with returned bytes
-            Would not need to do this seeking around when the underlying ImageInputStream is never read from outside
-            this class after the object is created.
-        */
+
+        // Reset to guarantee stream position consistent with returned bytes
+        // Would not need to do this seeking around when the underlying ImageInputStream is never read from outside
+        // this class after the object is created.
         imageInput.seek(streamPosition);
     }
 
     private void resetBuffer() throws IOException {
-
         long inputStreamPosition = imageInput.getStreamPosition();
+
         try {
             buffer = imageInput.readLong();
             bitOffset = 0;
@@ -156,7 +154,7 @@ public final class LSBBitReader {
             imageInput.seek(inputStreamPosition);
         }
         catch (EOFException e) {
-            //Retry byte by byte
+            // Retry byte by byte
             streamPosition = inputStreamPosition - 8;
             bitOffset = 64;
             refillBuffer();
@@ -164,7 +162,7 @@ public final class LSBBitReader {
 
     }
 
-    //Left for backwards compatibility / Compatibility with ImageInputStream interface
+    // Left for backwards compatibility / Compatibility with ImageInputStream interface
     public int readBit() throws IOException {
         return (int) readBits(1);
     }
