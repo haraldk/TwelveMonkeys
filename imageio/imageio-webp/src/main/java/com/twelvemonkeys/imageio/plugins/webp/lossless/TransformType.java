@@ -36,7 +36,7 @@ package com.twelvemonkeys.imageio.plugins.webp.lossless;
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
-// Hmm.. Why doesn't SUBTRACT_GREEN follow the convention?
+// Hmm... Why doesn't SUBTRACT_GREEN follow the convention?
 interface TransformType {
     int PREDICTOR_TRANSFORM = 0;
     int COLOR_TRANSFORM = 1;

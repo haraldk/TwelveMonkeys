@@ -83,7 +83,6 @@ final class HuffmanTable {
      * @throws IOException when reading produces an exception
      */
     public HuffmanTable(LSBBitReader lsbBitReader, int alphabetSize) throws IOException {
-
         boolean simpleLengthCode = lsbBitReader.readBit() == 1;
 
         if (simpleLengthCode) {
@@ -104,11 +103,9 @@ final class HuffmanTable {
             }
         }
         else {
-            /*
-                code lengths also huffman coded
-                first read the "first stage" code lengths
-                In the following this is called the L-Code (for length code)
-            */
+            // code lengths also huffman coded
+            // first read the "first stage" code lengths
+            // In the following this is called the L-Code (for length code)
             int numLCodeLengths = (int) (lsbBitReader.readBits(4) + 4);
             short[] lCodeLengths = new short[L_CODE_ORDER.length];
             int numPosCodeLens = 0;
@@ -116,15 +113,14 @@ final class HuffmanTable {
             for (int i = 0; i < numLCodeLengths; i++) {
                 short len = (short) lsbBitReader.readBits(3);
                 lCodeLengths[L_CODE_ORDER[i]] = len;
+
                 if (len > 0) {
                     numPosCodeLens++;
                 }
-
             }
 
-            //Use L-Code to read the actual code lengths
+            // Use L-Code to read the actual code lengths
             short[] codeLengths = readCodeLengths(lsbBitReader, lCodeLengths, alphabetSize, numPosCodeLens);
-
 
             buildFromLengths(codeLengths);
         }
@@ -142,25 +138,21 @@ final class HuffmanTable {
         buildFromLengths(codeLengths, numPosCodeLens);
     }
 
-
-    /*
-         Helper methods to allow reusing in different constructors
-     */
-
+    // Helper methods to allow reusing in different constructors
     private void buildFromLengths(short[] codeLengths) {
         int numPosCodeLens = 0;
+
         for (short codeLength : codeLengths) {
             if (codeLength != 0) {
                 numPosCodeLens++;
             }
         }
+
         buildFromLengths(codeLengths, numPosCodeLens);
     }
 
     private void buildFromLengths(short[] codeLengths, int numPosCodeLens) {
-
-        //Pack code length and corresponding symbols as described above
-
+        // Pack code length and corresponding symbols as described above
         int[] lengthsAndSymbols = new int[numPosCodeLens];
 
         int index = 0;
@@ -170,28 +162,25 @@ final class HuffmanTable {
             }
         }
 
-        //Special case: Only 1 code value
+        // Special case: Only 1 code value
         if (numPosCodeLens == 1) {
-            //Length is 0 so mask to clear length bits
+            // Length is 0 so mask to clear length bits
             Arrays.fill(level1, lengthsAndSymbols[0] & 0xffff);
         }
 
-        //Due to the layout of the elements this effectively first sorts by length and then symbol.
+        // Due to the layout of the elements this effectively first sorts by length and then symbol.
         Arrays.sort(lengthsAndSymbols);
 
-        /*
-            The next code, in the bit order it would appear on the input stream, i.e. it is reversed.
-            Only the lowest bits (corresponding to the bit length of the code) are considered.
-            Example: code 0..010 (length 2) would appear as 0..001.
-        */
+        // The next code, in the bit order it would appear on the input stream, i.e. it is reversed.
+        // Only the lowest bits (corresponding to the bit length of the code) are considered.
+        // Example: code 0..010 (length 2) would appear as 0..001.
         int code = 0;
 
-        //Used for level2 lookup
+        // Used for level2 lookup
         int rootEntry = -1;
         int[] currentTable = null;
 
         for (int i = 0; i < lengthsAndSymbols.length; i++) {
-
             int lengthAndSymbol = lengthsAndSymbols[i];
 
             int length = lengthAndSymbol >>> 16;
@@ -202,16 +191,15 @@ final class HuffmanTable {
                 }
             }
             else {
-                //Existing level2 table not fitting
+                // Existing level2 table not fitting
                 if ((code & ((1 << LEVEL1_BITS) - 1)) != rootEntry) {
-                    /*
-                        Figure out needed table size.
-                        Start at current symbol and length.
-                        Every symbol uses 1 slot at the current bit length.
-                        Going up 1 bit in length multiplies the slots by 2.
-                        No more open slots indicate the table size to be big enough.
-                    */
+                    // Figure out needed table size.
+                    // Start at current symbol and length.
+                    // Every symbol uses 1 slot at the current bit length.
+                    // Going up 1 bit in length multiplies the slots by 2.
+                    // No more open slots indicate the table size to be big enough.
                     int maxLength = length;
+
                     for (int j = i, openSlots = 1 << (length - LEVEL1_BITS);
                          j < lengthsAndSymbols.length && openSlots > 0;
                          j++, openSlots--) {
@@ -230,11 +218,11 @@ final class HuffmanTable {
                     rootEntry = code & ((1 << LEVEL1_BITS) - 1);
                     level2.add(currentTable);
 
-                    //Set root table indirection
+                    // Set root table indirection
                     level1[rootEntry] = (LEVEL1_BITS + level2Size) << 16 | (level2.size() - 1);
                 }
 
-                //Add to existing (or newly generated) 2nd level table
+                // Add to existing (or newly generated) 2nd level table
                 for (int j = (code >>> LEVEL1_BITS); j < currentTable.length; j += 1 << (length - LEVEL1_BITS)) {
                     currentTable[j] = (length - LEVEL1_BITS) << 16 | (lengthAndSymbol & 0xffff);
                 }
@@ -256,12 +244,12 @@ final class HuffmanTable {
     private int nextCode(int code, int length) {
         int a = (~code) & ((1 << length) - 1);
 
-        //This will result in the highest 0-bit in the lower length bits of code set (by construction of a)
-        //I.e. the lowest 0-bit in the value code represents
+        // This will result in the highest 0-bit in the lower length bits of code set (by construction of a)
+        // I.e. the lowest 0-bit in the value code represents
         int step = Integer.highestOneBit(a);
 
-        //In the represented value this clears the consecutive 1-bits starting at bit 0 and then sets the lowest 0 bit
-        //This corresponds to adding 1 to the value
+        // In the represented value this clears the consecutive 1-bits starting at bit 0 and then sets the lowest 0 bit
+        // This corresponds to adding 1 to the value
         return (code & (step - 1)) | step;
     }
 
@@ -270,7 +258,7 @@ final class HuffmanTable {
 
         HuffmanTable huffmanTable = new HuffmanTable(aCodeLengths, numPosCodeLens);
 
-        //Not sure where this comes from. Just adapted from the libwebp implementation
+        // Not sure where this comes from. Just adapted from the libwebp implementation
         int codedSymbols;
         if (lsbBitReader.readBit() == 1) {
             int maxSymbolBitLength = (int) (2 + 2 * lsbBitReader.readBits(3));
@@ -282,13 +270,13 @@ final class HuffmanTable {
 
         short[] codeLengths = new short[alphabetSize];
 
-        //Default code for repeating
+        // Default code for repeating
         short prevLength = 8;
 
         for (int i = 0; i < alphabetSize && codedSymbols > 0; i++, codedSymbols--) {
             short len = huffmanTable.readSymbol(lsbBitReader);
 
-            if (len < 16) { //Literal length
+            if (len < 16) { // Literal length
                 codeLengths[i] = len;
                 if (len != 0) {
                     prevLength = len;
@@ -300,16 +288,16 @@ final class HuffmanTable {
                 int repeatOffset;
 
                 switch (len) {
-                    case 16: //Repeat previous
+                    case 16: // Repeat previous
                         repeatSymbol = prevLength;
                         extraBits = 2;
                         repeatOffset = 3;
                         break;
-                    case 17: //Repeat 0 short
+                    case 17: // Repeat 0 short
                         extraBits = 3;
                         repeatOffset = 3;
                         break;
-                    case 18: //Repeat 0 long
+                    case 18: // Repeat 0 long
                         extraBits = 7;
                         repeatOffset = 11;
                         break;
@@ -318,7 +306,6 @@ final class HuffmanTable {
                 }
 
                 int repeatCount = (int) (lsbBitReader.readBits(extraBits) + repeatOffset);
-
 
                 if (i + repeatCount > alphabetSize) {
                     throw new IIOException(
@@ -330,10 +317,8 @@ final class HuffmanTable {
 
                 Arrays.fill(codeLengths, i, i + repeatCount, repeatSymbol);
                 i += repeatCount - 1;
-
             }
         }
-
 
         return codeLengths;
     }
@@ -346,21 +331,20 @@ final class HuffmanTable {
      * @throws IOException when the reader throws one reading a symbol
      */
     public short readSymbol(LSBBitReader lsbBitReader) throws IOException {
-
         int index = (int) lsbBitReader.peekBits(LEVEL1_BITS);
         int lengthAndSymbol = level1[index];
 
         int length = lengthAndSymbol >>> 16;
 
         if (length > LEVEL1_BITS) {
-            //Lvl2 lookup
-            lsbBitReader.readBits(LEVEL1_BITS); //Consume bits of first level
-            int level2Index = (int) lsbBitReader.peekBits(length - LEVEL1_BITS); //Peek remaining required bits
+            // Lvl2 lookup
+            lsbBitReader.readBits(LEVEL1_BITS); // Consume bits of first level
+            int level2Index = (int) lsbBitReader.peekBits(length - LEVEL1_BITS); // Peek remaining required bits
             lengthAndSymbol = level2.get(lengthAndSymbol & 0xffff)[level2Index];
             length = lengthAndSymbol >>> 16;
         }
 
-        lsbBitReader.readBits(length); //Consume bits
+        lsbBitReader.readBits(length); // Consume bits
 
         return (short) (lengthAndSymbol & 0xffff);
     }

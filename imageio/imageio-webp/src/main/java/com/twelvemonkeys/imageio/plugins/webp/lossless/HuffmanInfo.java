@@ -37,7 +37,7 @@ import java.awt.image.*;
  * @author Simon Kammermeier
  */
 final class HuffmanInfo {
-    public Raster huffmanMetaCodes; //Raster allows intuitive lookup by x and y
+    public Raster huffmanMetaCodes; // Raster allows intuitive lookup by x and y
 
     public int metaCodeBits;
 
