@@ -48,7 +48,6 @@ final class ColorIndexingTransform implements Transform {
 
     @Override
     public void applyInverse(WritableRaster raster) {
-
         int width = raster.getWidth();
         int height = raster.getHeight();
 
@@ -57,7 +56,6 @@ final class ColorIndexingTransform implements Transform {
         for (int y = 0; y < height; y++) {
             // Reversed so no used elements are overridden (in case of packing)
             for (int x = width - 1; x >= 0; x--) {
-
                 int componentSize = 8 >> bits;
                 int packed = 1 << bits;
                 int xC = x / packed;
@@ -70,7 +68,6 @@ final class ColorIndexingTransform implements Transform {
                 // Arraycopy for 4 elements might not be beneficial
                 System.arraycopy(colorTable, index * 4, rgba, 0, 4);
                 raster.setDataElements(x, y, rgba);
-
             }
         }
     }
