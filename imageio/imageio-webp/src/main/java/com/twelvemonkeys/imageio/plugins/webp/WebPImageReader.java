@@ -513,8 +513,8 @@ final class WebPImageReader extends ImageReaderBase {
     private void readAlpha(BufferedImage destination, ImageReadParam param, final int width, final int height) throws IOException {
         int compression = (int) lsbBitReader.readBits(2);
         int filtering = (int) lsbBitReader.readBits(2);
-        int reserved = (int) lsbBitReader.readBits(2);
         int preProcessing = (int) lsbBitReader.readBits(2);
+        int reserved = (int) lsbBitReader.readBits(2);
 
         if (reserved != 0) {
             // Spec says SHOULD be 0
