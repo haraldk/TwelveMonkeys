@@ -1,11 +1,8 @@
 package com.twelvemonkeys.imageio.plugins.webp;
 
-import static java.util.Arrays.asList;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.List;
+import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -13,10 +10,13 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
+import java.awt.*;
+import java.awt.image.*;
+import java.io.IOException;
+import java.util.List;
 
-import org.junit.Test;
-
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 
 /**
  * WebPImageReaderTest
@@ -136,6 +136,27 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
 
             BufferedImage image = reader.read(0, param);
             assertRGBEquals("RGB values differ, image all black?", 0xFFEC9800, image.getRGB(5, 5), 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadAlphaTransparent() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/1_webp_a.webp"))) {
+            reader.setInput(stream);
+            BufferedImage image = reader.read(0);
+
+            assertEquals(Transparency.TRANSLUCENT, image.getTransparency());
+
+            assertRGBEquals("Expected transparent corner (0, 0)", 0x00000000, image.getRGB(0, 0) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque center (200, 150)", 0xff9a4e01, image.getRGB(200, 150), 8);
+            assertRGBEquals("Expected transparent corner (399, 0)", 0x00000000, image.getRGB(399, 0) & 0xFF000000, 8);
+            assertRGBEquals("Expected transparent corner (0, 300)", 0x00000000, image.getRGB(0, 300) & 0xFF000000, 8);
+            assertRGBEquals("Expected transparent corner (399, 300)", 0x00000000, image.getRGB(399, 300) & 0xFF000000, 8);
         }
         finally {
             reader.dispose();

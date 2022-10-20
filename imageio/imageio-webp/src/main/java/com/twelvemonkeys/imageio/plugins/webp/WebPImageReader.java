@@ -511,15 +511,15 @@ final class WebPImageReader extends ImageReaderBase {
     }
 
     private void readAlpha(BufferedImage destination, ImageReadParam param, final int width, final int height) throws IOException {
+        int compression = (int) lsbBitReader.readBits(2);
+        int filtering = (int) lsbBitReader.readBits(2);
         int reserved = (int) lsbBitReader.readBits(2);
+        int preProcessing = (int) lsbBitReader.readBits(2);
+
         if (reserved != 0) {
             // Spec says SHOULD be 0
             processWarningOccurred(String.format("Unexpected 'ALPH' chunk reserved value, expected 0: %d", reserved));
         }
-
-        int preProcessing = (int) lsbBitReader.readBits(2);
-        int filtering = (int) lsbBitReader.readBits(2);
-        int compression = (int) lsbBitReader.readBits(2);
 
         if (DEBUG) {
             System.out.println("preProcessing: " + preProcessing);
