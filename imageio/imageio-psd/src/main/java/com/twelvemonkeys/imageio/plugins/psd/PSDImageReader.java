@@ -944,7 +944,7 @@ public final class PSDImageReader extends ImageReaderBase {
                 if (metadata.layerInfo == null) {
                     while (imageInput.getStreamPosition() + 12 < metadata.layerAndMaskInfoStart + layerAndMaskInfoLength) {
                         int resSig = imageInput.readInt();
-                        if (resSig != PSD.RESOURCE_TYPE) {
+                        if (resSig != PSD.RESOURCE_TYPE && resSig != PSD.RESOURCE_TYPE_LONG) {
                             processWarningOccurred(String.format("Bad resource alignment, expected: '8BIM' was '%s'", PSDUtil.intToStr(resSig)));
                             break;
                         }
