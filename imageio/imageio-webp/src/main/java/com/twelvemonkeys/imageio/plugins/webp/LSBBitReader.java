@@ -47,8 +47,8 @@ public final class LSBBitReader {
     // TODO: Consider creating an ImageInputStream wrapper with the WebP implementation of readBit(s)?
 
     private final ImageInputStream imageInput;
-    int bitOffset = 64;
-    long streamPosition = -1;
+    private int bitOffset = 64;
+    private long streamPosition = -1;
 
     /**
      * Pre-buffers up to the next 8 Bytes in input.
@@ -124,13 +124,13 @@ public final class LSBBitReader {
 
     private void refillBuffer() throws IOException {
         // Set to stream position consistent with buffered bytes
-        imageInput.seek(streamPosition + 8);
+        imageInput.readLong(); // Don't replace with skipBytes(8) or seek(+8), this will invalidate stream buffer... TODO: Fix streams to cope...
+
         for (; bitOffset >= 8; bitOffset -= 8) {
             try {
                 byte b = imageInput.readByte();
-                buffer >>>= 8;
+                buffer = ((long) b << 56) | buffer >>> 8;
                 streamPosition++;
-                buffer |= ((long) b << 56);
             }
             catch (EOFException e) {
                 imageInput.seek(streamPosition);
