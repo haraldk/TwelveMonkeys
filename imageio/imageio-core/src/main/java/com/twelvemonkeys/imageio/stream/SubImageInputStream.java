@@ -53,20 +53,20 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
     /**
      * Creates a {@link ImageInputStream}, reading up to a maximum number of bytes from the underlying stream.
      *
-     * @param pStream the underlying stream
-     * @param pLength the maximum length to read from the stream.
-     * Note that {@code pStream} may contain less than this maximum number of bytes.
+     * @param stream the underlying stream
+     * @param length the maximum length to read from the stream.
+     * Note that {@code stream} may contain less than this maximum number of bytes.
      *
-     * @throws IOException if {@code pStream}'s position can't be determined.
-     * @throws IllegalArgumentException if {@code pStream == null} or {@code pLength < 0}
+     * @throws IOException if {@code stream}'s position can't be determined.
+     * @throws IllegalArgumentException if {@code stream == null} or {@code length < 0}
      */
-    public SubImageInputStream(final ImageInputStream pStream, final long pLength) throws IOException {
-        Validate.notNull(pStream, "stream");
-        Validate.isTrue(pLength >= 0, pLength, "length < 0: %d");
+    public SubImageInputStream(final ImageInputStream stream, final long length) throws IOException {
+        Validate.notNull(stream, "stream");
+        Validate.isTrue(length >= 0, length, "length < 0: %d");
 
-        stream = pStream;
-        startPos = pStream.getStreamPosition();
-        length = pLength;
+        this.stream = stream;
+        this.startPos = stream.getStreamPosition();
+        this.length = length;
     }
 
     public int read() throws IOException {
@@ -84,14 +84,14 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
         }
     }
 
-    public int read(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
+    public int read(final byte[] bytes, final int off, final int len) throws IOException {
         if (streamPos >= length) { // Local EOF
             return -1;
         }
 
-        // Safe cast, as pLength can never cause int overflow
-        int length = (int) Math.min(pLength, this.length - streamPos);
-        int count = stream.read(pBytes, pOffset, length);
+        // Safe cast, as len can never cause int overflow
+        int length = (int) Math.min(len, this.length - streamPos);
+        int count = stream.read(bytes, off, length);
 
         if (count >= 0) {
             streamPos += count;
@@ -113,18 +113,18 @@ public final class SubImageInputStream extends ImageInputStreamImpl {
     }
 
     @Override
-    public void seek(final long pPosition) throws IOException {
-        if (pPosition < getFlushedPosition()) {
+    public void seek(final long position) throws IOException {
+        if (position < getFlushedPosition()) {
             throw new IndexOutOfBoundsException("pos < flushedPosition");
         }
 
-        stream.seek(startPos + pPosition);
-        streamPos = pPosition;
+        stream.seek(startPos + position);
+        streamPos = position;
     }
 
-    @SuppressWarnings({"FinalizeDoesntCallSuperFinalize"})
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
-    protected void finalize() throws Throwable {
+    protected void finalize() {
         // Empty finalizer (for improved performance; no need to call super.finalize() in this case)
     }
 }

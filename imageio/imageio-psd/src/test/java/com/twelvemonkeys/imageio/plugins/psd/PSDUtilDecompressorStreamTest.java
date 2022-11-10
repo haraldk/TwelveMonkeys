@@ -31,10 +31,12 @@
 package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
+import com.twelvemonkeys.imageio.stream.DirectImageInputStream;
 
 import org.junit.Test;
 
 import javax.imageio.stream.ImageInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static com.twelvemonkeys.imageio.plugins.psd.PSDUtil.createDecompressorStream;
@@ -51,6 +53,29 @@ public class PSDUtilDecompressorStreamTest {
                 0x7f, 0x7f, 0x7f
         };
         try (ImageInputStream input = createDecompressorStream(new ByteArrayImageInputStream(data), PSD.COMPRESSION_NONE, 3, 8, null, 9)) {
+            byte[] row = new byte[3];
+
+            for (int y = 0; y < 3; y++) {
+                input.readFully(row);
+
+                for (byte b : row) {
+                    assertEquals((byte) 0x7f, b);
+                }
+            }
+
+            assertEquals(-1, input.read());
+        }
+    }
+
+    @Test
+    public void testUncompressedUnknownLength() throws IOException {
+        // Data represents 3 x 3 raster with 8 bit samples, all 0x7f's
+        byte[] data = new byte[] {
+                0x7f, 0x7f, 0x7f,
+                0x7f, 0x7f, 0x7f,
+                0x7f, 0x7f, 0x7f
+        };
+        try (ImageInputStream input = createDecompressorStream(new DirectImageInputStream(new ByteArrayInputStream(data)), PSD.COMPRESSION_NONE, 3, 8, null, 9)) {
             byte[] row = new byte[3];
 
             for (int y = 0; y < 3; y++) {
