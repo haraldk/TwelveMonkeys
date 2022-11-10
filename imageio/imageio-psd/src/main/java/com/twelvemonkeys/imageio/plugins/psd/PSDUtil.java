@@ -103,7 +103,8 @@ final class PSDUtil {
                                                      final int[] byteCounts, long compressedLength) throws IOException {
         switch (compression) {
             case PSD.COMPRESSION_NONE:
-                return new SubImageInputStream(stream, stream.length());
+                long streamLength = stream.length();
+                return new SubImageInputStream(stream, streamLength < 0 ? Long.MAX_VALUE : streamLength);
 
             case PSD.COMPRESSION_RLE:
                 return new DirectImageInputStream(new SequenceInputStream(new LazyPackBitsStreamEnumeration(byteCounts, stream)));
