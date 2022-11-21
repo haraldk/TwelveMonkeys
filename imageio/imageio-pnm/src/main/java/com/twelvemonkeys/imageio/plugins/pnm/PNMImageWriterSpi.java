@@ -48,12 +48,11 @@ public final class PNMImageWriterSpi extends ImageWriterSpiBase {
         super(new PNMProviderInfo());
     }
 
-    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
-        // TODO: FixMe: Support only 1 bit b/w, 8-16 bit gray and 8-16 bit/sample RGB
-        return true;
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
+        return TupleType.forPNM(type) != null;
     }
 
-    public ImageWriter createWriterInstance(final Object pExtension) {
+    public ImageWriter createWriterInstance(final Object extension) {
         return new PNMImageWriter(this);
     }
 

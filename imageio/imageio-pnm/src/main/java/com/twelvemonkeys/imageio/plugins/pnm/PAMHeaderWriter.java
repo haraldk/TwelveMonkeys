@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import javax.imageio.IIOImage;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
@@ -44,6 +46,8 @@ final class PAMHeaderWriter extends HeaderWriter {
 
     @Override
     public void writeHeader(final IIOImage image, final ImageWriterSpi provider) throws IOException {
+        TupleType tupleType = tupleType(image);
+
         // Write PAM magic
         imageOutput.writeShort(PNM.PAM);
         imageOutput.write('\n');
@@ -52,12 +56,19 @@ final class PAMHeaderWriter extends HeaderWriter {
         // Write width/height and number of channels
         imageOutput.write(String.format("WIDTH %s\nHEIGHT %s\n", getWidth(image), getHeight(image)).getBytes(UTF_8));
         imageOutput.write(String.format("DEPTH %s\n", getNumBands(image)).getBytes(UTF_8));
-
-        // TODO: maxSample (8 or16 bit)
         imageOutput.write(String.format("MAXVAL %s\n", getMaxVal(image)).getBytes(UTF_8));
-
-        // TODO: Determine tuple type based on input color model and image data
-        TupleType tupleType = getNumBands(image) > 3 ? TupleType.RGB_ALPHA : TupleType.RGB;
         imageOutput.write(String.format("TUPLTYPE %s\nENDHDR\n", tupleType).getBytes(UTF_8));
+    }
+
+    private static TupleType tupleType(IIOImage image) {
+        TupleType tupleType = image.hasRaster()
+                ? TupleType.forPAM(image.getRaster())
+                : TupleType.forPAM(ImageTypeSpecifiers.createFromRenderedImage(image.getRenderedImage()));
+
+        if (tupleType == null) {
+            throw new IllegalArgumentException("Unknown TupleType for " + (image.hasRaster() ? image.getRaster() : image.getRenderedImage()));
+        }
+
+        return tupleType;
     }
 }

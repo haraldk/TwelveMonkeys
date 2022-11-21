@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+
 import javax.imageio.IIOImage;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
@@ -45,8 +47,7 @@ final class PNMHeaderWriter extends HeaderWriter {
     @Override
     public void writeHeader(final IIOImage image, final ImageWriterSpi provider) throws IOException {
         // Write P4/P5/P6 magic (Support only RAW formats for now; if we are to support PLAIN formats, pass parameter)
-        // TODO: Determine PBM, PBM or PPM based on input color model and image data?
-        short type = PNM.PPM;
+        short type = type(image);
         imageOutput.writeShort(type);
         imageOutput.write('\n');
 
@@ -60,5 +61,36 @@ final class PNMHeaderWriter extends HeaderWriter {
         if (type != PNM.PBM) {
             imageOutput.write(String.format("%s\n", getMaxVal(image)).getBytes(UTF_8));
         }
+    }
+
+    private short type(IIOImage image) {
+        TupleType type = tupleType(image);
+
+        if (type != null) {
+            switch (type) {
+                case BLACKANDWHITE_WHITE_IS_ZERO:
+                    return PNM.PBM;
+                case GRAYSCALE:
+                    return PNM.PGM;
+                case RGB:
+                    return PNM.PPM;
+                default:
+                    // fall through...
+            }
+        }
+
+        throw new IllegalArgumentException("Unsupported tupleType: " + type);
+    }
+
+    private static TupleType tupleType(IIOImage image) {
+        TupleType tupleType = image.hasRaster()
+                ? TupleType.forPNM(image.getRaster())
+                : TupleType.forPNM(ImageTypeSpecifiers.createFromRenderedImage(image.getRenderedImage()));
+
+        if (tupleType == null) {
+            throw new IllegalArgumentException("Unknown TupleType for " + (image.hasRaster() ? image.getRaster() : image.getRenderedImage()));
+        }
+
+        return tupleType;
     }
 }

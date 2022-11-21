@@ -69,7 +69,7 @@ final class PFMHeaderParser extends HeaderParser {
     public PNMHeader parse() throws IOException {
         int width = 0;
         int height = 0;
-        float maxSample = tupleType == TupleType.BLACKANDWHITE_WHITE_IS_ZERO ? 1 : 0; // PBM has no maxSample line
+        float maxSample = 0;
 
         List<String> comments = new ArrayList<>();
 
@@ -77,7 +77,7 @@ final class PFMHeaderParser extends HeaderParser {
             String line = input.readLine();
 
             if (line == null) {
-                throw new IIOException("Unexpeced end of stream");
+                throw new IIOException("Unexpected end of stream");
             }
 
             int commentStart = line.indexOf('#');

@@ -45,12 +45,11 @@ public final class PAMImageWriterSpi extends ImageWriterSpiBase {
         super(new PAMProviderInfo());
     }
 
-    public boolean canEncodeImage(final ImageTypeSpecifier pType) {
-        // TODO: FixMe
-        return true;
+    public boolean canEncodeImage(final ImageTypeSpecifier type) {
+        return TupleType.forPAM(type) != null;
     }
 
-    public ImageWriter createWriterInstance(final Object pExtension) {
+    public ImageWriter createWriterInstance(final Object extension) {
         return new PNMImageWriter(this);
     }
 

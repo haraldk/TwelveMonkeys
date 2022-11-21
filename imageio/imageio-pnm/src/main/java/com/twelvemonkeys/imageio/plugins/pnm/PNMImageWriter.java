@@ -31,14 +31,17 @@
 package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.ImageWriterBase;
+import com.twelvemonkeys.imageio.util.RasterUtils;
 
-import javax.imageio.*;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.Raster;
-import java.awt.image.SampleModel;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 
@@ -69,7 +72,7 @@ public final class PNMImageWriter extends ImageWriterBase {
         // TODO: Issue warning if streamMetadata is non-null?
         // TODO: Issue warning if IIOImage contains thumbnails or other data we can't store?
 
-        HeaderWriter.write(image, this, imageOutput);
+        writeHeader(image, this, imageOutput);
 
         // TODO: Sub region
         // TODO: Subsampling
@@ -80,16 +83,20 @@ public final class PNMImageWriter extends ImageWriterBase {
         processImageComplete();
     }
 
+    private void writeHeader(final IIOImage image, final ImageWriterBase writer, final ImageOutputStream imageOutput) throws IOException {
+        HeaderWriter.createHeaderWriter(writer.getFormatName(), imageOutput).writeHeader(image, writer.getOriginatingProvider());
+    }
+
     private void writeImageData(final IIOImage image) throws IOException {
-        // - dump data as is (or convert, if TYPE_INT_xxx)
+        // - dump data as is (or convert, if TYPE_INT_xxx
         // Enforce RGB/CMYK order for such data!
 
         // TODO: Loop over x/y tiles, using 0,0 is only valid for BufferedImage
         // TODO: PNM/PAM does not support tiling, we must iterate all tiles along the x-axis for each row we write
         Raster tile = image.hasRaster() ? image.getRaster() : image.getRenderedImage().getTile(0, 0);
+        tile = tile.getTransferType() == DataBuffer.TYPE_INT ? RasterUtils.asByteRaster(tile) : tile;
 
         SampleModel sampleModel = tile.getSampleModel();
-
         DataBuffer dataBuffer = tile.getDataBuffer();
 
         int tileWidth = tile.getWidth();

@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import com.twelvemonkeys.imageio.ImageWriterBase;
-
 import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOImage;
@@ -40,7 +38,7 @@ import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.image.DataBuffer;
+import java.awt.image.*;
 import java.io.IOException;
 import java.util.Locale;
 
@@ -53,11 +51,7 @@ abstract class HeaderWriter {
         this.imageOutput = imageOutput;
     }
 
-    public static void write(final IIOImage image, final ImageWriterBase writer, final ImageOutputStream imageOutput) throws IOException {
-        createHeaderWriter(writer.getFormatName(), imageOutput).writeHeader(image, writer.getOriginatingProvider());
-    }
-
-    private static HeaderWriter createHeaderWriter(final String formatName, final ImageOutputStream imageOutput) {
+    static HeaderWriter createHeaderWriter(final String formatName, final ImageOutputStream imageOutput) {
         if (formatName.equals("pam")) {
             return new PAMHeaderWriter(imageOutput);
         }
@@ -83,25 +77,36 @@ abstract class HeaderWriter {
         return image.hasRaster() ? image.getRaster().getNumBands() : image.getRenderedImage().getSampleModel().getNumBands();
     }
 
+    protected final SampleModel getSampleModel(final IIOImage image) {
+        return image.hasRaster() ? image.getRaster().getSampleModel() : image.getRenderedImage().getSampleModel();
+    }
+
     protected int getMaxVal(final IIOImage image) {
         int transferType = getTransferType(image);
 
-        if (transferType == DataBuffer.TYPE_BYTE) {
-            return PNM.MAX_VAL_8BIT;
-        }
-        else if (transferType == DataBuffer.TYPE_USHORT) {
-            return PNM.MAX_VAL_16BIT;
-        }
-//        else if (transferType == DataBuffer.TYPE_INT) {
-        // TODO: Support TYPE_INT through conversion, if number of channels is 3 or 4 (TYPE_INT_RGB, TYPE_INT_ARGB)
-//        }
-        else {
-            throw new IllegalArgumentException("Unsupported data type: " + transferType);
+        switch (transferType) {
+            case DataBuffer.TYPE_BYTE:
+                return PNM.MAX_VAL_8BIT;
+
+            case DataBuffer.TYPE_USHORT:
+                return PNM.MAX_VAL_16BIT;
+
+            case DataBuffer.TYPE_INT:
+                // We support TYPE_INT through conversion, if number of channels is 3 or 4 (TYPE_INT_RGB, TYPE_INT_ARGB)
+                SampleModel sampleModel = getSampleModel(image);
+                int numBands = sampleModel.getNumBands();
+
+                if (sampleModel instanceof SinglePixelPackedSampleModel && (numBands == 3 || numBands == 4)) {
+                    return PNM.MAX_VAL_8BIT;
+                }
+                // ...else fall through
+            default:
+                throw new IllegalArgumentException("Unsupported data type: " + transferType);
         }
     }
 
     protected final int getTransferType(final IIOImage image) {
-        return  image.hasRaster() ? image.getRaster().getTransferType() : image.getRenderedImage().getSampleModel().getTransferType();
+        return image.hasRaster() ? image.getRaster().getTransferType() : image.getRenderedImage().getSampleModel().getTransferType();
     }
 
     protected final void writeComments(final IIOMetadata metadata, final ImageWriterSpi provider) throws IOException {
@@ -120,5 +125,4 @@ abstract class HeaderWriter {
             }
         }
     }
-
 }
