@@ -17,8 +17,12 @@ final class MemoryCache implements Cache {
 
     final static int BLOCK_SIZE = 1 << 13;
 
+    private static final byte[] NULL_BLOCK = new byte[0];
+
     private final List<byte[]> cache = new ArrayList<>();
     private final ReadableByteChannel channel;
+
+    private int maxBlock = Integer.MAX_VALUE;
     private long length;
     private long position;
     private long start;
@@ -34,11 +38,13 @@ final class MemoryCache implements Cache {
 
     byte[] fetchBlock() throws IOException {
         long currPos = position;
-
         long index = currPos / BLOCK_SIZE;
 
         if (index >= Integer.MAX_VALUE) {
             throw new IOException("Memory cache max size exceeded");
+        }
+        if (index > maxBlock) {
+            return NULL_BLOCK;
         }
 
         while (index >= cache.size()) {
@@ -51,7 +57,14 @@ final class MemoryCache implements Cache {
             }
 
             cache.add(block);
-            length += readBlock(block);
+            int bytesRead = readBlock(block);
+            length += bytesRead;
+
+            if (bytesRead < BLOCK_SIZE) {
+                // Last block, EOF found
+                maxBlock = (int) index;
+                return block;
+            }
         }
 
         return cache.get((int) index);
@@ -63,7 +76,7 @@ final class MemoryCache implements Cache {
         while (wrapped.hasRemaining()) {
             int count = channel.read(wrapped);
             if (count == -1) {
-                // Last block
+                // Last block, EOF found
                 break;
             }
         }
@@ -84,12 +97,12 @@ final class MemoryCache implements Cache {
     @Override
     public int read(ByteBuffer dest) throws IOException {
         byte[] buffer = fetchBlock();
-        int bufferPos = (int) (position % BLOCK_SIZE);
 
         if (position >= length) {
             return -1;
         }
 
+        int bufferPos = (int) (position % BLOCK_SIZE);
         int len = min(dest.remaining(), (int) min(BLOCK_SIZE - bufferPos, length - position));
         dest.put(buffer, bufferPos, len);
 

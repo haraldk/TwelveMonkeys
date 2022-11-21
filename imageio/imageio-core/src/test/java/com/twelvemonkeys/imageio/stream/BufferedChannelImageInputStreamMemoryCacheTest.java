@@ -402,6 +402,24 @@ public class BufferedChannelImageInputStreamMemoryCacheTest {
             assertEquals(-1, stream.read());
         }
     }
+    @Test
+    public void testSeekWayPastEOFShouldNotThrowOOME() throws IOException {
+        byte[] bytes = new byte[9];
+        InputStream input = randomDataToInputStream(bytes);
+
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new MemoryCache(input))) {
+            stream.seek(Integer.MAX_VALUE * 4L * 512L); // ~4 TB
+
+            assertEquals(-1, stream.read()); // No OOME should happen...
+
+            stream.seek(0);
+            for (byte value : bytes) {
+                assertEquals(value, stream.readByte());
+            }
+
+            assertEquals(-1, stream.read());
+        }
+    }
 
     @Test
     public void testClose() throws IOException {
