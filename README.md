@@ -272,12 +272,12 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     <dependency>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio-jpeg</artifactId>
-        <version>3.8.1</version>
+        <version>3.9.4</version>
     </dependency>
     <dependency>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio-tiff</artifactId>
-        <version>3.8.1</version>
+        <version>3.9.4</version>
     </dependency>
 
     <!--
@@ -287,7 +287,7 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     <dependency>
         <groupId>com.twelvemonkeys.servlet</groupId>
         <artifactId>servlet</artifactId>
-        <version>3.8.1</version>
+        <version>3.9.4</version>
     </dependency>
 
     <!--
@@ -296,7 +296,7 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
     <dependency>
         <groupId>com.twelvemonkeys.servlet</groupId>
         <artifactId>servlet</artifactId>
-        <version>3.8.1</version>
+        <version>3.9.4</version>
         <classifier>jakarta</classifier>
     </dependency>
 </dependencies>
@@ -306,13 +306,13 @@ To depend on the JPEG and TIFF plugin using Maven, add the following to your POM
 
 To depend on the JPEG and TIFF plugin in your IDE or program, add all of the following JARs to your class path:
 
-    twelvemonkeys-common-lang-3.8.1.jar
-    twelvemonkeys-common-io-3.8.1.jar
-    twelvemonkeys-common-image-3.8.1.jar
-    twelvemonkeys-imageio-core-3.8.1.jar
-    twelvemonkeys-imageio-metadata-3.8.1.jar
-    twelvemonkeys-imageio-jpeg-3.8.1.jar
-    twelvemonkeys-imageio-tiff-3.8.1.jar
+    twelvemonkeys-common-lang-3.9.4.jar
+    twelvemonkeys-common-io-3.9.4.jar
+    twelvemonkeys-common-image-3.9.4.jar
+    twelvemonkeys-imageio-core-3.9.4.jar
+    twelvemonkeys-imageio-metadata-3.9.4.jar
+    twelvemonkeys-imageio-jpeg-3.9.4.jar
+    twelvemonkeys-imageio-tiff-3.9.4.jar
 
 #### Deploying the plugins in a web app
 
@@ -378,44 +378,44 @@ Other "fat" JAR bundlers will probably have similar mechanisms to merge entries 
 
 ### Links to prebuilt binaries
 
-##### Latest version (3.8.1)
+##### Latest version (3.9.4)
 
 Requires Java 7 or later.
  
 Common dependencies
-* [common-lang-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.8.1/common-lang-3.8.1.jar)
-* [common-io-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.8.1/common-io-3.8.1.jar)
-* [common-image-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.8.1/common-image-3.8.1.jar)
+* [common-lang-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-lang/3.9.4/common-lang-3.9.4.jar)
+* [common-io-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-io/3.9.4/common-io-3.9.4.jar)
+* [common-image-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/common/common-image/3.9.4/common-image-3.9.4.jar)
 
 ImageIO dependencies
-* [imageio-core-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.8.1/imageio-core-3.8.1.jar)
-* [imageio-metadata-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.8.1/imageio-metadata-3.8.1.jar)
+* [imageio-core-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-core/3.9.4/imageio-core-3.9.4.jar)
+* [imageio-metadata-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-metadata/3.9.4/imageio-metadata-3.9.4.jar)
 
 ImageIO plugins
-* [imageio-bmp-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.8.1/imageio-bmp-3.8.1.jar)
-* [imageio-hdr-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.8.1/imageio-hdr-3.8.1.jar)
-* [imageio-icns-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.8.1/imageio-icns-3.8.1.jar)
-* [imageio-iff-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.8.1/imageio-iff-3.8.1.jar)
-* [imageio-jpeg-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.8.1/imageio-jpeg-3.8.1.jar)
-* [imageio-pcx-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.8.1/imageio-pcx-3.8.1.jar)
-* [imageio-pict-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.8.1/imageio-pict-3.8.1.jar)
-* [imageio-pnm-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.8.1/imageio-pnm-3.8.1.jar)
-* [imageio-psd-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.8.1/imageio-psd-3.8.1.jar)
-* [imageio-sgi-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.8.1/imageio-sgi-3.8.1.jar)
-* [imageio-tga-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.8.1/imageio-tga-3.8.1.jar)
-* [imageio-thumbsdb-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.8.1/imageio-thumbsdb-3.8.1.jar)
-* [imageio-tiff-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.8.1/imageio-tiff-3.8.1.jar)
-* [imageio-webp-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-webp/3.8.1/imageio-webp-3.8.1.jar)
-* [imageio-xwd-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-xwd/3.8.1/imageio-xwd-3.8.1.jar)
+* [imageio-bmp-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-bmp/3.9.4/imageio-bmp-3.9.4.jar)
+* [imageio-hdr-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-hdr/3.9.4/imageio-hdr-3.9.4.jar)
+* [imageio-icns-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-icns/3.9.4/imageio-icns-3.9.4.jar)
+* [imageio-iff-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-iff/3.9.4/imageio-iff-3.9.4.jar)
+* [imageio-jpeg-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-jpeg/3.9.4/imageio-jpeg-3.9.4.jar)
+* [imageio-pcx-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pcx/3.9.4/imageio-pcx-3.9.4.jar)
+* [imageio-pict-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pict/3.9.4/imageio-pict-3.9.4.jar)
+* [imageio-pnm-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-pnm/3.9.4/imageio-pnm-3.9.4.jar)
+* [imageio-psd-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-psd/3.9.4/imageio-psd-3.9.4.jar)
+* [imageio-sgi-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-sgi/3.9.4/imageio-sgi-3.9.4.jar)
+* [imageio-tga-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tga/3.9.4/imageio-tga-3.9.4.jar)
+* [imageio-thumbsdb-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-thumbsdb/3.9.4/imageio-thumbsdb-3.9.4.jar)
+* [imageio-tiff-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-tiff/3.9.4/imageio-tiff-3.9.4.jar)
+* [imageio-webp-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-webp/3.9.4/imageio-webp-3.9.4.jar)
+* [imageio-xwd-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-xwd/3.9.4/imageio-xwd-3.9.4.jar)
 
 ImageIO plugins requiring 3rd party libs
-* [imageio-batik-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.8.1/imageio-batik-3.8.1.jar)
+* [imageio-batik-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-batik/3.9.4/imageio-batik-3.9.4.jar)
 
 Photoshop Path support for ImageIO
-* [imageio-clippath-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.8.1/imageio-clippath-3.8.1.jar)
+* [imageio-clippath-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/imageio/imageio-clippath/3.9.4/imageio-clippath-3.9.4.jar)
 
 Servlet support
-* [servlet-3.8.1.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.8.1/servlet-3.8.1.jar)
+* [servlet-3.9.4.jar](https://search.maven.org/remotecontent?filepath=com/twelvemonkeys/servlet/servlet/3.9.4/servlet-3.9.4.jar)
 
 ##### Old version (3.0.x)
 
@@ -452,7 +452,7 @@ Servlet support
 
 This project is provided under the OSI approved [BSD license](https://opensource.org/licenses/BSD-3-Clause):
 
-    Copyright (c) 2008-2020, Harald Kuhr
+    Copyright (c) 2008-2022, Harald Kuhr
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -484,8 +484,9 @@ This project is provided under the OSI approved [BSD license](https://opensource
 
 q: How do I use it?
 
-a: The easiest way is to build your own project using Maven, and just add dependencies to the specific plug-ins you need.
- If you don't use Maven, make sure you have all the necessary JARs in classpath. See the Install section above.
+a: The easiest way is to build your own project using Maven, Gradle or other build tool with dependency management, 
+and just add dependencies to the specific plug-ins you need.
+ If you don't use such a build tool, make sure you have all the necessary JARs in classpath. See the Install section above.
 
 
 q: What changes do I have to make to my code in order to use the plug-ins?
@@ -503,20 +504,34 @@ q: How does it work?
 
 a: The TwelveMonkeys ImageIO project contains plug-ins for ImageIO. ImageIO uses a service lookup mechanism, to discover plug-ins at runtime. 
 
-All you have have to do, is to make sure you have the TwelveMonkeys JARs in your classpath.
+All you have to do, is to make sure you have the TwelveMonkeys ImageIO JARs in your classpath.
 
 You can read more about the registry and the lookup mechanism in the [IIORegistry API doc](https://docs.oracle.com/javase/7/docs/api/javax/imageio/spi/IIORegistry.html).
 
 The fine print: The TwelveMonkeys service providers for JPEG, BMP and TIFF, overrides the onRegistration method, and
 utilizes the pairwise partial ordering mechanism of the `IIOServiceRegistry` to make sure it is installed before
-the Sun/Oracle provided `JPEGImageReader` and `BMPImageReader`, and the Apple provided `TIFFImageReader` on OS X, 
+the Sun/Oracle provided `JPEGImageReader`, `BMPImageReader` `TIFFImageReader`, and the Apple provided `TIFFImageReader` on OS X, 
 respectively. Using the pairwise ordering will not remove any functionality form these implementations, but in most 
 cases you'll end up using the TwelveMonkeys plug-ins instead.
 
+
 q: Why is there no support for common formats like GIF or PNG?
 
-a: The short answer is simply that the built-in support in ImageIO for these formats are good enough as-is.
+a: The short answer is simply that the built-in support in ImageIO for these formats are considered good enough as-is.
 If you are looking for better PNG write performance on Java 7 and 8, see [JDK9 PNG Writer Backport](https://github.com/gredler/jdk9-png-writer-backport).
+
+
+q: When is the next release? What is the current release schedule?
+
+a: The goal is to make monthly releases, containing bug fixes and minor new features. 
+And quarterly releases with more "major" features.
+
+
+q: I love this project! How can I help?
+
+a: Have a look at the open issues, and see if there are any issues you can help fix, or provide sample file or create test cases for.
+It is also possible for you or your organization to become a sponsor, through GitHub Sponsors. 
+Providing funding will allow us to spend more time on fixing bugs and implementing new features. 
 
 
 q: What about JAI? Several of the formats are already supported by JAI.
