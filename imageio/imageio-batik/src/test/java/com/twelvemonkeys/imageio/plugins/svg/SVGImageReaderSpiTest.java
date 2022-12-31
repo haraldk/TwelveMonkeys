@@ -34,6 +34,10 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import org.junit.Test;
 
+import org.w3c.dom.Document;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
@@ -96,5 +100,59 @@ public class SVGImageReaderSpiTest {
                 assertFalse("Claims to read invalid input:" + invalidInput, provider.canDecodeInput(input));
             }
         }
+    }
+
+    @Test
+    public void canDecodeSVGDocument() throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        dbf.setNamespaceAware(true);
+
+        DocumentBuilder domBuilder = dbf.newDocumentBuilder();
+        for (String validInput : VALID_INPUTS) {
+            Document input = domBuilder.parse(getClass().getResource(validInput).toString());
+            assertTrue("Can't read valid input: " + validInput, provider.canDecodeInput(input));
+        }
+    }
+
+    @Test
+    public void cannotDecodeNamespaceUnawareDocument() throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+
+        DocumentBuilder domBuilder = dbf.newDocumentBuilder();
+        for (String validInput : VALID_INPUTS) {
+            Document input = domBuilder.parse(getClass().getResource(validInput).toString());
+            assertFalse("Claims to read namespace unaware document: " + validInput,
+                        provider.canDecodeInput(input));
+        }
+    }
+
+    @Test
+    public void cannotDecodeNonSVGNamespaceDocument() throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        dbf.setNamespaceAware(true);
+
+        Document document = dbf.newDocumentBuilder().newDocument();
+        document.appendChild(document
+                .createElementNS("http://www.w3.org/2000/doovde", "svg"));
+
+        assertFalse("Claims to read document with root element: {"
+                + document.getDocumentElement().getNamespaceURI() + "}"
+                + document.getDocumentElement().getLocalName(),
+                provider.canDecodeInput(document));
+    }
+
+    @Test
+    public void cannotDecodeNonSVGRootElement() throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        dbf.setNamespaceAware(true);
+
+        Document document = dbf.newDocumentBuilder().newDocument();
+        document.appendChild(document
+                .createElementNS("http://www.w3.org/2000/svg", "path"));
+
+        assertFalse("Claims to read document with root element: {"
+                + document.getDocumentElement().getNamespaceURI() + "}"
+                + document.getDocumentElement().getLocalName(),
+                provider.canDecodeInput(document));
     }
 }

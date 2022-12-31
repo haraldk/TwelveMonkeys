@@ -35,6 +35,11 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -402,6 +407,51 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         }
         finally {
             reader.dispose();
+        }
+    }
+
+    @Test
+    public void testDOMInput() throws IOException {
+        URL resource = getClassLoaderResource("/svg/quadrants.svg");
+
+        SVGImageReader reader = createReader();
+
+        Document svgDoc = readDocument(resource);
+        svgDoc.getDocumentElement().setAttributeNS(null, "viewBox", "0 0 200 200");
+        try {
+            reader.setInput(svgDoc);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setSourceRenderSize(new Dimension(100, 100));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(100, image.getWidth());
+            assertEquals(100, image.getHeight());
+
+            // Some quick samples
+            assertRGBEquals("Transparent top-right quadrant",     0, image.getRGB(55, 45), 0);
+            assertRGBEquals("Transparent bottom-left quadrant",   0, image.getRGB(45, 55), 0);
+            assertRGBEquals("Transparent bottom-right quadrant",  0, image.getRGB(55, 55), 0);
+            assertRGBEquals("Blue top-left square",      0xff0000ff, image.getRGB(12, 12), 0);
+            assertRGBEquals("Green top-right square",    0xff00ff00, image.getRGB(27, 12), 0);
+            assertRGBEquals("Red bottom-left square",    0xffff0000, image.getRGB(12, 27), 0);
+            assertRGBEquals("Black bottom-right square", 0xff000000, image.getRGB(27, 27), 0);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static Document readDocument(URL resource) {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+
+        try {
+            return dbf.newDocumentBuilder().parse(resource.toString());
+        }
+        catch (SAXException | IOException | ParserConfigurationException e) {
+            throw new IllegalStateException("Couldn't read: " + resource, e);
         }
     }
 }

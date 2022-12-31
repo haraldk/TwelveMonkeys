@@ -115,6 +115,10 @@ public class SVGImageReader extends ImageReaderBase {
             TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
             rasterizer.setInput(input);
         }
+        else if (pInput instanceof Document) {
+            Document doc = (Document) pInput;
+            rasterizer.setInput(new TranscoderInput(doc));
+        }
     }
 
     public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
