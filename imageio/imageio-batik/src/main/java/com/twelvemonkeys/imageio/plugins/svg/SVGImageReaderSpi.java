@@ -31,13 +31,24 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.SystemUtil;
 
+import org.xml.sax.Attributes;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.ext.DefaultHandler2;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.FactoryConfigurationError;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParserFactory;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
-import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
@@ -51,6 +62,8 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
 public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
+
+    static final String SVG_NS_URI = "http://www.w3.org/2000/svg";
 
     /**
      * Creates an {@code SVGImageReaderSpi}.
@@ -66,95 +79,32 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     @SuppressWarnings("StatementWithEmptyBody")
     private static boolean canDecode(final ImageInputStream pInput) throws IOException {
-        // NOTE: This test is quite quick as it does not involve any parsing,
-        // however it may not recognize all kinds of SVG documents.
+        DoctypeHandler doctype = new DoctypeHandler();
+        pInput.mark();
         try {
-            pInput.mark();
-
-            // TODO: This is not ok for UTF-16 and other wide encodings
-            // TODO: Use an XML (encoding) aware Reader instance instead
-            // Need to figure out pretty fast if this is XML or not
-            int b;
-            while (Character.isWhitespace((char) (b = pInput.read()))) {
-                // Skip over leading WS
-            }
-
-            // If it's not a tag, this can't be valid XML
-            if (b != '<') {
-                return false;
-            }
-
-            // Algorithm for detecting SVG:
-            //  - Skip until begin tag '<' and read 4 bytes
-            //  - if next is "?" skip until "?>" and start over
-            //  - else if next is "!--" skip until  "-->" and start over
-            //  - else if next is  "!DOCTYPE " skip any whitespace
-            //      - compare next 3 bytes against "svg", return result
-            //  - else
-            //      - compare next 3 bytes against "svg", return result
-
-            byte[] buffer = new byte[4];
-            while (true) {
-                pInput.readFully(buffer);
-
-                if (buffer[0] == '?') {
-                    // This is the XML declaration or a processing instruction
-                    while (!((pInput.readByte() & 0xFF) == '?' && pInput.read() == '>')) {
-                        // Skip until end of XML declaration or processing instruction or EOF
-                    }
-                }
-                else if (buffer[0] == '!') {
-                    if (buffer[1] == '-' && buffer[2] == '-') {
-                        // This is a comment
-                        while (!((pInput.readByte() & 0xFF) == '-' && pInput.read() == '-' && pInput.read() == '>')) {
-                            // Skip until end of comment or EOF
-                        }
-                    }
-                    else if (buffer[1] == 'D' && buffer[2] == 'O' && buffer[3] == 'C'
-                            && pInput.read() == 'T' && pInput.read() == 'Y'
-                            && pInput.read() == 'P' && pInput.read() == 'E') {
-                        // This is the DOCTYPE declaration
-                        while (Character.isWhitespace((char) (b = pInput.read()))) {
-                            // Skip over WS
-                        }
-
-                        if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g') {
-                            // It's SVG, identified by DOCTYPE
-                            return true;
-                        }
-
-                        // DOCTYPE found, but not SVG
-                        return false;
-                    }
-
-                    // Something else, we'll skip
-                }
-                else {
-                    // This is a normal tag
-                    if (buffer[0] == 's' && buffer[1] == 'v' && buffer[2] == 'g'
-                            && (Character.isWhitespace((char) buffer[3]) || buffer[3] == ':')) {
-                        // It's SVG, identified by root tag
-                        // TODO: Support svg with prefix + recognize namespace (http://www.w3.org/2000/svg)!
-                        return true;
-                    }
-
-                    // If the tag is not "svg", this isn't SVG
-                    return false;
-                }
-
-                while ((pInput.readByte() & 0xFF) != '<') {
-                    // Skip over, until next begin tag or EOF
-                }
-            }
+            XMLReader xmlReader = XMLReaderFactory.getXMLReader();
+            xmlReader.setContentHandler(doctype);
+            xmlReader.setErrorHandler(doctype);
+            xmlReader.setEntityResolver(doctype);
+            @SuppressWarnings("resource")
+            InputStream stream = IIOUtil.createStreamAdapter(pInput);
+            // XMLReader.parse() generally closes the input streams but the
+            // stream adapter prevents closing the underlying stream (✔)
+            xmlReader.parse(new InputSource(stream));
         }
-        catch (EOFException ignore) {
-            // Possible for small files...
+        catch (StopParseException e) {
+            // Found root element
+        }
+        catch (SAXException e) {
+            // Malformed XML, or not an XML at all
             return false;
         }
         finally {
             //noinspection ThrowFromFinallyBlock
             pInput.reset();
         }
+        return "svg".equals(doctype.rootLocalName)
+                && SVG_NS_URI.equals(doctype.rootNamespaceURI);
     }
 
     public ImageReader createReaderInstance(final Object extension) throws IOException {
@@ -183,5 +133,104 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
             deregisterProvider(registry, this, category);
         }
     }
+
+
+    private static class DoctypeHandler extends DefaultHandler2 {
+
+        String rootNamespaceURI;
+        String rootLocalName;
+
+        @Override
+        public void startDTD(String name, String publicId, String systemId)
+                throws SAXException {
+            if (name.equals("svg") || name.endsWith(":svg")) {
+                // Speculate it is a legitimate SVG
+                rootLocalName = "svg";
+                rootNamespaceURI = SVG_NS_URI;
+            }
+            else {
+                rootLocalName = name;
+                rootNamespaceURI = publicId;
+            }
+
+            throw StopParseException.INSTANCE;
+        }
+
+        @Override
+        public void startElement(String uri,
+                                 String localName,
+                                 String qName,
+                                 Attributes attributes)
+                throws SAXException {
+            rootNamespaceURI = uri;
+            rootLocalName = localName;
+
+            throw StopParseException.INSTANCE;
+        }
+
+        @Override
+        public InputSource resolveEntity(String name,
+                                         String publicId,
+                                         String baseURI,
+                                         String systemId) {
+            return new InputSource(new StringReader("")); // empty entity
+        }
+    }
+
+
+    private static class StopParseException extends SAXException {
+
+        private static final long serialVersionUID = 7645435205561343094L;
+
+        static final StopParseException INSTANCE = new StopParseException();
+
+        private StopParseException() {
+            super("Parsing stopped from content handler");
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            return this; // Don't fill in stack trace
+        }
+    }
+
+
+    private static class XMLReaderFactory {
+
+        private static ThreadLocal<XMLReader> localXMLReader = new ThreadLocal<XMLReader>() {
+            @Override protected XMLReader initialValue() {
+                synchronized (XMLReaderFactory.class) {
+                    try {
+                        return saxParserFactory().newSAXParser().getXMLReader();
+                    }
+                    catch (SAXException | ParserConfigurationException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+            }
+        };
+
+        private static SAXParserFactory saxParserFactory;
+
+        private static SAXParserFactory saxParserFactory() {
+            if (saxParserFactory == null) {
+                try {
+                    SAXParserFactory spf = SAXParserFactory.newInstance();
+                    spf.setNamespaceAware(true);
+                    spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                    saxParserFactory = spf;
+                } catch (SAXException | ParserConfigurationException e) {
+                    throw new FactoryConfigurationError(e);
+                }
+            }
+            return saxParserFactory;
+        }
+
+        static XMLReader getXMLReader() {
+            return localXMLReader.get();
+        }
+    }
+
+
 }
 
