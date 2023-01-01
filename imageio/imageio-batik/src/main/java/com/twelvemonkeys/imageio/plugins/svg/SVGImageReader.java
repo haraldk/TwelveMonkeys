@@ -53,6 +53,8 @@ import org.apache.batik.transcoder.TranscodingHints;
 import org.apache.batik.transcoder.image.ImageTranscoder;
 import org.apache.batik.util.ParsedURL;
 import org.apache.batik.util.SVGConstants;
+
+import org.w3c.dom.DOMException;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.svg.SVGSVGElement;
@@ -280,13 +282,20 @@ public class SVGImageReader extends ImageReaderBase {
         }
 
         //  This is cheating... We don't fully transcode after all
-        protected void transcode(Document document, final String uri, final TranscoderOutput output) {
+        protected void transcode(Document document, final String uri, final TranscoderOutput output)
+                throws TranscoderException {
             // Sets up root, curTxf & curAoi
             // ----
             if (document != null) {
                 if (!(document.getImplementation() instanceof SVGDOMImplementation)) {
                     DOMImplementation impl = (DOMImplementation) hints.get(KEY_DOM_IMPLEMENTATION);
-                    document = DOMUtilities.deepCloneDocument(document, impl);
+                    try {
+                        document = DOMUtilities.deepCloneDocument(document, impl);
+                    }
+                    catch (DOMException e) {
+                        // Happens if unknown element in the SVG namespace appears
+                        throw new TranscoderException(e);
+                    }
                 }
 
                 if (uri != null) {
@@ -301,6 +310,11 @@ public class SVGImageReader extends ImageReaderBase {
 
             ctx = createBridgeContext();
             SVGOMDocument svgDoc = (SVGOMDocument) document;
+            if (!(svgDoc.getDocumentElement() instanceof SVGSVGElement)) {
+                // SVGOMDocument.getRootElement() unconditionally casts to SVGSVGElement
+                throw new TranscoderException(svgDoc.getDocumentElement().getClass()
+                        + " cannot be cast to " + SVGSVGElement.class);
+            }
 
             // build the GVT tree
             builder = new GVTBuilder();
@@ -421,6 +435,10 @@ public class SVGImageReader extends ImageReaderBase {
                     }
                     catch (MalformedURLException ignore) {
                         // Ignored
+                    }
+                    catch (TranscoderException e) {
+                        Throwable cause = unwrapException(e);
+                        throw new IIOException(cause.getMessage(), cause);
                     }
                 }
 

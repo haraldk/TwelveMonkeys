@@ -34,9 +34,12 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
+import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -59,6 +62,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
@@ -452,6 +456,66 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         }
         catch (SAXException | IOException | ParserConfigurationException e) {
             throw new IllegalStateException("Couldn't read: " + resource, e);
+        }
+    }
+
+    @Test
+    public void testDOMNonSVGNamespaceRoot() throws IOException {
+        testDOMInputUnsupported(new QName("http://www.w3.org/2000/lucde", "svg"),
+                "GenericElementNS cannot be cast to interface org.w3c.dom.svg.SVGSVGElement");
+    }
+
+    @Test
+    public void testDOMNonSVGRoot() throws IOException {
+        testDOMInputUnsupported(new QName("http://www.w3.org/2000/svg", "circle"),
+                "SVGOMCircleElement cannot be cast to interface org.w3c.dom.svg.SVGSVGElement");
+    }
+
+    @Test
+    public void testDOMInvalidSVGRoot() throws IOException {
+        testDOMInputUnsupported(new QName("http://www.w3.org/2000/svg", "doovde"),
+                "The current document is unable to create an element of the requested type");
+    }
+
+    @Test
+    public void testDOMNoNamespaceRoot() throws IOException {
+        testDOMInputUnsupported(new QName(XMLConstants.NULL_NS_URI, "svg"),
+                "GenericElement cannot be cast to interface org.w3c.dom.svg.SVGSVGElement");
+    }
+
+    private void testDOMInputUnsupported(QName name, String expectedMessage)
+            throws IOException {
+        final SVGImageReader reader = createReader();
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+
+        Document svgDoc;
+        try {
+            svgDoc = dbf.newDocumentBuilder().newDocument();
+        } catch (ParserConfigurationException e) {
+            throw new IOException(e);
+        }
+
+        svgDoc.appendChild(svgDoc
+                .createElementNS(name.getNamespaceURI(), name.getLocalPart()));
+
+        try {
+            reader.setInput(svgDoc);
+
+            IIOException thrown = assertThrows("reader.read()",
+                    IIOException.class, new ThrowingRunnable() {
+                @Override public void run() throws Throwable {
+                    reader.read(0, null);
+                }
+            });
+
+            assertTrue("Exception message expected: a string containing \""
+                    + expectedMessage + "\" but was: \"" + thrown.getMessage() + "\"",
+                    thrown.getMessage().contains(expectedMessage));
+        }
+        finally {
+            reader.dispose();
         }
     }
 }
