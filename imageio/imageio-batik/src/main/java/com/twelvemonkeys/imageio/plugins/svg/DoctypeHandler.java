@@ -38,6 +38,7 @@ import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.ext.DefaultHandler2;
 import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
@@ -50,45 +51,52 @@ import java.io.StringReader;
  */
 class DoctypeHandler extends DefaultHandler2 {
 
-    private static ThreadLocal<XMLReader> localXMLReader = new ThreadLocal<XMLReader>() {
-        @Override protected XMLReader initialValue() {
-            synchronized (this) {
-                try {
-                    return saxParserFactory().newSAXParser().getXMLReader();
-                }
-                catch (SAXException | ParserConfigurationException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
+    private static ThreadLocal<DoctypeHandler> localHandler = new ThreadLocal<DoctypeHandler>() {
+        @Override protected DoctypeHandler initialValue() {
+            return new DoctypeHandler();
         }
     };
 
     private static SAXParserFactory saxParserFactory;
 
-    String rootNamespaceURI;
-    String rootLocalName;
+    private QName rootElement;
 
-    public static DoctypeHandler ofSource(InputSource source)
-            throws IOException, SAXException {
-        DoctypeHandler doctype = new DoctypeHandler();
-        XMLReader xmlReader = localXMLReader.get();
-        xmlReader.setContentHandler(doctype);
-        xmlReader.setErrorHandler(doctype);
-        xmlReader.setEntityResolver(doctype);
+    private XMLReader xmlReader;
+
+    private DoctypeHandler() {
         try {
-            xmlReader.setProperty("http://xml.org/sax/properties/lexical-handler", doctype);
+            xmlReader = saxParserFactory().newSAXParser().getXMLReader();
+        }
+        catch (SAXException | ParserConfigurationException e) {
+            throw new IllegalStateException(e);
+        }
+
+        xmlReader.setContentHandler(this);
+        xmlReader.setErrorHandler(this);
+        xmlReader.setEntityResolver(this);
+        try {
+            xmlReader.setProperty("http://xml.org/sax/properties/lexical-handler", this);
         }
         catch (SAXNotRecognizedException | SAXNotSupportedException e) {
             // Optional
         }
+    }
 
+    public static QName doctypeOf(InputSource source)
+            throws IOException, SAXException {
+        return localHandler.get().parse(source);
+    }
+
+    private QName parse(InputSource source)
+            throws IOException, SAXException {
+        rootElement = null;
         try {
             xmlReader.parse(source);
         }
         catch (StopParseException e) {
             // Found root element
         }
-        return doctype;
+        return rootElement;
     }
 
     @Override
@@ -96,12 +104,10 @@ class DoctypeHandler extends DefaultHandler2 {
             throws SAXException {
         if (name.equals("svg") || name.endsWith(":svg")) {
             // Speculate it is a legitimate SVG
-            rootLocalName = "svg";
-            rootNamespaceURI = SVGImageReaderSpi.SVG_NS_URI;
+            rootElement = SVGImageReaderSpi.SVG_ROOT;
         }
         else {
-            rootLocalName = name;
-            rootNamespaceURI = publicId;
+            rootElement = new QName(publicId, name);
         }
 
         throw StopParseException.INSTANCE;
@@ -113,8 +119,7 @@ class DoctypeHandler extends DefaultHandler2 {
                              String qName,
                              Attributes attributes)
             throws SAXException {
-        rootNamespaceURI = uri;
-        rootLocalName = localName;
+        rootElement = new QName(uri, localName);
 
         throw StopParseException.INSTANCE;
     }

@@ -36,6 +36,8 @@ import com.twelvemonkeys.lang.SystemUtil;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import javax.xml.namespace.QName;
+
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
@@ -55,7 +57,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
 
-    static final String SVG_NS_URI = "http://www.w3.org/2000/svg";
+    static final QName SVG_ROOT = new QName("http://www.w3.org/2000/svg", "svg");
 
     /**
      * Creates an {@code SVGImageReaderSpi}.
@@ -70,14 +72,14 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     }
 
     private static boolean canDecode(final ImageInputStream pInput) throws IOException {
-        DoctypeHandler doctype;
+        QName doctype;
         pInput.mark();
         try {
             @SuppressWarnings("resource")
             InputStream stream = IIOUtil.createStreamAdapter(pInput);
             // XMLReader.parse() generally closes the input streams but the
             // stream adapter prevents closing the underlying stream (✔)
-            doctype = DoctypeHandler.ofSource(new InputSource(stream));
+            doctype = DoctypeHandler.doctypeOf(new InputSource(stream));
         }
         catch (SAXException e) {
             // Malformed XML, or not an XML at all
@@ -87,8 +89,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
             //noinspection ThrowFromFinallyBlock
             pInput.reset();
         }
-        return "svg".equals(doctype.rootLocalName)
-                && SVG_NS_URI.equals(doctype.rootNamespaceURI);
+        return SVG_ROOT.equals(doctype);
     }
 
     public ImageReader createReaderInstance(final Object extension) throws IOException {
