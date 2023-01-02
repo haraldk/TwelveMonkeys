@@ -34,21 +34,13 @@ import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.SystemUtil;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.ext.DefaultHandler2;
-import javax.xml.XMLConstants;
-import javax.xml.parsers.FactoryConfigurationError;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParserFactory;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
@@ -77,23 +69,15 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
     }
 
-    @SuppressWarnings("StatementWithEmptyBody")
     private static boolean canDecode(final ImageInputStream pInput) throws IOException {
-        DoctypeHandler doctype = new DoctypeHandler();
+        DoctypeHandler doctype;
         pInput.mark();
         try {
-            XMLReader xmlReader = XMLReaderFactory.getXMLReader();
-            xmlReader.setContentHandler(doctype);
-            xmlReader.setErrorHandler(doctype);
-            xmlReader.setEntityResolver(doctype);
             @SuppressWarnings("resource")
             InputStream stream = IIOUtil.createStreamAdapter(pInput);
             // XMLReader.parse() generally closes the input streams but the
             // stream adapter prevents closing the underlying stream (✔)
-            xmlReader.parse(new InputSource(stream));
-        }
-        catch (StopParseException e) {
-            // Found root element
+            doctype = DoctypeHandler.ofSource(new InputSource(stream));
         }
         catch (SAXException e) {
             // Malformed XML, or not an XML at all
@@ -133,104 +117,5 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
             deregisterProvider(registry, this, category);
         }
     }
-
-
-    private static class DoctypeHandler extends DefaultHandler2 {
-
-        String rootNamespaceURI;
-        String rootLocalName;
-
-        @Override
-        public void startDTD(String name, String publicId, String systemId)
-                throws SAXException {
-            if (name.equals("svg") || name.endsWith(":svg")) {
-                // Speculate it is a legitimate SVG
-                rootLocalName = "svg";
-                rootNamespaceURI = SVG_NS_URI;
-            }
-            else {
-                rootLocalName = name;
-                rootNamespaceURI = publicId;
-            }
-
-            throw StopParseException.INSTANCE;
-        }
-
-        @Override
-        public void startElement(String uri,
-                                 String localName,
-                                 String qName,
-                                 Attributes attributes)
-                throws SAXException {
-            rootNamespaceURI = uri;
-            rootLocalName = localName;
-
-            throw StopParseException.INSTANCE;
-        }
-
-        @Override
-        public InputSource resolveEntity(String name,
-                                         String publicId,
-                                         String baseURI,
-                                         String systemId) {
-            return new InputSource(new StringReader("")); // empty entity
-        }
-    }
-
-
-    private static class StopParseException extends SAXException {
-
-        private static final long serialVersionUID = 7645435205561343094L;
-
-        static final StopParseException INSTANCE = new StopParseException();
-
-        private StopParseException() {
-            super("Parsing stopped from content handler");
-        }
-
-        @Override
-        public synchronized Throwable fillInStackTrace() {
-            return this; // Don't fill in stack trace
-        }
-    }
-
-
-    private static class XMLReaderFactory {
-
-        private static ThreadLocal<XMLReader> localXMLReader = new ThreadLocal<XMLReader>() {
-            @Override protected XMLReader initialValue() {
-                synchronized (XMLReaderFactory.class) {
-                    try {
-                        return saxParserFactory().newSAXParser().getXMLReader();
-                    }
-                    catch (SAXException | ParserConfigurationException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }
-            }
-        };
-
-        private static SAXParserFactory saxParserFactory;
-
-        private static SAXParserFactory saxParserFactory() {
-            if (saxParserFactory == null) {
-                try {
-                    SAXParserFactory spf = SAXParserFactory.newInstance();
-                    spf.setNamespaceAware(true);
-                    spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-                    saxParserFactory = spf;
-                } catch (SAXException | ParserConfigurationException e) {
-                    throw new FactoryConfigurationError(e);
-                }
-            }
-            return saxParserFactory;
-        }
-
-        static XMLReader getXMLReader() {
-            return localXMLReader.get();
-        }
-    }
-
-
 }
 

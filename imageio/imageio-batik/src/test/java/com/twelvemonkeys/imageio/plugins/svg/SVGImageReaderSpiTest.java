@@ -103,6 +103,15 @@ public class SVGImageReaderSpiTest {
     }
 
     @Test
+    public void canDecodeSpeculativeDoctype() throws Exception {
+        String svg = "<!DOCTYPE svg><svg xmlns=\"http://www.w3.org/2023/fake\">";
+
+        try (ImageInputStream input = new ByteArrayImageInputStream(svg.getBytes(StandardCharsets.UTF_8))) {
+            assertTrue("Can't read speculative DOCTYPE: " + svg, provider.canDecodeInput(input));
+        }
+    }
+
+    @Test
     public void canDecodeUTFBOMInput() throws Exception {
         String svgRoot = "\uFEFF<svg xmlns='http://www.w3.org/2000/svg'>";
         Charset[] utfCharsets = { StandardCharsets.UTF_8,
