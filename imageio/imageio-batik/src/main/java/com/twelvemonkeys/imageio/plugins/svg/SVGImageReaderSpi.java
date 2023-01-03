@@ -41,6 +41,7 @@ import javax.xml.namespace.QName;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
@@ -57,6 +58,9 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
 
+    static final String XML_READER_DETECT =
+            "com.twelvemonkeys.imageio.plugins.svg.xmlReaderDetect";
+
     static final QName SVG_ROOT = new QName("http://www.w3.org/2000/svg", "svg");
 
     /**
@@ -71,15 +75,98 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
     }
 
+    @SuppressWarnings("StatementWithEmptyBody")
     private static boolean canDecode(final ImageInputStream pInput) throws IOException {
-        QName doctype;
-        pInput.mark();
+        // NOTE: This test is quite quick as it does not involve any parsing,
+        // however it may not recognize all kinds of SVG documents.
         try {
-            @SuppressWarnings("resource")
-            InputStream stream = IIOUtil.createStreamAdapter(pInput);
-            // XMLReader.parse() generally closes the input streams but the
-            // stream adapter prevents closing the underlying stream (✔)
-            doctype = DoctypeHandler.doctypeOf(new InputSource(stream));
+            pInput.mark();
+
+            if (Boolean.getBoolean(XML_READER_DETECT)) {
+                InputStream stream = IIOUtil.createStreamAdapter(pInput);
+                return SVG_ROOT.equals(DoctypeHandler
+                        .doctypeOf(new InputSource(stream)));
+            }
+
+            // TODO: This is not ok for UTF-16 and other wide encodings
+            // TODO: Use an XML (encoding) aware Reader instance instead
+            // Need to figure out pretty fast if this is XML or not
+            int b;
+            while (Character.isWhitespace((char) (b = pInput.read()))) {
+                // Skip over leading WS
+            }
+
+            // If it's not a tag, this can't be valid XML
+            if (b != '<') {
+                return false;
+            }
+
+            // Algorithm for detecting SVG:
+            //  - Skip until begin tag '<' and read 4 bytes
+            //  - if next is "?" skip until "?>" and start over
+            //  - else if next is "!--" skip until  "-->" and start over
+            //  - else if next is  "!DOCTYPE " skip any whitespace
+            //      - compare next 3 bytes against "svg", return result
+            //  - else
+            //      - compare next 3 bytes against "svg", return result
+
+            byte[] buffer = new byte[4];
+            while (true) {
+                pInput.readFully(buffer);
+
+                if (buffer[0] == '?') {
+                    // This is the XML declaration or a processing instruction
+                    while (!((pInput.readByte() & 0xFF) == '?' && pInput.read() == '>')) {
+                        // Skip until end of XML declaration or processing instruction or EOF
+                    }
+                }
+                else if (buffer[0] == '!') {
+                    if (buffer[1] == '-' && buffer[2] == '-') {
+                        // This is a comment
+                        while (!((pInput.readByte() & 0xFF) == '-' && pInput.read() == '-' && pInput.read() == '>')) {
+                            // Skip until end of comment or EOF
+                        }
+                    }
+                    else if (buffer[1] == 'D' && buffer[2] == 'O' && buffer[3] == 'C'
+                            && pInput.read() == 'T' && pInput.read() == 'Y'
+                            && pInput.read() == 'P' && pInput.read() == 'E') {
+                        // This is the DOCTYPE declaration
+                        while (Character.isWhitespace((char) (b = pInput.read()))) {
+                            // Skip over WS
+                        }
+
+                        if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g') {
+                            // It's SVG, identified by DOCTYPE
+                            return true;
+                        }
+
+                        // DOCTYPE found, but not SVG
+                        return false;
+                    }
+
+                    // Something else, we'll skip
+                }
+                else {
+                    // This is a normal tag
+                    if (buffer[0] == 's' && buffer[1] == 'v' && buffer[2] == 'g'
+                            && (Character.isWhitespace((char) buffer[3]) || buffer[3] == ':')) {
+                        // It's SVG, identified by root tag
+                        // TODO: Support svg with prefix + recognize namespace (http://www.w3.org/2000/svg)!
+                        return true;
+                    }
+
+                    // If the tag is not "svg", this isn't SVG
+                    return false;
+                }
+
+                while ((pInput.readByte() & 0xFF) != '<') {
+                    // Skip over, until next begin tag or EOF
+                }
+            }
+        }
+        catch (EOFException ignore) {
+            // Possible for small files...
+            return false;
         }
         catch (SAXException e) {
             // Malformed XML, or not an XML at all
@@ -89,7 +176,6 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
             //noinspection ThrowFromFinallyBlock
             pInput.reset();
         }
-        return SVG_ROOT.equals(doctype);
     }
 
     public ImageReader createReaderInstance(final Object extension) throws IOException {
