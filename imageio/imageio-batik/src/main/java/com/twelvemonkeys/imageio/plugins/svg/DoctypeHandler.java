@@ -38,7 +38,6 @@ import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.ext.DefaultHandler2;
 import javax.xml.XMLConstants;
-import javax.xml.namespace.QName;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
@@ -51,7 +50,8 @@ import java.io.StringReader;
  */
 class DoctypeHandler extends DefaultHandler2 {
 
-    private static ThreadLocal<DoctypeHandler> localHandler = new ThreadLocal<DoctypeHandler>() {
+    private static ThreadLocal<DoctypeHandler>
+            localHandler = new ThreadLocal<DoctypeHandler>() {
         @Override protected DoctypeHandler initialValue() {
             return new DoctypeHandler();
         }
@@ -59,7 +59,7 @@ class DoctypeHandler extends DefaultHandler2 {
 
     private static SAXParserFactory saxParserFactory;
 
-    private QName rootElement;
+    private String rootElement;
 
     private XMLReader xmlReader;
 
@@ -75,19 +75,20 @@ class DoctypeHandler extends DefaultHandler2 {
         xmlReader.setErrorHandler(this);
         xmlReader.setEntityResolver(this);
         try {
-            xmlReader.setProperty("http://xml.org/sax/properties/lexical-handler", this);
+            xmlReader.setProperty("http://xml.org/sax/properties/"
+                                  + "lexical-handler", this);
         }
         catch (SAXNotRecognizedException | SAXNotSupportedException e) {
             // Optional
         }
     }
 
-    public static QName doctypeOf(InputSource source)
+    public static String doctypeOf(InputSource source)
             throws IOException, SAXException {
         return localHandler.get().parse(source);
     }
 
-    private QName parse(InputSource source)
+    private String parse(InputSource source)
             throws IOException, SAXException {
         rootElement = null;
         try {
@@ -103,11 +104,10 @@ class DoctypeHandler extends DefaultHandler2 {
     public void startDTD(String name, String publicId, String systemId)
             throws SAXException {
         if (name.equals("svg") || name.endsWith(":svg")) {
-            // Speculate it is a legitimate SVG
-            rootElement = SVGImageReaderSpi.SVG_ROOT;
+            rootElement = "svg";
         }
         else {
-            rootElement = new QName(publicId, name);
+            rootElement = name;
         }
 
         throw StopParseException.INSTANCE;
@@ -119,7 +119,8 @@ class DoctypeHandler extends DefaultHandler2 {
                              String qName,
                              Attributes attributes)
             throws SAXException {
-        rootElement = new QName(uri, localName);
+        int colonIndex = qName.lastIndexOf(':');
+        rootElement = colonIndex < 0 ? qName : qName.substring(colonIndex + 1);
 
         throw StopParseException.INSTANCE;
     }
@@ -129,14 +130,17 @@ class DoctypeHandler extends DefaultHandler2 {
                                      String publicId,
                                      String baseURI,
                                      String systemId) {
-        return new InputSource(new StringReader("")); // empty entity
+        // Don't resolve any external entities – just replace with empty
+        // content.  A more general accessExternalDTD="" setup.
+        return new InputSource(new StringReader(""));
     }
 
     private static SAXParserFactory saxParserFactory() {
         if (saxParserFactory == null) {
             try {
                 SAXParserFactory spf = SAXParserFactory.newInstance();
-                spf.setNamespaceAware(true);
+                spf.setNamespaceAware(false);
+                spf.setValidating(false);
                 spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
                 saxParserFactory = spf;
             } catch (SAXException | ParserConfigurationException e) {

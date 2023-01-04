@@ -84,7 +84,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
             if (Boolean.getBoolean(XML_READER_DETECT)) {
                 InputStream stream = IIOUtil.createStreamAdapter(pInput);
-                return SVG_ROOT.equals(DoctypeHandler
+                return SVG_ROOT.getLocalPart().equals(DoctypeHandler
                         .doctypeOf(new InputSource(stream)));
             }
 
