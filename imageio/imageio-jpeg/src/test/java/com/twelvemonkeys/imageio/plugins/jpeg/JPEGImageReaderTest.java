@@ -94,6 +94,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     protected List<TestData> getTestData() {
         // While a lot of these files don't conform to any spec (Exif/JFIF), we will read these.
         return Arrays.asList(
+                new TestData(getClassLoaderResource("/test_jpeg/Portugal-Nazare.jpg"), new Dimension(13622, 5070)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-adobe-rgb.jpg"), new Dimension(626, 76)),
                 new TestData(getClassLoaderResource("/jpeg/cmm-exception-srgb.jpg"), new Dimension(1800, 1200)),
                 new TestData(getClassLoaderResource("/jpeg/corrupted-icc-srgb.jpg"), new Dimension(1024, 685)),
