@@ -493,8 +493,9 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         Document svgDoc;
         try {
             svgDoc = dbf.newDocumentBuilder().newDocument();
-        } catch (ParserConfigurationException e) {
-            throw new IOException(e);
+        }
+        catch (ParserConfigurationException e) {
+            throw new IllegalStateException(e);
         }
 
         svgDoc.appendChild(svgDoc

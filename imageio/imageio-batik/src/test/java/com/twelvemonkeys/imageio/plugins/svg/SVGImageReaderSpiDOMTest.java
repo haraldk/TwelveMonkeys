@@ -51,7 +51,7 @@ public class SVGImageReaderSpiDOMTest {
 
     @Test
     public void canDecodeSVGDocument() throws Exception {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
 
         DocumentBuilder domBuilder = dbf.newDocumentBuilder();
@@ -63,7 +63,7 @@ public class SVGImageReaderSpiDOMTest {
 
     @Test
     public void cannotDecodeNamespaceUnawareDocument() throws Exception {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
         DocumentBuilder domBuilder = dbf.newDocumentBuilder();
         for (String validInput : VALID_INPUTS) {
@@ -75,7 +75,7 @@ public class SVGImageReaderSpiDOMTest {
 
     @Test
     public void cannotDecodeNonSVGNamespaceDocument() throws Exception {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
 
         Document document = dbf.newDocumentBuilder().newDocument();
@@ -90,7 +90,7 @@ public class SVGImageReaderSpiDOMTest {
 
     @Test
     public void cannotDecodeNonSVGRootElement() throws Exception {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newDefaultInstance();
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setNamespaceAware(true);
 
         Document document = dbf.newDocumentBuilder().newDocument();
