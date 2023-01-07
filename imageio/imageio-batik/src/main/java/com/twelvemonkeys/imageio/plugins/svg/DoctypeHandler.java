@@ -65,7 +65,9 @@ class DoctypeHandler extends DefaultHandler2 {
 
     private DoctypeHandler() {
         try {
-            xmlReader = saxParserFactory().newSAXParser().getXMLReader();
+            synchronized (DoctypeHandler.class) {
+                xmlReader = saxParserFactory().newSAXParser().getXMLReader();
+            }
         }
         catch (SAXException | ParserConfigurationException e) {
             throw new IllegalStateException(e);
@@ -119,7 +121,7 @@ class DoctypeHandler extends DefaultHandler2 {
                              String qName,
                              Attributes attributes)
             throws SAXException {
-        int colonIndex = qName.lastIndexOf(':');
+        int colonIndex = qName.indexOf(':');
         rootElement = colonIndex < 0 ? qName : qName.substring(colonIndex + 1);
 
         throw StopParseException.INSTANCE;
@@ -143,7 +145,8 @@ class DoctypeHandler extends DefaultHandler2 {
                 spf.setValidating(false);
                 spf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
                 saxParserFactory = spf;
-            } catch (SAXException | ParserConfigurationException e) {
+            }
+            catch (SAXException | ParserConfigurationException e) {
                 throw new FactoryConfigurationError(e);
             }
         }
