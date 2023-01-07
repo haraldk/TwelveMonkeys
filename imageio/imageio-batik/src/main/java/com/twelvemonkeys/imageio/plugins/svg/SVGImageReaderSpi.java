@@ -35,6 +35,7 @@ import com.twelvemonkeys.lang.SystemUtil;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import javax.xml.namespace.QName;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
@@ -55,7 +56,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
 
-    static final String SVG_NS_URI = "http://www.w3.org/2000/svg";
+    static final QName SVG_ROOT = new QName("http://www.w3.org/2000/svg", "svg");
 
     /**
      * Creates an {@code SVGImageReaderSpi}.
@@ -168,8 +169,8 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     private static boolean canDecode(Document doc) {
         Element root = doc.getDocumentElement();
         return root != null
-                && "svg".equals(root.getLocalName())
-                && SVG_NS_URI.equals(root.getNamespaceURI());
+                && SVG_ROOT.getLocalPart().equals(root.getLocalName())
+                && SVG_ROOT.getNamespaceURI().equals(root.getNamespaceURI());
     }
 
     public ImageReader createReaderInstance(final Object extension) throws IOException {
