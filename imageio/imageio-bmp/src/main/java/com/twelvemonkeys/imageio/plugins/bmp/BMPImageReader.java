@@ -251,8 +251,14 @@ public final class BMPImageReader extends ImageReaderBase {
                         );
                     }
 
+                    // TODO: use some heuristic to determine if we should treat the extra byte as an alpha channel
+                    //
+                    // According to https://entropymine.com/jason/bmpsuite/bmpsuite/html/bmpsuite.html some BMP decoders
+                    // will treat the unused bits in a 32 bit representation as an alpha channel if any of the unused bits is non-zero
+                    // but that potentially requires doing a full pass over all the pizels (in that case that it doesn't use fake alpha).
+
                     // Default if no mask
-                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+                    return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
 
                 case 0:
                     if (header.getCompression() == DIB.COMPRESSION_JPEG || header.getCompression() == DIB.COMPRESSION_PNG) {

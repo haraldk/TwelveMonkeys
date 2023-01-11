@@ -394,6 +394,23 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         }
     }
 
+    @Test
+    public void testFakeAlpha() throws IOException {
+      final ImageReader reader = createReader();
+      TestData data = new TestData(getClassLoaderResource("/bmpsuite/q/rgb32fakealpha.bmp"), new Dimension(127, 64));
+      reader.setInput(data.getInputStream());
+      try {
+        reader.read(0);
+      }
+      catch (IOException e) {
+        fail("Could not read image");
+      }
+
+      ImageTypeSpecifier rawType = reader.getRawImageType(0);
+      assertNotNull(rawType);
+      assertTrue("BMP with fake alpha should support the alpha channel", rawType.getColorModel().hasAlpha());
+    }
+
     private void assertNodeEquals(final String message, final Node expected, final Node actual) {
         assertEquals(message + " class differs", expected.getClass(), actual.getClass());
 
