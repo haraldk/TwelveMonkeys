@@ -203,6 +203,7 @@ public final class PSDMetadata extends AbstractMetadata {
                     IIOMetadataNode guideNode = new IIOMetadataNode("Guide");
                     guideNode.setAttribute("location", Integer.toString(guide.location));
                     guideNode.setAttribute("orientation", GUIDE_ORIENTATIONS[guide.direction]);
+                    node.appendChild(guideNode);
                 }
             }
             else if (imageResource instanceof PSDPixelAspectRatio) {
