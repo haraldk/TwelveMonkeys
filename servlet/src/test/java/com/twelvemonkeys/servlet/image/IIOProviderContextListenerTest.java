@@ -33,7 +33,6 @@ package com.twelvemonkeys.servlet.image;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.Locale;
 
@@ -54,32 +53,29 @@ import org.junit.Test;
  * @version $Id: IIOProviderContextListenerTest.java,v 1.0 02.01.14 12:33 haraldk Exp$
  */
 public class IIOProviderContextListenerTest {
+
+    private final ServletContext context = mock(ServletContext.class);
+    private  final ServletContextEvent initialized = new ServletContextEvent(context);
+    private  final ServletContextEvent destroyed = new ServletContextEvent(context);
+
     @Test
     public void testContextInitialized() {
         ServletContextListener listener = new IIOProviderContextListener();
-        listener.contextInitialized(mock(ServletContextEvent.class));
+        listener.contextInitialized(initialized);
     }
 
     @Test
     public void testContextDestroyed() {
-        ServletContext context = mock(ServletContext.class);
-        ServletContextEvent destroyed = mock(ServletContextEvent.class);
-        when(destroyed.getServletContext()).thenReturn(context);
-
         ServletContextListener listener = new IIOProviderContextListener();
-        listener.contextInitialized(mock(ServletContextEvent.class));
+        listener.contextInitialized(initialized);
         listener.contextDestroyed(destroyed);
     }
 
     // Regression test for issue #29
     @Test
     public void testDestroyConcurrentModRegression() {
-        ServletContext context = mock(ServletContext.class);
-        ServletContextEvent destroyed = mock(ServletContextEvent.class);
-        when(destroyed.getServletContext()).thenReturn(context);
-
         ServletContextListener listener = new IIOProviderContextListener();
-        listener.contextInitialized(mock(ServletContextEvent.class));
+        listener.contextInitialized(initialized);
 
         ImageReaderSpi provider1 = new MockImageReaderSpiOne();
         ImageReaderSpi provider2 = new MockImageReaderSpiToo();
