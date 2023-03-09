@@ -24,7 +24,7 @@ jobs:
           java-package: jdk
           cache: 'maven'
       - name: Run Tests
-        run: mvn test
+        run: mvn --no-transfer-progress test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: ${{ !cancelled() }}
@@ -58,7 +58,7 @@ jobs:
       - name: Display Java version
         run: java -version
       - name: Run Tests
-        run: mvn test
+        run: mvn --no-transfer-progress test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3
         if: ${{ !cancelled() }}
