@@ -37,6 +37,7 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ServiceRegistry;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
@@ -57,31 +58,38 @@ import javax.servlet.ServletContextListener;
 public final class IIOProviderContextListener implements ServletContextListener {
     
     public void contextInitialized(final ServletContextEvent event) {
+        event.getServletContext().log("Scanning for locally installed ImageIO plugin providers");
+
         // Registers all locally available IIO plugins.
         ImageIO.scanForPlugins();
     }
 
     public void contextDestroyed(final ServletContextEvent event) {
+        ServletContext servletContext = event.getServletContext();
+
         // De-register any locally registered IIO plugins. Relies on each web app having its own context class loader.
-        final IIORegistry registry = IIORegistry.getDefaultInstance();
-        final LocalFilter localFilter = new LocalFilter(Thread.currentThread().getContextClassLoader()); // scanForPlugins uses context class loader
+        LocalFilter localFilter = new LocalFilter(Thread.currentThread().getContextClassLoader()); // scanForPlugins uses context class loader
 
+        IIORegistry registry = IIORegistry.getDefaultInstance();
         Iterator<Class<?>> categories = registry.getCategories();
-        
+
         while (categories.hasNext()) {
-            Class<?> category = categories.next();
-            Iterator<?> providers = registry.getServiceProviders(category, localFilter, false);
+            deregisterLocalProvidersForCategory(registry, localFilter, categories.next(), servletContext);
+        }
+    }
 
-            // Copy the providers, as de-registering while iterating over providers will lead to ConcurrentModificationExceptions.
-            List<Object> providersCopy = new ArrayList<>();
-            while (providers.hasNext()) {
-                providersCopy.add(providers.next());
-            }
+    private static <T> void deregisterLocalProvidersForCategory(IIORegistry registry, LocalFilter localFilter, Class<T> category, ServletContext context) {
+        Iterator<T> providers = registry.getServiceProviders(category, localFilter, false);
 
-            for (Object provider : providersCopy) {
-                registry.deregisterServiceProvider(provider);
-                event.getServletContext().log(String.format("Unregistered locally installed provider class: %s", provider.getClass()));
-            }
+        // Copy the providers, as de-registering while iterating over providers will lead to ConcurrentModificationExceptions.
+        List<T> providersCopy = new ArrayList<>();
+        while (providers.hasNext()) {
+            providersCopy.add(providers.next());
+        }
+
+        for (T provider : providersCopy) {
+            registry.deregisterServiceProvider(provider, category);
+            context.log(String.format("Unregistered locally installed provider class: %s", provider.getClass()));
         }
     }
 
