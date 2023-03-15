@@ -162,4 +162,27 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
             reader.dispose();
         }
     }
+
+    @Test
+    public void testAlphaSubsampling() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/alpha_filter.webp"))) {
+            reader.setInput(stream);
+
+            // Read the image using a subsampling factor of 2 
+            ImageReadParam param = new ImageReadParam();
+            param.setSourceSubsampling(2, 2, 0, 0);
+
+            BufferedImage image = reader.read(0, param);
+
+            assertRGBEquals("Expected transparent center (500, 362)", 0x00000000, image.getRGB(500, 362) & 0xFF000000, 8);
+            assertRGBEquals("Expected transparent at (240, 90)", 0x00000000, image.getRGB(240, 90) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque at (256, 640)", 0xFF000000, image.getRGB(256, 640) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque at (850, 120)", 0xFF000000, image.getRGB(256, 640) & 0xFF000000, 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 }
