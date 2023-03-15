@@ -560,7 +560,12 @@ final class WebPImageReader extends ImageReaderBase {
 
         // Copy into destination raster
         WritableRaster dstRaster = destination.getAlphaRaster();
-        VP8LDecoder.copyIntoRasterWithParams(alphaRaster, dstRaster, param);
+        if (param == null) {
+            dstRaster.setRect(alphaRaster);
+        } 
+        else {
+            VP8LDecoder.copyIntoRasterWithParams(alphaRaster, dstRaster, param);
+        }
     }
 
     private int getPredictorAlpha(WritableRaster alphaRaster, int filtering, int y, int x) {
