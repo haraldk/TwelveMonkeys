@@ -141,10 +141,6 @@ public final class VP8LDecoder {
     
     /**
      * Copy a source raster into a destination raster with settings applied.
-     * 
-     * TODO: This piece of code was inside readVP8Lossless(), but as it can be used
-     * in readAlpha(), this static utility method was created here. Probably, it
-     * can be moved to another class.
      */
     public static void copyIntoRasterWithParams(final Raster srcRaster, final WritableRaster dstRaster,
             final ImageReadParam param) {
