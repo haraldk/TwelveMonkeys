@@ -60,7 +60,7 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                         new Dimension(394, 383), new Dimension(394, 394), new Dimension(372, 394),
                         new Dimension(400, 400), new Dimension(320, 382)),
                 // Alpha transparency and Alpha filtering
-                new TestData(getClassLoaderResource("/webp/alpha_filter.webp"), new Dimension(2000, 1447))
+                new TestData(getClassLoaderResource("/webp/alpha_filter.webp"), new Dimension(1600, 1600))
         );
     }
 
@@ -178,10 +178,10 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
 
             BufferedImage image = reader.read(0, param);
 
-            assertRGBEquals("Expected transparent center (500, 362)", 0x00000000, image.getRGB(500, 362) & 0xFF000000, 8);
-            assertRGBEquals("Expected transparent at (240, 90)", 0x00000000, image.getRGB(240, 90) & 0xFF000000, 8);
-            assertRGBEquals("Expected opaque at (256, 640)", 0xFF000000, image.getRGB(256, 640) & 0xFF000000, 8);
-            assertRGBEquals("Expected opaque at (850, 120)", 0xFF000000, image.getRGB(256, 640) & 0xFF000000, 8);
+            assertRGBEquals("Expected transparent at (100, 265)", 0x00000000, image.getRGB(100, 265) & 0xFF000000, 8);
+            assertRGBEquals("Expected transparent at (512, 320)", 0x00000000, image.getRGB(512, 320) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque at (666, 444)", 0xFF000000, image.getRGB(666, 444) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque corner (799, 799)", 0xFF000000, image.getRGB(699, 699) & 0xFF000000, 8);
         }
         finally {
             reader.dispose();
