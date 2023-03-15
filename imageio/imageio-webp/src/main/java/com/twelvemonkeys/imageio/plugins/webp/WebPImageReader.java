@@ -61,6 +61,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.plugins.webp.lossless.VP8LDecoder.copyIntoRasterWithParams;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -560,7 +562,7 @@ final class WebPImageReader extends ImageReaderBase {
 
         // Copy into destination raster
         WritableRaster dstRaster = destination.getAlphaRaster();
-        VP8LDecoder.copyIntoRasterWithParams(alphaRaster, dstRaster, param);
+        copyIntoRasterWithParams(alphaRaster, dstRaster, param);
     }
 
     private int getPredictorAlpha(WritableRaster alphaRaster, int filtering, int y, int x) {
