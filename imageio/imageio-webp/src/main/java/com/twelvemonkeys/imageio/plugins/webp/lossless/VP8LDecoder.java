@@ -148,16 +148,12 @@ public final class VP8LDecoder {
      */
     public static void copyIntoRasterWithParams(final Raster srcRaster, final WritableRaster dstRaster,
             final ImageReadParam param) {
-        Rectangle sourceRegion = param.getSourceRegion();
-        int sourceXSubsampling = param.getSourceXSubsampling();
-        int sourceYSubsampling = param.getSourceYSubsampling();
-        int subsamplingXOffset = param.getSubsamplingXOffset();
-        int subsamplingYOffset = param.getSubsamplingYOffset();
-        Point destinationOffset = param.getDestinationOffset();
-
-        if (sourceRegion == null) {
-            sourceRegion = dstRaster.getBounds();
-        }
+        Rectangle sourceRegion = param != null && param.getSourceRegion() != null ? param.getSourceRegion() : dstRaster.getBounds();
+        int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
+        int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
+        int subsamplingXOffset = param != null ? param.getSubsamplingXOffset() : 0;
+        int subsamplingYOffset = param != null ? param.getSubsamplingYOffset() : 0;
+        Point destinationOffset = param != null ? param.getDestinationOffset() : new Point(0, 0) ;
 
         if (sourceXSubsampling == 1 && sourceYSubsampling == 1) {
             // Only apply offset (and limit to requested region)
