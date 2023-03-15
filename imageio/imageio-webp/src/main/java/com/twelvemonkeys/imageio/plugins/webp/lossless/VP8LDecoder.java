@@ -135,7 +135,7 @@ public final class VP8LDecoder {
         }
 
         if (fullSizeRaster != raster && param != null) {
-            copyIntoRasterWithParams(fullSizeRaster, decodeRaster, param);
+            copyIntoRasterWithParams(fullSizeRaster, raster, param);
         }
     }
     
