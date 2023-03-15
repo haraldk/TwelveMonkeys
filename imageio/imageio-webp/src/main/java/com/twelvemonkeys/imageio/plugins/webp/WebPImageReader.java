@@ -527,7 +527,8 @@ final class WebPImageReader extends ImageReaderBase {
             System.out.println("compression: " + compression);
         }
 
-        WritableRaster alphaRaster = destination.getAlphaRaster();
+        // Alpha raster must have same dimensions as the source, because of gradient filtering.
+        WritableRaster alphaRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, height, 1, null);
         switch (compression) {
             case 0:
                 readUncompressedAlpha(alphaRaster);
@@ -536,8 +537,8 @@ final class WebPImageReader extends ImageReaderBase {
                 // Simulate header
                 imageInput.seek(imageInput.getStreamPosition() - 5);
 
-                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, destination.getWidth(), destination.getHeight(), 4, null);
-                readVP8Lossless(tempRaster, param, width, height);
+                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, height, 4, null);
+                readVP8Lossless(tempRaster, null, width, height);
 
                 // Copy from green (band 1) in temp to alpha in destination
                 alphaRaster.setRect(tempRaster.createChild(0, 0, tempRaster.getWidth(), tempRaster.getHeight(), 0, 0, new int[] {1}));
@@ -549,13 +550,17 @@ final class WebPImageReader extends ImageReaderBase {
         }
 
         if (filtering != AlphaFiltering.NONE) {
-            for (int y = 0; y < destination.getHeight(); y++) {
-                for (int x = 0; x < destination.getWidth(); x++) {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
                     int predictorAlpha = getPredictorAlpha(alphaRaster, filtering, y, x);
                     alphaRaster.setSample(x, y, 0, alphaRaster.getSample(x, y, 0) + predictorAlpha % 256);
                 }
             }
         }
+
+        // Copy into destination raster
+        WritableRaster dstRaster = destination.getAlphaRaster();
+        VP8LDecoder.copyIntoRasterWithParams(alphaRaster, dstRaster, param);
     }
 
     private int getPredictorAlpha(WritableRaster alphaRaster, int filtering, int y, int x) {
