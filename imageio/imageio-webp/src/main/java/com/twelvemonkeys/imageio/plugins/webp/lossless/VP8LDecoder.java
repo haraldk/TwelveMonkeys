@@ -177,7 +177,7 @@ public final class VP8LDecoder {
             }
         }
     }
-        
+
     private WritableRaster getRasterForDecoding(WritableRaster raster, ImageReadParam param, Rectangle bounds) {
         // If the ImageReadParam requires only a subregion of the image, and if the whole image does not fit into the
         // Raster or subsampling is requested, we need a temporary Raster as we can only decode the whole image at once
