@@ -58,7 +58,9 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                         new Dimension(400, 400), new Dimension(400, 400), new Dimension(400, 394),
                         new Dimension(371, 394), new Dimension(394, 382), new Dimension(400, 388),
                         new Dimension(394, 383), new Dimension(394, 394), new Dimension(372, 394),
-                        new Dimension(400, 400), new Dimension(320, 382))
+                        new Dimension(400, 400), new Dimension(320, 382)),
+                // Alpha transparency and Alpha filtering
+                new TestData(getClassLoaderResource("/webp/alpha_filter.webp"), new Dimension(1600, 1600))
         );
     }
 
@@ -157,6 +159,29 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
             assertRGBEquals("Expected transparent corner (399, 0)", 0x00000000, image.getRGB(399, 0) & 0xFF000000, 8);
             assertRGBEquals("Expected transparent corner (0, 300)", 0x00000000, image.getRGB(0, 300) & 0xFF000000, 8);
             assertRGBEquals("Expected transparent corner (399, 300)", 0x00000000, image.getRGB(399, 300) & 0xFF000000, 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testAlphaSubsampling() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/alpha_filter.webp"))) {
+            reader.setInput(stream);
+
+            // Read the image using a subsampling factor of 2 
+            ImageReadParam param = new ImageReadParam();
+            param.setSourceSubsampling(2, 2, 0, 0);
+
+            BufferedImage image = reader.read(0, param);
+
+            assertRGBEquals("Expected transparent at (100, 265)", 0x00000000, image.getRGB(100, 265) & 0xFF000000, 8);
+            assertRGBEquals("Expected transparent at (512, 320)", 0x00000000, image.getRGB(512, 320) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque at (666, 444)", 0xFF000000, image.getRGB(666, 444) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque corner (799, 799)", 0xFF000000, image.getRGB(699, 699) & 0xFF000000, 8);
         }
         finally {
             reader.dispose();

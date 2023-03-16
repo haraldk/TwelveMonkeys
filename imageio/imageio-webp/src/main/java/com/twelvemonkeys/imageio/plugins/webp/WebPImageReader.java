@@ -61,6 +61,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static com.twelvemonkeys.imageio.plugins.webp.lossless.VP8LDecoder.copyIntoRasterWithParams;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -536,21 +538,26 @@ final class WebPImageReader extends ImageReaderBase {
                 // Simulate header
                 imageInput.seek(imageInput.getStreamPosition() - 5);
 
-                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, destination.getWidth(), destination.getHeight(), 4, null);
-                readVP8Lossless(tempRaster, param, width, height);
+                // Temp alpha raster must have same dimensions as the source, because of filtering.
+                WritableRaster tempRaster = Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, width, height, 4, null);
+                readVP8Lossless(tempRaster, null, width, height);
 
                 // Copy from green (band 1) in temp to alpha in destination
-                alphaRaster.setRect(tempRaster.createChild(0, 0, tempRaster.getWidth(), tempRaster.getHeight(), 0, 0, new int[] {1}));
+                WritableRaster alphaChannel = tempRaster.createWritableChild(0, 0, tempRaster.getWidth(), tempRaster.getHeight(), 0, 0, new int[]{1});
+                alphaFilter(alphaChannel, filtering);
+                copyIntoRasterWithParams(alphaChannel, alphaRaster, param);
                 break;
             default:
                 processWarningOccurred("Unknown WebP alpha compression: " + compression);
                 opaqueAlpha(alphaRaster);
                 break;
         }
+    }
 
+    private void alphaFilter(WritableRaster alphaRaster, int filtering) {
         if (filtering != AlphaFiltering.NONE) {
-            for (int y = 0; y < destination.getHeight(); y++) {
-                for (int x = 0; x < destination.getWidth(); x++) {
+            for (int y = 0; y < alphaRaster.getHeight(); y++) {
+                for (int x = 0; x < alphaRaster.getWidth(); x++) {
                     int predictorAlpha = getPredictorAlpha(alphaRaster, filtering, y, x);
                     alphaRaster.setSample(x, y, 0, alphaRaster.getSample(x, y, 0) + predictorAlpha % 256);
                 }

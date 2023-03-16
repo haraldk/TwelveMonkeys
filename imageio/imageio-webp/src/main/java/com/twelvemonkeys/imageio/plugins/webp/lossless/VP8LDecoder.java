@@ -135,33 +135,36 @@ public final class VP8LDecoder {
         }
 
         if (fullSizeRaster != raster && param != null) {
-            // Copy into destination raster with settings applied
-            Rectangle sourceRegion = param.getSourceRegion();
-            int sourceXSubsampling = param.getSourceXSubsampling();
-            int sourceYSubsampling = param.getSourceYSubsampling();
-            int subsamplingXOffset = param.getSubsamplingXOffset();
-            int subsamplingYOffset = param.getSubsamplingYOffset();
-            Point destinationOffset = param.getDestinationOffset();
+            copyIntoRasterWithParams(fullSizeRaster, raster, param);
+        }
+    }
+    
+    /**
+     * Copy a source raster into a destination raster with settings applied.
+     */
+    public static void copyIntoRasterWithParams(final Raster srcRaster, final WritableRaster dstRaster,
+            final ImageReadParam param) {
+        Rectangle sourceRegion = param != null && param.getSourceRegion() != null ? param.getSourceRegion() : dstRaster.getBounds();
+        int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
+        int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
+        int subsamplingXOffset = param != null ? param.getSubsamplingXOffset() : 0;
+        int subsamplingYOffset = param != null ? param.getSubsamplingYOffset() : 0;
+        Point destinationOffset = param != null ? param.getDestinationOffset() : new Point(0, 0) ;
 
-            if (sourceRegion == null) {
-                sourceRegion = raster.getBounds();
-            }
+        if (sourceXSubsampling == 1 && sourceYSubsampling == 1) {
+            // Only apply offset (and limit to requested region)
+            dstRaster.setRect(destinationOffset.x, destinationOffset.y, srcRaster);
+        }
+        else {
+            // Manual copy, more efficient way might exist
+            byte[] rgba = new byte[4];
+            int xEnd = dstRaster.getWidth() + dstRaster.getMinX();
+            int yEnd = dstRaster.getHeight() + dstRaster.getMinY();
 
-            if (sourceXSubsampling == 1 && sourceYSubsampling == 1) {
-                // Only apply offset (and limit to requested region)
-                raster.setRect(destinationOffset.x, destinationOffset.y, fullSizeRaster);
-            }
-            else {
-                // Manual copy, more efficient way might exist
-                byte[] rgba = new byte[4];
-                int xEnd = raster.getWidth() + raster.getMinX();
-                int yEnd = raster.getHeight() + raster.getMinY();
-
-                for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset; xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
-                    for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset; yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
-                        fullSizeRaster.getDataElements(xSrc, ySrc, rgba);
-                        raster.setDataElements(xDst, yDst, rgba);
-                    }
+            for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset; xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
+                for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset; yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
+                    srcRaster.getDataElements(xSrc, ySrc, rgba);
+                    dstRaster.setDataElements(xDst, yDst, rgba);
                 }
             }
         }
