@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.stream.DirectImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.io.SubStream;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
@@ -107,7 +108,8 @@ final class PSDUtil {
                 return new SubImageInputStream(stream, streamLength < 0 ? Long.MAX_VALUE : streamLength);
 
             case PSD.COMPRESSION_RLE:
-                return new DirectImageInputStream(new SequenceInputStream(new LazyPackBitsStreamEnumeration(byteCounts, stream)));
+                int rowLength = (columns * bitsPerSample + 7) / 8;
+                return new DirectImageInputStream(new SequenceInputStream(new LazyPackBitsStreamEnumeration(stream, byteCounts, rowLength)));
 
             case PSD.COMPRESSION_ZIP:
                 return new DirectImageInputStream(new InflaterInputStream(createStreamAdapter(stream, compressedLength)));
@@ -124,11 +126,13 @@ final class PSDUtil {
     private static class LazyPackBitsStreamEnumeration implements Enumeration<InputStream> {
         private final ImageInputStream stream;
         private final int[] byteCounts;
+        private final int rowLength;
         private int index;
 
-        public LazyPackBitsStreamEnumeration(int[] byteCounts, ImageInputStream stream) {
-            this.byteCounts = byteCounts;
+        public LazyPackBitsStreamEnumeration(ImageInputStream stream, int[] byteCounts, int rowLength) {
             this.stream = stream;
+            this.byteCounts = byteCounts;
+            this.rowLength = rowLength;
         }
 
         @Override
@@ -138,7 +142,7 @@ final class PSDUtil {
 
         @Override
         public InputStream nextElement() {
-            return new DecoderStream(createStreamAdapter(stream, byteCounts[index++]), new PackBitsDecoder());
+            return new SubStream(new DecoderStream(createStreamAdapter(stream, byteCounts[index++]), new PackBitsDecoder(), rowLength), rowLength);
         }
     }
 }
