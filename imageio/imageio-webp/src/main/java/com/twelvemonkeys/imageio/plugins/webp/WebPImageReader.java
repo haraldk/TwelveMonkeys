@@ -62,7 +62,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.plugins.webp.lossless.VP8LDecoder.copyIntoRasterWithParams;
-
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
@@ -134,8 +133,8 @@ final class WebPImageReader extends ImageReaderBase {
 
             if (DEBUG) {
                 System.out.printf("chunk: '%s'\n", fourCC(nextChunk));
-                System.out.println("chunkLength: " + chunkLength);
                 System.out.println("chunkStart: " + chunkStart);
+                System.out.println("chunkLength: " + chunkLength);
             }
 
             switch (nextChunk) {
@@ -473,8 +472,8 @@ final class WebPImageReader extends ImageReaderBase {
 
             if (DEBUG) {
                 System.out.printf("chunk: '%s'\n", fourCC(nextChunk));
-                System.out.println("chunkLength: " + chunkLength);
                 System.out.println("chunkStart: " + chunkStart);
+                System.out.println("chunkLength: " + chunkLength);
             }
 
             switch (nextChunk) {
@@ -684,8 +683,8 @@ final class WebPImageReader extends ImageReaderBase {
                 long chunkStart = imageInput.getStreamPosition();
 
 //                System.err.printf("chunk: '%s'\n", fourCC(nextChunk));
-//                System.err.println("chunkLength: " + chunkLength);
 //                System.err.println("chunkStart: " + chunkStart);
+//                System.err.println("chunkLength: " + chunkLength);
 
                 switch (nextChunk) {
                     case WebP.CHUNK_EXIF:
