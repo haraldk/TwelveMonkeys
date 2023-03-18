@@ -140,11 +140,10 @@ public final class VP8LDecoder {
     }
     
     /**
-     * Copy a source raster into a destination raster with settings applied.
+     * Copy a source raster into a destination raster with optional settings applied.
      */
-    public static void copyIntoRasterWithParams(final Raster srcRaster, final WritableRaster dstRaster,
-            final ImageReadParam param) {
-        Rectangle sourceRegion = param != null && param.getSourceRegion() != null ? param.getSourceRegion() : dstRaster.getBounds();
+    public static void copyIntoRasterWithParams(final Raster srcRaster, final WritableRaster dstRaster, final ImageReadParam param) {
+        Rectangle sourceRegion = param != null && param.getSourceRegion() != null ? param.getSourceRegion() : srcRaster.getBounds();
         int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
         int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
         int subsamplingXOffset = param != null ? param.getSubsamplingXOffset() : 0;
@@ -156,13 +155,13 @@ public final class VP8LDecoder {
             dstRaster.setRect(destinationOffset.x, destinationOffset.y, srcRaster);
         }
         else {
-            // Manual copy, more efficient way might exist
+            // Subsampled case
             byte[] rgba = new byte[4];
             int xEnd = dstRaster.getWidth() + dstRaster.getMinX();
             int yEnd = dstRaster.getHeight() + dstRaster.getMinY();
 
-            for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset; xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
-                for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset; yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
+            for (int yDst = destinationOffset.y, ySrc = sourceRegion.y + subsamplingYOffset; yDst < yEnd; yDst++, ySrc += sourceYSubsampling) {
+                for (int xDst = destinationOffset.x, xSrc = sourceRegion.x + subsamplingXOffset; xDst < xEnd; xDst++, xSrc += sourceXSubsampling) {
                     srcRaster.getDataElements(xSrc, ySrc, rgba);
                     dstRaster.setDataElements(xDst, yDst, rgba);
                 }
