@@ -41,21 +41,20 @@ import java.io.InputStream;
  * underlying stream.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
- * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/io/SubStream.java#2 $
  */
 public final class SubStream extends FilterInputStream {
     private long bytesLeft;
     private int markLimit;
 
     /**
-     * Creates a {@code SubStream} of the given {@code pStream}.
+     * Creates a {@code SubStream} of the given {@code stream}.
      *
-     * @param pStream the underlying input stream
-     * @param pLength maximum number of bytes to read drom this stream
+     * @param stream the underlying input stream
+     * @param length maximum number of bytes to read from this stream
      */
-    public SubStream(final InputStream pStream, final long pLength) {
-        super(Validate.notNull(pStream, "stream"));
-        bytesLeft = pLength;
+    public SubStream(final InputStream stream, final long length) {
+        super(Validate.notNull(stream, "stream"));
+        bytesLeft = length;
     }
 
     /**
@@ -73,13 +72,13 @@ public final class SubStream extends FilterInputStream {
 
     @Override
     public int available() throws IOException {
-        return (int) Math.min(super.available(), bytesLeft);
+        return (int) findMaxLen(super.available());
     }
 
     @Override
-    public void mark(int pReadLimit) {
-        super.mark(pReadLimit);// This either succeeds or does nothing...
-        markLimit = pReadLimit;
+    public void mark(int readLimit) {
+        super.mark(readLimit);// This either succeeds or does nothing...
+        markLimit = readLimit;
     }
 
     @Override
@@ -93,44 +92,42 @@ public final class SubStream extends FilterInputStream {
         if (bytesLeft-- <= 0) {
             return -1;
         }
+
         return super.read();
     }
 
     @Override
-    public final int read(byte[] pBytes) throws IOException {
-        return read(pBytes, 0, pBytes.length);
+    public int read(byte[] bytes) throws IOException {
+        return read(bytes, 0, bytes.length);
     }
 
     @Override
-    public int read(final byte[] pBytes, final int pOffset, final int pLength) throws IOException {
+    public int read(final byte[] bytes, final int off, final int len) throws IOException {
         if (bytesLeft <= 0) {
             return -1;
         }
 
-        int read = super.read(pBytes, pOffset, (int) findMaxLen(pLength));
+        int read = super.read(bytes, off, (int) findMaxLen(len));
         bytesLeft = read < 0 ? 0 : bytesLeft - read;
+
         return read;
+    }
+
+    @Override
+    public long skip(long length) throws IOException {
+        long skipped = super.skip(findMaxLen(length));// Skips 0 or more, never -1
+        bytesLeft -= skipped;
+
+        return skipped;
     }
 
     /**
      * Finds the maximum number of bytes we can read or skip, from this stream.
      *
-     * @param pLength the requested length
+     * @param length the requested length
      * @return the maximum number of bytes to read
      */
-    private long findMaxLen(long pLength) {
-        if (bytesLeft < pLength) {
-            return (int) Math.max(bytesLeft, 0);
-        }
-        else {
-            return pLength;
-        }
-    }
-
-    @Override
-    public long skip(long pLength) throws IOException {
-        long skipped = super.skip(findMaxLen(pLength));// Skips 0 or more, never -1
-        bytesLeft -= skipped;
-        return skipped;
+    private long findMaxLen(long length) {
+        return bytesLeft < length ? Math.max(bytesLeft, 0) : length;
     }
 }
