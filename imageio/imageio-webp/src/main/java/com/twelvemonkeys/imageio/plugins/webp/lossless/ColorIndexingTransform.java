@@ -67,6 +67,11 @@ final class ColorIndexingTransform implements Transform {
 
                 // Arraycopy for 4 elements might not be beneficial
                 System.arraycopy(colorTable, index * 4, rgba, 0, 4);
+//                 rgba[0] = colorTable[index * 4];
+//                 rgba[1] = colorTable[index * 4 + 1];
+//                 rgba[2] = colorTable[index * 4 + 2];
+//                 rgba[3] = colorTable[index * 4 + 3];
+
                 raster.setDataElements(x, y, rgba);
             }
         }
