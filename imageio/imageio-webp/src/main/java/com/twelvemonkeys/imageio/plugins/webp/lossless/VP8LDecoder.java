@@ -117,7 +117,7 @@ public final class VP8LDecoder {
 
         if (topLevel) {
             Rectangle bounds = new Rectangle(width, height);
-            fullSizeRaster = getRasterForDecoding(raster, param, bounds);
+            fullSizeRaster = createDecodeRaster(raster, param, bounds);
 
             // If multiple indices packed into one pixel xSize is different from raster width
             decodeRaster = fullSizeRaster.createWritableChild(0, 0, xSize, height, 0, 0, null);
@@ -134,11 +134,41 @@ public final class VP8LDecoder {
             transform.applyInverse(fullSizeRaster);
         }
 
-        if (fullSizeRaster != raster && param != null) {
+        if (fullSizeRaster != raster) {
             copyIntoRasterWithParams(fullSizeRaster, raster, param);
         }
     }
-    
+
+    private WritableRaster createDecodeRaster(WritableRaster raster, ImageReadParam param, Rectangle bounds) {
+        // If the ImageReadParam requires only a subregion of the image, and if the whole image does not fit into the
+        // Raster or subsampling is requested, we need a temporary Raster as we can only decode the whole image at once
+        boolean originSet = false;
+
+        if (param != null) {
+            if (param.getSourceRegion() != null && !param.getSourceRegion().contains(bounds) ||
+                    param.getSourceXSubsampling() != 1 || param.getSourceYSubsampling() != 1) {
+                // Can't reuse existing
+                return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height,
+                        4 * bounds.width, 4, new int[] {0, 1, 2, 3}, null);
+            }
+            else {
+                bounds.setLocation(param.getDestinationOffset());
+                originSet = true;
+            }
+        }
+
+        if (!raster.getBounds().contains(bounds)) {
+            // Can't reuse existing
+            return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height, 4 * bounds.width,
+                    4, new int[] {0, 1, 2, 3}, null);
+        }
+
+        return originSet ?
+                // Recenter to (0, 0)
+                raster.createWritableChild(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, null) :
+                raster;
+    }
+
     /**
      * Copy a source raster into a destination raster with optional settings applied.
      */
@@ -167,36 +197,6 @@ public final class VP8LDecoder {
                 }
             }
         }
-    }
-
-    private WritableRaster getRasterForDecoding(WritableRaster raster, ImageReadParam param, Rectangle bounds) {
-        // If the ImageReadParam requires only a subregion of the image, and if the whole image does not fit into the
-        // Raster or subsampling is requested, we need a temporary Raster as we can only decode the whole image at once
-        boolean originSet = false;
-
-        if (param != null) {
-            if (param.getSourceRegion() != null && !param.getSourceRegion().contains(bounds) ||
-                    param.getSourceXSubsampling() != 1 || param.getSourceYSubsampling() != 1) {
-                // Can't reuse existing
-                return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height,
-                        4 * bounds.width, 4, new int[] {0, 1, 2, 3}, null);
-            }
-            else {
-                bounds.setLocation(param.getDestinationOffset());
-                originSet = true;
-
-            }
-        }
-        if (!raster.getBounds().contains(bounds)) {
-            // Can't reuse existing
-            return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height, 4 * bounds.width,
-                    4, new int[] {0, 1, 2, 3}, null);
-        }
-
-        return originSet ?
-               // Recenter to (0, 0)
-               raster.createWritableChild(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, null) :
-               raster;
     }
 
     private void decodeImage(WritableRaster raster, HuffmanInfo huffmanInfo, ColorCache colorCache) throws IOException {
