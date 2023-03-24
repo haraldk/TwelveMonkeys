@@ -68,7 +68,8 @@ final class HorizontalDeDifferencingStream extends InputStream {
 
         channel = Channels.newChannel(Validate.notNull(stream, "stream"));
 
-        buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8).order(byteOrder);
+        buffer = ByteBuffer.allocate((columns * samplesPerPixel * bitsPerSample + 7) / 8)
+                           .order(byteOrder);
         buffer.flip();
     }
 
