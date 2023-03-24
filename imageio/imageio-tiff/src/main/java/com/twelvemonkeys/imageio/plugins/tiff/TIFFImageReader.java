@@ -2484,7 +2484,7 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING:
                 return new HorizontalDeDifferencingStream(stream, width, samplesPerPixel, bitsPerSample, byteOrder);
             case TIFFExtension.PREDICTOR_HORIZONTAL_FLOATINGPOINT:
-                throw new IIOException("Unsupported TIFF Predictor value: " + predictor);
+                return new HorizontalDeDifferencingFloatingPointStream(stream, width, samplesPerPixel, bitsPerSample, byteOrder);
             default:
                 throw new IIOException("Unknown TIFF Predictor value: " + predictor);
         }
