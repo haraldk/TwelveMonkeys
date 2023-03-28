@@ -160,6 +160,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
     // Special cases found in the wild below
 
+
     @Test
     public void testICCProfileCMYKClassOutputColors() throws IOException {
         // Make sure ICC profile with class output isn't converted to too bright values
@@ -529,6 +530,59 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         finally {
             reader.dispose();
         }
+    }
+
+    @Test
+    public void testReadImageWithExifOrientation() throws IOException {
+        List<String> expectedOrientations = Arrays.asList("Normal", "Normal", "FlipH", "Rotate180", "FlipV", "FlipVRotate90", "Rotate270", "FlipHRotate90", "Rotate90");
+        JPEGImageReader reader = createReader();
+        try {
+            for (int i = 0; i < expectedOrientations.size(); i++) {
+                String expOrientation = expectedOrientations.get(i);
+                String imgName = String.format("/exif-small/exif_orientation_%s.jpg", i);
+                try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(imgName))) {
+                    reader.setInput(stream);
+                    int w = reader.getWidth(0);
+                    int h = reader.getHeight(0);
+                    assertEquals(expOrientation + " width", 32, w);
+                    assertEquals(expOrientation + " height", 48, h);
+                    BufferedImage img = reader.read(0);
+                    assertEquals(expOrientation + " BufferedImage width", 32, img.getWidth());
+                    assertEquals(expOrientation + " BufferedImage height", 48, img.getHeight());
+                    assertEquals(i + " - upper left corner is pink", 0.95, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.1);
+
+                }
+
+                // also try to read the common way
+                BufferedImage img = ImageIO.read(new File(getClassLoaderResource(imgName).getFile()));
+                assertEquals(expOrientation + " ImageIO width", 32, img.getWidth());
+                assertEquals(expOrientation + " ImageIO height", 48, img.getHeight());
+                assertEquals(i + " - upper left corner is pink", 0.95, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.1);
+    
+            }
+        } finally {
+            reader.dispose();
+        }
+    }
+
+    private static final double colorMatchPercent(BufferedImage image, int x, int y, String hexColor) throws IOException {
+        
+        // Get the RGB values of the pixel at the given coordinates
+        Color pixelColor = new Color(image.getRGB(x, y));
+        Color targetColor = Color.decode(hexColor);
+        
+        // Calculate the color difference using the CIE76 formula
+        double colorDifference = Math.sqrt(Math.pow(pixelColor.getRed() - targetColor.getRed(), 2) +
+                                           Math.pow(pixelColor.getGreen() - targetColor.getGreen(), 2) +
+                                           Math.pow(pixelColor.getBlue() - targetColor.getBlue(), 2));
+        
+        // Calculate the maximum possible color difference (the diagonal distance between two opposite corners of the RGB cube)
+        double maxColorDifference = Math.sqrt(Math.pow(255, 2) * 3);
+        
+        // Calculate the percentage of color similarity
+        double percentSimilar = 1d - (colorDifference / maxColorDifference);
+        
+        return percentSimilar;
     }
 
     @Test
