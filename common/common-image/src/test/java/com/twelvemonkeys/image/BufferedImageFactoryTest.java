@@ -40,7 +40,6 @@ import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -89,17 +88,12 @@ public class BufferedImageFactoryTest {
 
     // This is a little random, and it would be nicer if we could throw an IllegalArgumentException on create.
     // Unfortunately, the API doesn't allow this...
-    @Test(timeout = 1000)
+    @Test(timeout = 1000, expected = ImageConversionException.class)
     public void testGetBufferedImageErrorSourceURL() {
         Image source = Toolkit.getDefaultToolkit().createImage(getClass().getResource("/META-INF/MANIFEST.MF"));
 
-        try {
-            BufferedImageFactory factory = new BufferedImageFactory(source);
-            assertNull(factory.getBufferedImage()); // Should normally not be reached
-        }
-        catch (ImageConversionException ignore) {
-            // This exception is allowed and *expected*, however this behavior is flaky in some environments...
-        }
+        BufferedImageFactory factory = new BufferedImageFactory(source);
+        factory.getBufferedImage();
     }
 
     @Test
