@@ -531,6 +531,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
         final int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
         final int numBands = renderedImage.getSampleModel().getNumBands();
 
+        // TODO: This buffer should probably have order matching that of imageOutput, but only if writing "actual" 16 or 32 bit samples, not "packed" samples
+        final byte[] buffer = new byte[(tileWidth * numBands * sampleSize + 7) / 8];
+        int bufferPos = 0;
+
         for (int yTile = minTileY; yTile < maxYTiles; yTile++) {
             for (int xTile = minTileX; xTile < maxXTiles; xTile++) {
                 final Raster tile = renderedImage.getTile(xTile, yTile);
@@ -568,16 +572,17 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int s = 0; s < numBands; s++) {
                                         if (sampleSize == 8 || shift == 0) {
                                             // Normal interleaved/planar case
-                                            stream.writeByte((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
-
+                                            buffer[bufferPos++] = ((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
                                         }
                                         else {
                                             // "Packed" case
-                                            stream.writeByte((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
+                                            buffer[bufferPos++] = ((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
                                         }
                                     }
                                 }
 
+                                flushBuffer(buffer, bufferPos, stream);
+                                bufferPos = 0;
                                 flushStream(stream);
                             }
                         }
@@ -597,9 +602,13 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
                                         int xOff = yOff + x;
 
-                                        stream.writeShort((short) (dataBuffer.getElem(b, xOff) & 0xffff));
+                                        int elem = dataBuffer.getElem(b, xOff);
+                                        buffer[bufferPos++] = (byte) ((elem >>> 8) & 0xff);
+                                        buffer[bufferPos++] = (byte) (elem & 0xff);
                                     }
 
+                                    flushBuffer(buffer, bufferPos, stream);
+                                    bufferPos = 0;
                                     flushStream(stream);
                                 }
                             }
@@ -642,9 +651,15 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                     for (int x = offsetX; x < tileWidth + offsetX; x++) {
                                         int xOff = yOff + x;
 
-                                        stream.writeInt(dataBuffer.getElem(b, xOff));
+                                        int elem = dataBuffer.getElem(b, xOff);
+                                        buffer[bufferPos++] = (byte) ((elem >>> 24) & 0xff);
+                                        buffer[bufferPos++] = (byte) ((elem >>> 16) & 0xff);
+                                        buffer[bufferPos++] = (byte) ((elem >>> 8) & 0xff);
+                                        buffer[bufferPos++] = (byte) (elem & 0xff);
                                     }
 
+                                    flushBuffer(buffer, bufferPos, stream);
+                                    bufferPos = 0;
                                     flushStream(stream);
                                 }
                             }
@@ -661,10 +676,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                         int element = dataBuffer.getElem(b, xOff);
 
                                         for (int s = 0; s < numBands; s++) {
-                                            stream.writeByte((byte) ((element >> bitOffsets[s]) & 0xff));
+                                            buffer[bufferPos++] = (byte) ((element >> bitOffsets[s]) & 0xff);
                                         }
                                     }
 
+                                    flushBuffer(buffer, bufferPos, stream);
+                                    bufferPos = 0;
                                     flushStream(stream);
                                 }
                             }
@@ -690,12 +707,16 @@ public final class TIFFImageWriter extends ImageWriterBase {
         processImageComplete();
     }
 
-    private void flushStream(DataOutput stream) throws IOException {
-        // Need to flush/start new compression for each row, for proper LZW/PackBits/Deflate/ZLib compression
+    private static void flushStream(DataOutput stream) throws IOException {
+        // Need to flush/start new compression for each row, for proper LZW/PackBits/Deflate/ZLib
         if (stream instanceof DataOutputStream) {
             DataOutputStream dataOutputStream = (DataOutputStream) stream;
             dataOutputStream.flush();
         }
+    }
+
+    private static void flushBuffer(final byte[] buffer, final int bufferPos, final DataOutput stream) throws IOException {
+        stream.write(buffer, 0, bufferPos);
     }
 
     // Metadata
