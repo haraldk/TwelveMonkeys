@@ -79,7 +79,7 @@ public final class BufferedImageFactory {
     private int scanSize;
 
     private ColorModel sourceColorModel;
-    private Hashtable sourceProperties; // ImageConsumer API dictates Hashtable
+    private Hashtable<?, ?> sourceProperties; // ImageConsumer API dictates Hashtable
 
     private Object sourcePixels;
 
@@ -214,31 +214,34 @@ public final class BufferedImageFactory {
             // Wait until the producer wakes us up, by calling imageComplete
             while (fetching) {
                 try {
-                    wait(200l);
+                    wait(200L);
                 }
                 catch (InterruptedException e) {
                     throw new ImageConversionException("Image conversion aborted: " + e.getMessage(), e);
                 }
             }
 
-            if (consumerException != null) {
-                throw new ImageConversionException("Image conversion failed: " + consumerException.getMessage(), consumerException);
-            }
+            try {
+                if (consumerException != null) {
+                    throw new ImageConversionException("Image conversion failed: " + consumerException.getMessage(), consumerException);
+                }
 
-            if (colorModelOnly) {
-                createColorModel();
+                if (colorModelOnly) {
+                    createColorModel();
+                }
+                else {
+                    createBuffered();
+                }
             }
-            else {
-                createBuffered();
+            finally {
+                // Clean up, in case any objects are copied/cloned, so we can free resources
+                freeResources();
             }
         }
     }
 
     private void createColorModel() {
         colorModel = sourceColorModel;
-
-        // Clean up, in case any objects are copied/cloned, so we can free resources
-        freeResources();
     }
 
     private void createBuffered() {
@@ -253,8 +256,9 @@ public final class BufferedImageFactory {
             }
         }
 
-        // Clean up, in case any objects are copied/cloned, so we can free resources
-        freeResources();
+        if (buffered == null) {
+            throw new ImageConversionException("Could not create BufferedImage");
+        }
     }
 
     private void freeResources() {
@@ -324,12 +328,13 @@ public final class BufferedImageFactory {
      * Converts an array of {@code int} pixels to an array of {@code short}
      * pixels. The conversion is done, by masking out the
      * <em>higher 16 bits</em> of the {@code int}.
-     *
+     * <p>
      * For any given {@code int}, the {@code short} value is computed as
      * follows:
      * <blockquote>{@code
      * short value = (short) (intValue & 0x0000ffff);
      * }</blockquote>
+     * </p>
      *
      * @param inputPixels the pixel data to convert
      * @return an array of {@code short}s, same length as {@code inputPixels}
@@ -351,7 +356,7 @@ public final class BufferedImageFactory {
      * @see BufferedImageFactory#addProgressListener
      * @see BufferedImageFactory#removeProgressListener
      */
-    public static interface ProgressListener extends EventListener {
+    public interface ProgressListener extends EventListener {
 
         /**
          * Reports progress to this listener.
@@ -456,7 +461,7 @@ public final class BufferedImageFactory {
             // later replaces it with the default RGB in the first setPixels call
             // (this is probably allowed according to the spec, but it's a waste of time and space).
             if (sourceColorModel != colorModel) {
-                if (/*sourceColorModel == null ||*/ sourcePixels == null) {
+                if (sourcePixels == null) {
                     sourceColorModel = colorModel;
                 }
                 else {
@@ -478,10 +483,8 @@ public final class BufferedImageFactory {
                 producer.removeConsumer(this);
             }
 
-            switch (status) {
-                case ImageConsumer.IMAGEERROR:
-                    consumerException = new ImageConversionException("ImageConsumer.IMAGEERROR");
-                break;
+            if (status == ImageConsumer.IMAGEERROR) {
+                consumerException = new ImageConversionException("ImageConsumer.IMAGEERROR");
             }
 
             synchronized (BufferedImageFactory.this) {
