@@ -91,21 +91,21 @@ public final class BufferedImageFactory {
 
     /**
      * Creates a {@code BufferedImageFactory}.
-     * @param pSource the source image
-     * @throws IllegalArgumentException if {@code pSource == null}
+     * @param source the source image
+     * @throws IllegalArgumentException if {@code source == null}
      */
-    public BufferedImageFactory(final Image pSource) {
-        this(pSource != null ? pSource.getSource() : null);
+    public BufferedImageFactory(final Image source) {
+        this(source != null ? source.getSource() : null);
     }
 
     /**
      * Creates a {@code BufferedImageFactory}.
-     * @param pSource the source image producer
-     * @throws IllegalArgumentException if {@code pSource == null}
+     * @param source the source image producer
+     * @throws IllegalArgumentException if {@code source == null}
      */
-    public BufferedImageFactory(final ImageProducer pSource) {
-        Validate.notNull(pSource, "source");
-        producer = pSource;
+    public BufferedImageFactory(final ImageProducer source) {
+        Validate.notNull(source, "source");
+        producer = source;
     }
 
     /**
@@ -155,44 +155,44 @@ public final class BufferedImageFactory {
     /**
      * Sets the source region (AOI) for the new image.
      *
-     * @param pRegion the source region
+     * @param region the source region
      */
-    public void setSourceRegion(final Rectangle pRegion) {
+    public void setSourceRegion(final Rectangle region) {
         // Re-fetch everything, if region changed
-        if (x != pRegion.x || y != pRegion.y || width != pRegion.width || height != pRegion.height) {
+        if (x != region.x || y != region.y || width != region.width || height != region.height) {
             dispose();
         }
 
-        x = pRegion.x;
-        y = pRegion.y;
-        width = pRegion.width;
-        height = pRegion.height;
+        x = region.x;
+        y = region.y;
+        width = region.width;
+        height = region.height;
     }
 
     /**
      * Sets the source subsampling for the new image.
      *
-     * @param pXSub horizontal subsampling factor
-     * @param pYSub vertical subsampling factor
+     * @param xSubsampling horizontal subsampling factor
+     * @param ySubsampling vertical subsampling factor
      */
-    public void setSourceSubsampling(int pXSub, int pYSub) {
+    public void setSourceSubsampling(int xSubsampling, int ySubsampling) {
         // Re-fetch everything, if subsampling changed
-        if (xSub != pXSub || ySub != pYSub) {
+        if (xSub != xSubsampling || ySub != ySubsampling) {
             dispose();
         }
 
-        if (pXSub > 1) {
-            xSub = pXSub;
+        if (xSubsampling > 1) {
+            xSub = xSubsampling;
         }
-        if (pYSub > 1) {
-            ySub = pYSub;
+        if (ySubsampling > 1) {
+            ySub = ySubsampling;
         }
     }
 
-    private synchronized void doFetch(boolean pColorModelOnly) throws ImageConversionException {
-        if (!fetching && (!pColorModelOnly && buffered == null || buffered == null && sourceColorModel == null)) {
+    private synchronized void doFetch(final boolean colorModelOnly) throws ImageConversionException {
+        if (!fetching && (!colorModelOnly && buffered == null || buffered == null && sourceColorModel == null)) {
             // NOTE: Subsampling is only applied if extracting full image
-            if (!pColorModelOnly && (xSub > 1 || ySub > 1)) {
+            if (!colorModelOnly && (xSub > 1 || ySub > 1)) {
                 // If only sampling a region, the region must be scaled too
                 if (width > 0 && height > 0) {
                     width = (width + xSub - 1) / xSub;
@@ -207,7 +207,7 @@ public final class BufferedImageFactory {
 
             // Start fetching
             fetching = true;
-            readColorModelOnly = pColorModelOnly;
+            readColorModelOnly = colorModelOnly;
 
             producer.startProduction(consumer); // Note: If single-thread (synchronous), this call will block
 
@@ -225,7 +225,7 @@ public final class BufferedImageFactory {
                 throw new ImageConversionException("Image conversion failed: " + consumerException.getMessage(), consumerException);
             }
 
-            if (pColorModelOnly) {
+            if (colorModelOnly) {
                 createColorModel();
             }
             else {
@@ -280,27 +280,27 @@ public final class BufferedImageFactory {
     /**
      * Adds a progress listener to this factory.
      *
-     * @param pListener the progress listener
+     * @param listener the progress listener
      */
-    public void addProgressListener(ProgressListener pListener) {
-        if (pListener == null) {
+    public void addProgressListener(ProgressListener listener) {
+        if (listener == null) {
             return;
         }
 
         if (listeners == null) {
-            listeners = new CopyOnWriteArrayList<ProgressListener>();
+            listeners = new CopyOnWriteArrayList<>();
         }
 
-        listeners.add(pListener);
+        listeners.add(listener);
     }
 
     /**
      * Removes a progress listener from this factory.
      *
-     * @param pListener the progress listener
+     * @param listener the progress listener
      */
-    public void removeProgressListener(ProgressListener pListener) {
-        if (pListener == null) {
+    public void removeProgressListener(ProgressListener listener) {
+        if (listener == null) {
             return;
         }
 
@@ -308,7 +308,7 @@ public final class BufferedImageFactory {
             return;
         }
 
-        listeners.remove(pListener);
+        listeners.remove(listener);
     }
 
     /**
@@ -331,14 +331,14 @@ public final class BufferedImageFactory {
      * short value = (short) (intValue & 0x0000ffff);
      * }</blockquote>
      *
-     * @param pPixels the pixel data to convert
-     * @return an array of {@code short}s, same lenght as {@code pPixels}
+     * @param inputPixels the pixel data to convert
+     * @return an array of {@code short}s, same length as {@code inputPixels}
      */
-    private static short[] toShortPixels(int[] pPixels) {
-        short[] pixels = new short[pPixels.length];
+    private static short[] toShortPixels(int[] inputPixels) {
+        short[] pixels = new short[inputPixels.length];
 
         for (int i = 0; i < pixels.length; i++) {
-            pixels[i] = (short) (pPixels[i] & 0xffff);
+            pixels[i] = (short) (inputPixels[i] & 0xffff);
         }
 
         return pixels;
@@ -358,10 +358,10 @@ public final class BufferedImageFactory {
          * Invoked by the {@code BufferedImageFactory} to report progress in
          * the image decoding.
          *
-         * @param pFactory the factory reporting the progress
-         * @param pPercentage the percentage of progress
+         * @param factory the factory reporting the progress
+         * @param percentage the percentage of progress
          */
-        void progress(BufferedImageFactory pFactory, float pPercentage);
+        void progress(BufferedImageFactory factory, float percentage);
     }
 
     private class Consumer implements ImageConsumer {
@@ -446,18 +446,18 @@ public final class BufferedImageFactory {
             processProgress(pY + pHeight);
         }
 
-        public void setPixels(int pX, int pY, int pWidth, int pHeight, ColorModel pModel, short[] pPixels, int pOffset, int pScanSize) {
-            setPixelsImpl(pX, pY, pWidth, pHeight, pModel, pPixels, pOffset, pScanSize);
+        public void setPixels(int x, int y, int width, int height, ColorModel colorModel, short[] pixels, int offset, int scanSize) {
+            setPixelsImpl(x, y, width, height, colorModel, pixels, offset, scanSize);
         }
 
-        private void setColorModelOnce(final ColorModel pModel) {
+        private void setColorModelOnce(final ColorModel colorModel) {
             // NOTE: There seems to be a "bug" in AreaAveragingScaleFilter, as it
             // first passes the original color model through in setColorModel, then
             // later replaces it with the default RGB in the first setPixels call
             // (this is probably allowed according to the spec, but it's a waste of time and space).
-            if (sourceColorModel != pModel) {
+            if (sourceColorModel != colorModel) {
                 if (/*sourceColorModel == null ||*/ sourcePixels == null) {
-                    sourceColorModel = pModel;
+                    sourceColorModel = colorModel;
                 }
                 else {
                     throw new IllegalStateException("Change of ColorModel after pixel delivery not supported");
@@ -470,14 +470,15 @@ public final class BufferedImageFactory {
             }
         }
 
-        public void imageComplete(int pStatus) {
+        @Override
+        public void imageComplete(int status) {
             fetching = false;
 
             if (producer != null) {
                 producer.removeConsumer(this);
             }
 
-            switch (pStatus) {
+            switch (status) {
                 case ImageConsumer.IMAGEERROR:
                     consumerException = new ImageConversionException("ImageConsumer.IMAGEERROR");
                 break;
@@ -488,16 +489,18 @@ public final class BufferedImageFactory {
             }
         }
 
-        public void setColorModel(ColorModel pModel) {
-            setColorModelOnce(pModel);
+        @Override
+        public void setColorModel(ColorModel colorModel) {
+            setColorModelOnce(colorModel);
         }
 
-        public void setDimensions(int pWidth, int pHeight) {
+        @Override
+        public void setDimensions(int w, int h) {
             if (width < 0) {
-                width = pWidth - x;
+                width = w - x;
             }
             if (height < 0) {
-                height = pHeight - y;
+                height = h - y;
             }
 
             // Hmm.. Special case, but is it a good idea?
@@ -506,27 +509,31 @@ public final class BufferedImageFactory {
             }
         }
 
-        public void setHints(int pHintflags) {
+        @Override
+        public void setHints(int hintFlags) {
            // ignore
         }
 
-        public void setPixels(int pX, int pY, int pWidth, int pHeight, ColorModel pModel, byte[] pPixels, int pOffset, int pScanSize) {
-            setPixelsImpl(pX, pY, pWidth, pHeight, pModel, pPixels, pOffset, pScanSize);
+        @Override
+        public void setPixels(int x, int y, int width, int height, ColorModel colorModel, byte[] pixels, int offset, int scanSize) {
+            setPixelsImpl(x, y, width, height, colorModel, pixels, offset, scanSize);
         }
 
-        public void setPixels(int pX, int pY, int pWeigth, int pHeight, ColorModel pModel, int[] pPixels, int pOffset, int pScanSize) {
-            if (pModel.getTransferType() == DataBuffer.TYPE_USHORT) {
+        @Override
+        public void setPixels(int x, int y, int width, int height, ColorModel colorModel, int[] pixels, int offset, int scanSize) {
+            if (colorModel.getTransferType() == DataBuffer.TYPE_USHORT) {
                 // NOTE: Workaround for limitation in ImageConsumer API
                 // Convert int[] to short[], to be compatible with the ColorModel
-                setPixelsImpl(pX, pY, pWeigth, pHeight, pModel, toShortPixels(pPixels), pOffset, pScanSize);
+                setPixelsImpl(x, y, width, height, colorModel, toShortPixels(pixels), offset, scanSize);
             }
             else {
-                setPixelsImpl(pX, pY, pWeigth, pHeight, pModel, pPixels, pOffset, pScanSize);
+                setPixelsImpl(x, y, width, height, colorModel, pixels, offset, scanSize);
             }
         }
 
-        public void setProperties(Hashtable pProperties) {
-            sourceProperties = pProperties;
+        @Override
+        public void setProperties(Hashtable properties) {
+            sourceProperties = properties;
         }
     }
 
