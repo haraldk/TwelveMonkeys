@@ -577,7 +577,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(imgName))) {
                     reader.setInput(stream);
                     ImageReadParam param = reader.getDefaultReadParam();
-                    // we set the source region to cover the little red square at the bottom right corner
+                    // we set the source region to focus the little red square at the bottom right corner
                     Rectangle sourceRegion = new Rectangle(18, 34, 32-18, 48-34);
                     param.setSourceRegion(sourceRegion);
                     IIOImage ioImg = reader.readAll(0, param);
