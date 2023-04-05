@@ -568,40 +568,26 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
     @Test
     public void testReadImageRegionWithExifOrientation() throws IOException {
-        List<String> allExpectedOrientations = Arrays.asList("Normal", "Normal", "FlipH", "Rotate180", "FlipV", "FlipVRotate90", "Rotate270", "FlipHRotate90", "Rotate90");
         List<String> expectedOrientations = Arrays.asList("Normal", "Normal", "FlipH", "Rotate180", "FlipV", "FlipVRotate90", "Rotate270", "FlipHRotate90", "Rotate90");
-        //List<String> expectedOrientations = Arrays.asList("Rotate90");
         JPEGImageReader reader = createReader();
         try {
             for (int i = 0; i < expectedOrientations.size(); i++) {
                 String expOrientation = expectedOrientations.get(i);
-                int idx = allExpectedOrientations.indexOf(expOrientation);
-                String imgName = String.format("/exif-small/exif_orientation_%s.jpg", idx);
+                String imgName = String.format("/exif-small/exif_orientation_%s.jpg", i);
                 try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(imgName))) {
                     reader.setInput(stream);
                     ImageReadParam param = reader.getDefaultReadParam();
+                    // we set the source region to cover the little red square at the bottom right corner
                     Rectangle sourceRegion = new Rectangle(18, 34, 32-18, 48-34);
                     param.setSourceRegion(sourceRegion);
                     IIOImage ioImg = reader.readAll(0, param);
                     RenderedImage img = ioImg.getRenderedImage();
-                    // assertEquals(expOrientation + " BufferedImage width", 16, img.getWidth());
-                    // assertEquals(expOrientation + " BufferedImage height", 24, img.getHeight());
-                    //ImageIO.write(img, "jpg", new File(String.format("C:\\Users\\awznu\\dev\\test\\exif\\%s-sourceRegion-%s.jpg", idx, expOrientation)));
-                    // int w = reader.getWidth(0);
-                    // int h = reader.getHeight(0);
-                    // assertEquals(expOrientation + " width", 32, w);
-                    // assertEquals(expOrientation + " height", 48, h);
-                    // BufferedImage img = reader.read(0);
+                    // ImageIO.write(img, "jpg", new File(String.format("C:\\Users\\awznu\\dev\\test\\exif\\%s-sourceRegion-%s.jpg", i, expOrientation)));
+                    assertEquals(expOrientation + " BufferedImage width", 14, img.getWidth());
+                    assertEquals(expOrientation + " BufferedImage height", 14, img.getHeight());
                     assertEquals(i + " - center of region should be red", 0.95, colorMatchPercent((BufferedImage) img, 7, 7, "#ff0000"), 0.1);
 
-                }
-
-                // also try to read the common way
-                // BufferedImage img = ImageIO.read(new File(getClassLoaderResource(imgName).getFile()));
-                // assertEquals(expOrientation + " ImageIO width", 32, img.getWidth());
-                // assertEquals(expOrientation + " ImageIO height", 48, img.getHeight());
-                // assertEquals(i + " - upper left corner is pink", 0.95, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.1);
-    
+                }    
             }
         } finally {
             reader.dispose();

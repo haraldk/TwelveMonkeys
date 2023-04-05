@@ -311,16 +311,26 @@ public final class JPEGImageReader extends ImageReaderBase {
         return rotateIfNecessary(readImage(imageIndex, param));
     }
 
-    private ImageReadParam updateReadParam(ImageReadParam param) throws IOException {
-        AffineTransform affineTransform = null;
-        if (param == null || param.getSourceRegion() == null || (affineTransform = getExifOrientationTransform()) == null) {
-            return param;
+    /**
+     * 
+     * @param srcRegion The original source region
+     * @return Returns a new transformed source region in respect to the current exif orientation value.
+     * Returns <code>null</code> if the given srcRegion is null, an exception occured or no exif orientation value is set that requires a transformation.
+     * @throws IOException
+     */
+    private Rectangle getTransformedSourceRegion(Rectangle srcRegion) throws IOException {
+
+        if (srcRegion == null) {
+            return null;
+        }
+
+        AffineTransform affineTransform = getExifOrientationTransform(getWidth(0, true), getHeight(0, true));
+        if (affineTransform == null) {
+           return null;
         }
 
         try {
             affineTransform.invert();
-
-            Rectangle srcRegion = param.getSourceRegion();
             
             Point2D srcUpperLeftPoint = new Point2D.Double(srcRegion.x, srcRegion.y);
             Point2D destUpperLeftPoint = new Point2D.Double();
@@ -334,23 +344,27 @@ public final class JPEGImageReader extends ImageReaderBase {
             Point2D newBottomRightPoint = new Point2D.Double(
                 Math.max(destUpperLeftPoint.getX(), destBottomRightPoint.getX()),
                 Math.max(destUpperLeftPoint.getY(), destBottomRightPoint.getY()));
-            param.setSourceRegion(new Rectangle(
+            return new Rectangle(
                 (int) Math.round(newUpperLeftPoint.getX()), 
                 (int) Math.round(newUpperLeftPoint.getY()),
                 (int) Math.round(newBottomRightPoint.getX() - newUpperLeftPoint.getX()),
                 (int) Math.round(newBottomRightPoint.getY() - newUpperLeftPoint.getY())
-                ));
+                );
         } catch (NoninvertibleTransformException e) {
             System.err.println("Failed inverting affine transform.\n" + e.getMessage());
         }
-        return param;
+        return null;
     }
 
-    private AffineTransform getExifOrientationTransform() throws IOException {
+    /**
+     * 
+     * @return <code>null</code> if no exif orientation value is set or if the value does not require any transformation to be displayed correctly.
+     * Otherwise returns a new {@link AffineTransform} that conciders the exif orientation value.
+     * @throws IOException
+     */
+    private AffineTransform getExifOrientationTransform(int width, int height) throws IOException {
         if (exifOrientation > 1) {
             AffineTransform transform = new AffineTransform();
-            int width = getWidth(0, true);
-            int height = getHeight(0, true);
 
             switch (exifOrientation) {
                 //case 1: // top left - no rotation
@@ -370,27 +384,19 @@ public final class JPEGImageReader extends ImageReaderBase {
                     transform.rotate(Math.toRadians(270), 0, height);
                     transform.scale(-1, 1);
                     transform.translate(-height, height);
-                    // width = originalImage.getHeight();
-                    // height = originalImage.getWidth();
                     break;
                 case 6: // right top - rotate 90 degrees
                     transform.rotate(Math.toRadians(90), 0, 0);
                     transform.translate(0, -height);
-                    // width = originalImage.getHeight();
-                    // height = originalImage.getWidth();
                     break;
                 case 7: // right bottom - flip horizontally and rotate -90 degrees
                     transform.scale(-1, 1);
                     transform.rotate(Math.toRadians(-90), 0, 0);
                     transform.translate(-width, -height);
-                    // width = originalImage.getHeight();
-                    // height = originalImage.getWidth();
                     break;
                 case 8: // left bottom - rotate -90 degrees
                     transform.rotate(Math.toRadians(-90), 0, 0);
                     transform.translate(-width, 0);
-                    // width = originalImage.getHeight();
-                    // height = originalImage.getWidth();
                     break;
             }
             return transform;
@@ -398,57 +404,25 @@ public final class JPEGImageReader extends ImageReaderBase {
         return null;
     }
 
-    private BufferedImage rotateIfNecessary(BufferedImage bufferedImage) {
+    /**
+     * Creates a new buffered image if exif orientation header is set and the image needs to be rotated accordingly.
+     * @param bufferedImage original image
+     * @return Returns the same buffered image or a new buffered image depending on the exif orientation value
+     * @throws IOException
+     */
+    private BufferedImage rotateIfNecessary(BufferedImage bufferedImage) throws IOException {
         if (exifOrientation > 1) {
-
-            // create the transformation matrix for the desired rotation
-            AffineTransform transform = new AffineTransform();
             BufferedImage originalImage = bufferedImage;
+            // create the transformation matrix for the desired rotation
             int width = originalImage.getWidth();
             int height = originalImage.getHeight();
-
-            switch (exifOrientation) {
-                //case 1: // top left - no rotation
-                //    break;
-                case 2: // top right - flip horizontally
-                    transform.scale(-1, 1);
-                    transform.translate(-width, 0);
-                    break;
-                case 3: // bottom right - rotate 180 degrees
-                    transform.rotate(Math.PI, width / 2.0, height / 2.0);
-                    break;
-                case 4: // bottom left - flip vertically
-                    transform.scale(1, -1);
-                    transform.translate(0, -height);
-                    break;
-                case 5: // left top - flip horizontally and rotate 270 degrees
-                    transform.rotate(Math.toRadians(270), 0, height);
-                    transform.scale(-1, 1);
-                    transform.translate(-height, height);
-                    width = originalImage.getHeight();
-                    height = originalImage.getWidth();
-                    break;
-                case 6: // right top - rotate 90 degrees
-                    transform.rotate(Math.toRadians(90), 0, 0);
-                    transform.translate(0, -height);
-                    width = originalImage.getHeight();
-                    height = originalImage.getWidth();
-                    break;
-                case 7: // right bottom - flip horizontally and rotate -90 degrees
-                    transform.scale(-1, 1);
-                    transform.rotate(Math.toRadians(-90), 0, 0);
-                    transform.translate(-width, -height);
-                    width = originalImage.getHeight();
-                    height = originalImage.getWidth();
-                    break;
-                case 8: // left bottom - rotate -90 degrees
-                    transform.rotate(Math.toRadians(-90), 0, 0);
-                    transform.translate(-width, 0);
-                    width = originalImage.getHeight();
-                    height = originalImage.getWidth();
-                    break;
+            AffineTransform transform = getExifOrientationTransform(width, height);
+            if (exifDimSwap) {
+                int tmp = width;
+                width = height;
+                height = tmp;
             }
-            
+
             // create a new BufferedImage (with rotated dimensions if needed)
             BufferedImage rotatedImage = new BufferedImage(width, height, originalImage.getType());
 
@@ -464,69 +438,82 @@ public final class JPEGImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         initHeader(imageIndex);
 
-        param = updateReadParam(param);
-
-        Frame sof = getSOF();
-        ICC_Profile profile = getEmbeddedICCProfile(false);
-        AdobeDCT adobeDCT = getAdobeDCT();
-        boolean bogusAdobeDCT = false;
-
-        if (adobeDCT != null && (adobeDCT.transform == AdobeDCT.YCC && sof.componentsInFrame() != 3 ||
-                adobeDCT.transform == AdobeDCT.YCCK && sof.componentsInFrame() != 4)) {
-            processWarningOccurred(String.format(
-                    "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
-                            "Ignoring Adobe App14 marker.",
-                    adobeDCT.transform == AdobeDCT.YCCK ? "YCCK/CMYK" : "YCC/RGB",
-                    sof.marker & 0xf, sof.componentsInFrame()
-            ));
-
-            bogusAdobeDCT = true;
-            adobeDCT = null;
+        // If the user has specified a source region and an Exif orientation value is set, we assume that the user has specified a source region that refers to the rotated image.
+        // In this case, we need to recalculate the source region to get the correct region with respect to the original (unrotated) image, since we are working with the original image dimensions from that point on.
+        final Rectangle sourceRegion = param.getSourceRegion();
+        final Rectangle transformedSourceRegion = getTransformedSourceRegion(sourceRegion);
+        if (transformedSourceRegion != null) {
+            param.setSourceRegion(transformedSourceRegion);
         }
 
-        JFIF jfif = getJFIF();
-        JPEGColorSpace sourceCSType = getSourceCSType(jfif, adobeDCT, sof);
+        try {
+            Frame sof = getSOF();
+            ICC_Profile profile = getEmbeddedICCProfile(false);
+            AdobeDCT adobeDCT = getAdobeDCT();
+            boolean bogusAdobeDCT = false;
 
-        if (sof.marker == JPEG.SOF3) {
-            // Read image as lossless
+            if (adobeDCT != null && (adobeDCT.transform == AdobeDCT.YCC && sof.componentsInFrame() != 3 ||
+                    adobeDCT.transform == AdobeDCT.YCCK && sof.componentsInFrame() != 4)) {
+                processWarningOccurred(String.format(
+                        "Invalid Adobe App14 marker. Indicates %s data, but SOF%d has %d color component(s). " +
+                                "Ignoring Adobe App14 marker.",
+                        adobeDCT.transform == AdobeDCT.YCCK ? "YCCK/CMYK" : "YCC/RGB",
+                        sof.marker & 0xf, sof.componentsInFrame()
+                ));
+
+                bogusAdobeDCT = true;
+                adobeDCT = null;
+            }
+
+            JFIF jfif = getJFIF();
+            JPEGColorSpace sourceCSType = getSourceCSType(jfif, adobeDCT, sof);
+
+            if (sof.marker == JPEG.SOF3) {
+                // Read image as lossless
+                if (DEBUG) {
+                    System.out.println("Reading using Lossless decoder");
+                }
+
+                // TODO: What about stream position?
+                // TODO: Param handling: Source region, offset, subsampling, destination, destination type, etc....
+                BufferedImage bufferedImage = new JPEGLosslessDecoderWrapper(this).readImage(segments, imageInput);
+
+                // TODO: This is QnD, move param handling to lossless wrapper
+                // TODO: Create test!
+                BufferedImage destination = param != null ? param.getDestination() : null;
+                if (destination != null) {
+                    destination.getRaster().setDataElements(0, 0, bufferedImage.getRaster());
+                    return destination;
+                }
+
+                return bufferedImage;
+            }
+
+            // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
+            // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
+            else if (FORCE_RASTER_CONVERSION || bogusAdobeDCT
+                    || profile != null && !ColorProfiles.isCS_sRGB(profile)
+                    || (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE
+                    || delegateCSTypeMismatch(jfif, adobeDCT, sof, sourceCSType)) {
+                if (DEBUG) {
+                    System.out.println("Reading using raster and extra conversion");
+                    System.out.println("ICC color profile: " + profile);
+                }
+
+                return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, profile);
+            }
+
             if (DEBUG) {
-                System.out.println("Reading using Lossless decoder");
+                System.out.println("Reading using delegate");
             }
 
-            // TODO: What about stream position?
-            // TODO: Param handling: Source region, offset, subsampling, destination, destination type, etc....
-            BufferedImage bufferedImage = new JPEGLosslessDecoderWrapper(this).readImage(segments, imageInput);
-
-            // TODO: This is QnD, move param handling to lossless wrapper
-            // TODO: Create test!
-            BufferedImage destination = param != null ? param.getDestination() : null;
-            if (destination != null) {
-                destination.getRaster().setDataElements(0, 0, bufferedImage.getRaster());
-                return destination;
+            return delegate.read(0, param);
+        } finally {
+            // restore the original source region
+            if (transformedSourceRegion != null) {
+                param.setSourceRegion(sourceRegion);
             }
-
-            return bufferedImage;
         }
-
-        // We need to apply ICC profile unless the profile is sRGB/default gray (whatever that is)
-        // - or only filter out the bad ICC profiles in the JPEGSegmentImageInputStream.
-        else if (FORCE_RASTER_CONVERSION || bogusAdobeDCT
-                || profile != null && !ColorProfiles.isCS_sRGB(profile)
-                || (long) sof.lines * sof.samplesPerLine > Integer.MAX_VALUE
-                || delegateCSTypeMismatch(jfif, adobeDCT, sof, sourceCSType)) {
-            if (DEBUG) {
-                System.out.println("Reading using raster and extra conversion");
-                System.out.println("ICC color profile: " + profile);
-            }
-
-            return readImageAsRasterAndReplaceColorProfile(imageIndex, param, sof, sourceCSType, profile);
-        }
-
-        if (DEBUG) {
-            System.out.println("Reading using delegate");
-        }
-
-        return delegate.read(0, param);
     }
 
     private boolean delegateCSTypeMismatch(final JFIF jfif, final AdobeDCT adobeDCT, final Frame startOfFrame, final JPEGColorSpace sourceCSType) throws IOException {
