@@ -313,7 +313,7 @@ public final class JPEGImageReader extends ImageReaderBase {
      * 
      * @param srcRegion The original source region
      * @return Returns a new transformed source region in respect to the current exif orientation value.
-     * Returns <code>null</code> if the given srcRegion is null, an exception occured or no exif orientation value is set that requires a transformation.
+     * Returns <code>null</code> if the given srcRegion is <code>null</code>, an exception occurred or no exif orientation value is set that requires a transformation.
      * @throws IOException
      */
     private Rectangle getTransformedSourceRegion(Rectangle srcRegion) throws IOException {
@@ -358,9 +358,8 @@ public final class JPEGImageReader extends ImageReaderBase {
      * 
      * @return <code>null</code> if no exif orientation value is set or if the value does not require any transformation to be displayed correctly.
      * Otherwise returns a new {@link AffineTransform} that conciders the exif orientation value.
-     * @throws IOException
      */
-    private AffineTransform getExifOrientationTransform(int width, int height) throws IOException {
+    private AffineTransform getExifOrientationTransform(int width, int height) {
         if (exifOrientation > 1) {
             AffineTransform transform = new AffineTransform();
 
@@ -406,9 +405,8 @@ public final class JPEGImageReader extends ImageReaderBase {
      * Creates a new buffered image if exif orientation header is set and the image needs to be rotated accordingly.
      * @param bufferedImage original image
      * @return Returns the same buffered image or a new buffered image depending on the exif orientation value
-     * @throws IOException
      */
-    private BufferedImage rotateIfNecessary(BufferedImage bufferedImage) throws IOException {
+    private BufferedImage rotateIfNecessary(BufferedImage bufferedImage) {
         if (!ORIENTATION_HANDLING_DISABLED && exifOrientation > 1) {
             BufferedImage originalImage = bufferedImage;
             // create the transformation matrix for the desired rotation

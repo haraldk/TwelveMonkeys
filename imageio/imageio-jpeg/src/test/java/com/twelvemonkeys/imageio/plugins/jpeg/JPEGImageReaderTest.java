@@ -550,7 +550,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                     BufferedImage img = reader.read(0);
                     assertEquals(expOrientation + " BufferedImage width", 32, img.getWidth());
                     assertEquals(expOrientation + " BufferedImage height", 48, img.getHeight());
-                    assertEquals(i + " - upper left corner is pink", 0.95, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.1);
+                    assertEquals(i + " - upper left corner is pink", 1.0, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.01);
 
                 }
 
@@ -558,7 +558,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 BufferedImage img = ImageIO.read(new File(getClassLoaderResource(imgName).getFile()));
                 assertEquals(expOrientation + " ImageIO width", 32, img.getWidth());
                 assertEquals(expOrientation + " ImageIO height", 48, img.getHeight());
-                assertEquals(i + " - upper left corner is pink", 0.95, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.1);
+                assertEquals(i + " - upper left corner is pink", 1.0, colorMatchPercent(img, 5, 5, "#ff00ff"), 0.01);
     
             }
         } finally {
@@ -582,10 +582,10 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                     param.setSourceRegion(sourceRegion);
                     IIOImage ioImg = reader.readAll(0, param);
                     RenderedImage img = ioImg.getRenderedImage();
-                    // ImageIO.write(img, "jpg", new File(String.format("C:\\Users\\awznu\\dev\\test\\exif\\%s-sourceRegion-%s.jpg", i, expOrientation)));
+                    
                     assertEquals(expOrientation + " BufferedImage width", 14, img.getWidth());
                     assertEquals(expOrientation + " BufferedImage height", 14, img.getHeight());
-                    assertEquals(i + " - center of region should be red", 0.95, colorMatchPercent((BufferedImage) img, 7, 7, "#ff0000"), 0.1);
+                    assertEquals(i + " - center of region should be red", 1.0, colorMatchPercent((BufferedImage) img, 7, 7, "#ff0000"), 0.05);
 
                 }    
             }
