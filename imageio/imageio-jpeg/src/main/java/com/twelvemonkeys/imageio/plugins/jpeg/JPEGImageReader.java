@@ -63,6 +63,8 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
 import java.awt.image.*;
 import java.io.*;
 import java.util.List;
@@ -309,6 +311,93 @@ public final class JPEGImageReader extends ImageReaderBase {
         return rotateIfNecessary(readImage(imageIndex, param));
     }
 
+    private ImageReadParam updateReadParam(ImageReadParam param) throws IOException {
+        AffineTransform affineTransform = null;
+        if (param == null || param.getSourceRegion() == null || (affineTransform = getExifOrientationTransform()) == null) {
+            return param;
+        }
+
+        try {
+            affineTransform.invert();
+
+            Rectangle srcRegion = param.getSourceRegion();
+            
+            Point2D srcUpperLeftPoint = new Point2D.Double(srcRegion.x, srcRegion.y);
+            Point2D destUpperLeftPoint = new Point2D.Double();
+            Point2D srcBottomRightPoint = new Point2D.Double(srcRegion.x + srcRegion.width, srcRegion.y + srcRegion.height);
+            Point2D destBottomRightPoint = new Point2D.Double();
+            affineTransform.transform(srcUpperLeftPoint, destUpperLeftPoint);
+            affineTransform.transform(srcBottomRightPoint, destBottomRightPoint);
+            Point2D newUpperLeftPoint = new Point2D.Double(
+                Math.min(destUpperLeftPoint.getX(), destBottomRightPoint.getX()),
+                Math.min(destUpperLeftPoint.getY(), destBottomRightPoint.getY()));
+            Point2D newBottomRightPoint = new Point2D.Double(
+                Math.max(destUpperLeftPoint.getX(), destBottomRightPoint.getX()),
+                Math.max(destUpperLeftPoint.getY(), destBottomRightPoint.getY()));
+            param.setSourceRegion(new Rectangle(
+                (int) Math.round(newUpperLeftPoint.getX()), 
+                (int) Math.round(newUpperLeftPoint.getY()),
+                (int) Math.round(newBottomRightPoint.getX() - newUpperLeftPoint.getX()),
+                (int) Math.round(newBottomRightPoint.getY() - newUpperLeftPoint.getY())
+                ));
+        } catch (NoninvertibleTransformException e) {
+            System.err.println("Failed inverting affine transform.\n" + e.getMessage());
+        }
+        return param;
+    }
+
+    private AffineTransform getExifOrientationTransform() throws IOException {
+        if (exifOrientation > 1) {
+            AffineTransform transform = new AffineTransform();
+            int width = getWidth(0, true);
+            int height = getHeight(0, true);
+
+            switch (exifOrientation) {
+                //case 1: // top left - no rotation
+                //    break;
+                case 2: // top right - flip horizontally
+                    transform.scale(-1, 1);
+                    transform.translate(-width, 0);
+                    break;
+                case 3: // bottom right - rotate 180 degrees
+                    transform.rotate(Math.PI, width / 2.0, height / 2.0);
+                    break;
+                case 4: // bottom left - flip vertically
+                    transform.scale(1, -1);
+                    transform.translate(0, -height);
+                    break;
+                case 5: // left top - flip horizontally and rotate 270 degrees
+                    transform.rotate(Math.toRadians(270), 0, height);
+                    transform.scale(-1, 1);
+                    transform.translate(-height, height);
+                    // width = originalImage.getHeight();
+                    // height = originalImage.getWidth();
+                    break;
+                case 6: // right top - rotate 90 degrees
+                    transform.rotate(Math.toRadians(90), 0, 0);
+                    transform.translate(0, -height);
+                    // width = originalImage.getHeight();
+                    // height = originalImage.getWidth();
+                    break;
+                case 7: // right bottom - flip horizontally and rotate -90 degrees
+                    transform.scale(-1, 1);
+                    transform.rotate(Math.toRadians(-90), 0, 0);
+                    transform.translate(-width, -height);
+                    // width = originalImage.getHeight();
+                    // height = originalImage.getWidth();
+                    break;
+                case 8: // left bottom - rotate -90 degrees
+                    transform.rotate(Math.toRadians(-90), 0, 0);
+                    transform.translate(-width, 0);
+                    // width = originalImage.getHeight();
+                    // height = originalImage.getWidth();
+                    break;
+            }
+            return transform;
+        }
+        return null;
+    }
+
     private BufferedImage rotateIfNecessary(BufferedImage bufferedImage) {
         if (exifOrientation > 1) {
 
@@ -359,7 +448,7 @@ public final class JPEGImageReader extends ImageReaderBase {
                     height = originalImage.getWidth();
                     break;
             }
-
+            
             // create a new BufferedImage (with rotated dimensions if needed)
             BufferedImage rotatedImage = new BufferedImage(width, height, originalImage.getType());
 
@@ -374,6 +463,8 @@ public final class JPEGImageReader extends ImageReaderBase {
     private BufferedImage readImage(int imageIndex, ImageReadParam param) throws IOException {
         checkBounds(imageIndex);
         initHeader(imageIndex);
+
+        param = updateReadParam(param);
 
         Frame sof = getSOF();
         ICC_Profile profile = getEmbeddedICCProfile(false);
