@@ -56,8 +56,6 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 
-import org.w3c.dom.Node;
-
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
@@ -107,7 +105,6 @@ import java.util.*;
  * @version $Id: JPEGImageReader.java,v 1.0 24.01.11 16.37 haraldk Exp$
  */
 public final class JPEGImageReader extends ImageReaderBase {
-    // TODO: Allow automatic rotation based on EXIF rotation field?
     // TODO: Create a simplified native metadata format that is closer to the actual JPEG stream AND supports EXIF in a sensible way
     // TODO: As we already parse the SOF segments, maybe we should stop delegating getWidth/getHeight etc?
 
@@ -412,25 +409,16 @@ public final class JPEGImageReader extends ImageReaderBase {
      * @throws IOException
      */
     private BufferedImage rotateIfNecessary(BufferedImage bufferedImage) throws IOException {
-        if (exifOrientation > 1) {
+        if (!ORIENTATION_HANDLING_DISABLED && exifOrientation > 1) {
             BufferedImage originalImage = bufferedImage;
             // create the transformation matrix for the desired rotation
             int width = originalImage.getWidth();
             int height = originalImage.getHeight();
             AffineTransform transform = getExifOrientationTransform(width, height);
-            if (exifDimSwap) {
-                int tmp = width;
-                width = height;
-                height = tmp;
-            }
-
-            // create a new BufferedImage (with rotated dimensions if needed)
-            BufferedImage rotatedImage = new BufferedImage(width, height, originalImage.getType());
 
             // apply the transformation matrix to the original image using AffineTransformOp
-            AffineTransformOp op = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
-            op.filter(originalImage, rotatedImage);
-            bufferedImage = rotatedImage;
+            AffineTransformOp op = new AffineTransformOp(transform, null);
+            bufferedImage = op.filter(originalImage, null);
         }
         return bufferedImage;
     }
@@ -439,10 +427,12 @@ public final class JPEGImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         initHeader(imageIndex);
 
-        // If the user has specified a source region and an Exif orientation value is set, we assume that the user has specified a source region that refers to the rotated image.
-        // In this case, we need to recalculate the source region to get the correct region with respect to the original (unrotated) image, since we are working with the original image dimensions from that point on.
+        // If the user has specified a source region and an Exif orientation value is set,
+        // we assume that the user has specified a source region that refers to the rotated image.
+        // In this case, we need to recalculate the source region to get the correct region with respect to
+        // the original (unrotated) image, since we are working with the original image dimensions from that point on.
         final Rectangle sourceRegion = param == null ? null : param.getSourceRegion();
-        final Rectangle transformedSourceRegion = getTransformedSourceRegion(sourceRegion);
+        final Rectangle transformedSourceRegion = ORIENTATION_HANDLING_DISABLED ? null : getTransformedSourceRegion(sourceRegion);
         if (transformedSourceRegion != null) {
             param.setSourceRegion(transformedSourceRegion);
         }
