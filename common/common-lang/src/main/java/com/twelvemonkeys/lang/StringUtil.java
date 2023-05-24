@@ -904,7 +904,7 @@ public final class StringUtil {
         }
         catch (ParseException pe) {
             // Wrap in RuntimeException
-            throw new IllegalArgumentException(pe.getMessage());
+            throw new IllegalArgumentException(pe.getMessage() + " at pos " + pe.getErrorOffset());
         }
     }
 

@@ -36,9 +36,11 @@ import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.*;
 
 public class KCMSSanitizerStrategyTest {
@@ -56,6 +58,8 @@ public class KCMSSanitizerStrategyTest {
 
     @Test
     public void testFixProfileUpdateHeader() throws Exception {
+        assumeICC_ProfileNotSealed(); // Ignores test for JDK 19+
+
         byte[] header = new byte[128];
         header[ICC_Profile.icHdrRenderingIntent + 3] = 1;
         ICC_Profile profile = mock(ICC_Profile.class);
@@ -67,6 +71,17 @@ public class KCMSSanitizerStrategyTest {
 
         // Verify that the method was invoked
         verify(profile).setData(eq(ICC_Profile.icSigHead), any(byte[].class));
+    }
+
+    static void assumeICC_ProfileNotSealed() {
+        try {
+            Method isSealed = Class.class.getMethod("isSealed");
+            Boolean result = (Boolean) isSealed.invoke(ICC_Profile.class);
+            assumeFalse("Can't mock ICC_Profile, class is sealed (as of JDK 19).", result);
+        }
+        catch (ReflectiveOperationException ignore) {
+            // We can't have sealed classes if we don't have the isSealed method...
+        }
     }
 
     @Test

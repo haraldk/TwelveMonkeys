@@ -224,8 +224,8 @@
                     <version>3.11.0</version>
                     <inherited>true</inherited>
                     <configuration>
-                        <source>1.7</source>
-                        <target>1.7</target>
+                        <source>8</source>
+                        <target>8</target>
                         <showDeprecation>false</showDeprecation>
                         <debuglevel>source,lines</debuglevel>
                         <compilerArguments>

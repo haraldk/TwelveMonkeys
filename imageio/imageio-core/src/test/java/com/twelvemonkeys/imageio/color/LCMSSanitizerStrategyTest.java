@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.awt.color.ICC_Profile;
 
+import static com.twelvemonkeys.imageio.color.KCMSSanitizerStrategyTest.assumeICC_ProfileNotSealed;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -46,6 +47,8 @@ public class LCMSSanitizerStrategyTest {
 
     @Test
     public void testFixProfile() throws Exception {
+        assumeICC_ProfileNotSealed(); // Ignores test for JDK 19+
+
         ICC_Profile profile = mock(ICC_Profile.class);
         new LCMSSanitizerStrategy().fixProfile(profile);
 
