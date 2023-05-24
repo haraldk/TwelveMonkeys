@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Maven/Java library updates
+  - package-ecosystem: "maven" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "daily"
+  # GitHub actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/.github"
+    schedule:
+      interval: "daily"
