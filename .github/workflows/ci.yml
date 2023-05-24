@@ -30,7 +30,7 @@ jobs:
           java-package: jdk
           cache: 'maven'
       - name: Run Tests
-        run: mvn --no-transfer-progress test
+        run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@959aefb7f095e717eb407fe917238d61ca323ff3 # v3.7.6
         if: ${{ !cancelled() }}
@@ -64,7 +64,7 @@ jobs:
       - name: Display Java version
         run: java -version
       - name: Run Tests
-        run: mvn --no-transfer-progress test
+        run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@959aefb7f095e717eb407fe917238d61ca323ff3 # v3.7.6
         if: ${{ !cancelled() }}
@@ -92,10 +92,10 @@ jobs:
           gpg-passphrase: MAVEN_CENTRAL_GPG_PASSPHRASE # env variable for GPG private key passphrase (3)
       - name: Get Project Version
         run: |
-          echo "PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+          echo "PROJECT_VERSION=$(mvn --batch-mode help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       - name: Publish to Maven Central
         if: ${{ endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
-        run: mvn --no-transfer-progress deploy -P release -DskipTests
+        run: mvn --batch-mode --no-transfer-progress deploy -P release -DskipTests
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # must be the same env variable name as (1)
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # must be the same env variable name as (2)
