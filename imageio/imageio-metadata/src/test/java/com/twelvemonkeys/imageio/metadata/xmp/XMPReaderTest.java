@@ -35,8 +35,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -50,6 +53,7 @@ import java.util.Iterator;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 
+import com.twelvemonkeys.imageio.stream.DirectImageInputStream;
 import org.junit.Test;
 
 import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
@@ -490,12 +494,15 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
         assertThat(exif.getEntryById("http://ns.adobe.com/exif/1.0/NativeDigest"), hasValue("36864,40960,40961,37121,37122,40962,40963,37510,40964,36867,36868,33434,33437,34850,34852,34855,34856,37377,37378,37379,37380,37381,37382,37383,37384,37385,37386,37396,41483,41484,41486,41487,41488,41492,41493,41495,41728,41729,41730,41985,41986,41987,41988,41989,41990,41991,41992,41993,41994,41995,41996,42016,0,2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,20,22,23,24,25,26,27,28,30;A7F21D25E2C562F152B2C4ECC9E534DA"));
     }
 
-    @Test(timeout = 1500L)
+    @Test(timeout = 2500L)
     public void testNoExternalRequest() throws Exception {
-        // TODO: Use dynamic port?
-        try (HTTPServer server = new HTTPServer(7777)) {
-            try {
-                createReader().read(getResourceAsIIS("/xmp/xmp-jpeg-xxe.xml"));
+        String maliciousXML = resourceAsString("/xmp/xmp-jpeg-xxe.xml");
+
+        try (HTTPServer server = new HTTPServer()) {
+            String dynamicXML = maliciousXML.replace("http://localhost:7777/", "http://localhost:" + server.port() + "/");
+
+            try (DirectImageInputStream input = new DirectImageInputStream(new ByteArrayInputStream(dynamicXML.getBytes(StandardCharsets.UTF_8)));) {
+                createReader().read(input);
             } catch (IOException ioe) {
                 if (ioe.getMessage().contains("501")) {
                     throw new AssertionError("Reading should not cause external requests", ioe);
@@ -507,18 +514,36 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
         }
     }
 
+    private String resourceAsString(String name) throws IOException {
+        StringBuilder builder = new StringBuilder(1024);
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(getResource(name).openStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line)
+                        .append('\n');
+            }
+        }
+
+        return builder.toString();
+    }
+
     private static class HTTPServer implements AutoCloseable {
         private final ServerSocket server;
         private final Thread thread;
 
-        HTTPServer(int port) throws IOException {
-            server = new ServerSocket(port, 1);
+        HTTPServer() throws IOException {
+            server = new ServerSocket(0, 1);
             thread = new Thread(new Runnable() {
                 @Override public void run() {
                     serve();
                 }
             });
             thread.start();
+        }
+
+        public final int port() {
+            return server.getLocalPort();
         }
 
         private void serve() {
