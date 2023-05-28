@@ -709,4 +709,6 @@ interface PSD extends com.twelvemonkeys.imageio.metadata.psd.PSD {
     int luni = 'l' << 24 | 'u' << 16 | 'n' << 8 | 'i';
     int lyid = 'l' << 24 | 'y' << 16 | 'i' << 8 | 'd';
     int lsct = 'l' << 24 | 's' << 16 | 'c' << 8 | 't';
+    // Undocumented: Nested section divider setting
+    int lsdk = 'l' << 24 | 's' << 16 | 'd' << 8 | 'k';
 }
