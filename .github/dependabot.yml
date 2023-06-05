@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Maven/Java library updates
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+  # GitHub actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/.github/workflows"
+    schedule:
+      interval: "daily"

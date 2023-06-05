@@ -155,6 +155,7 @@ final class PSDLayerInfo {
                     layerId = pInput.readInt();
                     break;
 
+                case PSD.lsdk:
                 case PSD.lsct:
                     if (resourceLength < 4) {
                         throw new IIOException(String.format("Expected sectionDividerSetting length >= 4: %d", resourceLength));

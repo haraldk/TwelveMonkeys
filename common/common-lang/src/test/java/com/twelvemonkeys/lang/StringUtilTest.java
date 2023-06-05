@@ -593,8 +593,8 @@ public class StringUtilTest {
         cal.clear();
         cal.set(Calendar.HOUR, 1);
         cal.set(Calendar.MINUTE, 2);
-        date = StringUtil.toDate("1:02 am",
-                                 DateFormat.getTimeInstance(DateFormat.SHORT, Locale.US));
+        format = new SimpleDateFormat("HH:mm");
+        date = StringUtil.toDate("1:02", format);
         assertNotNull(date);
         assertEquals(cal.getTime(), date);
     }
