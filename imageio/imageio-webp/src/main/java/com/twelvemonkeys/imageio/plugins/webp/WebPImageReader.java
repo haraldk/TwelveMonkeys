@@ -480,6 +480,7 @@ final class WebPImageReader extends ImageReaderBase {
 
             switch (nextChunk) {
                 case WebP.CHUNK_ALPH:
+                    seenALPH = true;
                     readAlpha(destination, param, width, height);
                     break;
 
