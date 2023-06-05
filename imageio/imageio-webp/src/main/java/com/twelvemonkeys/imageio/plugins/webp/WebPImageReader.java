@@ -465,6 +465,8 @@ final class WebPImageReader extends ImageReaderBase {
     }
 
     private void readVP8Extended(BufferedImage destination, ImageReadParam param, long streamEnd, final int width, final int height) throws IOException {
+        boolean seenALPH = false;
+
         while (imageInput.getStreamPosition() < streamEnd) {
             int nextChunk = imageInput.readInt();
             long chunkLength = imageInput.readUnsignedInt();
@@ -484,6 +486,12 @@ final class WebPImageReader extends ImageReaderBase {
                 case WebP.CHUNK_VP8_:
                     readVP8(RasterUtils.asByteRaster(destination.getRaster())
                             .createWritableChild(0, 0, destination.getWidth(), destination.getHeight(), 0, 0, new int[] {0, 1, 2}), param);
+
+                    if (header.containsALPH && !seenALPH) {
+                        // May happen for animation frames, if some frames are fully opaque
+                        opaqueAlpha(destination.getAlphaRaster());
+                    }
+
                     break;
 
                 case WebP.CHUNK_VP8L:
