@@ -910,7 +910,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         Set<ImageTypeSpecifier> specs = new LinkedHashSet<>(5);
 
         // TODO: Based on raw type, we can probably convert to most RGB types at least, maybe gray etc
-        if (rawType.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_RGB) {
+        if (rawType.getColorModel().getColorSpace().isCS_sRGB()) {
             if (rawType.getNumBands() == 3 && rawType.getBitsPerBand(0) == 8) {
                 specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
 //                specs.add(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
