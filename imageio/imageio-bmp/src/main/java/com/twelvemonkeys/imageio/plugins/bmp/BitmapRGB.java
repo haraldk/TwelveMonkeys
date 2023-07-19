@@ -31,8 +31,7 @@
 package com.twelvemonkeys.imageio.plugins.bmp;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 
 /**
  * Describes an RGB/true color bitmap structure (16, 24 and 32 bits per pixel).
@@ -40,10 +39,10 @@ import java.awt.image.WritableRaster;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BitmapRGB.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-class BitmapRGB extends BitmapDescriptor {
+final class BitmapRGB extends BitmapDescriptor {
 
-    public BitmapRGB(final DirectoryEntry pEntry, final DIBHeader pHeader) {
-        super(pEntry, pHeader);
+    public BitmapRGB(final DirectoryEntry entry, final DIBHeader header) {
+        super(entry, header);
     }
 
     @Override
@@ -71,7 +70,7 @@ class BitmapRGB extends BitmapDescriptor {
 
         WritableRaster alphaRaster = masked.getAlphaRaster();
 
-        byte[] trans = {0x0};
+        byte[] trans = {0x00};
         for (int y = 0; y < getHeight(); y++) {
             for (int x = 0; x < getWidth(); x++) {
                 if (mask.isTransparent(x, y)) {

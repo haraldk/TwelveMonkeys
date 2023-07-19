@@ -43,15 +43,17 @@ import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.RenderedImage;
+import java.awt.image.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 /**
@@ -108,8 +110,8 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         return getTestData().get(index);
     }
 
-    protected URL getClassLoaderResource(final String pName) {
-        return getClass().getResource(pName);
+    protected URL getClassLoaderResource(final String name) {
+        return getClass().getResource(name);
     }
 
     @Test

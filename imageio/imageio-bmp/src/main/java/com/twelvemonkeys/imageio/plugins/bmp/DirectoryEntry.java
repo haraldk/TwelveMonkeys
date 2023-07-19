@@ -32,8 +32,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import javax.imageio.IIOException;
 import java.awt.*;
-import java.awt.image.ColorModel;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -58,47 +57,43 @@ abstract class DirectoryEntry {
     DirectoryEntry() {
     }
 
-    public static DirectoryEntry read(final int pType, final DataInput pStream) throws IOException {
-        DirectoryEntry entry = createEntry(pType);
-        entry.read(pStream);
+    public static DirectoryEntry read(final int type, final DataInput stream) throws IOException {
+        DirectoryEntry entry = createEntry(type);
+        entry.read(stream);
+
         return entry;
     }
 
-    private static DirectoryEntry createEntry(int pType) throws IIOException {
-        switch (pType) {
+    private static DirectoryEntry createEntry(int type) throws IIOException {
+        switch (type) {
             case DIB.TYPE_ICO:
                 return new ICOEntry();
             case DIB.TYPE_CUR:
                 return new CUREntry();
             default:
-                throw new IIOException(
-                        String.format(
-                                "Unknown DIB type: %s, expected: %s (ICO) or %s (CUR)",
-                                pType, DIB.TYPE_ICO, DIB.TYPE_CUR
-                        )
-                );
+                throw new IIOException(String.format("Unknown DIB type: %s, expected: %s (ICO) or %s (CUR)", type, DIB.TYPE_ICO, DIB.TYPE_CUR));
         }
     }
 
-    protected void read(final DataInput pStream) throws IOException {
+    protected void read(final DataInput stream) throws IOException {
         // Width/height = 0, means 256
-        int w = pStream.readUnsignedByte();
+        int w = stream.readUnsignedByte();
         width = w == 0 ? 256 : w;
-        int h = pStream.readUnsignedByte();
+        int h = stream.readUnsignedByte();
         height = h == 0 ? 256 : h;
         
         // Color count = 0, means 256 or more colors
-        colorCount = pStream.readUnsignedByte();
+        colorCount = stream.readUnsignedByte();
 
         // Ignore. Should be 0, but .NET (System.Drawing.Icon.Save) sets this value to 255, according to Wikipedia
-        pStream.readUnsignedByte();
+        stream.readUnsignedByte();
 
-        planes = pStream.readUnsignedShort();     // Should be 0 or 1 for ICO, x hotspot for CUR
-        bitCount = pStream.readUnsignedShort();   // bit count for ICO, y hotspot for CUR
+        planes = stream.readUnsignedShort();     // Should be 0 or 1 for ICO, x hotspot for CUR
+        bitCount = stream.readUnsignedShort();   // bit count for ICO, y hotspot for CUR
 
         // Size of bitmap in bytes
-        size = pStream.readInt();
-        offset = pStream.readInt();
+        size = stream.readInt();
+        offset = stream.readInt();
     }
 
     void write(final DataOutput output) throws IOException {
@@ -157,8 +152,8 @@ abstract class DirectoryEntry {
         private int yHotspot;
 
         @Override
-        protected void read(final DataInput pStream) throws IOException {
-            super.read(pStream);
+        protected void read(final DataInput stream) throws IOException {
+            super.read(stream);
 
             // NOTE: This is a hack...
             xHotspot = planes;

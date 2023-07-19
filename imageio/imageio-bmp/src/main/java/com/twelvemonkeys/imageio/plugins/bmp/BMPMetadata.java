@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.AbstractMetadata;
 import com.twelvemonkeys.lang.Validate;
+
 import org.w3c.dom.Node;
 
 import javax.imageio.metadata.IIOMetadataNode;
@@ -141,7 +142,7 @@ final class BMPMetadata extends AbstractMetadata {
     @Override
     protected IIOMetadataNode getStandardChromaNode() {
         // NOTE: BMP files may contain a color map, even if true color...
-        // Not sure if this is a good idea to expose to the meta data,
+        // Not sure if this is a good idea to expose to the metadata,
         // as it might be unexpected... Then again...
         if (colorMap != null) {
             IIOMetadataNode chroma = new IIOMetadataNode("Chroma");

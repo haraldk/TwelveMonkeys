@@ -30,11 +30,10 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-
-import javax.imageio.IIOException;
 
 /**
  * Represents the DIB (Device Independent Bitmap) Information header structure.
@@ -91,17 +90,17 @@ abstract class DIBHeader {
     protected DIBHeader() {
     }
 
-    public static DIBHeader read(final DataInput pStream) throws IOException {
-        int size = pStream.readInt();
+    public static DIBHeader read(final DataInput stream) throws IOException {
+        int size = stream.readInt();
 
         DIBHeader header = createHeader(size);
-        header.read(size, pStream);
+        header.read(size, stream);
 
         return header;
     }
 
-    private static DIBHeader createHeader(final int pSize) throws IOException {
-        switch (pSize) {
+    private static DIBHeader createHeader(final int size) throws IOException {
+        switch (size) {
             case DIB.BITMAP_CORE_HEADER_SIZE:
                 return new BitmapCoreHeader();
             case DIB.OS2_V2_HEADER_16_SIZE:
@@ -118,11 +117,12 @@ abstract class DIBHeader {
             case DIB.BITMAP_V5_INFO_HEADER_SIZE:
                 return new BitmapV5InfoHeader();
             default:
-                throw new IIOException(String.format("Unknown Bitmap Information Header (size: %s)", pSize));
+                throw new IIOException(String.format("Unknown Bitmap Information Header (size: %s)", size));
         }
     }
 
-    protected abstract void read(int pSize, DataInput pStream) throws IOException;
+    protected abstract void read(int size, DataInput stream) throws IOException;
+    protected abstract void write(final DataOutput stream) throws IOException;
 
     public final int getSize() {
         return size;
@@ -189,12 +189,12 @@ abstract class DIBHeader {
         );
     }
 
-    private static int[] readMasks(final DataInput pStream, final boolean hasAlphaMask) throws IOException {
+    private static int[] readMasks(final DataInput stream, final boolean hasAlphaMask) throws IOException {
         int maskCount = hasAlphaMask ? 4 : 3;
         int[] masks = new int[4];
 
         for (int i = 0; i < maskCount; i++) {
-            masks[i] = pStream.readInt();
+            masks[i] = stream.readInt();
         }
 
         return masks;
@@ -205,24 +205,30 @@ abstract class DIBHeader {
     // TODO: Get rid of code duplication below...
 
     static final class BitmapCoreHeader extends DIBHeader {
-        protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (pSize != DIB.BITMAP_CORE_HEADER_SIZE) {
-                throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.BITMAP_CORE_HEADER_SIZE));
+        @Override
+        protected void read(final int size, final DataInput stream) throws IOException {
+            if (size != DIB.BITMAP_CORE_HEADER_SIZE) {
+                throw new IIOException(String.format("Size: %s !=: %s", size, DIB.BITMAP_CORE_HEADER_SIZE));
             }
 
-            size = pSize;
+            this.size = size;
 
             // NOTE: Unlike all other headers, width and height are unsigned SHORT values (16 bit)!
-            width = pStream.readUnsignedShort();
-            height = pStream.readShort();
+            width = stream.readUnsignedShort();
+            height = stream.readShort();
 
             if (height < 0) {
                 height = -height;
                 topDown = true;
             }
 
-            planes = pStream.readUnsignedShort();
-            bitCount = pStream.readUnsignedShort();
+            planes = stream.readUnsignedShort();
+            bitCount = stream.readUnsignedShort();
+        }
+
+        @Override
+        protected void write(DataOutput stream) {
+            throw new UnsupportedOperationException();
         }
 
         public String getBMPVersion() {
@@ -242,52 +248,57 @@ abstract class DIBHeader {
      */
     static final class BitmapCoreHeaderV2 extends DIBHeader {
         @SuppressWarnings("unused")
-        protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (pSize != DIB.OS2_V2_HEADER_SIZE && pSize != DIB.OS2_V2_HEADER_16_SIZE) {
-                throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.OS2_V2_HEADER_SIZE));
+        @Override
+        protected void read(final int size, final DataInput stream) throws IOException {
+            if (size != DIB.OS2_V2_HEADER_SIZE && size != DIB.OS2_V2_HEADER_16_SIZE) {
+                throw new IIOException(String.format("Size: %s !=: %s", size, DIB.OS2_V2_HEADER_SIZE));
             }
 
-            size = pSize;
+            this.size = size;
 
-            width = pStream.readInt();
-            height = pStream.readInt();
+            width = stream.readInt();
+            height = stream.readInt();
 
             if (height < 0) {
                 height = -height;
                 topDown = true;
             }
 
-            planes = pStream.readUnsignedShort();
-            bitCount = pStream.readUnsignedShort();
+            planes = stream.readUnsignedShort();
+            bitCount = stream.readUnsignedShort();
 
-            if (pSize != DIB.OS2_V2_HEADER_16_SIZE) {
-                compression = pStream.readInt();
+            if (size != DIB.OS2_V2_HEADER_16_SIZE) {
+                compression = stream.readInt();
 
-                imageSize = pStream.readInt();
+                imageSize = stream.readInt();
 
-                xPixelsPerMeter = pStream.readInt();
-                yPixelsPerMeter = pStream.readInt();
+                xPixelsPerMeter = stream.readInt();
+                yPixelsPerMeter = stream.readInt();
 
-                colorsUsed = pStream.readInt();
-                colorsImportant = pStream.readInt();
+                colorsUsed = stream.readInt();
+                colorsImportant = stream.readInt();
             }
 
             // TODO: Use? These fields are not reflected in metadata as per now...
-            int units = pStream.readShort();
-            int reserved = pStream.readShort();
-            int recording = pStream.readShort(); // Recording algorithm
-            int rendering = pStream.readShort(); // Halftoning algorithm
-            int size1 = pStream.readInt(); // Reserved for halftoning use
-            int size2 = pStream.readInt(); // Reserved for halftoning use
-            int colorEncoding = pStream.readInt(); // Color model used in bitmap
-            int identifier = pStream.readInt(); // Reserved for application use
+            int units = stream.readShort();
+            int reserved = stream.readShort();
+            int recording = stream.readShort(); // Recording algorithm
+            int rendering = stream.readShort(); // Halftoning algorithm
+            int size1 = stream.readInt(); // Reserved for halftoning use
+            int size2 = stream.readInt(); // Reserved for halftoning use
+            int colorEncoding = stream.readInt(); // Color model used in bitmap
+            int identifier = stream.readInt(); // Reserved for application use
+        }
+
+        @Override
+        protected void write(DataOutput stream) {
+            throw new UnsupportedOperationException();
         }
 
         public String getBMPVersion() {
             return "BMP v. 2.2";
         }
     }
-
 
     /**
      * Represents the DIB (Device Independent Bitmap) Windows 3.0 Bitmap Information header structure.
@@ -304,44 +315,46 @@ abstract class DIBHeader {
      * @see <a href="https://forums.adobe.com/message/3272950#3272950">BITMAPV3INFOHEADER</a>.
      */
     static final class BitmapInfoHeader extends DIBHeader {
-        protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (!(pSize == DIB.BITMAP_INFO_HEADER_SIZE || pSize == DIB.BITMAP_V2_INFO_HEADER_SIZE || pSize == DIB.BITMAP_V3_INFO_HEADER_SIZE)) {
-                throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.BITMAP_INFO_HEADER_SIZE));
+        @Override
+        protected void read(final int size, final DataInput stream) throws IOException {
+            if (!(size == DIB.BITMAP_INFO_HEADER_SIZE || size == DIB.BITMAP_V2_INFO_HEADER_SIZE || size == DIB.BITMAP_V3_INFO_HEADER_SIZE)) {
+                throw new IIOException(String.format("Size: %s !=: %s", size, DIB.BITMAP_INFO_HEADER_SIZE));
             }
 
-            size = pSize;
+            this.size = size;
 
-            width = pStream.readInt();
-            height = pStream.readInt();
+            width = stream.readInt();
+            height = stream.readInt();
 
             if (height < 0) {
                 height = -height;
                 topDown = true;
             }
 
-            planes = pStream.readUnsignedShort();
-            bitCount = pStream.readUnsignedShort();
-            compression = pStream.readInt();
+            planes = stream.readUnsignedShort();
+            bitCount = stream.readUnsignedShort();
+            compression = stream.readInt();
 
-            imageSize = pStream.readInt();
+            imageSize = stream.readInt();
 
-            xPixelsPerMeter = pStream.readInt();
-            yPixelsPerMeter = pStream.readInt();
+            xPixelsPerMeter = stream.readInt();
+            yPixelsPerMeter = stream.readInt();
 
-            colorsUsed = pStream.readInt();
-            colorsImportant = pStream.readInt();
+            colorsUsed = stream.readInt();
+            colorsImportant = stream.readInt();
 
             // Read masks if we have V2 or V3
             // or if we have compression BITFIELDS or ALPHA_BITFIELDS
-            if (size == DIB.BITMAP_V2_INFO_HEADER_SIZE || compression == DIB.COMPRESSION_BITFIELDS) {
-                masks = readMasks(pStream, false);
+            if (this.size == DIB.BITMAP_V2_INFO_HEADER_SIZE || compression == DIB.COMPRESSION_BITFIELDS) {
+                masks = readMasks(stream, false);
             }
-            else if (size == DIB.BITMAP_V3_INFO_HEADER_SIZE || compression == DIB.COMPRESSION_ALPHA_BITFIELDS) {
-                masks = readMasks(pStream, true);
+            else if (this.size == DIB.BITMAP_V3_INFO_HEADER_SIZE || compression == DIB.COMPRESSION_ALPHA_BITFIELDS) {
+                masks = readMasks(stream, true);
             }
         }
 
-        void write(final DataOutput stream) throws IOException {
+        @Override
+        protected void write(final DataOutput stream) throws IOException {
             stream.writeInt(DIB.BITMAP_INFO_HEADER_SIZE);
 
             stream.writeInt(width);
@@ -359,7 +372,7 @@ abstract class DIBHeader {
             stream.writeInt(colorsUsed);
             stream.writeInt(colorsImportant);
 
-            // TODO: Write masks, if bitfields
+            // TODO: Write masks, if COMPRESSION_BITFIELDS/COMPRESSION_ALPHA_BITFIELDS
         }
 
         public String getBMPVersion() {
@@ -376,51 +389,101 @@ abstract class DIBHeader {
      * Represents the BITMAPV4INFOHEADER structure.
      */
     static final class BitmapV4InfoHeader extends DIBHeader {
-        protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (pSize != DIB.BITMAP_V4_INFO_HEADER_SIZE) {
-                throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.BITMAP_V4_INFO_HEADER_SIZE));
+        @Override
+        protected void read(final int size, final DataInput stream) throws IOException {
+            if (size != DIB.BITMAP_V4_INFO_HEADER_SIZE) {
+                throw new IIOException(String.format("Size: %s !=: %s", size, DIB.BITMAP_V4_INFO_HEADER_SIZE));
             }
 
-            size = pSize;
+            this.size = size;
 
-            width = pStream.readInt();
-            height = pStream.readInt();
+            width = stream.readInt();
+            height = stream.readInt();
 
             if (height < 0) {
                 height = -height;
                 topDown = true;
             }
 
-            planes = pStream.readUnsignedShort();
-            bitCount = pStream.readUnsignedShort();
-            compression = pStream.readInt();
+            planes = stream.readUnsignedShort();
+            bitCount = stream.readUnsignedShort();
+            compression = stream.readInt();
 
-            imageSize = pStream.readInt();
+            imageSize = stream.readInt();
 
-            xPixelsPerMeter = pStream.readInt();
-            yPixelsPerMeter = pStream.readInt();
+            xPixelsPerMeter = stream.readInt();
+            yPixelsPerMeter = stream.readInt();
 
-            colorsUsed = pStream.readInt();
-            colorsImportant = pStream.readInt();
+            colorsUsed = stream.readInt();
+            colorsImportant = stream.readInt();
 
-            masks = readMasks(pStream, true);
+            masks = readMasks(stream, true);
 
-            colorSpaceType = pStream.readInt(); // Should be 0 for V4
+            colorSpaceType = stream.readInt(); // Should be 0 for V4
             cieXYZEndpoints = new double[9];
 
             for (int i = 0; i < cieXYZEndpoints.length; i++) {
-                cieXYZEndpoints[i] = pStream.readInt(); // TODO: Hmmm...?
+                cieXYZEndpoints[i] = stream.readInt(); // TODO: Hmmm...?
             }
 
             gamma = new int[3];
 
             for (int i = 0; i < gamma.length; i++) {
-                gamma[i] = pStream.readInt();
+                gamma[i] = stream.readInt();
             }
         }
 
         public String getBMPVersion() {
             return "BMP v. 4.x";
+        }
+
+        @Override
+        protected void write(DataOutput stream) throws IOException {
+            stream.writeInt(DIB.BITMAP_V4_INFO_HEADER_SIZE);
+
+            stream.writeInt(width);
+            stream.writeInt(topDown ? -height : height);
+
+            stream.writeShort(planes);
+            stream.writeShort(bitCount);
+            stream.writeInt(compression);
+
+            stream.writeInt(imageSize);
+
+            stream.writeInt(xPixelsPerMeter);
+            stream.writeInt(yPixelsPerMeter);
+
+            stream.writeInt(colorsUsed);
+            stream.writeInt(colorsImportant);
+
+            // Red, Green, Blue, Alpha masks
+            stream.writeInt(masks[0]);
+            stream.writeInt(masks[1]);
+            stream.writeInt(masks[2]);
+            stream.writeInt(masks[3]);
+
+            // color space ("sRGB" LITTLE endian)
+            stream.writeInt(DIB.LCS_sRGB);
+
+            // 36 bytes CIE XYZ triples, unused for sRGB
+            stream.writeInt(0);
+            stream.writeInt(0);
+            stream.writeInt(0);
+
+            stream.writeInt(0);
+            stream.writeInt(0);
+            stream.writeInt(0);
+
+            stream.writeInt(0);
+            stream.writeInt(0);
+            stream.writeInt(0);
+
+            // Red gamma, unused for sRGB
+            // Green gamma, unused for sRGB
+            // Blue gamma, unused for sRGB
+            stream.writeInt(0);
+            stream.writeInt(0);
+            stream.writeInt(0);
         }
     }
 
@@ -428,53 +491,58 @@ abstract class DIBHeader {
      * Represents the BITMAPV5INFOHEADER structure.
      */
     static final class BitmapV5InfoHeader extends DIBHeader {
-        protected void read(final int pSize, final DataInput pStream) throws IOException {
-            if (pSize != DIB.BITMAP_V5_INFO_HEADER_SIZE) {
-                throw new IIOException(String.format("Size: %s !=: %s", pSize, DIB.BITMAP_V5_INFO_HEADER_SIZE));
+        protected void read(final int size, final DataInput stream) throws IOException {
+            if (size != DIB.BITMAP_V5_INFO_HEADER_SIZE) {
+                throw new IIOException(String.format("Size: %s !=: %s", size, DIB.BITMAP_V5_INFO_HEADER_SIZE));
             }
 
-            size = pSize;
+            this.size = size;
 
-            width = pStream.readInt();
-            height = pStream.readInt();
+            width = stream.readInt();
+            height = stream.readInt();
 
             if (height < 0) {
                 height = -height;
                 topDown = true;
             }
 
-            planes = pStream.readUnsignedShort();
-            bitCount = pStream.readUnsignedShort();
-            compression = pStream.readInt();
+            planes = stream.readUnsignedShort();
+            bitCount = stream.readUnsignedShort();
+            compression = stream.readInt();
 
-            imageSize = pStream.readInt();
+            imageSize = stream.readInt();
 
-            xPixelsPerMeter = pStream.readInt();
-            yPixelsPerMeter = pStream.readInt();
+            xPixelsPerMeter = stream.readInt();
+            yPixelsPerMeter = stream.readInt();
 
-            colorsUsed = pStream.readInt();
-            colorsImportant = pStream.readInt();
+            colorsUsed = stream.readInt();
+            colorsImportant = stream.readInt();
 
-            masks = readMasks(pStream, true);
+            masks = readMasks(stream, true);
 
-            colorSpaceType = pStream.readInt();
+            colorSpaceType = stream.readInt();
 
             cieXYZEndpoints = new double[9];
 
             for (int i = 0; i < cieXYZEndpoints.length; i++) {
-                cieXYZEndpoints[i] = pStream.readInt(); // TODO: Hmmm...?
+                cieXYZEndpoints[i] = stream.readInt(); // TODO: Hmmm...?
             }
 
             gamma = new int[3];
 
             for (int i = 0; i < gamma.length; i++) {
-                gamma[i] = pStream.readInt();
+                gamma[i] = stream.readInt();
             }
 
-            intent = pStream.readInt(); // TODO: Verify if this is same as ICC intent
-            profileData = pStream.readInt() & 0xffffffffL;
-            profileSize = pStream.readInt() & 0xffffffffL;
-            pStream.readInt(); // Reserved
+            intent = stream.readInt(); // TODO: Verify if this is same as ICC intent
+            profileData = stream.readInt() & 0xffffffffL;
+            profileSize = stream.readInt() & 0xffffffffL;
+            stream.readInt(); // Reserved
+        }
+
+        @Override
+        protected void write(DataOutput stream) {
+            throw new UnsupportedOperationException();
         }
 
         public String getBMPVersion() {

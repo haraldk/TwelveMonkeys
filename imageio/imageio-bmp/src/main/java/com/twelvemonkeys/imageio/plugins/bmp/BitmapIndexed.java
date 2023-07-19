@@ -29,10 +29,7 @@
  */
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.IndexColorModel;
-import java.awt.image.WritableRaster;
+import java.awt.image.*;
 import java.util.Hashtable;
 
 /**
@@ -41,12 +38,13 @@ import java.util.Hashtable;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BitmapIndexed.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-class BitmapIndexed extends BitmapDescriptor {
-    protected final int[] bits;
-    protected final int[] colors;
+final class BitmapIndexed extends BitmapDescriptor {
+    final int[] bits;
+    final int[] colors;
 
-    public BitmapIndexed(final DirectoryEntry pEntry, final DIBHeader pHeader) {
-        super(pEntry, pHeader);
+    public BitmapIndexed(final DirectoryEntry entry, final DIBHeader header) {
+        super(entry, header);
+
         bits = new int[getWidth() * getHeight()];
 
         // NOTE: We're adding space for one extra color, for transparency
@@ -59,20 +57,16 @@ class BitmapIndexed extends BitmapDescriptor {
 
         IndexColorModel icm = createColorModel();
 
-        // This is slightly obscure, and should probably be moved..
+        // We add cursor hotspot as a property to images created from CUR format.
+        // This is slightly obscure, and should probably be moved...
         Hashtable<String, Object> properties = null;
         if (entry instanceof DirectoryEntry.CUREntry) {
             properties = new Hashtable<>(1);
             properties.put("cursor_hotspot", ((DirectoryEntry.CUREntry) this.entry).getHotspot());
         }
 
-        BufferedImage image = new BufferedImage(
-                icm,
-                icm.createCompatibleWritableRaster(getWidth(), getHeight()),
-                icm.isAlphaPremultiplied(), properties
-        );
-
-        WritableRaster raster = image.getRaster();
+        WritableRaster raster = icm.createCompatibleWritableRaster(getWidth(), getHeight());
+        BufferedImage image = new BufferedImage(icm, raster, icm.isAlphaPremultiplied(), properties);
 
         // Make pixels transparent according to mask
         final int trans = icm.getTransparentPixel();
@@ -105,7 +99,7 @@ class BitmapIndexed extends BitmapDescriptor {
             int index = findTransparentIndexMaybeRemap(this.colors, this.bits);
 
             if (index == -1) {
-                // No duplicate found, increase bitcount
+                // No duplicate found, increase bit count
                 bits++;
                 transparent = this.colors.length - 1;
             }
@@ -117,10 +111,8 @@ class BitmapIndexed extends BitmapDescriptor {
         }
 
         // NOTE: Setting hasAlpha to true, makes things work on 1.2
-        return new IndexColorModel(
-                bits, colors, this.colors, 0, true, transparent,
-                bits <= 8 ? DataBuffer.TYPE_BYTE : DataBuffer.TYPE_USHORT
-        );
+        return new IndexColorModel(bits, colors, this.colors, 0, true, transparent,
+                                   bits <= 8 ? DataBuffer.TYPE_BYTE : DataBuffer.TYPE_USHORT);
     }
 
     private static int findTransparentIndexMaybeRemap(final int[] colors, final int[] bits) {

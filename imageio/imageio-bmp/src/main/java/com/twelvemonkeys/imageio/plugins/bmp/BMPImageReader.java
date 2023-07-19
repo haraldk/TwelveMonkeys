@@ -81,8 +81,8 @@ public final class BMPImageReader extends ImageReaderBase {
         super(new BMPImageReaderSpi());
     }
 
-    BMPImageReader(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    BMPImageReader(final ImageReaderSpi provider) {
+        super(provider);
     }
 
     @Override
@@ -129,6 +129,7 @@ public final class BMPImageReader extends ImageReaderBase {
 
             // Read DIB header
             header = DIBHeader.read(imageInput);
+//            System.out.println("header = " + header);
 
             if (pixelOffset < header.size + DIB.BMP_FILE_HEADER_SIZE) {
                 throw new IIOException("Invalid pixel offset: " + pixelOffset);
@@ -186,30 +187,30 @@ public final class BMPImageReader extends ImageReaderBase {
     }
 
     @Override
-    public int getWidth(int pImageIndex) throws IOException {
-        checkBounds(pImageIndex);
+    public int getWidth(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
 
         return header.getWidth();
     }
 
     @Override
-    public int getHeight(int pImageIndex) throws IOException {
-        checkBounds(pImageIndex);
+    public int getHeight(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
 
         return header.getHeight();
     }
 
     @Override
-    public Iterator<ImageTypeSpecifier> getImageTypes(int pImageIndex) throws IOException {
-        checkBounds(pImageIndex);
+    public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
 
         // TODO: Better implementation, include INT_RGB types for 3BYTE_BGR and 4BYTE_ABGR for INT_ARGB
-        return Collections.singletonList(getRawImageType(pImageIndex)).iterator();
+        return Collections.singletonList(getRawImageType(imageIndex)).iterator();
     }
 
     @Override
-    public ImageTypeSpecifier getRawImageType(int pImageIndex) throws IOException {
-        checkBounds(pImageIndex);
+    public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
 
         if (header.getPlanes() != 1) {
             throw new IIOException("Multiple planes not supported");
@@ -685,8 +686,8 @@ public final class BMPImageReader extends ImageReaderBase {
     }
 
     @SuppressWarnings({ "unchecked", "UnusedDeclaration", "SameParameterValue" })
-    static <T extends Throwable> void throwAs(final Class<T> pType, final Throwable pThrowable) throws T {
-        throw (T) pThrowable;
+    static <T extends Throwable> void throwAs(final Class<T> type, final Throwable throwable) throws T {
+        throw (T) throwable;
     }
 
     private class ListenerDelegator extends ProgressListenerBase implements IIOReadUpdateListener, IIOReadWarningListener {

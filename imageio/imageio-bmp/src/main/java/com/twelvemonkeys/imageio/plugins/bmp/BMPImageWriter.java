@@ -47,7 +47,7 @@ import java.nio.ByteOrder;
  * BMPImageWriter
  */
 public final class BMPImageWriter extends DIBImageWriter {
-    protected BMPImageWriter(ImageWriterSpi provider) {
+    BMPImageWriter(ImageWriterSpi provider) {
         super(provider);
     }
 

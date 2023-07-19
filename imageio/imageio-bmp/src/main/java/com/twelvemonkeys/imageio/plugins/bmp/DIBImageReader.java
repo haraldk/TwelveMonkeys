@@ -30,19 +30,11 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.image.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import com.twelvemonkeys.image.ImageUtil;
+import com.twelvemonkeys.imageio.ImageReaderBase;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
+import com.twelvemonkeys.util.WeakWeakMap;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -52,12 +44,18 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
-
-import com.twelvemonkeys.image.ImageUtil;
-import com.twelvemonkeys.imageio.ImageReaderBase;
-import com.twelvemonkeys.imageio.stream.SubImageInputStream;
-import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
-import com.twelvemonkeys.util.WeakWeakMap;
+import java.awt.*;
+import java.awt.color.*;
+import java.awt.event.*;
+import java.awt.image.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * ImageReader for Microsoft Windows ICO (icon) format.
@@ -81,13 +79,13 @@ abstract class DIBImageReader extends ImageReaderBase {
     private Directory directory;
 
     // TODO: Review these, make sure we don't have a memory leak
-    private Map<DirectoryEntry, DIBHeader> headers = new WeakHashMap<>();
-    private Map<DirectoryEntry, BitmapDescriptor> descriptors = new WeakWeakMap<>();
+    private final Map<DirectoryEntry, DIBHeader> headers = new WeakHashMap<>();
+    private final Map<DirectoryEntry, BitmapDescriptor> descriptors = new WeakWeakMap<>();
 
     private ImageReader pngImageReader;
 
-    protected DIBImageReader(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    protected DIBImageReader(final ImageReaderSpi provider) {
+        super(provider);
     }
 
     protected void resetMembers() {
@@ -102,8 +100,8 @@ abstract class DIBImageReader extends ImageReaderBase {
         }
     }
 
-    public Iterator<ImageTypeSpecifier> getImageTypes(final int pImageIndex) throws IOException {
-        DirectoryEntry entry = getEntry(pImageIndex);
+    public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
+        DirectoryEntry entry = getEntry(imageIndex);
 
         // NOTE: Delegate to PNG reader
         if (isPNG(entry)) {
@@ -155,39 +153,39 @@ abstract class DIBImageReader extends ImageReaderBase {
         return getDirectory().count();
     }
 
-    public int getWidth(final int pImageIndex) throws IOException {
-        return getEntry(pImageIndex).getWidth();
+    public int getWidth(final int imageIndex) throws IOException {
+        return getEntry(imageIndex).getWidth();
     }
 
-    public int getHeight(final int pImageIndex) throws IOException {
-        return getEntry(pImageIndex).getHeight();
+    public int getHeight(final int imageIndex) throws IOException {
+        return getEntry(imageIndex).getHeight();
     }
 
-    public BufferedImage read(final int pImageIndex, final ImageReadParam pParam) throws IOException {
-        checkBounds(pImageIndex);
+    public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
+        checkBounds(imageIndex);
 
-        processImageStarted(pImageIndex);
+        processImageStarted(imageIndex);
 
-        DirectoryEntry entry = getEntry(pImageIndex);
+        DirectoryEntry entry = getEntry(imageIndex);
 
         BufferedImage destination;
 
         if (isPNG(entry)) {
             // NOTE: Special case for Windows Vista, 256x256 PNG encoded images, with no DIB header...
-            destination = readPNG(entry, pParam);
+            destination = readPNG(entry, param);
         }
         else {
             // NOTE: If param does not have explicit destination, we'll try to create a BufferedImage later,
             //       to allow for storing the cursor hotspot for CUR images
-            destination = hasExplicitDestination(pParam) ?
-                    getDestination(pParam, getImageTypes(pImageIndex), getWidth(pImageIndex), getHeight(pImageIndex)) : null;
+            destination = hasExplicitDestination(param) ?
+                    getDestination(param, getImageTypes(imageIndex), getWidth(imageIndex), getHeight(imageIndex)) : null;
 
             BufferedImage image = readBitmap(entry);
 
             // TODO: Handle AOI and subsampling inline, probably not of big importance...
-            if (pParam != null) {
-                image = fakeAOI(image, pParam);
-                image = ImageUtil.toBuffered(fakeSubsampling(image, pParam));
+            if (param != null) {
+                image = fakeAOI(image, param);
+                image = ImageUtil.toBuffered(fakeSubsampling(image, param));
             }
 
             if (destination == null) {
@@ -213,10 +211,10 @@ abstract class DIBImageReader extends ImageReaderBase {
         return destination;
     }
 
-    private boolean isPNG(final DirectoryEntry pEntry) throws IOException {
+    private boolean isPNG(final DirectoryEntry entry) throws IOException {
         long magic;
 
-        imageInput.seek(pEntry.getOffset());
+        imageInput.seek(entry.getOffset());
         imageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
 
         try {
@@ -229,22 +227,20 @@ abstract class DIBImageReader extends ImageReaderBase {
         return magic == DIB.PNG_MAGIC;
     }
 
-    private BufferedImage readPNG(final DirectoryEntry pEntry, final ImageReadParam pParam) throws IOException {
+    private BufferedImage readPNG(final DirectoryEntry entry, final ImageReadParam param) throws IOException {
         // TODO: Consider delegating listener calls
-        return initPNGReader(pEntry).read(0, pParam);
+        return initPNGReader(entry).read(0, param);
     }
 
-    private Iterator<ImageTypeSpecifier> getImageTypesPNG(final DirectoryEntry pEntry) throws IOException {
-        return initPNGReader(pEntry).getImageTypes(0);
+    private Iterator<ImageTypeSpecifier> getImageTypesPNG(final DirectoryEntry entry) throws IOException {
+        return initPNGReader(entry).getImageTypes(0);
     }
 
-    private ImageReader initPNGReader(final DirectoryEntry pEntry) throws IOException {
+    private ImageReader initPNGReader(final DirectoryEntry entry) throws IOException {
         ImageReader pngReader = getPNGReader();
 
-        imageInput.seek(pEntry.getOffset());
-//        InputStream inputStream = IIOUtil.createStreamAdapter(imageInput, pEntry.getSize());
-//        ImageInputStream stream = ImageIO.createImageInputStream(inputStream);
-        ImageInputStream stream = new SubImageInputStream(imageInput, pEntry.getSize());
+        imageInput.seek(entry.getOffset());
+        ImageInputStream stream = new SubImageInputStream(imageInput, entry.getSize());
 
         // NOTE: Will throw IOException on later reads if input is not PNG
         pngReader.setInput(stream);
@@ -271,31 +267,31 @@ abstract class DIBImageReader extends ImageReaderBase {
         return pngImageReader;
     }
 
-    private DIBHeader getHeader(final DirectoryEntry pEntry) throws IOException {
-        if (!headers.containsKey(pEntry)) {
-            imageInput.seek(pEntry.getOffset());
+    private DIBHeader getHeader(final DirectoryEntry entry) throws IOException {
+        if (!headers.containsKey(entry)) {
+            imageInput.seek(entry.getOffset());
             DIBHeader header = DIBHeader.read(imageInput);
-            headers.put(pEntry, header);
+            headers.put(entry, header);
         }
 
-        return headers.get(pEntry);
+        return headers.get(entry);
     }
 
-    private BufferedImage readBitmap(final DirectoryEntry pEntry) throws IOException {
+    private BufferedImage readBitmap(final DirectoryEntry entry) throws IOException {
         // TODO: Get rid of the caching, as the images are mutable
-        BitmapDescriptor descriptor = descriptors.get(pEntry);
+        BitmapDescriptor descriptor = descriptors.get(entry);
 
-        if (descriptor == null || !descriptors.containsKey(pEntry)) {
-            DIBHeader header = getHeader(pEntry);
+        if (descriptor == null || !descriptors.containsKey(entry)) {
+            DIBHeader header = getHeader(entry);
 
-            int offset = pEntry.getOffset() + header.getSize();
+            int offset = entry.getOffset() + header.getSize();
             if (offset != imageInput.getStreamPosition()) {
                 imageInput.seek(offset);
             }
 
             // TODO: Support this, it's already in the BMP reader, spec allows RLE4 and RLE8
             if (header.getCompression() != DIB.COMPRESSION_RGB) {
-                descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported compression: %d", header.getCompression()));
+                descriptor = new BitmapUnsupported(entry, header, String.format("Unsupported compression: %d", header.getCompression()));
             }
             else {
                 int bitCount = header.getBitCount();
@@ -305,75 +301,75 @@ abstract class DIBImageReader extends ImageReaderBase {
                     case 1:
                     case 4:
                     case 8: // TODO: Gray!
-                        descriptor = new BitmapIndexed(pEntry, header);
+                        descriptor = new BitmapIndexed(entry, header);
                         readBitmapIndexed((BitmapIndexed) descriptor);
                         break;
                     // RGB style
                     case 16:
-                        descriptor = new BitmapRGB(pEntry, header);
+                        descriptor = new BitmapRGB(entry, header);
                         readBitmap16(descriptor);
                         break;
                     case 24:
-                        descriptor = new BitmapRGB(pEntry, header);
+                        descriptor = new BitmapRGB(entry, header);
                         readBitmap24(descriptor);
                         break;
                     case 32:
-                        descriptor = new BitmapRGB(pEntry, header);
+                        descriptor = new BitmapRGB(entry, header);
                         readBitmap32(descriptor);
                         break;
 
                     default:
-                        descriptor = new BitmapUnsupported(pEntry, header, String.format("Unsupported bit count %d", bitCount));
+                        descriptor = new BitmapUnsupported(entry, header, String.format("Unsupported bit count %d", bitCount));
                 }
             }
 
-            descriptors.put(pEntry, descriptor);
+            descriptors.put(entry, descriptor);
         }
 
         return descriptor.getImage();
     }
 
-    private void readBitmapIndexed(final BitmapIndexed pBitmap) throws IOException {
-        readColorMap(pBitmap);
+    private void readBitmapIndexed(final BitmapIndexed bitmap) throws IOException {
+        readColorMap(bitmap);
 
-        switch (pBitmap.getBitCount()) {
+        switch (bitmap.getBitCount()) {
             case 1:
-                readBitmapIndexed1(pBitmap, false);
+                readBitmapIndexed1(bitmap, false);
                 break;
             case 4:
-                readBitmapIndexed4(pBitmap);
+                readBitmapIndexed4(bitmap);
                 break;
             case 8:
-                readBitmapIndexed8(pBitmap);
+                readBitmapIndexed8(bitmap);
                 break;
         }
 
-        BitmapMask mask = new BitmapMask(pBitmap.entry, pBitmap.header);
+        BitmapMask mask = new BitmapMask(bitmap.entry, bitmap.header);
         readBitmapIndexed1(mask.bitMask, true);
-        pBitmap.setMask(mask);
+        bitmap.setMask(mask);
     }
 
-    private void readColorMap(final BitmapIndexed pBitmap) throws IOException {
-        int colorCount = pBitmap.getColorCount();
+    private void readColorMap(final BitmapIndexed bitmap) throws IOException {
+        int colorCount = bitmap.getColorCount();
 
         for (int i = 0; i < colorCount; i++) {
             // aRGB (a is "Reserved")
-            pBitmap.colors[i] = (imageInput.readInt() & 0xffffff) | 0xff000000;
+            bitmap.colors[i] = (imageInput.readInt() & 0xffffff) | 0xff000000;
         }
     }
 
-    private void readBitmapIndexed1(final BitmapIndexed pBitmap, final boolean pAsMask) throws IOException {
-        int width = adjustToPadding((pBitmap.getWidth() + 7) >> 3);
+    private void readBitmapIndexed1(final BitmapIndexed bitmap, final boolean asMask) throws IOException {
+        int width = adjustToPadding((bitmap.getWidth() + 7) >> 3);
         byte[] row = new byte[width];
 
-        for (int y = 0; y < pBitmap.getHeight(); y++) {
+        for (int y = 0; y < bitmap.getHeight(); y++) {
             imageInput.readFully(row, 0, width);
             int rowPos = 0;
             int xOrVal = 0x80;
-            int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
+            int pos = (bitmap.getHeight() - y - 1) * bitmap.getWidth();
 
-            for (int x = 0; x < pBitmap.getWidth(); x++) {
-                pBitmap.bits[pos++] = ((row[rowPos] & xOrVal) / xOrVal) & 0xFF;
+            for (int x = 0; x < bitmap.getWidth(); x++) {
+                bitmap.bits[pos++] = ((row[rowPos] & xOrVal) / xOrVal) & 0xFF;
 
                 if (xOrVal == 1) {
                     xOrVal = 0x80;
@@ -384,29 +380,29 @@ abstract class DIBImageReader extends ImageReaderBase {
                 }
             }
 
-            // NOTE: If we are reading the mask, we don't abort or report progress
-            if (!pAsMask) {
+            // NOTE: If we are reading the mask, we can't abort or report progress
+            if (!asMask) {
                 if (abortRequested()) {
                     processReadAborted();
                     break;
                 }
 
-                processImageProgress(100 * y / (float) pBitmap.getHeight());
+                processImageProgress(100 * y / (float) bitmap.getHeight());
             }
         }
     }
 
-    private void readBitmapIndexed4(final BitmapIndexed pBitmap) throws IOException {
-        int width = adjustToPadding((pBitmap.getWidth() + 1) >> 1);
+    private void readBitmapIndexed4(final BitmapIndexed bitmap) throws IOException {
+        int width = adjustToPadding((bitmap.getWidth() + 1) >> 1);
         byte[] row = new byte[width];
 
-        for (int y = 0; y < pBitmap.getHeight(); y++) {
+        for (int y = 0; y < bitmap.getHeight(); y++) {
             imageInput.readFully(row, 0, width);
             int rowPos = 0;
             boolean high4 = true;
-            int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
+            int pos = (bitmap.getHeight() - y - 1) * bitmap.getWidth();
 
-            for (int x = 0; x < pBitmap.getWidth(); x++) {
+            for (int x = 0; x < bitmap.getWidth(); x++) {
                 int value;
 
                 if (high4) {
@@ -417,7 +413,7 @@ abstract class DIBImageReader extends ImageReaderBase {
                     rowPos++;
                 }
 
-                pBitmap.bits[pos++] = value & 0xFF;
+                bitmap.bits[pos++] = value & 0xFF;
                 high4 = !high4;
             }
 
@@ -426,22 +422,22 @@ abstract class DIBImageReader extends ImageReaderBase {
                 break;
             }
 
-            processImageProgress(100 * y / (float) pBitmap.getHeight());
+            processImageProgress(100 * y / (float) bitmap.getHeight());
         }
     }
 
-    private void readBitmapIndexed8(final BitmapIndexed pBitmap) throws IOException {
-        int width = adjustToPadding(pBitmap.getWidth());
+    private void readBitmapIndexed8(final BitmapIndexed bitmap) throws IOException {
+        int width = adjustToPadding(bitmap.getWidth());
 
         byte[] row = new byte[width];
 
-        for (int y = 0; y < pBitmap.getHeight(); y++) {
+        for (int y = 0; y < bitmap.getHeight(); y++) {
             imageInput.readFully(row, 0, width);
             int rowPos = 0;
-            int pos = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
+            int pos = (bitmap.getHeight() - y - 1) * bitmap.getWidth();
 
-            for (int x = 0; x < pBitmap.getWidth(); x++) {
-                pBitmap.bits[pos++] = row[rowPos++] & 0xFF;
+            for (int x = 0; x < bitmap.getWidth(); x++) {
+                bitmap.bits[pos++] = row[rowPos++] & 0xFF;
             }
 
             if (abortRequested()) {
@@ -449,40 +445,41 @@ abstract class DIBImageReader extends ImageReaderBase {
                 break;
             }
 
-            processImageProgress(100 * y / (float) pBitmap.getHeight());
+            processImageProgress(100 * y / (float) bitmap.getHeight());
         }
     }
 
     /**
-     * @param pWidth Bytes per scan line (i.e., 1BPP, width = 9 -> bytes = 1)
+     * @param width Bytes per scan line (i.e., 1BPP, width = 9 -> bytes = 2)
      * @return padded width
      */
-    private static int adjustToPadding(final int pWidth) {
-        if ((pWidth & 0x03) != 0) {
-             return (pWidth & ~0x03) + 4;
+    private static int adjustToPadding(final int width) {
+        if ((width & 0x03) != 0) {
+             return (width & ~0x03) + 4;
         }
-        return pWidth;
+
+        return width;
     }
 
-    private void readBitmap16(final BitmapDescriptor pBitmap) throws IOException {
-        short[] pixels = new short[pBitmap.getWidth() * pBitmap.getHeight()];
+    private void readBitmap16(final BitmapDescriptor bitmap) throws IOException {
+        short[] pixels = new short[bitmap.getWidth() * bitmap.getHeight()];
 
         // TODO: Support TYPE_USHORT_565 and the RGB 444/ARGB 4444 layouts
         // Will create TYPE_USHORT_555
         DirectColorModel cm = new DirectColorModel(16, 0x7C00, 0x03E0, 0x001F);
         DataBuffer buffer = new DataBufferUShort(pixels, pixels.length);
         WritableRaster raster = Raster.createPackedRaster(
-                buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
+                buffer, bitmap.getWidth(), bitmap.getHeight(), bitmap.getWidth(), cm.getMasks(), null
         );
-        pBitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+        bitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
-        for (int y = 0; y < pBitmap.getHeight(); y++) {
-            int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
-            imageInput.readFully(pixels, offset, pBitmap.getWidth());
+        for (int y = 0; y < bitmap.getHeight(); y++) {
+            int offset = (bitmap.getHeight() - y - 1) * bitmap.getWidth();
+            imageInput.readFully(pixels, offset, bitmap.getWidth());
 
 
             // Skip to 32 bit boundary
-            if (pBitmap.getWidth() % 2 != 0) {
+            if (bitmap.getWidth() % 2 != 0) {
                 imageInput.readShort();
             }
 
@@ -491,14 +488,14 @@ abstract class DIBImageReader extends ImageReaderBase {
                 break;
             }
 
-            processImageProgress(100 * y / (float) pBitmap.getHeight());
+            processImageProgress(100 * y / (float) bitmap.getHeight());
         }
 
         // TODO: Might be mask!?
     }
 
-    private void readBitmap24(final BitmapDescriptor pBitmap) throws IOException {
-        byte[] pixels = new byte[pBitmap.getWidth() * pBitmap.getHeight() * 3];
+    private void readBitmap24(final BitmapDescriptor bitmap) throws IOException {
+        byte[] pixels = new byte[bitmap.getWidth() * bitmap.getHeight() * 3];
 
         // Create TYPE_3BYTE_BGR
         DataBuffer buffer = new DataBufferByte(pixels, pixels.length);
@@ -509,17 +506,17 @@ abstract class DIBImageReader extends ImageReaderBase {
                 cs, nBits, false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE
         );
 
-        int scanlineStride = pBitmap.getWidth() * 3;
+        int scanlineStride = bitmap.getWidth() * 3;
         // BMP rows are padded to 4 byte boundary
         int rowSizeBytes = ((8 * scanlineStride + 31) / 32) * 4;
 
         WritableRaster raster = Raster.createInterleavedRaster(
-                buffer, pBitmap.getWidth(), pBitmap.getHeight(), scanlineStride, 3, bOffs, null
+                buffer, bitmap.getWidth(), bitmap.getHeight(), scanlineStride, 3, bOffs, null
         );
-        pBitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+        bitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
-        for (int y = 0; y < pBitmap.getHeight(); y++) {
-            int offset = (pBitmap.getHeight() - y - 1) * scanlineStride;
+        for (int y = 0; y < bitmap.getHeight(); y++) {
+            int offset = (bitmap.getHeight() - y - 1) * scanlineStride;
             imageInput.readFully(pixels, offset, scanlineStride);
             imageInput.skipBytes(rowSizeBytes - scanlineStride);
 
@@ -528,38 +525,38 @@ abstract class DIBImageReader extends ImageReaderBase {
                 break;
             }
 
-            processImageProgress(100 * y / (float) pBitmap.getHeight());
+            processImageProgress(100 * y / (float) bitmap.getHeight());
         }
 
         // 24 bit icons usually have a bit mask
-        if (pBitmap.hasMask()) {
-            BitmapMask mask = new BitmapMask(pBitmap.entry, pBitmap.header);
+        if (bitmap.hasMask()) {
+            BitmapMask mask = new BitmapMask(bitmap.entry, bitmap.header);
             readBitmapIndexed1(mask.bitMask, true);
 
-            pBitmap.setMask(mask);
+            bitmap.setMask(mask);
         }
     }
 
-    private void readBitmap32(final BitmapDescriptor pBitmap) throws IOException {
-        int[] pixels = new int[pBitmap.getWidth() * pBitmap.getHeight()];
+    private void readBitmap32(final BitmapDescriptor bitmap) throws IOException {
+        int[] pixels = new int[bitmap.getWidth() * bitmap.getHeight()];
 
         // Will create TYPE_INT_ARGB
         DirectColorModel cm = (DirectColorModel) ColorModel.getRGBdefault();
         DataBuffer buffer = new DataBufferInt(pixels, pixels.length);
         WritableRaster raster = Raster.createPackedRaster(
-                buffer, pBitmap.getWidth(), pBitmap.getHeight(), pBitmap.getWidth(), cm.getMasks(), null
+                buffer, bitmap.getWidth(), bitmap.getHeight(), bitmap.getWidth(), cm.getMasks(), null
         );
-        pBitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
+        bitmap.image = new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
 
-        for (int y = 0; y < pBitmap.getHeight(); y++) {
-            int offset = (pBitmap.getHeight() - y - 1) * pBitmap.getWidth();
-            imageInput.readFully(pixels, offset, pBitmap.getWidth());
+        for (int y = 0; y < bitmap.getHeight(); y++) {
+            int offset = (bitmap.getHeight() - y - 1) * bitmap.getWidth();
+            imageInput.readFully(pixels, offset, bitmap.getWidth());
 
             if (abortRequested()) {
                 processReadAborted();
                 break;
             }
-            processImageProgress(100 * y / (float) pBitmap.getHeight());
+            processImageProgress(100 * y / (float) bitmap.getHeight());
         }
 
         // There might be a mask here as well, but we'll ignore it,
@@ -590,18 +587,18 @@ abstract class DIBImageReader extends ImageReaderBase {
         directory = Directory.read(type, imageCount, imageInput);
     }
 
-    final DirectoryEntry getEntry(final int pImageIndex) throws IOException {
+    final DirectoryEntry getEntry(final int imageIndex) throws IOException {
         Directory directory = getDirectory();
-        if (pImageIndex < 0 || pImageIndex >= directory.count()) {
-            throw new IndexOutOfBoundsException(String.format("Index: %d, ImageCount: %d", pImageIndex, directory.count()));
+        if (imageIndex < 0 || imageIndex >= directory.count()) {
+            throw new IndexOutOfBoundsException(String.format("Index: %d, ImageCount: %d", imageIndex, directory.count()));
         }
 
-        return directory.getEntry(pImageIndex);
+        return directory.getEntry(imageIndex);
     }
 
     /// Test code below, ignore.. :-)
-    public static void main(final String[] pArgs) throws IOException {
-        if (pArgs.length == 0) {
+    public static void main(final String[] args) throws IOException {
+        if (args.length == 0) {
             System.err.println("Please specify the icon file name");
             System.exit(1);
         }
@@ -613,7 +610,7 @@ abstract class DIBImageReader extends ImageReaderBase {
             // Ignore
         }
 
-        String title = new File(pArgs[0]).getName();
+        String title = new File(args[0]).getName();
         JFrame frame = createWindow(title);
         JPanel root = new JPanel(new FlowLayout());
         JScrollPane scroll =
@@ -629,7 +626,7 @@ abstract class DIBImageReader extends ImageReaderBase {
 
         ImageReader reader = readers.next();
 
-        for (String arg : pArgs) {
+        for (String arg : args) {
             JPanel panel = new JPanel(null);
             panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
             readImagesInFile(arg, reader, panel);
@@ -640,28 +637,28 @@ abstract class DIBImageReader extends ImageReaderBase {
         frame.setVisible(true);
     }
 
-    private static void readImagesInFile(String pFileName, ImageReader pReader, final Container pContainer) throws IOException {
-        File file = new File(pFileName);
+    private static void readImagesInFile(String fileName, ImageReader reader, final Container container) throws IOException {
+        File file = new File(fileName);
         if (!file.isFile()) {
-            System.err.println(pFileName + " not found, or is no file");
+            System.err.println(fileName + " not found, or is no file");
         }
 
-        pReader.setInput(ImageIO.createImageInputStream(file));
-        int imageCount = pReader.getNumImages(true);
+        reader.setInput(ImageIO.createImageInputStream(file));
+        int imageCount = reader.getNumImages(true);
         for (int i = 0; i < imageCount; i++) {
             try {
-                addImage(pContainer, pReader, i);
+                addImage(container, reader, i);
             }
             catch (Exception e) {
-                System.err.println("FileName: " + pFileName);
+                System.err.println("FileName: " + fileName);
                 System.err.println("Icon: " + i);
                 e.printStackTrace();
             }
         }
     }
 
-    private static JFrame createWindow(final String pTitle) {
-        JFrame frame = new JFrame(pTitle);
+    private static JFrame createWindow(final String title) {
+        JFrame frame = new JFrame(title);
         frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             public void windowClosed(WindowEvent e) {
@@ -671,15 +668,15 @@ abstract class DIBImageReader extends ImageReaderBase {
         return frame;
     }
 
-    private static void addImage(final Container pParent, final ImageReader pReader, final int pImageNo) throws IOException {
+    private static void addImage(final Container parent, final ImageReader reader, final int imageNo) throws IOException {
         final JButton button = new JButton();
 
-        BufferedImage image = pReader.read(pImageNo);
+        BufferedImage image = reader.read(imageNo);
         button.setIcon(new ImageIcon(image) {
             TexturePaint texture;
 
-            private void createTexture(final GraphicsConfiguration pGraphicsConfiguration) {
-                BufferedImage pattern = pGraphicsConfiguration.createCompatibleImage(20, 20);
+            private void createTexture(final GraphicsConfiguration graphicsConfiguration) {
+                BufferedImage pattern = graphicsConfiguration.createCompatibleImage(20, 20);
                 Graphics2D g = pattern.createGraphics();
                 try {
                     g.setColor(Color.LIGHT_GRAY);
@@ -714,6 +711,6 @@ abstract class DIBImageReader extends ImageReaderBase {
                 String.valueOf(((IndexColorModel) image.getColorModel()).getMapSize()) :
                 "TrueColor"));
 
-        pParent.add(button);
+        parent.add(button);
     }
 }

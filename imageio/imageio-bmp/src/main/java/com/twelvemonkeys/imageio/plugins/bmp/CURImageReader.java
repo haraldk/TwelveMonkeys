@@ -48,22 +48,22 @@ public final class CURImageReader extends DIBImageReader {
         super(new CURImageReaderSpi());
     }
 
-    protected CURImageReader(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    CURImageReader(final ImageReaderSpi provider) {
+        super(provider);
     }
 
     /**
      * Returns the hot spot location for the cursor.
      *
-     * @param pImageIndex the index of the cursor in the current input.
+     * @param imageIndex the index of the cursor in the current input.
      * @return the hot spot location for the cursor
      *
      * @throws java.io.IOException if an I/O exception occurs during reading of image meta data
      * @throws IndexOutOfBoundsException if {@code pImageIndex} is less than {@code 0} or greater than/equal to
      *         the number of cursors in the file
      */
-    public final Point getHotSpot(final int pImageIndex) throws IOException {
-        DirectoryEntry.CUREntry entry = (DirectoryEntry.CUREntry) getEntry(pImageIndex);
+    public Point getHotSpot(final int imageIndex) throws IOException {
+        DirectoryEntry.CUREntry entry = (DirectoryEntry.CUREntry) getEntry(imageIndex);
         return entry.getHotspot();
     }
 }

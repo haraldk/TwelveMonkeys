@@ -30,24 +30,14 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNoException;
-import static org.mockito.ArgumentMatchers.anyFloat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
+import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import com.twelvemonkeys.xml.XMLSerializer;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -57,16 +47,25 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
+import java.awt.*;
+import java.awt.image.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
-import org.mockito.InOrder;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
-import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
-import com.twelvemonkeys.xml.XMLSerializer;
+import static org.junit.Assert.*;
+import static org.junit.Assume.assumeNoException;
+import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 
 /**
  * BMPImageReaderTest
@@ -326,10 +325,8 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     public void testMetadataEqualsJRE() throws IOException {
         ImageReader jreReader;
         try {
-            @SuppressWarnings("unchecked")
-            Class<ImageReader> jreReaderClass = (Class<ImageReader>) Class.forName("com.sun.imageio.plugins.bmp.BMPImageReader");
-            Constructor<ImageReader> constructor = jreReaderClass.getConstructor(ImageReaderSpi.class);
-            jreReader = constructor.newInstance(new Object[] {null});
+            ImageReaderSpi provider = (ImageReaderSpi) IIORegistry.getDefaultInstance().getServiceProviderByClass(Class.forName("com.sun.imageio.plugins.bmp.BMPImageReaderSpi"));
+            jreReader = provider.createReaderInstance();
         }
         catch (Exception e) {
             e.printStackTrace();

@@ -30,7 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import java.awt.image.BufferedImage;
+import java.awt.image.*;
 
 
 /**
@@ -39,17 +39,17 @@ import java.awt.image.BufferedImage;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BitmapMask.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-class BitmapMask extends BitmapDescriptor {
-    protected final BitmapIndexed bitMask;
+final class BitmapMask extends BitmapDescriptor {
+    final BitmapIndexed bitMask;
 
-    public BitmapMask(final DirectoryEntry pParent, final DIBHeader pHeader) {
-        super(pParent, pHeader);
-        bitMask = new BitmapIndexed(pParent, pHeader);
+    public BitmapMask(final DirectoryEntry parent, final DIBHeader header) {
+        super(parent, header);
+        bitMask = new BitmapIndexed(parent, header);
     }
 
-    boolean isTransparent(final int pX, final int pY) {
+    boolean isTransparent(final int x, final int y) {
         // NOTE: 1: Fully transparent, 0: Opaque...
-        return bitMask.bits[pX + pY * getWidth()] != 0;
+        return bitMask.bits[x + y * getWidth()] != 0;
     }
 
     public BufferedImage getImage() {

@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
-import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -49,32 +48,32 @@ public final class ICOImageReaderSpi extends ImageReaderSpiBase {
         super(new ICOProviderInfo());
     }
 
-    public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource, DIB.TYPE_ICO);
+    public boolean canDecodeInput(final Object source) throws IOException {
+        return source instanceof ImageInputStream && canDecode((ImageInputStream) source, DIB.TYPE_ICO);
     }
 
-    static boolean canDecode(final ImageInputStream pInput, final int pType) throws IOException {
+    static boolean canDecode(final ImageInputStream input, final int type) throws IOException {
         byte[] signature = new byte[4];
 
         try {
-            pInput.mark();
-            pInput.readFully(signature);
+            input.mark();
+            input.readFully(signature);
 
-            int count = pInput.readByte() + (pInput.readByte() << 8);
+            int count = input.readByte() + (input.readByte() << 8);
 
-            return (signature[0] == 0x0 && signature[1] == 0x0 && signature[2] == pType
+            return (signature[0] == 0x0 && signature[1] == 0x0 && signature[2] == type
                     && signature[3] == 0x0 && count > 0);
         }
         finally {
-            pInput.reset();
+            input.reset();
         }
     }
 
-    public ImageReader createReaderInstance(final Object pExtension) throws IOException {
+    public ICOImageReader createReaderInstance(final Object extension) {
         return new ICOImageReader(this);
     }
 
-    public String getDescription(final Locale pLocale) {
+    public String getDescription(final Locale locale) {
         return "Windows Icon Format (ICO) Reader";
     }
 }

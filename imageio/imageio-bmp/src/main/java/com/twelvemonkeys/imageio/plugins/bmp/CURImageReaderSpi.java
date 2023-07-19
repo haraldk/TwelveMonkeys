@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 
-import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Locale;
@@ -49,15 +48,15 @@ public final class CURImageReaderSpi extends ImageReaderSpiBase {
         super(new CURProviderInfo());
     }
 
-    public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && ICOImageReaderSpi.canDecode((ImageInputStream) pSource, DIB.TYPE_CUR);
+    public boolean canDecodeInput(final Object source) throws IOException {
+        return source instanceof ImageInputStream && ICOImageReaderSpi.canDecode((ImageInputStream) source, DIB.TYPE_CUR);
     }
 
-    public ImageReader createReaderInstance(final Object pExtension) throws IOException {
+    public CURImageReader createReaderInstance(final Object extension) {
         return new CURImageReader(this);
     }
 
-    public String getDescription(final Locale pLocale) {
+    public String getDescription(final Locale locale) {
         return "Windows Cursor Format (CUR) Reader";
     }
 }

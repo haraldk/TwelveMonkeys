@@ -31,6 +31,7 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
+import com.twelvemonkeys.lang.Validate;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -38,14 +39,18 @@ import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
+import java.awt.geom.*;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +58,7 @@ import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -602,7 +608,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         assertReadWithSourceRegionParamEqualImage(new Rectangle(3, 3, 9, 9), getTestData().get(0), 0);
     }
 
-    protected void assertReadWithSourceRegionParamEqualImage(final Rectangle r, final TestData data, final int imageIndex) throws IOException {
+    protected void assertReadWithSourceRegionParamEqualImage(final Rectangle r, final TestData data, @SuppressWarnings("SameParameterValue") final int imageIndex) throws IOException {
         ImageReader reader = createReader();
         try (ImageInputStream inputStream = data.getInputStream()) {
             reader.setInput(inputStream);
@@ -1828,52 +1834,51 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         private final List<Dimension> sizes;
         private final List<BufferedImage> images;
 
-        public TestData(final Object pInput, final Dimension... pSizes) {
-            this(pInput, Arrays.asList(pSizes), null);
+        public TestData(final Object input, final Dimension... dimensions) {
+            this(input, Arrays.asList(dimensions), null);
         }
 
-        public TestData(final Object pInput, final BufferedImage... pImages) {
-            this(pInput, null, Arrays.asList(pImages));
+        public TestData(final Object input, final BufferedImage... images) {
+            this(input, null, Arrays.asList(images));
         }
 
-        public TestData(final Object pInput, final List<Dimension> pSizes, final List<BufferedImage> pImages) {
-            if (pInput == null) {
-                throw new IllegalArgumentException("input == null");
-            }
+        public TestData(final Object input, final List<Dimension> dimensions, final List<BufferedImage> images) {
+            Validate.notNull(input, "input");
+            Validate.isTrue(dimensions != null || images != null, "Need either dimensions or image");
 
-            sizes = new ArrayList<>();
-            images = new ArrayList<>();
+            List<Dimension> combinedDimensions;
+            if (dimensions == null) {
+                // Copy dimensions  from images
+                combinedDimensions = new ArrayList<>(images.size());
 
-            List<Dimension> sizes = pSizes;
-            if (sizes == null) {
-                sizes = new ArrayList<>();
-                if (pImages != null) {
-                    for (BufferedImage image : pImages) {
-                        sizes.add(new Dimension(image.getWidth(), image.getHeight()));
-                    }
-                }
-                else {
-                    throw new IllegalArgumentException("Need either size or image");
+                for (BufferedImage image : images) {
+                    combinedDimensions.add(new Dimension(image.getWidth(), image.getHeight()));
                 }
             }
-            else if (pImages != null) {
-                if (pImages.size() != pSizes.size()) {
-                    throw new IllegalArgumentException("Size parameter and image size differs");
-                }
-                for (int i = 0; i < sizes.size(); i++) {
-                    if (!new Dimension(pImages.get(i).getWidth(), pImages.get(i).getHeight()).equals(sizes.get(i))) {
-                        throw new IllegalArgumentException("Size parameter and image size differs");
+            else {
+                // Validate equal dimensions
+                if (images != null) {
+                    if (images.size() != dimensions.size()) {
+                        throw new IllegalArgumentException("Dimensions and images parameter's size differs");
                     }
 
+                    for (int i = 0; i < dimensions.size(); i++) {
+                        if (!new Dimension(images.get(i).getWidth(), images.get(i).getHeight()).equals(dimensions.get(i))) {
+                            throw new IllegalArgumentException("Dimensions and images parameter's dimensions differ");
+                        }
+                    }
                 }
+
+                combinedDimensions = new ArrayList<>(dimensions);
             }
 
-            this.sizes.addAll(sizes);
-            if (pImages != null) {
-                images.addAll(pImages);
-            }
+            this.sizes = Collections.unmodifiableList(combinedDimensions);
 
-            input = pInput;
+            this.images = images != null
+                    ? Collections.unmodifiableList(new ArrayList<>(images))
+                    : Collections.<BufferedImage>emptyList();
+
+            this.input = input;
         }
 
         public Object getInput() {
@@ -1898,13 +1903,13 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             return sizes.size();
         }
 
-        public Dimension getDimension(final int pIndex) {
-            return sizes.get(pIndex);
+        public Dimension getDimension(final int index) {
+            return sizes.get(index);
         }
 
         @SuppressWarnings("unused")
-        public BufferedImage getImage(final int pIndex) {
-            return images.get(pIndex);
+        public BufferedImage getImage(final int index) {
+            return images.get(index);
         }
 
         @Override

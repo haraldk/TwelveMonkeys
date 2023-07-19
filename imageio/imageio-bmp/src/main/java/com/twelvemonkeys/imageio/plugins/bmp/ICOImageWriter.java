@@ -33,15 +33,19 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
-import javax.imageio.*;
+import javax.imageio.IIOException;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteWarningListener;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.RenderedImage;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -64,7 +68,7 @@ public final class ICOImageWriter extends DIBImageWriter {
 
     private ImageWriter pngDelegate;
 
-    protected ICOImageWriter(final ImageWriterSpi provider) {
+    ICOImageWriter(final ImageWriterSpi provider) {
         super(provider);
     }
 
@@ -124,7 +128,7 @@ public final class ICOImageWriter extends DIBImageWriter {
     }
 
     @Override
-    public void endWriteSequence() throws IOException {
+    public void endWriteSequence() {
         assertOutput();
 
         if (sequenceIndex < 0) {

@@ -30,10 +30,9 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-
 import javax.imageio.IIOException;
+import java.awt.image.*;
+import java.io.IOException;
 
 /**
  * Represents bitmap structures we can't read.
@@ -42,13 +41,13 @@ import javax.imageio.IIOException;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: BitmapUnsupported.java,v 1.0 25.feb.2006 00:29:44 haku Exp$
  */
-class BitmapUnsupported extends BitmapDescriptor {
-    private String message;
+final class BitmapUnsupported extends BitmapDescriptor {
+    private final String message;
 
-    public BitmapUnsupported(final DirectoryEntry pEntry, DIBHeader header, final String pMessage) {
-        super(pEntry, header);
+    public BitmapUnsupported(final DirectoryEntry entry, DIBHeader header, final String message) {
+        super(entry, header);
 
-        message = pMessage;
+        this.message = message;
     }
 
     @Override

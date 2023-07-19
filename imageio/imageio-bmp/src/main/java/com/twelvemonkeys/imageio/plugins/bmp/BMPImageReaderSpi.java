@@ -65,16 +65,16 @@ public final class BMPImageReaderSpi extends ImageReaderSpiBase {
         }
     }
 
-    public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
+    public boolean canDecodeInput(final Object source) throws IOException {
+        return source instanceof ImageInputStream && canDecode((ImageInputStream) source);
     }
 
-    private static boolean canDecode(final ImageInputStream pInput) throws IOException {
+    private static boolean canDecode(final ImageInputStream input) throws IOException {
         byte[] fileHeader = new byte[18]; // Strictly: file header (14 bytes) + BMP header size field (4 bytes)
 
         try {
-            pInput.mark();
-            pInput.readFully(fileHeader);
+            input.mark();
+            input.readFully(fileHeader);
 
             // Magic: BM
             if (fileHeader[0] != 'B' || fileHeader[1] != 'M') {
@@ -112,15 +112,15 @@ public final class BMPImageReaderSpi extends ImageReaderSpiBase {
             }
         }
         finally {
-            pInput.reset();
+            input.reset();
         }
     }
 
-    public ImageReader createReaderInstance(final Object pExtension) {
+    public ImageReader createReaderInstance(final Object extension) {
         return new BMPImageReader(this);
     }
 
-    public String getDescription(final Locale pLocale) {
+    public String getDescription(final Locale locale) {
         return "Windows Device Independent Bitmap Format (BMP) Reader";
     }
 }

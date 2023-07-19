@@ -46,7 +46,7 @@ public final class ICOImageReader extends DIBImageReader {
         super(new ICOImageReaderSpi());
     }
 
-    protected ICOImageReader(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    ICOImageReader(final ImageReaderSpi provider) {
+        super(provider);
     }
 }

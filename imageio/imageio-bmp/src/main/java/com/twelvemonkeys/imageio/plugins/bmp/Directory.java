@@ -44,24 +44,25 @@ import java.util.List;
 class Directory {
     private final List<DirectoryEntry> entries;
 
-    private Directory(int pImageCount) {
-        entries = Arrays.asList(new DirectoryEntry[pImageCount]);
+    private Directory(int imageCount) {
+        entries = Arrays.asList(new DirectoryEntry[imageCount]);
     }
 
-    public static Directory read(final int pType, final int pImageCount, final DataInput pStream) throws IOException {
-        Directory directory = new Directory(pImageCount);
-        directory.readEntries(pType,  pStream);
+    public static Directory read(final int type, final int imageCount, final DataInput stream) throws IOException {
+        Directory directory = new Directory(imageCount);
+        directory.readEntries(type,  stream);
+
         return directory;
     }
 
-    private void readEntries(final int pType, final DataInput pStream) throws IOException {
+    private void readEntries(final int type, final DataInput stream) throws IOException {
         for (int i = 0; i < entries.size(); i++) {
-            entries.set(i, DirectoryEntry.read(pType, pStream));
+            entries.set(i, DirectoryEntry.read(type, stream));
         }
     }
 
-    public DirectoryEntry getEntry(final int pEntryIndex) {
-        return entries.get(pEntryIndex);
+    public DirectoryEntry getEntry(final int entryIndex) {
+        return entries.get(entryIndex);
     }
 
     public int count() {
