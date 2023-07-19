@@ -59,7 +59,7 @@ public final class HDRImageReader extends ImageReaderBase {
 
     private HDRHeader header;
 
-    protected HDRImageReader(final ImageReaderSpi provider) {
+    HDRImageReader(final ImageReaderSpi provider) {
         super(provider);
     }
 
@@ -196,7 +196,7 @@ public final class HDRImageReader extends ImageReaderBase {
         int ySub = param != null ? param.getSourceYSubsampling() : 1;
 
         byte[] rowRGBE = new byte[width * 4];
-        byte[] pixelRGBE = new byte[width];
+        byte[] pixelRGBE = new byte[4];
 
         processImageStarted(imageIndex);
 
@@ -231,7 +231,7 @@ public final class HDRImageReader extends ImageReaderBase {
 
         processImageComplete();
 
-        return destination.getRaster();
+        return raster;
     }
 
     @Override
