@@ -52,7 +52,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class SVGImageReaderSpiTest {
 
-    private static final String[] VALID_INPUTS = {
+    static final String[] VALID_INPUTS = {
             "/svg/Android_robot.svg", // Minimal, no xml dec, no namespace
             "/svg/batikLogo.svg",     // xml dec, comments, namespace
             "/svg/blue-square.svg",   // xml dec, namespace

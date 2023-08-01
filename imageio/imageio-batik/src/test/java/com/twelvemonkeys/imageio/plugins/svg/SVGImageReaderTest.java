@@ -34,6 +34,14 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
+
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+import javax.xml.XMLConstants;
+import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -54,6 +62,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
@@ -399,6 +408,112 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             assertRGBEquals("Expected green feet", 0xffa4c639, image.getRGB(130, 246), 25);
             assertRGBEquals("Expected white edge", 0xffffffff, image.getRGB(0, 128), 0);
             assertRGBEquals("Expected white edge", 0xffffffff, image.getRGB(218, 128), 0);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testDOMInput() throws IOException {
+        URL resource = getClassLoaderResource("/svg/quadrants.svg");
+
+        SVGImageReader reader = createReader();
+
+        Document svgDoc = readDocument(resource);
+        svgDoc.getDocumentElement().setAttributeNS(null, "viewBox", "0 0 200 200");
+        try {
+            reader.setInput(svgDoc);
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setSourceRenderSize(new Dimension(100, 100));
+            BufferedImage image = reader.read(0, param);
+
+            assertNotNull(image);
+            assertEquals(100, image.getWidth());
+            assertEquals(100, image.getHeight());
+
+            // Some quick samples
+            assertRGBEquals("Transparent top-right quadrant",     0, image.getRGB(55, 45), 0);
+            assertRGBEquals("Transparent bottom-left quadrant",   0, image.getRGB(45, 55), 0);
+            assertRGBEquals("Transparent bottom-right quadrant",  0, image.getRGB(55, 55), 0);
+            assertRGBEquals("Blue top-left square",      0xff0000ff, image.getRGB(12, 12), 0);
+            assertRGBEquals("Green top-right square",    0xff00ff00, image.getRGB(27, 12), 0);
+            assertRGBEquals("Red bottom-left square",    0xffff0000, image.getRGB(12, 27), 0);
+            assertRGBEquals("Black bottom-right square", 0xff000000, image.getRGB(27, 27), 0);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static Document readDocument(URL resource) {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+
+        try {
+            return dbf.newDocumentBuilder().parse(resource.toString());
+        }
+        catch (SAXException | IOException | ParserConfigurationException e) {
+            throw new IllegalStateException("Couldn't read: " + resource, e);
+        }
+    }
+
+    @Test
+    public void testDOMNonSVGNamespaceRoot() throws IOException {
+        testDOMInputUnsupported(new QName("http://www.w3.org/2000/lucde", "svg"),
+                "GenericElementNS cannot be cast to interface org.w3c.dom.svg.SVGSVGElement");
+    }
+
+    @Test
+    public void testDOMNonSVGRoot() throws IOException {
+        testDOMInputUnsupported(new QName("http://www.w3.org/2000/svg", "circle"),
+                "SVGOMCircleElement cannot be cast to interface org.w3c.dom.svg.SVGSVGElement");
+    }
+
+    @Test
+    public void testDOMInvalidSVGRoot() throws IOException {
+        testDOMInputUnsupported(new QName("http://www.w3.org/2000/svg", "doovde"),
+                "The current document is unable to create an element of the requested type");
+    }
+
+    @Test
+    public void testDOMNoNamespaceRoot() throws IOException {
+        testDOMInputUnsupported(new QName(XMLConstants.NULL_NS_URI, "svg"),
+                "GenericElement cannot be cast to interface org.w3c.dom.svg.SVGSVGElement");
+    }
+
+    private void testDOMInputUnsupported(QName name, String expectedMessage)
+            throws IOException {
+        final SVGImageReader reader = createReader();
+
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+
+        Document svgDoc;
+        try {
+            svgDoc = dbf.newDocumentBuilder().newDocument();
+        }
+        catch (ParserConfigurationException e) {
+            throw new IllegalStateException(e);
+        }
+
+        svgDoc.appendChild(svgDoc
+                .createElementNS(name.getNamespaceURI(), name.getLocalPart()));
+
+        try {
+            reader.setInput(svgDoc);
+
+            IIOException thrown = assertThrows("reader.read()",
+                    IIOException.class, new ThrowingRunnable() {
+                @Override public void run() throws Throwable {
+                    reader.read(0, null);
+                }
+            });
+
+            assertTrue("Exception message expected: a string containing \""
+                    + expectedMessage + "\" but was: \"" + thrown.getMessage() + "\"",
+                    thrown.getMessage().contains(expectedMessage));
         }
         finally {
             reader.dispose();

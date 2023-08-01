@@ -33,6 +33,10 @@ package com.twelvemonkeys.imageio.plugins.svg;
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import com.twelvemonkeys.lang.SystemUtil;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import javax.xml.namespace.QName;
+
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
@@ -52,16 +56,21 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
 
+    static final QName SVG_ROOT = new QName("http://www.w3.org/2000/svg", "svg");
+
     /**
      * Creates an {@code SVGImageReaderSpi}.
      */
     @SuppressWarnings("WeakerAccess")
     public SVGImageReaderSpi() {
         super(new SVGProviderInfo());
+
+        this.inputTypes = new Class<?>[] { ImageInputStream.class, Document.class };
     }
 
     public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
+        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource)
+                || pSource instanceof Document && canDecode((Document) pSource);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
@@ -155,6 +164,13 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
             //noinspection ThrowFromFinallyBlock
             pInput.reset();
         }
+    }
+
+    private static boolean canDecode(Document doc) {
+        Element root = doc.getDocumentElement();
+        return root != null
+                && SVG_ROOT.getLocalPart().equals(root.getLocalName())
+                && SVG_ROOT.getNamespaceURI().equals(root.getNamespaceURI());
     }
 
     public ImageReader createReaderInstance(final Object extension) throws IOException {
