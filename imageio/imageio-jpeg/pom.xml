@@ -38,6 +38,18 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Require-Capability>
+                            osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+                        </Require-Capability>
+                        <Provide-Capability>
+                            osgi.serviceloader;
+                            osgi.serviceloader=javax.imageio.spi.ImageReaderSpi;
+                            osgi.serviceloader=javax.imageio.spi.ImageWriterSpi
+                        </Provide-Capability>
+                    </instructions>
+                </configuration>
             </plugin>
         </plugins>
     </build>
