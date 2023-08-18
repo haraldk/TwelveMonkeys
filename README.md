@@ -3,6 +3,7 @@
 [![Maven Snapshot](https://img.shields.io/nexus/s/com.twelvemonkeys.imageio/imageio?label=development&server=https%3A%2F%2Foss.sonatype.org&color=slateblue)](https://oss.sonatype.org/content/repositories/snapshots/com/twelvemonkeys/)
 [![StackOverflow](https://img.shields.io/badge/stack_overflow-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/haraldk/TwelveMonkeys/badge)](https://securityscorecards.dev/viewer/?uri=github.com/haraldk/TwelveMonkeys)
 
 ![Logo](logo.png)
 
