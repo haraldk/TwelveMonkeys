@@ -145,8 +145,8 @@ final class HuffmanTable extends Segment {
             }
 
             int c = temp >> 4;
-            if (c > 2) {
-                throw new IIOException("Unexpected JPEG Huffman Table class (> 2): " + c);
+            if (c > 1) {
+                throw new IIOException("Unexpected JPEG Huffman Table class (> 1): " + c);
             }
 
             table.tc[t][c] = true;
