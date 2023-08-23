@@ -51,16 +51,16 @@ public class SVGReadParam extends ImageReadParam {
         return background;
     }
 
-    public void setBackgroundColor(Paint pColor) {
-        background = pColor;
+    public void setBackgroundColor(Paint color) {
+        background = color;
     }
 
     public String getBaseURI() {
         return baseURI;
     }
 
-    public void setBaseURI(String pBaseURI) {
-        baseURI = pBaseURI;
+    public void setBaseURI(String baseURI) {
+        this.baseURI = baseURI;
     }
 
     public void setAllowExternalResources(boolean allow) {

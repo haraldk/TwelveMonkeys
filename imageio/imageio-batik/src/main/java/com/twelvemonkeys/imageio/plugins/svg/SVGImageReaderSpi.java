@@ -60,22 +60,22 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         super(new SVGProviderInfo());
     }
 
-    public boolean canDecodeInput(final Object pSource) throws IOException {
-        return pSource instanceof ImageInputStream && canDecode((ImageInputStream) pSource);
+    public boolean canDecodeInput(final Object source) throws IOException {
+        return source instanceof ImageInputStream && canDecode((ImageInputStream) source);
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    private static boolean canDecode(final ImageInputStream pInput) throws IOException {
+    private static boolean canDecode(final ImageInputStream input) throws IOException {
         // NOTE: This test is quite quick as it does not involve any parsing,
         // however it may not recognize all kinds of SVG documents.
         try {
-            pInput.mark();
+            input.mark();
 
             // TODO: This is not ok for UTF-16 and other wide encodings
             // TODO: Use an XML (encoding) aware Reader instance instead
             // Need to figure out pretty fast if this is XML or not
             int b;
-            while (Character.isWhitespace((char) (b = pInput.read()))) {
+            while (Character.isWhitespace((char) (b = input.read()))) {
                 // Skip over leading WS
             }
 
@@ -95,30 +95,30 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
             byte[] buffer = new byte[4];
             while (true) {
-                pInput.readFully(buffer);
+                input.readFully(buffer);
 
                 if (buffer[0] == '?') {
                     // This is the XML declaration or a processing instruction
-                    while (!((pInput.readByte() & 0xFF) == '?' && pInput.read() == '>')) {
+                    while (!((input.readByte() & 0xFF) == '?' && input.read() == '>')) {
                         // Skip until end of XML declaration or processing instruction or EOF
                     }
                 }
                 else if (buffer[0] == '!') {
                     if (buffer[1] == '-' && buffer[2] == '-') {
                         // This is a comment
-                        while (!((pInput.readByte() & 0xFF) == '-' && pInput.read() == '-' && pInput.read() == '>')) {
+                        while (!((input.readByte() & 0xFF) == '-' && input.read() == '-' && input.read() == '>')) {
                             // Skip until end of comment or EOF
                         }
                     }
                     else if (buffer[1] == 'D' && buffer[2] == 'O' && buffer[3] == 'C'
-                            && pInput.read() == 'T' && pInput.read() == 'Y'
-                            && pInput.read() == 'P' && pInput.read() == 'E') {
+                            && input.read() == 'T' && input.read() == 'Y'
+                            && input.read() == 'P' && input.read() == 'E') {
                         // This is the DOCTYPE declaration
-                        while (Character.isWhitespace((char) (b = pInput.read()))) {
+                        while (Character.isWhitespace((char) (b = input.read()))) {
                             // Skip over WS
                         }
 
-                        if (b == 's' && pInput.read() == 'v' && pInput.read() == 'g') {
+                        if (b == 's' && input.read() == 'v' && input.read() == 'g') {
                             // It's SVG, identified by DOCTYPE
                             return true;
                         }
@@ -142,7 +142,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                     return false;
                 }
 
-                while ((pInput.readByte() & 0xFF) != '<') {
+                while ((input.readByte() & 0xFF) != '<') {
                     // Skip over, until next begin tag or EOF
                 }
             }
@@ -153,7 +153,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         }
         finally {
             //noinspection ThrowFromFinallyBlock
-            pInput.reset();
+            input.reset();
         }
     }
 

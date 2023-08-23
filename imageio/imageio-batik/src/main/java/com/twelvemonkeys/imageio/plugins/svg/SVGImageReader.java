@@ -91,10 +91,10 @@ public class SVGImageReader extends ImageReaderBase {
     /**
      * Creates an {@code SVGImageReader}.
      *
-     * @param pProvider the provider
+     * @param provider the provider
      */
-    public SVGImageReader(final ImageReaderSpi pProvider) {
-        super(pProvider);
+    public SVGImageReader(final ImageReaderSpi provider) {
+        super(provider);
     }
 
     protected void resetMembers() {
@@ -108,20 +108,20 @@ public class SVGImageReader extends ImageReaderBase {
     }
 
     @Override
-    public void setInput(Object pInput, boolean seekForwardOnly, boolean ignoreMetadata) {
-        super.setInput(pInput, seekForwardOnly, ignoreMetadata);
+    public void setInput(Object input, boolean seekForwardOnly, boolean ignoreMetadata) {
+        super.setInput(input, seekForwardOnly, ignoreMetadata);
 
         if (imageInput != null) {
-            TranscoderInput input = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
-            rasterizer.setInput(input);
+            TranscoderInput transcoderInput = new TranscoderInput(IIOUtil.createStreamAdapter(imageInput));
+            rasterizer.setInput(transcoderInput);
         }
     }
 
-    public BufferedImage read(int pIndex, ImageReadParam pParam) throws IOException {
-        checkBounds(pIndex);
+    public BufferedImage read(int imageIndex, ImageReadParam param) throws IOException {
+        checkBounds(imageIndex);
 
-        if (pParam instanceof SVGReadParam) {
-            SVGReadParam svgParam = (SVGReadParam) pParam;
+        if (param instanceof SVGReadParam) {
+            SVGReadParam svgParam = (SVGReadParam) param;
 
             // set the external-resource-resolution preference
             allowExternalResources = svgParam.isAllowExternalResources();
@@ -139,17 +139,17 @@ public class SVGImageReader extends ImageReaderBase {
         }
 
         Dimension size = null;
-        if (pParam != null) {
-            size = pParam.getSourceRenderSize();
+        if (param != null) {
+            size = param.getSourceRenderSize();
         }
         if (size == null) {
-            size = new Dimension(getWidth(pIndex), getHeight(pIndex));
+            size = new Dimension(getWidth(imageIndex), getHeight(imageIndex));
         }
 
-        BufferedImage destination = getDestination(pParam, getImageTypes(pIndex), size.width, size.height);
+        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), size.width, size.height);
 
         // Read in the image, using the Batik Transcoder
-        processImageStarted(pIndex);
+        processImageStarted(imageIndex);
 
         BufferedImage image = rasterizer.getImage();
 
@@ -173,18 +173,18 @@ public class SVGImageReader extends ImageReaderBase {
         return ex.getException() != null ? ex.getException() : ex;
     }
 
-    private TranscodingHints paramsToHints(SVGReadParam pParam) throws IOException {
+    private TranscodingHints paramsToHints(SVGReadParam param) throws IOException {
         TranscodingHints hints = new TranscodingHints();
         // Note: We must allow generic ImageReadParams, so converting to
         //       TanscodingHints should be done outside the SVGReadParam class.
 
         // Set dimensions
-        Dimension size = pParam.getSourceRenderSize();
+        Dimension size = param.getSourceRenderSize();
         Rectangle viewBox = rasterizer.getViewBox();
         if (size == null) {
             // SVG is not a pixel based format, but we'll scale it, according to
             // the subsampling for compatibility
-            size = getSourceRenderSizeFromSubsamping(pParam, viewBox.getSize());
+            size = getSourceRenderSizeFromSubsamping(param, viewBox.getSize());
         }
 
         if (size != null) {
@@ -193,7 +193,7 @@ public class SVGImageReader extends ImageReaderBase {
         }
 
         // Set area of interest
-        Rectangle region = pParam.getSourceRegion();
+        Rectangle region = param.getSourceRegion();
         if (region != null) {
             hints.put(ImageTranscoder.KEY_AOI, region);
 
@@ -217,7 +217,7 @@ public class SVGImageReader extends ImageReaderBase {
         }
 
         // Background color
-        Paint bg = pParam.getBackgroundColor();
+        Paint bg = param.getBackgroundColor();
         if (bg != null) {
             hints.put(ImageTranscoder.KEY_BACKGROUND_COLOR, bg);
         }
@@ -225,10 +225,10 @@ public class SVGImageReader extends ImageReaderBase {
         return hints;
     }
 
-    private Dimension getSourceRenderSizeFromSubsamping(ImageReadParam pParam, Dimension pOrigSize) {
-        if (pParam.getSourceXSubsampling() > 1 || pParam.getSourceYSubsampling() > 1) {
-            return new Dimension((int) (pOrigSize.width / (float) pParam.getSourceXSubsampling()),
-                    (int) (pOrigSize.height / (float) pParam.getSourceYSubsampling()));
+    private Dimension getSourceRenderSizeFromSubsamping(ImageReadParam param, Dimension origSize) {
+        if (param.getSourceXSubsampling() > 1 || param.getSourceYSubsampling() > 1) {
+            return new Dimension((int) (origSize.width / (float) param.getSourceXSubsampling()),
+                    (int) (origSize.height / (float) param.getSourceYSubsampling()));
         }
         return null;
     }
@@ -237,14 +237,14 @@ public class SVGImageReader extends ImageReaderBase {
         return new SVGReadParam();
     }
 
-    public int getWidth(int pIndex) throws IOException {
-        checkBounds(pIndex);
+    public int getWidth(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
 
         return rasterizer.getDefaultWidth();
     }
 
-    public int getHeight(int pIndex) throws IOException {
-        checkBounds(pIndex);
+    public int getHeight(int imageIndex) throws IOException {
+        checkBounds(imageIndex);
         return rasterizer.getDefaultHeight();
     }
 
@@ -601,6 +601,7 @@ public class SVGImageReader extends ImageReaderBase {
                 initialized = true;
 
                 try {
+                    super.addTranscodingHint(SVGAbstractTranscoder.KEY_ALLOW_EXTERNAL_RESOURCES, allowExternalResources);
                     super.transcode(transcoderInput, null);
                 }
                 catch (TranscoderException e) {
@@ -633,8 +634,8 @@ public class SVGImageReader extends ImageReaderBase {
             return viewBox.getBounds();
         }
 
-        void setInput(final TranscoderInput pInput) {
-            transcoderInput = pInput;
+        void setInput(final TranscoderInput input) {
+            transcoderInput = input;
         }
 
         @Override
