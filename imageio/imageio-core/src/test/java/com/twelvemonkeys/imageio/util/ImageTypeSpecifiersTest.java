@@ -39,6 +39,7 @@ import java.awt.color.*;
 import java.awt.image.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class ImageTypeSpecifiersTest {
 
@@ -736,6 +737,7 @@ public class ImageTypeSpecifiersTest {
             ImageTypeSpecifier fromType = ImageTypeSpecifiers.createFromBufferedImageType(type);
 
             assertEquals(fromConstructor.getColorModel(), fromType.getColorModel());
+            assertEquals(fromConstructor.getSampleModel(), fromType.getSampleModel());
         }
     }
 
@@ -747,13 +749,43 @@ public class ImageTypeSpecifiersTest {
             ImageTypeSpecifier fromImage = ImageTypeSpecifiers.createFromRenderedImage(image);
 
             assertEquals(fromConstructor.getColorModel(), fromImage.getColorModel());
+            assertEquals(fromConstructor.getSampleModel(), fromImage.getSampleModel());
         }
+    }
+
+    @Test
+    public void testCreateFromRenderedImageIndexedBinaryShouldRetainPalette() {
+        IndexColorModel whiteIsZero = new IndexColorModel(1, 2, new int[]{0xFFFFFFFF, 0xFF000000}, 0, false, -1, DataBuffer.TYPE_BYTE);
+
+        BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_BINARY, whiteIsZero);
+        ImageTypeSpecifier fromImage = ImageTypeSpecifiers.createFromRenderedImage(image);
+
+        assertEquals(whiteIsZero, fromImage.getColorModel());
+        assertSame(whiteIsZero, fromImage.getColorModel()); // Note: This can be relaxed to asserting the LUTs are equal
+        assertEquals(image.getSampleModel(), fromImage.getSampleModel());
+    }
+
+    @Test
+    public void testCreateFromRenderedImageIndexedShouldRetainPalette() {
+        IndexColorModel palette = new IndexColorModel(4, 16, new int[]{
+                0xFFFFFFFF, 0xFF999999, 0xFF666666, 0xFF333333,
+                0xFF000000, 0xFF00202E, 0xFF003F5C, 0xFF2C4875,
+                0xFF8A508F, 0xFFBC5090, 0xFFFF6361, 0xFFFF8531,
+                0xFFFFA600, 0xFFFFD380, 0xFF74A892, 0xFF008585
+        }, 0, false, -1, DataBuffer.TYPE_BYTE);
+
+        BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_INDEXED, palette);
+        ImageTypeSpecifier fromImage = ImageTypeSpecifiers.createFromRenderedImage(image);
+
+        assertEquals(palette, fromImage.getColorModel());
+        assertSame(palette, fromImage.getColorModel()); // Note: This can be relaxed to asserting the LUTs are equal
+        assertEquals(image.getSampleModel(), fromImage.getSampleModel());
     }
 
     private static byte[] createByteLut(final int count) {
         byte[] lut = new byte[count];
         for (int i = 0; i < count; i++) {
-            lut[i] = (byte) count;
+            lut[i] = (byte) (i * 255 / count);
         }
         return lut;
     }
@@ -762,7 +794,8 @@ public class ImageTypeSpecifiersTest {
         int[] lut = new int[count];
 
         for (int i = 0; i < count; i++) {
-            lut[i] = 0xff000000 | count << 16 | count << 8 | count;
+            int val = (i * 255 / count);
+            lut[i] = 0xff000000 | val << 16 | val << 8 | val;
         }
 
         return lut;

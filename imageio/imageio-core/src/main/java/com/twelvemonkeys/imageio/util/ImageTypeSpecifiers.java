@@ -257,18 +257,18 @@ public final class ImageTypeSpecifiers {
         return createFromIndexColorModel(new IndexColorModel(bits, colors.length, colors, 0, hasAlpha, transIndex, dataType));
     }
 
-    public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel pColorModel) {
-        return new IndexedImageTypeSpecifier(pColorModel);
+    public static ImageTypeSpecifier createFromIndexColorModel(final IndexColorModel colorModel) {
+        return new IndexedImageTypeSpecifier(colorModel);
     }
 
-    public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel pColorModel) {
-        ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel);
-        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+    public static ImageTypeSpecifier createDiscreteAlphaIndexedFromIndexColorModel(final IndexColorModel colorModel) {
+        ColorModel discreteAlphaIndexColorModel = new DiscreteAlphaIndexColorModel(colorModel);
+        return new ImageTypeSpecifier(discreteAlphaIndexColorModel, discreteAlphaIndexColorModel.createCompatibleSampleModel(1, 1));
     }
 
-    public static ImageTypeSpecifier createDiscreteExtraSamplesIndexedFromIndexColorModel(final IndexColorModel pColorModel, int extraSamples, boolean hasAlpha) {
-        ColorModel colorModel = new DiscreteAlphaIndexColorModel(pColorModel, extraSamples, hasAlpha);
-        return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
+    public static ImageTypeSpecifier createDiscreteExtraSamplesIndexedFromIndexColorModel(final IndexColorModel colorModel, int extraSamples, boolean hasAlpha) {
+        ColorModel discreteAlphaIndexColorModel = new DiscreteAlphaIndexColorModel(colorModel, extraSamples, hasAlpha);
+        return new ImageTypeSpecifier(discreteAlphaIndexColorModel, discreteAlphaIndexColorModel.createCompatibleSampleModel(1, 1));
     }
 
     public static ImageTypeSpecifier createFromRenderedImage(RenderedImage image) {
@@ -279,7 +279,9 @@ public final class ImageTypeSpecifiers {
         if (image instanceof BufferedImage) {
             int bufferedImageType = ((BufferedImage) image).getType();
 
-            if (bufferedImageType != BufferedImage.TYPE_CUSTOM) {
+            if (bufferedImageType != BufferedImage.TYPE_CUSTOM &&
+                    // Need to retain the actual palette in the color model for IndexColorModel
+                    bufferedImageType != BufferedImage.TYPE_BYTE_BINARY && bufferedImageType != BufferedImage.TYPE_BYTE_INDEXED) {
                 return createFromBufferedImageType(bufferedImageType);
             }
         }

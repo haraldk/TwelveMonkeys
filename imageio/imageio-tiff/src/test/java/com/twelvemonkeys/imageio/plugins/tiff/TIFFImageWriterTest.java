@@ -1305,6 +1305,60 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
     }
 
     @Test
+    public void testWriteBinaryWhiteIsZero() throws IOException {
+        IndexColorModel whiteIsZero = new IndexColorModel(1, 2, new int[] {-1, 0}, 0, false, -1, DataBuffer.TYPE_BYTE);
+        BufferedImage image = new BufferedImage(10, 10, BufferedImage.TYPE_BYTE_BINARY, whiteIsZero);
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+            ImageWriter imageWriter = createWriter();
+            imageWriter.setOutput(output);
+            imageWriter.write(image);
+        }
+
+        Directory directory = new TIFFReader().read(new ByteArrayImageInputStream(bytes.toByteArray()));
+
+        assertNotNull(directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION));
+        assertEquals(TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO, directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION).getValue());
+    }
+
+    @Test
+    public void testWriteBinaryBlackIsZero() throws IOException {
+        IndexColorModel blackIsZero = new IndexColorModel(1, 2, new int[] {0, -1}, 0, false, -1, DataBuffer.TYPE_BYTE);
+        BufferedImage image = new BufferedImage(10, 10, BufferedImage.TYPE_BYTE_BINARY, blackIsZero);
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+            ImageWriter imageWriter = createWriter();
+            imageWriter.setOutput(output);
+            imageWriter.write(image);
+        }
+
+        Directory directory = new TIFFReader().read(new ByteArrayImageInputStream(bytes.toByteArray()));
+
+        assertNotNull(directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION));
+        assertEquals(TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO, directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION).getValue());
+    }
+
+    @Test
+    public void testWriteBinaryPalette() throws IOException {
+        IndexColorModel redAndBluePalette = new IndexColorModel(1, 2, new int[] {0xFF00FF00, 0xFF0000FF}, 0, false, -1, DataBuffer.TYPE_BYTE);
+        BufferedImage image = new BufferedImage(10, 10, BufferedImage.TYPE_BYTE_BINARY, redAndBluePalette);
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+            ImageWriter imageWriter = createWriter();
+            imageWriter.setOutput(output);
+            imageWriter.write(image);
+        }
+
+        Directory directory = new TIFFReader().read(new ByteArrayImageInputStream(bytes.toByteArray()));
+
+        assertNotNull(directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION));
+        assertEquals(TIFFBaseline.PHOTOMETRIC_PALETTE, directory.getEntryById(TIFF.TAG_PHOTOMETRIC_INTERPRETATION).getValue());
+    }
+
+    @Test
     public void testShortOverflowHuge() throws IOException {
         int width = 34769;
         int height = 33769;

@@ -52,12 +52,12 @@ final class IndexedImageTypeSpecifier extends ImageTypeSpecifier {
     }
 
     @Override
-    public final BufferedImage createBufferedImage(final int pWidth, final int pHeight) {
+    public BufferedImage createBufferedImage(final int width, final int height) {
         try {
             // This is a fix for the super-method, that first creates a sample model, and then
             // creates a raster from it, using Raster.createWritableRaster. The problem with
             // that approach, is that it always creates a TYPE_CUSTOM BufferedImage for indexed images.
-            WritableRaster raster = colorModel.createCompatibleWritableRaster(pWidth, pHeight);
+            WritableRaster raster = colorModel.createCompatibleWritableRaster(width, height);
             return new BufferedImage(colorModel, raster, colorModel.isAlphaPremultiplied(), null);
         }
         catch (NegativeArraySizeException e) {

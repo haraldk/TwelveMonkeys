@@ -40,6 +40,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFWriter;
 import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
@@ -149,9 +150,9 @@ public final class TIFFImageWriter extends ImageWriterBase {
         RenderedImage renderedImage = image.getRenderedImage();
         SampleModel sampleModel = renderedImage.getSampleModel();
 
-        // Can't use createFromRenderedImage in this case, as it does not consider palette for TYPE_BYTE_BINARY...
-        // TODO: Consider writing workaround in ImageTypeSpecifiers
-        ImageTypeSpecifier spec = new ImageTypeSpecifier(renderedImage);
+        // Need ImageTypeSpecifiers.createFromRenderedImage in this case, as the JDK method does not consider
+        // palette for TYPE_BYTE_BINARY/TYPE_BYTE_INDEXED...
+        ImageTypeSpecifier spec = ImageTypeSpecifiers.createFromRenderedImage(renderedImage);
 
         // TODO: Handle case where convertImageMetadata returns null, due to unknown metadata format, or reconsider if that's a valid case...
         TIFFImageMetadata metadata = image.getMetadata() != null
