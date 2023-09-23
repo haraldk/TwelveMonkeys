@@ -250,7 +250,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 ListenerDelegate listener = new ListenerDelegate(imageIndex);
                 jpegWriter.addIIOWriteProgressListener(listener);
                 jpegWriter.addIIOWriteWarningListener(listener);
-                jpegWriter.write(null, image, copyParams(param, jpegWriter));
+                jpegWriter.write(null, imageOnly(image), copyParams(param, jpegWriter));
             }
             finally {
                 jpegWriter.dispose();
@@ -283,6 +283,17 @@ public final class TIFFImageWriter extends ImageWriterBase {
         }
 
         return nextIFDPointerOffset;
+    }
+
+    private IIOImage imageOnly(final IIOImage image) {
+        if (image.getMetadata() == null && image.getNumThumbnails() == 0) {
+            // Just image data here, no need to copy
+            return image;
+        }
+
+        return image.hasRaster()
+                ? new IIOImage(image.getRaster(), null, null)
+                : new IIOImage(image.getRenderedImage(), null, null);
     }
 
     // TODO: Candidate util method
