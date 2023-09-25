@@ -9,6 +9,8 @@ on:
   schedule:
     - cron: '26 13 * * 6'
 
+permissions: {}
+
 jobs:
   analyze:
     name: Analyze
