@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import static com.twelvemonkeys.imageio.StandardImageMetadataSupport.builder;
 import static org.junit.Assert.*;
@@ -184,14 +183,13 @@ public class StandardImageMetadataSupportTest {
         NodeList textEntries = textNode.getElementsByTagName("TextEntry");
         assertEquals(entries.size(), textEntries.getLength());
 
-        int i = 0;
-        for (Entry<String, String> entry : entries.entrySet()) {
+        for(int i=0;i<entries.size();i++){
             IIOMetadataNode textEntry = (IIOMetadataNode) textEntries.item(i);
-            assertEquals(entry.getKey(), textEntry.getAttribute("keyword"));
-            assertEquals(entry.getValue(), textEntry.getAttribute("value"));
-
-            i++;
+            assertTrue(entries.containsKey(textEntry.getAttribute("keyword")));
+            String key = textEntry.getAttribute("keyword");
+            assertEquals(entries.get(key), textEntry.getAttribute("value"));
         }
+            
     }
 
     @Test
