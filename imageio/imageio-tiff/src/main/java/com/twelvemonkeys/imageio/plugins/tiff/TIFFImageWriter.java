@@ -896,6 +896,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 // Baseline
                 case TIFF.TAG_SUBFILE_TYPE:
                 case TIFF.TAG_OLD_SUBFILE_TYPE:
+                case TIFF.TAG_TITLE:
                 case TIFF.TAG_IMAGE_DESCRIPTION:
                 case TIFF.TAG_MAKE:
                 case TIFF.TAG_MODEL:

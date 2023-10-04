@@ -894,6 +894,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         // DocumentName, ImageDescription, Make, Model, PageName, Software, Artist, HostComputer, InkNames, Copyright:
         // /Text/TextEntry@keyword = field name, /Text/TextEntry@value = field value.
         addTextEntryIfPresent(text, TIFF.TAG_DOCUMENT_NAME);
+        addTextEntryIfPresent(text, TIFF.TAG_TITLE);
         addTextEntryIfPresent(text, TIFF.TAG_IMAGE_DESCRIPTION);
         addTextEntryIfPresent(text, TIFF.TAG_MAKE);
         addTextEntryIfPresent(text, TIFF.TAG_MODEL);
@@ -1120,6 +1121,9 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
                 if ("documentname".equals(keyword)) {
                     entry = new TIFFEntry(TIFF.TAG_DOCUMENT_NAME, TIFF.TYPE_ASCII, value);
+                }
+                else if ("title".equals(keyword)) {
+                    entry = new TIFFEntry(TIFF.TAG_TITLE, TIFF.TYPE_ASCII, value);
                 }
                 else if ("imagedescription".equals(keyword)) {
                     entry = new TIFFEntry(TIFF.TAG_IMAGE_DESCRIPTION, TIFF.TYPE_ASCII, value);

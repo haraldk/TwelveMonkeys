@@ -125,6 +125,8 @@ public final class TIFFEntry extends AbstractEntry {
                 return "FillOrder";
             case TIFF.TAG_DOCUMENT_NAME:
                 return "DocumentName";
+            case TIFF.TAG_TITLE:
+                return "Title";
             case TIFF.TAG_IMAGE_DESCRIPTION:
                 return "ImageDescription";
             case TIFF.TAG_MAKE:

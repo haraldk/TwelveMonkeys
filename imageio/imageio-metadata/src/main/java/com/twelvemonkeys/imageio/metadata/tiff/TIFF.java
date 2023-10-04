@@ -171,6 +171,7 @@ public interface TIFF {
 
     int TAG_DATE_TIME = 306;
     int TAG_DOCUMENT_NAME = 269;
+    int TAG_TITLE = 42038;
     int TAG_IMAGE_DESCRIPTION = 270;
     int TAG_MAKE = 271;
     int TAG_MODEL = 272;
