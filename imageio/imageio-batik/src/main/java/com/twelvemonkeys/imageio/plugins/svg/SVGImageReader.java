@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.svg;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.lang.StringUtil;
 
 import org.apache.batik.anim.dom.SVGDOMImplementation;
@@ -249,7 +250,7 @@ public class SVGImageReader extends ImageReaderBase {
     }
 
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) {
-        return Collections.singleton(ImageTypeSpecifier.createFromRenderedImage(rasterizer.createImage(1, 1))).iterator();
+        return Collections.singleton(ImageTypeSpecifiers.createFromRenderedImage(rasterizer.createImage(1, 1))).iterator();
     }
 
     /**
